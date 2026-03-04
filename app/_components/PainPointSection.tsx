@@ -20,7 +20,7 @@ const PAIN_POINTS = [
   },
   {
     icon: Target,
-    title: "같은 생기부인데, 지원 전략에 따라 결과가 달라질까요?",
+    title: "같은 생기부인데, 왜 지원 전략에 따라 결과가 달라질까요?",
     description:
       "우리 아이에게 가장 유리한 전형과 대학을 전략적으로 선택하고 계신가요?",
     colorClass: "iconGreen",
