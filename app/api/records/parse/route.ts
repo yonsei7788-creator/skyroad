@@ -94,9 +94,8 @@ interface RawRow {
 
 /**
  * LLM 출력이 토큰 한도로 잘렸을 때 JSON 복구를 시도한다.
- * - 열린 문자열 닫기
- * - 미완성 key-value 제거
- * - 열린 괄호/중괄호 닫기
+ * 전략: 끝에서부터 마지막으로 완전하게 닫힌 배열 요소(}나 ])까지 잘라낸 뒤
+ * 열린 괄호/중괄호를 닫는다. 단순 bracket-closing보다 훨씬 안정적.
  */
 const repairTruncatedJson = (text: string): string => {
   let json = text.trim();
@@ -104,9 +103,23 @@ const repairTruncatedJson = (text: string): string => {
   // 마크다운 코드 펜스 제거
   json = json.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
 
-  // 파서 상태 추적
+  // 1차 시도: 그냥 파싱
+  try {
+    JSON.parse(json);
+    return json;
+  } catch {
+    // 복구 진행
+  }
+
+  // 끝에서부터 마지막 완전한 값 경계까지 잘라낸다.
+  // 완전한 값: }, ], "...", number, true, false, null로 끝나는 지점
+  // 그 뒤에 오는 불완전한 데이터를 제거한다.
+  let cutPoint = json.length;
+
+  // 마지막으로 유효하게 닫힌 } 또는 ] 위치를 찾는다 (문자열 내부 제외)
   let inString = false;
   let escaped = false;
+  let lastValidClose = -1;
   const stack: string[] = [];
 
   for (let i = 0; i < json.length; i++) {
@@ -125,26 +138,55 @@ const repairTruncatedJson = (text: string): string => {
     }
     if (inString) continue;
 
-    const top = stack[stack.length - 1];
     if (ch === "{") stack.push("}");
     else if (ch === "[") stack.push("]");
-    else if (ch === "}" && top === "}") stack.pop();
-    else if (ch === "]" && top === "]") stack.pop();
+    else if (ch === "}" || ch === "]") {
+      const top = stack[stack.length - 1];
+      if (ch === top) {
+        stack.pop();
+        lastValidClose = i;
+      }
+    }
   }
 
-  // 불완전한 이스케이프 시퀀스 제거
-  if (escaped) json = json.slice(0, -1);
+  if (lastValidClose > 0 && stack.length > 0) {
+    // 마지막으로 완전히 닫힌 위치 이후를 잘라낸다
+    cutPoint = lastValidClose + 1;
+    json = json.slice(0, cutPoint);
 
-  // 열린 문자열 닫기
-  if (inString) json += '"';
+    // 후행 콤마 제거
+    json = json.replace(/,\s*$/, "");
 
-  // 미완성 key-value 패턴 제거 (밖에서부터)
-  json = json.replace(/,\s*"(?:[^"\\]|\\.)*"\s*:\s*$/, "");
-  json = json.replace(/,\s*"(?:[^"\\]|\\.)*"\s*$/, "");
-  json = json.replace(/[,:]\s*$/, "");
-
-  // 열린 괄호/중괄호 닫기
-  while (stack.length > 0) json += stack.pop();
+    // 남은 열린 괄호 닫기 — 재스캔
+    const remainStack: string[] = [];
+    let rs = false;
+    let re = false;
+    for (let i = 0; i < json.length; i++) {
+      const ch = json[i];
+      if (re) {
+        re = false;
+        continue;
+      }
+      if (ch === "\\" && rs) {
+        re = true;
+        continue;
+      }
+      if (ch === '"') {
+        rs = !rs;
+        continue;
+      }
+      if (rs) continue;
+      if (ch === "{") remainStack.push("}");
+      else if (ch === "[") remainStack.push("]");
+      else if (
+        (ch === "}" || ch === "]") &&
+        remainStack[remainStack.length - 1] === ch
+      ) {
+        remainStack.pop();
+      }
+    }
+    while (remainStack.length > 0) json += remainStack.pop();
+  }
 
   return json;
 };
@@ -255,8 +297,6 @@ export async function POST(request: NextRequest) {
       generationConfig: {
         responseMimeType: "application/json",
         maxOutputTokens: MAX_OUTPUT_TOKENS,
-        // @ts-expect-error -- thinkingConfig is supported but not yet typed in SDK
-        thinkingConfig: { thinkingBudget: 0 },
       },
     });
 
@@ -264,6 +304,9 @@ export async function POST(request: NextRequest) {
       ...fileParts,
       { text: PARSE_PROMPT },
     ]);
+
+    const finishReason =
+      result.response.candidates?.[0]?.finishReason ?? "UNKNOWN";
     const responseText = result.response.text();
 
     if (!responseText || responseText.trim().length === 0) {
@@ -271,6 +314,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "AI가 빈 응답을 반환했습니다. 다시 시도해주세요." },
         { status: 502 }
+      );
+    }
+
+    if (finishReason === "MAX_TOKENS") {
+      console.warn(
+        `Response truncated (finishReason=MAX_TOKENS, length=${responseText.length})`
       );
     }
 
@@ -285,7 +334,7 @@ export async function POST(request: NextRequest) {
       );
       try {
         rawJson = JSON.parse(repairTruncatedJson(responseText));
-        console.info("JSON repair succeeded");
+        console.info("JSON repair succeeded (some sections may be partial)");
       } catch (repairErr) {
         console.error("JSON repair also failed:", repairErr);
         return NextResponse.json(
