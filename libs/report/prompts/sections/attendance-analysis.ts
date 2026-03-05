@@ -1,6 +1,6 @@
 /** 섹션 8: 출결 분석 (attendanceAnalysis) */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface AttendanceAnalysisPromptInput {
   attendanceSummary: string;

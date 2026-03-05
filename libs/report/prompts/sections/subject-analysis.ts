@@ -1,6 +1,6 @@
 /** 섹션 10: 교과 세특 분석 (subjectAnalysis) */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface SubjectAnalysisPromptInput {
   subjectData: string;

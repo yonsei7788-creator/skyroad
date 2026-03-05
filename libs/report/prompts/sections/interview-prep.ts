@@ -1,6 +1,6 @@
 /** 섹션 15: 예상 면접 질문 (interviewPrep) -- Standard+ */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface InterviewPrepPromptInput {
   subjectAnalysisResult: string;

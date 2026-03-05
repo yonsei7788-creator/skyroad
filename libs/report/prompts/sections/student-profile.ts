@@ -1,6 +1,6 @@
 /** 섹션 1: 학생 프로필 (studentProfile) */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface StudentProfilePromptInput {
   studentTypeClassification: string;

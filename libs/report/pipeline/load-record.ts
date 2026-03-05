@@ -7,7 +7,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { RecordData } from "./preprocessor";
+import type { RecordData } from "./preprocessor.ts";
 
 const SUB_TABLES = [
   { name: "record_attendance", key: "attendance" },

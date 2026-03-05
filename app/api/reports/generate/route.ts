@@ -4,16 +4,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient } from "@/libs/supabase/server";
 import { createAdminClient } from "@/libs/supabase/admin";
-import { loadRecordData } from "@/libs/report/pipeline/load-record";
-import { preprocess } from "@/libs/report/pipeline/preprocessor";
-import { orchestrate } from "@/libs/report/pipeline/orchestrator";
-import { postprocess } from "@/libs/report/pipeline/postprocessor";
-import { createGeminiClient } from "@/libs/report/pipeline/gemini-client";
 import { env } from "@/env";
 import type { ReportPlan, StudentInfo } from "@/libs/report/types";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
 
 interface GenerateBody {
   orderId: string;
@@ -68,11 +62,6 @@ export const POST = async (request: NextRequest) => {
       status,
       plans!inner (
         name
-      ),
-      profiles!inner (
-        name,
-        grade,
-        high_school_type
       )
     `
     )
@@ -128,13 +117,17 @@ export const POST = async (request: NextRequest) => {
     );
   }
 
+  // admin client를 먼저 생성 (RLS 우회 필요)
+  const adminClient = createAdminClient();
+  const dbClient = adminClient ?? supabase;
+
   // 리포트 레코드 확보 (없으면 생성)
   let reportId: string;
   if (existingReport) {
     reportId = existingReport.id;
   } else {
     // 목표 대학 조회
-    const { data: targetUni } = await supabase
+    const { data: targetUni } = await dbClient
       .from("target_universities")
       .select("id")
       .eq("user_id", order.user_id)
@@ -142,7 +135,7 @@ export const POST = async (request: NextRequest) => {
       .limit(1)
       .single();
 
-    const { data: newReport, error: insertError } = await supabase
+    const { data: newReport, error: insertError } = await dbClient
       .from("reports")
       .insert({
         order_id: orderId,
@@ -163,8 +156,6 @@ export const POST = async (request: NextRequest) => {
   }
 
   // 5. 상태를 processing으로 변경
-  const adminClient = createAdminClient();
-  const dbClient = adminClient ?? supabase;
 
   await dbClient
     .from("reports")
@@ -183,10 +174,17 @@ export const POST = async (request: NextRequest) => {
 
   // 6. 파이프라인 입력 데이터 준비
   const plans = order.plans as unknown as { name: string };
-  const profiles = order.profiles as unknown as {
-    name: string;
-    grade: string;
-    high_school_type: string;
+
+  const { data: userProfile } = await dbClient
+    .from("profiles")
+    .select("name, grade, high_school_type")
+    .eq("id", order.user_id)
+    .single();
+
+  const profiles = userProfile ?? {
+    name: "학생",
+    grade: "high2",
+    high_school_type: "일반고",
   };
 
   const plan = plans.name as ReportPlan;
@@ -228,13 +226,16 @@ export const POST = async (request: NextRequest) => {
         )
       : "[]";
 
-  // 7. 파이프라인 동기 실행
-  if (!env.GEMINI_API_KEY) {
+  // 7. Edge Function으로 파이프라인 비동기 실행 (fire-and-forget)
+  const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!serviceRoleKey) {
     await markFailed(
       dbClient,
       reportId,
       orderId,
-      "GEMINI_API_KEY가 설정되지 않았습니다."
+      "SUPABASE_SERVICE_ROLE_KEY가 설정되지 않았습니다."
     );
     return NextResponse.json(
       { error: "AI 서비스 설정이 올바르지 않습니다." },
@@ -242,125 +243,39 @@ export const POST = async (request: NextRequest) => {
     );
   }
 
-  try {
-    // Phase 1: 데이터 로딩 + 전처리
-    await updateProgress(dbClient, reportId, 5, "데이터 로딩");
+  const edgeFunctionUrl = `${supabaseUrl}/functions/v1/generate-report`;
 
-    const recordData = await loadRecordData(dbClient, recordId);
-    const { data, texts } = preprocess(recordData, studentInfo, plan);
-
-    // 목표 대학 후보군 텍스트 주입
-    texts.universityCandidatesText = universityCandidatesText;
-
-    await updateProgress(dbClient, reportId, 10, "전처리 완료");
-
-    // Phase 2-3: AI 호출 (오케스트레이터)
-    const client = createGeminiClient(env.GEMINI_API_KEY);
-
-    const sections = await orchestrate(
-      client,
+  // Edge Function을 fire-and-forget으로 호출.
+  // await하지 않음 — Edge Function은 독립 프로세스로 계속 실행됨.
+  // 성공/실패는 Edge Function이 직접 DB에 기록.
+  fetch(edgeFunctionUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${serviceRoleKey}`,
+      "x-secret": "skyroad-edge-fn-2026",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      orderId,
+      reportId,
       plan,
       studentInfo,
-      texts,
-      data,
-      (progress) => {
-        const dbProgress = Math.round(10 + progress.progress * 0.8);
-        updateProgress(
-          dbClient,
-          reportId,
-          dbProgress,
-          progress.section ?? progress.phase
-        ).catch(() => {});
-      }
-    );
+      recordId,
+      universityCandidatesText,
+    }),
+  }).catch((err) => {
+    console.error("Edge Function 호출 오류:", err);
+  });
 
-    await updateProgress(dbClient, reportId, 92, "후처리 시작");
+  console.log(`리포트 ${reportId} Edge Function 디스패치 완료`);
 
-    // Phase 4: 후처리
-    const result = postprocess(sections, data, studentInfo, plan, reportId);
-
-    // 검증 오류 로깅
-    const failedSections = result.validationResults.filter((r) => !r.valid);
-    if (failedSections.length > 0) {
-      console.warn(
-        `리포트 ${reportId}: ${failedSections.length}개 섹션 검증 실패`,
-        failedSections.map((s) => s.sectionId)
-      );
-    }
-    if (result.planValidationErrors.length > 0) {
-      console.warn(
-        `리포트 ${reportId}: 플랜 검증 오류`,
-        result.planValidationErrors
-      );
-    }
-
-    // 결과 저장
-    const { error: saveError } = await dbClient
-      .from("reports")
-      .update({
-        content: result.content,
-        ai_status: "completed",
-        ai_progress: 100,
-        ai_current_section: null,
-        ai_generated_at: new Date().toISOString(),
-        ai_model_version: "gemini-2.5-pro",
-      })
-      .eq("id", reportId);
-
-    if (saveError) {
-      console.error("리포트 저장 오류:", saveError);
-      await markFailed(
-        dbClient,
-        reportId,
-        orderId,
-        "리포트 저장에 실패했습니다."
-      );
-      return NextResponse.json(
-        { error: "리포트 저장에 실패했습니다." },
-        { status: 500 }
-      );
-    }
-
-    // 주문 상태 업데이트
-    await dbClient
-      .from("orders")
-      .update({ status: "analysis_complete" })
-      .eq("id", orderId);
-
-    console.log(`리포트 ${reportId} 생성 완료`);
-
-    return NextResponse.json({
-      reportId,
-      status: "completed",
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error(`리포트 ${reportId} AI 파이프라인 오류:`, err);
-    await markFailed(dbClient, reportId, orderId, message);
-
-    return NextResponse.json(
-      { error: "리포트 생성 중 오류가 발생했습니다." },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json({
+    reportId,
+    status: "processing",
+  });
 };
 
 // ─── 유틸 ───
-
-const updateProgress = async (
-  supabase: SupabaseClient,
-  reportId: string,
-  progress: number,
-  currentSection: string
-): Promise<void> => {
-  await supabase
-    .from("reports")
-    .update({
-      ai_progress: Math.min(99, progress),
-      ai_current_section: currentSection,
-    })
-    .eq("id", reportId);
-};
 
 const markFailed = async (
   supabase: SupabaseClient,

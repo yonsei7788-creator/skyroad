@@ -5,41 +5,41 @@
  * 21개 섹션을 생성한다.
  */
 
-import type { ReportPlan, ReportSection, StudentInfo } from "../types";
-import { SECTION_ORDER } from "../types";
-import { buildSystemPrompt } from "../prompts/system";
+import type { ReportPlan, ReportSection, StudentInfo } from "../types.ts";
+import { SECTION_ORDER } from "../types.ts";
+import { buildSystemPrompt } from "../prompts/system.ts";
 
 // Phase 2 prompts
-import { buildCompetencyExtractionPrompt } from "../prompts/phase2/competency-extraction";
-import type { CompetencyExtractionOutput } from "../prompts/phase2/competency-extraction";
-import { buildAcademicContextAnalysisPrompt } from "../prompts/phase2/academic-analysis";
-import type { AcademicContextAnalysisOutput } from "../prompts/phase2/academic-analysis";
-import { buildStudentTypeClassificationPrompt } from "../prompts/phase2/student-type-classification";
-import type { StudentTypeClassificationOutput } from "../prompts/phase2/student-type-classification";
+import { buildCompetencyExtractionPrompt } from "../prompts/phase2/competency-extraction.ts";
+import type { CompetencyExtractionOutput } from "../prompts/phase2/competency-extraction.ts";
+import { buildAcademicContextAnalysisPrompt } from "../prompts/phase2/academic-analysis.ts";
+import type { AcademicContextAnalysisOutput } from "../prompts/phase2/academic-analysis.ts";
+import { buildStudentTypeClassificationPrompt } from "../prompts/phase2/student-type-classification.ts";
+import type { StudentTypeClassificationOutput } from "../prompts/phase2/student-type-classification.ts";
 
 // Section prompts
-import { buildStudentProfilePrompt } from "../prompts/sections/student-profile";
-import { buildCompetencyScorePrompt } from "../prompts/sections/competency-score";
-import { buildAdmissionPredictionPrompt } from "../prompts/sections/admission-prediction";
-import { buildAcademicAnalysisPrompt } from "../prompts/sections/academic-analysis";
-import { buildCourseAlignmentPrompt } from "../prompts/sections/course-alignment";
-import { buildAttendanceAnalysisPrompt } from "../prompts/sections/attendance-analysis";
-import { buildActivityAnalysisPrompt } from "../prompts/sections/activity-analysis";
-import { buildSubjectAnalysisPrompt } from "../prompts/sections/subject-analysis";
-import { buildBehaviorAnalysisPrompt } from "../prompts/sections/behavior-analysis";
-import { buildWeaknessAnalysisPrompt } from "../prompts/sections/weakness-analysis";
-import { buildTopicRecommendationPrompt } from "../prompts/sections/topic-recommendation";
-import { buildInterviewPrepPrompt } from "../prompts/sections/interview-prep";
+import { buildStudentProfilePrompt } from "../prompts/sections/student-profile.ts";
+import { buildCompetencyScorePrompt } from "../prompts/sections/competency-score.ts";
+import { buildAdmissionPredictionPrompt } from "../prompts/sections/admission-prediction.ts";
+import { buildAcademicAnalysisPrompt } from "../prompts/sections/academic-analysis.ts";
+import { buildCourseAlignmentPrompt } from "../prompts/sections/course-alignment.ts";
+import { buildAttendanceAnalysisPrompt } from "../prompts/sections/attendance-analysis.ts";
+import { buildActivityAnalysisPrompt } from "../prompts/sections/activity-analysis.ts";
+import { buildSubjectAnalysisPrompt } from "../prompts/sections/subject-analysis.ts";
+import { buildBehaviorAnalysisPrompt } from "../prompts/sections/behavior-analysis.ts";
+import { buildWeaknessAnalysisPrompt } from "../prompts/sections/weakness-analysis.ts";
+import { buildTopicRecommendationPrompt } from "../prompts/sections/topic-recommendation.ts";
+import { buildInterviewPrepPrompt } from "../prompts/sections/interview-prep.ts";
 import {
   buildAdmissionStrategyPrompt,
   buildDirectionGuidePrompt,
-} from "../prompts/sections/admission-strategy";
-import { buildStoryAnalysisPrompt } from "../prompts/sections/story-analysis";
-import { buildActionRoadmapPrompt } from "../prompts/sections/action-roadmap";
-import { buildMajorExplorationPrompt } from "../prompts/sections/major-exploration";
+} from "../prompts/sections/admission-strategy.ts";
+import { buildStoryAnalysisPrompt } from "../prompts/sections/story-analysis.ts";
+import { buildActionRoadmapPrompt } from "../prompts/sections/action-roadmap.ts";
+import { buildMajorExplorationPrompt } from "../prompts/sections/major-exploration.ts";
 
-import type { GeminiClient } from "./gemini-client";
-import type { PreprocessedTexts, PreprocessedData } from "./preprocessor";
+import type { GeminiClient } from "./gemini-client.ts";
+import type { PreprocessedTexts, PreprocessedData } from "./preprocessor.ts";
 
 // ─── Gemini responseSchema stubs ───
 // 실제 Schema 객체는 Gemini SDK 타입으로 정의해야 하지만,

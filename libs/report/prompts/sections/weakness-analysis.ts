@@ -1,6 +1,6 @@
 /** 섹션 13: 부족한 부분 + 보완 전략 (weaknessAnalysis) */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface WeaknessAnalysisPromptInput {
   competencyExtraction: string;

@@ -1,6 +1,6 @@
 /** 섹션 19: 추천 도서 (bookRecommendation) -- Standard+ */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface BookRecommendationPromptInput {
   competencyExtraction: string;

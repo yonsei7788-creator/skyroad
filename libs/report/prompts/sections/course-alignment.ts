@@ -1,6 +1,6 @@
 /** 섹션 7: 권장과목 이수 분석 (courseAlignment) */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface CourseAlignmentPromptInput {
   recommendedCourseMatch: string;

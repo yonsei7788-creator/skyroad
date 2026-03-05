@@ -1,6 +1,6 @@
 /** 섹션 16: 입시 전략 + 대학 추천 (admissionStrategy) */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface AdmissionStrategyPromptInput {
   academicAnalysis: string;

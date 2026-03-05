@@ -1,6 +1,6 @@
-import type { ReportPlan } from "../types";
+import type { ReportPlan } from "../types.ts";
 
-import { getPlanInstructions } from "./plan-instructions";
+import { getPlanInstructions } from "./plan-instructions.ts";
 
 const COMMON_SYSTEM_PROMPT = `당신은 대한민국 입시 전문 AI 분석가입니다. 대학 입학사정관의 평가 관점과 입시 컨설턴트의 전략적 시각을 겸비하고 있습니다.
 

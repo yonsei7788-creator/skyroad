@@ -1,6 +1,6 @@
 /** 섹션 12: 기록 충실도 종합 (overallAssessment) -- Standard+ */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface OverallAssessmentPromptInput {
   recordVolumeData: string;

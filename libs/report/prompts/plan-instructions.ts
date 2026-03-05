@@ -1,4 +1,4 @@
-import type { ReportPlan } from "../types";
+import type { ReportPlan } from "../types.ts";
 
 const LITE_INSTRUCTIONS = `## 분석 깊이: 기본
 - 핵심 사항만 간결하게 서술합니다.

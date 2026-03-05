@@ -1,6 +1,6 @@
 /** 섹션 14: 세특 주제 추천 (topicRecommendation) */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface TopicRecommendationPromptInput {
   subjectAnalysisResult: string;
