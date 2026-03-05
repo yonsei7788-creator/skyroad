@@ -20,10 +20,9 @@ export const AttendanceAnalysisRenderer = ({
   sectionNumber,
 }: AttendanceAnalysisRendererProps) => {
   return (
-    <div className={styles.section}>
+    <div>
       <SectionHeader number={sectionNumber} title={data.title} />
 
-      {/* Overall rating badge */}
       <div className={styles.cardAccent}>
         <div className={styles.cardHeader}>
           <div className={styles.cardTitle}>출결 종합 평가</div>
@@ -33,7 +32,6 @@ export const AttendanceAnalysisRenderer = ({
         </div>
       </div>
 
-      {/* Summary by year table */}
       <div className={`${styles.h3} ${styles.mt24} ${styles.mb12}`}>
         학년별 출결 현황
       </div>
@@ -64,11 +62,55 @@ export const AttendanceAnalysisRenderer = ({
         </tbody>
       </table>
 
-      {/* Impact analysis and integrity contribution */}
+      {data.comparisonData && (
+        <>
+          <div className={`${styles.h3} ${styles.mt24} ${styles.mb12}`}>
+            출결 벤치마크 비교
+          </div>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th className={styles.tableAlignCenter}>내 출결(결석일)</th>
+                <th className={styles.tableAlignCenter}>지원적정 평균</th>
+                <th className={styles.tableAlignCenter}>전체 평균</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td
+                  className={`${styles.tableAlignCenter} ${styles.tableCellBold}`}
+                >
+                  {data.comparisonData.myValue}일
+                </td>
+                <td className={styles.tableAlignCenter}>
+                  {data.comparisonData.targetRangeAvg}일
+                </td>
+                <td className={styles.tableAlignCenter}>
+                  {data.comparisonData.overallAvg}일
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          {data.comparisonData.estimationBasis && (
+            <p className={`${styles.caption} ${styles.mt4}`}>
+              * {data.comparisonData.estimationBasis}
+            </p>
+          )}
+        </>
+      )}
+
       <div className={`${styles.card} ${styles.mt20}`}>
         <div className={styles.cardHeader}>
           <div className={styles.cardTitle}>출결 영향 분석</div>
         </div>
+
+        {data.integrityScore !== undefined && (
+          <p className={`${styles.body} ${styles.mt8}`}>
+            <span className={styles.emphasis}>성실성 점수:</span>{" "}
+            {data.integrityScore}점 / 100점
+          </p>
+        )}
+
         <p className={`${styles.body} ${styles.mt8}`}>
           <span className={styles.emphasis}>입시 영향:</span>{" "}
           {data.impactAnalysis}
@@ -77,9 +119,17 @@ export const AttendanceAnalysisRenderer = ({
           <span className={styles.emphasis}>성실성 기여:</span>{" "}
           {data.integrityContribution}
         </p>
+
+        {data.estimatedDeduction && (
+          <p className={`${styles.body} ${styles.mt8}`}>
+            <span className={styles.emphasis}>
+              추정 감점: {data.estimatedDeduction.deductionPoints}점
+            </span>{" "}
+            — {data.estimatedDeduction.rationale}
+          </p>
+        )}
       </div>
 
-      {/* Improvement advice (Standard+, only when needed) */}
       {data.improvementAdvice && (
         <div
           className={`${styles.callout} ${styles.calloutCaution} ${styles.mt16}`}

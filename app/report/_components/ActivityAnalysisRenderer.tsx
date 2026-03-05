@@ -14,51 +14,65 @@ export const ActivityAnalysisRenderer = ({
   sectionNumber,
 }: ActivityAnalysisRendererProps) => {
   return (
-    <div className={styles.section}>
-      <SectionHeader number={sectionNumber} title={data.title} />
+    <>
+      {/* Block 1: SectionHeader + curriculum version tag */}
+      <div>
+        <SectionHeader number={sectionNumber} title={data.title} />
 
-      {/* Curriculum version tag */}
-      <div className={styles.mb16}>
-        <span className={styles.tag}>
-          {data.curriculumVersion === "2015"
-            ? "2015 개정 교육과정 (4영역)"
-            : "2022 개정 교육과정 (3영역)"}
-        </span>
+        <div className={styles.mb16}>
+          <span className={styles.tag}>
+            {data.curriculumVersion === "2015"
+              ? "2015 개정 교육과정 (4영역)"
+              : "2022 개정 교육과정 (3영역)"}
+          </span>
+        </div>
       </div>
 
-      {/* Activity type cards */}
+      {/* Each activity type as its own Block */}
       {data.activities.map((activity) => (
-        <div
-          key={activity.type}
-          className={`${styles.cardAccent} ${styles.mt16}`}
-        >
-          <div className={styles.cardHeader}>
-            <div className={styles.cardTitle}>{activity.type}</div>
-          </div>
+        <div key={activity.type}>
+          {/* Activity type header */}
+          <h3 className={`${styles.h3} ${styles.mt16} ${styles.mb12}`}>
+            {activity.type}
+          </h3>
 
-          {/* Yearly analysis */}
-          {activity.yearlyAnalysis.map((year) => (
-            <div
-              key={year.year}
-              className={`${styles.cardNeutral} ${styles.mt12}`}
-            >
-              <div className={styles.cardHeader}>
-                <span className={styles.emphasis}>{year.year}학년</span>
-                <ReportBadge rating={year.rating} />
-              </div>
-              <p className={styles.body}>{year.summary}</p>
-              {year.competencyTags.length > 0 && (
-                <div className={`${styles.tagGroup} ${styles.mt8}`}>
-                  {year.competencyTags.map((tag, idx) => (
-                    <span key={idx} className={styles.tag}>
-                      {tag.subcategory}
-                      {tag.assessment && ` (${tag.assessment})`}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+          {/* Yearly analysis table */}
+          <table className={styles.tableCompact}>
+            <thead>
+              <tr>
+                <th className={styles.tableAlignCenter}>학년</th>
+                <th>분석 내용</th>
+                <th className={styles.tableAlignCenter}>평가</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activity.yearlyAnalysis.map((year) => (
+                <tr key={year.year}>
+                  <td
+                    className={`${styles.tableCellBold} ${styles.tableAlignCenter}`}
+                  >
+                    {year.year}학년
+                  </td>
+                  <td>
+                    <span className={styles.body}>{year.summary}</span>
+                    {year.competencyTags.length > 0 && (
+                      <div className={`${styles.tagGroup} ${styles.mt6}`}>
+                        {year.competencyTags.map((tag, idx) => (
+                          <span key={idx} className={styles.tag}>
+                            {tag.subcategory}
+                            {tag.assessment && ` (${tag.assessment})`}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                  <td className={styles.tableAlignCenter}>
+                    <ReportBadge rating={year.rating} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
           {/* Volume assessment */}
           {activity.volumeAssessment && (
@@ -79,24 +93,40 @@ export const ActivityAnalysisRenderer = ({
               <div className={`${styles.overline} ${styles.mb8}`}>
                 핵심 활동
               </div>
-              {activity.keyActivities.map((ka, idx) => (
-                <div
-                  key={idx}
-                  className={`${styles.cardHighlight} ${styles.mt8}`}
-                >
-                  <div className={styles.cardTitle}>{ka.activity}</div>
-                  <p className={`${styles.small} ${styles.mt6}`}>
-                    {ka.evaluation}
-                  </p>
-                  <div className={`${styles.tagGroup} ${styles.mt8}`}>
-                    {ka.competencyTags.map((tag, tagIdx) => (
-                      <span key={tagIdx} className={styles.tag}>
-                        {tag.subcategory}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
+              <table className={styles.tableCompact}>
+                <thead>
+                  <tr>
+                    <th className={styles.tableAlignCenter}>No.</th>
+                    <th>활동 내용</th>
+                    <th>평가</th>
+                    <th>역량</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activity.keyActivities.map((ka, idx) => (
+                    <tr key={idx}>
+                      <td
+                        className={`${styles.tableCellBold} ${styles.tableAlignCenter}`}
+                      >
+                        {String(idx + 1).padStart(2, "0")}
+                      </td>
+                      <td className={styles.tableCellBold}>{ka.activity}</td>
+                      <td>
+                        <span className={styles.small}>{ka.evaluation}</span>
+                      </td>
+                      <td>
+                        <div className={styles.tagGroup}>
+                          {ka.competencyTags.map((tag, tagIdx) => (
+                            <span key={tagIdx} className={styles.tag}>
+                              {tag.subcategory}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 
@@ -114,14 +144,16 @@ export const ActivityAnalysisRenderer = ({
         </div>
       ))}
 
-      {/* Overall comment */}
-      <div className={`${styles.aiCommentary} ${styles.mt20}`}>
-        <div className={styles.aiCommentaryIcon}>AI</div>
-        <div className={styles.aiCommentaryContent}>
-          <div className={styles.aiCommentaryLabel}>창체 종합 평가</div>
-          <div className={styles.aiCommentaryText}>{data.overallComment}</div>
+      {/* Final Block: Overall AI commentary */}
+      <div>
+        <div className={`${styles.aiCommentary} ${styles.mt20}`}>
+          <div className={styles.aiCommentaryIcon}>AI</div>
+          <div className={styles.aiCommentaryContent}>
+            <div className={styles.aiCommentaryLabel}>창체 종합 평가</div>
+            <div className={styles.aiCommentaryText}>{data.overallComment}</div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };

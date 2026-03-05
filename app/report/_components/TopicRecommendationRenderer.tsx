@@ -13,87 +13,129 @@ export const TopicRecommendationRenderer = ({
   sectionNumber,
 }: TopicRecommendationRendererProps) => {
   return (
-    <div className={styles.section}>
-      <SectionHeader
-        number={sectionNumber}
-        title={data.title}
-        subtitle="생기부와 연계할 수 있는 탐구 주제를 추천합니다"
-      />
+    <>
+      {/* Block 1: Header + summary table */}
+      <div>
+        <SectionHeader number={sectionNumber} title={data.title} />
 
+        <table className={styles.compactTable}>
+          <thead>
+            <tr>
+              <th>주제</th>
+              <th className={styles.tableAlignCenter}>관련 과목</th>
+              {data.topics[0]?.difficulty && (
+                <th className={styles.tableAlignCenter}>난이도</th>
+              )}
+              {data.topics[0]?.synergyScore !== undefined && (
+                <th className={styles.tableAlignCenter}>시너지</th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {data.topics.map((topic, idx) => (
+              <tr key={idx}>
+                <td className={styles.tableCellBold}>{topic.topic}</td>
+                <td className={styles.tableAlignCenter}>
+                  <div className={styles.tagGroup}>
+                    {topic.relatedSubjects.map((s) => (
+                      <span key={s} className={styles.tag}>
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+                {data.topics[0]?.difficulty && (
+                  <td className={styles.tableAlignCenter}>
+                    <span className={styles.tag}>
+                      {topic.difficulty ?? "—"}
+                    </span>
+                  </td>
+                )}
+                {data.topics[0]?.synergyScore !== undefined && (
+                  <td
+                    className={`${styles.tableAlignCenter} ${styles.tableCellBold}`}
+                  >
+                    {topic.synergyScore ?? "—"}
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Each topic as its own block */}
       {data.topics.map((topic, idx) => (
-        <div key={idx} className={styles.cardAccent}>
-          {/* Numbered header */}
-          <div className={`${styles.flexRowStart} ${styles.gap14}`}>
-            <span className={`${styles.sectionNumber} ${styles.sizeCircleSm}`}>
-              {String(idx + 1).padStart(2, "0")}
-            </span>
-            <div className={styles.flexOne}>
-              <div className={styles.cardTitle}>{topic.topic}</div>
-              <div className={`${styles.tagGroup} ${styles.mt8}`}>
-                {topic.relatedSubjects.map((subject) => (
-                  <span key={subject} className={styles.tagAccent}>
-                    {subject}
-                  </span>
-                ))}
-              </div>
-            </div>
+        <div key={idx}>
+          <div className={`${styles.h3} ${styles.mb6}`}>
+            {String(idx + 1).padStart(2, "0")}. {topic.topic}
+            {topic.estimatedDuration && (
+              <span className={`${styles.caption} ${styles.ml8}`}>
+                {topic.estimatedDuration}
+              </span>
+            )}
           </div>
 
-          {/* Description */}
-          <p className={`${styles.body} ${styles.mt14}`}>{topic.description}</p>
+          <div className={`${styles.tagGroup} ${styles.mb8}`}>
+            {topic.relatedSubjects.map((s) => (
+              <span key={s} className={styles.tag}>
+                {s}
+              </span>
+            ))}
+            {topic.keywordSuggestions?.map((kw) => (
+              <span key={kw} className={styles.tag}>
+                {kw}
+              </span>
+            ))}
+          </div>
 
-          {/* Rationale (Standard+) */}
+          <p className={styles.small}>{topic.description}</p>
+
           {topic.rationale && (
-            <div className={`${styles.callout} ${styles.mt14}`}>
-              <div className={styles.calloutContent}>
-                <span className={styles.emphasis}>주제 선정 이유:</span>{" "}
-                {topic.rationale}
-              </div>
-            </div>
+            <p className={`${styles.caption} ${styles.mt6}`}>
+              <span className={styles.emphasis}>선정 이유:</span>{" "}
+              {topic.rationale}
+            </p>
           )}
 
-          {/* Existing connection (Standard+) */}
           {topic.existingConnection && (
-            <div className={`${styles.cardHighlight} ${styles.mt14}`}>
-              <div className={`${styles.overline} ${styles.mb6}`}>
-                기존 탐구와의 연결
-              </div>
-              <p className={styles.body}>{topic.existingConnection}</p>
-            </div>
+            <p className={`${styles.caption} ${styles.mt4}`}>
+              <span className={styles.emphasis}>기존 탐구 연결:</span>{" "}
+              {topic.existingConnection}
+            </p>
           )}
 
-          {/* Activity design (Premium) */}
           {topic.activityDesign && (
-            <div className={styles.mt20}>
-              <div className={`${styles.overline} ${styles.mb12}`}>
-                활동 설계 ({topic.activityDesign.duration})
+            <div className={styles.mt12}>
+              <div className={`${styles.overline} ${styles.mb6}`}>
+                활동 설계
+                {topic.activityDesign.duration &&
+                  ` (${topic.activityDesign.duration})`}
               </div>
-              <ol className={styles.numberedList}>
-                {topic.activityDesign.steps.map((step, stepIdx) => (
-                  <li key={stepIdx} className={styles.numberedListItem}>
-                    <span className={styles.numberedListNumber}>
-                      {stepIdx + 1}
-                    </span>
+              <div className={styles.caption}>
+                {topic.activityDesign.steps.map((step, sIdx) => (
+                  <p key={sIdx} className={sIdx > 0 ? styles.mt4 : undefined}>
                     {step}
-                  </li>
+                  </p>
                 ))}
-              </ol>
-              <p className={`${styles.small} ${styles.mt8}`}>
+              </div>
+              <p className={`${styles.caption} ${styles.mt6}`}>
                 <span className={styles.emphasis}>예상 결과물:</span>{" "}
                 {topic.activityDesign.expectedResult}
               </p>
             </div>
           )}
 
-          {/* Sample evaluation (Premium) */}
           {topic.sampleEvaluation && (
-            <div className={`${styles.quoteBox} ${styles.mt14}`}>
-              <div className={styles.quoteText}>{topic.sampleEvaluation}</div>
-              <div className={styles.quoteEvaluation}>세특 서술 예시</div>
+            <div className={`${styles.callout} ${styles.mt12}`}>
+              <div className={styles.calloutContent}>
+                <span className={styles.emphasis}>세특 서술 예시:</span>{" "}
+                {topic.sampleEvaluation}
+              </div>
             </div>
           )}
         </div>
       ))}
-    </div>
+    </>
   );
 };

@@ -92,22 +92,22 @@
   /* -- Layout -- */
   --report-page-width: 210mm;
   --report-page-height: 297mm;
-  --report-page-padding: 28mm 24mm;
+  --report-page-padding: 20mm 18mm;
   --report-gutter: 20px;
 
   /* -- Typography scale -- */
   --report-font:
     "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     system-ui, "Noto Sans KR", sans-serif;
-  --report-fs-display: 2.25rem;
-  --report-fs-h1: 1.75rem;
-  --report-fs-h2: 1.375rem;
-  --report-fs-h3: 1.125rem;
-  --report-fs-subtitle: 1rem;
-  --report-fs-body: 0.9375rem;
-  --report-fs-small: 0.8125rem;
-  --report-fs-caption: 0.75rem;
-  --report-fs-overline: 0.6875rem;
+  --report-fs-display: 2.5rem;
+  --report-fs-h1: 2rem;
+  --report-fs-h2: 1.5rem;
+  --report-fs-h3: 1.25rem;
+  --report-fs-subtitle: 1.0625rem;
+  --report-fs-body: 1rem;
+  --report-fs-small: 0.9375rem;
+  --report-fs-caption: 0.875rem;
+  --report-fs-overline: 0.8125rem;
 
   /* -- Spacing -- */
   --report-space-xs: 4px;
@@ -153,7 +153,7 @@
   position: relative;
   width: var(--report-page-width);
   max-width: 100%;
-  min-height: auto;
+  height: var(--report-page-height);
   margin: 0 auto var(--report-space-lg);
   padding: var(--report-page-padding);
   padding-bottom: calc(var(--report-space-xl) + 24px);
@@ -162,7 +162,8 @@
     0 1px 3px rgb(0 0 0 / 0.06),
     0 6px 24px rgb(0 0 0 / 0.06);
   border-radius: 2px;
-  overflow: visible;
+  overflow: hidden;
+  counter-increment: page-counter;
 }
 
 .page:last-child {
@@ -238,11 +239,7 @@
 }
 
 .highlight {
-  background: linear-gradient(
-    to top,
-    var(--report-accent-light) 40%,
-    transparent 40%
-  );
+  font-weight: 600;
   padding: 0 2px;
 }
 
@@ -282,8 +279,8 @@
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
   border-bottom: 2px solid var(--report-accent);
 }
 
@@ -342,26 +339,24 @@
 
 .cardAccent {
   composes: card;
-  border-left: 3px solid var(--report-accent);
+  border-top: 2px solid var(--report-accent);
 }
 
 .cardStrength {
   composes: card;
-  background: var(--report-strength-light);
-  border-color: var(--report-strength-border);
-  border-left: 3px solid var(--report-strength);
+  background: var(--report-bg);
+  border-color: var(--report-border);
 }
 
 .cardWeakness {
   composes: card;
-  background: var(--report-weakness-light);
-  border-color: var(--report-weakness-border);
-  border-left: 3px solid var(--report-weakness);
+  background: var(--report-bg);
+  border-color: var(--report-border);
 }
 
 .cardHighlight {
-  background: var(--report-accent-light);
-  border: 1px solid var(--report-accent-border);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
   border-radius: var(--report-radius-md);
   padding: 20px 24px;
   margin-bottom: var(--report-space-md);
@@ -374,15 +369,15 @@
   top: 0;
   left: 0;
   width: 100%;
-  height: 3px;
+  height: 2px;
   background: var(--report-accent);
   border-radius: 10px 10px 0 0;
 }
 
 .cardNeutral {
   composes: card;
-  background: var(--report-neutral-light);
-  border-color: var(--report-neutral-border);
+  background: var(--report-bg);
+  border-color: var(--report-border);
 }
 
 .cardHeader {
@@ -425,114 +420,180 @@
 }
 
 /* ============================================
-   5. Cover Page (redesigned)
+   5. Cover Page — v3.0 (2026 Redesign)
    ============================================ */
+
 .coverPage {
   composes: page;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 40mm 32mm;
+  padding: 48mm 36mm 36mm;
   position: relative;
   overflow: hidden;
+  background: var(--report-bg);
 }
 
-/* Background decorations */
-.coverDecoration {
+/* --- Geometric corner decorations --- */
+.coverCornerTR {
   position: absolute;
-  top: -80px;
-  right: -80px;
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  background: var(--report-accent-light);
-  opacity: 0.5;
+  top: 32px;
+  right: 32px;
+  width: 120px;
+  height: 120px;
+  border-top: 2px solid var(--report-accent);
+  border-right: 2px solid var(--report-accent);
+  opacity: 0.2;
   z-index: 0;
 }
 
-.coverDecorationSmall {
+.coverCornerBL {
   position: absolute;
-  bottom: 60px;
-  left: -40px;
-  width: 160px;
-  height: 160px;
-  border-radius: 50%;
-  background: var(--report-accent-light);
-  opacity: 0.3;
+  bottom: 32px;
+  left: 32px;
+  width: 80px;
+  height: 80px;
+  border-bottom: 2px solid var(--report-accent);
+  border-left: 2px solid var(--report-accent);
+  opacity: 0.15;
   z-index: 0;
 }
 
-/* Top section */
-.coverTop {
+/* Dot-grid texture (Standard + Premium) */
+.coverDotGrid {
+  position: absolute;
+  top: 60px;
+  right: 60px;
+  width: 200px;
+  height: 200px;
+  background-image: radial-gradient(
+    circle,
+    var(--report-accent) 1px,
+    transparent 1px
+  );
+  background-size: 16px 16px;
+  opacity: 0.06;
+  z-index: 0;
+}
+
+/* Premium radial glow */
+.coverGlow {
+  position: absolute;
+  top: -100px;
+  right: -100px;
+  width: 500px;
+  height: 500px;
+  background: none;
+  opacity: 0;
+  z-index: 0;
+}
+
+/* --- Header: brand left + badge right --- */
+.coverHeader {
   position: relative;
   z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
 }
 
 .coverBrand {
   font-size: var(--report-fs-overline);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.25em;
   color: var(--report-accent);
-  margin-bottom: 32px;
 }
 
 .coverPlanBadge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 20px;
+  padding: 6px 18px;
   border-radius: 50px;
   background: var(--report-accent);
-  color: #ffffff;
-  font-size: var(--report-fs-small);
+  color: var(--report-accent-fg);
+  font-size: var(--report-fs-overline);
   font-weight: 700;
-  margin-bottom: 24px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.coverBadgeOutline {
+  background: transparent;
+  color: var(--report-accent);
+  border: 1.5px solid var(--report-accent);
+}
+
+.coverBadgePremium {
+  box-shadow: none;
+}
+
+/* --- Main content (vertically centered) --- */
+.coverMain {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 40px 0;
 }
 
 .coverTitle {
-  font-size: var(--report-fs-display);
+  font-size: 2.5rem;
   font-weight: 800;
   color: var(--report-fg);
-  line-height: 1.25;
-  letter-spacing: -0.03em;
-  margin-bottom: 16px;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  margin-bottom: 20px;
+}
+
+.coverPremiumTitle {
+  color: var(--report-fg);
 }
 
 .coverDivider {
-  width: 48px;
+  width: 64px;
   height: 3px;
   border-radius: 2px;
   background: var(--report-accent);
-  margin: 16px 0;
+  margin: 0 0 20px;
+}
+
+.coverDividerGradient {
+  width: 80px;
+  background: var(--report-accent);
 }
 
 .coverSubtitle {
   font-size: var(--report-fs-subtitle);
   font-weight: 400;
   color: var(--report-fg-secondary);
-  line-height: 1.6;
-  max-width: 400px;
+  line-height: 1.7;
+  max-width: 380px;
 }
 
-/* Bottom: Student info card */
+/* --- Student info (left-border accent list) --- */
 .coverStudentCard {
   position: relative;
   z-index: 1;
-  background: var(--report-bg);
-  border: 1px solid var(--report-border);
-  border-radius: 12px;
-  padding: 24px 28px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px 32px;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.04);
-}
-
-.coverStudentField {
+  border-top: 1px solid var(--report-border);
+  padding: 20px 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 12px;
+  background: transparent;
+}
+
+.coverStudentCardPremium {
+  background: transparent;
+  border-radius: 0;
+}
+
+.coverStudentRow {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
 }
 
 .coverStudentLabel {
@@ -541,6 +602,8 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--report-fg-tertiary);
+  min-width: 80px;
+  flex-shrink: 0;
 }
 
 .coverStudentValue {
@@ -549,38 +612,13 @@
   color: var(--report-fg);
 }
 
-/* Legacy cover meta (kept for backward compat) */
-.coverMeta {
-  display: flex;
-  flex-direction: column;
-  gap: var(--report-space-sm);
-  margin-top: auto;
-  padding-top: var(--report-space-2xl);
+/* --- Plan-specific backgrounds --- */
+.coverStandardBg {
+  background: var(--report-bg);
 }
 
-.coverMetaRow {
-  display: flex;
-  align-items: center;
-  gap: var(--report-space-sm);
-  font-size: var(--report-fs-small);
-  color: var(--report-fg-tertiary);
-}
-
-.coverMetaLabel {
-  font-weight: 500;
-  color: var(--report-fg-secondary);
-}
-
-/* Premium cover extras */
-.coverPremiumAccent {
-  background: linear-gradient(135deg, #f5f3ff 0%, #fef3c7 100%);
-}
-
-.coverPremiumTitle {
-  background: linear-gradient(135deg, #7c3aed 0%, #b45309 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.coverPremiumBg {
+  background: var(--report-bg);
 }
 
 /* ============================================
@@ -689,7 +727,7 @@
 .comparisonBar {
   position: relative;
   width: 100%;
-  height: 24px;
+  height: 20px;
   border-radius: 6px;
   background: var(--report-neutral-light);
   border: 1px solid var(--report-border);
@@ -707,9 +745,9 @@
 
 .comparisonMarker {
   position: absolute;
-  top: -4px;
-  width: 12px;
-  height: 32px;
+  top: -3px;
+  width: 10px;
+  height: 26px;
   border-radius: 3px;
   background: var(--report-accent);
   transform: translateX(-50%);
@@ -717,10 +755,21 @@
 
 .comparisonLabel {
   position: absolute;
-  bottom: -20px;
-  font-size: var(--report-fs-overline);
+  bottom: -18px;
+  font-size: var(--report-fs-caption);
   font-weight: 600;
   color: var(--report-fg-secondary);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* 두 번째 라벨(합격률 범위)은 바 위에 표시하여 겹침 방지 */
+.comparisonLabelTop {
+  position: absolute;
+  top: -18px;
+  font-size: var(--report-fs-caption);
+  font-weight: 600;
+  color: var(--report-accent);
   transform: translateX(-50%);
   white-space: nowrap;
 }
@@ -733,7 +782,8 @@
   gap: var(--report-space-xs);
   padding: var(--report-space-md);
   border-radius: var(--report-radius-md);
-  background: var(--report-neutral-light);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
 }
 
 .miniStatValue {
@@ -759,8 +809,8 @@
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  border: 3px solid var(--report-accent);
-  background: var(--report-accent-light);
+  border: 2px solid var(--report-border);
+  background: var(--report-bg);
 }
 
 .scoreCircleValue {
@@ -794,10 +844,9 @@
   font-size: var(--report-fs-caption);
   color: var(--report-fg-secondary);
   text-align: left;
-  border-bottom: 2px solid var(--report-accent);
-  background: var(--report-accent-light);
+  border-bottom: 1px solid var(--report-border);
+  background: #f8fafc;
   white-space: nowrap;
-  text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
@@ -829,9 +878,23 @@
   text-align: center;
 }
 
+/* Compact table variant for tight layouts */
+.tableCompact {
+  composes: table;
+}
+
+.tableCompact th {
+  padding: 8px 12px;
+}
+
+.tableCompact td {
+  padding: 8px 12px;
+}
+
 .tableCellBold {
   font-weight: 600;
   color: var(--report-fg);
+  white-space: nowrap;
 }
 
 /* -- Grade Table: colored row indicators -- */
@@ -840,19 +903,23 @@
 }
 
 .gradeRowExcellent td:first-child {
-  border-left: 3px solid var(--grade-excellent);
+  color: var(--grade-excellent);
+  font-weight: 600;
 }
 
 .gradeRowGood td:first-child {
-  border-left: 3px solid var(--grade-good);
+  color: var(--grade-good);
+  font-weight: 600;
 }
 
 .gradeRowCaution td:first-child {
-  border-left: 3px solid var(--grade-average);
+  color: var(--grade-average);
+  font-weight: 600;
 }
 
 .gradeRowAlert td:first-child {
-  border-left: 3px solid var(--grade-weak);
+  color: var(--grade-weak);
+  font-weight: 600;
 }
 
 /* -- Compact Table (for subject analysis) -- */
@@ -875,68 +942,72 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: var(--report-fs-caption);
+  padding: 3px 10px;
+  border-radius: 50px;
+  font-size: var(--report-fs-overline);
   font-weight: 600;
   line-height: 1;
 }
 
 .ratingExcellent {
   composes: ratingBadge;
-  background: var(--report-strength-light);
-  color: var(--report-strength);
-  border: 1px solid var(--report-strength-border);
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #d1fae5;
 }
 
 .ratingGood {
   composes: ratingBadge;
-  background: var(--report-accent-light);
-  color: var(--report-accent);
-  border: 1px solid var(--report-accent-border);
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
 }
 
 .ratingAverage {
   composes: ratingBadge;
-  background: var(--report-caution-light);
-  color: var(--report-caution);
-  border: 1px solid var(--report-caution-border);
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
 }
 
 .ratingWeak {
   composes: ratingBadge;
-  background: var(--report-weakness-light);
-  color: var(--report-weakness);
-  border: 1px solid var(--report-weakness-border);
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
 }
 
 /* -- Strategy Badge (reach/match/safety) -- */
 .strategyBadge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 14px;
+  padding: 3px 10px;
   border-radius: 50px;
-  font-size: var(--report-fs-caption);
-  font-weight: 700;
+  font-size: var(--report-fs-overline);
+  font-weight: 600;
   letter-spacing: 0.02em;
+  border: 1px solid #e2e8f0;
 }
 
 .strategyReach {
   composes: strategyBadge;
-  background: var(--strategy-reach-light);
-  color: var(--strategy-reach);
+  background: #f1f5f9;
+  color: #475569;
+  white-space: nowrap;
 }
 
 .strategyMatch {
   composes: strategyBadge;
-  background: var(--strategy-match-light);
-  color: var(--strategy-match);
+  background: #f1f5f9;
+  color: #475569;
+  white-space: nowrap;
 }
 
 .strategySafety {
   composes: strategyBadge;
-  background: var(--strategy-safety-light);
-  color: var(--strategy-safety);
+  background: #f1f5f9;
+  color: #475569;
+  white-space: nowrap;
 }
 
 /* -- Chance Badge -- */
@@ -944,28 +1015,34 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 16px;
-  border-radius: 8px;
-  font-size: var(--report-fs-small);
-  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: var(--report-fs-caption);
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
 }
 
 .chanceHigh {
   composes: chanceBadge;
-  background: var(--chance-high-light);
-  color: var(--chance-high);
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #d1fae5;
+  white-space: nowrap;
 }
 
 .chanceMedium {
   composes: chanceBadge;
-  background: var(--chance-medium-light);
-  color: var(--chance-medium);
+  background: #f1f5f9;
+  color: #475569;
+  white-space: nowrap;
 }
 
 .chanceLow {
   composes: chanceBadge;
-  background: var(--chance-low-light);
-  color: var(--chance-low);
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+  white-space: nowrap;
 }
 
 /* -- Category Tag -- */
@@ -981,14 +1058,14 @@
 
 .categorySubject {
   composes: categoryTag;
-  background: var(--report-primary-50);
-  color: var(--report-primary-700);
+  background: #f1f5f9;
+  color: #475569;
 }
 
 .categoryActivity {
   composes: categoryTag;
-  background: #fef3c7;
-  color: #92400e;
+  background: #f1f5f9;
+  color: #475569;
 }
 
 /* ============================================
@@ -1000,7 +1077,7 @@
   position: relative;
   padding: var(--report-space-lg);
   border-radius: var(--report-radius-md);
-  background: var(--report-neutral-light);
+  background: var(--report-bg);
   border: 1px solid var(--report-border);
   margin-bottom: var(--report-space-md);
 }
@@ -1016,11 +1093,12 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--report-accent);
-  color: #ffffff;
+  background: #f1f5f9;
+  color: #475569;
   font-size: var(--report-fs-caption);
   font-weight: 700;
   margin-bottom: var(--report-space-sm);
+  border: 1px solid #e2e8f0;
 }
 
 .interviewQuestion {
@@ -1036,7 +1114,7 @@
   color: var(--report-fg-secondary);
   line-height: 1.6;
   padding-left: var(--report-space-md);
-  border-left: 2px solid var(--report-accent-border);
+  border-left: 2px solid var(--report-border);
 }
 
 .interviewTag {
@@ -1044,11 +1122,12 @@
   align-items: center;
   padding: 2px 10px;
   border-radius: 50px;
-  background: var(--report-accent-light);
-  color: var(--report-accent);
+  background: #f1f5f9;
+  color: #475569;
   font-size: var(--report-fs-overline);
   font-weight: 600;
   margin-top: var(--report-space-sm);
+  border: 1px solid #e2e8f0;
 }
 
 /* -- Admission Probability Badge (legacy) -- */
@@ -1056,38 +1135,35 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
-  border-radius: var(--report-radius-lg);
-  font-weight: 700;
-  font-size: var(--report-fs-subtitle);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: var(--report-fs-small);
+  border: 1px solid #e2e8f0;
 }
 
 .probabilityHigh {
   composes: probabilityBadge;
-  background: var(--report-trend-up-light);
-  color: var(--report-trend-up);
-  border: 1px solid var(--report-trend-up-border);
+  background: var(--report-bg);
+  color: var(--report-fg);
 }
 
 .probabilityMedium {
   composes: probabilityBadge;
-  background: var(--report-trend-stable-light);
-  color: var(--report-trend-stable);
-  border: 1px solid var(--report-trend-stable-border);
+  background: var(--report-bg);
+  color: var(--report-fg);
 }
 
 .probabilityLow {
   composes: probabilityBadge;
-  background: var(--report-trend-down-light);
-  color: var(--report-trend-down);
-  border: 1px solid var(--report-trend-down-border);
+  background: var(--report-bg);
+  color: var(--report-fg);
 }
 
 .probabilityCaution {
   composes: probabilityBadge;
-  background: var(--report-weakness-light);
-  color: var(--report-weakness);
-  border: 1px solid var(--report-weakness-border);
+  background: var(--report-bg);
+  color: var(--report-fg);
 }
 
 .probabilityValue {
@@ -1112,41 +1188,42 @@
   background: var(--report-neutral-light);
   color: var(--report-fg-secondary);
   border: 1px solid var(--report-border);
+  white-space: nowrap;
 }
 
 .tagAccent {
   composes: tag;
-  background: var(--report-accent-light);
-  color: var(--report-accent);
-  border-color: var(--report-accent-border);
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #e2e8f0;
 }
 
 .tagStrength {
   composes: tag;
-  background: var(--report-strength-light);
-  color: var(--report-strength);
-  border-color: var(--report-strength-border);
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #d1fae5;
 }
 
 .tagWeakness {
   composes: tag;
-  background: var(--report-weakness-light);
-  color: var(--report-weakness);
-  border-color: var(--report-weakness-border);
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
 }
 
 .tagTrendUp {
   composes: tag;
-  background: var(--report-trend-up-light);
-  color: var(--report-trend-up);
-  border-color: var(--report-trend-up-border);
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #e2e8f0;
 }
 
 .tagTrendDown {
   composes: tag;
-  background: var(--report-trend-down-light);
-  color: var(--report-trend-down);
-  border-color: var(--report-trend-down-border);
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #e2e8f0;
 }
 
 .tagGroup {
@@ -1160,9 +1237,9 @@
   display: flex;
   gap: 14px;
   padding: 16px 20px;
-  border-radius: var(--report-radius-md);
-  background: var(--report-accent-light);
-  border: 1px solid var(--report-accent-border);
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
 }
 
 .calloutIcon {
@@ -1170,7 +1247,7 @@
   width: 20px;
   height: 20px;
   margin-top: 2px;
-  color: var(--report-accent);
+  color: var(--report-fg-tertiary);
 }
 
 .calloutContent {
@@ -1181,39 +1258,40 @@
 
 .calloutStrength {
   composes: callout;
-  background: var(--report-strength-light);
-  border-color: var(--report-strength-border);
+  background: #f8fafc;
+  border-color: #e2e8f0;
 }
 
 .calloutStrength .calloutIcon {
-  color: var(--report-strength);
+  color: var(--report-fg-tertiary);
 }
 
 .calloutWeakness {
   composes: callout;
-  background: var(--report-weakness-light);
-  border-color: var(--report-weakness-border);
+  background: #f8fafc;
+  border-color: #e2e8f0;
 }
 
 .calloutWeakness .calloutIcon {
-  color: var(--report-weakness);
+  color: var(--report-fg-tertiary);
 }
 
 .calloutCaution {
   composes: callout;
-  background: var(--report-caution-light);
-  border-color: var(--report-caution-border);
+  background: #f8fafc;
+  border-color: #e2e8f0;
 }
 
 /* -- AI Commentary Box (new) -- */
 .aiCommentary {
   display: flex;
-  gap: 16px;
-  padding: 20px 24px;
+  gap: 14px;
+  padding: 14px 18px;
   border-radius: var(--report-radius-md);
-  background: var(--report-accent-light);
-  border: 1px solid var(--report-accent-border);
-  margin: 16px 0;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid #cbd5e1;
+  margin: 0;
 }
 
 .aiCommentaryIcon {
@@ -1221,13 +1299,13 @@
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: var(--report-accent);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
-  font-size: 0.875rem;
-  font-weight: 700;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .aiCommentaryContent {
@@ -1236,10 +1314,10 @@
 
 .aiCommentaryLabel {
   font-size: var(--report-fs-overline);
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--report-accent);
+  color: #94a3b8;
   margin-bottom: 6px;
 }
 
@@ -1266,7 +1344,7 @@
   left: 16px;
   font-size: 2rem;
   font-weight: 800;
-  color: var(--report-accent);
+  color: #cbd5e1;
   line-height: 1;
   font-family: Georgia, serif;
 }
@@ -1289,41 +1367,37 @@
 
 .quoteBoxHighlight {
   composes: quoteBox;
-  background: var(--report-strength-light);
-  border-color: var(--report-strength-border);
+  background: var(--report-bg);
+  border-color: var(--report-border);
 }
 
 .quoteBoxHighlight::before {
-  color: var(--report-strength);
+  color: #cbd5e1;
 }
 
 .quoteBoxImprove {
   composes: quoteBox;
-  background: var(--report-caution-light);
-  border-color: var(--report-caution-border);
+  background: var(--report-bg);
+  border-color: var(--report-border);
 }
 
 .quoteBoxImprove::before {
-  color: var(--report-caution);
+  color: #cbd5e1;
 }
 
 /* -- Verdict / Summary Box -- */
 .verdict {
   padding: var(--report-space-lg);
   border-radius: var(--report-radius-lg);
-  background: linear-gradient(
-    135deg,
-    var(--report-accent-light) 0%,
-    var(--report-bg) 100%
-  );
-  border: 1px solid var(--report-accent-border);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
   text-align: center;
 }
 
 .verdictTitle {
   font-size: var(--report-fs-h3);
   font-weight: 700;
-  color: var(--report-accent-dark);
+  color: var(--report-fg);
   margin-bottom: var(--report-space-sm);
 }
 
@@ -1336,16 +1410,13 @@
 /* -- Premium Verdict -- */
 .verdictPremium {
   composes: verdict;
-  background: linear-gradient(135deg, #f5f3ff 0%, #fef3c7 50%, #ffffff 100%);
-  border-color: #ddd6fe;
+  background: var(--report-bg);
+  border-color: var(--report-border);
 }
 
 .verdictPremiumTitle {
   composes: verdictTitle;
-  background: linear-gradient(135deg, #7c3aed 0%, #b45309 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--report-fg);
 }
 
 /* -- List (bullet / numbered) -- */
@@ -1372,7 +1443,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--report-accent);
+  background: #cbd5e1;
 }
 
 /* ============================================
@@ -1414,14 +1485,13 @@
 }
 
 .pageFooter {
-  position: relative;
-  bottom: auto;
-  left: auto;
-  right: auto;
+  position: absolute;
+  bottom: 15mm;
+  left: 18mm;
+  right: 18mm;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: var(--report-space-xl);
   padding-top: 12px;
   border-top: 1px solid var(--report-border);
 }
@@ -1437,6 +1507,10 @@
   font-weight: 600;
   color: var(--report-fg-tertiary);
   font-variant-numeric: tabular-nums;
+}
+
+.pageNumber::after {
+  content: counter(page-counter);
 }
 
 /* ============================================
@@ -1460,87 +1534,211 @@
 /* ============================================
    12. Table of Contents (redesigned with Parts)
    ============================================ */
-.tocList {
+/* --- TOC Page (standalone, no ReportPage wrapper) --- */
+.tocPage {
+  composes: page;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  padding: 32mm 28mm 24mm;
+  position: relative;
+  overflow: hidden;
 }
 
-/* Part group */
-.tocPart {
+.tocCornerTR {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 64px;
+  height: 64px;
+  border-top: 1.5px solid var(--report-accent);
+  border-right: 1.5px solid var(--report-accent);
+  opacity: 0.15;
+  z-index: 0;
+}
+
+.tocCornerBL {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  width: 40px;
+  height: 40px;
+  border-bottom: 1.5px solid var(--report-accent);
+  border-left: 1.5px solid var(--report-accent);
+  opacity: 0.12;
+  z-index: 0;
+}
+
+/* --- TOC Header --- */
+.tocHeader {
+  position: relative;
+  z-index: 1;
   margin-bottom: 24px;
+}
+
+.tocHeaderLabel {
+  display: block;
+  font-size: var(--report-fs-overline);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--report-accent);
+  margin-bottom: 6px;
+}
+
+.tocHeaderTitle {
+  font-size: var(--report-fs-h2);
+  font-weight: 800;
+  color: var(--report-fg);
+  letter-spacing: -0.02em;
+  margin: 0 0 10px;
+}
+
+.tocHeaderLine {
+  width: 48px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--report-accent);
+}
+
+/* --- TOC Body --- */
+.tocBody {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* 2-column grid for Standard/Premium (22 sections) */
+.tocBodyGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
+}
+
+/* --- Part group --- */
+.tocPart {
+  display: flex;
+  flex-direction: column;
 }
 
 .tocPartHeader {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--report-accent);
+  gap: 8px;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1.5px solid var(--report-accent);
 }
 
 .tocPartNumber {
-  font-size: var(--report-fs-overline);
+  font-size: 0.625rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: var(--report-accent);
 }
 
 .tocPartTitle {
-  font-size: var(--report-fs-subtitle);
+  font-size: var(--report-fs-small);
   font-weight: 700;
   color: var(--report-fg);
 }
 
-/* TOC item (improved) */
+/* --- TOC items container --- */
+.tocItems {
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Individual item --- */
 .tocItem {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 0 10px 24px;
-  border-bottom: 1px solid var(--report-border);
-  font-size: var(--report-fs-body);
-}
-
-.tocItem:last-child {
-  border-bottom: none;
+  gap: 6px;
+  padding: 4px 0 4px 8px;
+  font-size: var(--report-fs-small);
 }
 
 .tocNumber {
   flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: var(--report-accent-light);
-  color: var(--report-accent);
   font-size: var(--report-fs-caption);
   font-weight: 700;
+  color: var(--report-accent);
+  font-variant-numeric: tabular-nums;
+  min-width: 18px;
 }
 
 .tocTitle {
-  flex: 1;
   font-weight: 500;
   color: var(--report-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tocDots {
   flex: 1;
   border-bottom: 1px dotted var(--report-border-strong);
-  margin: 0 8px;
-  min-width: 24px;
+  margin: 0 4px;
+  min-width: 8px;
+  align-self: center;
 }
 
-.tocPage {
-  flex-shrink: 0;
-  font-weight: 600;
-  color: var(--report-fg-tertiary);
-  font-variant-numeric: tabular-nums;
+/* --- Compact variant (Standard/Premium) --- */
+.tocCompact {
+  padding: 28mm 26mm 20mm;
+}
+
+.tocCompact .tocHeader {
+  margin-bottom: 16px;
+}
+
+.tocCompact .tocHeaderTitle {
+  font-size: var(--report-fs-h3);
+  margin-bottom: 6px;
+}
+
+.tocCompact .tocItem {
+  padding: 3.5px 0 3.5px 8px;
   font-size: var(--report-fs-small);
+}
+
+.tocCompact .tocNumber {
+  font-size: var(--report-fs-caption);
+  min-width: 18px;
+}
+
+.tocCompact .tocTitle {
+  font-size: var(--report-fs-small);
+}
+
+.tocCompact .tocPartHeader {
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+}
+
+.tocCompact .tocPartNumber {
+  font-size: 0.625rem;
+}
+
+.tocCompact .tocPartTitle {
+  font-size: var(--report-fs-small);
+}
+
+/* --- TOC Footer --- */
+.tocFooter {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--report-border);
+}
+
+.tocFooterText {
+  font-size: var(--report-fs-caption);
+  color: var(--report-fg-tertiary);
 }
 
 /* ============================================
@@ -1548,50 +1746,131 @@
    ============================================ */
 .partPage {
   composes: page;
+  margin-top: 24px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  padding: 60mm 40mm;
+  padding: 48mm 32mm;
+  position: relative;
+  overflow: hidden;
 }
 
-.partNumber {
-  font-size: 0.875rem;
+/* --- Part geometric accents (match Cover/TOC) --- */
+.partCornerTR {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 72px;
+  height: 72px;
+  border-top: 1.5px solid var(--report-accent);
+  border-right: 1.5px solid var(--report-accent);
+  opacity: 0.15;
+  z-index: 0;
+}
+
+.partCornerBL {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  width: 48px;
+  height: 48px;
+  border-bottom: 1.5px solid var(--report-accent);
+  border-left: 1.5px solid var(--report-accent);
+  opacity: 0.12;
+  z-index: 0;
+}
+
+/* Subtle accent line behind content */
+.partAccentLine {
+  position: absolute;
+  top: 50%;
+  right: 32mm;
+  width: 120px;
+  height: 1.5px;
+  background: var(--report-border);
+  opacity: 0.3;
+  z-index: 0;
+}
+
+/* --- Part content --- */
+.partContent {
+  position: relative;
+  z-index: 1;
+}
+
+.partLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--report-fs-overline);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.2em;
   color: var(--report-accent);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.partLabel::before {
+  content: "";
+  width: 24px;
+  height: 2px;
+  background: var(--report-accent);
+  border-radius: 1px;
 }
 
 .partTitle {
-  font-size: var(--report-fs-h1);
+  font-size: var(--report-fs-display);
   font-weight: 800;
   color: var(--report-fg);
-  line-height: 1.3;
-  letter-spacing: -0.02em;
-  margin-bottom: 16px;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  margin-bottom: 12px;
+}
+
+.partDivider {
+  width: 40px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--report-accent);
+  margin-bottom: 20px;
 }
 
 .partDescription {
   font-size: var(--report-fs-subtitle);
   color: var(--report-fg-secondary);
-  line-height: 1.6;
-  max-width: 380px;
-  margin-bottom: 32px;
+  line-height: 1.7;
+  max-width: 520px;
+  margin-bottom: 40px;
 }
 
 .partSections {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  padding-left: 2px;
 }
 
 .partSectionItem {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 0.875rem;
+  gap: 12px;
+  font-size: var(--report-fs-body);
+  color: var(--report-fg-secondary);
+}
+
+.partSectionNumber {
+  flex-shrink: 0;
+  font-size: var(--report-fs-small);
+  font-weight: 700;
+  color: var(--report-accent);
+  font-variant-numeric: tabular-nums;
+  min-width: 24px;
+}
+
+.partSectionTitle {
+  font-size: var(--report-fs-body);
+  font-weight: 500;
   color: var(--report-fg-secondary);
 }
 
@@ -1601,6 +1880,26 @@
   border-radius: 50%;
   background: var(--report-accent);
   flex-shrink: 0;
+}
+
+/* --- Part page footer --- */
+.partFooter {
+  position: absolute;
+  bottom: 28px;
+  left: 32mm;
+  right: 32mm;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.partFooterBrand {
+  font-size: var(--report-fs-overline);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--report-fg-tertiary);
+  text-transform: uppercase;
 }
 
 /* ============================================
@@ -1618,7 +1917,7 @@
   left: 15px;
   width: 2px;
   height: 100%;
-  background: var(--report-accent-border);
+  background: #e2e8f0;
 }
 
 .timelineItem {
@@ -1637,8 +1936,9 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--report-accent);
-  color: #ffffff;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1658,11 +1958,12 @@
   display: inline-flex;
   padding: 2px 10px;
   border-radius: 4px;
-  background: var(--report-accent-light);
-  color: var(--report-accent);
+  background: #f1f5f9;
+  color: #475569;
   font-size: var(--report-fs-caption);
   font-weight: 600;
   margin-bottom: 12px;
+  border: 1px solid #e2e8f0;
 }
 
 /* ============================================
@@ -1672,6 +1973,7 @@
   max-width: 900px;
   margin: 0 auto;
   padding: var(--report-space-xl) var(--report-space-md);
+  counter-reset: page-counter;
 }
 
 /* ============================================
@@ -1699,11 +2001,12 @@
   .page {
     width: auto;
     max-width: none;
-    min-height: auto;
+    height: auto;
     margin: 0;
     padding: 0;
     box-shadow: none;
     border-radius: 0;
+    overflow: visible;
     page-break-after: always;
     break-after: page;
   }
@@ -1803,7 +2106,18 @@
   .sectionNumber,
   .timelineDot,
   .coverPlanBadge,
+  .coverBadgeOutline,
+  .coverBadgePremium,
   .coverStudentCard,
+  .coverStudentCardPremium,
+  .coverCornerTR,
+  .coverCornerBL,
+  .coverDotGrid,
+  .coverGlow,
+  .coverDivider,
+  .coverDividerGradient,
+  .coverStandardBg,
+  .coverPremiumBg,
   .cardHighlight,
   .aiCommentary,
   .aiCommentaryIcon,
@@ -1823,11 +2137,10 @@
 
   /* -- Page footer in print mode -- */
   .pageFooter {
-    position: relative;
-    bottom: auto;
-    left: auto;
-    right: auto;
-    margin-top: auto;
+    position: absolute;
+    bottom: 10mm;
+    left: 18mm;
+    right: 18mm;
     padding-top: 8px;
     border-top: 1px solid var(--report-border);
   }
@@ -1862,12 +2175,13 @@
 @media screen and (max-width: 900px) {
   .page {
     width: 100%;
-    min-height: auto;
+    height: auto;
     padding: var(--report-space-xl) var(--report-space-lg);
     border-radius: 0;
     box-shadow: none;
     border-bottom: 1px solid var(--report-border);
     margin-bottom: 0;
+    overflow: visible;
   }
 
   .coverPage {
@@ -1876,11 +2190,63 @@
   }
 
   .coverTitle {
-    font-size: 1.75rem;
+    font-size: 2rem;
   }
 
-  .coverStudentCard {
-    grid-template-columns: 1fr;
+  .coverCornerTR {
+    width: 80px;
+    height: 80px;
+    top: 16px;
+    right: 16px;
+  }
+
+  .coverCornerBL {
+    width: 48px;
+    height: 48px;
+    bottom: 16px;
+    left: 16px;
+  }
+
+  .coverDotGrid {
+    width: 120px;
+    height: 120px;
+  }
+
+  .coverStudentLabel {
+    min-width: 64px;
+  }
+
+  .partPage {
+    padding: var(--report-space-2xl) var(--report-space-lg);
+    min-height: 60vh;
+  }
+
+  .partCornerTR {
+    width: 56px;
+    height: 56px;
+    top: 16px;
+    right: 16px;
+  }
+
+  .partCornerBL {
+    width: 36px;
+    height: 36px;
+    bottom: 16px;
+    left: 16px;
+  }
+
+  .partAccentLine {
+    display: none;
+  }
+
+  .partTitle {
+    font-size: var(--report-fs-h1);
+  }
+
+  .partFooter {
+    left: var(--report-space-lg);
+    right: var(--report-space-lg);
+    bottom: 16px;
   }
 
   .cardGrid {
@@ -1891,26 +2257,69 @@
     grid-template-columns: 1fr;
   }
 
+  .profileIdentity,
+  .profileIdentityStandard,
+  .profileIdentityPremium {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  .profileMonogram,
+  .profileMonogramPremium {
+    width: 56px;
+    height: 56px;
+    font-size: var(--report-fs-h1);
+  }
+
+  .profileStatsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .competencyDimGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .admissionSimpleGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .competencyGrowth,
+  .competencyGrowthStandard,
+  .competencyGrowthPremium {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .competencyGrowthLeft {
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .competencyHeroComparison {
+    gap: 16px;
+  }
+
   .reportWrapper {
     padding: 0;
   }
 
   .pageFooter {
-    position: relative;
-    bottom: auto;
-    left: auto;
-    right: auto;
+    position: static;
     margin-top: var(--report-space-xl);
   }
 }
 
 @media screen and (max-width: 480px) {
   .h1 {
-    font-size: 1.5rem;
+    font-size: 1.625rem;
   }
 
   .h2 {
-    font-size: 1.25rem;
+    font-size: 1.375rem;
   }
 
   .progressLabel {
@@ -1919,8 +2328,702 @@
   }
 
   .page {
+    height: auto;
     padding: var(--report-space-lg) var(--report-space-md);
   }
+
+  .profileStatsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .profileStatBlock,
+  .profileStatBlockPrimary {
+    padding: 14px 12px;
+  }
+
+  .profileStatValue,
+  .profileStatValueAccent {
+    font-size: var(--report-fs-h2);
+  }
+}
+
+/* ============================================
+   Student Profile (redesigned)
+   ============================================ */
+
+/* --- Type identity card --- */
+.profileIdentity {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 28px;
+  border: 1px solid var(--report-border);
+  border-radius: var(--report-radius-md);
+  background: var(--report-bg);
+  margin-bottom: 28px;
+}
+
+.profileIdentityStandard {
+  composes: profileIdentity;
+}
+
+.profileIdentityPremium {
+  composes: profileIdentity;
+}
+
+/* Monogram square */
+.profileMonogram {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--report-accent);
+  font-size: var(--report-fs-display);
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.profileMonogramPremium {
+  composes: profileMonogram;
+}
+
+/* Type info (right of monogram) */
+.profileTypeInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.profileTypeName {
+  font-size: var(--report-fs-h2);
+  font-weight: 800;
+  color: var(--report-fg);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.profileTypeDesc {
+  font-size: var(--report-fs-body);
+  font-weight: 400;
+  color: var(--report-fg-secondary);
+  line-height: 1.65;
+}
+
+/* --- Competency stats grid --- */
+.profileStatsLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--report-fs-subtitle);
+  font-weight: 700;
+  color: var(--report-fg);
+  margin-bottom: 14px;
+}
+
+.profileStatsLabel::before {
+  content: "";
+  width: 20px;
+  height: 2px;
+  background: var(--report-accent);
+  border-radius: 1px;
+}
+
+.profileStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.profileStatBlock {
+  padding: 18px 16px;
+  border: 1px solid var(--report-border);
+  border-radius: var(--report-radius-md);
+  background: var(--report-bg);
+  text-align: center;
+}
+
+.profileStatBlockPrimary {
+  composes: profileStatBlock;
+  border-color: var(--report-border);
+  background: var(--report-bg);
+}
+
+.profileStatLabel {
+  font-size: var(--report-fs-caption);
+  font-weight: 500;
+  color: var(--report-fg-tertiary);
+  letter-spacing: 0.03em;
+  margin-bottom: 10px;
+}
+
+.profileStatValue {
+  font-size: var(--report-fs-h1);
+  font-weight: 800;
+  color: var(--report-fg);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.profileStatValueAccent {
+  composes: profileStatValue;
+  color: var(--report-accent);
+}
+
+.profileStatDenom {
+  font-size: var(--report-fs-caption);
+  font-weight: 500;
+  color: var(--report-fg-tertiary);
+  margin-top: 4px;
+}
+
+/* Thin progress bar for premium */
+.profileStatBar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--report-border);
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.profileStatBarFill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--report-accent);
+  opacity: 0.55;
+}
+
+/* --- Tags row --- */
+.profileTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.profileTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  border-radius: 50px;
+  font-size: var(--report-fs-small);
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+/* --- Catch phrase highlight --- */
+.profileCatchPhrase {
+  position: relative;
+  padding: 20px 24px;
+  border-radius: var(--report-radius-md);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
+  text-align: center;
+}
+
+.profileCatchPhrase::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: var(--report-accent);
+}
+
+.profileCatchPhraseText {
+  font-size: var(--report-fs-subtitle);
+  font-weight: 600;
+  color: var(--report-fg);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+.profileCatchPhrasePremium {
+  composes: profileCatchPhrase;
+  background: var(--report-bg);
+}
+
+/* ============================================
+   Competency Score (redesigned)
+   ============================================ */
+
+/* --- Hero score panel --- */
+.competencyHero {
+  padding: 20px 24px;
+  border-radius: var(--report-radius-lg);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.competencyHeroStandard {
+  composes: competencyHero;
+}
+
+.competencyHeroPremium {
+  composes: competencyHero;
+}
+
+.competencyHeroOverline {
+  font-size: var(--report-fs-overline);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--report-accent);
+  margin-bottom: var(--report-space-sm);
+}
+
+.competencyHeroScoreRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.competencyHeroScore {
+  font-size: var(--report-fs-display);
+  font-weight: 800;
+  color: var(--report-accent);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.competencyHeroDenom {
+  font-size: var(--report-fs-h3);
+  font-weight: 500;
+  color: var(--report-fg-tertiary);
+}
+
+.competencyHeroBar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--report-border);
+  overflow: hidden;
+  margin-bottom: 10px;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.competencyHeroBarFill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--report-accent);
+}
+
+.competencyHeroBarFillPremium {
+  composes: competencyHeroBarFill;
+  background: var(--report-accent);
+}
+
+/* Comparison row (Standard+) */
+.competencyHeroComparison {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  padding-top: var(--report-space-md);
+  border-top: 1px solid var(--report-border);
+}
+
+.competencyHeroCompareItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.competencyHeroCompareValue {
+  font-size: var(--report-fs-subtitle);
+  font-weight: 800;
+  color: var(--report-fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.competencyHeroCompareLabel {
+  font-size: var(--report-fs-caption);
+  font-weight: 500;
+  color: var(--report-fg-tertiary);
+}
+
+/* --- Section sub-label with dash --- */
+.competencySectionLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--report-fs-subtitle);
+  font-weight: 700;
+  color: var(--report-fg);
+  margin-bottom: 14px;
+}
+
+.competencySectionLabel::before {
+  content: "";
+  width: 20px;
+  height: 2px;
+  background: var(--report-accent);
+  border-radius: 1px;
+}
+
+/* --- Dimension cards grid --- */
+.competencyDimGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.competencyDimCard {
+  padding: 14px 16px;
+  border: 1px solid var(--report-border);
+  border-radius: var(--report-radius-md);
+  background: var(--report-bg);
+}
+
+.competencyDimCardStandard {
+  composes: competencyDimCard;
+}
+
+.competencyDimCardPremium {
+  composes: competencyDimCard;
+}
+
+.competencyDimHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--report-space-sm);
+}
+
+.competencyDimLabel {
+  font-size: var(--report-fs-caption);
+  font-weight: 600;
+  color: var(--report-fg-tertiary);
+  letter-spacing: 0.03em;
+}
+
+.competencyDimScoreRow {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.competencyDimScore {
+  font-size: var(--report-fs-h2);
+  font-weight: 800;
+  color: var(--report-fg);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.competencyDimMax {
+  font-size: var(--report-fs-small);
+  font-weight: 500;
+  color: var(--report-fg-tertiary);
+}
+
+.competencyDimBar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--report-border);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.competencyDimBarFill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--report-accent);
+  opacity: 0.65;
+}
+
+.competencyDimBarFillPremium {
+  composes: competencyDimBarFill;
+  opacity: 1;
+  background: var(--report-accent);
+}
+
+/* Subcategory rows */
+.competencyDimSubs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--report-border);
+}
+
+.competencyDimSubRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.competencyDimSubLabel {
+  font-size: var(--report-fs-caption);
+  font-weight: 500;
+  color: var(--report-fg-secondary);
+}
+
+.competencyDimSubScore {
+  font-size: var(--report-fs-caption);
+  font-weight: 700;
+  color: var(--report-fg);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Growth potential card --- */
+.competencyGrowth {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 20px;
+  border-radius: var(--report-radius-md);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 10px;
+}
+
+.competencyGrowthStandard {
+  composes: competencyGrowth;
+}
+
+.competencyGrowthPremium {
+  composes: competencyGrowth;
+}
+
+.competencyGrowthLeft {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 72px;
+}
+
+.competencyGrowthLabel {
+  font-size: var(--report-fs-overline);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--report-fg-tertiary);
+}
+
+.competencyGrowthGradeBox {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: var(--report-fs-h2);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.competencyGrowthGradeS {
+  composes: competencyGrowthGradeBox;
+  background: var(--report-strength-light);
+  color: var(--report-strength);
+  border: 1px solid var(--report-strength-border);
+}
+
+.competencyGrowthGradeA {
+  composes: competencyGrowthGradeBox;
+  background: var(--report-accent-light);
+  color: var(--report-accent);
+  border: 1px solid var(--report-accent-border);
+}
+
+.competencyGrowthGradeB {
+  composes: competencyGrowthGradeBox;
+  background: var(--report-caution-light);
+  color: var(--report-caution);
+  border: 1px solid var(--report-caution-border);
+}
+
+.competencyGrowthGradeCD {
+  composes: competencyGrowthGradeBox;
+  background: var(--report-weakness-light);
+  color: var(--report-weakness);
+  border: 1px solid var(--report-weakness-border);
+}
+
+.competencyGrowthRight {
+  flex: 1;
+  min-width: 0;
+}
+
+.competencyGrowthComment {
+  font-size: var(--report-fs-body);
+  font-weight: 400;
+  color: var(--report-fg-secondary);
+  line-height: 1.65;
+}
+
+/* ============================================
+   Admission Prediction (redesigned)
+   ============================================ */
+
+/* --- Banner: Recommended Type (compact single-line) --- */
+.admissionBanner {
+  padding: 10px 20px;
+  border-radius: var(--report-radius-md);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
+  margin-bottom: 12px;
+}
+
+.admissionBannerStandard {
+  composes: admissionBanner;
+}
+
+.admissionBannerPremium {
+  composes: admissionBanner;
+}
+
+.admissionBannerOverline {
+  font-size: var(--report-fs-caption);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--report-fg-secondary);
+}
+
+.admissionBannerRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admissionBannerType {
+  font-size: var(--report-fs-h3);
+  font-weight: 800;
+  color: var(--report-accent);
+  line-height: 1.3;
+}
+
+/* --- Section sub-label with dash --- */
+.admissionSectionLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--report-fs-small);
+  font-weight: 700;
+  color: var(--report-fg);
+  margin-bottom: 8px;
+}
+
+.admissionSectionLabel::before {
+  content: "";
+  width: 20px;
+  height: 2px;
+  background: var(--report-accent);
+  border-radius: 1px;
+}
+
+/* --- Prediction card --- */
+/* 2-column grid for simple cards (교과/정시) */
+.admissionSimpleGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.admissionCard {
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
+  border-radius: var(--report-radius-md);
+  padding: 12px 16px;
+  margin-bottom: 8px;
+}
+
+/* Remove bottom margin inside grid */
+.admissionSimpleGrid .admissionCard,
+.admissionSimpleGrid .admissionCardStandard,
+.admissionSimpleGrid .admissionCardPremium {
+  margin-bottom: 0;
+}
+
+.admissionCardStandard {
+  composes: admissionCard;
+}
+
+.admissionCardPremium {
+  composes: admissionCard;
+}
+
+.admissionCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.admissionCardType {
+  font-size: var(--report-fs-small);
+  font-weight: 700;
+  color: var(--report-fg);
+}
+
+.admissionCardRate {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 50px;
+  font-size: var(--report-fs-overline);
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.admissionCardAnalysis {
+  font-size: var(--report-fs-caption);
+  color: var(--report-fg-secondary);
+  line-height: 1.45;
+}
+
+/* --- Inline university list inside card (Standard+) --- */
+.admissionUniList {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--report-border);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.admissionUniRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admissionUniName {
+  font-size: var(--report-fs-caption);
+  font-weight: 700;
+  color: var(--report-fg);
+  min-width: 72px;
+}
+
+.admissionUniDept {
+  font-size: var(--report-fs-caption);
+  color: var(--report-fg-secondary);
+  flex: 1;
 }
 
 /* ============================================
@@ -1938,8 +3041,8 @@
   gap: 6px;
   padding: 20px 16px;
   border-radius: var(--report-radius-md);
-  background: var(--report-accent-light);
-  border: 1px solid var(--report-accent-border);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
 }
 
 .statCardLargeValue {
@@ -2008,33 +3111,34 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--report-accent-light);
-  color: var(--report-accent);
+  background: #f1f5f9;
+  color: #475569;
   font-size: var(--report-fs-caption);
   font-weight: 700;
   margin-top: 2px;
+  border: 1px solid #e2e8f0;
 }
 
 /* -- Strategy Group (UniversityStrategy) -- */
 .strategyGroupReach {
-  border: 1px solid var(--strategy-reach-light);
-  border-left: 3px solid var(--strategy-reach);
+  border: 1px solid #e2e8f0;
   border-radius: var(--report-radius-md);
   padding: 20px 24px;
+  background: var(--report-bg);
 }
 
 .strategyGroupMatch {
-  border: 1px solid var(--strategy-match-light);
-  border-left: 3px solid var(--strategy-match);
+  border: 1px solid #e2e8f0;
   border-radius: var(--report-radius-md);
   padding: 20px 24px;
+  background: var(--report-bg);
 }
 
 .strategyGroupSafety {
-  border: 1px solid var(--strategy-safety-light);
-  border-left: 3px solid var(--strategy-safety);
+  border: 1px solid #e2e8f0;
   border-radius: var(--report-radius-md);
   padding: 20px 24px;
+  background: var(--report-bg);
 }
 
 .strategyGroupHeader {
@@ -2064,9 +3168,8 @@
   position: relative;
   padding: 24px 28px 24px 56px;
   border-radius: var(--report-radius-md);
-  background: var(--report-accent-light);
-  border: 1px solid var(--report-accent-border);
-  border-left: 4px solid var(--report-accent);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
   margin-bottom: 24px;
 }
 
@@ -2077,17 +3180,17 @@
   left: 20px;
   font-size: 2.5rem;
   font-weight: 800;
-  color: var(--report-accent);
+  color: #cbd5e1;
   line-height: 1;
   font-family: Georgia, serif;
 }
 
 .storyMainQuoteLabel {
   font-size: var(--report-fs-overline);
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--report-accent);
+  color: var(--report-fg-tertiary);
   margin-bottom: 8px;
 }
 
@@ -2120,7 +3223,7 @@
   display: block;
   width: 2px;
   height: 20px;
-  background: var(--report-accent-border);
+  background: #e2e8f0;
   position: relative;
 }
 
@@ -2134,7 +3237,7 @@
   height: 0;
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
-  border-top: 6px solid var(--report-accent);
+  border-top: 6px solid #cbd5e1;
 }
 
 /* -- Coherence Progress Bar (StoryAnalysis) -- */
@@ -2198,34 +3301,32 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--report-accent);
-  color: #ffffff;
+  background: #f1f5f9;
+  color: #475569;
   font-size: 0.875rem;
   font-weight: 700;
+  border: 1px solid #e2e8f0;
 }
 
 /* -- Supplement Priority Border -- */
 .supplementCardHigh {
   composes: card;
-  border-left: 3px solid var(--report-accent);
 }
 
 .supplementCardMedium {
   composes: card;
-  border-left: 3px solid var(--report-caution);
 }
 
 .supplementCardLow {
   composes: card;
-  border-left: 3px solid var(--report-neutral);
 }
 
 /* -- Career Path Hero Card -- */
 .careerHero {
   padding: 28px 32px;
   border-radius: var(--report-radius-lg);
-  background: var(--report-accent-light);
-  border: 1px solid var(--report-accent-border);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
   text-align: center;
   margin-bottom: 16px;
 }
@@ -2275,13 +3376,8 @@
 .roadmapFinalGoal {
   padding: 28px 32px;
   border-radius: var(--report-radius-lg);
-  background: linear-gradient(
-    135deg,
-    var(--report-accent-light) 0%,
-    var(--report-accent-muted) 50%,
-    var(--report-bg) 100%
-  );
-  border: 1px solid var(--report-accent-border);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
   text-align: center;
 }
 
@@ -2487,7 +3583,7 @@
 
 /* Subject card accent border */
 .borderAccentLeft {
-  border-left: 3px solid var(--report-accent);
+  border-top: 2px solid var(--report-accent);
 }
 
 /* Font helpers */
@@ -2595,4 +3691,513 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+}
+
+/* ============================================
+   22. Diagnostic Section (2026 Redesign)
+   ============================================ */
+
+/* --- Hero Callout (oneLiner) --- */
+.diagHero {
+  position: relative;
+  padding: 28px 32px;
+  border-radius: var(--report-radius-lg);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
+  overflow: hidden;
+}
+
+.diagHero::before {
+  content: "\201C";
+  position: absolute;
+  top: -8px;
+  left: 16px;
+  font-size: 5rem;
+  font-weight: 800;
+  color: #cbd5e1;
+  opacity: 0.15;
+  line-height: 1;
+  font-family: Georgia, serif;
+  pointer-events: none;
+}
+
+.diagHeroText {
+  position: relative;
+  font-size: var(--report-fs-subtitle);
+  font-weight: 600;
+  color: var(--report-fg);
+  line-height: 1.7;
+  z-index: 1;
+}
+
+.diagHeroAccent {
+  color: var(--report-accent);
+}
+
+/* --- Keyword Chips (modern pill style) --- */
+.diagKeywordGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.diagKeywordChip {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: var(--report-radius-md);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
+  transition: border-color 0.15s;
+}
+
+.diagKeywordChip:hover {
+  border-color: var(--report-accent-border);
+}
+
+.diagKeywordBadge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 12px;
+  border-radius: 50px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: var(--report-fs-caption);
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid #e2e8f0;
+}
+
+.diagKeywordDesc {
+  font-size: var(--report-fs-small);
+  color: var(--report-fg-secondary);
+  line-height: 1.6;
+}
+
+/* --- Competency Summary (modern card strip) --- */
+.diagCompGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.diagCompCard {
+  position: relative;
+  padding: 14px 16px;
+  border-radius: var(--report-radius-md);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.diagCompCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--report-border);
+  opacity: 1;
+}
+
+.diagCompLabel {
+  font-size: var(--report-fs-overline);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--report-fg-secondary);
+  margin-bottom: 8px;
+}
+
+.diagCompText {
+  font-size: var(--report-fs-small);
+  color: var(--report-fg-secondary);
+  line-height: 1.6;
+}
+
+/* --- Positioning / Strategy panels --- */
+.diagPanel {
+  padding: 20px 24px;
+  border-radius: var(--report-radius-md);
+  border: 1px solid var(--report-border);
+  background: #f8fafc;
+  position: relative;
+}
+
+.diagPanelLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--report-fs-overline);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--report-fg-secondary);
+  margin-bottom: 10px;
+}
+
+.diagPanelLabelDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--report-fg-tertiary);
+}
+
+.diagPanelText {
+  font-size: var(--report-fs-small);
+  color: var(--report-fg);
+  line-height: 1.7;
+}
+
+/* ============================================
+   23. Overall Assessment (2026 Redesign)
+   ============================================ */
+
+/* --- Fill Rate Hero --- */
+.assessHero {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 28px;
+  border-radius: var(--report-radius-lg);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
+}
+
+.assessHeroCircle {
+  position: relative;
+  flex-shrink: 0;
+  width: 88px;
+  height: 88px;
+}
+
+.assessHeroCircleSvg {
+  width: 88px;
+  height: 88px;
+  transform: rotate(-90deg);
+}
+
+.assessHeroCircleTrack {
+  fill: none;
+  stroke: var(--report-border);
+  stroke-width: 6;
+}
+
+.assessHeroCircleFill {
+  fill: none;
+  stroke: var(--report-accent);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.assessHeroCircleValue {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--report-fs-h2);
+  font-weight: 800;
+  color: var(--report-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.assessHeroRight {
+  flex: 1;
+  min-width: 0;
+}
+
+.assessHeroTitle {
+  font-size: var(--report-fs-h3);
+  font-weight: 700;
+  color: var(--report-fg);
+  margin-bottom: 4px;
+}
+
+.assessHeroDesc {
+  font-size: var(--report-fs-small);
+  color: var(--report-fg-secondary);
+  line-height: 1.6;
+}
+
+/* --- Volume Analysis Cards (instead of table) --- */
+.assessVolumeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.assessVolumeCard {
+  padding: 14px 16px;
+  border-radius: var(--report-radius-sm);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
+}
+
+.assessVolumeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.assessVolumeName {
+  font-size: var(--report-fs-caption);
+  font-weight: 600;
+  color: var(--report-fg);
+}
+
+.assessVolumeRate {
+  font-size: var(--report-fs-caption);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.assessVolumeRateGood {
+  composes: assessVolumeRate;
+  color: var(--report-strength);
+}
+
+.assessVolumeRateWeak {
+  composes: assessVolumeRate;
+  color: var(--report-weakness);
+}
+
+.assessVolumeBar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--report-border);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.assessVolumeBarFill {
+  height: 100%;
+  border-radius: 2px;
+}
+
+.assessVolumeBarFillGood {
+  composes: assessVolumeBarFill;
+  background: var(--report-strength);
+}
+
+.assessVolumeBarFillWeak {
+  composes: assessVolumeBarFill;
+  background: var(--report-caution);
+}
+
+.assessVolumeCaption {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  color: var(--report-fg-tertiary);
+}
+
+.assessVolumeAssessment {
+  font-size: 0.6875rem;
+  color: var(--report-fg-tertiary);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* ============================================
+   24. Competency Evaluation (2026 Redesign)
+   ============================================ */
+
+/* Sub-heading with inline divider line */
+.ceSubheading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--report-fs-subtitle);
+  font-weight: 700;
+  color: var(--report-fg);
+  margin-bottom: 14px;
+}
+
+.ceSubheading::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--report-border);
+}
+
+/* 2-column card grid for strength/weakness */
+.ceCardGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* Strength card */
+.ceStrengthCard {
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
+  border-radius: var(--report-radius-md);
+  padding: 14px 16px;
+}
+
+/* Weakness card */
+.ceWeaknessCard {
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
+  border-radius: var(--report-radius-md);
+  padding: 14px 16px;
+}
+
+/* Card label row */
+.ceCardLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.ceCardLabelText {
+  font-size: var(--report-fs-small);
+  font-weight: 700;
+  color: var(--report-fg);
+}
+
+/* Competency pill tag */
+.ceCompetencyPill {
+  font-size: var(--report-fs-overline);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: #f1f5f9;
+  color: #475569;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: 1px solid #e2e8f0;
+}
+
+/* Evidence text */
+.ceEvidence {
+  font-size: var(--report-fs-caption);
+  color: var(--report-fg-secondary);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Rating card (full width) */
+.ceRatingCard {
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
+  border-radius: var(--report-radius-md);
+  padding: 16px 20px;
+  margin-bottom: 10px;
+}
+
+.ceRatingCard:last-child {
+  margin-bottom: 0;
+}
+
+/* Rating header */
+.ceRatingHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.ceRatingCategory {
+  font-size: var(--report-fs-body);
+  font-weight: 700;
+  color: var(--report-fg);
+}
+
+/* Text-based grade badge */
+.ceGradeBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 10px;
+  border-radius: 50px;
+  font-size: var(--report-fs-caption);
+  font-weight: 700;
+  flex-shrink: 0;
+  border: 1px solid #e2e8f0;
+}
+
+.ceGradeS {
+  composes: ceGradeBadge;
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #d1fae5;
+}
+
+.ceGradeA {
+  composes: ceGradeBadge;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.ceGradeB {
+  composes: ceGradeBadge;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.ceGradeC {
+  composes: ceGradeBadge;
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.ceGradeD {
+  composes: ceGradeBadge;
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+/* Rating comment */
+.ceRatingComment {
+  font-size: var(--report-fs-small);
+  color: var(--report-fg-secondary);
+  line-height: 1.55;
+}
+
+/* Subcategory chips (inline, Premium) */
+.ceSubcatRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px solid var(--report-border);
+}
+
+.ceSubcatChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: var(--report-fs-overline);
+  font-weight: 600;
+  color: var(--report-fg-secondary);
+  background: var(--report-neutral-light);
+  border: 1px solid var(--report-neutral-border);
+}
+
+.ceSubcatGradeDot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffffff;
 }

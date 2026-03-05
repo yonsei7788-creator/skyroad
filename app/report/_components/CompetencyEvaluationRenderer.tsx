@@ -18,92 +18,147 @@ const CATEGORY_LABEL: Record<string, string> = {
   growth: "발전 가능성",
 };
 
-const GRADE_CLASS: Record<CompetencyGrade, string> = {
-  S: styles.ratingExcellent,
-  A: styles.ratingGood,
-  B: styles.ratingAverage,
-  C: styles.ratingWeak,
-  D: styles.ratingWeak,
+const GRADE_BADGE_CLASS: Record<CompetencyGrade, string> = {
+  S: styles.ceGradeS,
+  A: styles.ceGradeA,
+  B: styles.ceGradeB,
+  C: styles.ceGradeC,
+  D: styles.ceGradeD,
+};
+
+const GRADE_COLOR: Record<CompetencyGrade, string> = {
+  S: "var(--report-strength)",
+  A: "var(--grade-good)",
+  B: "var(--grade-average)",
+  C: "var(--grade-weak)",
+  D: "#991b1b",
 };
 
 export const CompetencyEvaluationRenderer = ({
   data,
   sectionNumber,
 }: CompetencyEvaluationRendererProps) => {
+  const ratingsFirstHalf = data.competencyRatings.slice(0, 2);
+  const ratingsSecondHalf = data.competencyRatings.slice(2);
+
   return (
-    <div className={styles.section}>
-      <SectionHeader number={sectionNumber} title={data.title} />
-
-      {/* Strengths */}
-      <div className={`${styles.h3} ${styles.mb12}`}>
-        <span className={styles.textStrength}>강점 분석</span>
-      </div>
-      {data.strengths.map((item) => (
-        <div key={item.label} className={styles.cardStrength}>
-          <div className={styles.cardHeader}>
-            <div className={styles.cardTitle}>{item.label}</div>
-            <span className={styles.tag}>{item.competencyTag.subcategory}</span>
-          </div>
-          <p className={styles.body}>{item.evidence}</p>
+    <>
+      {/* Block 1: Header + Strengths */}
+      <div>
+        <SectionHeader number={sectionNumber} title={data.title} />
+        <div className={styles.ceSubheading}>
+          <span className={styles.textStrength}>강점 분석</span>
         </div>
-      ))}
-
-      {/* Weaknesses */}
-      <div className={`${styles.h3} ${styles.mt24} ${styles.mb12}`}>
-        <span className={styles.textWeakness}>약점 분석</span>
-      </div>
-      {data.weaknesses.map((item) => (
-        <div key={item.label} className={styles.cardWeakness}>
-          <div className={styles.cardHeader}>
-            <div className={styles.cardTitle}>{item.label}</div>
-            <span className={styles.tag}>{item.competencyTag.subcategory}</span>
-          </div>
-          <p className={styles.body}>{item.evidence}</p>
-        </div>
-      ))}
-
-      <hr className={styles.divider} />
-
-      {/* Competency ratings */}
-      <div className={`${styles.h3} ${styles.mb12}`}>역량별 등급</div>
-      {data.competencyRatings.map((rating) => (
-        <div key={rating.category} className={`${styles.card} ${styles.mt12}`}>
-          <div className={styles.cardHeader}>
-            <div className={styles.cardTitle}>
-              {CATEGORY_LABEL[rating.category] ?? rating.label}
+        <div className={styles.ceCardGrid}>
+          {data.strengths.map((item) => (
+            <div key={item.label} className={styles.ceStrengthCard}>
+              <div className={styles.ceCardLabel}>
+                <span className={styles.ceCardLabelText}>{item.label}</span>
+                <span className={styles.ceCompetencyPill}>
+                  {item.competencyTag.subcategory}
+                </span>
+              </div>
+              <p className={styles.ceEvidence}>{item.evidence}</p>
             </div>
-            <span className={GRADE_CLASS[rating.grade]}>{rating.grade}</span>
-          </div>
-          <p className={styles.body}>{rating.comment}</p>
-
-          {/* Subcategories (Premium) */}
-          {rating.subcategories && rating.subcategories.length > 0 && (
-            <div className={styles.mt12}>
-              {rating.subcategories.map((sub) => (
-                <div
-                  key={sub.name}
-                  className={`${styles.cardNeutral} ${styles.mt8}`}
-                >
-                  <div className={styles.cardHeader}>
-                    <span className={styles.emphasis}>{sub.name}</span>
-                    <span className={GRADE_CLASS[sub.grade]}>{sub.grade}</span>
-                  </div>
-                  <p className={styles.small}>{sub.comment}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
-
-      {/* Overall comment */}
-      <div className={`${styles.aiCommentary} ${styles.mt20}`}>
-        <div className={styles.aiCommentaryIcon}>AI</div>
-        <div className={styles.aiCommentaryContent}>
-          <div className={styles.aiCommentaryLabel}>종합 코멘트</div>
-          <div className={styles.aiCommentaryText}>{data.overallComment}</div>
+          ))}
         </div>
       </div>
-    </div>
+
+      {/* Block 2: Weaknesses */}
+      <div>
+        <div className={styles.ceSubheading}>
+          <span className={styles.textWeakness}>약점 분석</span>
+        </div>
+        <div className={styles.ceCardGrid}>
+          {data.weaknesses.map((item) => (
+            <div key={item.label} className={styles.ceWeaknessCard}>
+              <div className={styles.ceCardLabel}>
+                <span className={styles.ceCardLabelText}>{item.label}</span>
+                <span className={styles.ceCompetencyPill}>
+                  {item.competencyTag.subcategory}
+                </span>
+              </div>
+              <p className={styles.ceEvidence}>{item.evidence}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Block 3: Ratings - first half (academic, career) */}
+      <div>
+        <div className={styles.ceSubheading}>역량별 등급</div>
+        {ratingsFirstHalf.map((rating) => (
+          <div key={rating.category} className={styles.ceRatingCard}>
+            <div className={styles.ceRatingHeader}>
+              <span className={styles.ceRatingCategory}>
+                {CATEGORY_LABEL[rating.category] ?? rating.label}
+              </span>
+              <span className={GRADE_BADGE_CLASS[rating.grade]}>
+                {rating.grade}
+              </span>
+            </div>
+            <p className={styles.ceRatingComment}>{rating.comment}</p>
+            {rating.subcategories && rating.subcategories.length > 0 && (
+              <div className={styles.ceSubcatRow}>
+                {rating.subcategories.map((sub) => (
+                  <span key={sub.name} className={styles.ceSubcatChip}>
+                    {sub.name}
+                    <span
+                      className={styles.ceSubcatGradeDot}
+                      style={{ background: GRADE_COLOR[sub.grade] }}
+                    >
+                      {sub.grade}
+                    </span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Block 4: Ratings - second half (community, growth) */}
+      <div>
+        {ratingsSecondHalf.map((rating) => (
+          <div key={rating.category} className={styles.ceRatingCard}>
+            <div className={styles.ceRatingHeader}>
+              <span className={styles.ceRatingCategory}>
+                {CATEGORY_LABEL[rating.category] ?? rating.label}
+              </span>
+              <span className={GRADE_BADGE_CLASS[rating.grade]}>
+                {rating.grade}
+              </span>
+            </div>
+            <p className={styles.ceRatingComment}>{rating.comment}</p>
+            {rating.subcategories && rating.subcategories.length > 0 && (
+              <div className={styles.ceSubcatRow}>
+                {rating.subcategories.map((sub) => (
+                  <span key={sub.name} className={styles.ceSubcatChip}>
+                    {sub.name}
+                    <span
+                      className={styles.ceSubcatGradeDot}
+                      style={{ background: GRADE_COLOR[sub.grade] }}
+                    >
+                      {sub.grade}
+                    </span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Block 5: AI overall comment */}
+      <div>
+        <div className={styles.aiCommentary}>
+          <div className={styles.aiCommentaryIcon}>AI</div>
+          <div className={styles.aiCommentaryContent}>
+            <div className={styles.aiCommentaryLabel}>종합 코멘트</div>
+            <div className={styles.aiCommentaryText}>{data.overallComment}</div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 };

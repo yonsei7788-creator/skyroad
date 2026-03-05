@@ -1,104 +1,134 @@
-import type { AdmissionPredictionSection } from "@/libs/report/types";
+import type {
+  AdmissionPredictionSection,
+  ReportPlan,
+} from "@/libs/report/types";
 
 import { ReportBadge } from "./ReportBadge";
-import { ReportComparisonBar } from "./ReportProgress";
 import styles from "./report.module.css";
 import { SectionHeader } from "./SectionHeader";
 
 interface AdmissionPredictionRendererProps {
   data: AdmissionPredictionSection;
   sectionNumber: number;
+  plan?: ReportPlan;
 }
+
+const TYPE_LABEL: Record<string, string> = {
+  학종: "학생부종합전형 추천",
+  교과: "학생부교과전형 추천",
+  정시: "정시전형 추천",
+};
 
 export const AdmissionPredictionRenderer = ({
   data,
   sectionNumber,
+  plan = "lite",
 }: AdmissionPredictionRendererProps) => {
+  const isPremium = plan === "premium";
+  const isStandard = plan === "standard";
+
+  const bannerClass = isPremium
+    ? styles.admissionBannerPremium
+    : isStandard
+      ? styles.admissionBannerStandard
+      : styles.admissionBanner;
+
+  const cardClass = isPremium
+    ? styles.admissionCardPremium
+    : isStandard
+      ? styles.admissionCardStandard
+      : styles.admissionCard;
+
+  const mainCards = data.predictions.filter(
+    (p) => p.universityPredictions && p.universityPredictions.length > 0
+  );
+  const simpleCards = data.predictions.filter(
+    (p) => !p.universityPredictions || p.universityPredictions.length === 0
+  );
+
   return (
-    <div className={styles.section}>
-      <SectionHeader number={sectionNumber} title={data.title} />
+    <>
+      {/* Block 1: Header + Banner + Prediction cards */}
+      <div>
+        <SectionHeader number={sectionNumber} title={data.title} />
 
-      {/* Recommended type */}
-      <div className={styles.cardAccent}>
-        <div className={styles.cardHeader}>
-          <div className={styles.cardTitle}>추천 전형</div>
-          <span className={styles.tagAccent}>{data.recommendedType}</span>
-        </div>
-        <p className={styles.body}>{data.recommendedTypeReason}</p>
-      </div>
-
-      {/* Prediction cards */}
-      {data.predictions.map((pred) => (
-        <div key={pred.admissionType} className={styles.card}>
-          <div className={styles.cardHeader}>
-            <div className={`${styles.flexRow} ${styles.gap10}`}>
-              <div className={styles.cardTitle}>{pred.admissionType}</div>
-              <span className={styles.tagAccent}>{pred.passRateLabel}</span>
-            </div>
+        <div className={bannerClass}>
+          <div className={styles.admissionBannerRow}>
+            <span className={styles.admissionBannerOverline}>추천 전형</span>
+            <span className={styles.admissionBannerType}>
+              {data.recommendedType}
+            </span>
+            <span className={styles.tagAccent}>
+              {TYPE_LABEL[data.recommendedType] ?? data.recommendedType}
+            </span>
           </div>
-
-          {/* Pass rate range */}
-          <ReportComparisonBar
-            myValue={(pred.passRateRange[0] + pred.passRateRange[1]) / 2}
-            rangeStart={pred.passRateRange[0]}
-            rangeEnd={pred.passRateRange[1]}
-            myLabel="예측 중앙"
-            rangeLabel="합격률 범위"
-          />
-
-          <p className={styles.body}>{pred.analysis}</p>
-
-          {/* University predictions (Standard+) */}
-          {pred.universityPredictions &&
-            pred.universityPredictions.length > 0 && (
-              <div className={styles.mt16}>
-                <div className={`${styles.overline} ${styles.mb8}`}>
-                  대학별 예측
-                </div>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>대학</th>
-                      <th>학과</th>
-                      <th className={styles.tableAlignCenter}>합격 가능성</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pred.universityPredictions.map((up) => (
-                      <tr key={`${up.university}-${up.department}`}>
-                        <td className={styles.tableCellBold}>
-                          {up.university}
-                        </td>
-                        <td>{up.department}</td>
-                        <td className={styles.tableAlignCenter}>
-                          <ReportBadge chance={up.chance} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {pred.universityPredictions.map((up) => (
-                  <p
-                    key={`${up.university}-rationale`}
-                    className={`${styles.small} ${styles.mt8}`}
-                  >
-                    <span className={styles.emphasis}>{up.university}:</span>{" "}
-                    {up.rationale}
-                  </p>
-                ))}
-              </div>
-            )}
         </div>
-      ))}
 
-      {/* Overall comment */}
-      <div className={`${styles.aiCommentary} ${styles.mt20}`}>
-        <div className={styles.aiCommentaryIcon}>AI</div>
-        <div className={styles.aiCommentaryContent}>
-          <div className={styles.aiCommentaryLabel}>종합 코멘트</div>
-          <div className={styles.aiCommentaryText}>{data.overallComment}</div>
+        <div className={styles.admissionSectionLabel}>전형별 합격 예측</div>
+
+        {mainCards.map((pred) => (
+          <div key={pred.admissionType} className={cardClass}>
+            <div className={styles.admissionCardHeader}>
+              <span className={styles.admissionCardType}>
+                {pred.admissionType}
+              </span>
+              <span className={styles.admissionCardRate}>
+                {pred.passRateLabel}
+              </span>
+            </div>
+            <p className={styles.admissionCardAnalysis}>{pred.analysis}</p>
+
+            {pred.universityPredictions &&
+              pred.universityPredictions.length > 0 && (
+                <div className={styles.admissionUniList}>
+                  {pred.universityPredictions.map((up) => (
+                    <div
+                      key={`${up.university}-${up.department}`}
+                      className={styles.admissionUniRow}
+                    >
+                      <span className={styles.admissionUniName}>
+                        {up.university}
+                      </span>
+                      <span className={styles.admissionUniDept}>
+                        {up.department}
+                      </span>
+                      <ReportBadge chance={up.chance} />
+                    </div>
+                  ))}
+                </div>
+              )}
+          </div>
+        ))}
+
+        {simpleCards.length > 0 && (
+          <div className={styles.admissionSimpleGrid}>
+            {simpleCards.map((pred) => (
+              <div key={pred.admissionType} className={cardClass}>
+                <div className={styles.admissionCardHeader}>
+                  <span className={styles.admissionCardType}>
+                    {pred.admissionType}
+                  </span>
+                  <span className={styles.admissionCardRate}>
+                    {pred.passRateLabel}
+                  </span>
+                </div>
+                <p className={styles.admissionCardAnalysis}>{pred.analysis}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Block 2: AI commentary */}
+      <div>
+        <div className={styles.aiCommentary}>
+          <div className={styles.aiCommentaryIcon}>AI</div>
+          <div className={styles.aiCommentaryContent}>
+            <div className={styles.aiCommentaryLabel}>종합 코멘트</div>
+            <div className={styles.aiCommentaryText}>{data.overallComment}</div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };

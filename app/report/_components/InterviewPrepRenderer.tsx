@@ -8,66 +8,124 @@ interface InterviewPrepRendererProps {
   sectionNumber: number;
 }
 
+const chunkItems = <T,>(arr: T[], size: number): T[][] => {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+};
+
 export const InterviewPrepRenderer = ({
   data,
   sectionNumber,
 }: InterviewPrepRendererProps) => {
+  const questionChunks = chunkItems(data.questions, 2);
+
   return (
-    <div className={styles.section}>
-      <SectionHeader
-        number={sectionNumber}
-        title={data.title}
-        subtitle="면접에서 예상되는 질문과 대비 전략을 제시합니다"
-      />
+    <>
+      {/* Block 1: Header + distribution / readiness */}
+      <div>
+        <SectionHeader number={sectionNumber} title={data.title} />
 
-      {data.questions.map((q, idx) => (
-        <div key={idx} className={styles.interviewCard}>
-          <div className={styles.interviewNumber}>{idx + 1}</div>
-          {q.questionType && (
-            <span className={styles.interviewTag}>{q.questionType}</span>
-          )}
-          <div className={styles.interviewQuestion}>{q.question}</div>
-          {q.intent && <div className={styles.interviewHint}>{q.intent}</div>}
-
-          {/* Answer strategy (Premium) */}
-          {q.answerStrategy && (
-            <div className={`${styles.callout} ${styles.mt12}`}>
-              <div className={styles.calloutContent}>
-                <span className={styles.emphasis}>답변 전략:</span>{" "}
-                {q.answerStrategy}
-              </div>
+        <div className={styles.cardAccent}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardTitle}>
+              예상 질문 {data.questions.length}개
             </div>
-          )}
+            {data.readinessScore !== undefined && (
+              <span className={styles.emphasis}>
+                준비도 {data.readinessScore}점
+              </span>
+            )}
+          </div>
+        </div>
 
-          {/* Sample answer (Premium) */}
-          {q.sampleAnswer && (
-            <div className={`${styles.quoteBox} ${styles.mt12}`}>
-              <div className={styles.quoteText}>{q.sampleAnswer}</div>
-              <div className={styles.quoteEvaluation}>모범 답변 가이드</div>
-            </div>
-          )}
+        {data.questionDistribution && data.questionDistribution.length > 0 && (
+          <div className={`${styles.tagGroup} ${styles.mt12}`}>
+            {data.questionDistribution.map((d) => (
+              <span key={d.type} className={styles.tag}>
+                {d.type} {d.count}개
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
 
-          {/* Follow-up questions (Premium) */}
-          {q.followUpQuestions && q.followUpQuestions.length > 0 && (
-            <div className={styles.mt16}>
-              <div className={`${styles.overline} ${styles.mb8}`}>
-                예상 꼬리질문
-              </div>
-              {q.followUpQuestions.map((fq, fqIdx) => (
-                <div
-                  key={fqIdx}
-                  className={`${styles.cardNeutral} ${styles.mt8}`}
-                >
-                  <div className={styles.emphasis}>{fq.question}</div>
-                  <p className={`${styles.small} ${styles.mt4}`}>
-                    {fq.context}
-                  </p>
+      {/* 질문 2개씩 묶어서 한 페이지 단위 */}
+      {questionChunks.map((chunk, chunkIdx) => (
+        <div key={chunkIdx}>
+          {chunk.map((q, localIdx) => {
+            const globalIdx = chunkIdx * 2 + localIdx;
+            return (
+              <div
+                key={globalIdx}
+                className={localIdx > 0 ? styles.mt24 : undefined}
+              >
+                <div className={`${styles.h3} ${styles.mb6}`}>
+                  Q{globalIdx + 1}.
+                  {q.questionType && (
+                    <span className={`${styles.caption} ${styles.ml8}`}>
+                      [{q.questionType}]
+                    </span>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
+
+                <p className={styles.body}>{q.question}</p>
+
+                {q.intent && (
+                  <p className={`${styles.caption} ${styles.mt6}`}>
+                    <span className={styles.emphasis}>출제 의도:</span>{" "}
+                    {q.intent}
+                  </p>
+                )}
+
+                {q.answerKeywords && q.answerKeywords.length > 0 && (
+                  <div className={`${styles.tagGroup} ${styles.mt8}`}>
+                    {q.answerKeywords.map((kw) => (
+                      <span key={kw} className={styles.tag}>
+                        {kw}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {q.answerStrategy && (
+                  <p className={`${styles.small} ${styles.mt8}`}>
+                    <span className={styles.emphasis}>답변 전략:</span>{" "}
+                    {q.answerStrategy}
+                  </p>
+                )}
+
+                {q.sampleAnswer && (
+                  <div className={`${styles.callout} ${styles.mt12}`}>
+                    <div className={styles.calloutContent}>
+                      <span className={styles.emphasis}>모범 답변:</span>{" "}
+                      {q.sampleAnswer}
+                    </div>
+                  </div>
+                )}
+
+                {q.followUpQuestions && q.followUpQuestions.length > 0 && (
+                  <div className={styles.mt8}>
+                    {q.followUpQuestions.map((fq, fqIdx) => (
+                      <p
+                        key={fqIdx}
+                        className={`${styles.caption} ${styles.mt4}`}
+                      >
+                        <span className={styles.emphasis}>
+                          꼬리 {fqIdx + 1}. {fq.question}
+                        </span>{" "}
+                        — {fq.context}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       ))}
-    </div>
+    </>
   );
 };

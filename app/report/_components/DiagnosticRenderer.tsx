@@ -20,72 +20,65 @@ export const DiagnosticRenderer = ({
   sectionNumber,
 }: DiagnosticRendererProps) => {
   return (
-    <div className={styles.section}>
-      <SectionHeader number={sectionNumber} title={data.title} />
+    <>
+      {/* Block 1: Header + Hero callout */}
+      <div>
+        <SectionHeader number={sectionNumber} title={data.title} />
 
-      {/* One-liner as large callout */}
-      <div className={styles.callout}>
-        <div className={styles.calloutContent}>
-          <span className={styles.emphasis}>{data.oneLiner}</span>
+        <div className={styles.diagHero}>
+          <div className={styles.diagHeroText}>{data.oneLiner}</div>
         </div>
       </div>
 
-      {/* Keywords as 3 tagAccent tags with descriptions */}
-      <div className={`${styles.h3} ${styles.mt24} ${styles.mb12}`}>
-        핵심 키워드
-      </div>
-      <div className={styles.tagGroup}>
-        {data.keywords.map((kw) => (
-          <span key={kw.label} className={styles.tagAccent}>
-            {kw.label}
-          </span>
-        ))}
-      </div>
-      <div className={styles.mt12}>
-        {data.keywords.map((kw) => (
-          <p key={kw.label} className={`${styles.small} ${styles.mt8}`}>
-            <span className={styles.emphasis}>{kw.label}:</span>{" "}
-            {kw.description}
-          </p>
-        ))}
+      {/* Block 2: Keywords */}
+      <div>
+        <div className={`${styles.h3} ${styles.mb12}`}>핵심 키워드</div>
+        <div className={styles.diagKeywordGrid}>
+          {data.keywords.map((kw) => (
+            <div key={kw.label} className={styles.diagKeywordChip}>
+              <span className={styles.diagKeywordBadge}>{kw.label}</span>
+              <span className={styles.diagKeywordDesc}>{kw.description}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Competency summary as 2x2 card grid */}
-      <div className={`${styles.h3} ${styles.mt24} ${styles.mb12}`}>
-        역량별 진단
-      </div>
-      <div className={styles.cardGrid}>
-        {data.competencySummary.map((item) => (
-          <div key={item.category} className={styles.card}>
-            <div className={styles.cardHeader}>
-              <div className={styles.cardTitle}>
+      {/* Block 3: Competency Summary 2×2 */}
+      <div>
+        <div className={`${styles.h3} ${styles.mb12}`}>역량별 진단</div>
+        <div className={styles.diagCompGrid}>
+          {data.competencySummary.map((item) => (
+            <div key={item.category} className={styles.diagCompCard}>
+              <div className={styles.diagCompLabel}>
                 {CATEGORY_LABEL[item.category] ?? item.label}
               </div>
+              <p className={styles.diagCompText}>{item.summary}</p>
             </div>
-            <p className={styles.body}>{item.summary}</p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      {/* Admission positioning (Standard+) */}
+      {/* Block 4: Admission positioning (Standard+) */}
       {data.admissionPositioning && (
-        <div className={`${styles.cardAccent} ${styles.mt20}`}>
-          <div className={styles.cardHeader}>
-            <div className={styles.cardTitle}>입시 포지셔닝</div>
+        <div className={styles.diagPanel}>
+          <div className={styles.diagPanelLabel}>
+            <span className={styles.diagPanelLabelDot} />
+            입시 포지셔닝
           </div>
-          <p className={styles.body}>{data.admissionPositioning}</p>
+          <p className={styles.diagPanelText}>{data.admissionPositioning}</p>
         </div>
       )}
 
-      {/* Strategy overview (Premium) */}
+      {/* Block 5: Strategy overview (Premium) */}
       {data.strategyOverview && (
-        <div className={`${styles.cardAccent} ${styles.mt16}`}>
-          <div className={styles.cardHeader}>
-            <div className={styles.cardTitle}>합격 전략 요약</div>
+        <div className={styles.diagPanel}>
+          <div className={styles.diagPanelLabel}>
+            <span className={styles.diagPanelLabelDot} />
+            합격 전략 요약
           </div>
-          <p className={styles.body}>{data.strategyOverview}</p>
+          <p className={styles.diagPanelText}>{data.strategyOverview}</p>
         </div>
       )}
-    </div>
+    </>
   );
 };
