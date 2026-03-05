@@ -239,6 +239,36 @@ const result = await model.generateContent({
 - 과목 간 연결 관계, 학년 간 심화 흐름을 적극적으로 분석합니다.
 ```
 
+### 양적 콘텐츠 기준 (프롬프트에 반드시 포함)
+
+AI 프롬프트 생성 시 아래 양적 기준을 준수하여 경쟁사 수준 이상의 콘텐츠를 생성합니다.
+
+#### Premium 플랜 기준
+
+- **subjectAnalysis**: 전과목(15-20과목) 분석, 과목당 sentenceAnalysis 5-10문장
+- **weaknessAnalysis**: 7-10개 영역, 영역당 description 350자+, actionItems 3-5개, recordSource 매핑 필수
+- **activityAnalysis**: 4개 활동유형 × 3학년 = 12개 상세 분석, 유형당 300자+ 분석, fillRate/yearlyDetails 포함
+- **interviewPrep**: 25-30문항, 문항당 modelAnswer 200자+, followUpQuestions 2-3개
+- **admissionStrategy**: 대학 추천 8-10개, 대학별 전형 분석 + 합격 가능성 + 구체적 준비 전략
+
+#### Standard 플랜 기준
+
+- **subjectAnalysis**: 10-15과목 분석, 과목당 sentenceAnalysis 3-5문장
+- **weaknessAnalysis**: 5개 영역, 영역당 description 250자+
+- **interviewPrep**: 15문항
+
+#### Lite 플랜 기준
+
+- **subjectAnalysis**: 5-8과목 분석
+- **weaknessAnalysis**: 3개 영역, 영역당 description 150자+
+- **interviewPrep**: 10문항
+
+#### 원문 인용 기준
+
+- Premium: 과목당 최소 3개 `OriginalTextCitation`, 각 인용에 역량 태깅(`competencyTags`) 필수
+- Standard: 과목당 최소 2개 원문 인용(`keyQuotes`)
+- 모든 인용에 `positivePoint` 또는 `improvementSuggestion` 중 하나 이상 포함
+
 ---
 
 ## 3. Phase 2: 기반 분석 프롬프트

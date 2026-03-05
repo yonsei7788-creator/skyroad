@@ -1,5 +1,5 @@
 // ============================================================
-// 리포트 Zod 검증 스키마 (v3)
+// 리포트 Zod 검증 스키마 (v4)
 //
 // AI 출력을 런타임에 검증하기 위한 Zod 스키마.
 // libs/report/types.ts와 1:1 대응.
@@ -8,11 +8,7 @@
 import { z } from "zod/v4";
 
 import { SECTION_ORDER } from "./types";
-import type {
-  ReportContent,
-  CompetencyEvaluationSection,
-  SubjectAnalysisSection,
-} from "./types";
+import type { ReportContent, SubjectAnalysisSection } from "./types";
 
 // ─── 공통 enum 스키마 ───
 
@@ -40,6 +36,46 @@ export const CompetencyTagSchema = z.object({
   assessment: z.enum(["우수", "양호", "미흡", "부족"]).optional(),
 });
 
+// ─── v4 공통 스키마 ───
+
+export const ThreeTierRatingSchema = z.enum(["우수", "양호", "보완필요"]);
+export const AdmissionRiskBandSchema = z.enum([
+  "안정",
+  "적정",
+  "소신",
+  "도전",
+  "위험",
+]);
+
+export const BenchmarkComparisonSchema = z.object({
+  myValue: z.number(),
+  targetRangeAvg: z.number(),
+  overallAvg: z.number(),
+  estimationBasis: z.string().optional(),
+});
+
+export const OriginalTextCitationSchema = z.object({
+  originalText: z.string().min(1),
+  source: z.string().min(1),
+  competencyTags: z.array(CompetencyTagSchema),
+  assessment: ThreeTierRatingSchema,
+  positivePoint: z.string().optional(),
+  improvementSuggestion: z.string().optional(),
+});
+
+export const CharacterLabelSchema = z.object({
+  label: z.string().min(1),
+  rationale: z.string().min(1),
+});
+
+export const VolumeMetricSchema = z.object({
+  category: z.string().min(1),
+  maxCapacityChars: z.number().int().min(0),
+  actualChars: z.number().int().min(0),
+  fillRate: z.number().min(0).max(100),
+  comparisonGroupAvg: z.number().optional(),
+});
+
 // ============================================================
 // Part 1: 진단 스키마
 // ============================================================
@@ -59,6 +95,13 @@ export const StudentProfileSectionSchema = z.object({
   }),
   tags: z.array(z.string().min(1)).min(3).max(5),
   catchPhrase: z.string().min(1),
+  // v4
+  radarChartComparison: z
+    .record(z.string(), BenchmarkComparisonSchema)
+    .optional(),
+  percentileLabel: z.string().optional(),
+  typeStrengths: z.array(z.string().min(1)).optional(),
+  typeWeaknesses: z.array(z.string().min(1)).optional(),
 });
 
 // ─── 섹션 2: 역량 정량 스코어 ───
@@ -99,6 +142,32 @@ export const CompetencyScoreSectionSchema = z.object({
   percentileLabel: z.string().optional(),
   comparison: ComparisonDataSchema.optional(),
   interpretation: z.string().min(1),
+  // v4
+  scoreComparisons: z
+    .tuple([
+      BenchmarkComparisonSchema,
+      BenchmarkComparisonSchema,
+      BenchmarkComparisonSchema,
+    ])
+    .optional(),
+  scoreBand: z
+    .object({
+      label: AdmissionRiskBandSchema,
+      rangeMin: z.number(),
+      rangeMax: z.number(),
+      description: z.string().min(1),
+    })
+    .optional(),
+  subcategoryComparisons: z
+    .array(
+      z.object({
+        name: z.string().min(1),
+        myScore: z.number(),
+        maxScore: z.number(),
+        estimatedAvg: z.number(),
+      })
+    )
+    .optional(),
 });
 
 // ─── 섹션 3: 합격 예측 ───
@@ -128,6 +197,46 @@ export const AdmissionPredictionSectionSchema = z.object({
   recommendedTypeReason: z.string().min(1),
   predictions: z.array(AdmissionPredictionItemSchema).min(1),
   overallComment: z.string().min(1),
+  // v4
+  riskBands: z
+    .array(
+      z.object({
+        admissionType: z.enum(["학종", "교과", "정시"]),
+        band: AdmissionRiskBandSchema,
+        rationale: z.string().min(1),
+      })
+    )
+    .optional(),
+  detailedUniversityPredictions: z
+    .array(
+      z.object({
+        university: z.string().min(1),
+        department: z.string().min(1),
+        admissionType: z.string().min(1),
+        band: AdmissionRiskBandSchema,
+        passRateRange: z.tuple([
+          z.number().min(0).max(100),
+          z.number().min(0).max(100),
+        ]),
+        comparisonBar: BenchmarkComparisonSchema.optional(),
+        keyFactors: z.array(
+          z.object({
+            factor: z.string().min(1),
+            impact: z.enum(["positive", "negative", "neutral"]),
+          })
+        ),
+        rationale: z.string().min(1),
+      })
+    )
+    .optional(),
+  typeSuitabilityScores: z
+    .array(
+      z.object({
+        type: z.string().min(1),
+        score: z.number().min(0).max(100),
+      })
+    )
+    .optional(),
 });
 
 // ─── 섹션 4: 종합 진단 ───
@@ -160,6 +269,30 @@ export const DiagnosticSectionSchema = z.object({
   ]),
   admissionPositioning: z.string().optional(),
   strategyOverview: z.string().optional(),
+  // v4
+  dashboardMetrics: z
+    .object({
+      totalScore: z.number(),
+      percentileLabel: z.string().min(1),
+      gradeTrend: z.enum(["상승", "유지", "하락"]),
+      recordFillRate: z.number().min(0).max(100),
+      recommendedType: z.string().min(1),
+    })
+    .optional(),
+  competencyBars: z
+    .array(
+      z.object({
+        category: z.string().min(1),
+        label: z.string().min(1),
+        score: z.number(),
+        maxScore: z.number(),
+        assessment: ThreeTierRatingSchema,
+      })
+    )
+    .optional(),
+  topStrengths: z.array(z.string().min(1)).optional(),
+  topWeaknesses: z.array(z.string().min(1)).optional(),
+  characterLabel: CharacterLabelSchema.optional(),
 });
 
 // ============================================================
@@ -172,6 +305,9 @@ const StrengthWeaknessItemSchema = z.object({
   competencyTag: CompetencyTagSchema,
   label: z.string().min(1),
   evidence: z.string().min(1),
+  // v4
+  tier: ThreeTierRatingSchema.optional(),
+  originalQuotes: z.array(OriginalTextCitationSchema).optional(),
 });
 
 const SubcategoryRatingSchema = z.object({
@@ -195,6 +331,24 @@ export const CompetencyEvaluationSectionSchema = z.object({
   weaknesses: z.array(StrengthWeaknessItemSchema).min(3),
   overallComment: z.string().min(20),
   competencyRatings: z.array(CompetencyRatingSchema).min(1),
+  // v4
+  competencyCharacters: z
+    .array(
+      z.object({
+        category: CompetencyCategorySchema,
+        characterLabel: CharacterLabelSchema,
+      })
+    )
+    .optional(),
+  citationAnalysis: z.array(OriginalTextCitationSchema).optional(),
+  competencyBenchmarks: z
+    .array(
+      z.object({
+        category: CompetencyCategorySchema,
+        comparison: BenchmarkComparisonSchema,
+      })
+    )
+    .optional(),
 });
 
 // ─── 섹션 6: 성적 분석 ───
@@ -303,6 +457,65 @@ export const AcademicAnalysisSectionSchema = z.object({
     .array(UniversityGradeSimulationSchema)
     .optional(),
   improvementPriority: z.array(z.string().min(1)).optional(),
+  // v4
+  detailedGradeTable: z
+    .array(
+      z.object({
+        subject: z.string().min(1),
+        year: z.number().int(),
+        semester: z.number().int(),
+        unitCount: z.number().int(),
+        rawScore: z.number(),
+        classAverage: z.number(),
+        stdDev: z.number(),
+        achievementLevel: z.string().min(1),
+        studentCount: z.number().int(),
+        grade: z.number(),
+      })
+    )
+    .optional(),
+  combinationTrends: z
+    .array(
+      z.object({
+        combination: z.string().min(1),
+        trendData: z.array(
+          z.object({
+            year: z.number().int(),
+            semester: z.number().int(),
+            avg: z.number(),
+          })
+        ),
+        trend: z.enum(["상승", "유지", "하락"]),
+      })
+    )
+    .optional(),
+  subjectTrends: z
+    .array(
+      z.object({
+        subject: z.string().min(1),
+        dataPoints: z.array(
+          z.object({
+            year: z.number().int(),
+            semester: z.number().int(),
+            grade: z.number(),
+          })
+        ),
+      })
+    )
+    .optional(),
+  subjectBenchmarks: z
+    .array(
+      z.object({
+        subject: z.string().min(1),
+        myGrade: z.number(),
+        estimatedTargetAvg: z.number(),
+        estimatedOverallAvg: z.number(),
+      })
+    )
+    .optional(),
+  gradeStrengths: z.array(z.string().min(1)).optional(),
+  gradeWeaknesses: z.array(z.string().min(1)).optional(),
+  characterLabel: CharacterLabelSchema.optional(),
 });
 
 // ─── 섹션 7: 권장과목 이수 분석 ───
@@ -329,6 +542,21 @@ export const CourseAlignmentSectionSchema = z.object({
   missingCourseImpact: z.string().min(1),
   recommendation: z.string().optional(),
   medicalRequirements: z.array(MedicalRequirementSchema).optional(),
+  // v4
+  matchRateComparison: BenchmarkComparisonSchema.optional(),
+  requiredMatchRate: z.number().min(0).max(100).optional(),
+  recommendedMatchRate: z.number().min(0).max(100).optional(),
+  missingCourseImpactScore: z.number().min(0).max(100).optional(),
+  courseActionPlan: z
+    .array(
+      z.object({
+        course: z.string().min(1),
+        priority: PrioritySchema,
+        actionItem: z.string().min(1),
+        expectedImpact: z.string().min(1),
+      })
+    )
+    .optional(),
 });
 
 // ─── 섹션 8: 출결 분석 ───
@@ -351,6 +579,15 @@ export const AttendanceAnalysisSectionSchema = z.object({
   impactAnalysis: z.string().min(1),
   integrityContribution: z.string().min(1),
   improvementAdvice: z.string().optional(),
+  // v4
+  comparisonData: BenchmarkComparisonSchema.optional(),
+  integrityScore: z.number().min(0).max(100).optional(),
+  estimatedDeduction: z
+    .object({
+      deductionPoints: z.number(),
+      rationale: z.string().min(1),
+    })
+    .optional(),
 });
 
 // ─── 섹션 9: 창체 활동 분석 ───
@@ -368,13 +605,67 @@ const KeyActivitySchema = z.object({
   competencyTags: z.array(CompetencyTagSchema),
 });
 
+const TieredAssessmentSchema = z.object({
+  excellent: z.object({
+    items: z.array(z.string()),
+    quotes: z.array(OriginalTextCitationSchema),
+  }),
+  good: z.object({
+    items: z.array(z.string()),
+    quotes: z.array(OriginalTextCitationSchema),
+  }),
+  needsImprovement: z.object({
+    items: z.array(z.string()),
+    quotes: z.array(OriginalTextCitationSchema),
+    improvementTable: z.array(
+      z.object({
+        area: z.string().min(1),
+        currentState: z.string().min(1),
+        suggestion: z.string().min(1),
+      })
+    ),
+  }),
+});
+
 const ActivityTypeAnalysisSchema = z.object({
   type: z.string().min(1),
   yearlyAnalysis: z.array(ActivityYearlyAnalysisSchema).min(1),
   overallComment: z.string().min(1),
   volumeAssessment: z.string().optional(),
+  fillRate: z
+    .object({
+      total: z.number().min(0).max(100),
+      personal: z.number().min(0).max(100),
+    })
+    .optional(),
+  yearlyDetails: z
+    .array(
+      z.object({
+        grade: z.number().int().min(1).max(3),
+        summary: z.string().min(1),
+        keyActivities: z.array(z.string().min(1)),
+        evaluation: z.string().min(1),
+      })
+    )
+    .optional(),
   keyActivities: z.array(KeyActivitySchema).optional(),
   improvementDirection: z.string().optional(),
+  // v4
+  tieredAssessment: TieredAssessmentSchema.optional(),
+  volumeMetric: VolumeMetricSchema.optional(),
+  characterLabel: CharacterLabelSchema.optional(),
+  activityLevelComparison: BenchmarkComparisonSchema.optional(),
+});
+
+const LeadershipQuantitativeSchema = z.object({
+  totalPositions: z.number().int().min(0),
+  positionsByYear: z.array(
+    z.object({
+      grade: z.number().int().min(1).max(3),
+      positions: z.array(z.string().min(1)),
+    })
+  ),
+  leadershipRate: z.number().min(0).max(100),
 });
 
 export const ActivityAnalysisSectionSchema = z.object({
@@ -383,6 +674,7 @@ export const ActivityAnalysisSectionSchema = z.object({
   curriculumVersion: z.enum(["2015", "2022"]),
   activities: z.array(ActivityTypeAnalysisSchema).min(1),
   overallComment: z.string().min(1),
+  leadershipQuantitative: LeadershipQuantitativeSchema.optional(),
 });
 
 // ─── 섹션 10: 교과 세특 분석 ───
@@ -416,12 +708,46 @@ const SubjectAnalysisItemSchema = z.object({
   sentenceAnalysis: z.array(SentenceAnalysisSchema).optional(),
   importancePercent: z.number().min(0).max(100).optional(),
   evaluationImpact: EvaluationImpactSchema.optional(),
+  // v4
+  tierRating: ThreeTierRatingSchema.optional(),
+  competencyMatrix: z
+    .array(
+      z.object({
+        dimension: z.string().min(1),
+        rating: ThreeTierRatingSchema,
+        evidence: z.string().optional(),
+      })
+    )
+    .optional(),
+  citationAnalysis: z.array(OriginalTextCitationSchema).optional(),
+  volumeMetric: VolumeMetricSchema.optional(),
+});
+
+const SubjectGroupMatrixSchema = z.object({
+  group: z.string().min(1),
+  적극성: ThreeTierRatingSchema,
+  탐구정신: ThreeTierRatingSchema,
+  전공진로탐색: ThreeTierRatingSchema,
+  협력성: ThreeTierRatingSchema,
 });
 
 export const SubjectAnalysisSectionSchema = z.object({
   sectionId: z.literal("subjectAnalysis"),
   title: z.string().min(1),
   subjects: z.array(SubjectAnalysisItemSchema).min(1),
+  // v4
+  subjectGroupMatrix: z.array(SubjectGroupMatrixSchema).optional(),
+  summaryDashboard: z
+    .object({
+      totalSubjects: z.number().int(),
+      excellentCount: z.number().int(),
+      goodCount: z.number().int(),
+      averageCount: z.number().int(),
+      weakCount: z.number().int(),
+      overallQualityScore: z.number().min(0).max(100),
+    })
+    .optional(),
+  characterLabel: CharacterLabelSchema.optional(),
 });
 
 // ─── 섹션 11: 행동특성 분석 ───
@@ -440,6 +766,12 @@ export const BehaviorAnalysisSectionSchema = z.object({
   consistentTraits: z.array(z.string().min(1)).min(1),
   overallComment: z.string().min(1),
   admissionRelevance: z.string().min(1),
+  // v4
+  characterLabel: CharacterLabelSchema.optional(),
+  citationAnalysis: z.array(OriginalTextCitationSchema).optional(),
+  personalityScore: z.number().min(0).max(100).optional(),
+  personalityComparison: BenchmarkComparisonSchema.optional(),
+  personalityKeywords: z.array(z.string().min(1)).optional(),
 });
 
 // ─── 섹션 12: 기록 충실도 종합 ───
@@ -460,6 +792,29 @@ export const OverallAssessmentSectionSchema = z.object({
   qualityAssessment: z.string().min(1),
   competitivenessSum: z.string().min(1),
   finalComment: z.string().min(1),
+  // v4
+  fillRateComparison: BenchmarkComparisonSchema.optional(),
+  competencyProgressBars: z
+    .array(
+      z.object({
+        category: z.string().min(1),
+        label: z.string().min(1),
+        score: z.number(),
+        maxScore: z.number(),
+        assessment: ThreeTierRatingSchema,
+      })
+    )
+    .optional(),
+  overallCompetitivenessScore: z.number().min(0).max(100).optional(),
+  areaGrades: z
+    .array(
+      z.object({
+        area: z.string().min(1),
+        grade: CompetencyGradeSchema,
+        summary: z.string().min(1),
+      })
+    )
+    .optional(),
 });
 
 // ============================================================
@@ -479,12 +834,42 @@ const WeaknessAreaSchema = z.object({
   effectiveness: PrioritySchema.optional(),
   executionStrategy: z.string().optional(),
   subjectLinkStrategy: z.string().optional(),
+  // v4
+  recordSource: z.string().optional(),
+  detailedStrategy: z.string().optional(),
+  actionItems: z.array(z.string().min(1)).optional(),
+  tierRating: ThreeTierRatingSchema.optional(),
+  improvementTable: z
+    .object({
+      currentState: z.string().min(1),
+      targetState: z.string().min(1),
+      specificAction: z.string().min(1),
+      timeline: z.string().min(1),
+      expectedOutcome: z.string().min(1),
+    })
+    .optional(),
+  relatedSubjects: z.array(z.string().min(1)).optional(),
+  expectedScoreImpact: z
+    .object({
+      category: z.string().min(1),
+      currentScore: z.number(),
+      projectedScore: z.number(),
+    })
+    .optional(),
 });
 
 export const WeaknessAnalysisSectionSchema = z.object({
   sectionId: z.literal("weaknessAnalysis"),
   title: z.string().min(1),
   areas: z.array(WeaknessAreaSchema).min(3),
+  // v4
+  tierSummary: z
+    .object({
+      excellent: z.number().int(),
+      good: z.number().int(),
+      needsImprovement: z.number().int(),
+    })
+    .optional(),
 });
 
 // ─── 섹션 14: 세특 주제 추천 ───
@@ -503,12 +888,27 @@ const TopicRecommendationItemSchema = z.object({
   existingConnection: z.string().optional(),
   activityDesign: ActivityDesignSchema.optional(),
   sampleEvaluation: z.string().optional(),
+  // v4
+  keywordSuggestions: z.array(z.string().min(1)).optional(),
+  difficulty: z.enum(["기본", "심화", "도전"]).optional(),
+  estimatedDuration: z.string().optional(),
+  synergyScore: z.number().min(0).max(100).optional(),
 });
 
 export const TopicRecommendationSectionSchema = z.object({
   sectionId: z.literal("topicRecommendation"),
   title: z.string().min(1),
   topics: z.array(TopicRecommendationItemSchema).min(3),
+  // v4
+  subjectKeywordTable: z
+    .array(
+      z.object({
+        subject: z.string().min(1),
+        keywords: z.array(z.string().min(1)),
+        topicCount: z.number().int(),
+      })
+    )
+    .optional(),
 });
 
 // ─── 섹션 15: 예상 면접 질문 ───
@@ -527,12 +927,27 @@ const InterviewQuestionSchema = z.object({
   answerStrategy: z.string().optional(),
   sampleAnswer: z.string().optional(),
   followUpQuestions: z.array(FollowUpQuestionSchema).optional(),
+  // v4
+  difficulty: z.enum(["상", "중", "하"]).optional(),
+  frequency: z.enum(["높음", "보통", "낮음"]).optional(),
+  relatedCitation: OriginalTextCitationSchema.optional(),
+  answerKeywords: z.array(z.string().min(1)).optional(),
 });
 
 export const InterviewPrepSectionSchema = z.object({
   sectionId: z.literal("interviewPrep"),
   title: z.string().min(1),
   questions: z.array(InterviewQuestionSchema).min(10),
+  // v4
+  questionDistribution: z
+    .array(
+      z.object({
+        type: z.string().min(1),
+        count: z.number().int(),
+      })
+    )
+    .optional(),
+  readinessScore: z.number().min(0).max(100).optional(),
 });
 
 // ─── 섹션 16: 입시 전략 + 대학 추천 ───
@@ -595,6 +1010,42 @@ export const AdmissionStrategySectionSchema = z.object({
   csatMinimumStrategy: z.string().optional(),
   applicationSimulation: ApplicationSimulationSchema.optional(),
   universityGuideMatching: z.array(UniversityGuideMatchingSchema).optional(),
+  // v4
+  universityRiskBands: z
+    .array(
+      z.object({
+        university: z.string().min(1),
+        department: z.string().min(1),
+        band: AdmissionRiskBandSchema,
+        rationale: z.string().min(1),
+      })
+    )
+    .optional(),
+  typeSuitabilityChart: z
+    .array(
+      z.object({
+        type: z.string().min(1),
+        score: z.number().min(0).max(100),
+        keyStrengths: z.array(z.string().min(1)),
+        keyRisks: z.array(z.string().min(1)),
+      })
+    )
+    .optional(),
+  strategyMatrix: z
+    .array(
+      z.object({
+        tier: AdmissionTierSchema,
+        recommendations: z.array(
+          z.object({
+            university: z.string().min(1),
+            department: z.string().min(1),
+            type: z.string().min(1),
+            band: AdmissionRiskBandSchema,
+          })
+        ),
+      })
+    )
+    .optional(),
 });
 
 // ─── 고1 전용: 방향 설정 가이드 ───
@@ -632,6 +1083,33 @@ export const StoryAnalysisSectionSchema = z.object({
   crossSubjectLinks: z.array(CrossSubjectLinkSchema).optional(),
   storyEnhancementSuggestions: z.array(z.string().min(1)).optional(),
   interviewStoryGuide: z.string().optional(),
+  // v4
+  timeline: z
+    .array(
+      z.object({
+        year: z.number().int(),
+        semester: z.number().int(),
+        events: z.array(
+          z.object({
+            category: z.string().min(1),
+            title: z.string().min(1),
+            competencyTags: z.array(CompetencyTagSchema),
+          })
+        ),
+      })
+    )
+    .optional(),
+  storyCompletenessScore: z.number().min(0).max(100).optional(),
+  storyGaps: z
+    .array(
+      z.object({
+        gap: z.string().min(1),
+        suggestion: z.string().min(1),
+        priority: PrioritySchema,
+      })
+    )
+    .optional(),
+  characterLabel: CharacterLabelSchema.optional(),
 });
 
 // ─── 섹션 18: 실행 로드맵 ───
@@ -657,6 +1135,38 @@ export const ActionRoadmapSectionSchema = z.object({
   prewriteProposals: z.array(z.string().min(1)).optional(),
   evaluationWritingGuide: EvaluationWritingGuideSchema.optional(),
   interviewTimeline: z.string().optional(),
+  // v4
+  milestones: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        title: z.string().min(1),
+        deadline: z.string().min(1),
+        category: z.string().min(1),
+        priority: PrioritySchema,
+        subtasks: z.array(z.string().min(1)),
+        estimatedImpact: z.string().min(1),
+      })
+    )
+    .optional(),
+  weeklyPlan: z
+    .array(
+      z.object({
+        week: z.number().int(),
+        focusArea: z.string().min(1),
+        tasks: z.array(z.string().min(1)),
+      })
+    )
+    .optional(),
+  projectedOutcome: z
+    .array(
+      z.object({
+        category: z.string().min(1),
+        currentScore: z.number(),
+        projectedScore: z.number(),
+      })
+    )
+    .optional(),
 });
 
 // ============================================================
@@ -688,6 +1198,17 @@ const MajorSuggestionSchema = z.object({
   rationale: z.string().min(1),
   strengthMatch: z.array(z.string().min(1)).min(1),
   gapAnalysis: z.string().optional(),
+  // v4
+  fitComparison: BenchmarkComparisonSchema.optional(),
+  relatedGradePerformance: z
+    .array(
+      z.object({
+        subject: z.string().min(1),
+        grade: z.number(),
+        assessment: ThreeTierRatingSchema,
+      })
+    )
+    .optional(),
 });
 
 export const MajorExplorationSectionSchema = z.object({
@@ -772,7 +1293,7 @@ export const ReportSectionSchema = z.discriminatedUnion("sectionId", [
 
 export const ReportContentSchema = z.object({
   meta: ReportMetaSchema,
-  sections: z.array(ReportSectionSchema).min(14),
+  sections: z.array(ReportSectionSchema).min(10),
 });
 
 // ============================================================
@@ -807,17 +1328,6 @@ export const validateByPlan = (content: ReportContent): string[] => {
     }
   }
 
-  // ── 전 플랜 공통: competencyRatings 필수 ──
-  const compEval = content.sections.find(
-    (s) => s.sectionId === "competencyEvaluation"
-  ) as CompetencyEvaluationSection | undefined;
-  if (
-    compEval &&
-    (!compEval.competencyRatings || compEval.competencyRatings.length === 0)
-  ) {
-    errors.push("전 플랜: competencyRatings 필수");
-  }
-
   // ── Standard/Premium 필수 필드 검증 ──
   if (plan === "standard" || plan === "premium") {
     const subjectAnalysis = content.sections.find(
@@ -836,8 +1346,8 @@ export const validateByPlan = (content: ReportContent): string[] => {
       }
     }
 
-    if (!actualSectionIds.includes("interviewPrep")) {
-      errors.push("Standard 이상: interviewPrep 섹션 필수");
+    if (!actualSectionIds.includes("admissionPrediction")) {
+      errors.push("Standard 이상: admissionPrediction 섹션 필수");
     }
     if (!actualSectionIds.includes("storyAnalysis")) {
       errors.push("Standard 이상: storyAnalysis 섹션 필수");
@@ -848,14 +1358,8 @@ export const validateByPlan = (content: ReportContent): string[] => {
     if (!actualSectionIds.includes("behaviorAnalysis")) {
       errors.push("Standard 이상: behaviorAnalysis 섹션 필수");
     }
-    if (!actualSectionIds.includes("overallAssessment")) {
-      errors.push("Standard 이상: overallAssessment 섹션 필수");
-    }
-    if (!actualSectionIds.includes("bookRecommendation")) {
-      errors.push("Standard 이상: bookRecommendation 섹션 필수");
-    }
-    if (!actualSectionIds.includes("majorExploration")) {
-      errors.push("Standard 이상: majorExploration 섹션 필수");
+    if (!actualSectionIds.includes("courseAlignment")) {
+      errors.push("Standard 이상: courseAlignment 섹션 필수");
     }
   }
 
@@ -877,6 +1381,10 @@ export const validateByPlan = (content: ReportContent): string[] => {
           );
         }
       }
+    }
+
+    if (!actualSectionIds.includes("majorExploration")) {
+      errors.push("Premium: majorExploration 섹션 필수");
     }
   }
 

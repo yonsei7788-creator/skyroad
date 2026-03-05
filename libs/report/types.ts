@@ -1,5 +1,5 @@
 // ============================================================
-// 리포트 Content JSONB 스키마 타입 정의 (v3)
+// 리포트 Content JSONB 스키마 타입 정의 (v4)
 //
 // 기반 문서: specs/report-ai-spec.md, 바이브온 벤치마크 분석
 // 구조: 3파트 + 부록, 총 21섹션
@@ -16,6 +16,8 @@
 // 부록:       bookRecommendation, majorExploration, wordCloud
 //
 // + 조건부 directionGuide (고1 전용, admissionStrategy 대체)
+//
+// v4 변경: 벤치마크 비교, 원문 인용, 3단계 평가, 캐릭터 라벨 등 추가
 // ============================================================
 
 // ─── 플랜 & 공통 타입 ───
@@ -48,6 +50,63 @@ export interface CompetencyTag {
   category: CompetencyCategory;
   subcategory: string;
   assessment?: "우수" | "양호" | "미흡" | "부족";
+}
+
+// ─── v4 공통 타입 ───
+
+/** 3단계 평가 (바이브온 스타일) */
+export type ThreeTierRating = "우수" | "양호" | "보완필요";
+
+/** 5단계 지원 안정도 */
+export type AdmissionRiskBand = "안정" | "적정" | "소신" | "도전" | "위험";
+
+/** 벤치마크 비교 데이터 (모든 비교 차트에 사용) */
+export interface BenchmarkComparison {
+  myValue: number;
+  targetRangeAvg: number;
+  overallAvg: number;
+  estimationBasis?: string;
+}
+
+/** 생기부 원문 인용 + 역량 태깅 */
+export interface OriginalTextCitation {
+  originalText: string;
+  source: string;
+  competencyTags: CompetencyTag[];
+  assessment: ThreeTierRating;
+  positivePoint?: string;
+  improvementSuggestion?: string;
+}
+
+/** 캐릭터 라벨 */
+export interface CharacterLabel {
+  label: string;
+  rationale: string;
+}
+
+/** 기재 분량 분석 */
+export interface VolumeMetric {
+  category: string;
+  maxCapacityChars: number;
+  actualChars: number;
+  fillRate: number;
+  comparisonGroupAvg?: number;
+}
+
+/** 과목군별 역량 매트릭스 (바이브온 스타일) */
+export interface SubjectGroupMatrix {
+  group: string;
+  적극성: ThreeTierRating;
+  탐구정신: ThreeTierRating;
+  전공진로탐색: ThreeTierRating;
+  협력성: ThreeTierRating;
+}
+
+/** 리더십 정량 분석 */
+export interface LeadershipQuantitative {
+  totalPositions: number;
+  positionsByYear: { grade: number; positions: string[] }[];
+  leadershipRate: number;
 }
 
 /** 모든 섹션이 공유하는 기본 필드 */
@@ -83,6 +142,17 @@ export interface StudentProfileSection extends BaseSection {
 
   /** 한줄 캐치프레이즈 */
   catchPhrase: string;
+
+  // ─── v4 추가 ───
+
+  /** 레이더 차트 벤치마크 비교 (역량별) */
+  radarChartComparison?: Record<string, BenchmarkComparison>;
+  /** 백분위 라벨 (예: "상위 35%") */
+  percentileLabel?: string;
+  /** 유형 강점 (2~3개) */
+  typeStrengths?: string[];
+  /** 유형 약점 (2~3개) */
+  typeWeaknesses?: string[];
 }
 
 // ─── 섹션 2: 역량 정량 스코어 (competencyScore) ───
@@ -134,6 +204,29 @@ export interface CompetencyScoreSection extends BaseSection {
 
   /** 점수 해석 */
   interpretation: string;
+
+  // ─── v4 추가 ───
+
+  /** 학업/진로/공동체 각각 벤치마크 비교 */
+  scoreComparisons?: [
+    BenchmarkComparison,
+    BenchmarkComparison,
+    BenchmarkComparison,
+  ];
+  /** 지원 안정도 밴드 */
+  scoreBand?: {
+    label: AdmissionRiskBand;
+    rangeMin: number;
+    rangeMax: number;
+    description: string;
+  };
+  /** 하위항목별 비교 */
+  subcategoryComparisons?: {
+    name: string;
+    myScore: number;
+    maxScore: number;
+    estimatedAvg: number;
+  }[];
 }
 
 // ─── 섹션 3: 합격 예측 (admissionPrediction) ───
@@ -169,6 +262,34 @@ export interface AdmissionPredictionSection extends BaseSection {
 
   /** 종합 코멘트 */
   overallComment: string;
+
+  // ─── v4 추가 ───
+
+  /** 전형별 리스크 밴드 */
+  riskBands?: {
+    admissionType: "학종" | "교과" | "정시";
+    band: AdmissionRiskBand;
+    rationale: string;
+  }[];
+  /** 대학별 상세 예측 */
+  detailedUniversityPredictions?: {
+    university: string;
+    department: string;
+    admissionType: string;
+    band: AdmissionRiskBand;
+    passRateRange: [number, number];
+    comparisonBar?: BenchmarkComparison;
+    keyFactors: {
+      factor: string;
+      impact: "positive" | "negative" | "neutral";
+    }[];
+    rationale: string;
+  }[];
+  /** 전형 적합도 점수 */
+  typeSuitabilityScores?: {
+    type: string;
+    score: number;
+  }[];
 }
 
 // ─── 섹션 4: 종합 진단 (diagnostic) ───
@@ -203,6 +324,31 @@ export interface DiagnosticSection extends BaseSection {
   admissionPositioning?: string;
   /** Premium: 합격 가능 전략 요약 */
   strategyOverview?: string;
+
+  // ─── v4 추가 ───
+
+  /** 대시보드 핵심 지표 */
+  dashboardMetrics?: {
+    totalScore: number;
+    percentileLabel: string;
+    gradeTrend: "상승" | "유지" | "하락";
+    recordFillRate: number;
+    recommendedType: string;
+  };
+  /** 역량별 바 차트 데이터 */
+  competencyBars?: {
+    category: string;
+    label: string;
+    score: number;
+    maxScore: number;
+    assessment: ThreeTierRating;
+  }[];
+  /** 핵심 강점 */
+  topStrengths?: string[];
+  /** 핵심 약점 */
+  topWeaknesses?: string[];
+  /** 캐릭터 라벨 */
+  characterLabel?: CharacterLabel;
 }
 
 // ============================================================
@@ -215,6 +361,10 @@ interface StrengthWeaknessItem {
   competencyTag: CompetencyTag;
   label: string;
   evidence: string;
+  /** v4: 3단계 평가 */
+  tier?: ThreeTierRating;
+  /** v4: 원문 인용 근거 */
+  originalQuotes?: OriginalTextCitation[];
 }
 
 interface SubcategoryRating {
@@ -244,6 +394,21 @@ export interface CompetencyEvaluationSection extends BaseSection {
 
   /** 4대 역량별 등급 (모든 플랜) */
   competencyRatings: CompetencyRating[];
+
+  // ─── v4 추가 ───
+
+  /** 역량별 캐릭터 라벨 */
+  competencyCharacters?: {
+    category: CompetencyCategory;
+    characterLabel: CharacterLabel;
+  }[];
+  /** 전체 원문 인용 목록 */
+  citationAnalysis?: OriginalTextCitation[];
+  /** 역량별 벤치마크 비교 */
+  competencyBenchmarks?: {
+    category: CompetencyCategory;
+    comparison: BenchmarkComparison;
+  }[];
 }
 
 // ─── 섹션 6: 성적 분석 (academicAnalysis) ───
@@ -361,6 +526,46 @@ export interface AcademicAnalysisSection extends BaseSection {
   fiveGradeSimulation?: FiveGradeSimulation[];
   universityGradeSimulations?: UniversityGradeSimulation[];
   improvementPriority?: string[];
+
+  // ─── v4 추가 ───
+
+  /** 상세 성적 테이블 */
+  detailedGradeTable?: {
+    subject: string;
+    year: number;
+    semester: number;
+    unitCount: number;
+    rawScore: number;
+    classAverage: number;
+    stdDev: number;
+    achievementLevel: string;
+    studentCount: number;
+    grade: number;
+  }[];
+  /** 과목 조합별 트렌드 */
+  combinationTrends?: {
+    combination: string;
+    trendData: { year: number; semester: number; avg: number }[];
+    trend: "상승" | "유지" | "하락";
+  }[];
+  /** 과목별 등급 변화 추이 */
+  subjectTrends?: {
+    subject: string;
+    dataPoints: { year: number; semester: number; grade: number }[];
+  }[];
+  /** 과목별 벤치마크 비교 */
+  subjectBenchmarks?: {
+    subject: string;
+    myGrade: number;
+    estimatedTargetAvg: number;
+    estimatedOverallAvg: number;
+  }[];
+  /** 성적 강점 */
+  gradeStrengths?: string[];
+  /** 성적 약점 */
+  gradeWeaknesses?: string[];
+  /** 캐릭터 라벨 */
+  characterLabel?: CharacterLabel;
 }
 
 // ─── 섹션 7: 권장과목 이수 분석 (courseAlignment) ───
@@ -392,6 +597,24 @@ export interface CourseAlignmentSection extends BaseSection {
     met: boolean;
     details: string;
   }[];
+
+  // ─── v4 추가 ───
+
+  /** 이수율 벤치마크 비교 */
+  matchRateComparison?: BenchmarkComparison;
+  /** 필수과목 이수율 */
+  requiredMatchRate?: number;
+  /** 권장과목 이수율 */
+  recommendedMatchRate?: number;
+  /** 미이수 과목 영향 점수 (0~100) */
+  missingCourseImpactScore?: number;
+  /** 과목별 액션 플랜 */
+  courseActionPlan?: {
+    course: string;
+    priority: Priority;
+    actionItem: string;
+    expectedImpact: string;
+  }[];
 }
 
 // ─── 섹션 8: 출결 분석 (attendanceAnalysis) ───
@@ -420,6 +643,18 @@ export interface AttendanceAnalysisSection extends BaseSection {
 
   /** Standard+: 개선 방향 (주의/경고일 때) */
   improvementAdvice?: string;
+
+  // ─── v4 추가 ───
+
+  /** 출결 벤치마크 비교 */
+  comparisonData?: BenchmarkComparison;
+  /** 성실성 점수 (0~100) */
+  integrityScore?: number;
+  /** 추정 감점 */
+  estimatedDeduction?: {
+    deductionPoints: number;
+    rationale: string;
+  };
 }
 
 // ─── 섹션 9: 창체 활동 분석 (activityAnalysis) ───
@@ -439,6 +674,16 @@ interface ActivityTypeAnalysis {
   /** 기록 분량 평가 */
   volumeAssessment?: string;
 
+  /** 기재율 (전체/개인기록) */
+  fillRate?: { total: number; personal: number };
+  /** 학년별 상세 분석 */
+  yearlyDetails?: {
+    grade: number;
+    summary: string;
+    keyActivities: string[];
+    evaluation: string;
+  }[];
+
   /** Standard+: 핵심 활동 상세 */
   keyActivities?: {
     activity: string;
@@ -447,6 +692,35 @@ interface ActivityTypeAnalysis {
   }[];
   /** Standard+: 개선 방향 */
   improvementDirection?: string;
+
+  // ─── v4 추가 ───
+
+  /** 3단계 티어 평가 (우수/양호/보완필요별 항목 + 인용) */
+  tieredAssessment?: {
+    excellent: {
+      items: string[];
+      quotes: OriginalTextCitation[];
+    };
+    good: {
+      items: string[];
+      quotes: OriginalTextCitation[];
+    };
+    needsImprovement: {
+      items: string[];
+      quotes: OriginalTextCitation[];
+      improvementTable: {
+        area: string;
+        currentState: string;
+        suggestion: string;
+      }[];
+    };
+  };
+  /** 기재 분량 분석 */
+  volumeMetric?: VolumeMetric;
+  /** 캐릭터 라벨 */
+  characterLabel?: CharacterLabel;
+  /** 활동 수준 벤치마크 비교 */
+  activityLevelComparison?: BenchmarkComparison;
 }
 
 export interface ActivityAnalysisSection extends BaseSection {
@@ -458,6 +732,9 @@ export interface ActivityAnalysisSection extends BaseSection {
   activities: ActivityTypeAnalysis[];
   /** 창체 종합 평가 */
   overallComment: string;
+
+  /** 리더십 정량 분석 */
+  leadershipQuantitative?: LeadershipQuantitative;
 }
 
 // ─── 섹션 10: 교과 세특 분석 (subjectAnalysis) ───
@@ -506,12 +783,44 @@ export interface SubjectAnalysisItem {
   importancePercent?: number;
   /** Premium: 평가 영향도 */
   evaluationImpact?: EvaluationImpact;
+
+  // ─── v4 추가 ───
+
+  /** 3단계 평가 */
+  tierRating?: ThreeTierRating;
+  /** 역량 매트릭스 */
+  competencyMatrix?: {
+    dimension: string;
+    rating: ThreeTierRating;
+    evidence?: string;
+  }[];
+  /** 원문 인용 분석 */
+  citationAnalysis?: OriginalTextCitation[];
+  /** 기재 분량 분석 */
+  volumeMetric?: VolumeMetric;
 }
 
 export interface SubjectAnalysisSection extends BaseSection {
   sectionId: "subjectAnalysis";
   /** 교과 세특만 포함 (창체는 activityAnalysis에서 분석) */
   subjects: SubjectAnalysisItem[];
+
+  // ─── v4 추가 ───
+
+  /** 과목군별 역량 매트릭스 */
+  subjectGroupMatrix?: SubjectGroupMatrix[];
+
+  /** 요약 대시보드 */
+  summaryDashboard?: {
+    totalSubjects: number;
+    excellentCount: number;
+    goodCount: number;
+    averageCount: number;
+    weakCount: number;
+    overallQualityScore: number;
+  };
+  /** 캐릭터 라벨 */
+  characterLabel?: CharacterLabel;
 }
 
 // ─── 섹션 11: 행동특성 분석 (behaviorAnalysis) ───
@@ -537,6 +846,19 @@ export interface BehaviorAnalysisSection extends BaseSection {
   overallComment: string;
   /** 입시에서의 활용 포인트 */
   admissionRelevance: string;
+
+  // ─── v4 추가 ───
+
+  /** 캐릭터 라벨 */
+  characterLabel?: CharacterLabel;
+  /** 원문 인용 분석 */
+  citationAnalysis?: OriginalTextCitation[];
+  /** 인성 점수 (0~100) */
+  personalityScore?: number;
+  /** 인성 벤치마크 비교 */
+  personalityComparison?: BenchmarkComparison;
+  /** 인성 키워드 */
+  personalityKeywords?: string[];
 }
 
 // ─── 섹션 12: 기록 충실도 종합 (overallAssessment) ───
@@ -562,6 +884,27 @@ export interface OverallAssessmentSection extends BaseSection {
   competitivenessSum: string;
   /** 최종 종합 의견 */
   finalComment: string;
+
+  // ─── v4 추가 ───
+
+  /** 기록 충실도 벤치마크 비교 */
+  fillRateComparison?: BenchmarkComparison;
+  /** 역량별 진행 바 */
+  competencyProgressBars?: {
+    category: string;
+    label: string;
+    score: number;
+    maxScore: number;
+    assessment: ThreeTierRating;
+  }[];
+  /** 전체 경쟁력 점수 (0~100) */
+  overallCompetitivenessScore?: number;
+  /** 영역별 등급 */
+  areaGrades?: {
+    area: string;
+    grade: CompetencyGrade;
+    summary: string;
+  }[];
 }
 
 // ============================================================
@@ -590,12 +933,49 @@ interface WeaknessArea {
   executionStrategy?: string;
   /** Premium: 진로-선택과목 연계 전략 */
   subjectLinkStrategy?: string;
+
+  // ─── v4 추가 ───
+
+  /** 생기부 항목 출처 (예: "세특_국어", "동아리활동") */
+  recordSource?: string;
+  /** 상세 보완 전략 (200-300자) */
+  detailedStrategy?: string;
+  /** 구체적 실행 항목 3-5개 */
+  actionItems?: string[];
+
+  /** 3단계 평가 */
+  tierRating?: ThreeTierRating;
+  /** 개선 테이블 */
+  improvementTable?: {
+    currentState: string;
+    targetState: string;
+    specificAction: string;
+    timeline: string;
+    expectedOutcome: string;
+  };
+  /** 관련 과목 */
+  relatedSubjects?: string[];
+  /** 예상 점수 영향 */
+  expectedScoreImpact?: {
+    category: string;
+    currentScore: number;
+    projectedScore: number;
+  };
 }
 
 export interface WeaknessAnalysisSection extends BaseSection {
   sectionId: "weaknessAnalysis";
   /** Lite: 3개, Standard: 5개, Premium: 5개+ */
   areas: WeaknessArea[];
+
+  // ─── v4 추가 ───
+
+  /** 티어 요약 (우수/양호/보완필요 개수) */
+  tierSummary?: {
+    excellent: number;
+    good: number;
+    needsImprovement: number;
+  };
 }
 
 // ─── 섹션 14: 세특 주제 추천 (topicRecommendation) ───
@@ -621,12 +1001,32 @@ export interface TopicRecommendationItem {
   activityDesign?: ActivityDesign;
   /** Premium: 세특 서술 예시 */
   sampleEvaluation?: string;
+
+  // ─── v4 추가 ───
+
+  /** 키워드 제안 */
+  keywordSuggestions?: string[];
+  /** 난이도 */
+  difficulty?: "기본" | "심화" | "도전";
+  /** 예상 소요 기간 */
+  estimatedDuration?: string;
+  /** 시너지 점수 (0~100) */
+  synergyScore?: number;
 }
 
 export interface TopicRecommendationSection extends BaseSection {
   sectionId: "topicRecommendation";
   /** Lite: 3개, Standard: 5개, Premium: 5개 */
   topics: TopicRecommendationItem[];
+
+  // ─── v4 추가 ───
+
+  /** 과목별 키워드 테이블 */
+  subjectKeywordTable?: {
+    subject: string;
+    keywords: string[];
+    topicCount: number;
+  }[];
 }
 
 // ─── 섹션 15: 예상 면접 질문 (interviewPrep) ───
@@ -652,12 +1052,33 @@ export interface InterviewQuestion {
   sampleAnswer?: string;
   /** Premium: 꼬리질문 1~2개 */
   followUpQuestions?: FollowUpQuestion[];
+
+  // ─── v4 추가 ───
+
+  /** 난이도 */
+  difficulty?: "상" | "중" | "하";
+  /** 출제 빈도 */
+  frequency?: "높음" | "보통" | "낮음";
+  /** 관련 원문 인용 */
+  relatedCitation?: OriginalTextCitation;
+  /** 답변 핵심 키워드 */
+  answerKeywords?: string[];
 }
 
 export interface InterviewPrepSection extends BaseSection {
   sectionId: "interviewPrep";
   /** Standard: 10~12개, Premium: 12~15개 */
   questions: InterviewQuestion[];
+
+  // ─── v4 추가 ───
+
+  /** 질문 유형별 분포 */
+  questionDistribution?: {
+    type: string;
+    count: number;
+  }[];
+  /** 면접 준비 점수 (0~100) */
+  readinessScore?: number;
 }
 
 // ─── 섹션 16: 입시 전략 + 대학 추천 (admissionStrategy) ───
@@ -726,6 +1147,33 @@ export interface AdmissionStrategySection extends BaseSection {
     studentStrengthMatch: string[];
     studentWeaknessMatch: string[];
   }[];
+
+  // ─── v4 추가 ───
+
+  /** 대학별 리스크 밴드 */
+  universityRiskBands?: {
+    university: string;
+    department: string;
+    band: AdmissionRiskBand;
+    rationale: string;
+  }[];
+  /** 전형별 적합도 차트 */
+  typeSuitabilityChart?: {
+    type: string;
+    score: number;
+    keyStrengths: string[];
+    keyRisks: string[];
+  }[];
+  /** 전략 매트릭스 (상향/안정/하향별 추천) */
+  strategyMatrix?: {
+    tier: AdmissionTier;
+    recommendations: {
+      university: string;
+      department: string;
+      type: string;
+      band: AdmissionRiskBand;
+    }[];
+  }[];
 }
 
 /** 고1 전용: 방향 설정 가이드 (admissionStrategy 대체) */
@@ -771,6 +1219,29 @@ export interface StoryAnalysisSection extends BaseSection {
   storyEnhancementSuggestions?: string[];
   /** Premium: 면접 스토리텔링 가이드 */
   interviewStoryGuide?: string;
+
+  // ─── v4 추가 ───
+
+  /** 타임라인 */
+  timeline?: {
+    year: number;
+    semester: number;
+    events: {
+      category: string;
+      title: string;
+      competencyTags: CompetencyTag[];
+    }[];
+  }[];
+  /** 스토리 완성도 점수 (0~100) */
+  storyCompletenessScore?: number;
+  /** 스토리 갭 분석 */
+  storyGaps?: {
+    gap: string;
+    suggestion: string;
+    priority: Priority;
+  }[];
+  /** 캐릭터 라벨 */
+  characterLabel?: CharacterLabel;
 }
 
 // ─── 섹션 18: 실행 로드맵 (actionRoadmap) ───
@@ -804,6 +1275,31 @@ export interface ActionRoadmapSection extends BaseSection {
   evaluationWritingGuide?: EvaluationWritingGuide;
   /** Premium: 면접 대비 타임라인 */
   interviewTimeline?: string;
+
+  // ─── v4 추가 ───
+
+  /** 마일스톤 */
+  milestones?: {
+    id: string;
+    title: string;
+    deadline: string;
+    category: string;
+    priority: Priority;
+    subtasks: string[];
+    estimatedImpact: string;
+  }[];
+  /** 주간 계획 (Premium) */
+  weeklyPlan?: {
+    week: number;
+    focusArea: string;
+    tasks: string[];
+  }[];
+  /** 예상 결과 */
+  projectedOutcome?: {
+    category: string;
+    currentScore: number;
+    projectedScore: number;
+  }[];
 }
 
 // ============================================================
@@ -842,6 +1338,17 @@ interface MajorSuggestion {
   strengthMatch: string[];
   /** 보완 필요 사항 */
   gapAnalysis?: string;
+
+  // ─── v4 추가 ───
+
+  /** 적합도 벤치마크 비교 */
+  fitComparison?: BenchmarkComparison;
+  /** 관련 교과 성취도 */
+  relatedGradePerformance?: {
+    subject: string;
+    grade: number;
+    assessment: ThreeTierRating;
+  }[];
 }
 
 export interface MajorExplorationSection extends BaseSection {
@@ -999,76 +1506,59 @@ export type ExtractSection<
 export const SECTION_ORDER: Record<ReportPlan, string[]> = {
   lite: [
     // Part 1: 진단
-    "studentProfile",
-    "competencyScore",
-    "admissionPrediction",
-    "diagnostic",
+    "studentProfile", // diagnostic 통합
+    "competencyScore", // competencyEvaluation 통합
     // Part 2: 분석
-    "competencyEvaluation",
     "academicAnalysis",
-    "courseAlignment",
     "attendanceAnalysis",
     "activityAnalysis",
     "subjectAnalysis",
     // Part 3: 전략
     "weaknessAnalysis",
     "topicRecommendation",
-    "admissionStrategy", // 또는 "directionGuide" (고1)
-    // 부록
-    "wordCloud",
+    "interviewPrep",
+    "admissionStrategy", // admissionPrediction 통합
   ],
   standard: [
     // Part 1: 진단
-    "studentProfile",
-    "competencyScore",
+    "studentProfile", // diagnostic 통합
+    "competencyScore", // competencyEvaluation 통합
     "admissionPrediction",
-    "diagnostic",
     // Part 2: 분석
-    "competencyEvaluation",
     "academicAnalysis",
     "courseAlignment",
     "attendanceAnalysis",
     "activityAnalysis",
     "subjectAnalysis",
     "behaviorAnalysis",
-    "overallAssessment",
     // Part 3: 전략
     "weaknessAnalysis",
     "topicRecommendation",
     "interviewPrep",
-    "admissionStrategy", // 또는 "directionGuide" (고1)
+    "admissionStrategy",
     "storyAnalysis",
     "actionRoadmap",
-    // 부록
-    "bookRecommendation",
-    "majorExploration",
-    "wordCloud",
   ],
   premium: [
     // Part 1: 진단
-    "studentProfile",
-    "competencyScore",
-    "admissionPrediction",
-    "diagnostic",
+    "studentProfile", // diagnostic 통합
+    "competencyScore", // competencyEvaluation 통합
+    "admissionPrediction", // Premium만 별도 유지
     // Part 2: 분석
-    "competencyEvaluation",
     "academicAnalysis",
     "courseAlignment",
     "attendanceAnalysis",
     "activityAnalysis",
     "subjectAnalysis",
     "behaviorAnalysis",
-    "overallAssessment",
     // Part 3: 전략
     "weaknessAnalysis",
     "topicRecommendation",
     "interviewPrep",
-    "admissionStrategy", // 또는 "directionGuide" (고1)
+    "admissionStrategy",
     "storyAnalysis",
     "actionRoadmap",
     // 부록
-    "bookRecommendation",
     "majorExploration",
-    "wordCloud",
   ],
 };
