@@ -19,7 +19,7 @@ import { ImageUploadStep } from "./ImageUploadStep";
 import { TextInputStep } from "./TextInputStep";
 import { ReviewStep } from "./ReviewStep";
 import { ParsingOverlay } from "./ParsingOverlay";
-import { INITIAL_WIZARD_STATE } from "./types";
+import { INITIAL_WIZARD_STATE, validateRequiredFields } from "./types";
 import type {
   InputMethod,
   WizardState,
@@ -224,6 +224,9 @@ export const RecordSubmitWizard = ({
   const totalSteps = isAiParseMode ? 4 : 3;
   const reviewStep = totalSteps;
 
+  const requiredFieldErrors = validateRequiredFields(state.record);
+  const isRequiredFieldsMet = requiredFieldErrors.length === 0;
+
   const canProceedFromStep2 = (): boolean => {
     if (!state.method) return false;
 
@@ -233,13 +236,13 @@ export const RecordSubmitWizard = ({
       case "image":
         return state.images.length > 0;
       case "text":
-        return Object.values(state.record).some((arr) => arr.length > 0);
+        return isRequiredFieldsMet;
     }
   };
 
   const canProceedFromStep3 = (): boolean => {
     if (!isAiParseMode) return false;
-    return Object.values(state.record).some((arr) => arr.length > 0);
+    return isRequiredFieldsMet;
   };
 
   const handleParseAndAdvance = async () => {
@@ -435,7 +438,6 @@ export const RecordSubmitWizard = ({
         <div
           className={`${styles.wizardCard} ${isWideStep ? styles.wizardCardFlat : ""}`}
         >
-
           {state.step === 1 && (
             <>
               {pendingDraft && (
@@ -490,6 +492,7 @@ export const RecordSubmitWizard = ({
             <TextInputStep
               record={state.record}
               onRecordChange={handleRecordChange}
+              requiredFieldErrors={requiredFieldErrors}
             />
           )}
 
@@ -497,6 +500,7 @@ export const RecordSubmitWizard = ({
             <TextInputStep
               record={state.record}
               onRecordChange={handleRecordChange}
+              requiredFieldErrors={requiredFieldErrors}
             />
           )}
 

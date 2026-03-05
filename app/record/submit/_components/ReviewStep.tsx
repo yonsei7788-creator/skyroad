@@ -1,5 +1,5 @@
 import type { InputMethod, SchoolRecord } from "./types";
-import { SECTION_TABS } from "./types";
+import { SECTION_TABS, REQUIRED_SECTION_KEYS } from "./types";
 
 import styles from "../page.module.css";
 
@@ -74,6 +74,9 @@ const ReviewSectionBlock = ({
   return (
     <div className={styles.reviewSectionBlock}>
       <h4 className={styles.reviewSectionLabel}>
+        {REQUIRED_SECTION_KEYS.has(sectionKey) && (
+          <span className={styles.requiredDot} />
+        )}
         {label}
         <span className={styles.reviewSectionCount}>{rows.length}건</span>
       </h4>

@@ -1547,7 +1547,6 @@
   text-align: center;
 }
 
-
 /* ---- Creative Activity Year Groups ---- */
 .creativeYearCell {
   vertical-align: middle;
@@ -1619,6 +1618,154 @@
 }
 
 .tableTextarea::placeholder {
+  color: var(--color-fg-tertiary);
+}
+
+/* ============================================
+   Required / Validation
+   ============================================ */
+
+.requiredDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-error-500);
+  margin-right: 4px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.requiredHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--color-fg-tertiary);
+}
+
+.requiredBadge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-error-600);
+  background: rgb(239 68 68 / 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+}
+
+.validationErrorBox {
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: rgb(239 68 68 / 0.06);
+  border: 1px solid rgb(239 68 68 / 0.2);
+  color: var(--color-error-600);
+  font-size: 0.8125rem;
+  margin-bottom: 16px;
+}
+
+.validationErrorBox > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.validationErrorTitle {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.validationErrorList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.8125rem;
+  color: var(--color-error-500);
+}
+
+.validationErrorList li::before {
+  content: "• ";
+}
+
+.accordionError {
+  border-color: rgb(239 68 68 / 0.3);
+  box-shadow: 0 0 0 1px rgb(239 68 68 / 0.1);
+}
+
+.sectionErrorHighlight {
+  border-radius: 8px;
+  background: rgb(239 68 68 / 0.03);
+  padding: 2px;
+  border: 1px dashed rgb(239 68 68 / 0.2);
+}
+
+.sectionRequiredDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-error-500);
+  margin-left: 4px;
+}
+
+/* ---- Required Checklist ---- */
+.requiredChecklist {
+  margin-top: 20px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+}
+
+.requiredChecklistTitle {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-fg-secondary);
+  margin-bottom: 12px;
+}
+
+.requiredChecklistItems {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.requiredChecklistItemMet,
+.requiredChecklistItemUnmet {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.requiredChecklistItemMet {
+  color: var(--color-success-600, #16a34a);
+}
+
+.requiredChecklistItemMet > svg {
+  flex-shrink: 0;
+}
+
+.requiredChecklistItemUnmet {
+  color: var(--color-error-600);
+}
+
+.requiredChecklistItemUnmet > svg {
+  flex-shrink: 0;
+}
+
+.requiredChecklistCount {
+  margin-left: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
   color: var(--color-fg-tertiary);
 }
 
