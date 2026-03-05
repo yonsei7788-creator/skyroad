@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { loadTossPayments } from "@tosspayments/tosspayments-sdk";
-import type { TossPaymentsWidgets } from "@tosspayments/tosspayments-sdk";
 import { ArrowLeft, CreditCard, Info, Loader2 } from "lucide-react";
 import Link from "next/link";
 
@@ -58,75 +57,15 @@ export const CheckoutClient = ({
   userId,
 }: CheckoutClientProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isWidgetReady, setIsWidgetReady] = useState(false);
-  const [agreedRequired, setAgreedRequired] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const widgetsRef = useRef<TossPaymentsWidgets | null>(null);
 
   const features = PLAN_FEATURES[plan.name] ?? [];
 
-  // 위젯 초기화 및 렌더링
-  useEffect(() => {
+  const handlePayment = async () => {
     if (!CLIENT_KEY) {
       setError("결제 서비스가 설정되지 않았습니다.");
       return;
     }
-
-    let destroyed = false;
-
-    const initWidget = async () => {
-      try {
-        const tossPayments = await loadTossPayments(CLIENT_KEY);
-        const widgets = tossPayments.widgets({ customerKey: userId });
-
-        if (destroyed) return;
-
-        widgetsRef.current = widgets;
-
-        await widgets.setAmount({
-          currency: "KRW",
-          value: plan.price,
-        });
-
-        if (destroyed) return;
-
-        const [, agreementWidget] = await Promise.all([
-          widgets.renderPaymentMethods({
-            selector: "#payment-method",
-          }),
-          widgets.renderAgreement({
-            selector: "#agreement",
-          }),
-        ]);
-
-        if (destroyed) return;
-
-        agreementWidget.on("agreementStatusChange", (status) => {
-          setAgreedRequired(status.agreedRequiredTerms);
-        });
-
-        setIsWidgetReady(true);
-      } catch (err) {
-        if (!destroyed) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "결제 위젯을 불러오는 중 오류가 발생했습니다."
-          );
-        }
-      }
-    };
-
-    initWidget();
-
-    return () => {
-      destroyed = true;
-    };
-  }, [userId, plan.price]);
-
-  const handlePayment = async () => {
-    if (!widgetsRef.current) return;
 
     setIsLoading(true);
     setError(null);
@@ -146,14 +85,28 @@ export const CheckoutClient = ({
 
       const { tossOrderId, orderName } = await orderRes.json();
 
-      // 2. 결제 요청 (위젯에서 선택한 결제수단으로 결제창 열림)
-      await widgetsRef.current.requestPayment({
+      // 2. 개별 연동 결제 요청 (토스 결제창 열림)
+      const tossPayments = await loadTossPayments(CLIENT_KEY);
+      const payment = tossPayments.payment({ customerKey: userId });
+
+      await payment.requestPayment({
+        method: "CARD",
+        amount: {
+          currency: "KRW",
+          value: plan.price,
+        },
         orderId: tossOrderId,
         orderName,
         successUrl: `${window.location.origin}/checkout/success`,
         failUrl: `${window.location.origin}/checkout/fail`,
         customerEmail: userEmail || undefined,
         customerName: userName || undefined,
+        card: {
+          useEscrow: false,
+          flowMode: "DEFAULT",
+          useCardPoint: false,
+          useAppCardOnly: false,
+        },
       });
     } catch (err) {
       if (err instanceof Error && err.message.includes("취소")) {
@@ -166,8 +119,6 @@ export const CheckoutClient = ({
       setIsLoading(false);
     }
   };
-
-  const isPayDisabled = isLoading || !isWidgetReady || !agreedRequired;
 
   return (
     <section className={styles.section}>
@@ -208,12 +159,6 @@ export const CheckoutClient = ({
           </div>
         </div>
 
-        {/* 결제수단 위젯 */}
-        <div id="payment-method" className={styles.widgetBox} />
-
-        {/* 약관 위젯 */}
-        <div id="agreement" className={styles.widgetBox} />
-
         {/* 안내 */}
         <div className={styles.infoBox}>
           <Info size={16} />
@@ -230,7 +175,7 @@ export const CheckoutClient = ({
           type="button"
           className={styles.payButton}
           onClick={handlePayment}
-          disabled={isPayDisabled}
+          disabled={isLoading}
         >
           {isLoading ? (
             <>
