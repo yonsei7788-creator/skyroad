@@ -1,4 +1,5 @@
 // Layout primitives
+export { AutoPaginatedSection } from "./AutoPaginatedSection";
 export { ReportPage } from "./ReportPage";
 export { ReportCover } from "./ReportCover";
 export { ReportTableOfContents } from "./ReportTableOfContents";

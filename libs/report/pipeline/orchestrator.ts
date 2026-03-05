@@ -20,16 +20,13 @@ import type { StudentTypeClassificationOutput } from "../prompts/phase2/student-
 // Section prompts
 import { buildStudentProfilePrompt } from "../prompts/sections/student-profile";
 import { buildCompetencyScorePrompt } from "../prompts/sections/competency-score";
-import { buildDiagnosticPrompt } from "../prompts/sections/diagnostic";
 import { buildAdmissionPredictionPrompt } from "../prompts/sections/admission-prediction";
-import { buildCompetencyEvaluationPrompt } from "../prompts/sections/competency-evaluation";
 import { buildAcademicAnalysisPrompt } from "../prompts/sections/academic-analysis";
 import { buildCourseAlignmentPrompt } from "../prompts/sections/course-alignment";
 import { buildAttendanceAnalysisPrompt } from "../prompts/sections/attendance-analysis";
 import { buildActivityAnalysisPrompt } from "../prompts/sections/activity-analysis";
 import { buildSubjectAnalysisPrompt } from "../prompts/sections/subject-analysis";
 import { buildBehaviorAnalysisPrompt } from "../prompts/sections/behavior-analysis";
-import { buildOverallAssessmentPrompt } from "../prompts/sections/overall-assessment";
 import { buildWeaknessAnalysisPrompt } from "../prompts/sections/weakness-analysis";
 import { buildTopicRecommendationPrompt } from "../prompts/sections/topic-recommendation";
 import { buildInterviewPrepPrompt } from "../prompts/sections/interview-prep";
@@ -39,7 +36,6 @@ import {
 } from "../prompts/sections/admission-strategy";
 import { buildStoryAnalysisPrompt } from "../prompts/sections/story-analysis";
 import { buildActionRoadmapPrompt } from "../prompts/sections/action-roadmap";
-import { buildBookRecommendationPrompt } from "../prompts/sections/book-recommendation";
 import { buildMajorExplorationPrompt } from "../prompts/sections/major-exploration";
 
 import type { GeminiClient } from "./gemini-client";
@@ -160,8 +156,9 @@ export const orchestrate = async (
   // Phase 3: 섹션 생성 (Wave 기반)
   // ═══════════════════════════════════════════
 
-  // --- Group 1: studentProfile, competencyScore, diagnostic (병렬) ---
-  const [studentProfile, competencyScore, diagnostic] = await Promise.all([
+  // --- Group 1: studentProfile, competencyScore (병렬) ---
+  // diagnostic은 전 플랜에서 제거됨 (studentProfile에 통합)
+  const [studentProfile, competencyScore] = await Promise.all([
     callGemini<ReportSection>(
       buildStudentProfilePrompt(
         {
@@ -188,39 +185,13 @@ export const orchestrate = async (
       reportProgress("Phase 3 Group 1", "competencyScore");
       return r;
     }),
-    callGemini<ReportSection>(
-      buildDiagnosticPrompt(
-        {
-          competencyExtraction: compExtrText,
-          academicAnalysis: acadAnalText,
-          studentTypeClassification: stuTypeText,
-          studentProfile: texts.studentProfileText,
-        },
-        plan
-      )
-    ).then((r) => {
-      reportProgress("Phase 3 Group 1", "diagnostic");
-      return r;
-    }),
   ]);
 
-  sections.push(studentProfile, competencyScore, diagnostic);
+  sections.push(studentProfile, competencyScore);
 
-  // --- Group 2: competencyEvaluation, academicAnalysis, courseAlignment, attendanceAnalysis, activityAnalysis (병렬) ---
+  // --- Group 2: academicAnalysis, attendanceAnalysis, activityAnalysis + courseAlignment(Standard+) (병렬) ---
+  // competencyEvaluation은 전 플랜에서 제거됨 (competencyScore에 통합)
   const group2Promises: Promise<ReportSection>[] = [
-    callGemini<ReportSection>(
-      buildCompetencyEvaluationPrompt(
-        {
-          competencyExtraction: compExtrText,
-          academicAnalysis: acadAnalText,
-          studentProfile: texts.studentProfileText,
-        },
-        plan
-      )
-    ).then((r) => {
-      reportProgress("Phase 3 Group 2", "competencyEvaluation");
-      return r;
-    }),
     callGemini<ReportSection>(
       buildAcademicAnalysisPrompt(
         {
@@ -232,19 +203,6 @@ export const orchestrate = async (
       )
     ).then((r) => {
       reportProgress("Phase 3 Group 2", "academicAnalysis");
-      return r;
-    }),
-    callGemini<ReportSection>(
-      buildCourseAlignmentPrompt(
-        {
-          recommendedCourseMatch: texts.recommendedCourseMatchText,
-          competencyExtraction: compExtrText,
-          studentProfile: texts.studentProfileText,
-        },
-        plan
-      )
-    ).then((r) => {
-      reportProgress("Phase 3 Group 2", "courseAlignment");
       return r;
     }),
     callGemini<ReportSection>(
@@ -274,10 +232,30 @@ export const orchestrate = async (
       return r;
     }),
   ];
+
+  if (isStandardPlus) {
+    group2Promises.push(
+      callGemini<ReportSection>(
+        buildCourseAlignmentPrompt(
+          {
+            recommendedCourseMatch: texts.recommendedCourseMatchText,
+            competencyExtraction: compExtrText,
+            studentProfile: texts.studentProfileText,
+          },
+          plan
+        )
+      ).then((r) => {
+        reportProgress("Phase 3 Group 2", "courseAlignment");
+        return r;
+      })
+    );
+  }
+
   const group2Results = await Promise.all(group2Promises);
   sections.push(...group2Results);
 
-  // --- Group 3: subjectAnalysis, behaviorAnalysis (Standard+), overallAssessment (Standard+) ---
+  // --- Group 3: subjectAnalysis + behaviorAnalysis(Standard+) ---
+  // overallAssessment는 전 플랜에서 제거됨
   const group3Promises: Promise<ReportSection>[] = [
     callGemini<ReportSection>(
       buildSubjectAnalysisPrompt(
@@ -309,29 +287,11 @@ export const orchestrate = async (
         return r;
       })
     );
-    group3Promises.push(
-      callGemini<ReportSection>(
-        buildOverallAssessmentPrompt(
-          {
-            recordVolumeData: texts.recordVolumeText,
-            competencyExtraction: compExtrText,
-            studentProfile: texts.studentProfileText,
-          },
-          plan
-        )
-      ).then((r) => {
-        reportProgress("Phase 3 Group 3", "overallAssessment");
-        return r;
-      })
-    );
   }
   const group3Results = await Promise.all(group3Promises);
   sections.push(...group3Results);
 
   // Serialize group 2/3 results for downstream usage
-  const compEvalText = JSON.stringify(
-    group2Results.find((s) => s.sectionId === "competencyEvaluation")
-  );
   const acadSectionText = JSON.stringify(
     group2Results.find((s) => s.sectionId === "academicAnalysis")
   );
@@ -342,7 +302,7 @@ export const orchestrate = async (
     group3Results.find((s) => s.sectionId === "subjectAnalysis")
   );
 
-  // --- Group 4: weaknessAnalysis, admissionPrediction, topicRecommendation, interviewPrep (Standard+) ---
+  // --- Group 4: weaknessAnalysis, topicRecommendation, interviewPrep(전 플랜) + admissionPrediction(Standard+) ---
   const group4Promises: Promise<ReportSection>[] = [
     callGemini<ReportSection>(
       buildWeaknessAnalysisPrompt(
@@ -358,25 +318,6 @@ export const orchestrate = async (
       return r;
     }),
     callGemini<ReportSection>(
-      buildAdmissionPredictionPrompt(
-        {
-          competencyExtraction: compExtrText,
-          academicAnalysis: acadAnalText,
-          studentTypeClassification: stuTypeText,
-          universityCandidates: "[]",
-          studentProfile: texts.studentProfileText,
-          competencyEvaluationResult: compEvalText,
-          subjectAnalysisResult: subjAnalysisText,
-          academicAnalysisResult: acadSectionText,
-          attendanceAnalysisResult: attendSectionText,
-        },
-        plan
-      )
-    ).then((r) => {
-      reportProgress("Phase 3 Group 4", "admissionPrediction");
-      return r;
-    }),
-    callGemini<ReportSection>(
       buildTopicRecommendationPrompt(
         {
           subjectAnalysisResult: subjAnalysisText,
@@ -389,21 +330,40 @@ export const orchestrate = async (
       reportProgress("Phase 3 Group 4", "topicRecommendation");
       return r;
     }),
+    callGemini<ReportSection>(
+      buildInterviewPrepPrompt(
+        {
+          subjectAnalysisResult: subjAnalysisText,
+          studentProfile: texts.studentProfileText,
+          academicData: texts.rawAcademicDataText,
+        },
+        plan
+      )
+    ).then((r) => {
+      reportProgress("Phase 3 Group 4", "interviewPrep");
+      return r;
+    }),
   ];
 
   if (isStandardPlus) {
     group4Promises.push(
       callGemini<ReportSection>(
-        buildInterviewPrepPrompt(
+        buildAdmissionPredictionPrompt(
           {
-            subjectAnalysisResult: subjAnalysisText,
+            competencyExtraction: compExtrText,
+            academicAnalysis: acadAnalText,
+            studentTypeClassification: stuTypeText,
+            universityCandidates: texts.universityCandidatesText,
             studentProfile: texts.studentProfileText,
-            academicData: texts.rawAcademicDataText,
+            competencyEvaluationResult: "null",
+            subjectAnalysisResult: subjAnalysisText,
+            academicAnalysisResult: acadSectionText,
+            attendanceAnalysisResult: attendSectionText,
           },
           plan
         )
       ).then((r) => {
-        reportProgress("Phase 3 Group 4", "interviewPrep");
+        reportProgress("Phase 3 Group 4", "admissionPrediction");
         return r;
       })
     );
@@ -442,9 +402,9 @@ export const orchestrate = async (
         buildAdmissionStrategyPrompt(
           {
             academicAnalysis: acadSectionText,
-            competencyEvaluation: compEvalText,
+            competencyEvaluation: "null",
             admissionPredictionResult: admPredText,
-            universityCandidates: "[]",
+            universityCandidates: texts.universityCandidatesText,
             recommendedCourseMatch: texts.recommendedCourseMatchText,
             studentProfile: texts.studentProfileText,
           },
@@ -500,37 +460,21 @@ export const orchestrate = async (
   const group5Results = await Promise.all(group5Promises);
   sections.push(...group5Results);
 
-  // --- Group 6: bookRecommendation (Standard+), majorExploration (Standard+) -- independent ---
-  if (isStandardPlus) {
-    const group6Results = await Promise.all([
-      callGemini<ReportSection>(
-        buildBookRecommendationPrompt(
-          {
-            competencyExtraction: compExtrText,
-            subjectAnalysisResult: subjAnalysisText,
-            studentProfile: texts.studentProfileText,
-          },
-          plan
-        )
-      ).then((r) => {
-        reportProgress("Phase 3 Group 6", "bookRecommendation");
-        return r;
-      }),
-      callGemini<ReportSection>(
-        buildMajorExplorationPrompt(
-          {
-            competencyExtraction: compExtrText,
-            academicAnalysis: acadAnalText,
-            studentProfile: texts.studentProfileText,
-          },
-          plan
-        )
-      ).then((r) => {
-        reportProgress("Phase 3 Group 6", "majorExploration");
-        return r;
-      }),
-    ]);
-    sections.push(...group6Results);
+  // --- Group 6: majorExploration (Premium 전용) ---
+  // bookRecommendation은 전 플랜에서 제거됨
+  if (plan === "premium") {
+    const majorExploration = await callGemini<ReportSection>(
+      buildMajorExplorationPrompt(
+        {
+          competencyExtraction: compExtrText,
+          academicAnalysis: acadAnalText,
+          studentProfile: texts.studentProfileText,
+        },
+        plan
+      )
+    );
+    reportProgress("Phase 3 Group 6", "majorExploration");
+    sections.push(majorExploration);
   }
 
   // Sort sections according to plan order
@@ -548,26 +492,27 @@ const computeTotalSteps = (plan: ReportPlan, isGrade1Only: boolean): number => {
   // Phase 2: 3 calls
   let steps = 3;
 
-  // Group 1: 3
-  steps += 3;
+  // Group 1: 2 (studentProfile, competencyScore)
+  steps += 2;
 
-  // Group 2: 5
-  steps += 5;
-
-  // Group 3: 1 (subjectAnalysis) + standard: 2 (behavior, overall)
-  steps += 1;
-  if (plan !== "lite") steps += 2;
-
-  // Group 4: 3 (weakness, prediction, topic) + standard: 1 (interview)
+  // Group 2: 3 (academic, attendance, activity) + Standard+: 1 (courseAlignment)
   steps += 3;
   if (plan !== "lite") steps += 1;
 
-  // Group 5: 1 (strategy/direction) + standard: 2 (story, roadmap)
+  // Group 3: 1 (subjectAnalysis) + Standard+: 1 (behaviorAnalysis)
+  steps += 1;
+  if (plan !== "lite") steps += 1;
+
+  // Group 4: 3 (weakness, topic, interview) + Standard+: 1 (admissionPrediction)
+  steps += 3;
+  if (plan !== "lite") steps += 1;
+
+  // Group 5: 1 (strategy/direction) + Standard+: 2 (story, roadmap)
   steps += 1;
   if (plan !== "lite") steps += 2;
 
-  // Group 6: standard: 2 (book, major)
-  if (plan !== "lite") steps += 2;
+  // Group 6: Premium: 1 (majorExploration)
+  if (plan === "premium") steps += 1;
 
   return steps;
 };

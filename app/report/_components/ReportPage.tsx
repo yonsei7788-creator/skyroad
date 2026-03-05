@@ -22,7 +22,7 @@ export const ReportPage = ({
   showWatermark = true,
 }: ReportPageProps) => {
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-page>
       {showWatermark && <div className={styles.watermark}>SKYLOAD</div>}
 
       {showHeader && (
@@ -41,9 +41,7 @@ export const ReportPage = ({
           <span className={styles.pageFooterText}>
             &copy; 2026 SKYLOAD{studentName ? ` | ${studentName}` : ""}
           </span>
-          {pageNumber !== undefined && (
-            <span className={styles.pageNumber}>{pageNumber}</span>
-          )}
+          <span className={styles.pageNumber} />
         </div>
       )}
     </div>

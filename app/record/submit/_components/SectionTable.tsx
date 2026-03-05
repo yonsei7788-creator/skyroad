@@ -4,6 +4,7 @@ import { Fragment, useState, type ComponentType } from "react";
 import { ChevronDown, Plus, X } from "lucide-react";
 
 import type { SchoolRecord } from "./types";
+import { REQUIRED_SECTION_KEYS } from "./types";
 import { TableSelect } from "./TableSelect";
 
 import styles from "../page.module.css";
@@ -43,7 +44,7 @@ export interface SectionDef {
   title: string;
   addLabel: string;
   columns?: ColumnDef<Record<string, unknown>>[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   createEmpty?: () => any;
   customRender?: ComponentType<CustomSectionProps>;
 }
@@ -253,6 +254,7 @@ interface SectionTableProps {
   onAdd: () => void;
   onChange: (id: string, field: string, value: unknown) => void;
   onRemove: (id: string) => void;
+  isRequired?: boolean;
 }
 
 export const SectionTable = ({
@@ -263,6 +265,7 @@ export const SectionTable = ({
   onAdd,
   onChange,
   onRemove,
+  isRequired,
 }: SectionTableProps) => {
   const inlineColumns = columns.filter((c) => c.type !== "textarea");
   const textareaColumns = columns.filter((c) => c.type === "textarea");
@@ -270,7 +273,10 @@ export const SectionTable = ({
   return (
     <div className={styles.sectionTableWrap}>
       <div className={styles.sectionTableHeader}>
-        <h4 className={styles.sectionTableTitle}>{title}</h4>
+        <h4 className={styles.sectionTableTitle}>
+          {isRequired && <span className={styles.requiredDot} />}
+          {title}
+        </h4>
         <span className={styles.sectionTableCount}>{rows.length}건</span>
       </div>
 
@@ -353,6 +359,7 @@ interface AccordionStepProps {
   record: SchoolRecord;
   onRecordChange: (record: SchoolRecord) => void;
   defaultOpen?: boolean;
+  errorKeys?: Set<keyof SchoolRecord>;
 }
 
 export const AccordionStep = ({
@@ -360,6 +367,7 @@ export const AccordionStep = ({
   record,
   onRecordChange,
   defaultOpen = false,
+  errorKeys,
 }: AccordionStepProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
@@ -391,7 +399,7 @@ export const AccordionStep = ({
 
   const handleAdd = (
     sectionKey: keyof SchoolRecord,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     createEmpty: () => any
   ) => {
     const current = record[sectionKey] as unknown as Record<string, unknown>[];
@@ -401,9 +409,14 @@ export const AccordionStep = ({
     });
   };
 
+  const hasRequired = step.sections.some((s) =>
+    REQUIRED_SECTION_KEYS.has(s.key)
+  );
+  const hasError = errorKeys && step.sections.some((s) => errorKeys.has(s.key));
+
   return (
     <div
-      className={`${styles.accordion} ${isOpen ? styles.accordionOpen : ""}`}
+      className={`${styles.accordion} ${isOpen ? styles.accordionOpen : ""} ${hasError ? styles.accordionError : ""}`}
     >
       <button
         type="button"
@@ -414,6 +427,7 @@ export const AccordionStep = ({
           STEP {String(step.stepNumber).padStart(2, "0")}
         </span>
         <span className={styles.accordionTitle}>{step.title}</span>
+        {hasRequired && <span className={styles.requiredBadge}>필수</span>}
         {totalRows > 0 && (
           <span className={styles.accordionCount}>{totalRows}</span>
         )}
@@ -426,35 +440,51 @@ export const AccordionStep = ({
       {isOpen && (
         <div className={styles.accordionContent}>
           {step.sections.map((section) => {
+            const isRequired = REQUIRED_SECTION_KEYS.has(section.key);
+            const isSectionError = errorKeys?.has(section.key);
             const Custom = section.customRender;
             if (Custom) {
               return (
-                <Custom
+                <div
                   key={section.key}
-                  title={section.title}
-                  addLabel={section.addLabel}
-                  record={record}
-                  onRecordChange={onRecordChange}
-                />
+                  className={
+                    isSectionError ? styles.sectionErrorHighlight : undefined
+                  }
+                >
+                  <Custom
+                    title={section.title}
+                    addLabel={section.addLabel}
+                    record={record}
+                    onRecordChange={onRecordChange}
+                  />
+                  {isRequired && <span className={styles.sectionRequiredDot} />}
+                </div>
               );
             }
             return (
-              <SectionTable
+              <div
                 key={section.key}
-                title={section.title}
-                columns={section.columns ?? []}
-                rows={
-                  record[section.key] as unknown as Record<string, unknown>[]
+                className={
+                  isSectionError ? styles.sectionErrorHighlight : undefined
                 }
-                addLabel={section.addLabel}
-                onAdd={() =>
-                  handleAdd(section.key, section.createEmpty ?? (() => ({})))
-                }
-                onChange={(id, field, value) =>
-                  handleChange(section.key, id, field, value)
-                }
-                onRemove={(id) => handleRemove(section.key, id)}
-              />
+              >
+                <SectionTable
+                  title={section.title}
+                  columns={section.columns ?? []}
+                  rows={
+                    record[section.key] as unknown as Record<string, unknown>[]
+                  }
+                  addLabel={section.addLabel}
+                  onAdd={() =>
+                    handleAdd(section.key, section.createEmpty ?? (() => ({})))
+                  }
+                  onChange={(id, field, value) =>
+                    handleChange(section.key, id, field, value)
+                  }
+                  onRemove={(id) => handleRemove(section.key, id)}
+                  isRequired={isRequired}
+                />
+              </div>
             );
           })}
         </div>

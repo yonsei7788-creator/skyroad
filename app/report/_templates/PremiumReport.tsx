@@ -1,10 +1,14 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+
 import { SECTION_ORDER } from "@/libs/report/types";
 import type { ReportContent, ReportSection } from "@/libs/report/types";
 
 import {
+  AutoPaginatedSection,
   PartPage,
   ReportCover,
-  ReportPage,
   ReportTableOfContents,
 } from "../_components";
 import styles from "../_components/report.module.css";
@@ -19,28 +23,21 @@ const PART_CONFIG = [
     partNumber: "PART 1",
     title: "진단",
     description:
-      "생기부 전체를 기반으로 한 학생 유형 분류, 역량 정밀 스코어, 합격 예측, 종합 진단",
-    sectionIds: [
-      "studentProfile",
-      "competencyScore",
-      "admissionPrediction",
-      "diagnostic",
-    ],
+      "생기부 전체를 기반으로 한 학생 유형 분류, 역량 정밀 스코어, 합격 예측",
+    sectionIds: ["studentProfile", "competencyScore", "admissionPrediction"],
   },
   {
     partNumber: "PART 2",
     title: "정밀 분석",
     description:
-      "역량별 종합 평가, 성적 분석, 권장과목 이수, 출결, 창체 활동, 문장 단위 세특 분석, 행동특성, 기록 충실도",
+      "성적 분석, 권장과목 이수, 출결, 창체 활동, 문장 단위 세특 분석, 행동특성",
     sectionIds: [
-      "competencyEvaluation",
       "academicAnalysis",
       "courseAlignment",
       "attendanceAnalysis",
       "activityAnalysis",
       "subjectAnalysis",
       "behaviorAnalysis",
-      "overallAssessment",
     ],
   },
   {
@@ -53,7 +50,6 @@ const PART_CONFIG = [
       "topicRecommendation",
       "interviewPrep",
       "admissionStrategy",
-      "directionGuide",
       "storyAnalysis",
       "actionRoadmap",
     ],
@@ -61,25 +57,37 @@ const PART_CONFIG = [
   {
     partNumber: "부록",
     title: "부록",
-    description: "추천 도서, AI 전공 추천, 워드 클라우드",
-    sectionIds: ["bookRecommendation", "majorExploration", "wordCloud"],
+    description: "AI 전공 추천",
+    sectionIds: ["majorExploration"],
   },
 ];
 
 export const PremiumReport = ({ data }: PremiumReportProps) => {
   const { meta, sections } = data;
   const order = SECTION_ORDER.premium;
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   const sectionMap = new Map<string, ReportSection>(
     sections.map((s) => [s.sectionId, s])
   );
 
   let globalSectionNum = 0;
-  let pageNum = 3;
+
+  // Dynamic page numbering after all pages are rendered
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    const pages = wrapper.querySelectorAll("[data-page]");
+    pages.forEach((el, i) => {
+      const numEl = el.querySelector("[data-page-number]");
+      if (numEl) numEl.textContent = String(i + 1);
+    });
+  });
 
   return (
     <div className={`${styles.report} ${styles.planPremium}`}>
-      <div className={styles.reportWrapper}>
+      <div className={styles.reportWrapper} ref={wrapperRef}>
         <ReportCover meta={meta} />
         <ReportTableOfContents
           sections={order
@@ -117,9 +125,8 @@ export const PremiumReport = ({ data }: PremiumReportProps) => {
               />
 
               {partSectionList.map((item) => (
-                <ReportPage
+                <AutoPaginatedSection
                   key={item.section.sectionId}
-                  pageNumber={++pageNum}
                   sectionTitle={item.section.title}
                   studentName={meta.studentInfo.name}
                 >
@@ -128,7 +135,7 @@ export const PremiumReport = ({ data }: PremiumReportProps) => {
                     plan="premium"
                     sectionNumber={item.num}
                   />
-                </ReportPage>
+                </AutoPaginatedSection>
               ))}
             </div>
           );

@@ -13,131 +13,188 @@ export const ActionRoadmapRenderer = ({
   sectionNumber,
 }: ActionRoadmapRendererProps) => {
   return (
-    <div className={styles.section}>
-      <SectionHeader
-        number={sectionNumber}
-        title={data.title}
-        subtitle="구체적인 실행 계획을 제시합니다"
-      />
+    <>
+      {/* Block 1: Header + completion strategy + phases table */}
+      <div>
+        <SectionHeader number={sectionNumber} title={data.title} />
 
-      {/* Completion strategy */}
-      <div className={styles.cardHighlight}>
-        <div className={styles.cardTitle}>생기부 마무리 전략</div>
-        <p className={`${styles.body} ${styles.mt8}`}>
-          {data.completionStrategy}
-        </p>
+        <div className={styles.cardAccent}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardTitle}>생기부 마무리 전략</div>
+          </div>
+          <p className={`${styles.small} ${styles.mt6}`}>
+            {data.completionStrategy}
+          </p>
+        </div>
+
+        <div className={`${styles.h3} ${styles.mt24} ${styles.mb12}`}>
+          학기별 실행 계획
+        </div>
+        <table className={styles.compactTable}>
+          <thead>
+            <tr>
+              <th>단계</th>
+              <th>기간</th>
+              <th>핵심 목표</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.phases.map((phase, idx) => (
+              <tr key={idx}>
+                <td className={styles.tableCellBold}>{phase.phase}</td>
+                <td className={styles.caption}>{phase.period}</td>
+                <td className={styles.small}>{phase.goals.join(", ")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {/* Phases as timeline */}
-      <div className={`${styles.h3} ${styles.mt24} ${styles.mb12}`}>
-        학기별 실행 계획
-      </div>
-      <div className={styles.timeline}>
-        {data.phases.map((phase, idx) => (
-          <div key={idx} className={styles.timelineItem}>
-            <div className={styles.timelineDot}>{idx + 1}</div>
-            <div className={styles.timelineContent}>
-              <div className={styles.timelinePeriod}>{phase.period}</div>
-              <div className={styles.cardTitle}>{phase.phase}</div>
+      {/* Block 2: Milestones (v4) + Prewrite proposals */}
+      {(data.milestones?.length || data.prewriteProposals?.length) && (
+        <div>
+          {data.milestones && data.milestones.length > 0 && (
+            <>
+              <div className={`${styles.h3} ${styles.mb12}`}>핵심 마일스톤</div>
+              <table className={styles.compactTable}>
+                <thead>
+                  <tr>
+                    <th>마일스톤</th>
+                    <th className={styles.tableAlignCenter}>마감</th>
+                    <th className={styles.tableAlignCenter}>우선순위</th>
+                    <th>예상 효과</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.milestones.map((ms) => (
+                    <tr key={ms.id}>
+                      <td>
+                        <span className={styles.tableCellBold}>{ms.title}</span>
+                        <span className={`${styles.caption} ${styles.ml8}`}>
+                          {ms.category}
+                        </span>
+                      </td>
+                      <td
+                        className={`${styles.tableAlignCenter} ${styles.caption}`}
+                      >
+                        {ms.deadline}
+                      </td>
+                      <td className={styles.tableAlignCenter}>
+                        <span className={styles.tag}>{ms.priority}</span>
+                      </td>
+                      <td className={styles.small}>{ms.estimatedImpact}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
 
+          {data.prewriteProposals && data.prewriteProposals.length > 0 && (
+            <>
               <div
-                className={`${styles.overline} ${styles.mt12} ${styles.mb6}`}
+                className={`${styles.h3} ${data.milestones?.length ? styles.mt24 : ""} ${styles.mb8}`}
               >
-                목표
+                사전 준비 활동 제안
               </div>
-              <ul className={`${styles.list} ${styles.mb16}`}>
-                {phase.goals.map((goal, gIdx) => (
-                  <li key={gIdx} className={styles.listItem}>
-                    {goal}
-                  </li>
+              <div className={styles.caption}>
+                {data.prewriteProposals.map((proposal, idx) => (
+                  <p key={idx} className={idx > 0 ? styles.mt4 : undefined}>
+                    {idx + 1}. {proposal}
+                  </p>
                 ))}
-              </ul>
-
-              <div className={`${styles.overline} ${styles.mb6}`}>
-                실행 과제
               </div>
-              <ol className={styles.numberedList}>
-                {phase.tasks.map((task, tIdx) => (
-                  <li key={tIdx} className={styles.numberedListItem}>
-                    <span className={styles.numberedListNumber}>
-                      {tIdx + 1}
-                    </span>
-                    {task}
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Prewrite proposals (Premium) */}
-      {data.prewriteProposals && data.prewriteProposals.length > 0 && (
-        <>
-          <hr className={styles.divider} />
-          <div className={`${styles.h3} ${styles.mb12}`}>
-            사전 준비 활동 제안
-          </div>
-          {data.prewriteProposals.map((proposal, idx) => (
-            <div key={idx} className={`${styles.card} ${styles.mt8}`}>
-              <div className={`${styles.flexRowStart} ${styles.gap10}`}>
-                <span
-                  className={`${styles.sectionNumber} ${styles.sizeCircleSm}`}
-                >
-                  {String(idx + 1).padStart(2, "0")}
-                </span>
-                <p className={styles.body}>{proposal}</p>
-              </div>
-            </div>
-          ))}
-        </>
+            </>
+          )}
+        </div>
       )}
 
-      {/* Evaluation writing guide (Premium) */}
+      {/* Block 3: Evaluation writing guide */}
       {data.evaluationWritingGuide && (
-        <>
-          <hr className={styles.divider} />
-          <div className={`${styles.h3} ${styles.mb12}`}>
+        <div>
+          <div className={`${styles.h3} ${styles.mb8}`}>
             세특 서술 전략 가이드
           </div>
 
-          <div className={`${styles.overline} ${styles.mb8}`}>서술 구조</div>
-          <ol className={styles.numberedList}>
+          <div className={`${styles.overline} ${styles.mb6}`}>서술 구조</div>
+          <div className={styles.caption}>
             {data.evaluationWritingGuide.structure.map((item, idx) => (
-              <li key={idx} className={styles.numberedListItem}>
-                <span className={styles.numberedListNumber}>{idx + 1}</span>
-                {item}
-              </li>
+              <p key={idx} className={idx > 0 ? styles.mt4 : undefined}>
+                {idx + 1}. {item}
+              </p>
             ))}
-          </ol>
+          </div>
 
-          <div className={`${styles.quoteBoxHighlight} ${styles.mt16}`}>
-            <div className={`${styles.overline} ${styles.mb6}`}>좋은 예시</div>
-            <div className={styles.quoteText}>
+          <div className={`${styles.callout} ${styles.mt16}`}>
+            <div className={styles.calloutContent}>
+              <span className={styles.emphasis}>좋은 예시:</span>{" "}
               {data.evaluationWritingGuide.goodExample}
             </div>
           </div>
 
-          <div className={`${styles.quoteBox} ${styles.mt12}`}>
-            <div className={`${styles.overline} ${styles.mb6}`}>
-              개선이 필요한 예시
-            </div>
-            <div className={styles.quoteText}>
-              {data.evaluationWritingGuide.badExample}
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Interview timeline (Premium) */}
-      {data.interviewTimeline && (
-        <div className={`${styles.card} ${styles.mt20}`}>
-          <div className={styles.cardTitle}>면접 대비 타임라인</div>
-          <p className={`${styles.body} ${styles.mt8}`}>
-            {data.interviewTimeline}
+          <p className={`${styles.small} ${styles.mt12}`}>
+            <span className={styles.emphasis}>개선 필요 예시:</span>{" "}
+            {data.evaluationWritingGuide.badExample}
           </p>
         </div>
       )}
-    </div>
+
+      {/* Block 4: Projected outcome (v4) + interview timeline */}
+      {(data.projectedOutcome?.length || data.interviewTimeline) && (
+        <div>
+          {data.projectedOutcome && data.projectedOutcome.length > 0 && (
+            <>
+              <div className={`${styles.h3} ${styles.mb12}`}>
+                예상 성과 전망
+              </div>
+              <table className={styles.compactTable}>
+                <thead>
+                  <tr>
+                    <th>영역</th>
+                    <th className={styles.tableAlignCenter}>현재</th>
+                    <th className={styles.tableAlignCenter}>예상</th>
+                    <th className={styles.tableAlignCenter}>변화</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.projectedOutcome.map((po) => (
+                    <tr key={po.category}>
+                      <td className={styles.tableCellBold}>{po.category}</td>
+                      <td className={styles.tableAlignCenter}>
+                        {po.currentScore}
+                      </td>
+                      <td
+                        className={`${styles.tableAlignCenter} ${styles.tableCellBold}`}
+                      >
+                        {po.projectedScore}
+                      </td>
+                      <td className={styles.tableAlignCenter}>
+                        +{po.projectedScore - po.currentScore}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+
+          {data.interviewTimeline && (
+            <div
+              className={`${styles.aiCommentary} ${data.projectedOutcome?.length ? styles.mt20 : ""}`}
+            >
+              <div className={styles.aiCommentaryIcon}>AI</div>
+              <div className={styles.aiCommentaryContent}>
+                <div className={styles.aiCommentaryLabel}>
+                  면접 대비 타임라인
+                </div>
+                <div className={styles.aiCommentaryText}>
+                  {data.interviewTimeline}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </>
   );
 };

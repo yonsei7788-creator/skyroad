@@ -55,7 +55,7 @@ export const ReportComparisonBar = ({
   const toPct = (v: number) => Math.min(100, Math.max(0, (v / max) * 100));
 
   return (
-    <div style={{ paddingBottom: 28 }}>
+    <div style={{ paddingTop: 22, paddingBottom: 22 }}>
       <div className={styles.comparisonBar}>
         <div
           className={styles.comparisonRange}
@@ -68,17 +68,19 @@ export const ReportComparisonBar = ({
           className={styles.comparisonMarker}
           style={{ left: `${toPct(myValue)}%` }}
         />
+        {/* 범위 라벨: 바 위 */}
+        <div
+          className={styles.comparisonLabelTop}
+          style={{ left: `${toPct((rangeStart + rangeEnd) / 2)}%` }}
+        >
+          {rangeLabel}
+        </div>
+        {/* 값 라벨: 바 아래 */}
         <div
           className={styles.comparisonLabel}
           style={{ left: `${toPct(myValue)}%` }}
         >
           {myLabel}
-        </div>
-        <div
-          className={`${styles.comparisonLabel} ${styles.colorAccent}`}
-          style={{ left: `${toPct((rangeStart + rangeEnd) / 2)}%` }}
-        >
-          {rangeLabel}
         </div>
       </div>
     </div>

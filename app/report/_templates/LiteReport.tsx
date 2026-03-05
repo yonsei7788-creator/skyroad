@@ -1,10 +1,14 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+
 import { SECTION_ORDER } from "@/libs/report/types";
 import type { ReportContent, ReportSection } from "@/libs/report/types";
 
 import {
+  AutoPaginatedSection,
   PartPage,
   ReportCover,
-  ReportPage,
   ReportTableOfContents,
 } from "../_components";
 import styles from "../_components/report.module.css";
@@ -18,24 +22,15 @@ const PART_CONFIG = [
   {
     partNumber: "PART 1",
     title: "진단",
-    description:
-      "생기부 전체를 기반으로 한 학생 유형 분류, 역량 점수, 합격 예측",
-    sectionIds: [
-      "studentProfile",
-      "competencyScore",
-      "admissionPrediction",
-      "diagnostic",
-    ],
+    description: "생기부 전체를 기반으로 한 학생 유형 분류 및 역량 점수",
+    sectionIds: ["studentProfile", "competencyScore"],
   },
   {
     partNumber: "PART 2",
     title: "분석",
-    description:
-      "역량별 평가, 성적 분석, 권장과목 이수, 출결, 창체 활동, 세특 분석",
+    description: "성적 분석, 출결, 창체 활동, 세특 분석",
     sectionIds: [
-      "competencyEvaluation",
       "academicAnalysis",
-      "courseAlignment",
       "attendanceAnalysis",
       "activityAnalysis",
       "subjectAnalysis",
@@ -44,36 +39,41 @@ const PART_CONFIG = [
   {
     partNumber: "PART 3",
     title: "전략",
-    description: "부족한 부분 보완 전략, 세특 주제 추천, 입시 전략",
+    description: "부족한 부분 보완 전략, 세특 주제 추천, 면접 대비, 입시 전략",
     sectionIds: [
       "weaknessAnalysis",
       "topicRecommendation",
+      "interviewPrep",
       "admissionStrategy",
-      "directionGuide",
     ],
-  },
-  {
-    partNumber: "부록",
-    title: "부록",
-    description: "워드 클라우드",
-    sectionIds: ["wordCloud"],
   },
 ];
 
 export const LiteReport = ({ data }: LiteReportProps) => {
   const { meta, sections } = data;
   const order = SECTION_ORDER.lite;
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   const sectionMap = new Map<string, ReportSection>(
     sections.map((s) => [s.sectionId, s])
   );
 
   let globalSectionNum = 0;
-  let pageNum = 3;
+
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    const pages = wrapper.querySelectorAll("[data-page]");
+    pages.forEach((el, i) => {
+      const numEl = el.querySelector("[data-page-number]");
+      if (numEl) numEl.textContent = String(i + 1);
+    });
+  });
 
   return (
     <div className={styles.report}>
-      <div className={styles.reportWrapper}>
+      <div className={styles.reportWrapper} ref={wrapperRef}>
         <ReportCover meta={meta} />
         <ReportTableOfContents
           sections={order
@@ -111,9 +111,8 @@ export const LiteReport = ({ data }: LiteReportProps) => {
               />
 
               {partSectionList.map((item) => (
-                <ReportPage
+                <AutoPaginatedSection
                   key={item.section.sectionId}
-                  pageNumber={++pageNum}
                   sectionTitle={item.section.title}
                   studentName={meta.studentInfo.name}
                 >
@@ -122,7 +121,7 @@ export const LiteReport = ({ data }: LiteReportProps) => {
                     plan="lite"
                     sectionNumber={item.num}
                   />
-                </ReportPage>
+                </AutoPaginatedSection>
               ))}
             </div>
           );

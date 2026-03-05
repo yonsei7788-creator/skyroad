@@ -37,7 +37,7 @@ export const GET = async (request: NextRequest) => {
   url.searchParams.set("svcType", "api");
   url.searchParams.set("svcCode", "SCHOOL");
   url.searchParams.set("contentType", "json");
-  url.searchParams.set("gubun", "대학교");
+  url.searchParams.set("gubun", "univ_list");
   url.searchParams.set("searchSchulNm", q);
 
   try {

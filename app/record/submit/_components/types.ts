@@ -384,3 +384,82 @@ export const createEmptyBehavioralAssessmentRow =
     year: 1,
     assessment: "",
   });
+
+// ============================================
+// 필수 입력 검증 (AI 파이프라인 필수 데이터)
+// ============================================
+
+export interface RequiredFieldRule {
+  key: keyof SchoolRecord;
+  label: string;
+  minCount: number;
+  message: string;
+}
+
+/**
+ * AI 리포트 생성에 필수적인 섹션과 최소 입력 기준.
+ * - generalSubjects: 성적 분석의 핵심 (최소 3과목 = 1학기분)
+ * - subjectEvaluations: 세특 분석의 핵심 (최소 1과목)
+ * - creativeActivities: 창체 분석의 핵심 (최소 1개 학년)
+ * - behavioralAssessments: 행특 분석의 핵심 (최소 1개 학년)
+ * - attendance: 출결 분석의 핵심 (최소 1개 학년)
+ */
+export const REQUIRED_FIELD_RULES: RequiredFieldRule[] = [
+  {
+    key: "generalSubjects",
+    label: "일반교과 성적",
+    minCount: 3,
+    message: "일반교과 성적을 최소 3과목 이상 입력해주세요",
+  },
+  {
+    key: "subjectEvaluations",
+    label: "세부능력 및 특기사항",
+    minCount: 1,
+    message: "세부능력 및 특기사항을 최소 1과목 이상 입력해주세요",
+  },
+  {
+    key: "creativeActivities",
+    label: "창의적 체험활동",
+    minCount: 1,
+    message: "창의적 체험활동을 최소 1개 학년 이상 입력해주세요",
+  },
+  {
+    key: "behavioralAssessments",
+    label: "행동특성 및 종합의견",
+    minCount: 1,
+    message: "행동특성 및 종합의견을 최소 1개 학년 이상 입력해주세요",
+  },
+  {
+    key: "attendance",
+    label: "출결상황",
+    minCount: 1,
+    message: "출결상황을 최소 1개 학년 이상 입력해주세요",
+  },
+];
+
+/** 필수 섹션 키 Set (빠른 조회용) */
+export const REQUIRED_SECTION_KEYS = new Set<keyof SchoolRecord>(
+  REQUIRED_FIELD_RULES.map((r) => r.key)
+);
+
+export interface ValidationError {
+  key: keyof SchoolRecord;
+  label: string;
+  message: string;
+  current: number;
+  required: number;
+}
+
+/** 필수 필드 검증. 미충족 항목만 반환. */
+export const validateRequiredFields = (
+  record: SchoolRecord
+): ValidationError[] =>
+  REQUIRED_FIELD_RULES.filter(
+    (rule) => record[rule.key].length < rule.minCount
+  ).map((rule) => ({
+    key: rule.key,
+    label: rule.label,
+    message: rule.message,
+    current: record[rule.key].length,
+    required: rule.minCount,
+  }));

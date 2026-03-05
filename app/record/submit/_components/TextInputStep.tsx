@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { Plus, X } from "lucide-react";
+import { AlertCircle, Check, Plus, X } from "lucide-react";
 
 import { AccordionStep } from "./SectionTable";
 import type {
@@ -12,7 +12,9 @@ import type {
   SchoolRecord,
   CreativeActivityRow,
   CreativeActivityArea,
+  ValidationError,
 } from "./types";
+import { REQUIRED_FIELD_RULES, REQUIRED_SECTION_KEYS } from "./types";
 import {
   createEmptyAttendanceRow,
   createEmptyAwardRow,
@@ -930,28 +932,74 @@ const ACCORDION_STEPS: AccordionStepDef[] = [
 interface TextInputStepProps {
   record: SchoolRecord;
   onRecordChange: (record: SchoolRecord) => void;
+  requiredFieldErrors?: ValidationError[];
 }
 
 export const TextInputStep = ({
   record,
   onRecordChange,
-}: TextInputStepProps) => (
-  <div className={styles.textInputStep}>
-    <div className={styles.textInputHeader}>
-      <h3 className={styles.stepSectionTitle}>생활기록부 직접 입력</h3>
-      <p className={styles.stepSectionDesc}>
-        각 STEP을 열어 생기부 데이터를 입력해주세요
-      </p>
-    </div>
+  requiredFieldErrors = [],
+}: TextInputStepProps) => {
+  const errorKeys = new Set(requiredFieldErrors.map((e) => e.key));
+  const allMet = requiredFieldErrors.length === 0;
 
-    {ACCORDION_STEPS.map((step) => (
-      <AccordionStep
-        key={step.stepNumber}
-        step={step}
-        record={record}
-        onRecordChange={onRecordChange}
-        defaultOpen={step.stepNumber === 1}
-      />
-    ))}
-  </div>
-);
+  return (
+    <div className={styles.textInputStep}>
+      <div className={styles.textInputHeader}>
+        <h3 className={styles.stepSectionTitle}>생활기록부 직접 입력</h3>
+        <p className={styles.stepSectionDesc}>
+          각 STEP을 열어 생기부 데이터를 입력해주세요.{" "}
+          <span className={styles.requiredHint}>
+            <span className={styles.requiredDot} />
+            필수 항목
+          </span>
+        </p>
+      </div>
+
+      {ACCORDION_STEPS.map((step) => (
+        <AccordionStep
+          key={step.stepNumber}
+          step={step}
+          record={record}
+          onRecordChange={onRecordChange}
+          defaultOpen={step.stepNumber === 1}
+          errorKeys={errorKeys}
+        />
+      ))}
+
+      {/* 필수 항목 체크리스트 */}
+      <div className={styles.requiredChecklist}>
+        <p className={styles.requiredChecklistTitle}>
+          {allMet
+            ? "모든 필수 항목이 입력되었습니다"
+            : "아래 필수 항목을 모두 입력해야 다음 단계로 진행할 수 있습니다"}
+        </p>
+        <ul className={styles.requiredChecklistItems}>
+          {REQUIRED_FIELD_RULES.map((rule) => {
+            const count = record[rule.key].length;
+            const met = count >= rule.minCount;
+            return (
+              <li
+                key={rule.key}
+                className={
+                  met
+                    ? styles.requiredChecklistItemMet
+                    : styles.requiredChecklistItemUnmet
+                }
+              >
+                {met ? <Check size={14} /> : <AlertCircle size={14} />}
+                <span>
+                  {rule.label}
+                  <span className={styles.requiredChecklistCount}>
+                    {count}/{rule.minCount}
+                    {rule.minCount > 1 ? "건" : "개 학년"}
+                  </span>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+};

@@ -8,124 +8,159 @@ interface WeaknessAnalysisRendererProps {
   sectionNumber: number;
 }
 
-const PRIORITY_CLASS: Record<Priority, string> = {
-  high: styles.tagWeakness,
-  medium: styles.tagAccent,
-  low: styles.tag,
-};
-
 const PRIORITY_LABEL: Record<Priority, string> = {
   high: "높음",
   medium: "보통",
   low: "낮음",
 };
 
+/** 영역 2개씩 묶어서 한 블록으로 */
+const chunkAreas = <T,>(arr: T[], size: number): T[][] => {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+};
+
 export const WeaknessAnalysisRenderer = ({
   data,
   sectionNumber,
 }: WeaknessAnalysisRendererProps) => {
+  const areaChunks = chunkAreas(data.areas, 2);
+
   return (
-    <div className={styles.section}>
-      <SectionHeader
-        number={sectionNumber}
-        title={data.title}
-        subtitle="보완이 필요한 영역과 구체적 활동을 제안합니다"
-      />
+    <>
+      {/* Block 1: Header + summary table */}
+      <div>
+        <SectionHeader number={sectionNumber} title={data.title} />
 
-      {data.areas.map((area, idx) => (
-        <div key={idx} className={styles.cardWeakness}>
-          {/* Header with area name and priority */}
-          <div className={styles.cardHeader}>
-            <div className={`${styles.flexRow} ${styles.gap10}`}>
-              <span className={`${styles.overline} ${styles.colorWeakness}`}>
-                {String(idx + 1).padStart(2, "0")}
-              </span>
-              <div className={styles.cardTitle}>{area.area}</div>
-            </div>
-            {area.priority && (
-              <span className={PRIORITY_CLASS[area.priority]}>
-                우선순위: {PRIORITY_LABEL[area.priority]}
-              </span>
-            )}
-          </div>
-
-          {/* Description */}
-          <p className={styles.body}>{area.description}</p>
-
-          {/* Evidence (Standard+) */}
-          {area.evidence && (
-            <div className={`${styles.callout} ${styles.mt12}`}>
-              <div className={styles.calloutContent}>
-                <span className={styles.emphasis}>근거:</span> {area.evidence}
-              </div>
-            </div>
-          )}
-
-          {/* Competency tag (Standard+) */}
-          {area.competencyTag && (
-            <div className={`${styles.tagGroup} ${styles.mt8}`}>
-              <span className={styles.tag}>
-                {area.competencyTag.subcategory}
-                {area.competencyTag.assessment &&
-                  ` (${area.competencyTag.assessment})`}
-              </span>
-            </div>
-          )}
-
-          {/* Urgency & Effectiveness (Premium) */}
-          {(area.urgency || area.effectiveness) && (
-            <div className={`${styles.tagGroup} ${styles.mt12}`}>
-              {area.urgency && (
-                <span className={PRIORITY_CLASS[area.urgency]}>
-                  시급도: {PRIORITY_LABEL[area.urgency]}
-                </span>
+        <table className={styles.compactTable}>
+          <thead>
+            <tr>
+              <th>영역</th>
+              <th className={styles.tableAlignCenter}>우선순위</th>
+              {data.areas[0]?.urgency && (
+                <>
+                  <th className={styles.tableAlignCenter}>시급도</th>
+                  <th className={styles.tableAlignCenter}>효과도</th>
+                </>
               )}
-              {area.effectiveness && (
-                <span className={PRIORITY_CLASS[area.effectiveness]}>
-                  효과도: {PRIORITY_LABEL[area.effectiveness]}
-                </span>
-              )}
-            </div>
-          )}
+              <th className={styles.tableAlignCenter}>활동 수</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.areas.map((area, idx) => (
+              <tr key={idx}>
+                <td className={styles.tableCellBold}>{area.area}</td>
+                <td className={styles.tableAlignCenter}>
+                  {area.priority ? (
+                    <span className={styles.tag}>
+                      {PRIORITY_LABEL[area.priority]}
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+                {data.areas[0]?.urgency && (
+                  <>
+                    <td className={styles.tableAlignCenter}>
+                      {area.urgency ? (
+                        <span className={styles.tag}>
+                          {PRIORITY_LABEL[area.urgency]}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className={styles.tableAlignCenter}>
+                      {area.effectiveness ? (
+                        <span className={styles.tag}>
+                          {PRIORITY_LABEL[area.effectiveness]}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </>
+                )}
+                <td className={styles.tableAlignCenter}>
+                  {area.suggestedActivities.length}개
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-          {/* Suggested activities */}
-          <div className={styles.mt16}>
-            <div className={`${styles.overline} ${styles.mb10}`}>
-              추천 보완 활동
-            </div>
-            <ol className={styles.numberedList}>
-              {area.suggestedActivities.map((activity, actIdx) => (
-                <li key={actIdx} className={styles.numberedListItem}>
-                  <span className={styles.numberedListNumber}>
-                    {actIdx + 1}
-                  </span>
-                  {activity}
-                </li>
-              ))}
-            </ol>
-          </div>
+      {/* 영역 2개씩 묶어서 한 페이지 단위 */}
+      {areaChunks.map((chunk, chunkIdx) => (
+        <div key={chunkIdx}>
+          {chunk.map((area, localIdx) => {
+            const globalIdx = chunkIdx * 2 + localIdx;
+            return (
+              <div
+                key={globalIdx}
+                className={localIdx > 0 ? styles.mt24 : undefined}
+              >
+                <div className={styles.h3}>
+                  {String(globalIdx + 1).padStart(2, "0")}. {area.area}
+                </div>
+                {area.priority && (
+                  <div className={`${styles.caption} ${styles.mb6}`}>
+                    우선순위: {PRIORITY_LABEL[area.priority]}
+                  </div>
+                )}
 
-          {/* Execution strategy (Premium) */}
-          {area.executionStrategy && (
-            <div className={`${styles.cardHighlight} ${styles.mt16}`}>
-              <div className={`${styles.overline} ${styles.mb6}`}>
-                실행 전략
+                <p className={styles.small}>{area.description}</p>
+
+                {area.evidence && (
+                  <p className={`${styles.caption} ${styles.mt4}`}>
+                    <span className={styles.emphasis}>근거:</span>{" "}
+                    {area.evidence}
+                  </p>
+                )}
+
+                {area.competencyTag && (
+                  <div className={`${styles.tagGroup} ${styles.mt6}`}>
+                    <span className={styles.tag}>
+                      {area.competencyTag.subcategory}
+                      {area.competencyTag.assessment &&
+                        ` (${area.competencyTag.assessment})`}
+                    </span>
+                    {area.recordSource && (
+                      <span className={styles.tag}>{area.recordSource}</span>
+                    )}
+                  </div>
+                )}
+
+                <div className={`${styles.caption} ${styles.mt8}`}>
+                  <span className={styles.emphasis}>추천 보완 활동:</span>
+                  {area.suggestedActivities.map((activity, actIdx) => (
+                    <p key={actIdx} className={styles.mt4}>
+                      {actIdx + 1}. {activity}
+                    </p>
+                  ))}
+                </div>
+
+                {(area.executionStrategy || area.detailedStrategy) && (
+                  <p className={`${styles.caption} ${styles.mt6}`}>
+                    <span className={styles.emphasis}>실행 전략:</span>{" "}
+                    {area.detailedStrategy ?? area.executionStrategy}
+                  </p>
+                )}
+
+                {area.subjectLinkStrategy && (
+                  <p className={`${styles.caption} ${styles.mt4}`}>
+                    <span className={styles.emphasis}>교과 연계:</span>{" "}
+                    {area.subjectLinkStrategy}
+                  </p>
+                )}
               </div>
-              <p className={styles.body}>{area.executionStrategy}</p>
-            </div>
-          )}
-
-          {/* Subject link strategy (Premium) */}
-          {area.subjectLinkStrategy && (
-            <div className={`${styles.cardHighlight} ${styles.mt12}`}>
-              <div className={`${styles.overline} ${styles.mb6}`}>
-                진로-선택과목 연계 전략
-              </div>
-              <p className={styles.body}>{area.subjectLinkStrategy}</p>
-            </div>
-          )}
+            );
+          })}
         </div>
       ))}
-    </div>
+    </>
   );
 };

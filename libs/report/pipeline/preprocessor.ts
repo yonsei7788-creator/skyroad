@@ -192,6 +192,7 @@ export interface PreprocessedTexts {
   attendanceSummaryText: string;
   recommendedCourseMatchText: string;
   recordVolumeText: string;
+  universityCandidatesText: string;
   curriculumVersion: "2015" | "2022";
 }
 
@@ -835,6 +836,7 @@ const buildTexts = (
     attendanceSummaryText,
     recommendedCourseMatchText,
     recordVolumeText,
+    universityCandidatesText: "[]",
     curriculumVersion: data.curriculumVersion,
   };
 };

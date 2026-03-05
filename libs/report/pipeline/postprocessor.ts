@@ -7,34 +7,7 @@
 
 import { z } from "zod/v4";
 
-import {
-  ReportSectionSchema,
-  ReportContentSchema,
-  ReportMetaSchema,
-  WordCloudSectionSchema,
-  validateByPlan,
-  StudentProfileSectionSchema,
-  CompetencyScoreSectionSchema,
-  AdmissionPredictionSectionSchema,
-  DiagnosticSectionSchema,
-  CompetencyEvaluationSectionSchema,
-  AcademicAnalysisSectionSchema,
-  CourseAlignmentSectionSchema,
-  AttendanceAnalysisSectionSchema,
-  ActivityAnalysisSectionSchema,
-  SubjectAnalysisSectionSchema,
-  BehaviorAnalysisSectionSchema,
-  OverallAssessmentSectionSchema,
-  WeaknessAnalysisSectionSchema,
-  TopicRecommendationSectionSchema,
-  InterviewPrepSectionSchema,
-  AdmissionStrategySectionSchema,
-  DirectionGuideSectionSchema,
-  StoryAnalysisSectionSchema,
-  ActionRoadmapSectionSchema,
-  BookRecommendationSectionSchema,
-  MajorExplorationSectionSchema,
-} from "../schemas";
+import { ReportSectionSchema, validateByPlan } from "../schemas";
 import { SECTION_ORDER } from "../types";
 import type {
   ReportPlan,
@@ -43,34 +16,7 @@ import type {
   ReportSection,
   StudentInfo,
 } from "../types";
-import type { PreprocessedData, WordCloudItem } from "./preprocessor";
-
-// ─── sectionId → Zod schema 매핑 ───
-
-const SECTION_SCHEMA_MAP: Record<string, z.ZodType> = {
-  studentProfile: StudentProfileSectionSchema,
-  competencyScore: CompetencyScoreSectionSchema,
-  admissionPrediction: AdmissionPredictionSectionSchema,
-  diagnostic: DiagnosticSectionSchema,
-  competencyEvaluation: CompetencyEvaluationSectionSchema,
-  academicAnalysis: AcademicAnalysisSectionSchema,
-  courseAlignment: CourseAlignmentSectionSchema,
-  attendanceAnalysis: AttendanceAnalysisSectionSchema,
-  activityAnalysis: ActivityAnalysisSectionSchema,
-  subjectAnalysis: SubjectAnalysisSectionSchema,
-  behaviorAnalysis: BehaviorAnalysisSectionSchema,
-  overallAssessment: OverallAssessmentSectionSchema,
-  weaknessAnalysis: WeaknessAnalysisSectionSchema,
-  topicRecommendation: TopicRecommendationSectionSchema,
-  interviewPrep: InterviewPrepSectionSchema,
-  admissionStrategy: AdmissionStrategySectionSchema,
-  directionGuide: DirectionGuideSectionSchema,
-  storyAnalysis: StoryAnalysisSectionSchema,
-  actionRoadmap: ActionRoadmapSectionSchema,
-  bookRecommendation: BookRecommendationSectionSchema,
-  majorExploration: MajorExplorationSectionSchema,
-  wordCloud: WordCloudSectionSchema,
-};
+import type { PreprocessedData } from "./preprocessor";
 
 // ─── 검증 결과 타입 ───
 
@@ -90,7 +36,7 @@ export interface PostprocessResult {
 
 export const postprocess = (
   rawSections: ReportSection[],
-  data: PreprocessedData,
+  _data: PreprocessedData,
   studentInfo: StudentInfo,
   plan: ReportPlan,
   reportId: string
@@ -116,13 +62,7 @@ export const postprocess = (
     }
   }
 
-  // 2. wordCloud 섹션 주입 (코드 생성, AI 아님)
-  const wordCloudSection = buildWordCloudSection(data.wordCloudData);
-  const wordCloudResult = validateSection(wordCloudSection);
-  validationResults.push(wordCloudResult);
-  validatedSections.push(wordCloudSection);
-
-  // 3. 섹션 정렬 (플랜별 순서)
+  // 2. 섹션 정렬 (플랜별 순서)
   const sectionOrder = SECTION_ORDER[plan];
   validatedSections.sort((a, b) => {
     const aIdx = sectionOrder.indexOf(a.sectionId);
@@ -167,17 +107,7 @@ export const postprocess = (
 
 const validateSection = (section: ReportSection): SectionValidationResult => {
   const { sectionId } = section;
-  const schema = SECTION_SCHEMA_MAP[sectionId];
-
-  if (!schema) {
-    return {
-      sectionId,
-      valid: false,
-      errors: [`알 수 없는 섹션 ID: ${sectionId}`],
-    };
-  }
-
-  const result = schema.safeParse(section);
+  const result = ReportSectionSchema.safeParse(section);
 
   if (result.success) {
     return { sectionId, valid: true, errors: [] };
@@ -198,58 +128,28 @@ const CRITICAL_SECTIONS: Record<ReportPlan, Set<string>> = {
   lite: new Set([
     "studentProfile",
     "competencyScore",
-    "diagnostic",
-    "competencyEvaluation",
     "academicAnalysis",
     "subjectAnalysis",
+    "admissionStrategy",
   ]),
   standard: new Set([
     "studentProfile",
     "competencyScore",
-    "diagnostic",
-    "competencyEvaluation",
+    "admissionPrediction",
     "academicAnalysis",
     "subjectAnalysis",
-    "admissionPrediction",
+    "admissionStrategy",
   ]),
   premium: new Set([
     "studentProfile",
     "competencyScore",
-    "diagnostic",
-    "competencyEvaluation",
+    "admissionPrediction",
     "academicAnalysis",
     "subjectAnalysis",
-    "admissionPrediction",
     "admissionStrategy",
   ]),
 };
 
 const isCriticalSection = (sectionId: string, plan: ReportPlan): boolean => {
   return CRITICAL_SECTIONS[plan].has(sectionId);
-};
-
-// ─── wordCloud 섹션 빌더 ───
-
-const buildWordCloudSection = (
-  wordCloudData: WordCloudItem[]
-): ReportSection => {
-  const words = wordCloudData.slice(0, 50).map((item) => ({
-    text: item.text,
-    frequency: item.frequency,
-    ...(item.category ? { category: item.category } : {}),
-  }));
-
-  // 최소 20개 보장
-  while (words.length < 20) {
-    words.push({
-      text: `키워드${words.length + 1}`,
-      frequency: 1,
-    });
-  }
-
-  return {
-    sectionId: "wordCloud",
-    title: "핵심 키워드 분석",
-    words,
-  } as ReportSection;
 };

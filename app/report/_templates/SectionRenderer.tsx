@@ -33,23 +33,33 @@ interface SectionRendererProps {
 
 export const SectionRenderer = ({
   section,
+  plan,
   sectionNumber,
 }: SectionRendererProps) => {
   switch (section.sectionId) {
     // Part 1: 진단
     case "studentProfile":
       return (
-        <StudentProfileRenderer data={section} sectionNumber={sectionNumber} />
+        <StudentProfileRenderer
+          data={section}
+          sectionNumber={sectionNumber}
+          plan={plan}
+        />
       );
     case "competencyScore":
       return (
-        <CompetencyScoreRenderer data={section} sectionNumber={sectionNumber} />
+        <CompetencyScoreRenderer
+          data={section}
+          sectionNumber={sectionNumber}
+          plan={plan}
+        />
       );
     case "admissionPrediction":
       return (
         <AdmissionPredictionRenderer
           data={section}
           sectionNumber={sectionNumber}
+          plan={plan}
         />
       );
     case "diagnostic":

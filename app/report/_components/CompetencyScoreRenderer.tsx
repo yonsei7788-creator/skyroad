@@ -1,15 +1,16 @@
 import type {
   CompetencyGrade,
   CompetencyScoreSection,
+  ReportPlan,
 } from "@/libs/report/types";
 
-import { ReportProgress } from "./ReportProgress";
 import styles from "./report.module.css";
 import { SectionHeader } from "./SectionHeader";
 
 interface CompetencyScoreRendererProps {
   data: CompetencyScoreSection;
   sectionNumber: number;
+  plan?: ReportPlan;
 }
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -27,114 +28,160 @@ const GRADE_BADGE_CLASS: Record<CompetencyGrade, string> = {
   D: styles.ratingWeak,
 };
 
+const GROWTH_GRADE_CLASS: Record<CompetencyGrade, string> = {
+  S: styles.competencyGrowthGradeS,
+  A: styles.competencyGrowthGradeA,
+  B: styles.competencyGrowthGradeB,
+  C: styles.competencyGrowthGradeCD,
+  D: styles.competencyGrowthGradeCD,
+};
+
 export const CompetencyScoreRenderer = ({
   data,
   sectionNumber,
+  plan = "lite",
 }: CompetencyScoreRendererProps) => {
+  const isPremium = plan === "premium";
+  const isStandard = plan === "standard";
+  const showBar = isStandard || isPremium;
+  const scorePct = Math.round((data.totalScore / 300) * 100);
+
+  const heroClass = isPremium
+    ? styles.competencyHeroPremium
+    : isStandard
+      ? styles.competencyHeroStandard
+      : styles.competencyHero;
+
+  const dimCardClass = isPremium
+    ? styles.competencyDimCardPremium
+    : isStandard
+      ? styles.competencyDimCardStandard
+      : styles.competencyDimCard;
+
+  const growthClass = isPremium
+    ? styles.competencyGrowthPremium
+    : isStandard
+      ? styles.competencyGrowthStandard
+      : styles.competencyGrowth;
+
   return (
-    <div className={styles.section}>
+    <div>
       <SectionHeader number={sectionNumber} title={data.title} />
 
-      {/* Total score + growth grade + percentile */}
-      <div className={`${styles.cardGridThree} ${styles.mb20}`}>
-        <div className={styles.statCardLarge}>
-          <span className={styles.statCardLargeValue}>{data.totalScore}</span>
-          <span className={styles.statCardLargeLabel}>총점 (300점 만점)</span>
+      {/* Hero score panel */}
+      <div className={heroClass}>
+        <div className={styles.competencyHeroOverline}>종합 역량 점수</div>
+        <div className={styles.competencyHeroScoreRow}>
+          <span className={styles.competencyHeroScore}>{data.totalScore}</span>
+          <span className={styles.competencyHeroDenom}>/ 300</span>
         </div>
-        <div className={styles.statCardLarge}>
-          <span className={GRADE_BADGE_CLASS[data.growthGrade]}>
-            {data.growthGrade}
-          </span>
-          <span className={styles.statCardLargeLabel}>발전가능성 등급</span>
-        </div>
-        {data.percentile !== undefined && (
-          <div className={styles.statCardLarge}>
-            <span className={styles.statCardLargeValue}>
-              상위 {data.percentile}%
-            </span>
-            <span className={styles.statCardLargeLabel}>
-              {data.percentileLabel ?? "백분위 추정"}
-            </span>
+
+        {showBar && (
+          <div className={styles.competencyHeroBar}>
+            <div
+              className={
+                isPremium
+                  ? styles.competencyHeroBarFillPremium
+                  : styles.competencyHeroBarFill
+              }
+              style={{ width: `${scorePct}%` }}
+            />
+          </div>
+        )}
+
+        {data.comparison && (
+          <div className={styles.competencyHeroComparison}>
+            <div className={styles.competencyHeroCompareItem}>
+              <span className={styles.competencyHeroCompareValue}>
+                {data.comparison.myScore}
+              </span>
+              <span className={styles.competencyHeroCompareLabel}>내 점수</span>
+            </div>
+            {data.comparison.targetRangeAvg !== undefined && (
+              <div className={styles.competencyHeroCompareItem}>
+                <span className={styles.competencyHeroCompareValue}>
+                  {data.comparison.targetRangeAvg}
+                </span>
+                <span className={styles.competencyHeroCompareLabel}>
+                  지원적정 평균
+                </span>
+              </div>
+            )}
+            {data.comparison.overallAvg !== undefined && (
+              <div className={styles.competencyHeroCompareItem}>
+                <span className={styles.competencyHeroCompareValue}>
+                  {data.comparison.overallAvg}
+                </span>
+                <span className={styles.competencyHeroCompareLabel}>
+                  전체 평균
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Growth grade comment */}
-      <div className={styles.callout}>
-        <div className={styles.calloutContent}>
-          <span className={styles.emphasis}>발전가능성:</span>{" "}
-          {data.growthComment}
-        </div>
-      </div>
-
-      {/* 3 category score cards */}
-      <div className={`${styles.h3} ${styles.mt24} ${styles.mb12}`}>
-        역량별 점수 상세
-      </div>
-      <div className={styles.cardGridThree}>
+      {/* Dimension cards */}
+      <div className={styles.competencySectionLabel}>역량별 상세</div>
+      <div className={styles.competencyDimGrid}>
         {data.scores.map((score) => (
-          <div key={score.category} className={styles.card}>
-            <div className={styles.cardHeader}>
-              <div className={styles.cardTitle}>
+          <div key={score.category} className={dimCardClass}>
+            <div className={styles.competencyDimHeader}>
+              <span className={styles.competencyDimLabel}>
                 {CATEGORY_LABEL[score.category] ?? score.label}
-              </div>
-              <span className={styles.emphasis}>
-                {score.score} / {score.maxScore}
               </span>
             </div>
-            <div className={styles.progressBar}>
-              <div
-                className={styles.progressFill}
-                style={{ width: `${(score.score / score.maxScore) * 100}%` }}
-              />
+            <div className={styles.competencyDimScoreRow}>
+              <span className={styles.competencyDimScore}>{score.score}</span>
+              <span className={styles.competencyDimMax}>/{score.maxScore}</span>
             </div>
 
-            {/* Subcategories */}
-            {score.subcategories.map((sub) => (
-              <ReportProgress
-                key={sub.name}
-                label={sub.name}
-                value={sub.score}
-                max={sub.maxScore}
-              />
-            ))}
+            {showBar && (
+              <div className={styles.competencyDimBar}>
+                <div
+                  className={
+                    isPremium
+                      ? styles.competencyDimBarFillPremium
+                      : styles.competencyDimBarFill
+                  }
+                  style={{
+                    width: `${(score.score / score.maxScore) * 100}%`,
+                  }}
+                />
+              </div>
+            )}
+
+            <div className={styles.competencyDimSubs}>
+              {score.subcategories.map((sub) => (
+                <div key={sub.name} className={styles.competencyDimSubRow}>
+                  <span className={styles.competencyDimSubLabel}>
+                    {sub.name}
+                  </span>
+                  <span className={styles.competencyDimSubScore}>
+                    {sub.score}/{sub.maxScore}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Comparison (Standard+) */}
-      {data.comparison && (
-        <div className={`${styles.cardHighlight} ${styles.mt20}`}>
-          <div className={styles.cardTitle}>점수 비교</div>
-          <div className={`${styles.cardGridThree} ${styles.mt12}`}>
-            <div className={styles.miniStat}>
-              <span className={styles.miniStatValue}>
-                {data.comparison.myScore}
-              </span>
-              <span className={styles.miniStatLabel}>내 점수</span>
-            </div>
-            {data.comparison.targetRangeAvg !== undefined && (
-              <div className={styles.miniStat}>
-                <span className={styles.miniStatValue}>
-                  {data.comparison.targetRangeAvg}
-                </span>
-                <span className={styles.miniStatLabel}>지원적정 평균</span>
-              </div>
-            )}
-            {data.comparison.overallAvg !== undefined && (
-              <div className={styles.miniStat}>
-                <span className={styles.miniStatValue}>
-                  {data.comparison.overallAvg}
-                </span>
-                <span className={styles.miniStatLabel}>전체 평균</span>
-              </div>
-            )}
+      {/* Growth potential */}
+      <div className={growthClass}>
+        <div className={styles.competencyGrowthLeft}>
+          <span className={styles.competencyGrowthLabel}>발전 가능성</span>
+          <div className={GROWTH_GRADE_CLASS[data.growthGrade]}>
+            {data.growthGrade}
           </div>
         </div>
-      )}
+        <div className={styles.competencyGrowthRight}>
+          <p className={styles.competencyGrowthComment}>{data.growthComment}</p>
+        </div>
+      </div>
 
-      {/* Interpretation */}
-      <div className={`${styles.aiCommentary} ${styles.mt20}`}>
+      {/* AI commentary */}
+      <div className={styles.aiCommentary}>
         <div className={styles.aiCommentaryIcon}>AI</div>
         <div className={styles.aiCommentaryContent}>
           <div className={styles.aiCommentaryLabel}>점수 해석</div>

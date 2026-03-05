@@ -1,10 +1,14 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+
 import { SECTION_ORDER } from "@/libs/report/types";
 import type { ReportContent, ReportSection } from "@/libs/report/types";
 
 import {
+  AutoPaginatedSection,
   PartPage,
   ReportCover,
-  ReportPage,
   ReportTableOfContents,
 } from "../_components";
 import styles from "../_components/report.module.css";
@@ -19,28 +23,21 @@ const PART_CONFIG = [
     partNumber: "PART 1",
     title: "진단",
     description:
-      "생기부 전체를 기반으로 한 학생 유형 분류, 역량 정량 스코어, 합격 예측, 종합 진단",
-    sectionIds: [
-      "studentProfile",
-      "competencyScore",
-      "admissionPrediction",
-      "diagnostic",
-    ],
+      "생기부 전체를 기반으로 한 학생 유형 분류, 역량 정량 스코어, 합격 예측",
+    sectionIds: ["studentProfile", "competencyScore", "admissionPrediction"],
   },
   {
     partNumber: "PART 2",
     title: "분석",
     description:
-      "역량별 종합 평가, 성적 분석, 권장과목 이수, 출결, 창체 활동, 세특, 행동특성, 기록 충실도 분석",
+      "성적 분석, 권장과목 이수, 출결, 창체 활동, 세특, 행동특성 분석",
     sectionIds: [
-      "competencyEvaluation",
       "academicAnalysis",
       "courseAlignment",
       "attendanceAnalysis",
       "activityAnalysis",
       "subjectAnalysis",
       "behaviorAnalysis",
-      "overallAssessment",
     ],
   },
   {
@@ -53,33 +50,37 @@ const PART_CONFIG = [
       "topicRecommendation",
       "interviewPrep",
       "admissionStrategy",
-      "directionGuide",
       "storyAnalysis",
       "actionRoadmap",
     ],
-  },
-  {
-    partNumber: "부록",
-    title: "부록",
-    description: "추천 도서, AI 전공 추천, 워드 클라우드",
-    sectionIds: ["bookRecommendation", "majorExploration", "wordCloud"],
   },
 ];
 
 export const StandardReport = ({ data }: StandardReportProps) => {
   const { meta, sections } = data;
   const order = SECTION_ORDER.standard;
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   const sectionMap = new Map<string, ReportSection>(
     sections.map((s) => [s.sectionId, s])
   );
 
   let globalSectionNum = 0;
-  let pageNum = 3;
+
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    const pages = wrapper.querySelectorAll("[data-page]");
+    pages.forEach((el, i) => {
+      const numEl = el.querySelector("[data-page-number]");
+      if (numEl) numEl.textContent = String(i + 1);
+    });
+  });
 
   return (
     <div className={`${styles.report} ${styles.planStandard}`}>
-      <div className={styles.reportWrapper}>
+      <div className={styles.reportWrapper} ref={wrapperRef}>
         <ReportCover meta={meta} />
         <ReportTableOfContents
           sections={order
@@ -117,9 +118,8 @@ export const StandardReport = ({ data }: StandardReportProps) => {
               />
 
               {partSectionList.map((item) => (
-                <ReportPage
+                <AutoPaginatedSection
                   key={item.section.sectionId}
-                  pageNumber={++pageNum}
                   sectionTitle={item.section.title}
                   studentName={meta.studentInfo.name}
                 >
@@ -128,7 +128,7 @@ export const StandardReport = ({ data }: StandardReportProps) => {
                     plan="standard"
                     sectionNumber={item.num}
                   />
-                </ReportPage>
+                </AutoPaginatedSection>
               ))}
             </div>
           );

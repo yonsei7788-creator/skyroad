@@ -88,6 +88,48 @@ interface BaseSection {
 }
 ```
 
+### 2.1.1 추가 공통 타입
+
+```typescript
+/** 교과군별 성적 매트릭스 (성적 분석 시 교과군 단위 비교에 사용) */
+interface SubjectGroupMatrix {
+  /** 교과군명 (예: "국어", "수학", "영어", "사회", "과학") */
+  group: string;
+  /** 학년별 평균 등급 */
+  yearlyAverage: {
+    year: number;
+    average: number;
+    subjectCount: number;
+  }[];
+  /** 전공 관련 교과군 여부 */
+  isCareerRelated: boolean;
+  /** 교과군 내 등급 편차 */
+  gradeDeviation: number;
+  /** 교과군 종합 평가 */
+  assessment: string;
+}
+
+/** 리더십 정량 지표 (공동체역량 평가에 사용) */
+interface LeadershipQuantitative {
+  /** 임원/리더 역할 횟수 */
+  leadershipRoleCount: number;
+  /** 역할 목록 */
+  roles: {
+    year: number;
+    role: string;
+    context: string;
+  }[];
+  /** 협업 활동 언급 빈도 */
+  collaborationMentionCount: number;
+  /** 나눔/배려 사례 수 */
+  caringSampleCount: number;
+  /** 리더십 성장 추이 */
+  growthTrend: "상승" | "유지" | "하강";
+  /** 종합 평가 */
+  assessment: string;
+}
+```
+
 ### 2.2 Part 1: 진단
 
 #### 섹션 1: 학생 프로필 (studentProfile)
@@ -492,6 +534,22 @@ interface ActivityTypeAnalysis {
   }[];
   /** Standard+: 개선 방향 */
   improvementDirection?: string;
+
+  /** Premium: 기록 충실도 (최대 기재 분량 대비 실제 기록 비율) */
+  fillRate?: {
+    maxCapacity: number;
+    actualLength: number;
+    percentage: number;
+    assessment: "충실" | "보통" | "부족";
+  };
+  /** Premium: 학년별 상세 분석 */
+  yearlyDetails?: {
+    year: number;
+    detailedAnalysis: string;
+    strengthPoints: string[];
+    improvementPoints: string[];
+    competencyTags: CompetencyTag[];
+  }[];
 }
 
 export interface ActivityAnalysisSection extends BaseSection {
@@ -641,6 +699,22 @@ interface WeaknessArea {
   executionStrategy?: string;
   /** Premium: 진로-선택과목 연계 전략 */
   subjectLinkStrategy?: string;
+
+  /** Premium: 근거 출처 (생기부 원문 참조) */
+  recordSource?: {
+    section: string;
+    subject?: string;
+    year: number;
+    quote: string;
+  };
+  /** Premium: 구체적 보완 전략 (350자+) */
+  detailedStrategy?: string;
+  /** Premium: 실행 항목 리스트 (3-5개) */
+  actionItems?: {
+    action: string;
+    timeline: string;
+    expectedOutcome: string;
+  }[];
 }
 
 export interface WeaknessAnalysisSection extends BaseSection {
