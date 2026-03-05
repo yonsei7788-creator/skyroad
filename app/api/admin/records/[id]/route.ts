@@ -84,9 +84,7 @@ export async function GET(
       grade_level,
       text_verified,
       final_text,
-      created_at,
-      profiles!inner(name),
-      orders(status)
+      created_at
     `
     )
     .eq("id", id)
@@ -99,12 +97,18 @@ export async function GET(
     );
   }
 
-  // 4. 모든 서브 테이블 병렬 조회
-  const subTableResults = await Promise.all(
-    SUB_TABLES.map(({ name }) =>
+  // 4. 프로필 + 주문 + 서브 테이블 병렬 조회
+  const [profileRes, orderRes, ...subTableResults] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("name")
+      .eq("id", record.user_id as string)
+      .single(),
+    supabase.from("orders").select("status").eq("record_id", id).limit(1),
+    ...SUB_TABLES.map(({ name }) =>
       supabase.from(name).select("*").eq("record_id", id)
-    )
-  );
+    ),
+  ]);
 
   const subData: Record<string, Record<string, unknown>[]> = {};
   SUB_TABLES.forEach(({ name, key }, index) => {
@@ -116,17 +120,15 @@ export async function GET(
   });
 
   // 5. 응답 구성
-  const profiles = record.profiles as unknown as { name: string } | null;
-  const orders = record.orders as unknown as { status: string }[] | null;
-
   const detail: RecordDetail = {
     id: record.id as string,
-    userName: profiles?.name ?? null,
+    userName: (profileRes.data?.name as string) ?? null,
     userId: record.user_id as string,
     submissionType: record.submission_type as "pdf" | "image" | "text",
     gradeLevel: record.grade_level as string,
     textVerified: record.text_verified as boolean,
-    orderStatus: orders?.[0]?.status ?? null,
+    orderStatus:
+      (orderRes.data as { status: string }[] | null)?.[0]?.status ?? null,
     createdAt: record.created_at as string,
     finalText: record.final_text as string | null,
     attendance: subData.attendance,

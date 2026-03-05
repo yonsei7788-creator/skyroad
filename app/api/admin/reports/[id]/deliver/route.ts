@@ -7,9 +7,7 @@ import { sendReportEmail } from "@/libs/email/send-report";
 
 import { verifyAdmin } from "../../helpers";
 
-interface DeliverBody {
-  reviewNotes?: string;
-}
+const MOCK_DELIVER_EMAIL = "ujh9208@gmail.com";
 
 export const POST = async (
   request: NextRequest,
@@ -21,14 +19,42 @@ export const POST = async (
   const { userId, error: authError } = await verifyAdmin(supabase);
   if (authError) return authError;
 
-  let body: DeliverBody = {};
-  try {
-    body = await request.json();
-  } catch {
-    // Empty body is acceptable
+  // FormData로 PDF 수신
+  const formData = await request.formData();
+  const pdfFile = formData.get("pdf") as File | null;
+  const reviewNotes = (formData.get("reviewNotes") as string) || null;
+
+  let pdfBuffer: Buffer | undefined;
+  if (pdfFile) {
+    const arrayBuffer = await pdfFile.arrayBuffer();
+    pdfBuffer = Buffer.from(arrayBuffer);
   }
 
-  // Fetch report with order and user info
+  // Mock 리포트 발송 처리
+  if (id.startsWith("mock-")) {
+    const planName = id.replace("mock-", "");
+    try {
+      await sendReportEmail({
+        to: MOCK_DELIVER_EMAIL,
+        userName: "테스트 유저",
+        planName,
+        pdfBuffer,
+      });
+    } catch (emailError) {
+      console.error("Mock email send error:", emailError);
+      return NextResponse.json(
+        { error: "이메일 발송에 실패했습니다." },
+        { status: 500 }
+      );
+    }
+    return NextResponse.json({
+      success: true,
+      mock: true,
+      pdfAttached: !!pdfBuffer,
+    });
+  }
+
+  // Fetch report with order info (no profiles join — FK doesn't exist)
   const { data: report, error: fetchError } = await supabase
     .from("reports")
     .select(
@@ -41,9 +67,6 @@ export const POST = async (
       orders!inner (
         id,
         user_id,
-        profiles!inner (
-          name
-        ),
         plans!inner (
           name,
           display_name
@@ -82,7 +105,7 @@ export const POST = async (
       .update({
         reviewed_by: userId,
         reviewed_at: new Date().toISOString(),
-        review_notes: body.reviewNotes || null,
+        review_notes: reviewNotes,
       })
       .eq("id", id);
 
@@ -95,43 +118,49 @@ export const POST = async (
     }
   }
 
-  // Get user email via admin client
+  // Get user profile + email in parallel (separate queries — no FK)
   const orders = report.orders as unknown as Record<string, unknown>;
-  const userProfile = orders.profiles as unknown as Record<string, unknown>;
   const plan = orders.plans as unknown as Record<string, unknown>;
   const targetUserId = orders.user_id as string;
 
   const adminClient = createAdminClient();
-  let userEmail = "";
-  if (adminClient) {
-    try {
-      const {
-        data: { user: authUser },
-      } = await adminClient.auth.admin.getUserById(targetUserId);
-      userEmail = authUser?.email || "";
-    } catch {
-      // Email not available
-    }
+
+  const [profileRes, emailRes] = await Promise.all([
+    supabase.from("profiles").select("name").eq("id", targetUserId).single(),
+    adminClient
+      ? adminClient.auth.admin
+          .getUserById(targetUserId)
+          .catch(() => ({ data: { user: null } }))
+      : Promise.resolve({ data: { user: null } }),
+  ]);
+
+  const userName = (profileRes.data?.name as string) || "고객";
+  const userEmail =
+    (emailRes.data as { user: { email?: string } | null })?.user?.email || "";
+
+  if (!userEmail) {
+    return NextResponse.json(
+      { error: "사용자 이메일을 찾을 수 없습니다." },
+      { status: 400 }
+    );
   }
 
-  // Send email
+  // Send email (with PDF if available)
+  const planName = (plan.display_name as string) || (plan.name as string) || "";
   let emailSent = true;
   try {
-    if (!userEmail) {
-      throw new Error("사용자 이메일을 찾을 수 없습니다.");
-    }
-
     await sendReportEmail({
       to: userEmail,
-      userName: (userProfile.name as string) || "고객",
-      planName: (plan.display_name as string) || (plan.name as string) || "",
+      userName,
+      planName,
+      pdfBuffer,
     });
   } catch (emailError) {
     console.error("Email send error:", emailError);
     emailSent = false;
   }
 
-  // Update delivered_at regardless of email result (review was already saved)
+  // Update delivered_at
   const { error: deliverError } = await supabase
     .from("reports")
     .update({
@@ -167,5 +196,8 @@ export const POST = async (
     );
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({
+    success: true,
+    pdfAttached: !!pdfBuffer,
+  });
 };

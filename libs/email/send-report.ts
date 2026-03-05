@@ -6,6 +6,7 @@ interface SendReportEmailParams {
   to: string;
   userName: string;
   planName: string;
+  pdfBuffer?: Buffer;
 }
 
 const buildEmailHtml = (userName: string, planName: string): string => `
@@ -50,7 +51,7 @@ const buildEmailHtml = (userName: string, planName: string): string => `
                   <li>궁금한 점이 있으시면 언제든 문의해 주세요.</li>
                 </ol>
               </div>
-              <a href="https://skyroad.co.kr/profile" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:600;">
+              <a href="https://skyroadedu.net/profile" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:600;">
                 리포트 확인하기
               </a>
             </td>
@@ -60,7 +61,7 @@ const buildEmailHtml = (userName: string, planName: string): string => `
             <td style="padding:24px 40px;border-top:1px solid #e2e8f0;">
               <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.6;text-align:center;">
                 본 메일은 SKYROAD 서비스에서 자동으로 발송되었습니다.<br />
-                문의사항이 있으시면 support@skyroad.co.kr로 연락해 주세요.
+                문의사항이 있으시면 support@skyroadedu.net로 연락해 주세요.
               </p>
             </td>
           </tr>
@@ -76,12 +77,23 @@ export const sendReportEmail = async ({
   to,
   userName,
   planName,
+  pdfBuffer,
 }: SendReportEmailParams) => {
+  const attachments = pdfBuffer
+    ? [
+        {
+          filename: `SKYROAD_리포트_${userName}.pdf`,
+          content: pdfBuffer,
+        },
+      ]
+    : undefined;
+
   const { error } = await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL || "SKYROAD <noreply@skyroad.co.kr>",
+    from: process.env.RESEND_FROM_EMAIL || "SKYROAD <noreply@skyroadedu.net>",
     to,
     subject: `[SKYROAD] ${userName}님의 생기부 분석 리포트가 도착했습니다`,
     html: buildEmailHtml(userName, planName),
+    attachments,
   });
 
   if (error) {

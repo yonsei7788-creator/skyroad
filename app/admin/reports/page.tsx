@@ -233,6 +233,26 @@ const ReportsPage = () => {
         </p>
       </div>
 
+      {/* Mock Test */}
+      <div className={styles.mockTestSection}>
+        <p className={styles.mockTestLabel}>목데이터 검수 테스트</p>
+        <div className={styles.mockTestButtons}>
+          {(["lite", "standard", "premium"] as const).map((plan) => (
+            <button
+              key={plan}
+              className={styles.mockTestButton}
+              onClick={() => router.push(`/admin/reports/mock-${plan}`)}
+            >
+              {plan === "lite"
+                ? "라이트"
+                : plan === "standard"
+                  ? "스탠다드"
+                  : "프리미엄"}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Filters */}
       <div className={styles.filters}>
         <div className={styles.statusTabs}>
