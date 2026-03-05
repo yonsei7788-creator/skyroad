@@ -2,11 +2,23 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { ArrowLeft, CheckCircle, Loader2, Mail, RefreshCw } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle,
+  Loader2,
+  Mail,
+  RefreshCw,
+  Save,
+  RotateCcw,
+} from "lucide-react";
 
 import { Badge } from "@/app/admin/_components";
+import { ReportRenderer } from "@/app/report/_templates";
+import { SingleSectionEditor } from "../_components/ReportContentEditor";
+import { SectionNav } from "../_components/SectionNav";
+import { generatePdfFromElement } from "@/libs/pdf/generate";
 import type { ReportDetail, ReportStatus } from "@/app/admin/types";
+import type { ReportContent } from "@/libs/report/types";
 
 import styles from "../reports.module.css";
 
@@ -22,61 +34,11 @@ const STATUS_BADGE_MAP: Record<
 
 const TOAST_DURATION = 3000;
 
-const formatDate = (dateStr: string | null): string => {
-  if (!dateStr) return "-";
-  const d = new Date(dateStr);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}.${month}.${day}`;
-};
-
 interface Toast {
   id: number;
   message: string;
   type: "success" | "error";
 }
-
-const renderJsonValue = (value: unknown, indent: number = 0): string => {
-  if (value === null || value === undefined) {
-    return "null";
-  }
-
-  if (typeof value === "string") {
-    return `"${value}"`;
-  }
-
-  if (typeof value === "number" || typeof value === "boolean") {
-    return String(value);
-  }
-
-  if (Array.isArray(value)) {
-    if (value.length === 0) return "[]";
-    const padding = "  ".repeat(indent);
-    const innerPadding = "  ".repeat(indent + 1);
-    const items = value
-      .map((item) => `${innerPadding}${renderJsonValue(item, indent + 1)}`)
-      .join(",\n");
-    return `[\n${items}\n${padding}]`;
-  }
-
-  if (typeof value === "object") {
-    const obj = value as Record<string, unknown>;
-    const keys = Object.keys(obj);
-    if (keys.length === 0) return "{}";
-    const padding = "  ".repeat(indent);
-    const innerPadding = "  ".repeat(indent + 1);
-    const entries = keys
-      .map(
-        (key) =>
-          `${innerPadding}"${key}": ${renderJsonValue(obj[key], indent + 1)}`
-      )
-      .join(",\n");
-    return `{\n${entries}\n${padding}}`;
-  }
-
-  return String(value);
-};
 
 const ReportDetailPage = () => {
   const router = useRouter();
@@ -85,15 +47,34 @@ const ReportDetailPage = () => {
 
   const [report, setReport] = useState<ReportDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [reviewNotes, setReviewNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState<
     "deliver" | "resend" | null
   >(null);
 
+  // Editable content state
+  const [editableContent, setEditableContent] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
+  const [originalContent, setOriginalContent] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // 3-panel review state
+  const [activeSectionIndex, setActiveSectionIndex] = useState(0);
+  const [checkedSections, setCheckedSections] = useState<Set<string>>(
+    new Set()
+  );
+  const [showPreview, setShowPreview] = useState(true);
+
   const toastCounter = useRef(0);
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const addToast = useCallback((message: string, type: "success" | "error") => {
     const id = ++toastCounter.current;
@@ -106,13 +87,25 @@ const ReportDetailPage = () => {
   const fetchReport = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/reports/${reportId}`);
+      const fetchUrl = reportId.startsWith("mock-")
+        ? `/api/admin/reports/mock/${reportId.replace("mock-", "")}`
+        : `/api/admin/reports/${reportId}`;
+      const res = await fetch(fetchUrl);
       if (!res.ok) {
         throw new Error("Failed to fetch report");
       }
       const data: ReportDetail = await res.json();
       setReport(data);
-      setReviewNotes(data.reviewNotes || "");
+      if (data.content) {
+        const contentClone = structuredClone(
+          data.content as Record<string, unknown>
+        );
+        setEditableContent(contentClone);
+        setOriginalContent(
+          structuredClone(data.content as Record<string, unknown>)
+        );
+        setHasChanges(false);
+      }
     } catch (err) {
       console.error("Fetch report error:", err);
     } finally {
@@ -131,7 +124,7 @@ const ReportDetailPage = () => {
       const res = await fetch(`/api/admin/reports/${reportId}/review`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reviewNotes }),
+        body: JSON.stringify({}),
       });
 
       if (!res.ok) {
@@ -150,16 +143,67 @@ const ReportDetailPage = () => {
     }
   };
 
+  const saveContentIfNeeded = async (): Promise<boolean> => {
+    if (!hasChanges || !editableContent) return true;
+    if (reportId.startsWith("mock-")) return true;
+
+    try {
+      const res = await fetch(`/api/admin/reports/${reportId}/content`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: editableContent }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "저장에 실패했습니다.");
+      }
+      setOriginalContent(structuredClone(editableContent));
+      setHasChanges(false);
+      return true;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "저장에 실패했습니다.";
+      addToast(message, "error");
+      return false;
+    }
+  };
+
+  const buildDeliverFormData = async (): Promise<FormData | null> => {
+    // 발송 전 자동 저장
+    const saved = await saveContentIfNeeded();
+    if (!saved) return null;
+
+    const formData = new FormData();
+
+    // 미리보기 패널에서 PDF 생성
+    if (previewRef.current) {
+      try {
+        addToast("PDF 생성 중...", "success");
+        const pdfBlob = await generatePdfFromElement(previewRef.current);
+        formData.append("pdf", pdfBlob, "report.pdf");
+      } catch (pdfError) {
+        console.error("PDF generation error:", pdfError);
+        addToast("PDF 생성에 실패하여 PDF 없이 발송합니다.", "error");
+      }
+    }
+
+    return formData;
+  };
+
   const handleDeliver = async () => {
     if (!report) return;
     setShowConfirmModal(false);
     setConfirmAction(null);
     setSubmitting(true);
     try {
+      const formData = await buildDeliverFormData();
+      if (!formData) {
+        setSubmitting(false);
+        return;
+      }
       const res = await fetch(`/api/admin/reports/${reportId}/deliver`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reviewNotes }),
+        body: formData,
       });
 
       const data = await res.json();
@@ -173,7 +217,8 @@ const ReportDetailPage = () => {
       if (data.warning) {
         addToast(data.warning, "error");
       } else {
-        addToast("이메일이 발송되었습니다.", "success");
+        const pdfNote = data.pdfAttached ? " (PDF 첨부)" : "";
+        addToast(`이메일이 발송되었습니다.${pdfNote}`, "success");
       }
 
       await fetchReport();
@@ -194,29 +239,25 @@ const ReportDetailPage = () => {
     setConfirmAction(null);
     setSubmitting(true);
     try {
-      // For resend, we call deliver again. The backend will check
-      // delivered_at, but for resend we need a different approach.
-      // We update delivered_at to null first, then deliver.
-      // Actually, for simplicity, we can just call the email utility directly
-      // via a separate endpoint, or we can just re-POST to deliver.
-      // Since the spec says 409 for already delivered, let's handle resend
-      // by sending the email manually via a fetch that expects 409.
+      const formData = await buildDeliverFormData();
+      if (!formData) {
+        setSubmitting(false);
+        return;
+      }
       const res = await fetch(`/api/admin/reports/${reportId}/deliver`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reviewNotes }),
+        body: formData,
       });
 
       const data = await res.json();
 
       if (res.status === 409) {
-        // Already delivered - this is expected for resend
-        // We need the backend to support resend. For now, show message.
         addToast("이미 발송된 리포트입니다. 관리자에게 문의하세요.", "error");
       } else if (!res.ok && !data.success) {
         throw new Error(data.error || "재발송에 실패했습니다.");
       } else {
-        addToast("이메일이 재발송되었습니다.", "success");
+        const pdfNote = data.pdfAttached ? " (PDF 첨부)" : "";
+        addToast(`이메일이 재발송되었습니다.${pdfNote}`, "success");
         await fetchReport();
       }
     } catch (err) {
@@ -241,6 +282,80 @@ const ReportDetailPage = () => {
     }
   };
 
+  const handleContentChange = useCallback(
+    (updated: Record<string, unknown>) => {
+      setEditableContent(updated);
+      setHasChanges(true);
+    },
+    []
+  );
+
+  const handleSaveContent = async () => {
+    if (!editableContent) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/reports/${reportId}/content`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: editableContent }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "저장에 실패했습니다.");
+      }
+
+      setOriginalContent(structuredClone(editableContent));
+      setHasChanges(false);
+      addToast("리포트 내용이 저장되었습니다.", "success");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "저장에 실패했습니다.";
+      addToast(message, "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResetContent = () => {
+    if (originalContent) {
+      setEditableContent(structuredClone(originalContent));
+      setHasChanges(false);
+    }
+  };
+
+  const handleSectionSelect = useCallback(
+    (index: number) => {
+      setActiveSectionIndex(index);
+
+      // Auto-check: mark current section as visited
+      if (editableContent) {
+        const sections = editableContent.sections as
+          | { sectionId: string }[]
+          | undefined;
+        const section = sections?.[index];
+        if (section?.sectionId) {
+          setCheckedSections((prev) => {
+            const next = new Set(prev);
+            next.add(section.sectionId);
+            return next;
+          });
+        }
+      }
+    },
+    [editableContent]
+  );
+
+  // Derived values (computed before early returns)
+  const sections = Array.isArray(editableContent?.sections)
+    ? (editableContent.sections as { sectionId: string; title: string }[])
+    : [];
+  const totalSections = sections.length;
+  const activeSection = sections[activeSectionIndex];
+  const checkedCount = checkedSections.size;
+  const progressPercent =
+    totalSections > 0 ? (checkedCount / totalSections) * 100 : 0;
+
   if (loading) {
     return (
       <div className={styles.loading}>
@@ -251,7 +366,7 @@ const ReportDetailPage = () => {
 
   if (!report) {
     return (
-      <div className={styles.detailContainer}>
+      <div className={styles.loading}>
         <p>리포트를 찾을 수 없습니다.</p>
       </div>
     );
@@ -260,16 +375,12 @@ const ReportDetailPage = () => {
   const shortId = report.id.slice(0, 8);
   const { label: statusLabel, variant: statusVariant } =
     STATUS_BADGE_MAP[report.status];
-  const contentAvailable = report.content !== null;
   const isDelivered = report.status === "delivered";
   const isReviewed = report.status === "review_complete" || isDelivered;
 
   return (
-    <motion.div
-      className={styles.detailContainer}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+    <div
+      className={`${styles.reviewLayout} ${!showPreview ? styles.previewHidden : ""}`}
     >
       {/* Toast container */}
       {toasts.length > 0 && (
@@ -320,164 +431,180 @@ const ReportDetailPage = () => {
         </div>
       )}
 
-      {/* Back button */}
-      <button
-        className={styles.backButton}
-        onClick={() => router.push("/admin/reports")}
-      >
-        <ArrowLeft size={16} />
-        뒤로가기
-      </button>
-
-      {/* Header */}
-      <div className={styles.detailHeader}>
-        <h1 className={styles.detailTitle}>리포트 검수 - #{shortId}</h1>
-      </div>
-
-      {/* Info Grid */}
-      <div className={styles.detailGrid}>
-        {/* User Info Card */}
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>유저 정보</h2>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>이름</span>
-            <span className={styles.infoValue}>{report.userName || "-"}</span>
+      {/* Top Bar */}
+      <div className={styles.topBar}>
+        <button
+          className={styles.topBarBack}
+          onClick={() => router.push("/admin/reports")}
+        >
+          <ArrowLeft size={14} /> 목록
+        </button>
+        <h1 className={styles.topBarTitle}>검수 #{shortId}</h1>
+        <Badge variant={statusVariant}>{statusLabel}</Badge>
+        <div className={styles.topBarProgress}>
+          <div className={styles.progressBarContainer}>
+            <div
+              className={styles.progressBarFill}
+              style={{ width: `${progressPercent}%` }}
+            />
           </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>이메일</span>
-            <span className={styles.infoValue}>{report.userEmail || "-"}</span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>플랜</span>
-            <span className={styles.infoValue}>{report.planName}</span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>목표 대학</span>
-            <span className={styles.infoValue}>
-              {report.targetUniversity || "-"}
-            </span>
-          </div>
-          <div className={styles.infoRow}>
-            <span className={styles.infoLabel}>AI 생성일</span>
-            <span className={styles.infoValue}>
-              {formatDate(report.aiGeneratedAt)}
-            </span>
-          </div>
+          <span className={styles.progressText}>
+            {checkedCount}/{totalSections}
+          </span>
         </div>
-
-        {/* Status & Action Card */}
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>리포트 상태 & 액션</h2>
-          <div className={styles.statusRow}>
-            <span className={styles.statusLabel}>상태</span>
-            <Badge variant={statusVariant}>{statusLabel}</Badge>
-          </div>
-
-          {report.reviewedBy && (
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>검수자</span>
-              <span className={styles.infoValue}>{report.reviewedBy}</span>
-            </div>
+        <div className={styles.topBarActions}>
+          {hasChanges && (
+            <button className={styles.resetButton} onClick={handleResetContent}>
+              <RotateCcw size={14} /> 초기화
+            </button>
           )}
-
-          {report.reviewedAt && (
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>검수일</span>
-              <span className={styles.infoValue}>
-                {formatDate(report.reviewedAt)}
-              </span>
-            </div>
-          )}
-
-          {report.deliveredAt && (
-            <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>발송일</span>
-              <span className={styles.infoValue}>
-                {formatDate(report.deliveredAt)}
-              </span>
-            </div>
-          )}
-
-          <div style={{ marginTop: 16 }}>
-            {!contentAvailable ? (
-              <p className={styles.disabledMessage}>
-                AI가 리포트를 생성하지 않았습니다
-              </p>
-            ) : isDelivered ? (
-              <div className={styles.actionRow}>
-                <button
-                  className={styles.resendButton}
-                  onClick={() => openConfirmModal("resend")}
-                  disabled={submitting}
-                >
-                  {submitting ? (
-                    <Loader2 size={16} className={styles.spinner} />
-                  ) : (
-                    <RefreshCw size={16} />
-                  )}
-                  재발송
-                </button>
-              </div>
+          <button
+            className={styles.saveButton}
+            onClick={handleSaveContent}
+            disabled={saving || !hasChanges}
+          >
+            {saving ? (
+              <Loader2 size={14} className={styles.spinner} />
             ) : (
-              <div className={styles.actionRow}>
-                {!isReviewed && (
-                  <button
-                    className={styles.reviewButton}
-                    onClick={handleReview}
-                    disabled={submitting}
-                  >
-                    {submitting ? (
-                      <Loader2 size={16} className={styles.spinner} />
-                    ) : (
-                      <CheckCircle size={16} />
-                    )}
-                    검수 완료
-                  </button>
-                )}
+              <Save size={14} />
+            )}
+            저장
+          </button>
+          {isDelivered ? (
+            <button
+              className={styles.resendButton}
+              onClick={() => openConfirmModal("resend")}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <Loader2 size={14} className={styles.spinner} />
+              ) : (
+                <RefreshCw size={14} />
+              )}
+              재발송
+            </button>
+          ) : (
+            <>
+              {!isReviewed && (
                 <button
-                  className={styles.sendEmailButton}
-                  onClick={() => openConfirmModal("deliver")}
+                  className={styles.reviewButton}
+                  onClick={handleReview}
                   disabled={submitting}
                 >
                   {submitting ? (
-                    <Loader2 size={16} className={styles.spinner} />
+                    <Loader2 size={14} className={styles.spinner} />
                   ) : (
-                    <Mail size={16} />
+                    <CheckCircle size={14} />
                   )}
-                  {isReviewed ? "이메일 발송" : "검수 완료 + 이메일 발송"}
+                  검수 완료
                 </button>
-              </div>
-            )}
-          </div>
+              )}
+              <button
+                className={styles.sendEmailButton}
+                onClick={() => openConfirmModal("deliver")}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <Loader2 size={14} className={styles.spinner} />
+                ) : (
+                  <Mail size={14} />
+                )}
+                {isReviewed ? "이메일 발송" : "검수 완료 + 이메일 발송"}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Content Preview */}
-      <div className={styles.contentCard}>
-        <h2 className={styles.cardTitle}>리포트 내용 미리보기</h2>
-        {contentAvailable ? (
-          <pre className={styles.contentPreview}>
-            {renderJsonValue(report.content)}
-          </pre>
+      {/* Left Nav */}
+      <div className={styles.leftNav}>
+        <SectionNav
+          sections={sections}
+          activeSectionIndex={activeSectionIndex}
+          onSectionSelect={handleSectionSelect}
+          checkedSections={checkedSections}
+          hasUnsavedChanges={hasChanges}
+          userName={report.userName}
+          userEmail={report.userEmail}
+          planName={report.planName}
+        />
+      </div>
+
+      {/* Center Editor */}
+      <div className={styles.centerEditor}>
+        {activeSection && editableContent ? (
+          <>
+            <div className={styles.sectionEditorHeader}>
+              <span className={styles.sectionEditorNumber}>
+                {activeSectionIndex + 1}
+              </span>
+              <h2 className={styles.sectionEditorTitle}>
+                {activeSection.title || activeSection.sectionId}
+              </h2>
+            </div>
+            <div className={styles.sectionEditorContent}>
+              <SingleSectionEditor
+                content={editableContent}
+                sectionIndex={activeSectionIndex}
+                onChange={handleContentChange}
+              />
+            </div>
+            <div className={styles.sectionPagination}>
+              <button
+                className={styles.paginationButton}
+                disabled={activeSectionIndex === 0}
+                onClick={() => handleSectionSelect(activeSectionIndex - 1)}
+              >
+                ← 이전
+              </button>
+              <span className={styles.paginationInfo}>
+                {activeSectionIndex + 1} / {totalSections}
+              </span>
+              <button
+                className={styles.paginationButton}
+                disabled={activeSectionIndex === totalSections - 1}
+                onClick={() => handleSectionSelect(activeSectionIndex + 1)}
+              >
+                다음 →
+              </button>
+            </div>
+          </>
         ) : (
-          <div className={styles.contentEmpty}>
+          <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>
             AI가 아직 리포트를 생성하지 않았습니다.
           </div>
         )}
       </div>
 
-      {/* Review Notes */}
-      <div className={styles.notesCard}>
-        <h2 className={styles.cardTitle}>검수 메모</h2>
-        <textarea
-          className={styles.textarea}
-          placeholder="검수 메모를 입력하세요..."
-          value={reviewNotes}
-          onChange={(e) => setReviewNotes(e.target.value)}
-          disabled={isDelivered}
-        />
-      </div>
-    </motion.div>
+      {/* Right Preview */}
+      {showPreview && (
+        <div className={styles.rightPreview}>
+          <button
+            className={styles.previewToggle}
+            onClick={() => setShowPreview(false)}
+          >
+            미리보기 접기 ✕
+          </button>
+          <div ref={previewRef}>
+            {editableContent && (
+              <ReportRenderer
+                data={editableContent as unknown as ReportContent}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Expand button when preview is hidden */}
+      {!showPreview && (
+        <button
+          className={styles.expandPreviewButton}
+          onClick={() => setShowPreview(true)}
+        >
+          미리보기 열기 →
+        </button>
+      )}
+    </div>
   );
 };
 

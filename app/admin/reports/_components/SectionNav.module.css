@@ -1,0 +1,111 @@
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.userInfo {
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.userName {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.userMeta {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 2px 0 0;
+}
+
+.partGroup {
+  padding: 0;
+}
+
+.partHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 4px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.partCount {
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: #cbd5e1;
+}
+
+.sectionItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  font-size: 0.8125rem;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.sectionItem:hover {
+  background: #f8fafc;
+}
+
+.sectionItemActive {
+  background: #eff6ff;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.statusDot {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.625rem;
+}
+
+.dotDefault {
+  color: #cbd5e1;
+}
+
+.dotActive {
+  color: #2563eb;
+}
+
+.dotChecked {
+  color: #22c55e;
+}
+
+.sectionNumber {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #94a3b8;
+  min-width: 16px;
+}
+
+.sectionItemActive .sectionNumber {
+  color: #2563eb;
+}
+
+.sectionTitle {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
