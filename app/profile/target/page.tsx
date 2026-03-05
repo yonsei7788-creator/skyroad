@@ -4,7 +4,7 @@ import { Header } from "@/app/_components/Header";
 import { Footer } from "@/app/_components/Footer";
 import { createClient } from "@/libs/supabase/server";
 
-import styles from "./page.module.css";
+import { TargetUniversityForm } from "./_components/TargetUniversityForm";
 
 export const metadata = {
   title: "목표 대학 수정 | SKYROAD",
@@ -20,19 +20,28 @@ const TargetUniversityPage = async () => {
     redirect("/");
   }
 
+  const { data: targets } = await supabase
+    .from("target_universities")
+    .select(
+      "id, university_name, admission_type, department, sub_field, priority"
+    )
+    .eq("user_id", user.id)
+    .order("priority", { ascending: true });
+
+  const initialTargets = (targets ?? []).map((t) => ({
+    id: t.id,
+    priority: t.priority as 1 | 2 | 3,
+    universityName: t.university_name ?? "",
+    admissionType: t.admission_type ?? "",
+    department: t.department ?? "",
+    subField: t.sub_field ?? "",
+  }));
+
   return (
     <>
       <Header />
-      <main className={styles.main}>
-        <div className={styles.container}>
-          <h1 className={styles.title}>목표 대학 수정</h1>
-          <div className={styles.emptyState}>
-            <p className={styles.emptyText}>준비 중인 기능입니다.</p>
-            <p className={styles.emptySubtext}>
-              곧 목표 대학을 설정하고 관리할 수 있습니다.
-            </p>
-          </div>
-        </div>
+      <main>
+        <TargetUniversityForm initialTargets={initialTargets} />
       </main>
       <Footer />
     </>
