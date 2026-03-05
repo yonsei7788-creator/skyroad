@@ -32,10 +32,6 @@ export const GET = async (
       orders!inner (
         id,
         user_id,
-        profiles!inner (
-          id,
-          name
-        ),
         plans!inner (
           id,
           name,
@@ -63,7 +59,6 @@ export const GET = async (
   }
 
   const orders = row.orders as unknown as Record<string, unknown>;
-  const profiles = orders?.profiles as unknown as Record<string, unknown>;
   const plans = orders?.plans as unknown as Record<string, unknown>;
   const targetUni = row.target_universities as unknown as Record<
     string,
@@ -72,19 +67,20 @@ export const GET = async (
   const reviewer = row.reviewer as unknown as Record<string, unknown> | null;
   const userId = orders?.user_id as string;
 
-  // Fetch email via admin client (optional)
+  // Parallel: profile name + email
   const adminClient = createAdminClient();
-  let userEmail = "";
-  if (adminClient) {
-    try {
-      const {
-        data: { user: authUser },
-      } = await adminClient.auth.admin.getUserById(userId);
-      userEmail = authUser?.email || "";
-    } catch {
-      // Fallback: email not available
-    }
-  }
+  const [profileRes, emailRes] = await Promise.all([
+    supabase.from("profiles").select("name").eq("id", userId).single(),
+    adminClient
+      ? adminClient.auth.admin.getUserById(userId).catch(() => ({
+          data: { user: null },
+        }))
+      : Promise.resolve({ data: { user: null } }),
+  ]);
+
+  const userName = (profileRes.data?.name as string) || null;
+  const userEmail =
+    (emailRes.data as { user: { email?: string } | null })?.user?.email || "";
 
   const universityParts = [
     targetUni?.university_name,
@@ -97,7 +93,7 @@ export const GET = async (
   const detail: ReportDetail = {
     id: row.id,
     orderId: orders?.id as string,
-    userName: (profiles?.name as string) || null,
+    userName,
     userEmail,
     planName: (plans?.display_name as string) || (plans?.name as string) || "",
     targetUniversity,

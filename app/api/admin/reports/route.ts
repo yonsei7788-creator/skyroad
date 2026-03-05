@@ -31,7 +31,45 @@ export const GET = async (request: NextRequest) => {
 
   const offset = (page - 1) * limit;
 
-  // Query reports with joins
+  // Search filter: find matching user IDs first
+  let searchUserIds: string[] | null = null;
+  if (search) {
+    const { data: matchedProfiles } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("name", `%${search}%`);
+    searchUserIds = (matchedProfiles ?? []).map((p) => p.id);
+    if (searchUserIds.length === 0) {
+      return NextResponse.json({
+        data: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      } satisfies PaginatedResponse<AdminReport>);
+    }
+  }
+
+  // Plan filter: find matching plan IDs first
+  let planIds: string[] | null = null;
+  if (planFilter) {
+    const { data: matchedPlans } = await supabase
+      .from("plans")
+      .select("id")
+      .eq("name", planFilter);
+    planIds = (matchedPlans ?? []).map((p) => p.id);
+    if (planIds.length === 0) {
+      return NextResponse.json({
+        data: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      } satisfies PaginatedResponse<AdminReport>);
+    }
+  }
+
+  // Query reports with joins (no profiles join on orders — no FK)
   let query = supabase
     .from("reports")
     .select(
@@ -47,10 +85,7 @@ export const GET = async (request: NextRequest) => {
       orders!inner (
         id,
         user_id,
-        profiles!inner (
-          id,
-          name
-        ),
+        plan_id,
         plans!inner (
           id,
           name,
@@ -70,14 +105,12 @@ export const GET = async (request: NextRequest) => {
     )
     .order("created_at", { ascending: false });
 
-  // Search filter by user name
-  if (search) {
-    query = query.ilike("orders.profiles.name", `%${search}%`);
+  // Apply pre-resolved filters
+  if (searchUserIds) {
+    query = query.in("orders.user_id", searchUserIds);
   }
-
-  // Plan filter
-  if (planFilter) {
-    query = query.eq("orders.plans.name", planFilter);
+  if (planIds) {
+    query = query.in("orders.plan_id", planIds);
   }
 
   // Status filter - we need to filter at the application level
@@ -108,8 +141,7 @@ export const GET = async (request: NextRequest) => {
     );
   }
 
-  // Get user emails via admin client (optional)
-  const adminClient = createAdminClient();
+  // Collect user IDs for profile + email lookup
   const userIds = [
     ...new Set(
       (rows || []).map(
@@ -119,18 +151,27 @@ export const GET = async (request: NextRequest) => {
     ),
   ].filter(Boolean);
 
-  const emailMap = new Map<string, string>();
-  if (adminClient && userIds.length > 0) {
-    const {
-      data: { users },
-    } = await adminClient.auth.admin.listUsers({
-      perPage: 1000,
-    });
+  // Parallel: profiles + emails
+  const adminClient = createAdminClient();
+  const [profilesRes, emailsRes] = await Promise.all([
+    userIds.length > 0
+      ? supabase.from("profiles").select("id, name").in("id", userIds)
+      : Promise.resolve({ data: [] }),
+    adminClient && userIds.length > 0
+      ? adminClient.auth.admin.listUsers({ perPage: 1000 })
+      : Promise.resolve({ data: { users: [] } }),
+  ]);
 
-    for (const u of users || []) {
-      if (userIds.includes(u.id) && u.email) {
-        emailMap.set(u.id, u.email);
-      }
+  const profileMap = new Map(
+    (profilesRes.data ?? []).map((p) => [p.id, p.name as string])
+  );
+  const emailMap = new Map<string, string>();
+  const authUsers =
+    (emailsRes.data as { users: { id: string; email?: string }[] })?.users ??
+    [];
+  for (const u of authUsers) {
+    if (userIds.includes(u.id) && u.email) {
+      emailMap.set(u.id, u.email);
     }
   }
 
@@ -140,7 +181,6 @@ export const GET = async (request: NextRequest) => {
   const data: AdminReport[] = (rows || []).map(
     (row: Record<string, unknown>) => {
       const orders = row.orders as Record<string, unknown>;
-      const profiles = orders?.profiles as Record<string, unknown>;
       const plans = orders?.plans as Record<string, unknown>;
       const targetUni = row.target_universities as Record<
         string,
@@ -158,7 +198,7 @@ export const GET = async (request: NextRequest) => {
 
       return {
         id: row.id as string,
-        userName: (profiles?.name as string) || null,
+        userName: profileMap.get(userId) || null,
         userEmail: emailMap.get(userId) || "",
         planName:
           (plans?.display_name as string) || (plans?.name as string) || "",
