@@ -192,13 +192,12 @@ export const POST = async (request: NextRequest) => {
   const plan = plans.name as ReportPlan;
   const recordId = order.record_id as string;
 
-  // 목표 대학 정보 조회
+  // 목표 대학 정보 조회 (1~3지망 전체)
   const { data: targetUnis } = await dbClient
     .from("target_universities")
-    .select("university_name, department")
+    .select("university_name, admission_type, department, sub_field, priority")
     .eq("user_id", order.user_id)
-    .order("priority", { ascending: true })
-    .limit(1);
+    .order("priority", { ascending: true });
 
   const targetUni = targetUnis?.[0];
 
@@ -212,6 +211,22 @@ export const POST = async (request: NextRequest) => {
     targetDepartment: targetUni?.department,
     hasMockExamData: false,
   };
+
+  // 목표 대학 후보군 텍스트 (AI 프롬프트용)
+  const universityCandidatesText =
+    targetUnis && targetUnis.length > 0
+      ? JSON.stringify(
+          targetUnis.map((u) => ({
+            priority: u.priority,
+            university: u.university_name,
+            admissionType: u.admission_type,
+            department: u.department,
+            subField: u.sub_field || undefined,
+          })),
+          null,
+          2
+        )
+      : "[]";
 
   // 7. 파이프라인 동기 실행
   if (!env.GEMINI_API_KEY) {
@@ -233,6 +248,9 @@ export const POST = async (request: NextRequest) => {
 
     const recordData = await loadRecordData(dbClient, recordId);
     const { data, texts } = preprocess(recordData, studentInfo, plan);
+
+    // 목표 대학 후보군 텍스트 주입
+    texts.universityCandidatesText = universityCandidatesText;
 
     await updateProgress(dbClient, reportId, 10, "전처리 완료");
 
