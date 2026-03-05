@@ -4,12 +4,14 @@ import {
   FileText,
   ArrowRight,
   ClipboardList,
+  CreditCard,
   GraduationCap,
 } from "lucide-react";
 
 import { Header } from "@/app/_components/Header";
 import { Footer } from "@/app/_components/Footer";
 import { createClient } from "@/libs/supabase/server";
+import { GenerateReportButton } from "./_components/GenerateReportButton";
 
 import styles from "./page.module.css";
 
@@ -163,6 +165,36 @@ const OrderCard = ({ order }: { order: OrderRow }) => {
           </div>
         )}
 
+      {/* Action area */}
+      {order.status === "pending_payment" && (
+        <div className={styles.actionArea}>
+          <Link
+            href={`/checkout?plan=${order.plans.name}`}
+            className={styles.actionButton}
+          >
+            <CreditCard size={14} />
+            결제하기
+          </Link>
+        </div>
+      )}
+
+      {order.status === "paid" &&
+        (order.reports.length === 0 ||
+          order.reports[0].ai_status === "pending" ||
+          order.reports[0].ai_status === "failed") && (
+          <div className={styles.actionArea}>
+            <GenerateReportButton
+              orderId={order.id}
+              reportId={order.reports[0]?.id}
+              label={
+                order.reports[0]?.ai_status === "failed"
+                  ? "다시 시도"
+                  : "리포트 생성"
+              }
+            />
+          </div>
+        )}
+
       {/* Report rows */}
       {order.reports.length > 0 &&
         order.reports.map((report) => (
@@ -188,7 +220,7 @@ const OrderCard = ({ order }: { order: OrderRow }) => {
                         : "대기중"}
               </div>
             </div>
-            {isDelivered && report.delivered_at ? (
+            {report.ai_status === "completed" ? (
               <Link
                 href={`/report/${report.id}`}
                 className={styles.reportAction}
