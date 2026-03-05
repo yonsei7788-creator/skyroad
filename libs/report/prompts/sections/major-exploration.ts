@@ -1,6 +1,6 @@
 /** 섹션 20: AI 전공 추천 (majorExploration) -- Standard+ */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface MajorExplorationPromptInput {
   competencyExtraction: string;

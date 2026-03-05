@@ -5,13 +5,13 @@
  * AI 호출 없음 -- 모든 수치 계산은 이 모듈에서 코드로 수행.
  */
 
-import type { ReportPlan, StudentInfo } from "../types";
+import type { ReportPlan, StudentInfo } from "../types.ts";
 import {
   MAJOR_COURSE_RECOMMENDATIONS,
   MEDICAL_COURSE_REQUIREMENTS,
   isMedicalMajor,
-} from "../constants/recommended-courses";
-import type { RecommendedCourseMatch } from "../constants/recommended-courses";
+} from "../constants/recommended-courses.ts";
+import type { RecommendedCourseMatch } from "../constants/recommended-courses.ts";
 
 // ─── 생기부 원본 JSONB 타입 ───
 

@@ -1,6 +1,6 @@
 /** 섹션 5: 역량별 종합 평가 (competencyEvaluation) */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface CompetencyEvaluationPromptInput {
   competencyExtraction: string;

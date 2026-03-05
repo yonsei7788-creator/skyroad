@@ -1,6 +1,6 @@
 /** 섹션 18: 실행 로드맵 (actionRoadmap) -- Standard+ */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface ActionRoadmapPromptInput {
   weaknessAnalysisResult: string;

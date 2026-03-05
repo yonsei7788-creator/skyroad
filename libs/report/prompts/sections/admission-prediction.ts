@@ -1,6 +1,6 @@
 /** 섹션 3: 합격 예측 (admissionPrediction) */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface AdmissionPredictionPromptInput {
   competencyExtraction: string;

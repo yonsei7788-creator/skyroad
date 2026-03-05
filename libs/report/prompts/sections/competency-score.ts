@@ -1,6 +1,6 @@
 /** 섹션 2: 역량 정량 스코어 (competencyScore) */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface CompetencyScorePromptInput {
   studentTypeClassification: string;

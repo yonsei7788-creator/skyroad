@@ -1,6 +1,6 @@
 /** 섹션 9: 창체 활동 분석 (activityAnalysis) */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface ActivityAnalysisPromptInput {
   creativeActivities: string;

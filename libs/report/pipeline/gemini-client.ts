@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { Schema } from "@google/generative-ai";
 
-import { withRetry, DEFAULT_RETRY_CONFIG } from "./retry";
-import type { RetryConfig } from "./retry";
+import { withRetry, DEFAULT_RETRY_CONFIG } from "./retry.ts";
+import type { RetryConfig } from "./retry.ts";
 
 const CALL_TIMEOUT_MS = 60_000;
 

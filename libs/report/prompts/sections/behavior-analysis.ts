@@ -1,6 +1,6 @@
 /** 섹션 11: 행동특성 분석 (behaviorAnalysis) -- Standard+ */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface BehaviorAnalysisPromptInput {
   behavioralAssessment: string;

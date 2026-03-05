@@ -7,16 +7,16 @@
 
 import { z } from "zod/v4";
 
-import { ReportSectionSchema, validateByPlan } from "../schemas";
-import { SECTION_ORDER } from "../types";
+import { ReportSectionSchema, validateByPlan } from "../schemas.ts";
+import { SECTION_ORDER } from "../types.ts";
 import type {
   ReportPlan,
   ReportContent,
   ReportMeta,
   ReportSection,
   StudentInfo,
-} from "../types";
-import type { PreprocessedData } from "./preprocessor";
+} from "../types.ts";
+import type { PreprocessedData } from "./preprocessor.ts";
 
 // ─── 검증 결과 타입 ───
 

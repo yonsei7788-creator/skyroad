@@ -1,6 +1,6 @@
 /** 섹션 6: 성적 분석 (academicAnalysis) */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface AcademicAnalysisPromptInput {
   quantitativeAnalysis: string;

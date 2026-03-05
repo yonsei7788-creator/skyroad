@@ -1,6 +1,6 @@
 /** 섹션 4: 종합 진단 (diagnostic) */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface DiagnosticPromptInput {
   competencyExtraction: string;

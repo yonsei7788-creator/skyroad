@@ -7,8 +7,8 @@
 
 import { z } from "zod/v4";
 
-import { SECTION_ORDER } from "./types";
-import type { ReportContent, SubjectAnalysisSection } from "./types";
+import { SECTION_ORDER } from "./types.ts";
+import type { ReportContent, SubjectAnalysisSection } from "./types.ts";
 
 // ─── 공통 enum 스키마 ───
 

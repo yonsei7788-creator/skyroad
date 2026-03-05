@@ -1,6 +1,6 @@
 /** 섹션 17: 생기부 스토리 구조 분석 (storyAnalysis) -- Standard+ */
 
-import type { ReportPlan } from "../../types";
+import type { ReportPlan } from "../../types.ts";
 
 export interface StoryAnalysisPromptInput {
   allSubjectData: string;
