@@ -1,4 +1,4 @@
-import type { ActionRoadmapSection } from "@/libs/report/types";
+import type { ActionRoadmapSection, ReportPlan } from "@/libs/report/types";
 
 import styles from "./report.module.css";
 import { SectionHeader } from "./SectionHeader";
@@ -6,11 +6,13 @@ import { SectionHeader } from "./SectionHeader";
 interface ActionRoadmapRendererProps {
   data: ActionRoadmapSection;
   sectionNumber: number;
+  plan?: ReportPlan;
 }
 
 export const ActionRoadmapRenderer = ({
   data,
   sectionNumber,
+  plan = "lite",
 }: ActionRoadmapRendererProps) => {
   return (
     <>
@@ -178,7 +180,7 @@ export const ActionRoadmapRenderer = ({
             </>
           )}
 
-          {data.interviewTimeline && (
+          {data.interviewTimeline && plan !== "premium" && (
             <div
               className={`${styles.aiCommentary} ${data.projectedOutcome?.length ? styles.mt20 : ""}`}
             >

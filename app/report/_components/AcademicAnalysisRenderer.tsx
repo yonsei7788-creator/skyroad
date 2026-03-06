@@ -322,6 +322,24 @@ export const AcademicAnalysisRenderer = ({
               <li key={item} className={styles.numberedListItem}>
                 <span className={styles.numberedListNumber}>{idx + 1}</span>
                 {item}
+                {data.gradeChangeAnalysis?.actionItemPriorities?.[idx] && (
+                  <span
+                    className={
+                      styles[
+                        `importance_${data.gradeChangeAnalysis.actionItemPriorities[idx]}` as keyof typeof styles
+                      ]
+                    }
+                    style={{ marginLeft: 6 }}
+                  >
+                    {data.gradeChangeAnalysis.actionItemPriorities[idx] ===
+                    "high"
+                      ? "★ 중요"
+                      : data.gradeChangeAnalysis.actionItemPriorities[idx] ===
+                          "medium"
+                        ? "● 보통"
+                        : "○ 참고"}
+                  </span>
+                )}
               </li>
             ))}
           </ol>
@@ -404,35 +422,53 @@ export const AcademicAnalysisRenderer = ({
       )}
 
       {/* Block 7: Five grade simulation */}
-      {data.fiveGradeSimulation && data.fiveGradeSimulation.length > 0 && (
-        <div>
-          <div className={styles.ceSubheading}>5등급제 전환 시뮬레이션</div>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>교과</th>
-                <th className={styles.tableAlignCenter}>현재 등급</th>
-                <th className={styles.tableAlignCenter}>전환 등급</th>
-                <th>해석</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.fiveGradeSimulation.map((sim) => (
-                <tr key={sim.subject}>
-                  <td className={styles.tableCellBold}>{sim.subject}</td>
-                  <td className={styles.tableAlignCenter}>
-                    {sim.currentGrade}
-                  </td>
-                  <td className={styles.tableAlignCenter}>
-                    {sim.simulatedGrade}
-                  </td>
-                  <td className={styles.small}>{sim.interpretation}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {data.fiveGradeSimulation &&
+        data.fiveGradeSimulation.length > 0 &&
+        (() => {
+          const fgSim = data.fiveGradeSimulation;
+          const showPercentile = fgSim.some(
+            (sim) => sim.percentileCumulative !== undefined
+          );
+          return (
+            <div>
+              <div className={styles.ceSubheading}>5등급제 전환 시뮬레이션</div>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>교과</th>
+                    <th className={styles.tableAlignCenter}>현재 등급</th>
+                    <th className={styles.tableAlignCenter}>전환 등급</th>
+                    {showPercentile && (
+                      <th className={styles.tableAlignCenter}>누적 백분위</th>
+                    )}
+                    <th>해석</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fgSim.map((sim) => (
+                    <tr key={sim.subject}>
+                      <td className={styles.tableCellBold}>{sim.subject}</td>
+                      <td className={styles.tableAlignCenter}>
+                        {sim.currentGrade}
+                      </td>
+                      <td className={styles.tableAlignCenter}>
+                        {sim.simulatedGrade}
+                      </td>
+                      {showPercentile && (
+                        <td className={styles.tableAlignCenter}>
+                          {sim.percentileCumulative !== undefined
+                            ? `${sim.percentileCumulative}%`
+                            : "—"}
+                        </td>
+                      )}
+                      <td className={styles.small}>{sim.interpretation}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
 
       {/* Block 8: University simulations + Improvement priority */}
       {((data.universityGradeSimulations &&

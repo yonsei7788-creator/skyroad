@@ -11,12 +11,12 @@ export interface InterviewPrepPromptInput {
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: "",
   standard: `## 플랜별 출력: 상세
-- 10~12개 질문을 출력합니다.
-- 각 질문: question + questionType(세특기반/성적기반/진로기반/인성기반) + intent(출제 의도 1~2줄)
+- 최대 20개 질문을 출력합니다.
+- 각 질문: question + questionType(세특기반/성적기반/진로기반/인성기반) + intent(출제 의도 1~2줄) + importance(high/medium/low)
 - answerStrategy, sampleAnswer, followUpQuestions 필드는 출력하지 않습니다.`,
   premium: `## 플랜별 출력: 정밀
-- 12~15개 질문을 출력합니다.
-- 각 질문: question + questionType + intent + answerStrategy(답변 전략) + sampleAnswer(모범 답변 가이드) + followUpQuestions(꼬리질문 1~2개)`,
+- 30개 질문을 출력합니다.
+- 각 질문: question + questionType + intent + importance(high/medium/low) + answerStrategy(답변 전략) + sampleAnswer(모범 답변 가이드) + followUpQuestions(꼬리질문 1~2개)`,
 };
 
 export const buildInterviewPrepPrompt = (

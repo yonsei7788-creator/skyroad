@@ -14,9 +14,15 @@ interface AdmissionPredictionRendererProps {
 }
 
 const TYPE_LABEL: Record<string, string> = {
-  학종: "학생부종합전형 추천",
-  교과: "학생부교과전형 추천",
-  정시: "정시전형 추천",
+  학종: "학생부종합전형",
+  교과: "학생부교과전형",
+  정시: "수능(정시)전형",
+};
+
+const FULL_TYPE_NAME: Record<string, string> = {
+  학종: "학생부종합전형",
+  교과: "학생부교과전형",
+  정시: "수능(정시)전형",
 };
 
 export const AdmissionPredictionRenderer = ({
@@ -56,9 +62,6 @@ export const AdmissionPredictionRenderer = ({
           <div className={styles.admissionBannerRow}>
             <span className={styles.admissionBannerOverline}>추천 전형</span>
             <span className={styles.admissionBannerType}>
-              {data.recommendedType}
-            </span>
-            <span className={styles.tagAccent}>
               {TYPE_LABEL[data.recommendedType] ?? data.recommendedType}
             </span>
           </div>
@@ -70,7 +73,7 @@ export const AdmissionPredictionRenderer = ({
           <div key={pred.admissionType} className={cardClass}>
             <div className={styles.admissionCardHeader}>
               <span className={styles.admissionCardType}>
-                {pred.admissionType}
+                {FULL_TYPE_NAME[pred.admissionType] ?? pred.admissionType}
               </span>
               <span className={styles.admissionCardRate}>
                 {pred.passRateLabel}
@@ -106,7 +109,7 @@ export const AdmissionPredictionRenderer = ({
               <div key={pred.admissionType} className={cardClass}>
                 <div className={styles.admissionCardHeader}>
                   <span className={styles.admissionCardType}>
-                    {pred.admissionType}
+                    {FULL_TYPE_NAME[pred.admissionType] ?? pred.admissionType}
                   </span>
                   <span className={styles.admissionCardRate}>
                     {pred.passRateLabel}

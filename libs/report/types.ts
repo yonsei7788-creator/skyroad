@@ -147,7 +147,7 @@ export interface StudentProfileSection extends BaseSection {
 
   /** 레이더 차트 벤치마크 비교 (역량별) */
   radarChartComparison?: Record<string, BenchmarkComparison>;
-  /** 백분위 라벨 (예: "상위 35%") */
+  /** 백분위 라벨 (예: "상위 34%") */
   percentileLabel?: string;
   /** 유형 강점 (2~3개) */
   typeStrengths?: string[];
@@ -170,6 +170,8 @@ interface CompetencyScoreDetail {
   score: number;
   maxScore: 100;
   subcategories: CompetencySubScore[];
+  grade?: CompetencyGrade;
+  gradeComment?: string;
 }
 
 /** 비교 데이터 (내 점수 vs 지원적정구간 평균 vs 전체 평균) */
@@ -473,6 +475,7 @@ interface GradeChangeAnalysis {
   currentTrend: "상승" | "유지" | "하락";
   prediction: string;
   actionItems: string[];
+  actionItemPriorities?: Priority[];
 }
 
 /** Premium: 5등급제 전환 시뮬레이션 */
@@ -481,6 +484,7 @@ interface FiveGradeSimulation {
   currentGrade: number;
   simulatedGrade: number;
   interpretation: string;
+  percentileCumulative?: number;
 }
 
 /** Premium: 대학별 반영 방법 시뮬레이션 */
@@ -668,6 +672,7 @@ interface ActivityTypeAnalysis {
     summary: string;
     rating: SubjectRating;
     competencyTags: CompetencyTag[];
+    ratingRationale?: string;
   }[];
   /** 영역 종합 코멘트 */
   overallComment: string;
@@ -1012,6 +1017,8 @@ export interface TopicRecommendationItem {
   estimatedDuration?: string;
   /** 시너지 점수 (0~100) */
   synergyScore?: number;
+  /** 중요도 */
+  importance?: Priority;
 }
 
 export interface TopicRecommendationSection extends BaseSection {
@@ -1063,11 +1070,13 @@ export interface InterviewQuestion {
   relatedCitation?: OriginalTextCitation;
   /** 답변 핵심 키워드 */
   answerKeywords?: string[];
+  /** 중요도 */
+  importance?: Priority;
 }
 
 export interface InterviewPrepSection extends BaseSection {
   sectionId: "interviewPrep";
-  /** Standard: 10~12개, Premium: 12~15개 */
+  /** Standard: 최대 20개, Premium: 30개 */
   questions: InterviewQuestion[];
 
   // ─── v4 추가 ───
@@ -1100,6 +1109,8 @@ interface UniversityRecommendation {
     competitionRate?: number;
     enrollment?: number;
   };
+  /** 합격 가능성 퍼센트 라벨 (예: "60~70%") */
+  chancePercentLabel?: string;
 }
 
 /** Standard+: 전형별 전략 */
@@ -1174,6 +1185,13 @@ export interface AdmissionStrategySection extends BaseSection {
       band: AdmissionRiskBand;
     }[];
   }[];
+  /** 티어 그룹별 추천 */
+  tierGroupedRecommendations?: {
+    tierGroup: "상향 위주" | "안정 위주" | "하향 위주";
+    recommendations: UniversityRecommendation[];
+  }[];
+  /** 다음 학기 전략 */
+  nextSemesterStrategy?: string;
 }
 
 /** 고1 전용: 방향 설정 가이드 (admissionStrategy 대체) */

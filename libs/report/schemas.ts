@@ -119,6 +119,8 @@ const CompetencyScoreDetailSchema = z.object({
   score: z.number().min(0),
   maxScore: z.literal(100),
   subcategories: z.array(CompetencySubScoreSchema).min(1),
+  grade: CompetencyGradeSchema.optional(),
+  gradeComment: z.string().optional(),
 });
 
 const ComparisonDataSchema = z.object({
@@ -408,6 +410,7 @@ const GradeChangeAnalysisSchema = z.object({
   currentTrend: z.enum(["상승", "유지", "하락"]),
   prediction: z.string().min(1),
   actionItems: z.array(z.string().min(1)).min(1),
+  actionItemPriorities: z.array(PrioritySchema).optional(),
 });
 
 const FiveGradeSimulationSchema = z.object({
@@ -415,6 +418,7 @@ const FiveGradeSimulationSchema = z.object({
   currentGrade: z.number(),
   simulatedGrade: z.number(),
   interpretation: z.string().min(1),
+  percentileCumulative: z.number().optional(),
 });
 
 const UniversityGradeSimulationSchema = z.object({
@@ -597,6 +601,7 @@ const ActivityYearlyAnalysisSchema = z.object({
   summary: z.string().min(1),
   rating: SubjectRatingSchema,
   competencyTags: z.array(CompetencyTagSchema),
+  ratingRationale: z.string().optional(),
 });
 
 const KeyActivitySchema = z.object({
@@ -893,6 +898,7 @@ const TopicRecommendationItemSchema = z.object({
   difficulty: z.enum(["기본", "심화", "도전"]).optional(),
   estimatedDuration: z.string().optional(),
   synergyScore: z.number().min(0).max(100).optional(),
+  importance: PrioritySchema.optional(),
 });
 
 export const TopicRecommendationSectionSchema = z.object({
@@ -932,6 +938,7 @@ const InterviewQuestionSchema = z.object({
   frequency: z.enum(["높음", "보통", "낮음"]).optional(),
   relatedCitation: OriginalTextCitationSchema.optional(),
   answerKeywords: z.array(z.string().min(1)).optional(),
+  importance: PrioritySchema.optional(),
 });
 
 export const InterviewPrepSectionSchema = z.object({
@@ -967,6 +974,7 @@ const UniversityRecommendationSchema = z.object({
   chance: AdmissionChanceSchema.optional(),
   chanceRationale: z.string().optional(),
   admissionData: AdmissionDataSchema.optional(),
+  chancePercentLabel: z.string().optional(),
 });
 
 const AdmissionTypeStrategySchema = z.object({
@@ -1046,6 +1054,15 @@ export const AdmissionStrategySectionSchema = z.object({
       })
     )
     .optional(),
+  tierGroupedRecommendations: z
+    .array(
+      z.object({
+        tierGroup: z.enum(["상향 위주", "안정 위주", "하향 위주"]),
+        recommendations: z.array(UniversityRecommendationSchema),
+      })
+    )
+    .optional(),
+  nextSemesterStrategy: z.string().optional(),
 });
 
 // ─── 고1 전용: 방향 설정 가이드 ───

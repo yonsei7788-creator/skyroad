@@ -23,11 +23,11 @@ export const ReportPage = ({
 }: ReportPageProps) => {
   return (
     <div className={styles.page} data-page>
-      {showWatermark && <div className={styles.watermark}>SKYLOAD</div>}
+      {showWatermark && <div className={styles.watermark}>SKYROAD</div>}
 
       {showHeader && (
         <div className={styles.pageHeader}>
-          <span className={styles.pageHeaderBrand}>SKYLOAD REPORT</span>
+          <span className={styles.pageHeaderBrand}>SKYROAD REPORT</span>
           {sectionTitle && (
             <span className={styles.pageHeaderSection}>{sectionTitle}</span>
           )}
@@ -39,7 +39,7 @@ export const ReportPage = ({
       {showFooter && (
         <div className={styles.pageFooter}>
           <span className={styles.pageFooterText}>
-            &copy; 2026 SKYLOAD{studentName ? ` | ${studentName}` : ""}
+            &copy; 2026 SKYROAD{studentName ? ` | ${studentName}` : ""}
           </span>
           <span className={styles.pageNumber} />
         </div>

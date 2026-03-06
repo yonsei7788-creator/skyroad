@@ -98,6 +98,7 @@ export const SectionRenderer = ({
         <ActivityAnalysisRenderer
           data={section}
           sectionNumber={sectionNumber}
+          plan={plan}
         />
       );
     case "subjectAnalysis":
@@ -125,6 +126,7 @@ export const SectionRenderer = ({
         <WeaknessAnalysisRenderer
           data={section}
           sectionNumber={sectionNumber}
+          plan={plan}
         />
       );
     case "topicRecommendation":
@@ -143,6 +145,7 @@ export const SectionRenderer = ({
         <AdmissionStrategyRenderer
           data={section}
           sectionNumber={sectionNumber}
+          plan={plan}
         />
       );
     case "directionGuide":
@@ -155,7 +158,11 @@ export const SectionRenderer = ({
       );
     case "actionRoadmap":
       return (
-        <ActionRoadmapRenderer data={section} sectionNumber={sectionNumber} />
+        <ActionRoadmapRenderer
+          data={section}
+          sectionNumber={sectionNumber}
+          plan={plan}
+        />
       );
 
     // 부록

@@ -113,6 +113,9 @@ const competencyScoreLite: CompetencyScoreSection = {
       label: "학업 역량",
       score: 82,
       maxScore: 100,
+      grade: "A",
+      gradeComment:
+        "교과 성적이 전반적으로 우수하며, 특히 수학과 정보 교과에서 상위권을 유지하고 있습니다. 탐구 교과에서도 적극적인 학습 태도를 보이고 있으나, 국어와 한국사 교과의 편차가 다소 존재하여 보완이 필요합니다.",
       subcategories: [
         {
           name: "교과 성취도",
@@ -141,6 +144,9 @@ const competencyScoreLite: CompetencyScoreSection = {
       label: "진로 역량",
       score: 78,
       maxScore: 100,
+      grade: "B",
+      gradeComment:
+        "컴퓨터공학이라는 진로 방향이 1학년부터 일관되게 유지되고 있으며, 코딩 동아리와 세특 활동에서 전공 적합성이 돋보입니다. 다만 외부 활동 연계나 심화 진로 탐색이 다소 부족하여, 보다 구체적인 진로 연계 경험을 확보할 필요가 있습니다.",
       subcategories: [
         {
           name: "전공 적합성",
@@ -169,6 +175,9 @@ const competencyScoreLite: CompetencyScoreSection = {
       label: "공동체 역량",
       score: 65,
       maxScore: 100,
+      grade: "C",
+      gradeComment:
+        "학교 내 소규모 프로젝트에서 기술적 역할을 수행하고 있으나, 공식적인 리더 경험이나 진로 연계 봉사 활동이 부족합니다. 3학년에서 학급 임원이나 동아리 부장 역할을 맡고, 코딩 교육 봉사를 시작하여 공동체 역량을 적극적으로 보강해야 합니다.",
       subcategories: [
         {
           name: "리더십",
@@ -901,6 +910,7 @@ const academicAnalysisStandard: AcademicAnalysisSection = {
       "한국사 개념 정리 노트 작성 및 기출 풀이",
       "전 교과 세특에서 진로 연결 활동 기록 강화",
     ],
+    actionItemPriorities: ["high", "high", "medium"],
   },
 };
 
@@ -912,13 +922,15 @@ const academicAnalysisPremium: AcademicAnalysisSection = {
       currentGrade: 1,
       simulatedGrade: 1,
       interpretation: "5등급제 전환 시에도 A등급(상위 10%) 유지가 예상됨",
+      percentileCumulative: 10,
     },
     {
       subject: "국어",
       currentGrade: 3,
       simulatedGrade: 2,
       interpretation:
-        "5등급제 전환 시 B등급(상위 35%)으로 약간의 이점이 있을 수 있음",
+        "5등급제 전환 시 2등급(상위 34% 이내)으로 약간의 이점이 있을 수 있음",
+      percentileCumulative: 34,
     },
   ],
   universityGradeSimulations: [
@@ -1074,6 +1086,8 @@ const activityAnalysisLite: ActivityAnalysisSection = {
               assessment: "양호",
             },
           ],
+          ratingRationale:
+            "학급 환경 개선 프로젝트에서 IT 환경 구축을 제안하고 실행한 점은 문제해결능력과 실행력을 보여주나, 프로젝트의 범위가 교실 내로 한정되어 있고 타 학생과의 협업 깊이나 결과물의 구체적 성과가 생기부에 충분히 드러나지 않아 '양호'로 평가하였습니다.",
         },
         {
           year: 2,
@@ -1092,6 +1106,8 @@ const activityAnalysisLite: ActivityAnalysisSection = {
               assessment: "양호",
             },
           ],
+          ratingRationale:
+            "학교 홈페이지의 UI/UX 문제점을 분석하고 프로토타입까지 직접 제작한 점은 전공 적합성과 실행력 모두에서 높은 수준을 보여줍니다. TF팀이라는 공식 조직 내에서 협업한 경험이 있어 공동체 역량도 함께 드러나며, 학교 공동체에 IT 역량으로 기여한 모범적 사례로 '우수'로 평가하였습니다.",
         },
       ],
       overallComment:
@@ -1112,6 +1128,8 @@ const activityAnalysisLite: ActivityAnalysisSection = {
               assessment: "양호",
             },
           ],
+          ratingRationale:
+            "코딩 동아리에 자발적으로 가입하여 Python 기초를 학습하고 간단한 프로그램을 개발한 점은 진로 탐색의 시작으로 의미 있으나, 1학년 수준의 기초 활동에 머물러 있어 독창적 성과물이나 심화 탐구가 부족합니다. 동아리 내 역할도 일반 부원 수준이어서 '양호'로 평가하였습니다.",
         },
         {
           year: 2,
@@ -1129,6 +1147,8 @@ const activityAnalysisLite: ActivityAnalysisSection = {
               assessment: "우수",
             },
           ],
+          ratingRationale:
+            "알고리즘 스터디를 직접 리드하며 학습 리더십을 발휘한 점과 교내 해커톤에 참가하여 실전 프로젝트 경험을 쌓은 점이 우수합니다. 1학년 대비 뚜렷한 성장을 보여주며, 전공 적합성과 탐구 역량 모두에서 높은 수준을 달성하여 '우수'로 평가하였습니다.",
         },
       ],
       overallComment:
@@ -1144,6 +1164,8 @@ const activityAnalysisLite: ActivityAnalysisSection = {
           competencyTags: [
             { category: "career", subcategory: "진로 탐색 활동" },
           ],
+          ratingRationale:
+            "IT 기업 탐방에 참여한 것 자체는 긍정적이나, 단순 견학 수준의 체험에 그치고 있으며 탐방 후 깊이 있는 성찰이나 후속 활동으로 연결되지 않았습니다. 진로 탐색의 초기 단계로 볼 수 있으나 구체성이 부족하여 '보통'으로 평가하였습니다.",
         },
         {
           year: 2,
@@ -1157,6 +1179,8 @@ const activityAnalysisLite: ActivityAnalysisSection = {
               assessment: "양호",
             },
           ],
+          ratingRationale:
+            "직업 탐구 보고서를 작성하고 AI 관련 진로 특강에 참여한 점에서 1학년 대비 진로 탐색의 구체성이 향상되었습니다. 다만 보고서의 깊이나 특강 참여 후 후속 탐구 활동이 생기부에 충분히 드러나지 않아 '양호'로 평가하였습니다.",
         },
       ],
       overallComment:
@@ -1175,6 +1199,8 @@ const activityAnalysisLite: ActivityAnalysisSection = {
               subcategory: "봉사 및 나눔",
             },
           ],
+          ratingRationale:
+            "환경정화 봉사에 12시간 참여한 것은 최소 기준은 충족하나, 진로와의 연계성이 전혀 없으며 단순 참여 수준에 머물러 있습니다. 봉사 활동에서 주도적 역할이나 의미 있는 성찰이 드러나지 않아 '보통'으로 평가하였습니다.",
         },
         {
           year: 2,
@@ -1188,6 +1214,8 @@ const activityAnalysisLite: ActivityAnalysisSection = {
               assessment: "부족" as const,
             },
           ],
+          ratingRationale:
+            "봉사 시간이 1학년 대비 오히려 감소하였으며(12시간→8시간), 활동 내용도 도서 정리라는 단순 업무에 그치고 있습니다. 컴퓨터공학 진로와 연계된 봉사(코딩 교육 등)가 전무하고, 봉사를 통한 성장이나 공동체 기여 의식이 드러나지 않아 '보완필요'로 평가하였습니다.",
         },
       ],
       overallComment:
@@ -4611,18 +4639,21 @@ const topicRecommendationLite: TopicRecommendationSection = {
       relatedSubjects: ["정보", "국어"],
       description:
         "Python의 KoNLPy 라이브러리를 활용하여 한국어 텍스트의 감성(긍정/부정)을 분석하는 프로그램을 개발하고, 국어 교과의 '언어와 매체' 단원과 연계하여 디지털 시대의 언어 분석 방법론을 탐구합니다.",
+      importance: "high",
     },
     {
       topic: "그래프 이론을 활용한 소셜 네트워크 분석",
       relatedSubjects: ["수학", "정보", "사회"],
       description:
         "그래프 이론(노드, 엣지, 중심성)을 학습하고, 실제 소셜 네트워크 데이터를 분석하여 영향력 있는 노드를 식별하는 알고리즘을 구현합니다. 사회 교과의 '정보사회' 단원과 연계 가능합니다.",
+      importance: "high",
     },
     {
       topic: "강화학습을 활용한 간단한 게임 AI 구현",
       relatedSubjects: ["정보", "수학"],
       description:
         "Q-러닝 알고리즘을 활용하여 간단한 미로 탈출 게임 AI를 구현하고, 보상 함수 설계와 학습 과정을 분석합니다. 수학의 행렬 연산과 확률 개념이 활용됩니다.",
+      importance: "medium",
     },
   ],
 };
@@ -4653,6 +4684,7 @@ const topicRecommendationStandard: TopicRecommendationSection = {
         "수학과 정보보안의 접점을 탐구하여 컴퓨터공학의 폭넓은 관심을 보여줍니다.",
       existingConnection:
         "수학 교과에서 학습한 정수론 개념을 실제 암호 기술에 적용하는 심화입니다.",
+      importance: "medium",
     },
     {
       topic: "컴퓨터 비전을 활용한 교내 쓰레기 분류 시스템 설계",
@@ -4663,6 +4695,7 @@ const topicRecommendationStandard: TopicRecommendationSection = {
         "사회 문제 해결에 IT를 적용하는 경험으로 '공동체 의식'과 '기술의 사회적 책임'을 동시에 보여줍니다.",
       existingConnection:
         "코딩 동아리 해커톤에서의 프로젝트 경험을 사회적 가치 창출로 확장합니다.",
+      importance: "low",
     },
   ],
 };
@@ -4708,7 +4741,13 @@ const topicRecommendationPremium: TopicRecommendationSection = {
           },
     sampleEvaluation: t.topic.includes("자연어")
       ? "자연어 처리 기술에 관심을 가지고 KoNLPy 라이브러리를 활용하여 한국어 텍스트의 감성을 분석하는 프로그램을 독립적으로 개발함. 형태소 분석 결과를 활용한 감성 사전 매칭 알고리즘을 설계하였으며, 뉴스 기사 300건에 대한 감성 분석 정확도를 검증하여 78%의 정확도를 달성함. 이 과정에서 언어의 구조적 특성과 컴퓨터 처리의 관계를 깊이 있게 이해하게 되었다고 보고함."
-      : undefined,
+      : t.topic.includes("그래프")
+        ? "그래프 이론의 기본 개념을 학습한 후, NetworkX 라이브러리를 활용하여 실제 소셜 네트워크 데이터를 분석하는 프로젝트를 수행함. 중심성 지표(연결 중심성, 매개 중심성, 근접 중심성)를 직접 구현하고, 이를 라이브러리 결과와 비교 검증하는 과정에서 알고리즘의 정확성을 확인함. 수학 교과에서 배운 행렬 연산을 인접 행렬 표현에 적용하여 교과 간 연결성을 보여주었으며, 분석 결과를 시각화하여 의미 있는 해석을 도출함."
+        : t.topic.includes("강화학습")
+          ? "Q-러닝 알고리즘의 원리를 학습하고, Python으로 간단한 미로 탈출 게임 AI를 구현함. 보상 함수 설계 시 즉각적 보상과 장기적 보상의 균형을 실험적으로 탐구하였으며, 학습률과 감가율 파라미터를 변경하며 수렴 속도의 차이를 분석함. 수학Ⅱ에서 학습한 극한과 수열의 개념이 강화학습의 수렴 조건 이해에 활용되었다고 보고하여 교과 연계성이 돋보임."
+          : t.topic.includes("암호학")
+            ? "RSA 암호 알고리즘의 수학적 원리를 탐구하고, 소인수분해와 모듈러 연산을 활용한 암호화/복호화 프로그램을 Python으로 구현함. 키 길이에 따른 암호 강도 차이를 실험적으로 검증하였으며, 양자 컴퓨팅이 기존 암호 체계에 미치는 위협에 대해서도 조사하여 보고함. 수학 교과의 정수론 개념을 실제 보안 기술에 적용하는 융합적 사고가 돋보임."
+            : "TensorFlow의 사전 학습 모델을 활용하여 재활용 쓰레기를 자동 분류하는 이미지 분류 시스템을 설계함. 교내에서 직접 수집한 쓰레기 이미지 데이터를 전처리하고 학습 데이터셋을 구성하는 과정에서 데이터 품질의 중요성을 체감함. 분류 정확도 85%를 달성하였으며, 환경 문제 해결에 IT 기술을 적용하는 과정에서 기술의 사회적 책임에 대해 깊이 성찰함.",
   })),
 };
 
@@ -4723,59 +4762,69 @@ const interviewPrepStandard: InterviewPrepSection = {
         "컴퓨터공학과에 지원한 동기와 고등학교에서 이를 위해 어떤 노력을 했는지 말씀해 주세요.",
       questionType: "진로기반",
       intent: "진로 동기의 진정성과 구체적인 준비 과정을 확인",
+      importance: "high",
     },
     {
       question:
         "세특에 기록된 다익스트라 알고리즘 탐구에서 시간 복잡도를 최적화한 과정을 설명해 주세요.",
       questionType: "세특기반",
       intent: "알고리즘 이해도와 최적화 사고력을 평가",
+      importance: "high",
     },
     {
       question:
         "수학 세특에서 경사하강법을 탐구했는데, 경사하강법의 한계점은 무엇이라고 생각하나요?",
       questionType: "세특기반",
       intent: "단순 학습을 넘어 비판적 사고력이 있는지 확인",
+      importance: "high",
     },
     {
       question:
         "AI 기술의 발전이 사회에 미치는 부정적 영향에 대해 어떻게 생각하나요?",
       questionType: "진로기반",
       intent: "기술에 대한 사회적 책임 의식과 비판적 사고력 평가",
+      importance: "medium",
     },
     {
       question:
         "코딩 동아리에서 팀 프로젝트를 수행한 경험과 본인의 역할을 말씀해 주세요.",
       questionType: "인성기반",
       intent: "협업 능력과 팀 내 역할을 확인",
+      importance: "high",
     },
     {
       question:
         "프로그래밍을 하다가 해결하기 어려운 버그를 만났을 때 어떻게 대처하나요?",
       questionType: "세특기반",
       intent: "문제 해결 방법론과 끈기를 평가",
+      importance: "medium",
     },
     {
       question:
         "컴퓨터공학과 수학의 관계를 어떻게 생각하며, 수학이 왜 중요한지 설명해 주세요.",
       questionType: "성적기반",
       intent: "전공에 대한 이해 깊이와 수학적 소양 확인",
+      importance: "high",
     },
     {
       question:
         "대학에서 구체적으로 어떤 분야를 공부하고 싶은지 말씀해 주세요.",
       questionType: "진로기반",
       intent: "전공 분야에 대한 구체적인 학업 계획 확인",
+      importance: "high",
     },
     {
       question: "고등학교 생활 중 가장 도전적이었던 경험은 무엇인가요?",
       questionType: "인성기반",
       intent: "도전 정신과 회복 탄력성 평가",
+      importance: "medium",
     },
     {
       question:
         "개인정보 보호와 데이터 활용 사이의 균형에 대한 본인의 의견을 말씀해 주세요.",
       questionType: "진로기반",
       intent: "IT 윤리에 대한 인식과 논리적 사고력 평가",
+      importance: "medium",
     },
     // ─── 추가 질문 11~27 ───
     {
@@ -4783,6 +4832,7 @@ const interviewPrepStandard: InterviewPrepSection = {
         "물리 세특에서 반도체의 원리를 탐구했다고 되어 있는데, 반도체가 컴퓨터공학에서 왜 중요한지 설명해 주세요.",
       questionType: "세특기반",
       intent: "물리-전공 연결 사고력과 하드웨어 이해도를 확인",
+      importance: "medium",
     },
     {
       question:
@@ -4790,18 +4840,21 @@ const interviewPrepStandard: InterviewPrepSection = {
       questionType: "성적기반",
       intent:
         "인문 교과 연계 부족에 대한 자기 인식과 균형 잡힌 학습 태도를 확인",
+      importance: "medium",
     },
     {
       question:
         "코딩 교육 봉사를 계획하고 있다고 들었는데, 프로그래밍을 전혀 모르는 초등학생에게 어떻게 코딩을 가르칠 건가요?",
       questionType: "인성기반",
       intent: "교육적 역량과 공동체 기여 의지를 확인",
+      importance: "high",
     },
     {
       question:
         "수학적 사고가 프로그래밍에 구체적으로 어떻게 활용되는지 본인의 경험을 바탕으로 말씀해 주세요.",
       questionType: "세특기반",
       intent: "수학-프로그래밍 융합 사고의 깊이와 실제 적용 경험을 확인",
+      importance: "high",
     },
     {
       question:
@@ -4809,78 +4862,113 @@ const interviewPrepStandard: InterviewPrepSection = {
       questionType: "진로기반",
       intent:
         "최신 IT 트렌드에 대한 관심과 비판적 사고력, 진로에 대한 확신을 평가",
+      importance: "medium",
     },
     {
       question:
         "팀 프로젝트에서 팀원 간 의견 충돌이 발생했을 때 어떻게 해결하나요?",
       questionType: "인성기반",
       intent: "갈등 해결 능력과 소통 역량을 평가",
+      importance: "medium",
     },
     {
       question:
         "자율주행 자동차의 윤리적 딜레마(트롤리 문제)에 대해 프로그래머로서 어떻게 접근해야 한다고 생각하나요?",
       questionType: "진로기반",
       intent: "AI 윤리에 대한 깊이 있는 사고와 기술-인문 융합적 관점을 확인",
+      importance: "low",
     },
     {
       question:
         "학업 스트레스가 심할 때 어떻게 관리하고, 공부와 생활의 균형을 어떻게 유지하나요?",
       questionType: "인성기반",
       intent: "자기관리 능력과 심리적 건강에 대한 인식을 확인",
+      importance: "low",
     },
     {
       question:
         "대학 졸업 후 10년 뒤에 어떤 일을 하고 있을 것이라고 생각하나요?",
       questionType: "진로기반",
       intent: "장기적 진로 비전과 전공에 대한 진정성을 확인",
+      importance: "medium",
     },
     {
       question:
         "스스로 학습 계획을 세우고 실행한 경험이 있나요? 구체적으로 어떤 방법으로 자기주도 학습을 해 왔는지 말씀해 주세요.",
       questionType: "성적기반",
       intent: "자기주도 학습 능력과 학습 전략을 평가",
+      importance: "medium",
     },
     {
       question:
         "고등학교에서 가장 큰 실패 경험은 무엇이었고, 그것을 어떻게 극복했나요?",
       questionType: "인성기반",
       intent: "실패에 대한 태도와 회복 탄력성을 확인",
+      importance: "medium",
     },
     {
       question:
         "교내 해커톤에 참가했다고 되어 있는데, 어떤 프로젝트를 만들었고 그 과정에서 무엇을 배웠나요?",
       questionType: "세특기반",
       intent: "프로젝트 수행 경험의 깊이와 학습 성찰 능력을 확인",
+      importance: "high",
     },
     {
       question:
         "Python을 주로 사용한다고 했는데, 왜 Python을 선택했나요? 다른 프로그래밍 언어와 비교했을 때 장단점은 무엇인가요?",
       questionType: "세특기반",
       intent: "프로그래밍 언어에 대한 이해도와 기술적 판단력을 확인",
+      importance: "low",
     },
     {
       question:
         "기하나 물리학Ⅱ를 이수하지 않은 이유가 있나요? 컴퓨터공학과에서 이 과목들이 필요할 수 있는데 어떻게 보완할 계획인가요?",
       questionType: "성적기반",
       intent: "교과 선택의 한계를 인식하고 있는지, 그리고 보완 의지를 확인",
+      importance: "high",
     },
     {
       question:
         "교내 활동 외에 비교과 활동이 상대적으로 적은 편인데, 그 이유는 무엇인가요?",
       questionType: "성적기반",
       intent: "활동의 양적 부족에 대한 자기 인식과 질적 보완 논리를 확인",
+      importance: "medium",
     },
     {
       question:
         "최근에 읽은 컴퓨터공학 관련 도서가 있나요? 어떤 내용이었고 어떤 점이 인상 깊었나요?",
       questionType: "진로기반",
       intent: "독서를 통한 지적 호기심과 전공 분야 탐구 의지를 확인",
+      importance: "low",
     },
     {
       question:
         "오픈소스 소프트웨어에 대해 어떻게 생각하나요? 참여해 본 경험이 있다면 말씀해 주세요.",
       questionType: "진로기반",
       intent: "소프트웨어 생태계에 대한 이해와 협업 문화에 대한 관심을 확인",
+      importance: "low",
+    },
+    // ─── 추가 질문 28~30 (Premium 30개 충족용) ───
+    {
+      question:
+        "데이터베이스와 자료구조의 차이점은 무엇이며, 각각 어떤 상황에서 활용되는지 설명해 주세요.",
+      questionType: "세특기반",
+      intent: "컴퓨터공학 기초 개념에 대한 이해도와 실무 적용 사고력을 확인",
+      importance: "medium",
+    },
+    {
+      question:
+        "학교 공동체를 위해 본인의 IT 역량을 활용해 기여한 경험이 있다면 말씀해 주세요.",
+      questionType: "인성기반",
+      intent: "공동체 의식과 전공 역량의 사회적 활용 의지를 평가",
+      importance: "high",
+    },
+    {
+      question:
+        "컴퓨터공학을 전공한 후 사회적으로 어떤 문제를 해결하고 싶은지 구체적으로 말씀해 주세요.",
+      questionType: "진로기반",
+      intent: "기술을 통한 사회 기여 비전과 진로 목표의 구체성을 확인",
+      importance: "high",
     },
   ],
 };
@@ -5513,6 +5601,57 @@ const INTERVIEW_PREMIUM_MAP: Record<
       "코드 학습",
     ],
   },
+  "데이터베이스와 자료구조의 차이점": {
+    answerStrategy:
+      "개념 정의 → 차이점 비교 → 실제 활용 사례의 흐름으로 구성. 본인의 프로젝트 경험과 연결.",
+    sampleAnswer:
+      "자료구조는 데이터를 효율적으로 저장하고 접근하기 위한 메모리 내 구조이고, 데이터베이스는 대용량 데이터를 영속적으로 저장·관리하는 시스템입니다. 예를 들어 해시 테이블은 빠른 검색을 위한 자료구조이고, MySQL은 관계형 데이터를 체계적으로 관리하는 데이터베이스입니다. 코딩 동아리에서 알고리즘 문제를 풀 때는 적절한 자료구조 선택이 성능을 좌우했고, 웹 프로젝트에서는 데이터베이스 설계가 시스템의 안정성을 결정했습니다.",
+    followUpQuestions: [
+      {
+        question: "NoSQL과 SQL의 차이를 알고 있나요?",
+        context: "데이터베이스에 대한 이해 범위와 최신 기술 관심도를 확인",
+      },
+    ],
+    difficulty: "중",
+    frequency: "보통",
+    answerKeywords: ["메모리", "영속성", "효율성", "관계형", "검색"],
+  },
+  "IT 역량을 활용해 기여한 경험": {
+    answerStrategy:
+      "구체적 경험 서술 → 기여한 결과 → 느낀 점의 흐름으로 구성. 공동체 의식과 기술 활용을 강조.",
+    sampleAnswer:
+      "2학년 때 학교 홈페이지 개선 TF팀에 참여한 경험이 있습니다. 학생들이 불편해하는 공지사항 검색 기능과 모바일 UI를 분석하고, 프로토타입을 제작하여 학교에 제안했습니다. 이 과정에서 단순히 코드를 잘 짜는 것을 넘어 사용자의 필요를 이해하고 실제로 도움이 되는 결과물을 만드는 것이 중요하다는 것을 배웠습니다. IT 기술이 공동체에 실질적인 가치를 제공할 수 있다는 확신을 갖게 된 계기였습니다.",
+    followUpQuestions: [
+      {
+        question: "TF팀에서 어떤 역할을 맡았고, 의견 조율은 어떻게 했나요?",
+        context: "팀 내 역할과 소통 능력을 심층 확인",
+      },
+    ],
+    difficulty: "중",
+    frequency: "높음",
+    answerKeywords: [
+      "홈페이지 개선",
+      "사용자 필요",
+      "프로토타입",
+      "공동체 기여",
+    ],
+  },
+  "사회적으로 어떤 문제를 해결": {
+    answerStrategy:
+      "관심 있는 사회 문제 제시 → IT 기술 적용 방안 → 실현 가능성과 비전 순으로 구성.",
+    sampleAnswer:
+      "저는 교육 격차 해소에 관심이 있습니다. 코딩 교육 봉사를 계획하면서 지역 간 IT 교육 기회의 불균형을 실감했습니다. 대학에서 AI와 교육 공학을 접목하여, 학생 개인의 수준에 맞춰 학습 경로를 추천하는 적응형 학습 플랫폼을 개발하고 싶습니다. 이를 통해 도시와 농촌, 소득 수준에 관계없이 모든 학생이 양질의 교육을 받을 수 있는 환경을 만들고 싶습니다.",
+    followUpQuestions: [
+      {
+        question:
+          "적응형 학습 플랫폼을 구현하려면 어떤 기술이 필요하다고 생각하나요?",
+        context: "기술적 실현 가능성에 대한 이해와 구체적인 학업 계획을 확인",
+      },
+    ],
+    difficulty: "중",
+    frequency: "보통",
+    answerKeywords: ["교육 격차", "적응형 학습", "AI", "사회적 가치", "플랫폼"],
+  },
 };
 
 /** Lite: 8~10개 기본 질문 */
@@ -5542,9 +5681,9 @@ const interviewPrepPremium: InterviewPrepSection = {
   }),
   // v4
   questionDistribution: [
-    { type: "세특기반", count: 8 },
-    { type: "진로기반", count: 8 },
-    { type: "인성기반", count: 6 },
+    { type: "세특기반", count: 9 },
+    { type: "진로기반", count: 9 },
+    { type: "인성기반", count: 7 },
     { type: "성적기반", count: 5 },
   ],
   readinessScore: 62,
@@ -5649,6 +5788,8 @@ const admissionStrategyStandard: AdmissionStrategySection = {
     chanceRationale:
       ADMISSION_RATIONALE_MAP[r.university] ??
       "현재 스펙 기준 합격 가능성이 높음.",
+    chancePercentLabel:
+      r.tier === "상향" ? "40~55%" : r.tier === "안정" ? "65~80%" : "80~90%",
     admissionData:
       r.university === "서울대학교"
         ? { cutoff50: 1.5, cutoff70: 1.8, competitionRate: 3.2, enrollment: 55 }
@@ -5973,6 +6114,202 @@ const admissionStrategyPremium: AdmissionStrategySection = {
       ],
     },
   ],
+  tierGroupedRecommendations: [
+    {
+      tierGroup: "상향 위주",
+      recommendations: [
+        {
+          university: "서울대학교",
+          department: "컴퓨터공학과",
+          admissionType: "학생부종합 (일반전형)",
+          tier: "상향",
+          chance: "medium",
+          chanceRationale:
+            "전공 적합성은 우수하나 공동체 역량 보완 필요. 3학년 보강 시 합격 가능성 상승.",
+          chancePercentLabel: "40~50%",
+        },
+        {
+          university: "KAIST",
+          department: "전산학부",
+          admissionType: "학생부종합",
+          tier: "상향",
+          chance: "medium",
+          chanceRationale:
+            "수학·정보 성적이 강점이나, 외부 대회 실적 추가 시 경쟁력 상승.",
+          chancePercentLabel: "35~45%",
+        },
+        {
+          university: "포항공과대학교",
+          department: "컴퓨터공학과",
+          admissionType: "학생부종합 (일반전형)",
+          tier: "상향",
+          chance: "medium",
+          chanceRationale:
+            "이공계 특성화 대학으로 수학·과학 역량이 강점. 연구 경험 추가 시 경쟁력 상승.",
+          chancePercentLabel: "40~50%",
+        },
+        {
+          university: "연세대학교",
+          department: "컴퓨터과학과",
+          admissionType: "학생부종합 (활동우수형)",
+          tier: "상향",
+          chance: "medium",
+          chanceRationale:
+            "활동우수형 전형에서 코딩 동아리·해커톤 경험이 강점이나 리더십 보강 권장.",
+          chancePercentLabel: "45~55%",
+        },
+        {
+          university: "고려대학교",
+          department: "컴퓨터학과",
+          admissionType: "학생부종합 (학업우수형)",
+          tier: "상향",
+          chance: "medium",
+          chanceRationale:
+            "학업우수형 전형에서 내신과 세특 활동이 합격선 근접. 3학년 성적 유지 시 가능성 높음.",
+          chancePercentLabel: "50~60%",
+        },
+        {
+          university: "성균관대학교",
+          department: "소프트웨어학과",
+          admissionType: "학생부종합 (계열모집)",
+          tier: "상향",
+          chance: "medium",
+          chanceRationale:
+            "소프트웨어 특성화 학과로 전공 적합성이 높으나, 상향 지원 시 내신 보강 필요.",
+          chancePercentLabel: "50~60%",
+        },
+      ],
+    },
+    {
+      tierGroup: "안정 위주",
+      recommendations: [
+        {
+          university: "고려대학교",
+          department: "컴퓨터학과",
+          admissionType: "학생부종합 (학업우수형)",
+          tier: "안정",
+          chance: "high",
+          chanceRationale:
+            "현재 스펙으로 안정적 합격 가능. 학업우수형 전형에 매우 적합.",
+          chancePercentLabel: "70~80%",
+        },
+        {
+          university: "성균관대학교",
+          department: "소프트웨어학과",
+          admissionType: "학생부종합 (계열모집)",
+          tier: "안정",
+          chance: "high",
+          chanceRationale:
+            "전공 적합성이 높으며 현재 내신과 활동으로 합격 가능성 높음.",
+          chancePercentLabel: "70~80%",
+        },
+        {
+          university: "한양대학교",
+          department: "컴퓨터소프트웨어학부",
+          admissionType: "학생부종합 (일반)",
+          tier: "안정",
+          chance: "high",
+          chanceRationale: "내신과 세특 활동 기준 안정적 합격 가능.",
+          chancePercentLabel: "70~80%",
+        },
+        {
+          university: "서강대학교",
+          department: "컴퓨터공학과",
+          admissionType: "학생부종합 (일반형)",
+          tier: "안정",
+          chance: "high",
+          chanceRationale:
+            "소규모 학과로 전공 적합성을 중시하며 현재 수학·정보 세특이 강점.",
+          chancePercentLabel: "75~85%",
+        },
+        {
+          university: "경희대학교",
+          department: "컴퓨터공학과",
+          admissionType: "학생부종합 (네오르네상스)",
+          tier: "안정",
+          chance: "high",
+          chanceRationale:
+            "네오르네상스 전형에서 자기주도 탐구와 진로 일관성이 강점으로 작용.",
+          chancePercentLabel: "75~85%",
+        },
+        {
+          university: "서울시립대학교",
+          department: "컴퓨터과학부",
+          admissionType: "학생부종합",
+          tier: "안정",
+          chance: "high",
+          chanceRationale: "현재 스펙 기준 합격 가능성이 매우 높음.",
+          chancePercentLabel: "80~90%",
+        },
+      ],
+    },
+    {
+      tierGroup: "하향 위주",
+      recommendations: [
+        {
+          university: "중앙대학교",
+          department: "소프트웨어학부",
+          admissionType: "학생부종합 (다빈치형인재)",
+          tier: "하향",
+          chance: "high",
+          chanceRationale:
+            "다빈치형인재 전형에서 자기주도 탐구 역량을 높이 평가. 합격 가능성 매우 높음.",
+          chancePercentLabel: "85~95%",
+        },
+        {
+          university: "건국대학교",
+          department: "컴퓨터공학부",
+          admissionType: "학생부종합 (KU자기추천)",
+          tier: "하향",
+          chance: "high",
+          chanceRationale:
+            "진로 일관성과 탐구 활동이 강점. 안전한 하향 지원처.",
+          chancePercentLabel: "85~95%",
+        },
+        {
+          university: "동국대학교",
+          department: "컴퓨터공학과",
+          admissionType: "학생부종합 (Do Dream)",
+          tier: "하향",
+          chance: "high",
+          chanceRationale:
+            "Do Dream 전형에서 전공 적합성과 자기주도 활동이 높이 평가됨.",
+          chancePercentLabel: "85~95%",
+        },
+        {
+          university: "숭실대학교",
+          department: "컴퓨터학부",
+          admissionType: "학생부종합 (SSU미래인재)",
+          tier: "하향",
+          chance: "high",
+          chanceRationale:
+            "IT 특성화 대학으로 전공 적합성이 높으며 합격 가능성 매우 높음.",
+          chancePercentLabel: "90~95%",
+        },
+        {
+          university: "세종대학교",
+          department: "컴퓨터공학과",
+          admissionType: "학생부종합 (창의인재)",
+          tier: "하향",
+          chance: "high",
+          chanceRationale: "현재 스펙 기준 합격이 거의 확실한 안전 지원처.",
+          chancePercentLabel: "90~95%",
+        },
+        {
+          university: "국민대학교",
+          department: "소프트웨어학부",
+          admissionType: "학생부종합 (국민프런티어)",
+          tier: "하향",
+          chance: "high",
+          chanceRationale:
+            "소프트웨어 분야 특성화로 전공 적합성 높음. 합격 확실한 안전 지원처.",
+          chancePercentLabel: "90~95%",
+        },
+      ],
+    },
+  ],
+  nextSemesterStrategy:
+    "3학년 1학기에는 국어·한국사 교과 성적을 2등급 이내로 끌어올리는 것을 최우선으로 하되, 전공 교과(수학·정보) 1등급 유지를 병행해야 합니다. 세특에서는 전공 심화 탐구(AI/알고리즘)와 함께 인문·사회 교과에서도 IT 연계 주제를 발굴하여 교과 간 융합 역량을 보여주는 것이 중요합니다. 또한 동아리 부장이나 학급 임원 등 공식 리더 역할을 맡아 공동체 역량을 보강하고, 지역 아동센터 코딩 교육 봉사를 시작하여 진로 연계 봉사 기록을 확보해야 합니다.",
 };
 
 // ─── 섹션 17: 생기부 스토리 구조 분석 ───

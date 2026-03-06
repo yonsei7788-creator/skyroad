@@ -20,11 +20,14 @@ export const InterviewPrepRenderer = ({
   data,
   sectionNumber,
 }: InterviewPrepRendererProps) => {
-  const questionChunks = chunkItems(data.questions, 2);
+  // 첫 2개 질문은 요약 블록과 합침, 나머지는 2개씩 묶음
+  const firstQuestions = data.questions.slice(0, 2);
+  const restQuestions = data.questions.slice(2);
+  const questionChunks = chunkItems(restQuestions, 2);
 
   return (
     <>
-      {/* Block 1: Header + distribution / readiness */}
+      {/* Block 1: Header + distribution + 첫 질문들 (요약 바로 밑에서 시작) */}
       <div>
         <SectionHeader number={sectionNumber} title={data.title} />
 
@@ -50,13 +53,46 @@ export const InterviewPrepRenderer = ({
             ))}
           </div>
         )}
+
+        {/* 첫 질문들을 요약 블록과 같은 div에 포함 */}
+        {firstQuestions.map((q, idx) => (
+          <div key={idx} className={styles.mt24}>
+            <div className={`${styles.h3} ${styles.mb6}`}>
+              Q{idx + 1}.
+              {q.questionType && (
+                <span className={`${styles.caption} ${styles.ml8}`}>
+                  [{q.questionType}]
+                </span>
+              )}
+              {q.importance && (
+                <span
+                  className={
+                    styles[`importance_${q.importance}` as keyof typeof styles]
+                  }
+                >
+                  {q.importance === "high"
+                    ? "★ 중요"
+                    : q.importance === "medium"
+                      ? "● 보통"
+                      : "○ 참고"}
+                </span>
+              )}
+            </div>
+            <p className={styles.body}>{q.question}</p>
+            {q.intent && (
+              <p className={`${styles.caption} ${styles.mt6}`}>
+                <span className={styles.emphasis}>출제 의도:</span> {q.intent}
+              </p>
+            )}
+          </div>
+        ))}
       </div>
 
-      {/* 질문 2개씩 묶어서 한 페이지 단위 */}
+      {/* 나머지 질문 2개씩 묶어서 한 페이지 단위 */}
       {questionChunks.map((chunk, chunkIdx) => (
         <div key={chunkIdx}>
           {chunk.map((q, localIdx) => {
-            const globalIdx = chunkIdx * 2 + localIdx;
+            const globalIdx = chunkIdx * 2 + localIdx + firstQuestions.length;
             return (
               <div
                 key={globalIdx}
@@ -67,6 +103,21 @@ export const InterviewPrepRenderer = ({
                   {q.questionType && (
                     <span className={`${styles.caption} ${styles.ml8}`}>
                       [{q.questionType}]
+                    </span>
+                  )}
+                  {q.importance && (
+                    <span
+                      className={
+                        styles[
+                          `importance_${q.importance}` as keyof typeof styles
+                        ]
+                      }
+                    >
+                      {q.importance === "high"
+                        ? "★ 중요"
+                        : q.importance === "medium"
+                          ? "● 보통"
+                          : "○ 참고"}
                     </span>
                   )}
                 </div>

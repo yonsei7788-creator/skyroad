@@ -211,6 +211,18 @@ const FIELD_LABELS: Record<string, string> = {
   citations: "원문 인용",
   originalTextCitations: "원문 인용 목록",
 
+  // 새 필드 (v4 개선)
+  gradeComment: "등급 사유",
+  ratingRationale: "평가 사유",
+  importance: "중요도",
+  chancePercentLabel: "합격 가능성 퍼센트",
+  percentileCumulative: "누적 백분위",
+  actionItemPriorities: "실행 항목 우선순위",
+  tierGroupedRecommendations: "조합별 대학 추천",
+  tierGroup: "조합 유형",
+  nextSemesterStrategy: "다음 학기 전략",
+  sampleEvaluation: "세특 서술 예시",
+
   // 기타
   maxCapacityChars: "최대 글자수",
   actualChars: "실제 글자수",
