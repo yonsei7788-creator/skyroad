@@ -11,14 +11,14 @@ export interface TopicRecommendationPromptInput {
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 기본
 - 3개 주제를 출력합니다.
-- 각 주제: topic + relatedSubjects + description (1줄)
+- 각 주제: topic + relatedSubjects + description (1줄) + importance(high/medium/low)
 - rationale, existingConnection 필드는 출력하지 않습니다.`,
   standard: `## 플랜별 출력: 상세
 - 5개 주제를 출력합니다.
-- 각 주제: topic + relatedSubjects + description + rationale(주제 선정 이유) + existingConnection(기존 탐구 연결)`,
+- 각 주제: topic + relatedSubjects + description + rationale(주제 선정 이유) + existingConnection(기존 탐구 연결) + importance(high/medium/low)`,
   premium: `## 플랜별 출력: 정밀
 - 5개 주제를 출력합니다.
-- Standard의 모든 항목 + activityDesign(구체적 탐구 설계: steps/duration/expectedResult) + sampleEvaluation(세특 서술 예시)`,
+- Standard의 모든 항목 + activityDesign(구체적 탐구 설계: steps/duration/expectedResult) + sampleEvaluation(세특 서술 예시, 모든 주제에 필수) + importance(high/medium/low)`,
 };
 
 export const buildTopicRecommendationPrompt = (

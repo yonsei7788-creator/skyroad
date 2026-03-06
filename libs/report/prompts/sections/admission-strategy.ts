@@ -14,18 +14,22 @@ export interface AdmissionStrategyPromptInput {
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 기본
 - 추천 전형 방향(recommendedPath, 3~5줄) 출력
-- 대학 추천(recommendations): 상향 2/안정 2/하향 2, 대학명+학과+전형명+티어
+- 대학 추천(recommendations): 상향 2/안정 2/하향 2 = 총 6개 고정, 대학명+학과+전형명+티어
+- 6개를 초과하지 않습니다.
 - typeStrategies, schoolTypeAnalysis 등 Standard+ 필드는 출력하지 않습니다.`,
   standard: `## 플랜별 출력: 상세
 - 추천 전형 방향(recommendedPath) + 대학 추천(recommendations)
-- 전형별 상세 전략(typeStrategies: 학종/교과/정시)
-- 대학별 합격 가능성(chance + chanceRationale) + 입시 데이터(admissionData)
-- 주의/유리 학교 유형(schoolTypeAnalysis)`,
+- 전형별 상세 전략(typeStrategies: 학생부종합전형/학생부교과전형/수능(정시)전형)
+- 대학별 합격 가능성(chance + chanceRationale + chancePercentLabel) + 입시 데이터(admissionData)
+- 주의/유리 학교 유형(schoolTypeAnalysis)
+- 다음 학기 전략(nextSemesterStrategy: 3~4줄)`,
   premium: `## 플랜별 출력: 정밀
 Standard의 모든 항목 + 다음을 추가로 출력합니다:
 - 수능 최저 전략(csatMinimumStrategy)
-- 6장 카드 배분 시뮬레이션(applicationSimulation)
-- 대학별 학종 가이드북 키워드 매칭(universityGuideMatching)`,
+- 6장 카드 배분 시뮬레이션(applicationSimulation: 수시 6개 대학 + 정시 1개 대학)
+- 대학별 학종 가이드북 키워드 매칭(universityGuideMatching)
+- 조합별 대학 추천(tierGroupedRecommendations): 상향 위주 6개 + 안정 위주 6개 + 하향 위주 6개 = 총 18개
+- 서울대학교는 학생부교과전형이 없으므로 교과전형 데이터를 생성하지 않습니다.`,
 };
 
 const ADMISSION_CONTEXT = `## 정시 학생부 반영 대학 (2028학년도)
