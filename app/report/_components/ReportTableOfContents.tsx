@@ -220,7 +220,7 @@ export const ReportTableOfContents = ({
       {/* Footer */}
       <div className={styles.tocFooter}>
         <span className={styles.tocFooterText}>
-          &copy; 2026 SKYLOAD{studentName ? ` | ${studentName}` : ""}
+          &copy; 2026 SKYROAD{studentName ? ` | ${studentName}` : ""}
         </span>
       </div>
     </div>

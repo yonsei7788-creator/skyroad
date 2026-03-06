@@ -38,7 +38,7 @@ export const ReportCover = ({ meta }: ReportCoverProps) => {
 
       {/* Header: brand + plan badge */}
       <div className={styles.coverHeader}>
-        <div className={styles.coverBrand}>SKYLOAD</div>
+        <div className={styles.coverBrand}>SKYROAD</div>
         <div
           className={`${styles.coverPlanBadge} ${
             isPremium ? styles.coverBadgePremium : ""
