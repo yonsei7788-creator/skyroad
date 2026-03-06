@@ -1,4 +1,8 @@
-import type { WeaknessAnalysisSection, Priority } from "@/libs/report/types";
+import type {
+  WeaknessAnalysisSection,
+  Priority,
+  ReportPlan,
+} from "@/libs/report/types";
 
 import styles from "./report.module.css";
 import { SectionHeader } from "./SectionHeader";
@@ -6,6 +10,7 @@ import { SectionHeader } from "./SectionHeader";
 interface WeaknessAnalysisRendererProps {
   data: WeaknessAnalysisSection;
   sectionNumber: number;
+  plan?: ReportPlan;
 }
 
 const PRIORITY_LABEL: Record<Priority, string> = {
@@ -26,71 +31,74 @@ const chunkAreas = <T,>(arr: T[], size: number): T[][] => {
 export const WeaknessAnalysisRenderer = ({
   data,
   sectionNumber,
+  plan,
 }: WeaknessAnalysisRendererProps) => {
   const areaChunks = chunkAreas(data.areas, 2);
 
   return (
     <>
-      {/* Block 1: Header + summary table */}
+      {/* Block 1: Header + summary table (Lite에서는 요약 도표 숨김) */}
       <div>
         <SectionHeader number={sectionNumber} title={data.title} />
 
-        <table className={styles.compactTable}>
-          <thead>
-            <tr>
-              <th>영역</th>
-              <th className={styles.tableAlignCenter}>우선순위</th>
-              {data.areas[0]?.urgency && (
-                <>
-                  <th className={styles.tableAlignCenter}>시급도</th>
-                  <th className={styles.tableAlignCenter}>효과도</th>
-                </>
-              )}
-              <th className={styles.tableAlignCenter}>활동 수</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.areas.map((area, idx) => (
-              <tr key={idx}>
-                <td className={styles.tableCellBold}>{area.area}</td>
-                <td className={styles.tableAlignCenter}>
-                  {area.priority ? (
-                    <span className={styles.tag}>
-                      {PRIORITY_LABEL[area.priority]}
-                    </span>
-                  ) : (
-                    "—"
-                  )}
-                </td>
+        {plan !== "lite" && (
+          <table className={styles.compactTable}>
+            <thead>
+              <tr>
+                <th>영역</th>
+                <th className={styles.tableAlignCenter}>우선순위</th>
                 {data.areas[0]?.urgency && (
                   <>
-                    <td className={styles.tableAlignCenter}>
-                      {area.urgency ? (
-                        <span className={styles.tag}>
-                          {PRIORITY_LABEL[area.urgency]}
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className={styles.tableAlignCenter}>
-                      {area.effectiveness ? (
-                        <span className={styles.tag}>
-                          {PRIORITY_LABEL[area.effectiveness]}
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
+                    <th className={styles.tableAlignCenter}>시급도</th>
+                    <th className={styles.tableAlignCenter}>효과도</th>
                   </>
                 )}
-                <td className={styles.tableAlignCenter}>
-                  {area.suggestedActivities.length}개
-                </td>
+                <th className={styles.tableAlignCenter}>활동 수</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.areas.map((area, idx) => (
+                <tr key={idx}>
+                  <td className={styles.tableCellBold}>{area.area}</td>
+                  <td className={styles.tableAlignCenter}>
+                    {area.priority ? (
+                      <span className={styles.tag}>
+                        {PRIORITY_LABEL[area.priority]}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  {data.areas[0]?.urgency && (
+                    <>
+                      <td className={styles.tableAlignCenter}>
+                        {area.urgency ? (
+                          <span className={styles.tag}>
+                            {PRIORITY_LABEL[area.urgency]}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className={styles.tableAlignCenter}>
+                        {area.effectiveness ? (
+                          <span className={styles.tag}>
+                            {PRIORITY_LABEL[area.effectiveness]}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                    </>
+                  )}
+                  <td className={styles.tableAlignCenter}>
+                    {area.suggestedActivities.length}개
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* 영역 2개씩 묶어서 한 페이지 단위 */}

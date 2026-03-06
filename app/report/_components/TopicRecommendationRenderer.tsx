@@ -74,6 +74,21 @@ export const TopicRecommendationRenderer = ({
                 {topic.estimatedDuration}
               </span>
             )}
+            {topic.importance && (
+              <span
+                className={
+                  styles[
+                    `importance_${topic.importance}` as keyof typeof styles
+                  ]
+                }
+              >
+                {topic.importance === "high"
+                  ? "★ 중요"
+                  : topic.importance === "medium"
+                    ? "● 보통"
+                    : "○ 참고"}
+              </span>
+            )}
           </div>
 
           <div className={`${styles.tagGroup} ${styles.mb8}`}>
