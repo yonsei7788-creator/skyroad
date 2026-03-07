@@ -59,15 +59,12 @@ const GeneratingContent = () => {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [exhausted, setExhausted] = useState(false);
+  const [retryTrigger, setRetryTrigger] = useState(0);
 
-  const calledRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
 
-  // 마운트 시 파이프라인 자동 실행
+  // 마운트 시 + 재시도 시 파이프라인 실행
   useEffect(() => {
-    if (calledRef.current) return;
-    calledRef.current = true;
-
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -178,7 +175,7 @@ const GeneratingContent = () => {
       controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [retryTrigger]);
 
   // beforeunload 이탈 방지
   useEffect(() => {
@@ -198,8 +195,7 @@ const GeneratingContent = () => {
       return;
     }
     setRetryCount(nextRetry);
-    calledRef.current = false;
-    runPipeline();
+    setRetryTrigger((t) => t + 1);
   };
 
   const isWorking = phase === "initializing" || phase === "running";
