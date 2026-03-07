@@ -21,6 +21,7 @@ Standard의 모든 항목 + 다음을 추가로 출력하세요:
 
 ### 4. 과목 간 연결 그래프 (crossSubjectLinks)
 - 과목 A의 탐구가 과목 B로 이어지는 연결 관계를 식별합니다.
+- **상위 5개 연결만** 출력합니다 (가장 의미 있는 연결 우선).
 - 각 연결에 대해: from(출발 과목), to(도착 과목), topic(연결 주제), depth(심화/반복/확장/무관)
 
 #### 주제 반복 vs 심화 구분 기준
@@ -49,6 +50,35 @@ export const buildStoryAnalysisPrompt = (
   return `## 작업
 학생의 생기부 전체를 하나의 스토리로 분석하세요.
 
+## 출력 JSON 스키마
+
+중요: yearProgressions, crossSubjectLinks 배열의 각 요소는 반드시 완전한 객체여야 합니다.
+
+{
+  "sectionId": "storyAnalysis",
+  "title": "스토리 분석",
+  "mainStoryline": "사회 문제에 대한 깊은 관심을 바탕으로 정치·행정 분야를 탐색하는 학생으로...",
+  "yearProgressions": [
+    {"year": 1, "theme": "사회 문제 인식", "description": "통합사회에서 사회 불평등 문제에 관심을 갖고..."},
+    {"year": 2, "theme": "정책 분석 심화", "description": "정치와법에서 복지 정책을 비교 분석하며..."}
+  ],
+  "careerConsistencyGrade": "A",
+  "careerConsistencyComment": "사회과학 분야에 대한 일관된 관심이...",
+  "crossSubjectLinks": [
+    {"from": "통합사회", "to": "사회·문화", "topic": "사회 불평등", "depth": "심화"},
+    {"from": "사회·문화", "to": "정치와법", "topic": "복지 정책", "depth": "확장"}
+  ],
+  "storyEnhancementSuggestions": ["3학년에서 사회문제 해결 프로젝트 수행"],
+  "interviewStoryGuide": "사회 문제 인식 → 정책 분석 → 해결 방안 모색의 흐름으로..."
+}
+
+**CompetencyGrade 등급 기준:**
+- S: 전 학년에 걸쳐 일관된 진로 방향 + 뚜렷한 심화 흐름
+- A: 일관된 방향이지만 일부 학년에서 심화가 부족
+- B: 큰 방향은 유지되나 구체성이 부족하거나 일부 흔들림
+- C: 진로 방향이 불분명하거나 학년 간 연결이 약함
+- D: 진로 일관성이 거의 없음, 매 학년 다른 방향
+
 ## 분석 항목
 
 ### 1. 메인 스토리라인 (mainStoryline)
@@ -58,6 +88,7 @@ export const buildStoryAnalysisPrompt = (
 ### 2. 학년별 심화 흐름 (yearProgressions)
 - 1학년 -> 2학년 -> 3학년(있는 경우)의 심화 흐름을 분석합니다.
 - 각 학년의 핵심 키워드(theme)와 설명(description)을 포함합니다.
+- **description은 1~2줄(80자 이내)**로 핵심만 서술합니다.
 - 학년 간 심화가 있는지, 탐색 -> 구체화 -> 심화 구조인지 판단합니다.
 
 ### 3. 진로 일관성 등급 (careerConsistencyGrade)

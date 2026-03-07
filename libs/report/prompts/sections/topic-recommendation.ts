@@ -9,16 +9,16 @@ export interface TopicRecommendationPromptInput {
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
-  lite: `## 플랜별 출력: 기본
-- 3개 주제를 출력합니다.
-- 각 주제: topic + relatedSubjects + description (1줄) + importance(high/medium/low)
-- rationale, existingConnection 필드는 출력하지 않습니다.`,
+  lite: `## 플랜별 출력: 간략
+- **3개** 주제를 출력합니다.
+- 각 주제: topic + relatedSubjects + description(**1줄**) + importance(high/medium/low)
+- rationale, existingConnection, activityDesign, sampleEvaluation 필드는 출력하지 않습니다.`,
   standard: `## 플랜별 출력: 상세
 - 5개 주제를 출력합니다.
 - 각 주제: topic + relatedSubjects + description + rationale(주제 선정 이유) + existingConnection(기존 탐구 연결) + importance(high/medium/low)`,
   premium: `## 플랜별 출력: 정밀
-- 5개 주제를 출력합니다.
-- Standard의 모든 항목 + activityDesign(구체적 탐구 설계: steps/duration/expectedResult) + sampleEvaluation(세특 서술 예시, 모든 주제에 필수) + importance(high/medium/low)`,
+- **3개** 주제를 출력합니다 (초과 금지).
+- Standard의 모든 항목 + activityDesign(구체적 탐구 설계: steps 3단계 이내/duration/expectedResult 1줄) + sampleEvaluation(세특 서술 예시, 3줄 이내) + importance(high/medium/low)`,
 };
 
 export const buildTopicRecommendationPrompt = (
@@ -27,6 +27,33 @@ export const buildTopicRecommendationPrompt = (
 ): string => {
   return `## 작업
 학생의 향후 세특에 활용할 수 있는 탐구 주제를 맞춤 추천하세요.
+
+## 출력 JSON 스키마
+
+중요: topics 배열의 각 요소는 반드시 아래와 같은 완전한 객체여야 합니다.
+
+{
+  "sectionId": "topicRecommendation",
+  "title": "주제 추천",
+  "topics": [
+    {
+      "topic": "지역 복지 정책의 효과성 비교 분석",
+      "relatedSubjects": ["사회·문화", "정치와법"],
+      "description": "국내 지자체별 복지 정책을 비교 분석하여...",
+      "importance": "high",
+      "rationale": "기존 사회·문화 탐구를 정책 분석으로 심화...",
+      "existingConnection": "2학년 사회·문화에서 복지 문제를 다룬 것과 연결...",
+      "activityDesign": {
+        "steps": ["1단계: 지자체별 복지 예산 데이터 수집", "2단계: 정책 효과 비교 기준 설정", "3단계: 분석 및 보고서 작성"],
+        "duration": "4주",
+        "expectedResult": "지역별 복지 정책 비교 분석 보고서"
+      },
+      "sampleEvaluation": "지역 복지 정책의 효과성에 관심을 갖고..."
+    }
+  ]
+}
+
+**[필수] Premium 플랜에서 sampleEvaluation은 모든 주제에 반드시 포함해야 합니다. 누락 시 출력이 불완전한 것으로 간주됩니다.**
 
 ## 추천 기준 (우선순위 순)
 1. 학생의 기존 탐구 흐름과 자연스럽게 이어지는 주제

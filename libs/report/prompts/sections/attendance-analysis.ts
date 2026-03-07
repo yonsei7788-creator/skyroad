@@ -37,6 +37,23 @@ ${input.attendanceSummary}
 ### 학생 프로필
 ${input.studentProfile}
 
+## 출력 JSON 스키마
+
+중요: summaryByYear 배열의 각 요소는 반드시 아래와 같은 완전한 객체여야 합니다.
+
+{
+  "sectionId": "attendanceAnalysis",
+  "title": "출결 분석",
+  "summaryByYear": [
+    {"year": 1, "totalAbsence": 2, "illness": 2, "unauthorized": 0, "etc": 0, "lateness": 1, "earlyLeave": 0},
+    {"year": 2, "totalAbsence": 1, "illness": 1, "unauthorized": 0, "etc": 0, "lateness": 0, "earlyLeave": 0}
+  ],
+  "overallRating": "우수",
+  "impactAnalysis": "전체 출결 상황이 매우 양호하며...",
+  "integrityContribution": "출결 상황이 성실성 평가에 긍정적으로...",
+  "improvementAdvice": ""
+}
+
 ## 출력 지시
 
 ### 학년별 출결 요약 (summaryByYear)
@@ -49,8 +66,8 @@ ${input.studentProfile}
   - lateness: 지각
   - earlyLeave: 조퇴
 
-### 전체 평가 (overallRating)
-다음 기준으로 평가합니다:
+### 전체 평가 (overallRating) — 필수, 절대 빈 문자열 금지
+반드시 아래 4개 값 중 하나를 출력하세요:
 | 등급 | 기준 |
 |------|------|
 | 우수 | 미인정 결석 0, 총 결석 3일 이하 |

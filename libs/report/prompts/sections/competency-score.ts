@@ -46,6 +46,79 @@ ${input.preprocessedAcademicData}
 ### 학생 프로필
 ${input.studentProfile}
 
+## 출력 JSON 스키마
+
+중요: scores 배열은 반드시 3개의 완전한 객체(academic, career, community)를 포함해야 합니다. 문자열 배열 절대 금지.
+subcategories도 반드시 객체 배열이어야 합니다. comparison은 null이 아닌 객체로 출력하세요.
+
+{
+  "sectionId": "competencyScore",
+  "title": "역량 점수",
+  "totalScore": 210,
+  "growthGrade": "B",
+  "growthComment": "학년별 성장이 보이나 심화 단계에서 추가 발전 필요...",
+  "scores": [
+    {
+      "category": "academic",
+      "label": "학업역량",
+      "score": 75,
+      "maxScore": 100,
+      "subcategories": [
+        {"name": "학업성취도", "score": 30, "maxScore": 40, "comment": "내신 평균 2.5등급으로..."},
+        {"name": "학업태도", "score": 15, "maxScore": 20, "comment": "수업 참여도가 높으며..."},
+        {"name": "탐구력", "score": 30, "maxScore": 40, "comment": "탐구 주제가 구체적이며..."}
+      ],
+      "grade": "A",
+      "gradeComment": "학업 성취도와 탐구력이 균형있게..."
+    },
+    {
+      "category": "career",
+      "label": "진로역량",
+      "score": 70,
+      "maxScore": 100,
+      "subcategories": [
+        {"name": "교과이수노력", "score": 20, "maxScore": 30, "comment": "전공 관련 과목 이수율이..."},
+        {"name": "교과성취도", "score": 25, "maxScore": 30, "comment": "전공 관련 과목 성적이..."},
+        {"name": "진로탐색", "score": 25, "maxScore": 40, "comment": "진로 방향이 일관되며..."}
+      ],
+      "grade": "B",
+      "gradeComment": "진로 방향은 명확하나..."
+    },
+    {
+      "category": "community",
+      "label": "공동체역량",
+      "score": 65,
+      "maxScore": 100,
+      "subcategories": [
+        {"name": "나눔과배려", "score": 15, "maxScore": 25, "comment": "또래 학습 도움 사례가..."},
+        {"name": "소통및협업", "score": 18, "maxScore": 25, "comment": "모둠 활동에서..."},
+        {"name": "리더십", "score": 17, "maxScore": 25, "comment": "학급 임원 경험이..."},
+        {"name": "성실성", "score": 15, "maxScore": 25, "comment": "출결이 양호하며..."}
+      ],
+      "grade": "B",
+      "gradeComment": "공동체 활동 참여는 있으나..."
+    }
+  ],
+  "interpretation": "총점 210점으로 학업역량이 가장 강한 편이며...",
+  "percentile": 65,
+  "percentileLabel": "상위 35%",
+  "comparison": {"myScore": 210, "targetRangeAvg": 230, "overallAvg": 180}
+}
+
+## 단계별 채점 절차
+
+1. Call C의 radarChart에서 academic, career, community 점수를 각 역량의 총점(score)으로 확정합니다.
+2. 각 역량 내 하위항목 점수를 배분합니다. 하위항목 점수의 합 = 해당 역량 총점이어야 합니다.
+3. 각 하위항목에 대해 근거 기반 코멘트를 **1줄(50~80자)** 로 간결하게 작성합니다.
+4. 역량별 등급(grade)을 부여합니다: S(90~100), A(75~89), B(60~74), C(40~59), D(0~39).
+5. growthGrade는 Call C의 growth 점수 기반으로 같은 등급 기준을 적용합니다.
+6. totalScore = academic.score + career.score + community.score 으로 합산합니다.
+7. interpretation에 총점의 의미, 강점 역량, 보완 필요 역량을 서술합니다.
+
+## 주의: category 값은 반드시 영문
+- scores 배열의 category는 반드시 "academic", "career", "community" (영문)을 사용합니다.
+- label은 "학업역량", "진로역량", "공동체역량" (한글)을 사용합니다.
+
 ## 출력 지시
 
 ### 총점 (totalScore)
@@ -60,7 +133,7 @@ ${input.studentProfile}
 학업역량, 진로역량, 공동체역량 각각에 대해:
 - 역량 총점 (0~100)
 - 하위항목별 점수, 만점, 코멘트
-- 역량 등급 (grade: S/A/B/C/D) + 등급 사유 (gradeComment: 2~3줄)
+- 역량 등급 (grade: S/A/B/C/D) + 등급 사유 (gradeComment: **1~2줄, 100자 이내**)
 
 #### 학업역량 하위항목:
 | 항목 | 만점 | 설명 |

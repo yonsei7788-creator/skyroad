@@ -9,16 +9,16 @@ export interface WeaknessAnalysisPromptInput {
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
-  lite: `## 플랜별 출력: 기본
-- 3개 부족 영역을 출력합니다.
-- 각 영역: area + description + suggestedActivities (1~2개)
+  lite: `## 플랜별 출력: 간략
+- **3개** 부족 영역을 출력합니다.
+- 각 영역: area + description(**2줄 이내**) + suggestedActivities(**1개만**)
 - evidence, competencyTag, priority 필드는 출력하지 않습니다.`,
   standard: `## 플랜별 출력: 상세
 - 5개 부족 영역을 출력합니다.
 - 각 영역: area + description + suggestedActivities + evidence(상세 근거) + competencyTag(역량 매핑) + priority(보완 우선순위 high/medium/low)`,
   premium: `## 플랜별 출력: 정밀
-- 5개 이상 부족 영역을 출력합니다.
-- Standard의 모든 항목 + urgency(시급도) + effectiveness(효과도) 매트릭스 + executionStrategy(실행 전략) + subjectLinkStrategy(진로-선택과목 연계 전략)`,
+- **5개** 부족 영역을 출력합니다 (초과 금지).
+- Standard의 모든 항목 + urgency(시급도) + effectiveness(효과도) 매트릭스 + executionStrategy(실행 전략, 2줄 이내) + subjectLinkStrategy(진로-선택과목 연계 전략, 1줄)`,
 };
 
 export const buildWeaknessAnalysisPrompt = (
@@ -27,6 +27,38 @@ export const buildWeaknessAnalysisPrompt = (
 ): string => {
   return `## 작업
 학생의 생기부에서 부족한 부분을 구체적으로 식별하고 보완 방향을 제시하세요.
+
+## 단계별 분석 절차
+1. **역량 추출 결과에서 "미흡"/"부족" 평가 항목 식별**: 4대 역량(학업/진로/공동체/발전가능성) 각각에서 점수가 낮거나 부족 판정을 받은 하위항목을 나열합니다.
+2. **부족 유형 체크리스트와 매칭**: 아래 체크리스트의 8가지 유형 중 학생에게 해당하는 유형을 매칭합니다.
+3. **성적-세특 교차분석 수행**: 성적 데이터와 세특 평가 간 불일치를 찾아 추가 약점을 식별합니다.
+4. **우선순위 결정**: 입시 영향도(high/medium/low)와 개선 가능성을 기준으로 priority를 배정합니다.
+5. **보완 활동 설계**: 각 약점에 대해 고등학생이 실제 수행 가능한 구체적 활동을 제안합니다.
+
+## 출력 JSON 스키마
+
+중요: areas 배열의 각 요소는 반드시 아래와 같은 완전한 객체여야 합니다.
+
+{
+  "sectionId": "weaknessAnalysis",
+  "title": "부족한 부분 + 보완 전략",
+  "areas": [
+    {
+      "area": "탐구 깊이 부족",
+      "description": "세특에서 '조사함', '발표함'으로 끝나는 기록이 다수 발견되며...",
+      "suggestedActivities": ["탐구 보고서 작성 시 가설-실험-결론 구조를 갖추기", "교과 내 소논문 작성"],
+      "evidence": "2학년 사회·문화 세특에서 '복지 정책을 조사하고 발표함'이라고만...",
+      "competencyTag": {"category": "academic", "subcategory": "탐구력"},
+      "priority": "high",
+      "urgency": "high",
+      "effectiveness": "high",
+      "executionStrategy": "3학년 1학기 세특에서 탐구 과정을 구체적으로...",
+      "subjectLinkStrategy": "사회·문화와 정치와법 연계 탐구..."
+    }
+  ]
+}
+
+플랜별로 불필요한 필드는 생략하되, areas의 각 요소는 반드시 위와 같은 객체여야 합니다.
 
 ## 부족 유형 체크리스트
 다음 유형의 약점이 존재하는지 확인하고, 해당되는 경우 포함하세요:

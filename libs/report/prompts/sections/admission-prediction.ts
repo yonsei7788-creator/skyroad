@@ -70,6 +70,39 @@ ${input.studentProfile}
 
 ${additionalInputs}
 
+## 출력 JSON 스키마
+
+중요: predictions 배열의 각 요소는 반드시 아래와 같은 완전한 객체여야 합니다.
+
+{
+  "sectionId": "admissionPrediction",
+  "title": "합격 예측",
+  "recommendedType": "학종",
+  "recommendedTypeReason": "학생의 세특 내용과 활동 이력이 학종에 적합하며...",
+  "predictions": [
+    {
+      "admissionType": "학종",
+      "passRateLabel": "60~70%",
+      "passRateRange": [60, 70],
+      "analysis": "세특 내용의 질과 활동의 일관성이 학종에서 경쟁력이...",
+      "universityPredictions": [
+        {"university": "한양대학교", "department": "행정학과", "chance": "medium", "rationale": "세특 내용은 우수하나 내신이..."}
+      ]
+    },
+    {
+      "admissionType": "교과",
+      "passRateLabel": "40~50%",
+      "passRateRange": [40, 50],
+      "analysis": "내신 등급이 교과전형 지원에는 다소 부족하며...",
+      "universityPredictions": []
+    }
+  ],
+  "overallComment": "학생부종합전형을 주력으로 하되..."
+}
+
+- **"간략 근거" (Lite)** = analysis 필드에 1~2문장으로 핵심만 서술
+- **"상세 근거" (Premium)** = analysis 필드에 3~4문장으로 역량/성적/활동 근거를 구체적으로 서술
+
 ## 출력 지시
 
 ### 추천 전형 (recommendedType)
@@ -77,6 +110,8 @@ ${additionalInputs}
 - 추천 이유를 2~3줄로 서술합니다.
 
 ### 전형별 합격 예측 (predictions)
+**admissionType은 반드시 다음 3개 중 하나:** "학종" | "교과" | "정시". "학생부종합" 등 다른 표현 금지.
+**chance는 반드시 다음 3개 중 하나:** "high" | "medium" | "low". 다른 값 금지.
 학종, 교과, 정시 각 전형에 대해:
 - 합격률 표시 (예: "60~70%")
 - 합격률 수치 범위 [하한, 상한] (예: [60, 70])
