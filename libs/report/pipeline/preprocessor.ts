@@ -167,6 +167,11 @@ export interface PreprocessedData {
     achievementLevel: string;
     grade?: string;
   }[];
+  careerSubjects: {
+    subject: string;
+    achievement: string;
+    achievementDistribution: string;
+  }[];
   recommendedCourseMatch: RecommendedCourseMatch;
   curriculumVersion: "2015" | "2022";
   attendanceSummary: AttendanceSummaryItem[];
@@ -430,6 +435,11 @@ export const preprocess = (
     convertedGrade,
     fiveGradeConversion,
     smallClassSubjects,
+    careerSubjects: careerSubjects.map((cs) => ({
+      subject: cs.subject,
+      achievement: cs.achievement,
+      achievementDistribution: cs.achievementDistribution,
+    })),
     recommendedCourseMatch,
     curriculumVersion,
     attendanceSummary,
@@ -624,8 +634,8 @@ const matchRecommendedCourses = (
     missingCourses,
     matchRate:
       requiredCourses.length > 0
-        ? Math.round((takenCourses.length / requiredCourses.length) * 100) / 100
-        : 1,
+        ? Math.round((takenCourses.length / requiredCourses.length) * 100)
+        : 100,
   };
 };
 

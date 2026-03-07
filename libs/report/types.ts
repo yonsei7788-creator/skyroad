@@ -1429,40 +1429,38 @@ export type ReportSection =
 // ============================================================
 
 type LiteSectionId =
-  // Part 1
+  // Part 1: 진단
   | "studentProfile"
   | "competencyScore"
-  | "admissionPrediction"
-  | "diagnostic"
-  // Part 2
-  | "competencyEvaluation"
+  // Part 2: 분석
   | "academicAnalysis"
-  | "courseAlignment"
-  | "attendanceAnalysis"
   | "activityAnalysis"
   | "subjectAnalysis"
-  // Part 3
+  // Part 3: 전략
   | "weaknessAnalysis"
   | "topicRecommendation"
-  | "admissionStrategy"
-  | "directionGuide"
-  // 부록
-  | "wordCloud";
+  | "interviewPrep"
+  | "admissionStrategy";
 
 type StandardSectionId =
   | LiteSectionId
+  // Part 1 추가
+  | "admissionPrediction"
   // Part 2 추가
-  | "behaviorAnalysis"
+  | "courseAlignment"
+  | "attendanceAnalysis"
+  | "behaviorAnalysis";
+
+type PremiumSectionId =
+  | StandardSectionId
+  // Part 2 추가
   | "overallAssessment"
   // Part 3 추가
-  | "interviewPrep"
   | "storyAnalysis"
   | "actionRoadmap"
   // 부록 추가
   | "bookRecommendation"
   | "majorExploration";
-
-type PremiumSectionId = StandardSectionId;
 
 /** 플랜별 가능한 섹션 ID 매핑 */
 export type RequiredSectionIds = {
@@ -1524,23 +1522,22 @@ export type ExtractSection<
 export const SECTION_ORDER: Record<ReportPlan, string[]> = {
   lite: [
     // Part 1: 진단
-    "studentProfile", // diagnostic 통합
-    "competencyScore", // competencyEvaluation 통합
+    "studentProfile",
+    "competencyScore",
     // Part 2: 분석
     "academicAnalysis",
-    "attendanceAnalysis",
     "activityAnalysis",
     "subjectAnalysis",
     // Part 3: 전략
     "weaknessAnalysis",
     "topicRecommendation",
     "interviewPrep",
-    "admissionStrategy", // admissionPrediction 통합
+    "admissionStrategy",
   ],
   standard: [
     // Part 1: 진단
-    "studentProfile", // diagnostic 통합
-    "competencyScore", // competencyEvaluation 통합
+    "studentProfile",
+    "competencyScore",
     "admissionPrediction",
     // Part 2: 분석
     "academicAnalysis",
@@ -1554,8 +1551,6 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     "topicRecommendation",
     "interviewPrep",
     "admissionStrategy",
-    "storyAnalysis",
-    "actionRoadmap",
   ],
   premium: [
     // Part 1: 진단
