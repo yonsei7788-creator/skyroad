@@ -43,19 +43,11 @@ const CheckoutSuccessContent = () => {
           throw new Error(confirmErr.error ?? "결제 확인에 실패했습니다.");
         }
 
-        const { orderId: confirmedOrderId, reportId } = await confirmRes.json();
+        const { orderId: confirmedOrderId } = await confirmRes.json();
 
         setStatus("confirmed");
 
-        // 이미 콘텐츠가 있는 리포트 → 바로 리포트 페이지로
-        // 아직 생성 전 → generating 페이지로 (orderId 전달)
-        if (reportId) {
-          router.replace(
-            `/report/${reportId}/generating?orderId=${confirmedOrderId}`
-          );
-        } else {
-          router.replace("/profile/consulting");
-        }
+        router.replace(`/report/generating?orderId=${confirmedOrderId}`);
       } catch (err) {
         setStatus("error");
         setError(
@@ -107,7 +99,7 @@ const CheckoutSuccessContent = () => {
             <p className={styles.subtitle}>
               {status === "confirming"
                 ? "잠시만 기다려주세요."
-                : "AI 분석 페이지로 이동합니다..."}
+                : "AI 분석 페이지로 이동합니다. 페이지를 닫지 마세요."}
             </p>
           </>
         )}

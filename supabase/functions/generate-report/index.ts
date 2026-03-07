@@ -1,26 +1,35 @@
 /**
  * Supabase Edge Function: generate-report
  *
- * AI 리포트 생성 파이프라인을 Supabase Edge Function에서 실행한다.
- * Vercel Hobby 타임아웃(10초) 제약을 우회하기 위해
- * 기존 /api/reports/generate에서 파이프라인 실행 부분을 이전.
+ * Task 기반 Wave 실행으로 AI 리포트를 생성한다.
+ * 각 Wave는 정확히 1개의 Gemini 호출을 실행하여 150초 wall time 안에 완료된다.
+ * 완료 후 다음 Wave를 pg_net(비동기 HTTP)으로 트리거한다.
  *
- * 호출: Next.js API Route → Edge Function (fire-and-forget 스타일)
- * 인증: Authorization Bearer 헤더에 service_role key
+ * Wave 0: 데이터 로딩 + 전처리 + 태스크 큐 생성
+ * Wave 1+: 태스크 큐에서 순서대로 1개씩 실행
+ * 마지막 Wave: 후처리 + content 저장
+ *
+ * 인증: x-secret 헤더로 공유 시크릿 검증
  */
 
 import { createClient } from "@supabase/supabase-js";
-import type { SupabaseClient } from "@supabase/supabase-js";
 
-// Pipeline imports (relative paths from supabase/functions/generate-report/)
-import { loadRecordData } from "../../../libs/report/pipeline/load-record.ts";
-import { preprocess } from "../../../libs/report/pipeline/preprocessor.ts";
-import { orchestrate } from "../../../libs/report/pipeline/orchestrator.ts";
-import { postprocess } from "../../../libs/report/pipeline/postprocessor.ts";
 import { createGeminiClient } from "../../../libs/report/pipeline/gemini-client.ts";
+import {
+  loadWaveState,
+  computeNextWave,
+  clearWaveState,
+  verifyRunId,
+} from "../../../libs/report/pipeline/wave-state.ts";
+import type { WaveState } from "../../../libs/report/pipeline/wave-state.ts";
+import {
+  executePreprocess,
+  executeTask,
+} from "../../../libs/report/pipeline/wave-executor.ts";
+import { postprocess } from "../../../libs/report/pipeline/postprocessor.ts";
 import type { ReportPlan, StudentInfo } from "../../../libs/report/types.ts";
 
-// ─── CORS 헤더 ───
+// ─── CORS ───
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -37,46 +46,26 @@ interface GenerateReportPayload {
   studentInfo: StudentInfo;
   recordId: string;
   universityCandidatesText: string;
+  wave?: number;
+  runId?: string;
 }
+
+// ─── 상수 ───
+
+// Premium 최대 18 waves (preprocess + 17 tasks)
+const MAX_WAVE = 20;
 
 // ─── 유틸 ───
 
-const updateProgress = async (
-  supabase: SupabaseClient,
-  reportId: string,
-  progress: number,
-  currentSection: string
-): Promise<void> => {
-  await supabase
-    .from("reports")
-    .update({
-      ai_progress: Math.min(99, progress),
-      ai_current_section: currentSection,
-    })
-    .eq("id", reportId);
-};
-
-const markFailed = async (
-  supabase: SupabaseClient,
-  reportId: string,
-  orderId: string,
-  errorMessage: string
-): Promise<void> => {
-  await supabase
-    .from("reports")
-    .update({
-      ai_status: "failed",
-      ai_error: errorMessage,
-    })
-    .eq("id", reportId);
-
-  await supabase.from("orders").update({ status: "paid" }).eq("id", orderId);
-};
+const jsonResponse = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+  });
 
 // ─── 메인 핸들러 ───
 
 Deno.serve(async (req) => {
-  // CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: CORS_HEADERS });
   }
@@ -85,46 +74,27 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+  const edgeFnSecret = Deno.env.get("EDGE_FUNCTION_SECRET");
 
   if (!supabaseUrl || !serviceRoleKey) {
-    return new Response(
-      JSON.stringify({ error: "서버 설정 오류 (Supabase)" }),
-      {
-        status: 500,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      }
-    );
+    return jsonResponse({ error: "서버 설정 오류 (Supabase)" }, 500);
   }
-
   if (!geminiApiKey) {
-    return new Response(
-      JSON.stringify({ error: "서버 설정 오류 (Gemini API Key)" }),
-      {
-        status: 500,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      }
-    );
+    return jsonResponse({ error: "서버 설정 오류 (Gemini API Key)" }, 500);
   }
 
-  // 2. 인증: x-secret 헤더로 공유 시크릿 검증
-  const edgeFnSecret = Deno.env.get("EDGE_FUNCTION_SECRET");
+  // 2. 인증
   const secret = req.headers.get("x-secret");
   if (!edgeFnSecret || !secret || secret !== edgeFnSecret) {
-    return new Response(JSON.stringify({ error: "인증 실패" }), {
-      status: 401,
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: "인증 실패" }, 401);
   }
 
-  // 3. 요청 바디 파싱
+  // 3. 요청 파싱
   let payload: GenerateReportPayload;
   try {
     payload = await req.json();
   } catch {
-    return new Response(JSON.stringify({ error: "잘못된 요청 바디" }), {
-      status: 400,
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: "잘못된 요청 바디" }, 400);
   }
 
   const {
@@ -135,119 +105,186 @@ Deno.serve(async (req) => {
     recordId,
     universityCandidatesText,
   } = payload;
+  const wave = payload.wave ?? 0;
 
   if (!orderId || !reportId || !plan || !studentInfo || !recordId) {
-    return new Response(JSON.stringify({ error: "필수 파라미터 누락" }), {
-      status: 400,
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: "필수 파라미터 누락" }, 400);
   }
 
-  // 4. Supabase admin client
-  const dbClient = createClient(supabaseUrl, serviceRoleKey, {
+  // Run ID: Wave 0에서 생성, 이후 wave에서 검증
+  const runId = payload.runId ?? crypto.randomUUID();
+
+  if (wave > MAX_WAVE) {
+    return jsonResponse(
+      { error: `최대 Wave(${MAX_WAVE})를 초과했습니다.` },
+      400
+    );
+  }
+
+  // 4. 클라이언트 생성
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+  const gemini = createGeminiClient(geminiApiKey);
 
-  // 5. 파이프라인 실행
   try {
-    // Phase 1: 데이터 로딩 + 전처리
-    await updateProgress(dbClient, reportId, 5, "데이터 로딩");
+    console.log(`[report:${reportId}] Wave ${wave} 시작 (plan: ${plan})`);
 
-    const recordData = await loadRecordData(dbClient, recordId);
-    const { data, texts } = preprocess(recordData, studentInfo, plan);
+    let nextState: WaveState;
 
-    // 목표 대학 후보군 텍스트 주입
-    texts.universityCandidatesText = universityCandidatesText;
-
-    await updateProgress(dbClient, reportId, 10, "전처리 완료");
-
-    // Phase 2-3: AI 호출 (오케스트레이터)
-    const client = createGeminiClient(geminiApiKey);
-
-    const sections = await orchestrate(
-      client,
-      plan,
-      studentInfo,
-      texts,
-      data,
-      (progress) => {
-        const dbProgress = Math.round(10 + progress.progress * 0.8);
-        updateProgress(
-          dbClient,
-          reportId,
-          dbProgress,
-          progress.section ?? progress.phase
-        ).catch(() => {});
+    // Wave 1+: run ID 검증 (동시 실행 방지)
+    if (wave > 0) {
+      const isValidRun = await verifyRunId(supabase, reportId, runId);
+      if (!isValidRun) {
+        console.log(
+          `[report:${reportId}] Wave ${wave} 중단: 다른 실행(runId)이 진행 중`
+        );
+        return jsonResponse({
+          success: false,
+          reason: "stale_run",
+          wave,
+        });
       }
+    }
+
+    if (wave === 0) {
+      // ── Wave 0: 전처리 + 태스크 큐 생성 ──
+      nextState = await executePreprocess(
+        plan,
+        studentInfo,
+        reportId,
+        supabase,
+        recordId,
+        universityCandidatesText,
+        runId
+      );
+    } else {
+      // ── Wave 1+: 태스크 큐에서 다음 태스크 실행 ──
+      const state = await loadWaveState(supabase, reportId);
+      if (!state) {
+        throw new Error(`Wave ${wave}: 이전 상태를 찾을 수 없습니다.`);
+      }
+
+      const taskIndex = state.currentTaskIndex + 1;
+      const taskId = state.taskQueue[taskIndex];
+      if (!taskId) {
+        throw new Error(`Wave ${wave}: 태스크 큐에 남은 작업이 없습니다.`);
+      }
+
+      console.log(
+        `[report:${reportId}] Task: ${taskId} (${taskIndex + 1}/${state.totalTasks})`
+      );
+
+      nextState = await executeTask(
+        taskId,
+        gemini,
+        plan,
+        studentInfo,
+        state,
+        reportId,
+        supabase
+      );
+    }
+
+    console.log(`[report:${reportId}] Wave ${wave} 완료`);
+
+    // 5. 다음 Wave 판별
+    const nextWaveNum = computeNextWave(nextState);
+
+    if (nextWaveNum !== null) {
+      // ── pg_net으로 다음 Wave 비동기 트리거 ──
+      const selfUrl = `${supabaseUrl}/functions/v1/generate-report`;
+      const nextPayload = {
+        ...payload,
+        wave: nextState.lastCompletedWave + 1,
+        runId,
+      };
+
+      const { error: rpcError } = await supabase.rpc("trigger_next_wave", {
+        p_url: selfUrl,
+        p_secret: edgeFnSecret,
+        p_payload: nextPayload,
+      });
+
+      if (rpcError) {
+        console.error(`[report:${reportId}] 다음 Wave 트리거 실패:`, rpcError);
+        throw new Error(`다음 Wave 트리거 실패: ${rpcError.message}`);
+      }
+
+      const currentTask =
+        nextState.taskQueue[nextState.currentTaskIndex] ?? "preprocess";
+      console.log(
+        `[report:${reportId}] 다음 Wave 트리거 완료 (다음 태스크: ${nextState.taskQueue[nextState.currentTaskIndex + 1] ?? "finalize"})`
+      );
+
+      return jsonResponse({
+        success: true,
+        reportId,
+        wave,
+        task: currentTask,
+        nextWave: nextState.lastCompletedWave + 1,
+      });
+    }
+
+    // ── 마지막 태스크: 후처리 + 결과 저장 ──
+
+    const sections = nextState.completedSections ?? [];
+    const result = postprocess(
+      sections,
+      nextState.preprocessedData!,
+      studentInfo,
+      plan,
+      reportId
     );
 
-    await updateProgress(dbClient, reportId, 92, "후처리 시작");
-
-    // Phase 4: 후처리
-    const result = postprocess(sections, data, studentInfo, plan, reportId);
-
-    // 검증 오류 로깅
     const failedSections = result.validationResults.filter((r) => !r.valid);
     if (failedSections.length > 0) {
       console.warn(
-        `리포트 ${reportId}: ${failedSections.length}개 섹션 검증 실패`,
+        `[report:${reportId}] ${failedSections.length}개 섹션 검증 실패:`,
         failedSections.map((s) => s.sectionId)
       );
     }
-    if (result.planValidationErrors.length > 0) {
-      console.warn(
-        `리포트 ${reportId}: 플랜 검증 오류`,
-        result.planValidationErrors
-      );
-    }
 
-    // 결과 저장
-    const { error: saveError } = await dbClient
+    const { error: saveError } = await supabase
       .from("reports")
       .update({
-        content: result.content,
+        content: result.content as unknown as Record<string, unknown>,
         ai_status: "completed",
         ai_progress: 100,
         ai_current_section: null,
+        ai_wave_state: null,
+        ai_current_wave: null,
         ai_generated_at: new Date().toISOString(),
         ai_model_version: "gemini-2.5-pro",
       })
       .eq("id", reportId);
 
     if (saveError) {
-      console.error("리포트 저장 오류:", saveError);
-      await markFailed(
-        dbClient,
-        reportId,
-        orderId,
-        "리포트 저장에 실패했습니다."
-      );
-      return new Response(JSON.stringify({ error: "리포트 저장 실패" }), {
-        status: 500,
-        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-      });
+      throw new Error(`리포트 저장 실패: ${saveError.message}`);
     }
 
-    // 주문 상태 업데이트
-    await dbClient
+    await supabase
       .from("orders")
       .update({ status: "analysis_complete" })
       .eq("id", orderId);
 
-    console.log(`리포트 ${reportId} 생성 완료`);
-
-    return new Response(JSON.stringify({ success: true, reportId }), {
-      status: 200,
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-    });
+    console.log(`[report:${reportId}] 생성 완료! (총 ${wave + 1} waves)`);
+    return jsonResponse({ success: true, reportId, wave, final: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error(`리포트 ${reportId} AI 파이프라인 오류:`, err);
-    await markFailed(dbClient, reportId, orderId, message);
+    console.error(`[report:${reportId}] Wave ${wave} 오류:`, message);
 
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-    });
+    await supabase
+      .from("reports")
+      .update({
+        ai_status: "failed",
+        ai_error: message,
+        ai_current_wave: wave,
+      })
+      .eq("id", reportId);
+
+    await supabase.from("orders").update({ status: "paid" }).eq("id", orderId);
+
+    return jsonResponse({ error: message, wave }, 500);
   }
 });

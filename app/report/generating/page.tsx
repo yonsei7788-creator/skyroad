@@ -1,30 +1,16 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import styles from "./page.module.css";
 
 const MAX_RETRY = 3;
 
-interface GenerateResponse {
-  reportId: string;
-  orderId: string;
-  plan: string;
-  studentInfo: Record<string, unknown>;
-  taskQueue: string[];
-  status: string;
-  error?: string;
-}
-
-interface RunTaskResponse {
-  taskId: string;
-  progress: number;
-  completed: boolean;
-  error?: string;
-}
+type Phase = "idle" | "running" | "completed" | "error";
 
 const TASK_LABELS: Record<string, string> = {
+  preprocess: "데이터 준비",
   phase2: "기초 분석",
   studentProfile: "학생 프로필",
   competencyScore: "역량 점수",
@@ -46,121 +32,101 @@ const TASK_LABELS: Record<string, string> = {
 };
 
 const GeneratingContent = () => {
-  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
 
-  const [phase, setPhase] = useState<
-    "idle" | "initializing" | "running" | "completed" | "error"
-  >("idle");
+  const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);
   const [currentSection, setCurrentSection] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [exhausted, setExhausted] = useState(false);
 
-  const calledRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
 
-  // 마운트 시 파이프라인 자동 실행
   useEffect(() => {
-    if (calledRef.current) return;
-    calledRef.current = true;
+    if (!orderId) {
+      setPhase("error");
+      setError("주문 정보가 없습니다. 결제 내역에서 다시 시도해 주세요.");
+      return;
+    }
 
     const controller = new AbortController();
     abortRef.current = controller;
 
     const run = async () => {
-      if (!orderId) {
-        setPhase("error");
-        setError("주문 정보가 없습니다. 결제 내역에서 다시 시도해 주세요.");
-        return;
-      }
-
-      setPhase("initializing");
+      setPhase("running");
       setError(null);
       setProgress(0);
 
       try {
-        // 1. 전처리 + 태스크 큐 받기
-        const initRes = await fetch("/api/reports/generate", {
+        const res = await fetch("/api/reports/run-pipeline", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ orderId }),
           signal: controller.signal,
         });
 
-        const initBody: GenerateResponse = (await initRes.json().catch(() => ({
-          error: "서버 오류가 발생했습니다.",
-        }))) as GenerateResponse;
-
-        if (!initRes.ok) {
-          if (initRes.status === 409) {
-            if (initBody.error?.includes("완료")) {
-              router.replace(`/report/${id}`);
-              return;
-            }
-            if (initBody.error?.includes("생성 중")) {
-              setPhase("error");
-              setError(
-                "이미 다른 곳에서 리포트가 생성 중입니다. 잠시 후 다시 시도해 주세요."
-              );
-              return;
-            }
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          if (res.status === 409 && body.error?.includes("완료")) {
+            router.replace("/profile/consulting");
+            return;
           }
           setPhase("error");
-          setError(initBody.error ?? "알 수 없는 오류가 발생했습니다.");
+          setError(body.error ?? "알 수 없는 오류가 발생했습니다.");
           return;
         }
 
-        const { taskQueue, plan, studentInfo } = initBody;
+        // SSE 스트림 읽기
+        const reader = res.body?.getReader();
+        if (!reader) {
+          setPhase("error");
+          setError("스트림을 읽을 수 없습니다.");
+          return;
+        }
 
-        // 2. 태스크를 순차 실행
-        setPhase("running");
+        const decoder = new TextDecoder();
+        let buffer = "";
 
-        for (const taskId of taskQueue) {
-          if (controller.signal.aborted) return;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-          setCurrentSection(TASK_LABELS[taskId] ?? taskId);
+          buffer += decoder.decode(value, { stream: true });
 
-          const taskRes = await fetch(`/api/reports/${id}/run-task`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              taskId,
-              plan,
-              studentInfo,
-              orderId,
-            }),
-            signal: controller.signal,
-          });
+          // SSE 이벤트 파싱 (data: {...}\n\n)
+          const lines = buffer.split("\n\n");
+          buffer = lines.pop() ?? "";
 
-          const taskBody: RunTaskResponse = (await taskRes.json().catch(() => ({
-            error: "서버 오류가 발생했습니다.",
-          }))) as RunTaskResponse;
+          for (const line of lines) {
+            const dataLine = line.trim();
+            if (!dataLine.startsWith("data: ")) continue;
 
-          if (!taskRes.ok) {
-            setPhase("error");
-            setError(
-              taskBody.error ?? `태스크 ${taskId} 실행 중 오류가 발생했습니다.`
-            );
-            return;
-          }
+            try {
+              const data = JSON.parse(dataLine.slice(6));
 
-          setProgress(taskBody.progress);
-
-          if (taskBody.completed) {
-            setPhase("completed");
-            setProgress(100);
-            setCurrentSection(null);
-            return;
+              if (data.type === "progress") {
+                setProgress(data.progress);
+                const label = TASK_LABELS[data.section] ?? data.section;
+                setCurrentSection(label);
+              } else if (data.type === "completed") {
+                setPhase("completed");
+                setProgress(100);
+                setCurrentSection(null);
+              } else if (data.type === "error") {
+                setPhase("error");
+                setError(data.error);
+              }
+            } catch {
+              // JSON 파싱 실패 무시
+            }
           }
         }
 
-        // 모든 태스크 완료
-        setPhase("completed");
-        setProgress(100);
+        // 스트림 종료 후 phase가 아직 running이면 완료 처리
+        setPhase((prev) => (prev === "running" ? "completed" : prev));
       } catch (err) {
         if (controller.signal.aborted) return;
         setPhase("error");
@@ -178,11 +144,11 @@ const GeneratingContent = () => {
       controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [orderId]);
 
   // beforeunload 이탈 방지
   useEffect(() => {
-    if (phase !== "initializing" && phase !== "running") return;
+    if (phase !== "running") return;
 
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
@@ -198,11 +164,83 @@ const GeneratingContent = () => {
       return;
     }
     setRetryCount(nextRetry);
-    calledRef.current = false;
-    runPipeline();
-  };
 
-  const isWorking = phase === "initializing" || phase === "running";
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setPhase("running");
+    setError(null);
+    setProgress(0);
+
+    const run = async () => {
+      try {
+        const res = await fetch("/api/reports/run-pipeline", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId }),
+          signal: controller.signal,
+        });
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          setPhase("error");
+          setError(body.error ?? "알 수 없는 오류가 발생했습니다.");
+          return;
+        }
+
+        const reader = res.body?.getReader();
+        if (!reader) {
+          setPhase("error");
+          setError("스트림을 읽을 수 없습니다.");
+          return;
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            const dataLine = line.trim();
+            if (!dataLine.startsWith("data: ")) continue;
+            try {
+              const data = JSON.parse(dataLine.slice(6));
+              if (data.type === "progress") {
+                setProgress(data.progress);
+                setCurrentSection(TASK_LABELS[data.section] ?? data.section);
+              } else if (data.type === "completed") {
+                setPhase("completed");
+                setProgress(100);
+                setCurrentSection(null);
+              } else if (data.type === "error") {
+                setPhase("error");
+                setError(data.error);
+              }
+            } catch {
+              // ignore
+            }
+          }
+        }
+
+        setPhase((prev) => (prev === "running" ? "completed" : prev));
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setPhase("error");
+        setError(
+          err instanceof Error ? err.message : "네트워크 오류가 발생했습니다."
+        );
+      }
+    };
+
+    run();
+  };
 
   return (
     <div className={styles.wrapper}>
@@ -229,7 +267,7 @@ const GeneratingContent = () => {
               컨설팅 내역으로 이동
             </button>
           </>
-        ) : isWorking ? (
+        ) : phase === "running" ? (
           <>
             <div
               className={styles.spinner}

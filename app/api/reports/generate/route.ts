@@ -4,10 +4,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient } from "@/libs/supabase/server";
 import { createAdminClient } from "@/libs/supabase/admin";
-import { env } from "@/env";
 import type { ReportPlan, StudentInfo } from "@/libs/report/types";
+import { executePreprocess } from "@/libs/report/pipeline/wave-executor";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 interface GenerateBody {
   orderId: string;
@@ -99,15 +100,69 @@ export const POST = async (request: NextRequest) => {
   // 4. 리포트 조회 또는 생성
   const { data: existingReport } = await supabase
     .from("reports")
-    .select("id, ai_status, content")
+    .select("id, ai_status, content, ai_wave_state")
     .eq("order_id", orderId)
     .single();
 
   if (existingReport?.ai_status === "processing") {
+    // 이미 processing 상태 — wave state가 있으면 태스크 큐 반환하여 이어서 실행
+    const waveState = existingReport.ai_wave_state as {
+      taskQueue?: string[];
+    } | null;
+
+    if (waveState?.taskQueue) {
+      const plans = order.plans as unknown as { name: string };
+      const plan = plans.name as ReportPlan;
+
+      const { data: userProfile } = await supabase
+        .from("profiles")
+        .select("name, grade, high_school_type")
+        .eq("id", order.user_id)
+        .single();
+
+      const profiles = userProfile ?? {
+        name: "학생",
+        grade: "high2",
+        high_school_type: "일반고",
+      };
+
+      const { data: targetUnis } = await supabase
+        .from("target_universities")
+        .select("university_name, department")
+        .eq("user_id", order.user_id)
+        .order("priority", { ascending: true });
+
+      const targetUni = targetUnis?.[0];
+
+      const studentInfo: StudentInfo = {
+        name: profiles.name ?? "학생",
+        grade: GRADE_MAP[profiles.grade] ?? 2,
+        track: "통합",
+        schoolType:
+          (profiles.high_school_type as StudentInfo["schoolType"]) ?? "일반고",
+        targetUniversity: targetUni?.university_name,
+        targetDepartment: targetUni?.department,
+        hasMockExamData: false,
+      };
+
+      return NextResponse.json({
+        reportId: existingReport.id,
+        orderId,
+        plan,
+        studentInfo,
+        taskQueue: waveState.taskQueue,
+        status: "ready",
+      });
+    }
+
     return NextResponse.json({ error: "이미 생성 중입니다." }, { status: 409 });
   }
 
+  // 실패한 리포트 재시도 판별
+  const isRetry = existingReport?.ai_status === "failed";
+
   if (
+    !isRetry &&
     existingReport?.content !== null &&
     existingReport?.content !== undefined
   ) {
@@ -226,53 +281,31 @@ export const POST = async (request: NextRequest) => {
         )
       : "[]";
 
-  // 7. Edge Function으로 파이프라인 비동기 실행 (fire-and-forget)
-  const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!serviceRoleKey) {
-    await markFailed(
-      dbClient,
-      reportId,
-      orderId,
-      "SUPABASE_SERVICE_ROLE_KEY가 설정되지 않았습니다."
-    );
-    return NextResponse.json(
-      { error: "AI 서비스 설정이 올바르지 않습니다." },
-      { status: 500 }
-    );
-  }
-
-  const edgeFunctionUrl = `${supabaseUrl}/functions/v1/generate-report`;
-
-  // Edge Function을 fire-and-forget으로 호출.
-  // await하지 않음 — Edge Function은 독립 프로세스로 계속 실행됨.
-  // 성공/실패는 Edge Function이 직접 DB에 기록.
-  fetch(edgeFunctionUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${serviceRoleKey}`,
-      "x-secret": "skyroad-edge-fn-2026",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      orderId,
-      reportId,
+  // 7. 전처리 실행 (Gemini 호출 없음 — 빠름)
+  try {
+    const waveState = await executePreprocess(
       plan,
       studentInfo,
+      reportId,
+      dbClient,
       recordId,
-      universityCandidatesText,
-    }),
-  }).catch((err) => {
-    console.error("Edge Function 호출 오류:", err);
-  });
+      universityCandidatesText
+    );
 
-  console.log(`리포트 ${reportId} Edge Function 디스패치 완료`);
-
-  return NextResponse.json({
-    reportId,
-    status: "processing",
-  });
+    return NextResponse.json({
+      reportId,
+      orderId,
+      plan,
+      studentInfo,
+      taskQueue: waveState.taskQueue,
+      status: "ready",
+    });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "전처리 중 오류가 발생했습니다.";
+    await markFailed(dbClient, reportId, orderId, message);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 };
 
 // ─── 유틸 ───
