@@ -169,6 +169,7 @@ export const PlanCards = () => {
 
         <p className={styles.note}>
           * 대학 지원 조합은 고2 이상 생기부가 포함된 경우에만 제공됩니다
+          <br />* 리포트 열람 기간은 구매일로부터 최대 12개월입니다
         </p>
       </div>
     </section>
