@@ -5,6 +5,7 @@ import type {
 } from "@/libs/report/types";
 
 import styles from "./report.module.css";
+import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
 interface CompetencyScoreRendererProps {
@@ -28,14 +29,6 @@ const GRADE_BADGE_CLASS: Record<CompetencyGrade, string> = {
   D: styles.ratingWeak,
 };
 
-const GROWTH_GRADE_CLASS: Record<CompetencyGrade, string> = {
-  S: styles.competencyGrowthGradeS,
-  A: styles.competencyGrowthGradeA,
-  B: styles.competencyGrowthGradeB,
-  C: styles.competencyGrowthGradeCD,
-  D: styles.competencyGrowthGradeCD,
-};
-
 export const CompetencyScoreRenderer = ({
   data,
   sectionNumber,
@@ -51,12 +44,6 @@ export const CompetencyScoreRenderer = ({
     : isStandard
       ? styles.competencyHeroStandard
       : styles.competencyHero;
-
-  const growthClass = isPremium
-    ? styles.competencyGrowthPremium
-    : isStandard
-      ? styles.competencyGrowthStandard
-      : styles.competencyGrowth;
 
   const renderDimCard = (score: (typeof data.scores)[number], key?: string) => (
     <div key={key ?? score.category} className={styles.competencyDimCardWide}>
@@ -89,7 +76,7 @@ export const CompetencyScoreRenderer = ({
       )}
 
       <div className={styles.competencyDimWideSubs}>
-        {score.subcategories.map((sub) => (
+        {(score.subcategories ?? []).map((sub) => (
           <div key={sub.name} className={styles.competencyDimWideSubRow}>
             <span className={styles.competencyDimWideSubLabel}>{sub.name}</span>
             <div className={styles.competencyDimWideSubRight}>
@@ -113,15 +100,19 @@ export const CompetencyScoreRenderer = ({
 
       {score.grade && score.gradeComment && (
         <div className={styles.competencyDimWideGradeComment}>
-          {score.gradeComment}
+          {safeText(score.gradeComment)}
         </div>
       )}
     </div>
   );
 
+  const academic = (data.scores ?? []).find((s) => s.category === "academic");
+  const career = (data.scores ?? []).find((s) => s.category === "career");
+  const community = (data.scores ?? []).find((s) => s.category === "community");
+
   return (
     <>
-      {/* ── Block 1: Hero + 첫 번째 역량 ── */}
+      {/* ── Page 1: 종합 역량 점수 + 역량별 상세 + 학업역량 + 진로역량 ── */}
       <div>
         <SectionHeader number={sectionNumber} title={data.title} />
 
@@ -183,29 +174,34 @@ export const CompetencyScoreRenderer = ({
         </div>
 
         <div className={styles.competencySectionLabel}>역량별 상세</div>
-        {data.scores[0] && renderDimCard(data.scores[0])}
+        {academic && renderDimCard(academic)}
+        {career && renderDimCard(career)}
       </div>
 
-      {/* ── Block 2+: 나머지 역량 카드 각각 ── */}
-      {data.scores.slice(1).map((score) => (
-        <div key={score.category}>{renderDimCard(score)}</div>
-      ))}
-
-      {/* ── Last block: Growth + AI ── */}
+      {/* ── Page 2: 공동체역량 + 발전가능성 + 점수 해석 ── */}
       <div>
-        {/* Growth potential */}
-        <div className={growthClass}>
-          <div className={styles.competencyGrowthLeft}>
-            <span className={styles.competencyGrowthLabel}>발전 가능성</span>
-            <div className={GROWTH_GRADE_CLASS[data.growthGrade]}>
-              {data.growthGrade}
+        {community && renderDimCard(community)}
+
+        {/* Growth potential — 다른 역량 카드와 동일한 레이아웃 */}
+        <div className={styles.competencyDimCardWide}>
+          <div className={styles.competencyDimWideHeader}>
+            <span className={styles.competencyDimWideLabel}>
+              {CATEGORY_LABEL.growth}
+            </span>
+            <div className={styles.competencyDimWideScoreRow}>
+              <span
+                className={`${styles.competencyDimWideGradeBadge} ${GRADE_BADGE_CLASS[data.growthGrade] ?? ""}`}
+              >
+                {data.growthGrade}
+              </span>
             </div>
           </div>
-          <div className={styles.competencyGrowthRight}>
-            <p className={styles.competencyGrowthComment}>
-              {data.growthComment}
-            </p>
-          </div>
+
+          {data.growthComment && (
+            <div className={styles.competencyDimWideGradeComment}>
+              {safeText(data.growthComment)}
+            </div>
+          )}
         </div>
 
         {/* AI commentary */}
@@ -213,7 +209,9 @@ export const CompetencyScoreRenderer = ({
           <div className={styles.aiCommentaryIcon}>AI</div>
           <div className={styles.aiCommentaryContent}>
             <div className={styles.aiCommentaryLabel}>점수 해석</div>
-            <div className={styles.aiCommentaryText}>{data.interpretation}</div>
+            <div className={styles.aiCommentaryText}>
+              {safeText(data.interpretation)}
+            </div>
           </div>
         </div>
       </div>

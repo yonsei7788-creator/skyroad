@@ -1,6 +1,7 @@
 import type { OverallAssessmentSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
+import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
 interface OverallAssessmentRendererProps {
@@ -33,7 +34,7 @@ export const OverallAssessmentRenderer = ({
           </tr>
         </thead>
         <tbody>
-          {data.volumeAnalysis.map((item) => (
+          {(data.volumeAnalysis ?? []).map((item) => (
             <tr key={item.category}>
               <td className={styles.tableCellBold}>{item.category}</td>
               <td
@@ -137,7 +138,7 @@ export const OverallAssessmentRenderer = ({
                   <td className={styles.tableAlignCenter}>
                     <span className={styles.tag}>{ag.grade}</span>
                   </td>
-                  <td className={styles.small}>{ag.summary}</td>
+                  <td className={styles.small}>{safeText(ag.summary)}</td>
                 </tr>
               ))}
             </tbody>
@@ -155,11 +156,11 @@ export const OverallAssessmentRenderer = ({
           )}
         </div>
         <p className={`${styles.small} ${styles.mt8}`}>
-          {data.competitivenessSum}
+          {safeText(data.competitivenessSum)}
         </p>
         <p className={`${styles.small} ${styles.mt6}`}>
           <span className={styles.emphasis}>질 평가:</span>{" "}
-          {data.qualityAssessment}
+          {safeText(data.qualityAssessment)}
         </p>
       </div>
 
@@ -167,7 +168,9 @@ export const OverallAssessmentRenderer = ({
         <div className={styles.aiCommentaryIcon}>AI</div>
         <div className={styles.aiCommentaryContent}>
           <div className={styles.aiCommentaryLabel}>최종 종합 의견</div>
-          <div className={styles.aiCommentaryText}>{data.finalComment}</div>
+          <div className={styles.aiCommentaryText}>
+            {safeText(data.finalComment)}
+          </div>
         </div>
       </div>
     </div>

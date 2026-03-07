@@ -2,6 +2,7 @@ import type { CourseAlignmentSection } from "@/libs/report/types";
 
 import { ReportProgress } from "./ReportProgress";
 import styles from "./report.module.css";
+import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
 interface CourseAlignmentRendererProps {
@@ -23,6 +24,18 @@ export const CourseAlignmentRenderer = ({
   data,
   sectionNumber,
 }: CourseAlignmentRendererProps) => {
+  const courses = data.courses ?? [];
+  const matchRate =
+    data.matchRate > 0
+      ? data.matchRate
+      : courses.length > 0
+        ? Math.round(
+            (courses.filter((c) => c.status === "이수").length /
+              courses.length) *
+              100
+          )
+        : 0;
+
   return (
     <>
       {/* Block 1: SectionHeader + target major + match rate + course table */}
@@ -32,8 +45,8 @@ export const CourseAlignmentRenderer = ({
         <div className={`${styles.h3} ${styles.mb12}`}>{data.targetMajor}</div>
         <ReportProgress
           label="권장과목 이수율"
-          value={data.matchRate}
-          variant={data.matchRate >= 80 ? "strength" : "weakness"}
+          value={matchRate}
+          variant={matchRate >= 80 ? "strength" : "weakness"}
         />
 
         <div className={`${styles.h3} ${styles.mt24} ${styles.mb12}`}>
@@ -48,7 +61,7 @@ export const CourseAlignmentRenderer = ({
             </tr>
           </thead>
           <tbody>
-            {data.courses.map((course) => (
+            {(data.courses ?? []).map((course) => (
               <tr key={course.course}>
                 <td className={styles.tableCellBold}>{course.course}</td>
                 <td className={styles.tableAlignCenter}>
@@ -74,7 +87,7 @@ export const CourseAlignmentRenderer = ({
         >
           <div className={styles.calloutContent}>
             <span className={styles.emphasis}>미이수 과목 영향:</span>{" "}
-            {data.missingCourseImpact}
+            {safeText(data.missingCourseImpact)}
           </div>
         </div>
       </div>
@@ -87,7 +100,7 @@ export const CourseAlignmentRenderer = ({
             <div className={styles.aiCommentaryContent}>
               <div className={styles.aiCommentaryLabel}>이수 전략</div>
               <div className={styles.aiCommentaryText}>
-                {data.recommendation}
+                {safeText(data.recommendation)}
               </div>
             </div>
           </div>
@@ -123,7 +136,7 @@ export const CourseAlignmentRenderer = ({
                       {req.met ? "충족" : "미충족"}
                     </span>
                   </td>
-                  <td className={styles.small}>{req.details}</td>
+                  <td className={styles.small}>{safeText(req.details)}</td>
                 </tr>
               ))}
             </tbody>
