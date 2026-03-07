@@ -5,6 +5,7 @@ import type {
 } from "@/libs/report/types";
 
 import styles from "./report.module.css";
+import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
 interface WeaknessAnalysisRendererProps {
@@ -33,7 +34,7 @@ export const WeaknessAnalysisRenderer = ({
   sectionNumber,
   plan,
 }: WeaknessAnalysisRendererProps) => {
-  const areaChunks = chunkAreas(data.areas, 2);
+  const areaChunks = chunkAreas(data.areas ?? [], 1);
 
   return (
     <>
@@ -47,7 +48,7 @@ export const WeaknessAnalysisRenderer = ({
               <tr>
                 <th>영역</th>
                 <th className={styles.tableAlignCenter}>우선순위</th>
-                {data.areas[0]?.urgency && (
+                {(data.areas ?? [])[0]?.urgency && (
                   <>
                     <th className={styles.tableAlignCenter}>시급도</th>
                     <th className={styles.tableAlignCenter}>효과도</th>
@@ -57,7 +58,7 @@ export const WeaknessAnalysisRenderer = ({
               </tr>
             </thead>
             <tbody>
-              {data.areas.map((area, idx) => (
+              {(data.areas ?? []).map((area, idx) => (
                 <tr key={idx}>
                   <td className={styles.tableCellBold}>{area.area}</td>
                   <td className={styles.tableAlignCenter}>
@@ -69,7 +70,7 @@ export const WeaknessAnalysisRenderer = ({
                       "—"
                     )}
                   </td>
-                  {data.areas[0]?.urgency && (
+                  {(data.areas ?? [])[0]?.urgency && (
                     <>
                       <td className={styles.tableAlignCenter}>
                         {area.urgency ? (
@@ -92,7 +93,7 @@ export const WeaknessAnalysisRenderer = ({
                     </>
                   )}
                   <td className={styles.tableAlignCenter}>
-                    {area.suggestedActivities.length}개
+                    {(area.suggestedActivities ?? []).length}개
                   </td>
                 </tr>
               ))}
@@ -120,12 +121,12 @@ export const WeaknessAnalysisRenderer = ({
                   </div>
                 )}
 
-                <p className={styles.small}>{area.description}</p>
+                <p className={styles.small}>{safeText(area.description)}</p>
 
                 {area.evidence && (
                   <p className={`${styles.caption} ${styles.mt4}`}>
                     <span className={styles.emphasis}>근거:</span>{" "}
-                    {area.evidence}
+                    {safeText(area.evidence)}
                   </p>
                 )}
 
@@ -144,7 +145,7 @@ export const WeaknessAnalysisRenderer = ({
 
                 <div className={`${styles.caption} ${styles.mt8}`}>
                   <span className={styles.emphasis}>추천 보완 활동:</span>
-                  {area.suggestedActivities.map((activity, actIdx) => (
+                  {(area.suggestedActivities ?? []).map((activity, actIdx) => (
                     <p key={actIdx} className={styles.mt4}>
                       {actIdx + 1}. {activity}
                     </p>
@@ -154,14 +155,14 @@ export const WeaknessAnalysisRenderer = ({
                 {(area.executionStrategy || area.detailedStrategy) && (
                   <p className={`${styles.caption} ${styles.mt6}`}>
                     <span className={styles.emphasis}>실행 전략:</span>{" "}
-                    {area.detailedStrategy ?? area.executionStrategy}
+                    {safeText(area.detailedStrategy ?? area.executionStrategy)}
                   </p>
                 )}
 
                 {area.subjectLinkStrategy && (
                   <p className={`${styles.caption} ${styles.mt4}`}>
                     <span className={styles.emphasis}>교과 연계:</span>{" "}
-                    {area.subjectLinkStrategy}
+                    {safeText(area.subjectLinkStrategy)}
                   </p>
                 )}
               </div>

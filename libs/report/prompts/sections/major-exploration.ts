@@ -15,8 +15,9 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - 각 전공: major + fitScore + rationale + strengthMatch
 - university, gapAnalysis 필드는 출력하지 않습니다.`,
   premium: `## 플랜별 출력: 정밀
-- 현재 목표 평가 + AI 추천 전공 3~5개
-- Standard의 모든 항목 + 대학 추천 연계(university) + 보완 분석(gapAnalysis)`,
+- 현재 목표 평가 + AI 추천 전공 **3개** (초과 금지)
+- Standard의 모든 항목 + 대학 추천 연계(university) + 보완 분석(gapAnalysis, 1줄)
+- rationale은 2줄 이내로 간결하게 서술`,
 };
 
 export const buildMajorExplorationPrompt = (
@@ -25,6 +26,32 @@ export const buildMajorExplorationPrompt = (
 ): string => {
   return `## 작업
 학생의 역량과 활동 이력을 분석하여 적합한 전공/학과를 추천하세요.
+
+## 출력 JSON 스키마
+
+중요: suggestions 배열의 각 요소는 반드시 아래와 같은 완전한 객체여야 합니다.
+
+{
+  "sectionId": "majorExploration",
+  "title": "학과 탐색",
+  "currentTargetAssessment": "현재 목표인 행정학과는 학생의 사회 문제 관심과...",
+  "suggestions": [
+    {
+      "major": "행정학과",
+      "university": "서울대학교",
+      "fitScore": 85,
+      "rationale": "사회 문제 해결에 대한 지속적 관심과 정책 분석 경험이...",
+      "strengthMatch": ["사회 문제 분석 역량", "정책 비교 탐구 경험", "리더십"],
+      "gapAnalysis": "통계적 분석 역량 보완 필요"
+    }
+  ]
+}
+
+**조건부 필드 규칙:**
+- 학생 프로필에 목표 학과(targetDepartment)가 있으면 → currentTargetAssessment를 생성하여 적합도 평가를 서술
+- 학생 프로필에 목표 학과가 없으면 → currentTargetAssessment는 null로 설정
+
+**strengthMatch 형식 주의:** 문자열이 아닌 문자열 배열(string[])입니다. 각 매칭 포인트를 개별 항목으로 분리하세요.
 
 ## 추천 기준
 1. 학생의 4대 역량 프로필에 가장 적합한 전공을 선별합니다.

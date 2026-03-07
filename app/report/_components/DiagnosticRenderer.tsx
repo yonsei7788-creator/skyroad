@@ -1,6 +1,7 @@
 import type { DiagnosticSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
+import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
 interface DiagnosticRendererProps {
@@ -26,7 +27,7 @@ export const DiagnosticRenderer = ({
         <SectionHeader number={sectionNumber} title={data.title} />
 
         <div className={styles.diagHero}>
-          <div className={styles.diagHeroText}>{data.oneLiner}</div>
+          <div className={styles.diagHeroText}>{safeText(data.oneLiner)}</div>
         </div>
       </div>
 
@@ -34,10 +35,12 @@ export const DiagnosticRenderer = ({
       <div>
         <div className={`${styles.h3} ${styles.mb12}`}>핵심 키워드</div>
         <div className={styles.diagKeywordGrid}>
-          {data.keywords.map((kw) => (
+          {(data.keywords ?? []).map((kw) => (
             <div key={kw.label} className={styles.diagKeywordChip}>
               <span className={styles.diagKeywordBadge}>{kw.label}</span>
-              <span className={styles.diagKeywordDesc}>{kw.description}</span>
+              <span className={styles.diagKeywordDesc}>
+                {safeText(kw.description)}
+              </span>
             </div>
           ))}
         </div>
@@ -47,12 +50,12 @@ export const DiagnosticRenderer = ({
       <div>
         <div className={`${styles.h3} ${styles.mb12}`}>역량별 진단</div>
         <div className={styles.diagCompGrid}>
-          {data.competencySummary.map((item) => (
+          {(data.competencySummary ?? []).map((item) => (
             <div key={item.category} className={styles.diagCompCard}>
               <div className={styles.diagCompLabel}>
                 {CATEGORY_LABEL[item.category] ?? item.label}
               </div>
-              <p className={styles.diagCompText}>{item.summary}</p>
+              <p className={styles.diagCompText}>{safeText(item.summary)}</p>
             </div>
           ))}
         </div>
@@ -65,7 +68,9 @@ export const DiagnosticRenderer = ({
             <span className={styles.diagPanelLabelDot} />
             입시 포지셔닝
           </div>
-          <p className={styles.diagPanelText}>{data.admissionPositioning}</p>
+          <p className={styles.diagPanelText}>
+            {safeText(data.admissionPositioning)}
+          </p>
         </div>
       )}
 
@@ -76,7 +81,9 @@ export const DiagnosticRenderer = ({
             <span className={styles.diagPanelLabelDot} />
             합격 전략 요약
           </div>
-          <p className={styles.diagPanelText}>{data.strategyOverview}</p>
+          <p className={styles.diagPanelText}>
+            {safeText(data.strategyOverview)}
+          </p>
         </div>
       )}
     </>

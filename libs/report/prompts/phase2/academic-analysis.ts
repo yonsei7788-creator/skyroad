@@ -27,13 +27,72 @@ export const buildAcademicContextAnalysisPrompt = (
 5. **고교 유형 환산 해석**: 환산 등급이 의미하는 대학 경쟁력
 6. **진로선택과목 해석**: 성취도 분포 기반 실질 위치 분석
 
+## 해석 항목 → JSON 키 매핑
+| 해석 항목 | JSON 키 |
+|-----------|---------|
+| 1. 등급 추이 해석 | gradeTrendInterpretation (string) |
+| 2. 과목별 실질 위치 해석 | subjectInterpretations (array) |
+| 3. 과목 간 편차 해석 | varianceInterpretation (object) |
+| 4. 전공 관련 교과 해석 | majorRelevanceInterpretation (object) |
+| 5. 고교 유형 환산 해석 | convertedGradeInterpretation (object) |
+| 6. 진로선택과목 해석 | careerSubjectInterpretations (array) |
+| (종합) | overallAssessment (string) |
+
+## 경쟁력(competitiveness) 판정 기준
+| 등급 | 조건 |
+|------|------|
+| high | Z-score >= +0.5 또는 석차등급 1~2등급 |
+| medium | Z-score -0.5 ~ +0.5 또는 석차등급 2~3등급 |
+| low | Z-score <= -0.5 또는 석차등급 4등급 이하 |
+
 ## 성적 해석 기준
 | 조합 | 해석 |
 |------|------|
 | 표준편차 크고 + 원점수 높음 | 어려운 시험에서 우수 -> 높은 평가 |
 | 표준편차 작고 + 원점수 높음 | 쉬운 시험 -> 높은 등급이어도 변별력 낮음 |
+| 표준편차 크고 + 원점수 낮음 | 어려운 시험이지만 성취 부족 -> 보완 필요 |
+| 표준편차 작고 + 원점수 낮음 | 쉬운 시험에서도 부진 -> 기초학력 점검 필요 |
 | 수강자수 많고 + 등급 높음 | 큰 경쟁에서의 성과 -> 높은 평가 |
 | 수강자수 적고 + 등급 높음 | 경쟁 구조 제한 -> 맥락적 해석 필요 |
+| 수강자수 많고 + 등급 낮음 | 경쟁이 치열한 환경에서 부진 -> 리스크 |
+| 수강자수 적고 + 등급 낮음 | 소규모 집단에서도 부진 -> 심각한 약점 |
+
+## 출력 JSON 스키마
+\`\`\`json
+{
+  "gradeTrendInterpretation": "string (학년별 등급 변화의 의미 해석)",
+  "subjectInterpretations": [
+    {
+      "subject": "string (과목명)",
+      "year": "number (학년)",
+      "semester": "number (학기)",
+      "interpretation": "string (Z-score, 수강자수 종합 해석)",
+      "competitiveness": "high | medium | low"
+    }
+  ],
+  "varianceInterpretation": {
+    "riskLevel": "high | medium | low",
+    "analysis": "string (과목 간 편차 분석)",
+    "recommendation": "string (편차 관련 입시 전략 제언)"
+  },
+  "majorRelevanceInterpretation": {
+    "comparison": "string (전공 관련 vs 전체 성적 비교)",
+    "strengths": ["string (전공 관련 강점 과목)"],
+    "weaknesses": ["string (전공 관련 약점 과목)"]
+  },
+  "convertedGradeInterpretation": {
+    "universityLine": "string (환산 등급이 의미하는 대학 수준)",
+    "competitivenessAnalysis": "string (대학별 경쟁력 분석)"
+  },
+  "careerSubjectInterpretations": [
+    {
+      "subject": "string (진로선택과목명)",
+      "interpretation": "string (성취도 분포 기반 실질 위치 분석)"
+    }
+  ],
+  "overallAssessment": "string (성적 전반에 대한 종합 평가)"
+}
+\`\`\`
 
 ## 코드 전처리 결과 (계산 완료)
 ${input.preprocessedAcademicData}

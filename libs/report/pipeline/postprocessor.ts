@@ -36,7 +36,7 @@ export interface PostprocessResult {
 
 export const postprocess = (
   rawSections: ReportSection[],
-  _data: PreprocessedData,
+  preprocessed: PreprocessedData,
   studentInfo: StudentInfo,
   plan: ReportPlan,
   reportId: string
@@ -46,20 +46,19 @@ export const postprocess = (
   // 1. 각 섹션 Zod 검증
   const validatedSections: ReportSection[] = [];
 
-  for (const section of rawSections) {
+  for (let section of rawSections) {
+    section = normalizeSection(section, preprocessed);
     const result = validateSection(section);
     validationResults.push(result);
 
-    if (result.valid) {
-      validatedSections.push(section);
-    } else {
-      // 검증 실패 시에도 섹션 포함 (최선의 결과 제공)
-      // 필수 섹션은 반드시 포함, 선택 섹션은 에러가 심각하면 제외 가능
-      const isCritical = isCriticalSection(section.sectionId, plan);
-      if (isCritical) {
-        validatedSections.push(section);
-      }
+    if (!result.valid) {
+      console.warn(
+        `[report:${reportId}] 섹션 검증 실패 (포함됨): ${section.sectionId}`,
+        result.errors.join("; ").substring(0, 500)
+      );
     }
+    // 검증 실패해도 모든 섹션 포함 — Flash 모델은 스키마를 완벽히 준수하지 않을 수 있음
+    validatedSections.push(section);
   }
 
   // 2. 섹션 정렬 (플랜별 순서)
@@ -84,7 +83,7 @@ export const postprocess = (
       hasMockExamData: studentInfo.hasMockExamData,
     },
     createdAt: new Date().toISOString(),
-    version: 3,
+    version: 4,
   };
 
   // 5. ReportContent 조합
@@ -101,6 +100,123 @@ export const postprocess = (
     validationResults,
     planValidationErrors,
   };
+};
+
+// ─── AI 출력 필드명 정규화 + 전처리 데이터 보강 ───
+
+const normalizeSection = (
+  section: ReportSection,
+  pre: PreprocessedData
+): ReportSection => {
+  const s = section as any;
+
+  if (s.sectionId === "academicAnalysis") {
+    // ── gradeDeviationAnalysis: 전처리 gradeVariance에서 확정값 주입 ──
+    const gv = pre.gradeVariance;
+    const aiDev = s.gradeDeviationAnalysis ?? {};
+    s.gradeDeviationAnalysis = {
+      highestSubject: gv.highest,
+      lowestSubject: gv.lowest,
+      deviationRange: gv.spread,
+      riskAssessment:
+        aiDev.riskAssessment || aiDev.analysis || aiDev.recommendation || "",
+    };
+
+    // ── majorRelevanceAnalysis: AI 필드명 매핑 ──
+    if (s.majorRelevanceAnalysis) {
+      const m = s.majorRelevanceAnalysis;
+      s.majorRelevanceAnalysis = {
+        enrollmentEffort: m.enrollmentEffort || m.comparison || "",
+        achievement: m.achievement || m.recommendation || "",
+        recommendedSubjects:
+          m.recommendedSubjects || m.weaknesses || m.strengths || [],
+      };
+    }
+
+    // ── gradeChangeAnalysis: AI 필드명 매핑 ──
+    if (s.gradeChangeAnalysis) {
+      const g = s.gradeChangeAnalysis;
+      const trendMap: Record<string, string> = {
+        ascending: "상승",
+        stable: "유지",
+        descending: "하락",
+      };
+      s.gradeChangeAnalysis = {
+        currentTrend:
+          g.currentTrend || trendMap[pre.gradeTrend.direction] || "유지",
+        prediction: g.prediction || g.analysis || "",
+        actionItems: g.actionItems || g.recommendations || [],
+        actionItemPriorities: g.actionItemPriorities || [],
+      };
+    }
+
+    // ── careerSubjectAnalyses: AI 필드명 정규화 + 전처리 데이터 주입 ──
+    if (Array.isArray(s.careerSubjectAnalyses)) {
+      const careerMap = new Map(
+        pre.careerSubjects.map((cs) => [cs.subject, cs])
+      );
+      s.careerSubjectAnalyses = s.careerSubjectAnalyses.map((cs: any) => {
+        const preData = careerMap.get(cs.subject);
+        return {
+          subject: cs.subject ?? "",
+          achievement: cs.achievement || preData?.achievement || "",
+          achievementDistribution:
+            cs.achievementDistribution ||
+            preData?.achievementDistribution ||
+            "",
+          interpretation: cs.interpretation || cs.analysis || cs.comment || "",
+        };
+      });
+    }
+
+    // ── fiveGradeSimulation: original/converted → currentGrade/simulatedGrade ──
+    if (Array.isArray(s.fiveGradeSimulation)) {
+      s.fiveGradeSimulation = s.fiveGradeSimulation.map((sim: any) => ({
+        subject: sim.subject ?? "",
+        currentGrade: sim.currentGrade ?? sim.original ?? null,
+        simulatedGrade: sim.simulatedGrade ?? sim.converted ?? null,
+        percentileCumulative: sim.percentileCumulative,
+        interpretation: sim.interpretation ?? "",
+      }));
+    }
+
+    // ── universityGradeSimulations: 빈값 행 제거 ──
+    if (Array.isArray(s.universityGradeSimulations)) {
+      s.universityGradeSimulations = s.universityGradeSimulations
+        .map((sim: any) => ({
+          university: sim.university ?? "",
+          department: sim.department ?? "",
+          reflectionMethod: sim.reflectionMethod || sim.method || "",
+          calculatedScore: sim.calculatedScore || sim.score || "",
+          interpretation: sim.interpretation ?? "",
+        }))
+        .filter(
+          (sim: any) =>
+            sim.department && sim.reflectionMethod && sim.calculatedScore
+        );
+    }
+  }
+
+  if (s.sectionId === "courseAlignment") {
+    // matchRate: 전처리 데이터에서 직접 주입
+    const prMatch = pre.recommendedCourseMatch;
+    if (prMatch.matchRate > 0) {
+      s.matchRate = prMatch.matchRate;
+    } else if (Array.isArray(s.courses) && s.courses.length > 0) {
+      const taken = s.courses.filter((c: any) => c.status === "이수").length;
+      s.matchRate = Math.round((taken / s.courses.length) * 100);
+    }
+    // 0~1 소수 보정
+    if (
+      typeof s.matchRate === "number" &&
+      s.matchRate > 0 &&
+      s.matchRate <= 1
+    ) {
+      s.matchRate = Math.round(s.matchRate * 100);
+    }
+  }
+
+  return s as ReportSection;
 };
 
 // ─── 개별 섹션 검증 ───

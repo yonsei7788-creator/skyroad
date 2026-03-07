@@ -80,7 +80,7 @@ export const orchestrate = async (
   const sections: ReportSection[] = [];
   const requiredSections = SECTION_ORDER[plan];
   const isGrade1Only = studentInfo.grade === 1;
-  const isStandardPlus = plan === "standard" || plan === "premium";
+  const has = (sectionId: string) => requiredSections.includes(sectionId);
 
   const totalSteps = computeTotalSteps(plan, isGrade1Only);
   let completedSteps = 0;
@@ -206,18 +206,6 @@ export const orchestrate = async (
       return r;
     }),
     callGemini<ReportSection>(
-      buildAttendanceAnalysisPrompt(
-        {
-          attendanceSummary: texts.attendanceSummaryText,
-          studentProfile: texts.studentProfileText,
-        },
-        plan
-      )
-    ).then((r) => {
-      reportProgress("Phase 3 Group 2", "attendanceAnalysis");
-      return r;
-    }),
-    callGemini<ReportSection>(
       buildActivityAnalysisPrompt(
         {
           creativeActivities: texts.creativeActivitiesText,
@@ -233,7 +221,24 @@ export const orchestrate = async (
     }),
   ];
 
-  if (isStandardPlus) {
+  if (has("attendanceAnalysis")) {
+    group2Promises.push(
+      callGemini<ReportSection>(
+        buildAttendanceAnalysisPrompt(
+          {
+            attendanceSummary: texts.attendanceSummaryText,
+            studentProfile: texts.studentProfileText,
+          },
+          plan
+        )
+      ).then((r) => {
+        reportProgress("Phase 3 Group 2", "attendanceAnalysis");
+        return r;
+      })
+    );
+  }
+
+  if (has("courseAlignment")) {
     group2Promises.push(
       callGemini<ReportSection>(
         buildCourseAlignmentPrompt(
@@ -271,7 +276,7 @@ export const orchestrate = async (
     }),
   ];
 
-  if (isStandardPlus) {
+  if (has("behaviorAnalysis")) {
     group3Promises.push(
       callGemini<ReportSection>(
         buildBehaviorAnalysisPrompt(
@@ -345,7 +350,7 @@ export const orchestrate = async (
     }),
   ];
 
-  if (isStandardPlus) {
+  if (has("admissionPrediction")) {
     group4Promises.push(
       callGemini<ReportSection>(
         buildAdmissionPredictionPrompt(
@@ -417,7 +422,7 @@ export const orchestrate = async (
     );
   }
 
-  if (isStandardPlus) {
+  if (has("storyAnalysis")) {
     group5Promises.push(
       callGemini<ReportSection>(
         buildStoryAnalysisPrompt(
@@ -434,6 +439,9 @@ export const orchestrate = async (
         return r;
       })
     );
+  }
+
+  if (has("actionRoadmap")) {
     group5Promises.push(
       callGemini<ReportSection>(
         buildActionRoadmapPrompt(
@@ -462,7 +470,7 @@ export const orchestrate = async (
 
   // --- Group 6: majorExploration (Premium 전용) ---
   // bookRecommendation은 전 플랜에서 제거됨
-  if (plan === "premium") {
+  if (has("majorExploration")) {
     const majorExploration = await callGemini<ReportSection>(
       buildMajorExplorationPrompt(
         {
@@ -488,31 +496,33 @@ export const orchestrate = async (
   return sections;
 };
 
-const computeTotalSteps = (plan: ReportPlan, isGrade1Only: boolean): number => {
+const computeTotalSteps = (
+  plan: ReportPlan,
+  _isGrade1Only: boolean
+): number => {
+  const secs = SECTION_ORDER[plan];
+  const h = (id: string) => secs.includes(id);
+
   // Phase 2: 3 calls
   let steps = 3;
-
-  // Group 1: 2 (studentProfile, competencyScore)
+  // Group 1: studentProfile + competencyScore
   steps += 2;
-
-  // Group 2: 3 (academic, attendance, activity) + Standard+: 1 (courseAlignment)
-  steps += 3;
-  if (plan !== "lite") steps += 1;
-
-  // Group 3: 1 (subjectAnalysis) + Standard+: 1 (behaviorAnalysis)
+  // Group 2: academic + activity (always) + attendance + courseAlignment (plan-based)
+  steps += 2;
+  if (h("attendanceAnalysis")) steps += 1;
+  if (h("courseAlignment")) steps += 1;
+  // Group 3: subjectAnalysis (always) + behaviorAnalysis (plan-based)
   steps += 1;
-  if (plan !== "lite") steps += 1;
-
-  // Group 4: 3 (weakness, topic, interview) + Standard+: 1 (admissionPrediction)
+  if (h("behaviorAnalysis")) steps += 1;
+  // Group 4: weakness + topic + interview (always) + admissionPrediction (plan-based)
   steps += 3;
-  if (plan !== "lite") steps += 1;
-
-  // Group 5: 1 (strategy/direction) + Standard+: 2 (story, roadmap)
+  if (h("admissionPrediction")) steps += 1;
+  // Group 5: strategy/direction (always) + storyAnalysis + actionRoadmap (plan-based)
   steps += 1;
-  if (plan !== "lite") steps += 2;
-
-  // Group 6: Premium: 1 (majorExploration)
-  if (plan === "premium") steps += 1;
+  if (h("storyAnalysis")) steps += 1;
+  if (h("actionRoadmap")) steps += 1;
+  // Group 6: majorExploration (plan-based)
+  if (h("majorExploration")) steps += 1;
 
   return steps;
 };

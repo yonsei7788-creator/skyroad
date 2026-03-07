@@ -1,6 +1,7 @@
 import type { BehaviorAnalysisSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
+import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
 interface BehaviorAnalysisRendererProps {
@@ -12,13 +13,14 @@ export const BehaviorAnalysisRenderer = ({
   data,
   sectionNumber,
 }: BehaviorAnalysisRendererProps) => {
+  const years = data.yearlyAnalysis ?? [];
+
   return (
     <>
-      {/* Block 1: Header + character label + yearly table */}
+      {/* Block 1: Header + character label + tags + first year */}
       <div>
         <SectionHeader number={sectionNumber} title={data.title} />
 
-        {/* 캐릭터 라벨 + 인성 점수 */}
         {data.characterLabel && (
           <div className={styles.cardAccent}>
             <div className={styles.cardHeader}>
@@ -33,15 +35,14 @@ export const BehaviorAnalysisRenderer = ({
             </div>
             {data.characterLabel.rationale && (
               <p className={`${styles.small} ${styles.mt6}`}>
-                {data.characterLabel.rationale}
+                {safeText(data.characterLabel.rationale)}
               </p>
             )}
           </div>
         )}
 
-        {/* 일관특성 + 인성 키워드 태그 */}
         <div className={`${styles.tagGroup} ${styles.mt12}`}>
-          {data.consistentTraits.map((trait) => (
+          {(data.consistentTraits ?? []).map((trait) => (
             <span key={trait} className={styles.tag}>
               {trait}
             </span>
@@ -53,62 +54,81 @@ export const BehaviorAnalysisRenderer = ({
           ))}
         </div>
 
-        {/* 학년별 분석 테이블 */}
         <div className={`${styles.h3} ${styles.mt24} ${styles.mb12}`}>
           학년별 행동특성 분석
         </div>
-        <table className={styles.compactTable}>
-          <thead>
-            <tr>
-              <th>학년</th>
-              <th>분석 내용</th>
-              <th className={styles.tableAlignCenter}>핵심 역량</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.yearlyAnalysis.map((year) => (
-              <tr key={year.year}>
-                <td className={styles.tableCellBold}>{year.year}학년</td>
-                <td>
-                  <p className={styles.small}>{year.summary}</p>
-                  {year.keyQuotes &&
-                    year.keyQuotes.map((q, i) => (
-                      <p
-                        key={i}
-                        className={styles.caption}
-                        style={{ fontStyle: "italic", marginTop: 4 }}
-                      >
-                        &ldquo;{q}&rdquo;
-                      </p>
-                    ))}
-                </td>
-                <td className={styles.tableAlignCenter}>
+        {years.length > 0 &&
+          (() => {
+            const [year] = years;
+            return (
+              <div className={styles.activityYearCard}>
+                <div className={styles.activityYearHeader}>
+                  <span className={styles.tableCellBold}>{year.year}학년</span>
                   <div className={styles.tagGroup}>
-                    {year.competencyTags.map((tag, idx) => (
+                    {(year.competencyTags ?? []).map((tag, idx) => (
                       <span key={idx} className={styles.tag}>
                         {tag.subcategory}
                       </span>
                     ))}
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+                <p className={styles.small}>{safeText(year.summary)}</p>
+                {year.keyQuotes?.map((q, i) => (
+                  <p
+                    key={i}
+                    className={styles.caption}
+                    style={{ fontStyle: "italic", marginTop: 4 }}
+                  >
+                    &ldquo;{q}&rdquo;
+                  </p>
+                ))}
+              </div>
+            );
+          })()}
       </div>
 
-      {/* Block 2: AI 종합 평가 + 입시 활용 (통합) */}
+      {/* Remaining years — each as its own block */}
+      {years.slice(1).map((year) => (
+        <div key={year.year}>
+          <div className={styles.activityYearCard}>
+            <div className={styles.activityYearHeader}>
+              <span className={styles.tableCellBold}>{year.year}학년</span>
+              <div className={styles.tagGroup}>
+                {(year.competencyTags ?? []).map((tag, idx) => (
+                  <span key={idx} className={styles.tag}>
+                    {tag.subcategory}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <p className={styles.small}>{safeText(year.summary)}</p>
+            {year.keyQuotes?.map((q, i) => (
+              <p
+                key={i}
+                className={styles.caption}
+                style={{ fontStyle: "italic", marginTop: 4 }}
+              >
+                &ldquo;{q}&rdquo;
+              </p>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {/* Final Block: AI 종합 평가 + 입시 활용 */}
       <div>
         <div className={styles.aiCommentary}>
           <div className={styles.aiCommentaryIcon}>AI</div>
           <div className={styles.aiCommentaryContent}>
             <div className={styles.aiCommentaryLabel}>종합 평가</div>
-            <div className={styles.aiCommentaryText}>{data.overallComment}</div>
+            <div className={styles.aiCommentaryText}>
+              {safeText(data.overallComment)}
+            </div>
             <div className={`${styles.aiCommentaryLabel} ${styles.mt12}`}>
               입시 활용 포인트
             </div>
             <div className={styles.aiCommentaryText}>
-              {data.admissionRelevance}
+              {safeText(data.admissionRelevance)}
             </div>
           </div>
         </div>

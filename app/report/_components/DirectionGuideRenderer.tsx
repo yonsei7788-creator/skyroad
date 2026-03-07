@@ -1,6 +1,7 @@
 import type { DirectionGuideSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
+import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
 interface DirectionGuideRendererProps {
@@ -25,7 +26,7 @@ export const DirectionGuideRenderer = ({
         <div className={styles.card}>
           <div className={styles.cardTitle}>추천 계열</div>
           <div className={`${styles.tagGroup} ${styles.mt12}`}>
-            {data.recommendedTracks.map((track) => (
+            {(data.recommendedTracks ?? []).map((track) => (
               <span key={track} className={styles.tagAccent}>
                 {track}
               </span>
@@ -39,7 +40,7 @@ export const DirectionGuideRenderer = ({
         <div className={`${styles.card} ${styles.mt16}`}>
           <div className={styles.cardTitle}>선택과목 가이드</div>
           <ol className={`${styles.numberedList} ${styles.mt12}`}>
-            {data.subjectSelectionGuide.map((item, idx) => (
+            {(data.subjectSelectionGuide ?? []).map((item, idx) => (
               <li key={idx} className={styles.numberedListItem}>
                 <span className={styles.numberedListNumber}>{idx + 1}</span>
                 {item}
@@ -53,7 +54,7 @@ export const DirectionGuideRenderer = ({
           <div className={styles.aiCommentaryContent}>
             <div className={styles.aiCommentaryLabel}>준비 조언</div>
             <div className={styles.aiCommentaryText}>
-              {data.preparationAdvice}
+              {safeText(data.preparationAdvice)}
             </div>
           </div>
         </div>

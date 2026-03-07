@@ -19,7 +19,9 @@ export const WordCloudRenderer = ({
   data,
   sectionNumber,
 }: WordCloudRendererProps) => {
-  const sorted = [...data.words].sort((a, b) => b.frequency - a.frequency);
+  const sorted = [...(data.words ?? [])].sort(
+    (a, b) => b.frequency - a.frequency
+  );
 
   return (
     <div>

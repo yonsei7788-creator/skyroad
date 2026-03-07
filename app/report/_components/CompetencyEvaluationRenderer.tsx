@@ -4,6 +4,7 @@ import type {
 } from "@/libs/report/types";
 
 import styles from "./report.module.css";
+import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
 interface CompetencyEvaluationRendererProps {
@@ -38,8 +39,8 @@ export const CompetencyEvaluationRenderer = ({
   data,
   sectionNumber,
 }: CompetencyEvaluationRendererProps) => {
-  const ratingsFirstHalf = data.competencyRatings.slice(0, 2);
-  const ratingsSecondHalf = data.competencyRatings.slice(2);
+  const ratingsFirstHalf = (data.competencyRatings ?? []).slice(0, 2);
+  const ratingsSecondHalf = (data.competencyRatings ?? []).slice(2);
 
   return (
     <>
@@ -50,15 +51,15 @@ export const CompetencyEvaluationRenderer = ({
           <span className={styles.textStrength}>강점 분석</span>
         </div>
         <div className={styles.ceCardGrid}>
-          {data.strengths.map((item) => (
+          {(data.strengths ?? []).map((item) => (
             <div key={item.label} className={styles.ceStrengthCard}>
               <div className={styles.ceCardLabel}>
                 <span className={styles.ceCardLabelText}>{item.label}</span>
                 <span className={styles.ceCompetencyPill}>
-                  {item.competencyTag.subcategory}
+                  {item.competencyTag?.subcategory}
                 </span>
               </div>
-              <p className={styles.ceEvidence}>{item.evidence}</p>
+              <p className={styles.ceEvidence}>{safeText(item.evidence)}</p>
             </div>
           ))}
         </div>
@@ -70,15 +71,15 @@ export const CompetencyEvaluationRenderer = ({
           <span className={styles.textWeakness}>약점 분석</span>
         </div>
         <div className={styles.ceCardGrid}>
-          {data.weaknesses.map((item) => (
+          {(data.weaknesses ?? []).map((item) => (
             <div key={item.label} className={styles.ceWeaknessCard}>
               <div className={styles.ceCardLabel}>
                 <span className={styles.ceCardLabelText}>{item.label}</span>
                 <span className={styles.ceCompetencyPill}>
-                  {item.competencyTag.subcategory}
+                  {item.competencyTag?.subcategory}
                 </span>
               </div>
-              <p className={styles.ceEvidence}>{item.evidence}</p>
+              <p className={styles.ceEvidence}>{safeText(item.evidence)}</p>
             </div>
           ))}
         </div>
@@ -97,7 +98,7 @@ export const CompetencyEvaluationRenderer = ({
                 {rating.grade}
               </span>
             </div>
-            <p className={styles.ceRatingComment}>{rating.comment}</p>
+            <p className={styles.ceRatingComment}>{safeText(rating.comment)}</p>
             {rating.subcategories && rating.subcategories.length > 0 && (
               <div className={styles.ceSubcatRow}>
                 {rating.subcategories.map((sub) => (
@@ -129,7 +130,7 @@ export const CompetencyEvaluationRenderer = ({
                 {rating.grade}
               </span>
             </div>
-            <p className={styles.ceRatingComment}>{rating.comment}</p>
+            <p className={styles.ceRatingComment}>{safeText(rating.comment)}</p>
             {rating.subcategories && rating.subcategories.length > 0 && (
               <div className={styles.ceSubcatRow}>
                 {rating.subcategories.map((sub) => (
@@ -155,7 +156,9 @@ export const CompetencyEvaluationRenderer = ({
           <div className={styles.aiCommentaryIcon}>AI</div>
           <div className={styles.aiCommentaryContent}>
             <div className={styles.aiCommentaryLabel}>종합 코멘트</div>
-            <div className={styles.aiCommentaryText}>{data.overallComment}</div>
+            <div className={styles.aiCommentaryText}>
+              {safeText(data.overallComment)}
+            </div>
           </div>
         </div>
       </div>

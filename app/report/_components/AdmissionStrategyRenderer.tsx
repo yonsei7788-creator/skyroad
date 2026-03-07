@@ -2,6 +2,7 @@ import type { AdmissionStrategySection, ReportPlan } from "@/libs/report/types";
 
 import { ReportBadge } from "./ReportBadge";
 import styles from "./report.module.css";
+import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
 interface AdmissionStrategyRendererProps {
@@ -26,7 +27,7 @@ export const AdmissionStrategyRenderer = ({
             <div className={styles.cardTitle}>추천 입시 경로</div>
           </div>
           <p className={`${styles.small} ${styles.mt6}`}>
-            {data.recommendedPath}
+            {safeText(data.recommendedPath)}
           </p>
         </div>
       </div>
@@ -45,13 +46,13 @@ export const AdmissionStrategyRenderer = ({
                   <th>학과</th>
                   <th>전형</th>
                   <th className={styles.tableAlignCenter}>전략</th>
-                  {group.recommendations.some((r) => r.chance) && (
+                  {(group.recommendations ?? []).some((r) => r.chance) && (
                     <th className={styles.tableAlignCenter}>가능성</th>
                   )}
                 </tr>
               </thead>
               <tbody>
-                {group.recommendations.map((rec, idx) => (
+                {(group.recommendations ?? []).map((rec, idx) => (
                   <tr key={idx}>
                     <td className={styles.tableCellBold}>{rec.university}</td>
                     <td className={styles.small}>{rec.department}</td>
@@ -59,7 +60,7 @@ export const AdmissionStrategyRenderer = ({
                     <td className={styles.tableAlignCenter}>
                       <ReportBadge strategy={rec.tier} />
                     </td>
-                    {group.recommendations.some((r) => r.chance) && (
+                    {(group.recommendations ?? []).some((r) => r.chance) && (
                       <td className={styles.tableAlignCenter}>
                         {rec.chance ? <ReportBadge chance={rec.chance} /> : "—"}
                       </td>
@@ -80,13 +81,13 @@ export const AdmissionStrategyRenderer = ({
                 <th>학과</th>
                 <th>전형</th>
                 <th className={styles.tableAlignCenter}>전략</th>
-                {data.recommendations.some((r) => r.chance) && (
+                {(data.recommendations ?? []).some((r) => r.chance) && (
                   <th className={styles.tableAlignCenter}>가능성</th>
                 )}
               </tr>
             </thead>
             <tbody>
-              {data.recommendations.map((rec, idx) => (
+              {(data.recommendations ?? []).map((rec, idx) => (
                 <tr key={idx}>
                   <td className={styles.tableCellBold}>{rec.university}</td>
                   <td className={styles.small}>{rec.department}</td>
@@ -94,7 +95,7 @@ export const AdmissionStrategyRenderer = ({
                   <td className={styles.tableAlignCenter}>
                     <ReportBadge strategy={rec.tier} />
                   </td>
-                  {data.recommendations.some((r) => r.chance) && (
+                  {(data.recommendations ?? []).some((r) => r.chance) && (
                     <td className={styles.tableAlignCenter}>
                       {rec.chance ? <ReportBadge chance={rec.chance} /> : "—"}
                     </td>
@@ -114,14 +115,14 @@ export const AdmissionStrategyRenderer = ({
               <div className={styles.cardTitle}>다음 학기 전략</div>
             </div>
             <p className={`${styles.small} ${styles.mt6}`}>
-              {data.nextSemesterStrategy}
+              {safeText(data.nextSemesterStrategy)}
             </p>
           </div>
         </div>
       )}
 
       {/* Block 3: Chance rationale */}
-      {data.recommendations.some((r) => r.chanceRationale) && (
+      {(data.recommendations ?? []).some((r) => r.chanceRationale) && (
         <div>
           <div className={`${styles.h3} ${styles.mb12}`}>
             대학별 합격 가능성 분석
@@ -134,7 +135,7 @@ export const AdmissionStrategyRenderer = ({
               </tr>
             </thead>
             <tbody>
-              {data.recommendations
+              {(data.recommendations ?? [])
                 .filter((r) => r.chanceRationale)
                 .map((rec, idx) => (
                   <tr key={idx}>
@@ -187,12 +188,12 @@ export const AdmissionStrategyRenderer = ({
           <div className={`${styles.h3} ${styles.mb8}`}>학교 유형 분석</div>
           <p className={styles.small}>{data.schoolTypeAnalysis.rationale}</p>
           <div className={`${styles.tagGroup} ${styles.mt8}`}>
-            {data.schoolTypeAnalysis.advantageTypes.map((t) => (
+            {(data.schoolTypeAnalysis.advantageTypes ?? []).map((t) => (
               <span key={t} className={styles.tag}>
                 유리: {t}
               </span>
             ))}
-            {data.schoolTypeAnalysis.cautionTypes.map((t) => (
+            {(data.schoolTypeAnalysis.cautionTypes ?? []).map((t) => (
               <span key={t} className={styles.tag}>
                 주의: {t}
               </span>
@@ -205,7 +206,7 @@ export const AdmissionStrategyRenderer = ({
       {data.csatMinimumStrategy && (
         <div>
           <div className={`${styles.h3} ${styles.mb8}`}>수능 최저 전략</div>
-          <p className={styles.small}>{data.csatMinimumStrategy}</p>
+          <p className={styles.small}>{safeText(data.csatMinimumStrategy)}</p>
         </div>
       )}
 
@@ -227,14 +228,14 @@ export const AdmissionStrategyRenderer = ({
               </tr>
             </thead>
             <tbody>
-              {data.applicationSimulation.details.map((detail, idx) => (
+              {(data.applicationSimulation.details ?? []).map((detail, idx) => (
                 <tr key={idx}>
                   <td className={styles.tableCellBold}>
                     {detail.admissionType}
                   </td>
                   <td className={styles.tableAlignCenter}>{detail.count}</td>
                   <td className={styles.small}>
-                    {detail.targetUniversities.join(", ")}
+                    {(detail.targetUniversities ?? []).join(", ")}
                   </td>
                 </tr>
               ))}
@@ -265,7 +266,7 @@ export const AdmissionStrategyRenderer = ({
                     <td className={styles.tableCellBold}>{match.university}</td>
                     <td>
                       <div className={styles.tagGroup}>
-                        {match.emphasisKeywords.map((kw) => (
+                        {(match.emphasisKeywords ?? []).map((kw) => (
                           <span key={kw} className={styles.tag}>
                             {kw}
                           </span>
@@ -274,7 +275,7 @@ export const AdmissionStrategyRenderer = ({
                     </td>
                     <td>
                       <div className={styles.tagGroup}>
-                        {match.studentStrengthMatch.map((s) => (
+                        {(match.studentStrengthMatch ?? []).map((s) => (
                           <span key={s} className={styles.tag}>
                             {s}
                           </span>
@@ -283,7 +284,7 @@ export const AdmissionStrategyRenderer = ({
                     </td>
                     <td>
                       <div className={styles.tagGroup}>
-                        {match.studentWeaknessMatch.map((w) => (
+                        {(match.studentWeaknessMatch ?? []).map((w) => (
                           <span key={w} className={styles.tag}>
                             {w}
                           </span>

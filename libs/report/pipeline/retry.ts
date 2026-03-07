@@ -20,6 +20,9 @@ const isRetryableError = (
 ): boolean => {
   if (!(error instanceof Error)) return false;
 
+  // JSON 파싱 실패 (잘린 응답 복구도 실패한 경우) → 재시도
+  if (error instanceof SyntaxError) return true;
+
   const { message } = error;
 
   for (const status of retryableStatuses) {
@@ -29,7 +32,9 @@ const isRetryableError = (
   if (
     message.includes("ECONNRESET") ||
     message.includes("ETIMEDOUT") ||
-    message.includes("network")
+    message.includes("network") ||
+    message.includes("aborted") ||
+    message.includes("AbortError")
   ) {
     return true;
   }
@@ -60,9 +65,13 @@ export const withRetry = async <T>(
         config.maxDelay
       );
 
+      const errMsg = error instanceof Error ? error.message : String(error);
+      const errName =
+        error instanceof Error ? error.constructor.name : "Unknown";
+      const errStack =
+        error instanceof Error ? error.stack?.split("\n")[1]?.trim() : "";
       console.warn(
-        `[retry] Attempt ${attempt + 1}/${config.maxRetries} failed, retrying in ${delay}ms...`,
-        error instanceof Error ? error.message : error
+        `[retry] Attempt ${attempt + 1}/${config.maxRetries} failed (${errName}), retrying in ${delay}ms...\n  message: ${errMsg}\n  at: ${errStack}`
       );
 
       await sleep(delay);

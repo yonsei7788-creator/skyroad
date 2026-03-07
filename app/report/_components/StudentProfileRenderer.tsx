@@ -1,6 +1,7 @@
 import type { ReportPlan, StudentProfileSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
+import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
 interface StudentProfileRendererProps {
@@ -27,10 +28,13 @@ export const StudentProfileRenderer = ({
   sectionNumber,
   plan = "lite",
 }: StudentProfileRendererProps) => {
-  const radarEntries = Object.entries(data.radarChart) as [string, number][];
+  const radarEntries = Object.entries(data.radarChart ?? {}) as [
+    string,
+    number,
+  ][];
   const totalScore = radarEntries.reduce((sum, [, v]) => sum + v, 0);
   const isPremium = plan === "premium";
-  const monogramChar = data.typeName.charAt(0);
+  const monogramChar = (data.typeName ?? "?").charAt(0);
 
   const identityClass = IDENTITY_STYLE[plan]
     ? styles[IDENTITY_STYLE[plan] as keyof typeof styles]
@@ -51,7 +55,9 @@ export const StudentProfileRenderer = ({
         </div>
         <div className={styles.profileTypeInfo}>
           <div className={styles.profileTypeName}>{data.typeName}</div>
-          <p className={styles.profileTypeDesc}>{data.typeDescription}</p>
+          <p className={styles.profileTypeDesc}>
+            {safeText(data.typeDescription)}
+          </p>
         </div>
       </div>
 
@@ -92,7 +98,7 @@ export const StudentProfileRenderer = ({
 
       {/* Tags */}
       <div className={styles.profileTags}>
-        {data.tags.map((tag) => (
+        {(data.tags ?? []).map((tag) => (
           <span key={tag} className={styles.profileTag}>
             {tag}
           </span>
@@ -108,7 +114,7 @@ export const StudentProfileRenderer = ({
         }
       >
         <span className={styles.profileCatchPhraseText}>
-          {data.catchPhrase}
+          {safeText(data.catchPhrase)}
         </span>
       </div>
     </div>

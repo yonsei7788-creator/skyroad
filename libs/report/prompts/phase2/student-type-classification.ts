@@ -63,10 +63,52 @@ export const buildStudentTypeClassificationPrompt = (
 - 역량 관련 키워드 (예: "꼬리물기탐구", "팀리더십")
 - 성장 관련 키워드 (예: "성적상승세", "활동심화")
 
+## 역량 점수 앵커 (scoring anchors)
+| 점수 구간 | 기준 |
+|-----------|------|
+| 90~100 | 매우 구체적인 증거가 다수 존재하며, 학년 간 심화·확장이 뚜렷함 |
+| 70~89 | 구체적 증거가 존재하며, 일관된 활동 흐름이 확인됨 |
+| 50~69 | 증거가 있으나 형식적이거나 깊이가 부족함 |
+| 30~49 | 증거가 적고 형식적 표현 위주임 |
+| 0~29 | 해당 역량의 증거가 거의 없음 |
+
 ## 캐치프레이즈 작성 기준
 학생의 핵심 특성을 한 문장으로 요약합니다.
 - 형식: "~하는 ~형 학생" 또는 자유 형식
 - 예시: "자동차에 대한 열정을 학업으로 증명하는 탐구형 성장러"
+
+## 추가 지침
+- competencyGrades는 radarChart 점수에서 역량 등급 기준 표를 적용하여 산출합니다. 점수를 먼저 결정한 뒤 등급을 매기세요.
+- 유형명은 예시를 그대로 사용하지 않고 학생 고유의 이름을 만드세요. 예시는 참고용입니다.
+- scoringRationale의 각 항목에는 해당 역량 점수를 부여한 근거를 2~3문장으로 작성합니다. 어떤 증거가 있었고 왜 해당 점수인지 설명하세요.
+
+## 출력 JSON 스키마
+\`\`\`json
+{
+  "typeName": "string (학생 고유 유형명, 예시를 그대로 쓰지 않을 것)",
+  "typeDescription": "string (유형에 대한 2~3문장 설명)",
+  "radarChart": {
+    "academic": "number (0~100, 학업역량 점수)",
+    "career": "number (0~100, 진로역량 점수)",
+    "community": "number (0~100, 공동체역량 점수)",
+    "growth": "number (0~100, 발전가능성 점수)"
+  },
+  "tags": ["string (3~5개 핵심 키워드 태그)"],
+  "catchPhrase": "string (한 문장 캐치프레이즈)",
+  "competencyGrades": {
+    "academic": "S | A | B | C | D (radarChart.academic 점수 기반)",
+    "career": "S | A | B | C | D (radarChart.career 점수 기반)",
+    "community": "S | A | B | C | D (radarChart.community 점수 기반)",
+    "growth": "S | A | B | C | D (radarChart.growth 점수 기반)"
+  },
+  "scoringRationale": {
+    "academic": "string (학업역량 점수 부여 근거 2~3문장)",
+    "career": "string (진로역량 점수 부여 근거 2~3문장)",
+    "community": "string (공동체역량 점수 부여 근거 2~3문장)",
+    "growth": "string (발전가능성 점수 부여 근거 2~3문장)"
+  }
+}
+\`\`\`
 
 ## 입력 데이터
 

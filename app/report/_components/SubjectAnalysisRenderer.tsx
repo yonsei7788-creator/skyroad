@@ -4,8 +4,8 @@ import type {
   SubjectRating,
 } from "@/libs/report/types";
 
-import { ReportBadge } from "./ReportBadge";
 import styles from "./report.module.css";
+import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
 interface SubjectAnalysisRendererProps {
@@ -62,9 +62,9 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
           ` · 평가 영향도 ${IMPACT_LABEL[subject.evaluationImpact] ?? subject.evaluationImpact}`}
       </div>
 
-      {subject.competencyTags.length > 0 && (
+      {(subject.competencyTags ?? []).length > 0 && (
         <div className={`${styles.tagGroup} ${styles.mb8}`}>
-          {subject.competencyTags.map((tag, idx) => (
+          {(subject.competencyTags ?? []).map((tag, idx) => (
             <span key={idx} className={styles.tag}>
               {tag.subcategory}
               {tag.assessment && ` (${tag.assessment})`}
@@ -73,10 +73,12 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
         </div>
       )}
 
-      <p className={styles.small}>{subject.activitySummary}</p>
-      <p className={`${styles.caption} ${styles.mt6}`}>
-        {subject.evaluationComment}
-      </p>
+      <p className={styles.small}>{safeText(subject.activitySummary)}</p>
+      {!subject.detailedEvaluation && subject.evaluationComment && (
+        <p className={`${styles.caption} ${styles.mt6}`}>
+          {safeText(subject.evaluationComment)}
+        </p>
+      )}
 
       {subject.keyQuotes && subject.keyQuotes.length > 0 && (
         <div className={styles.mt12}>
@@ -125,7 +127,9 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
                           {conn.connectionType}
                         </span>
                       </td>
-                      <td className={styles.small}>{conn.description}</td>
+                      <td className={styles.small}>
+                        {safeText(conn.description)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -141,7 +145,7 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
             <div className={styles.aiCommentaryContent}>
               <div className={styles.aiCommentaryLabel}>상세 평가</div>
               <div className={styles.aiCommentaryText}>
-                {subject.detailedEvaluation}
+                {safeText(subject.detailedEvaluation)}
               </div>
             </div>
           </div>
@@ -151,7 +155,7 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
           <div className={`${styles.callout} ${styles.mt12}`}>
             <div className={styles.calloutContent}>
               <span className={styles.emphasis}>개선 방향:</span>{" "}
-              {subject.improvementDirection}
+              {safeText(subject.improvementDirection)}
             </div>
           </div>
         )}
@@ -159,7 +163,7 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
           <div className={`${styles.callout} ${styles.mt8}`}>
             <div className={styles.calloutContent}>
               <span className={styles.emphasis}>개선 예시:</span>{" "}
-              {subject.improvementExample}
+              {safeText(subject.improvementExample)}
             </div>
           </div>
         )}
@@ -189,12 +193,12 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
                   {sa.improvementSuggestion && (
                     <p className={`${styles.caption} ${styles.mt4}`}>
                       <span className={styles.emphasis}>개선:</span>{" "}
-                      {sa.improvementSuggestion}
+                      {safeText(sa.improvementSuggestion)}
                     </p>
                   )}
                 </td>
                 <td className={`${styles.tableAlignCenter} ${styles.caption}`}>
-                  {sa.evaluation}
+                  {safeText(sa.evaluation)}
                 </td>
               </tr>
             ))}
@@ -211,35 +215,14 @@ export const SubjectAnalysisRenderer = ({
   data,
   sectionNumber,
 }: SubjectAnalysisRendererProps) => {
-  const sortedSubjects = [...data.subjects].sort(
+  const sortedSubjects = [...(data.subjects ?? [])].sort(
     (a, b) => RATING_ORDER[a.rating] - RATING_ORDER[b.rating]
   );
 
   return (
     <>
-      {/* 요약 테이블: 전체 과목 목록 (compact — 태그 없이) */}
       <div>
         <SectionHeader number={sectionNumber} title={data.title} />
-        <table className={styles.compactTable}>
-          <thead>
-            <tr>
-              <th>과목</th>
-              <th className={styles.tableAlignCenter}>학년</th>
-              <th className={styles.tableAlignCenter}>평가</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedSubjects.map((subject) => (
-              <tr key={`${subject.subjectName}-${subject.year}`}>
-                <td className={styles.tableCellBold}>{subject.subjectName}</td>
-                <td className={styles.tableAlignCenter}>{subject.year}학년</td>
-                <td className={styles.tableAlignCenter}>
-                  <ReportBadge rating={subject.rating} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
 
       {/* 과목별 상세 — 블록 단위로 페이지 분리 */}

@@ -94,7 +94,7 @@
   color: var(--color-fg-secondary);
 }
 
-/* ---- Check Icon (완료) ---- */
+/* ---- Check Icon ---- */
 .checkIcon {
   width: 56px;
   height: 56px;
@@ -108,7 +108,7 @@
   animation: fadeIn 0.3s ease-out;
 }
 
-/* ---- Notice Box (이탈 방지) ---- */
+/* ---- Notice Box ---- */
 .noticeBox {
   margin-top: 16px;
   padding: 12px 16px;

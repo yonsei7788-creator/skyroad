@@ -1,6 +1,7 @@
 import type { InterviewPrepSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
+import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
 interface InterviewPrepRendererProps {
@@ -21,8 +22,9 @@ export const InterviewPrepRenderer = ({
   sectionNumber,
 }: InterviewPrepRendererProps) => {
   // 첫 2개 질문은 요약 블록과 합침, 나머지는 2개씩 묶음
-  const firstQuestions = data.questions.slice(0, 2);
-  const restQuestions = data.questions.slice(2);
+  const questions = data.questions ?? [];
+  const firstQuestions = questions.slice(0, 2);
+  const restQuestions = questions.slice(2);
   const questionChunks = chunkItems(restQuestions, 2);
 
   return (
@@ -34,7 +36,7 @@ export const InterviewPrepRenderer = ({
         <div className={styles.cardAccent}>
           <div className={styles.cardHeader}>
             <div className={styles.cardTitle}>
-              예상 질문 {data.questions.length}개
+              예상 질문 {questions.length}개
             </div>
             {data.readinessScore !== undefined && (
               <span className={styles.emphasis}>
@@ -81,7 +83,8 @@ export const InterviewPrepRenderer = ({
             <p className={styles.body}>{q.question}</p>
             {q.intent && (
               <p className={`${styles.caption} ${styles.mt6}`}>
-                <span className={styles.emphasis}>출제 의도:</span> {q.intent}
+                <span className={styles.emphasis}>출제 의도:</span>{" "}
+                {safeText(q.intent)}
               </p>
             )}
           </div>
@@ -144,7 +147,7 @@ export const InterviewPrepRenderer = ({
                 {q.answerStrategy && (
                   <p className={`${styles.small} ${styles.mt8}`}>
                     <span className={styles.emphasis}>답변 전략:</span>{" "}
-                    {q.answerStrategy}
+                    {safeText(q.answerStrategy)}
                   </p>
                 )}
 
@@ -152,7 +155,7 @@ export const InterviewPrepRenderer = ({
                   <div className={`${styles.callout} ${styles.mt12}`}>
                     <div className={styles.calloutContent}>
                       <span className={styles.emphasis}>모범 답변:</span>{" "}
-                      {q.sampleAnswer}
+                      {safeText(q.sampleAnswer)}
                     </div>
                   </div>
                 )}
@@ -167,7 +170,7 @@ export const InterviewPrepRenderer = ({
                         <span className={styles.emphasis}>
                           꼬리 {fqIdx + 1}. {fq.question}
                         </span>{" "}
-                        — {fq.context}
+                        — {safeText(fq.context)}
                       </p>
                     ))}
                   </div>

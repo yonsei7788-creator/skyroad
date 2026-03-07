@@ -9,14 +9,19 @@ export interface InterviewPrepPromptInput {
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
-  lite: "",
+  lite: `## 플랜별 출력: 간략
+- **8~10개** 질문만 출력합니다.
+- 각 질문: question + questionType(세특기반/성적기반/진로기반/인성기반) + importance(high/medium/low) 필드만 출력합니다.
+- intent, answerStrategy, sampleAnswer, followUpQuestions 필드는 출력하지 않습니다.`,
   standard: `## 플랜별 출력: 상세
 - 최대 20개 질문을 출력합니다.
 - 각 질문: question + questionType(세특기반/성적기반/진로기반/인성기반) + intent(출제 의도 1~2줄) + importance(high/medium/low)
 - answerStrategy, sampleAnswer, followUpQuestions 필드는 출력하지 않습니다.`,
   premium: `## 플랜별 출력: 정밀
-- 30개 질문을 출력합니다.
-- 각 질문: question + questionType + intent + importance(high/medium/low) + answerStrategy(답변 전략) + sampleAnswer(모범 답변 가이드) + followUpQuestions(꼬리질문 1~2개)`,
+- **15개 질문**을 출력합니다 (세특기반 8 + 성적기반 2 + 진로기반 3 + 인성기반 2).
+- 각 질문: question + questionType + intent(1줄) + importance(high/medium/low) + answerStrategy(답변 전략, 2줄 이내)
+- **상위 5개 질문(importance: high)에만** sampleAnswer(3줄 이내) + followUpQuestions(1개)를 포함합니다.
+- 나머지 10개 질문은 sampleAnswer, followUpQuestions를 출력하지 않습니다.`,
 };
 
 export const buildInterviewPrepPrompt = (
@@ -26,16 +31,45 @@ export const buildInterviewPrepPrompt = (
   return `## 작업
 학생의 생기부를 바탕으로 예상 면접 질문을 생성하세요.
 
+## 출력 JSON 스키마
+
+중요: questions 배열의 각 요소는 반드시 아래와 같은 완전한 객체여야 합니다.
+
+{
+  "sectionId": "interviewPrep",
+  "title": "면접 준비",
+  "questions": [
+    {
+      "question": "사회·문화 시간에 복지 정책을 비교 분석했는데, 한국의 복지 정책에서 가장 시급한 개선점은 무엇이라고 생각하나요?",
+      "questionType": "세특기반",
+      "intent": "세특에 기록된 복지 정책 탐구의 깊이를 검증하고...",
+      "importance": "high",
+      "answerStrategy": "구체적 정책 사례를 들어 비교하고...",
+      "sampleAnswer": "한국의 복지 정책은 보편적 복지와 선별적 복지 사이에서...",
+      "followUpQuestions": [
+        {"question": "그렇다면 북유럽 모델을 한국에 적용할 때의 한계는?", "context": "비판적 사고력 검증"}
+      ]
+    }
+  ]
+}
+
 ## 질문 생성 기준
-1. 세특 기반: 세특에 기록된 구체적 탐구 내용에 대한 심화 질문
-2. 성적 기반: 성적 추이, 과목 간 편차 등에 대한 설명 요구
-3. 진로 기반: 진로 선택 이유, 전공 관련 활동의 의미
-4. 인성 기반: 갈등 해결, 협업 경험, 성장 과정
+questionType은 반드시 다음 4개 중 하나만 사용: "세특기반" | "성적기반" | "진로기반" | "인성기반". 다른 값 사용 금지.
+
+1. 세특기반: 세특에 기록된 구체적 탐구 내용에 대한 심화 질문
+2. 성적기반: 성적 추이, 과목 간 편차 등에 대한 설명 요구
+3. 진로기반: 진로 선택 이유, 전공 관련 활동의 의미
+4. 인성기반: 갈등 해결, 협업 경험, 성장 과정
 
 ## 규칙
-- 질문은 실제 대학 면접에서 나올 법한 구체적이고 날카로운 질문이어야 합니다.
+- 질문은 실제 대학 면접에서 나올 법한 질문이어야 합니다.
+- 좋은 질문의 기준:
+  1. 생기부 원문의 특정 내용(과목명, 탐구 주제, 활동명)을 직접 언급할 것
+  2. "왜 ~를 선택했나요?"처럼 의사결정 과정을 묻는 질문일 것
+  3. "~의 한계점은 무엇이었나요?"처럼 비판적 사고를 요구하는 질문일 것
+  4. 학생이 실제로 탐구한 내용의 깊이를 검증할 수 있는 질문일 것
+- 피해야 할 질문: "~에 대해 말해보세요", "~이 뭔가요?" 같은 단순 설명 요구형 질문.
 - 생기부의 특정 내용을 직접 언급하는 질문을 포함하세요.
-- "~에 대해 말해보세요" 같은 단순 질문보다 "~에서 ~를 선택한 이유는?" 같은 구체적 질문을 선호합니다.
 
 ## 입력 데이터
 

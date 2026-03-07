@@ -4,6 +4,7 @@ import type {
 } from "@/libs/report/types";
 
 import styles from "./report.module.css";
+import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
 interface StoryAnalysisRendererProps {
@@ -25,7 +26,7 @@ export const StoryAnalysisRenderer = ({
 }: StoryAnalysisRendererProps) => {
   return (
     <>
-      {/* Block 1: Header + storyline + year progressions + consistency */}
+      {/* Block 1: Header + storyline */}
       <div>
         <SectionHeader number={sectionNumber} title={data.title} />
 
@@ -34,37 +35,27 @@ export const StoryAnalysisRenderer = ({
             <div className={styles.cardTitle}>메인 스토리라인</div>
           </div>
           <p className={`${styles.small} ${styles.mt6}`}>
-            {data.mainStoryline}
+            {safeText(data.mainStoryline)}
           </p>
         </div>
 
         <div className={`${styles.h3} ${styles.mt24} ${styles.mb12}`}>
           학년별 심화 흐름
         </div>
-        <table className={styles.compactTable}>
-          <thead>
-            <tr>
-              <th className={styles.tableAlignCenter}>학년</th>
-              <th>테마</th>
-              <th>설명</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.yearProgressions.map((yp) => (
-              <tr key={yp.year}>
-                <td
-                  className={`${styles.tableCellBold} ${styles.tableAlignCenter}`}
-                >
-                  {yp.year}학년
-                </td>
-                <td className={styles.tableCellBold}>{yp.theme}</td>
-                <td className={styles.small}>{yp.description}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {(data.yearProgressions ?? []).map((yp) => (
+          <div key={yp.year} className={styles.activityYearCard}>
+            <div className={styles.activityYearHeader}>
+              <span className={styles.tableCellBold}>{yp.year}학년</span>
+              <span className={styles.tag}>{yp.theme}</span>
+            </div>
+            <p className={styles.small}>{safeText(yp.description)}</p>
+          </div>
+        ))}
+      </div>
 
-        <div className={`${styles.card} ${styles.mt20}`}>
+      {/* Block 1b: Career consistency */}
+      <div>
+        <div className={styles.card}>
           <div className={styles.cardHeader}>
             <div className={styles.cardTitle}>진로 일관성</div>
             <span className={styles.emphasis}>
@@ -73,7 +64,7 @@ export const StoryAnalysisRenderer = ({
             </span>
           </div>
           <p className={`${styles.small} ${styles.mt6}`}>
-            {data.careerConsistencyComment}
+            {safeText(data.careerConsistencyComment)}
           </p>
         </div>
       </div>
@@ -135,7 +126,7 @@ export const StoryAnalysisRenderer = ({
                   면접 스토리텔링 가이드
                 </div>
                 <div className={styles.aiCommentaryText}>
-                  {data.interviewStoryGuide}
+                  {safeText(data.interviewStoryGuide)}
                 </div>
               </div>
             </div>

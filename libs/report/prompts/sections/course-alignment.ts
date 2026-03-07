@@ -37,6 +37,24 @@ ${input.competencyExtraction}
 ### 학생 프로필
 ${input.studentProfile}
 
+## 출력 JSON 스키마
+
+중요: courses 배열의 각 요소는 반드시 아래와 같은 완전한 객체여야 합니다.
+
+{
+  "sectionId": "courseAlignment",
+  "title": "과목 적합도",
+  "targetMajor": "행정학과",
+  "matchRate": 75,
+  "courses": [
+    {"course": "정치와법", "status": "이수", "importance": "필수"},
+    {"course": "사회·문화", "status": "이수", "importance": "필수"},
+    {"course": "경제", "status": "미이수", "importance": "권장"}
+  ],
+  "missingCourseImpact": "경제 과목 미이수는 사회과학 계열 진학 시...",
+  "recommendation": "3학년에서 경제 과목 이수를 권장합니다..."
+}
+
 ## 출력 지시
 
 ### 목표 계열 (targetMajor)
@@ -44,6 +62,7 @@ ${input.studentProfile}
 
 ### 권장과목 이수율 (matchRate)
 - 코드 전처리에서 산출된 이수율(0~100)을 그대로 사용합니다.
+- 만약 전처리 데이터에 이수율이 없거나 0이면, courses 배열에서 직접 계산하세요: (이수 과목 수 / 전체 과목 수) × 100, 정수로 반올림.
 
 ### 이수/미이수 상세 (courses)
 - 각 권장과목에 대해:

@@ -14,8 +14,8 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - 3~5권 추천
 - 각 도서: title + author + reason + connectionToRecord + relatedSubject`,
   premium: `## 플랜별 출력: 정밀
-- 5~8권 추천
-- 각 도서: title + author + reason + connectionToRecord + relatedSubject`,
+- **5권** 추천 (초과 금지)
+- 각 도서: title + author + reason(2줄 이내) + connectionToRecord(1줄) + relatedSubject`,
 };
 
 export const buildBookRecommendationPrompt = (

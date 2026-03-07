@@ -1,6 +1,7 @@
 import type { BookRecommendationSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
+import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
 interface BookRecommendationRendererProps {
@@ -20,7 +21,7 @@ export const BookRecommendationRenderer = ({
         subtitle="생기부와 연계할 수 있는 도서를 추천합니다"
       />
 
-      {data.books.map((book, idx) => (
+      {(data.books ?? []).map((book, idx) => (
         <div key={idx} className={styles.card}>
           <div className={`${styles.flexRowStart} ${styles.gap14}`}>
             <span className={`${styles.sectionNumber} ${styles.sizeCircleSm}`}>
@@ -39,12 +40,14 @@ export const BookRecommendationRenderer = ({
             </div>
           </div>
 
-          <p className={`${styles.body} ${styles.mt14}`}>{book.reason}</p>
+          <p className={`${styles.body} ${styles.mt14}`}>
+            {safeText(book.reason)}
+          </p>
 
           <div className={`${styles.callout} ${styles.mt14}`}>
             <div className={styles.calloutContent}>
               <span className={styles.emphasis}>생기부 연결점:</span>{" "}
-              {book.connectionToRecord}
+              {safeText(book.connectionToRecord)}
             </div>
           </div>
         </div>

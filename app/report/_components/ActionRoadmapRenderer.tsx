@@ -1,6 +1,7 @@
 import type { ActionRoadmapSection, ReportPlan } from "@/libs/report/types";
 
 import styles from "./report.module.css";
+import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
 interface ActionRoadmapRendererProps {
@@ -25,7 +26,7 @@ export const ActionRoadmapRenderer = ({
             <div className={styles.cardTitle}>생기부 마무리 전략</div>
           </div>
           <p className={`${styles.small} ${styles.mt6}`}>
-            {data.completionStrategy}
+            {safeText(data.completionStrategy)}
           </p>
         </div>
 
@@ -41,11 +42,13 @@ export const ActionRoadmapRenderer = ({
             </tr>
           </thead>
           <tbody>
-            {data.phases.map((phase, idx) => (
+            {(data.phases ?? []).map((phase, idx) => (
               <tr key={idx}>
                 <td className={styles.tableCellBold}>{phase.phase}</td>
                 <td className={styles.caption}>{phase.period}</td>
-                <td className={styles.small}>{phase.goals.join(", ")}</td>
+                <td className={styles.small}>
+                  {(phase.goals ?? []).join(", ")}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -53,7 +56,8 @@ export const ActionRoadmapRenderer = ({
       </div>
 
       {/* Block 2: Milestones (v4) + Prewrite proposals */}
-      {(data.milestones?.length || data.prewriteProposals?.length) && (
+      {((data.milestones?.length ?? 0) > 0 ||
+        (data.prewriteProposals?.length ?? 0) > 0) && (
         <div>
           {data.milestones && data.milestones.length > 0 && (
             <>
@@ -112,37 +116,42 @@ export const ActionRoadmapRenderer = ({
       )}
 
       {/* Block 3: Evaluation writing guide */}
-      {data.evaluationWritingGuide && (
-        <div>
-          <div className={`${styles.h3} ${styles.mb8}`}>
-            세특 서술 전략 가이드
-          </div>
-
-          <div className={`${styles.overline} ${styles.mb6}`}>서술 구조</div>
-          <div className={styles.caption}>
-            {data.evaluationWritingGuide.structure.map((item, idx) => (
-              <p key={idx} className={idx > 0 ? styles.mt4 : undefined}>
-                {idx + 1}. {item}
-              </p>
-            ))}
-          </div>
-
-          <div className={`${styles.callout} ${styles.mt16}`}>
-            <div className={styles.calloutContent}>
-              <span className={styles.emphasis}>좋은 예시:</span>{" "}
-              {data.evaluationWritingGuide.goodExample}
+      {data.evaluationWritingGuide &&
+        ((data.evaluationWritingGuide.structure?.length ?? 0) > 0 ||
+          data.evaluationWritingGuide.goodExample ||
+          data.evaluationWritingGuide.badExample) && (
+          <div>
+            <div className={`${styles.h3} ${styles.mb8}`}>
+              세특 서술 전략 가이드
             </div>
-          </div>
 
-          <p className={`${styles.small} ${styles.mt12}`}>
-            <span className={styles.emphasis}>개선 필요 예시:</span>{" "}
-            {data.evaluationWritingGuide.badExample}
-          </p>
-        </div>
-      )}
+            <div className={`${styles.overline} ${styles.mb6}`}>서술 구조</div>
+            <div className={styles.caption}>
+              {(data.evaluationWritingGuide.structure ?? []).map(
+                (item, idx) => (
+                  <p key={idx} className={idx > 0 ? styles.mt4 : undefined}>
+                    {idx + 1}. {item}
+                  </p>
+                )
+              )}
+            </div>
+
+            <div className={`${styles.callout} ${styles.mt16}`}>
+              <div className={styles.calloutContent}>
+                <span className={styles.emphasis}>좋은 예시:</span>{" "}
+                {data.evaluationWritingGuide.goodExample}
+              </div>
+            </div>
+
+            <p className={`${styles.small} ${styles.mt12}`}>
+              <span className={styles.emphasis}>개선 필요 예시:</span>{" "}
+              {data.evaluationWritingGuide.badExample}
+            </p>
+          </div>
+        )}
 
       {/* Block 4: Projected outcome (v4) + interview timeline */}
-      {(data.projectedOutcome?.length || data.interviewTimeline) && (
+      {((data.projectedOutcome?.length ?? 0) > 0 || data.interviewTimeline) && (
         <div>
           {data.projectedOutcome && data.projectedOutcome.length > 0 && (
             <>
@@ -180,7 +189,7 @@ export const ActionRoadmapRenderer = ({
             </>
           )}
 
-          {data.interviewTimeline && plan !== "premium" && (
+          {data.interviewTimeline && (
             <div
               className={`${styles.aiCommentary} ${data.projectedOutcome?.length ? styles.mt20 : ""}`}
             >
@@ -190,7 +199,7 @@ export const ActionRoadmapRenderer = ({
                   면접 대비 타임라인
                 </div>
                 <div className={styles.aiCommentaryText}>
-                  {data.interviewTimeline}
+                  {safeText(data.interviewTimeline)}
                 </div>
               </div>
             </div>
