@@ -38,19 +38,28 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   - 역량 태깅(competencyTags): 해당 세특에서 드러나는 역량 태그 1~3개
 - keyQuotes, detailedEvaluation, improvementDirection, improvementExample, sentenceAnalysis 필드는 출력하지 않습니다.`,
   standard: `## 분석 수준: 상세
-각 과목에 대해 Lite의 모든 항목 + 다음을 추가로 출력하세요:
+### 과목 분류 및 분석 범위
+- **상위 7개 과목만** 분석합니다. 반드시 7개 이하로 출력하세요. 8개 이상 과목은 절대 출력하지 마세요.
+- 8번째 이후 과목은 과목명 + 등급(rating) + evaluationComment 1줄 요약만 출력합니다.
+
+각 상세 분석 과목에 대해 Lite의 모든 항목 + 다음을 추가로 출력하세요:
 - 원문 핵심 인용: 세특에서 평가에 중요한 문장 1~2개를 직접 인용
 - 상세 평가: 전문 컨설턴트 수준의 핵심 평가 (2~3줄)
   - 이 과목의 세특이 왜 좋은지/부족한지 핵심만 서술
   - "과목다운 세특"인지 판단
 - 개선 방향: 3학년 세특에서 보완할 구체적 방향 (1~2줄)
 - 개선 예시 문장: 약한 부분이 있다면 구체적 예시 1개 제시 (2줄 이내)
-- 교과 간 연결성은 storyAnalysis에서 분석하므로 crossSubjectConnections는 출력하지 않습니다.`,
+- 교과 간 연결성은 storyAnalysis에서 분석하므로 crossSubjectConnections는 출력하지 않습니다.
+
+⚠️ **분량 제한 (반드시 준수)**:
+- evaluationComment는 반드시 **150자 이내**로 작성합니다. 150자를 초과하는 항목은 절대 출력하지 마세요.
+- strengthPoints/weaknessPoints는 각 **최대 2개**, 각 항목 **80자 이내**로 작성합니다.
+- detailedEvaluation은 **200자 이내**로 작성합니다.`,
   premium: `## 분석 수준: 정밀 (핵심 과목 집중)
 
 ### 과목 분류 및 분석 깊이
-1. **핵심 과목 (전공 관련 상위 8과목)**: Standard 수준의 상세 분석을 출력합니다.
-2. **나머지 과목**: rating + evaluationComment(1~2줄 요약)만 출력합니다. detailedEvaluation, keyQuotes, improvementDirection, improvementExample, crossSubjectConnections는 생략합니다.
+1. **핵심 과목 (전공 관련 상위 10개 과목)**: 상세 분석을 출력합니다. 10개를 초과하면 안 됩니다.
+2. **11번째 이후 과목**: 과목명 + 등급(rating) + evaluationComment 1줄 요약만 출력합니다. detailedEvaluation, keyQuotes, improvementDirection, improvementExample, crossSubjectConnections는 생략합니다.
 
 ### 문장 단위 분석 (상위 2과목만)
 - **전공 관련도가 가장 높은 2과목에 한해서만** sentenceAnalysis를 출력합니다.
@@ -64,10 +73,12 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 ### crossSubjectConnections 생략
 - 과목 간 연결 분석은 storyAnalysis 섹션에서 수행합니다. subjectAnalysis에서는 crossSubjectConnections를 출력하지 않습니다.
 
-⚠️ **출력 분량 제한**: 전체 JSON 출력은 25,000자 이내로 유지하세요.
-- **핵심 과목 (상위 8과목)**: evaluationComment은 3~4줄, detailedEvaluation은 3~4줄로 작성합니다. 핵심을 짚되, 불필요한 반복이나 장황한 서술은 피하고 평가의 깊이에 집중하세요.
-- **나머지 과목**: evaluationComment은 1~2줄 요약만 작성합니다.
-- **sentenceAnalysis의 각 문장 evaluation**: 2~3줄로 작성합니다. 해당 문장이 입학사정관에게 어떤 인상을 주는지, 역량이 어떻게 드러나는지를 구체적으로 평가하세요.`,
+⚠️ **분량 제한 (반드시 준수)**:
+- evaluationComment는 반드시 **250자 이내**로 작성합니다. 250자 초과 금지.
+- strengthPoints/weaknessPoints는 각 **최대 3개**, 각 항목 **100자 이내**로 작성합니다.
+- detailedEvaluation은 **300자 이내**로 작성합니다.
+- **sentenceAnalysis의 각 문장 evaluation**: **150자 이내**로 작성합니다.
+- 나머지 과목은 evaluationComment **100자 이내** 1줄 요약만 작성합니다.`,
 };
 
 export const buildSubjectAnalysisPrompt = (

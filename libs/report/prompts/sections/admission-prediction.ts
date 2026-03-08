@@ -21,10 +21,20 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - universityPredictions 필드는 출력하지 않습니다.`,
   standard: `## 플랜별 출력
 - 추천 전형 + 전형별 합격률 범위 + 간략 근거 + 종합 코멘트를 출력합니다.
-- 추가로 전형별 주요 대학 예측(universityPredictions)을 포함합니다: 상향/안정/하향 각 1~2교.`,
+- 추가로 전형별 주요 대학 예측(universityPredictions)을 포함합니다: 상향/안정/하향 각 1~2교.
+
+⚠️ **분량 제한 (반드시 준수)**:
+- 각 전형(학종/교과/정시)의 analysis는 반드시 **150자 이내**로 작성합니다. 150자 초과 금지.
+- overallComment는 **200자 이내**로 작성합니다. 200자 초과 금지.
+- recommendedTypeReason은 **100자 이내**로 작성합니다.`,
   premium: `## 플랜별 출력
 - 추천 전형 + 전형별 합격률 범위 + 상세 근거 + 종합 코멘트를 출력합니다.
-- 추가로 전형별 주요 대학 예측(universityPredictions)을 포함합니다: 상향/안정/하향 각 1~2교, 더 상세한 분석 포함.`,
+- 추가로 전형별 주요 대학 예측(universityPredictions)을 포함합니다: 상향/안정/하향 각 1~2교, 더 상세한 분석 포함.
+
+⚠️ **분량 제한 (반드시 준수)**:
+- 각 전형(학종/교과/정시)의 analysis는 반드시 **250자 이내**로 작성합니다. 250자 초과 금지.
+- overallComment는 **300자 이내**로 작성합니다. 300자 초과 금지.
+- recommendedTypeReason은 **150자 이내**로 작성합니다.`,
 };
 
 export const buildAdmissionPredictionPrompt = (

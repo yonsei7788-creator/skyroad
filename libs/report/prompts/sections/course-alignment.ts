@@ -14,9 +14,19 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - medicalRequirements 필드는 출력하지 않습니다.`,
   standard: `## 플랜별 출력: 상세
 - Lite의 모든 항목
-- 메디컬 계열 대학별 요구사항 매칭(medicalRequirements, 해당 계열 학생만)`,
+- 메디컬 계열 대학별 요구사항 매칭(medicalRequirements, 해당 계열 학생만)
+
+⚠️ **분량 제한 (반드시 준수)**:
+- courses 배열은 **최대 5개**입니다. 6개 이상 절대 출력하지 마세요.
+- 각 course의 관련 설명(reason 등)은 **80자 이내**로 작성합니다.
+- missingCourseImpact는 **100자 이내**, recommendation은 **100자 이내**로 작성합니다.`,
   premium: `## 플랜별 출력: 정밀
-- Standard와 동일`,
+- Standard와 동일
+
+⚠️ **분량 제한 (반드시 준수)**:
+- courses 배열은 **최대 8개**입니다. 9개 이상 절대 출력하지 마세요.
+- 각 course의 관련 설명(reason 등)은 **120자 이내**로 작성합니다.
+- missingCourseImpact는 **150자 이내**, recommendation은 **150자 이내**로 작성합니다.`,
 };
 
 export const buildCourseAlignmentPrompt = (

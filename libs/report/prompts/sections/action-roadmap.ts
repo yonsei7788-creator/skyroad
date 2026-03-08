@@ -22,7 +22,13 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - 다음 학기: 학교 내 활동 계획
 - 입시 시즌: 원서/면접 준비
 
-- prewriteProposals, evaluationWritingGuide, interviewTimeline 필드는 출력하지 않습니다.`,
+- prewriteProposals, evaluationWritingGuide, interviewTimeline 필드는 출력하지 않습니다.
+
+⚠️ **분량 제한 (반드시 준수)**:
+- phases 배열은 **최대 3개**입니다. 4개 이상 절대 출력하지 마세요.
+- 각 phase의 tasks는 **최대 3개**이며, 각 task는 **80자 이내**로 작성합니다.
+- completionStrategy는 **200자 이내**로 작성합니다.
+- goals는 phase당 **최대 2개**로 제한합니다.`,
   premium: `## 출력 수준: 확장
 Standard의 모든 항목 + 다음을 추가로 출력하세요:
 
@@ -37,7 +43,14 @@ Standard의 모든 항목 + 다음을 추가로 출력하세요:
 - badExample: 같은 주제인데 피해야 할 서술 예시 (**2~3줄**). 왜 나쁜지 이유를 괄호로 부연합니다.
 
 ### 5. 면접 대비 타임라인 (interviewTimeline)
-- 면접 준비 시작 시점과 단계별 준비 방법을 **3줄 이내**로 간결하게 서술`,
+- 면접 준비 시작 시점과 단계별 준비 방법을 **3줄 이내**로 간결하게 서술
+
+⚠️ **분량 제한 (반드시 준수)**:
+- phases 배열은 **최대 6개**입니다. 7개 이상 절대 출력하지 마세요.
+- 각 phase의 tasks는 **최대 5개**이며, 각 task는 **100자 이내**로 작성합니다.
+- completionStrategy는 **300자 이내**로 작성합니다.
+- prewriteProposals는 **최대 3개**로 제한합니다.
+- interviewTimeline은 **200자 이내**로 작성합니다.`,
 };
 
 export const buildActionRoadmapPrompt = (

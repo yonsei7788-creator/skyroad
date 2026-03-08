@@ -12,16 +12,26 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 간략
 - **8~10개** 질문만 출력합니다.
 - 각 질문: question + questionType(세특기반/성적기반/진로기반/인성기반) + importance(high/medium/low) 필드만 출력합니다.
-- intent, answerStrategy, sampleAnswer, followUpQuestions 필드는 출력하지 않습니다.`,
+- intent, answerStrategy, sampleAnswer, followUpQuestions 필드는 출력하지 않습니다.
+
+## 분량 가이드
+- 예상 질문 3개 + 답변 가이드. A4 1페이지 이내.`,
   standard: `## 플랜별 출력: 상세
-- 최대 20개 질문을 출력합니다.
 - 각 질문: question + questionType(세특기반/성적기반/진로기반/인성기반) + intent(출제 의도 1~2줄) + importance(high/medium/low)
-- answerStrategy, sampleAnswer, followUpQuestions 필드는 출력하지 않습니다.`,
+- answerStrategy, sampleAnswer, followUpQuestions 필드는 출력하지 않습니다.
+
+⚠️ **분량 제한 (반드시 준수)**:
+- questions 배열은 **최대 3개**입니다. 4개 이상 절대 출력하지 마세요.
+- 각 intent는 **100자 이내**로 작성합니다. 100자 초과 금지.`,
   premium: `## 플랜별 출력: 정밀
-- **15개 질문**을 출력합니다 (세특기반 8 + 성적기반 2 + 진로기반 3 + 인성기반 2).
 - 각 질문: question + questionType + intent(1줄) + importance(high/medium/low) + answerStrategy(답변 전략, 2줄 이내)
-- **상위 5개 질문(importance: high)에만** sampleAnswer(3줄 이내) + followUpQuestions(1개)를 포함합니다.
-- 나머지 10개 질문은 sampleAnswer, followUpQuestions를 출력하지 않습니다.`,
+- **상위 3개 질문(importance: high)에만** sampleAnswer + followUpQuestions(1개)를 포함합니다.
+- 나머지 질문은 sampleAnswer, followUpQuestions를 출력하지 않습니다.
+
+⚠️ **분량 제한 (반드시 준수)**:
+- questions 배열은 **최대 5개**입니다. 6개 이상 절대 출력하지 마세요.
+- 각 sampleAnswer는 반드시 **300자 이내**로 작성합니다. 300자 초과 금지.
+- 각 answerStrategy는 **150자 이내**로 작성합니다.`,
 };
 
 export const buildInterviewPrepPrompt = (

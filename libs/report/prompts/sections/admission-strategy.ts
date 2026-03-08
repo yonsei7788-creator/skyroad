@@ -16,22 +16,41 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - 추천 전형 방향(recommendedPath, 2~3줄) 출력
 - 대학 추천(recommendations): 상향 1/안정 2/하향 1 = 총 **4개** 고정, 대학명+학과+전형명+티어+간단 rationale(1줄)
 - 4개를 초과하지 않습니다.
-- typeStrategies, schoolTypeAnalysis, nextSemesterStrategy, csatMinimumStrategy, applicationSimulation, universityGuideMatching, tierGroupedRecommendations 필드는 출력하지 않습니다.`,
+- typeStrategies, schoolTypeAnalysis, nextSemesterStrategy, csatMinimumStrategy, applicationSimulation, universityGuideMatching, tierGroupedRecommendations 필드는 출력하지 않습니다.
+
+⚠️ **분량 제한**: 이 섹션은 A4 1페이지 이내로 작성합니다.`,
   standard: `## 플랜별 출력: 상세
 - 추천 전형 방향(recommendedPath) + 대학 추천(recommendations)
-- 전형별 상세 전략(typeStrategies: 학생부종합전형/학생부교과전형/수능(정시)전형)
-- 대학별 합격 가능성(chance + chanceRationale + chancePercentLabel) + 입시 데이터(admissionData)
+- 대학 추천 수: 상향 1/적정 2/안정 1 = 총 **4개** 고정. 4개를 초과하면 절대 안 됩니다.
+- 대학별 합격 가능성(chance + chanceRationale + chancePercentLabel)만 출력합니다. admissionData 필드는 출력하지 않습니다.
+- 전형별 전략(typeStrategies) 출력
 - 주의/유리 학교 유형(schoolTypeAnalysis)
-- 다음 학기 전략(nextSemesterStrategy: 3~4줄)`,
+- 다음 학기 전략(nextSemesterStrategy)
+- csatMinimumStrategy, applicationSimulation, universityGuideMatching, tierGroupedRecommendations 필드는 출력하지 않습니다.
+
+⚠️ **분량 제한 (반드시 준수)**:
+- recommendations는 반드시 **4개** 고정. 5개 이상 절대 출력 금지.
+- 각 chanceRationale은 반드시 **80자 이내**로 작성합니다. 80자 초과 금지.
+- typeStrategies의 각 analysis는 **100자 이내**, 각 reason은 **80자 이내**로 작성합니다.
+- schoolTypeAnalysis의 rationale은 **100자 이내**로 작성합니다.
+- nextSemesterStrategy는 **150자 이내**로 작성합니다.`,
   premium: `## 플랜별 출력: 정밀
-Standard의 모든 항목 + 다음을 추가로 출력합니다:
+Standard의 모든 항목에 추가로 다음을 출력합니다:
+- 대학 추천 수: 상향 2/적정 2/안정 2 = 총 **최대 6개**. 6개를 초과하면 절대 안 됩니다.
+- 전형별 상세 전략(typeStrategies)
 - 수능 최저 전략(csatMinimumStrategy)
 - 6장 카드 배분 시뮬레이션(applicationSimulation): 반드시 아래 형식
   "applicationSimulation": {"description": "수시 6개 + 정시 배분 전략...", "details": [{"admissionType": "학생부종합", "count": 4, "targetUniversities": ["한양대", "중앙대", "경희대", "건국대"]}, {"admissionType": "학생부교과", "count": 2, "targetUniversities": ["서울시립대", "숭실대"]}]}
 - 대학별 학종 가이드북 키워드 매칭(universityGuideMatching): **상위 3개 대학만** 배열 형식으로 출력
   "universityGuideMatching": [{"university": "한양대학교", "emphasisKeywords": ["자기주도성", "탐구력"], "studentStrengthMatch": ["세특 탐구 깊이"], "studentWeaknessMatch": ["교과 편차"]}]
-- 조합별 대학 추천(tierGroupedRecommendations): "상향 위주" 3개 + "안정 위주" 3개 + "하향 위주" 3개 = 총 9개
-- 서울대학교는 학생부교과전형이 없으므로 교과전형 데이터를 생성하지 않습니다.`,
+- 조합별 대학 추천(tierGroupedRecommendations): "상향 위주" 2개 + "안정 위주" 2개 + "하향 위주" 2개 = 총 6개
+- 서울대학교는 학생부교과전형이 없으므로 교과전형 데이터를 생성하지 않습니다.
+
+⚠️ **분량 제한 (반드시 준수)**:
+- recommendations는 **최대 6개**. 7개 이상 절대 출력 금지.
+- 각 chanceRationale은 반드시 **150자 이내**로 작성합니다. 150자 초과 금지.
+- admissionData 포함 가능.
+- typeStrategies의 각 analysis는 **200자 이내**로 작성합니다.`,
 };
 
 const ADMISSION_CONTEXT = `## 정시 학생부 반영 대학 (2028학년도)
@@ -104,7 +123,7 @@ export const buildAdmissionStrategyPrompt = (
 
 **recommendations vs tierGroupedRecommendations 관계:**
 - \`recommendations\`: Lite/Standard에서 사용. 단일 리스트에 상향/안정/하향 대학을 혼합 배치.
-- \`tierGroupedRecommendations\`: Premium 전용. 상향 위주/안정 위주/하향 위주 3가지 시나리오별로 6개씩 그룹화하여 총 18개 추천. recommendations와 별도 필드.
+- \`tierGroupedRecommendations\`: Premium 전용. 상향 위주/안정 위주/하향 위주 3가지 시나리오별로 2개씩 그룹화하여 총 6개 추천. recommendations와 별도 필드.
 
 ## 대학 추천 규칙
 - 아래 제공된 "대학 후보군"은 코드에서 학생의 환산 등급을 기반으로 사전 산정한 결과입니다.
