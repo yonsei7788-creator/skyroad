@@ -12,10 +12,15 @@ export interface StoryAnalysisPromptInput {
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: "",
   standard: `## 출력 수준: 기본
-- 메인 스토리라인 (3~5줄)
+- 메인 스토리라인
 - 학년별 심화 흐름 (각 학년 테마 + 설명)
 - 진로 일관성 등급 + 코멘트
-- crossSubjectLinks, storyEnhancementSuggestions, interviewStoryGuide 필드는 출력하지 않습니다.`,
+- crossSubjectLinks, storyEnhancementSuggestions, interviewStoryGuide 필드는 출력하지 않습니다.
+
+⚠️ **분량 제한 (반드시 준수)**:
+- mainStoryline은 반드시 **200자 이내**로 작성합니다. 200자 초과 금지.
+- yearProgressions는 **최대 3개** (학년 수만큼)이며, 각 description은 **80자 이내**로 작성합니다.
+- careerConsistencyComment는 **100자 이내**로 작성합니다.`,
   premium: `## 출력 수준: 확장
 Standard의 모든 항목 + 다음을 추가로 출력하세요:
 
@@ -40,7 +45,14 @@ Standard의 모든 항목 + 다음을 추가로 출력하세요:
 
 ### 6. 면접 스토리텔링 가이드 (interviewStoryGuide)
 - 면접에서 생기부를 어떤 흐름으로 설명할지 가이드합니다.
-- "자기소개 -> 탐구 계기 -> 심화 과정 -> 미래 계획" 구조로 정리합니다.`,
+- "자기소개 -> 탐구 계기 -> 심화 과정 -> 미래 계획" 구조로 정리합니다.
+
+⚠️ **분량 제한 (반드시 준수)**:
+- mainStoryline은 반드시 **300자 이내**로 작성합니다. 300자 초과 금지.
+- yearProgressions는 **최대 3개**, 각 description은 **120자 이내**로 작성합니다.
+- crossSubjectLinks는 **최대 5개**입니다. 6개 이상 절대 출력하지 마세요.
+- storyEnhancementSuggestions는 **최대 3개**, 각 **100자 이내**로 작성합니다.
+- interviewStoryGuide는 **200자 이내**로 작성합니다.`,
 };
 
 export const buildStoryAnalysisPrompt = (

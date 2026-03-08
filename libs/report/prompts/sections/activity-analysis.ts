@@ -28,12 +28,26 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - 영역별(자율·자치/동아리/진로) 학년별 요약 + 등급(excellent/good/average/weak) + 역량 태그 + 종합 코멘트
 - 각 영역별 yearlyAnalysis의 summary를 **2줄 이내**로 간결 작성합니다.
 - rating과 competencyTags만 포함합니다.
-- volumeAssessment, keyActivities, improvementDirection 필드는 출력하지 않습니다.`,
+- volumeAssessment, keyActivities, improvementDirection 필드는 출력하지 않습니다.
+
+## 분량 가이드
+- 핵심 활동 3개 이내로 요약. A4 1페이지 이내.`,
   standard: `## 플랜별 출력: 상세
 - Lite의 모든 항목
-- 기록 분량 평가(volumeAssessment) + 핵심 활동 상세(keyActivities) + 개선 방향(improvementDirection)`,
+- 기록 분량 평가(volumeAssessment) + 핵심 활동 상세(keyActivities) + 개선 방향(improvementDirection)
+
+⚠️ **분량 제한 (반드시 준수)**:
+- activities 배열은 **최대 4개**입니다. 5개 이상 절대 출력하지 마세요.
+- 각 activity의 overallComment은 **150자 이내**, improvementDirection은 **100자 이내**로 작성합니다.
+- keyActivities의 각 evaluation은 **100자 이내**로 작성합니다.
+- keyActivities 배열은 영역당 **최대 3개**입니다.`,
   premium: `## 플랜별 출력: 정밀
-- Standard와 동일 (창체는 Standard 수준으로 충분)`,
+- Standard와 동일 항목을 출력하되 더 상세하게 작성합니다.
+
+⚠️ **분량 제한 (반드시 준수)**:
+- activities 배열은 **최대 6개**입니다. 7개 이상 절대 출력하지 마세요.
+- 각 activity의 overallComment은 **250자 이내**, improvementDirection은 **150자 이내**로 작성합니다.
+- keyActivities의 각 evaluation은 **150자 이내**로 작성합니다.`,
 };
 
 export const buildActivityAnalysisPrompt = (

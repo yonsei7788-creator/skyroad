@@ -12,13 +12,26 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 간략
 - **3개** 부족 영역을 출력합니다.
 - 각 영역: area + description(**2줄 이내**) + suggestedActivities(**1개만**)
-- evidence, competencyTag, priority 필드는 출력하지 않습니다.`,
+- evidence, competencyTag, priority 필드는 출력하지 않습니다.
+
+## 분량 가이드
+- 핵심 약점 3개. A4 1페이지 이내.`,
   standard: `## 플랜별 출력: 상세
-- 5개 부족 영역을 출력합니다.
-- 각 영역: area + description + suggestedActivities + evidence(상세 근거) + competencyTag(역량 매핑) + priority(보완 우선순위 high/medium/low)`,
+- 각 영역: area + description + suggestedActivities + evidence(상세 근거) + competencyTag(역량 매핑) + priority(보완 우선순위 high/medium/low)
+
+⚠️ **분량 제한 (반드시 준수)**:
+- areas 배열은 **최대 3개**입니다. 4개 이상 절대 출력하지 마세요.
+- 각 description은 반드시 **100자 이내**로 작성합니다. 100자 초과 금지.
+- 각 suggestedActivities의 항목은 **150자 이내**로 작성합니다.
+- evidence는 **100자 이내**로 작성합니다.`,
   premium: `## 플랜별 출력: 정밀
-- **5개** 부족 영역을 출력합니다 (초과 금지).
-- Standard의 모든 항목 + urgency(시급도) + effectiveness(효과도) 매트릭스 + executionStrategy(실행 전략, 2줄 이내) + subjectLinkStrategy(진로-선택과목 연계 전략, 1줄)`,
+- Standard의 모든 항목 + urgency(시급도) + effectiveness(효과도) 매트릭스 + executionStrategy(실행 전략, 2줄 이내) + subjectLinkStrategy(진로-선택과목 연계 전략, 1줄)
+
+⚠️ **분량 제한 (반드시 준수)**:
+- areas 배열은 **최대 5개**입니다. 6개 이상 절대 출력하지 마세요.
+- 각 description은 반드시 **150자 이내**로 작성합니다. 150자 초과 금지.
+- 각 suggestedActivities의 항목은 **250자 이내**로 작성합니다.
+- executionStrategy는 **150자 이내**, subjectLinkStrategy는 **80자 이내**로 작성합니다.`,
 };
 
 export const buildWeaknessAnalysisPrompt = (

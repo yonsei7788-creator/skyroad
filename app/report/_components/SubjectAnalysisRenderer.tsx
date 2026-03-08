@@ -8,6 +8,13 @@ import styles from "./report.module.css";
 import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
+/** 텍스트를 maxLen자로 자르고 말줄임 추가 */
+const truncate = (text: string | undefined, maxLen: number): string => {
+  if (!text) return "";
+  const safe = safeText(text);
+  return safe.length > maxLen ? `${safe.slice(0, maxLen)}…` : safe;
+};
+
 interface SubjectAnalysisRendererProps {
   data: SubjectAnalysisSection;
   sectionNumber: number;
@@ -35,9 +42,8 @@ const RATING_ORDER: Record<SubjectRating, number> = {
 
 /**
  * 과목 상세를 논리적 블록으로 렌더링.
- * Block 1: 헤더 + 태그 + 활동요약 + 평가 + 핵심인용
- * Block 2 (optional): 교과연결 + AI평가 + 개선방향 (내용이 많을 때 별도 페이지)
- * Block 3 (optional): 문장 단위 분석 (Premium)
+ * Block 1: 헤더 + 태그 + 활동요약 + 평가 + 핵심인용 + 심화분석 (한 페이지)
+ * Block 2 (optional): 문장 단위 분석 (Premium)
  */
 const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
   const key = `${subject.subjectName}-${subject.year}`;
@@ -50,7 +56,7 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
     subject.improvementDirection ||
     subject.improvementExample;
 
-  // Block 1: 핵심 정보 (헤더 + 태그 + 요약 + 평가 + 인용)
+  // Block 1: 과목 설명 + 심화 분석을 하나의 블록으로 통합
   blocks.push(
     <div key={key}>
       <div className={styles.h3}>{subject.subjectName}</div>
@@ -81,95 +87,72 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
       )}
 
       {subject.keyQuotes && subject.keyQuotes.length > 0 && (
-        <div className={styles.mt12}>
-          <div className={`${styles.overline} ${styles.mb6}`}>핵심 인용</div>
-          <table className={styles.compactTable}>
-            <tbody>
-              {subject.keyQuotes.map((quote, idx) => (
-                <tr key={idx}>
-                  <td className={styles.small}>{quote}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className={`${styles.callout} ${styles.mt8}`}>
+          <div className={styles.calloutContent}>
+            <span className={styles.emphasis}>핵심 인용:</span>{" "}
+            {subject.keyQuotes
+              .slice(0, 2)
+              .map((q) => `"${truncate(q, 120)}"`)
+              .join(" / ")}
+          </div>
         </div>
+      )}
+
+      {hasExtras && (
+        <>
+          {subject.crossSubjectConnections &&
+            subject.crossSubjectConnections.length > 0 && (
+              <div className={styles.mt8}>
+                <span className={`${styles.emphasis} ${styles.small}`}>
+                  교과 연결:
+                </span>{" "}
+                <span className={styles.caption}>
+                  {subject.crossSubjectConnections
+                    .map(
+                      (conn) => `${conn.targetSubject}(${conn.connectionType})`
+                    )
+                    .join(", ")}
+                </span>
+              </div>
+            )}
+
+          {subject.detailedEvaluation && (
+            <div className={`${styles.aiCommentary} ${styles.mt8}`}>
+              <div className={styles.aiCommentaryIcon}>AI</div>
+              <div className={styles.aiCommentaryContent}>
+                <div className={styles.aiCommentaryLabel}>상세 평가</div>
+                <div className={styles.aiCommentaryText}>
+                  {truncate(subject.detailedEvaluation, 300)}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(subject.improvementDirection || subject.improvementExample) && (
+            <div className={`${styles.callout} ${styles.mt8}`}>
+              <div className={styles.calloutContent}>
+                {subject.improvementDirection && (
+                  <>
+                    <span className={styles.emphasis}>개선 방향:</span>{" "}
+                    {truncate(subject.improvementDirection, 150)}
+                  </>
+                )}
+                {subject.improvementDirection && subject.improvementExample && (
+                  <br />
+                )}
+                {subject.improvementExample && (
+                  <>
+                    <span className={styles.emphasis}>개선 예시:</span>{" "}
+                    {truncate(subject.improvementExample, 150)}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
-
-  // Block 2: 교과연결 + AI평가 + 개선방향 (내용이 많으면 별도 페이지로 분리)
-  if (hasExtras) {
-    blocks.push(
-      <div key={`${key}-ext`}>
-        <div className={`${styles.overline} ${styles.mb8}`}>
-          {subject.subjectName} — 심화 분석
-        </div>
-
-        {subject.crossSubjectConnections &&
-          subject.crossSubjectConnections.length > 0 && (
-            <>
-              <table className={styles.compactTable}>
-                <thead>
-                  <tr>
-                    <th>연결 과목</th>
-                    <th className={styles.tableAlignCenter}>유형</th>
-                    <th>설명</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subject.crossSubjectConnections.map((conn, idx) => (
-                    <tr key={idx}>
-                      <td className={styles.tableCellBold}>
-                        {conn.targetSubject}
-                      </td>
-                      <td className={styles.tableAlignCenter}>
-                        <span className={styles.tag}>
-                          {conn.connectionType}
-                        </span>
-                      </td>
-                      <td className={styles.small}>
-                        {safeText(conn.description)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
-          )}
-
-        {subject.detailedEvaluation && (
-          <div
-            className={`${styles.aiCommentary} ${subject.crossSubjectConnections?.length ? styles.mt12 : ""}`}
-          >
-            <div className={styles.aiCommentaryIcon}>AI</div>
-            <div className={styles.aiCommentaryContent}>
-              <div className={styles.aiCommentaryLabel}>상세 평가</div>
-              <div className={styles.aiCommentaryText}>
-                {safeText(subject.detailedEvaluation)}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {subject.improvementDirection && (
-          <div className={`${styles.callout} ${styles.mt12}`}>
-            <div className={styles.calloutContent}>
-              <span className={styles.emphasis}>개선 방향:</span>{" "}
-              {safeText(subject.improvementDirection)}
-            </div>
-          </div>
-        )}
-        {subject.improvementExample && (
-          <div className={`${styles.callout} ${styles.mt8}`}>
-            <div className={styles.calloutContent}>
-              <span className={styles.emphasis}>개선 예시:</span>{" "}
-              {safeText(subject.improvementExample)}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
 
   // Block 3: 문장 단위 분석 (Premium — 분량이 커서 별도 페이지)
   if (subject.sentenceAnalysis && subject.sentenceAnalysis.length > 0) {

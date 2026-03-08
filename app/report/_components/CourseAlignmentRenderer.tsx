@@ -38,7 +38,7 @@ export const CourseAlignmentRenderer = ({
 
   return (
     <>
-      {/* Block 1: SectionHeader + target major + match rate + course table */}
+      {/* Block 1: SectionHeader + table + impact + AI strategy (한 페이지) */}
       <div>
         <SectionHeader number={sectionNumber} title={data.title} />
 
@@ -52,7 +52,7 @@ export const CourseAlignmentRenderer = ({
         <div className={`${styles.h3} ${styles.mt24} ${styles.mb12}`}>
           과목별 이수 현황
         </div>
-        <table className={styles.table}>
+        <table className={styles.compactTable}>
           <thead>
             <tr>
               <th>과목명</th>
@@ -78,10 +78,7 @@ export const CourseAlignmentRenderer = ({
             ))}
           </tbody>
         </table>
-      </div>
 
-      {/* Block 2: Missing course impact callout */}
-      <div>
         <div
           className={`${styles.callout} ${styles.calloutCaution} ${styles.mt20}`}
         >
@@ -90,11 +87,8 @@ export const CourseAlignmentRenderer = ({
             {safeText(data.missingCourseImpact)}
           </div>
         </div>
-      </div>
 
-      {/* Block 3: Recommendation (AI commentary) */}
-      {data.recommendation && (
-        <div>
+        {data.recommendation && (
           <div className={`${styles.aiCommentary} ${styles.mt16}`}>
             <div className={styles.aiCommentaryIcon}>AI</div>
             <div className={styles.aiCommentaryContent}>
@@ -104,8 +98,8 @@ export const CourseAlignmentRenderer = ({
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Block 4: Medical requirements (Standard+) */}
       {data.medicalRequirements && data.medicalRequirements.length > 0 && (

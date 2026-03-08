@@ -13,9 +13,11 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - 공통 항목(전과목 평균, 학년별 평균, 교과 조합별 평균, 등급 추이, 과목별 등급, 해석)을 출력합니다.
 - 간단 해석 (2~3줄)만 포함합니다.
 - subjectGrades는 **주요 5과목만** 출력합니다. 나머지 과목은 생략합니다.
-- subjectStatAnalyses, careerSubjectAnalyses, gradeInflationContext, gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 등 Standard+ 전용 필드는 출력하지 않습니다.`,
+- subjectStatAnalyses, careerSubjectAnalyses, gradeInflationContext, gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 등 Standard+ 전용 필드는 출력하지 않습니다.
+
+⚠️ **분량 제한**: 이 섹션은 A4 1페이지 이내로 작성합니다.`,
   standard: `## 플랜별 출력: 상세
-공통 항목에 추가로 **아래 모든 필드를 반드시 출력**합니다. 하나라도 누락하면 안 됩니다:
+공통 항목에 추가로 **아래 핵심 3개 필드만 반드시 출력**합니다:
 
 1. **gradeDeviationAnalysis** (필수): 과목 간 편차 리스크
    형식: {"highestSubject": "영어", "lowestSubject": "수학", "deviationRange": 3, "riskAssessment": "과목 간 편차가 3등급으로..."}
@@ -23,11 +25,12 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
    형식: {"enrollmentEffort": "...", "achievement": "...", "recommendedSubjects": ["과목1", "과목2"]}
 3. **gradeChangeAnalysis** (필수): 등급 변화 가능성
    형식: {"currentTrend": "상승|유지|하락", "prediction": "...", "actionItems": ["항목1", "항목2"], "actionItemPriorities": ["high", "medium"]}
-4. subjectStatAnalyses: 과목별 원점수-평균-표준편차 실질 위치 분석
-5. schoolTypeAdjustment: 고교 유형별 환산 (문자열)
-6. careerSubjectAnalyses: 진로선택과목 분석 (배열, 각 요소: {subject, achievement, achievementDistribution, interpretation})
-7. smallClassSubjectAnalyses: 소인수 과목 분석
-8. gradeInflationContext: 성적 인플레이션 맥락`,
+
+⚠️ **분량 제한 (반드시 준수)**:
+- gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis **3개 필드만** 출력합니다. 이 3개 외 추가 분석 필드는 절대 출력하지 마세요.
+- 각 필드의 텍스트(riskAssessment, enrollmentEffort, achievement, prediction 등)는 반드시 **200자 이내**로 작성합니다. 200자 초과 금지.
+- careerSubjectAnalyses는 **최대 3개**만 출력하며, 각 interpretation은 **100자 이내**로 작성합니다.
+- smallClassSubjectAnalyses, schoolTypeAdjustment, gradeInflationContext는 출력하지 않습니다.`,
   premium: `## 플랜별 출력: 정밀
 Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 포함)**을 반드시 출력하고, 추가로 다음을 출력합니다:
 - 5등급제 전환 시뮬레이션 (fiveGradeSimulation): **주요 5과목만** 배열 형태로 출력
@@ -44,7 +47,10 @@ Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysi
 - 성적 개선 우선순위 (improvementPriority): **3개 이내** 문자열 배열 형태
   예시: "improvementPriority": ["수학 등급 개선 (현 3등급 → 2등급 목표)", "과학탐구 과목 성적 안정화"]
 
-⚠️ **분량 제한**: interpretation, subjectStatAnalyses 등 해석 필드는 각 2~3줄 이내로 간결하게 서술합니다.`,
+⚠️ **분량 제한 (반드시 준수)**:
+- 모든 필드 출력 가능하지만, 각 분석 텍스트(riskAssessment, enrollmentEffort, achievement, prediction, interpretation 등)는 반드시 **300자 이내**로 작성합니다. 300자 초과 금지.
+- careerSubjectAnalyses는 **최대 5개**만 출력합니다. 5개 초과 금지.
+- subjectStatAnalyses 등 해석 필드도 각 **200자 이내**로 간결하게 서술합니다.`,
 };
 
 export const buildAcademicAnalysisPrompt = (
@@ -93,6 +99,7 @@ Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다
 ## 데이터 출처 구분
 - **코드 전처리 → 그대로 복사**: overallAverageGrade, gradesByYear, subjectCombinations, gradeTrend, subjectGrades
   → 이 필드들은 성적 전처리 결과에서 수치를 그대로 옮기세요. 직접 계산하지 마세요.
+  → subjectCombinations 필드명 매핑: 전처리 데이터의 "name" → 출력의 "combination", "average" → "averageGrade"로 변환하세요.
 - **AI 해석 → 생성**: interpretation, subjectStatAnalyses, gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 등
   → 이 필드들은 전처리 데이터를 바탕으로 해석하여 작성하세요.
 

@@ -13,9 +13,19 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - improvementAdvice 필드는 출력하지 않습니다.`,
   standard: `## 플랜별 출력: 상세
 - Lite의 모든 항목
-- 개선 방향(improvementAdvice): 주의/경고일 때 구체적 개선 조언`,
+- 개선 방향(improvementAdvice): 주의/경고일 때 구체적 개선 조언
+
+⚠️ **분량 제한 (반드시 준수)**:
+- impactAnalysis는 반드시 **150자 이내**로 작성합니다. 150자 초과 금지.
+- integrityContribution은 **100자 이내**로 작성합니다.
+- improvementAdvice는 **100자 이내**로 작성합니다. 상세 분석 없이 핵심만 서술하세요.`,
   premium: `## 플랜별 출력: 정밀
-- Standard와 동일`,
+- Standard와 동일하되, 학년별 추이를 포함합니다.
+
+⚠️ **분량 제한 (반드시 준수)**:
+- impactAnalysis는 반드시 **250자 이내**로 작성합니다. 250자 초과 금지.
+- integrityContribution은 **150자 이내**로 작성합니다.
+- 학년별 추이를 포함하되 간결하게 서술하세요.`,
 };
 
 export const buildAttendanceAnalysisPrompt = (

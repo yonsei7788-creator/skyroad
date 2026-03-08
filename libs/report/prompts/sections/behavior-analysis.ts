@@ -8,9 +8,21 @@ export interface BehaviorAnalysisPromptInput {
   studentProfile: string;
 }
 
+const PLAN_VOLUME_GUIDE: Record<ReportPlan, string> = {
+  lite: "",
+  standard: `⚠️ **분량 제한 (반드시 준수)**:
+- overallComment + admissionRelevance를 합쳐 **300자 이내**로 작성합니다. 300자 초과 금지.
+- consistentTraits 배열은 **최대 3개**입니다. 4개 이상 절대 출력하지 마세요.
+- 각 yearlyAnalysis의 summary는 **100자 이내**로 작성합니다.`,
+  premium: `⚠️ **분량 제한 (반드시 준수)**:
+- overallComment + admissionRelevance를 합쳐 **500자 이내**로 작성합니다. 500자 초과 금지.
+- consistentTraits 배열은 **최대 5개**입니다. 6개 이상 절대 출력하지 마세요.
+- 학년별 변화를 포함하되, 각 yearlyAnalysis의 summary는 **150자 이내**로 작성합니다.`,
+};
+
 export const buildBehaviorAnalysisPrompt = (
   input: BehaviorAnalysisPromptInput,
-  _plan: ReportPlan
+  plan: ReportPlan
 ): string => {
   return `## 작업
 학생의 행동특성 및 종합의견을 학년별로 분석하고, 입시에서의 활용 포인트를 도출하세요.
@@ -89,5 +101,7 @@ ${input.studentProfile}
 ### 역량 태그 형식
 역량 태그는 반드시 JSON 객체 형식으로 출력합니다:
 - {"category": "academic"|"career"|"community"|"growth", "subcategory": "하위역량명"}
-- 문자열("학업역량-학업성취도")이 아닌 객체 형식을 사용하세요.`;
+- 문자열("학업역량-학업성취도")이 아닌 객체 형식을 사용하세요.
+
+${PLAN_VOLUME_GUIDE[plan]}`;
 };

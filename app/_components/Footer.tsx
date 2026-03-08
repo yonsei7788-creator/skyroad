@@ -70,6 +70,7 @@ export const Footer = () => {
             소재지: 경기도 고양시 일산동구 무궁화로 7-63, 8층 840호(장항동,
             우인아크리움빌II)
           </p>
+          <p>전화번호: 010-8191-1693 | 이메일: yonsei7788@naver.com</p>
         </div>
 
         <div className={styles.bottom}>

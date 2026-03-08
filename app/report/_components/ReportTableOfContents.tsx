@@ -96,7 +96,7 @@ const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
     {
       partNumber: "부록",
       partTitle: "부록",
-      sectionIds: ["bookRecommendation", "majorExploration", "wordCloud"],
+      sectionIds: ["majorExploration", "wordCloud"],
     },
   ],
   premium: [
