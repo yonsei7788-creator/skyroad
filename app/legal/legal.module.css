@@ -11,6 +11,7 @@
   color: var(--color-fg-secondary);
 }
 
+/* ── Header ── */
 .article h1 {
   margin-bottom: 8px;
   font-size: 2rem;
@@ -25,12 +26,15 @@
   color: var(--color-fg-tertiary);
 }
 
+/* ── Sections ── */
 .article h2 {
   margin-top: 48px;
   margin-bottom: 16px;
+  padding-bottom: 8px;
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--color-fg);
+  border-bottom: 2px solid var(--color-brand, #6c5ce7);
 }
 
 .article h3 {
@@ -41,6 +45,7 @@
   color: var(--color-fg);
 }
 
+/* ── Text ── */
 .article p {
   margin-bottom: 16px;
   font-size: 0.9375rem;
@@ -73,6 +78,137 @@
   border-top: 1px solid var(--color-border);
 }
 
+/* ── Highlight box ── */
+.highlight {
+  margin: 24px 0;
+  padding: 20px 24px;
+  border-radius: 12px;
+  background: var(--color-bg-elevated, #f8f7ff);
+  border-left: 4px solid var(--color-brand, #6c5ce7);
+}
+
+.highlight p {
+  margin-bottom: 8px;
+  font-size: 0.9375rem;
+}
+
+.highlight p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Info card (company info, contact) ── */
+.infoCard {
+  margin: 24px 0;
+  padding: 20px 24px;
+  border-radius: 12px;
+  background: var(--color-bg-secondary, #fafafa);
+  border: 1px solid var(--color-border);
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px 16px;
+  font-size: 0.9375rem;
+}
+
+.infoLabel {
+  font-weight: 600;
+  color: var(--color-fg);
+}
+
+.infoValue {
+  color: var(--color-fg-secondary);
+}
+
+/* ── Table ── */
+.table {
+  width: 100%;
+  margin: 16px 0;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table th,
+.table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table th {
+  font-weight: 600;
+  color: var(--color-fg);
+  background: var(--color-bg-secondary, #fafafa);
+}
+
+.table td {
+  color: var(--color-fg-secondary);
+}
+
+/* ── Badge ── */
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 100px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.badgeGreen {
+  composes: badge;
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.badgeRed {
+  composes: badge;
+  background: #fce4ec;
+  color: #c62828;
+}
+
+/* ── TOC (table of contents) ── */
+.toc {
+  margin: 32px 0 48px;
+  padding: 24px;
+  border-radius: 12px;
+  background: var(--color-bg-secondary, #fafafa);
+  border: 1px solid var(--color-border);
+}
+
+.tocTitle {
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-fg-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tocList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 24px;
+}
+
+.tocList li {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.tocList a {
+  color: var(--color-fg-secondary);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.tocList a:hover {
+  color: var(--color-brand, #6c5ce7);
+}
+
 @media (min-width: 768px) {
   .main {
     padding: 100px 24px 120px;
@@ -80,5 +216,16 @@
 
   .article h1 {
     font-size: 2.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .tocList {
+    grid-template-columns: 1fr;
+  }
+
+  .infoGrid {
+    grid-template-columns: 100px 1fr;
+    gap: 6px 12px;
   }
 }
