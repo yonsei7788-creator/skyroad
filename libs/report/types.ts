@@ -1572,6 +1572,7 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     "storyAnalysis",
     "actionRoadmap",
     // 부록
+    "bookRecommendation",
     "majorExploration",
   ],
 };

@@ -36,6 +36,7 @@ import {
 } from "../prompts/sections/admission-strategy.ts";
 import { buildStoryAnalysisPrompt } from "../prompts/sections/story-analysis.ts";
 import { buildActionRoadmapPrompt } from "../prompts/sections/action-roadmap.ts";
+import { buildBookRecommendationPrompt } from "../prompts/sections/book-recommendation.ts";
 import { buildMajorExplorationPrompt } from "../prompts/sections/major-exploration.ts";
 
 import type { GeminiClient } from "./gemini-client.ts";
@@ -468,21 +469,48 @@ export const orchestrate = async (
   const group5Results = await Promise.all(group5Promises);
   sections.push(...group5Results);
 
-  // --- Group 6: majorExploration (Premium 전용) ---
-  // bookRecommendation은 전 플랜에서 제거됨
-  if (has("majorExploration")) {
-    const majorExploration = await callGemini<ReportSection>(
-      buildMajorExplorationPrompt(
-        {
-          competencyExtraction: compExtrText,
-          academicAnalysis: acadAnalText,
-          studentProfile: texts.studentProfileText,
-        },
-        plan
-      )
+  // --- Group 6: bookRecommendation (Premium 전용) + majorExploration (Premium 전용) ---
+  const group6Promises: Promise<ReportSection>[] = [];
+
+  if (has("bookRecommendation")) {
+    group6Promises.push(
+      callGemini<ReportSection>(
+        buildBookRecommendationPrompt(
+          {
+            competencyExtraction: compExtrText,
+            subjectAnalysisResult: subjAnalysisText,
+            studentProfile: texts.studentProfileText,
+          },
+          plan
+        )
+      ).then((r) => {
+        reportProgress("Phase 3 Group 6", "bookRecommendation");
+        return r;
+      })
     );
-    reportProgress("Phase 3 Group 6", "majorExploration");
-    sections.push(majorExploration);
+  }
+
+  if (has("majorExploration")) {
+    group6Promises.push(
+      callGemini<ReportSection>(
+        buildMajorExplorationPrompt(
+          {
+            competencyExtraction: compExtrText,
+            academicAnalysis: acadAnalText,
+            studentProfile: texts.studentProfileText,
+          },
+          plan
+        )
+      ).then((r) => {
+        reportProgress("Phase 3 Group 6", "majorExploration");
+        return r;
+      })
+    );
+  }
+
+  if (group6Promises.length > 0) {
+    const group6Results = await Promise.all(group6Promises);
+    sections.push(...group6Results);
   }
 
   // Sort sections according to plan order
@@ -521,7 +549,8 @@ const computeTotalSteps = (
   steps += 1;
   if (h("storyAnalysis")) steps += 1;
   if (h("actionRoadmap")) steps += 1;
-  // Group 6: majorExploration (plan-based)
+  // Group 6: bookRecommendation + majorExploration (plan-based)
+  if (h("bookRecommendation")) steps += 1;
   if (h("majorExploration")) steps += 1;
 
   return steps;

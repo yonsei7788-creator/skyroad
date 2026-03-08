@@ -359,7 +359,8 @@ export const AcademicAnalysisRenderer = ({
 
       {/* Block 6+: Career subjects — split into chunks of 5 */}
       {(() => {
-        const cs = data.careerSubjectAnalyses ?? [];
+        const raw = data.careerSubjectAnalyses;
+        const cs = Array.isArray(raw) ? raw : [];
         if (cs.length === 0) return null;
         const chunks: (typeof cs)[] = [];
         for (let i = 0; i < cs.length; i += 5) {
@@ -397,11 +398,11 @@ export const AcademicAnalysisRenderer = ({
       })()}
 
       {/* Block 6b: Small class subjects + grade inflation */}
-      {((data.smallClassSubjectAnalyses &&
+      {((Array.isArray(data.smallClassSubjectAnalyses) &&
         data.smallClassSubjectAnalyses.length > 0) ||
         data.gradeInflationContext) && (
         <div>
-          {data.smallClassSubjectAnalyses &&
+          {Array.isArray(data.smallClassSubjectAnalyses) &&
             data.smallClassSubjectAnalyses.length > 0 && (
               <>
                 <div className={styles.ceSubheading}>소인수 과목 분석</div>
@@ -449,7 +450,7 @@ export const AcademicAnalysisRenderer = ({
       )}
 
       {/* Block 7: Five grade simulation */}
-      {data.fiveGradeSimulation &&
+      {Array.isArray(data.fiveGradeSimulation) &&
         data.fiveGradeSimulation.filter(
           (s) => s.currentGrade && s.simulatedGrade
         ).length > 0 &&
@@ -504,11 +505,12 @@ export const AcademicAnalysisRenderer = ({
         })()}
 
       {/* Block 8: University simulations + Improvement priority */}
-      {((data.universityGradeSimulations &&
+      {((Array.isArray(data.universityGradeSimulations) &&
         data.universityGradeSimulations.length > 0) ||
-        (data.improvementPriority && data.improvementPriority.length > 0)) && (
+        (Array.isArray(data.improvementPriority) &&
+          data.improvementPriority.length > 0)) && (
         <div>
-          {data.universityGradeSimulations &&
+          {Array.isArray(data.universityGradeSimulations) &&
             data.universityGradeSimulations.length > 0 && (
               <>
                 <div className={styles.ceSubheading}>
@@ -547,19 +549,22 @@ export const AcademicAnalysisRenderer = ({
               </>
             )}
 
-          {data.improvementPriority && data.improvementPriority.length > 0 && (
-            <div className={styles.cardHighlight}>
-              <div className={styles.cardTitle}>성적 개선 우선순위</div>
-              <ol className={`${styles.numberedList} ${styles.mt12}`}>
-                {data.improvementPriority.map((item, idx) => (
-                  <li key={item} className={styles.numberedListItem}>
-                    <span className={styles.numberedListNumber}>{idx + 1}</span>
-                    {item}
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
+          {Array.isArray(data.improvementPriority) &&
+            data.improvementPriority.length > 0 && (
+              <div className={styles.cardHighlight}>
+                <div className={styles.cardTitle}>성적 개선 우선순위</div>
+                <ol className={`${styles.numberedList} ${styles.mt12}`}>
+                  {data.improvementPriority.map((item, idx) => (
+                    <li key={item} className={styles.numberedListItem}>
+                      <span className={styles.numberedListNumber}>
+                        {idx + 1}
+                      </span>
+                      {item}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
         </div>
       )}
     </>

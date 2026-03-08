@@ -6833,6 +6833,7 @@ export const PREMIUM_MOCK_REPORT: ReportContent = {
     storyAnalysisPremium,
     actionRoadmapPremium,
     // 부록
+    bookRecommendationPremium,
     majorExploration,
   ],
 };
