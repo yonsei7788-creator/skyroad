@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Loader2, Plus, Search } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 
 import {
   DataTable,
@@ -63,15 +63,6 @@ const ReportsPage = () => {
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // 리포트 생성 모달
-  const [generateModalOpen, setGenerateModalOpen] = useState(false);
-  const [generateUserId, setGenerateUserId] = useState("");
-  const [generatePlan, setGeneratePlan] = useState<
-    "lite" | "standard" | "premium"
-  >("standard");
-  const [generating, setGenerating] = useState(false);
-  const [generateError, setGenerateError] = useState<string | null>(null);
-
   const fetchReports = useCallback(async () => {
     setLoading(true);
     try {
@@ -130,45 +121,6 @@ const ReportsPage = () => {
 
   const handleRowClick = (report: AdminReport) => {
     router.push(`/admin/reports/${report.id}`);
-  };
-
-  const handleGenerate = async () => {
-    if (!generateUserId.trim()) {
-      setGenerateError("유저 ID를 입력해주세요.");
-      return;
-    }
-    setGenerating(true);
-    setGenerateError(null);
-    try {
-      const res = await fetch("/api/admin/reports/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: generateUserId.trim(),
-          plan: generatePlan,
-        }),
-      });
-      if (!res.ok) {
-        let message = "리포트 생성에 실패했습니다.";
-        try {
-          const data = await res.json();
-          message = data.error || message;
-        } catch {
-          // non-JSON response
-        }
-        throw new Error(message);
-      }
-      const data = await res.json();
-      setGenerateModalOpen(false);
-      setGenerateUserId("");
-      router.push(`/report/generating?orderId=${data.orderId}`);
-    } catch (err) {
-      setGenerateError(
-        err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다."
-      );
-    } finally {
-      setGenerating(false);
-    }
   };
 
   const columns: Column<AdminReport>[] = useMemo(
@@ -275,30 +227,10 @@ const ReportsPage = () => {
       transition={{ duration: 0.3 }}
     >
       <div className={styles.header}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <div>
-            <h1 className={styles.title}>리포트 관리</h1>
-            <p className={styles.subtitle}>
-              생기부 분석 리포트를 검수하고 발송할 수 있습니다.
-            </p>
-          </div>
-          <button
-            className={styles.saveButton}
-            onClick={() => {
-              setGenerateError(null);
-              setGenerateModalOpen(true);
-            }}
-          >
-            <Plus size={16} />
-            리포트 생성
-          </button>
-        </div>
+        <h1 className={styles.title}>리포트 관리</h1>
+        <p className={styles.subtitle}>
+          생기부 분석 리포트를 검수하고 발송할 수 있습니다.
+        </p>
       </div>
 
       {/* Mock Test */}
@@ -395,121 +327,6 @@ const ReportsPage = () => {
             onPageChange={setPage}
           />
         </>
-      )}
-      {/* 리포트 생성 모달 */}
-      {generateModalOpen && (
-        <div
-          className={styles.modalOverlay}
-          onClick={() => !generating && setGenerateModalOpen(false)}
-        >
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h2 className={styles.modalTitle}>리포트 생성 (어드민)</h2>
-            <p className={styles.modalDescription}>
-              결제 없이 리포트를 생성합니다. 유저 ID와 플랜을 선택해주세요.
-            </p>
-
-            <div style={{ marginBottom: 16 }}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "0.8125rem",
-                  fontWeight: 600,
-                  marginBottom: 6,
-                  color: "var(--color-neutral-700)",
-                }}
-              >
-                유저 ID (UUID)
-              </label>
-              <input
-                type="text"
-                className={styles.searchInput}
-                style={{ width: "100%", maxWidth: "none", paddingLeft: 12 }}
-                placeholder="유저 UUID 입력"
-                value={generateUserId}
-                onChange={(e) => setGenerateUserId(e.target.value)}
-                disabled={generating}
-              />
-            </div>
-
-            <div style={{ marginBottom: 20 }}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "0.8125rem",
-                  fontWeight: 600,
-                  marginBottom: 6,
-                  color: "var(--color-neutral-700)",
-                }}
-              >
-                플랜
-              </label>
-              <div style={{ display: "flex", gap: 8 }}>
-                {(["lite", "standard", "premium"] as const).map((p) => (
-                  <button
-                    key={p}
-                    className={styles.mockTestButton}
-                    style={{
-                      flex: 1,
-                      background:
-                        generatePlan === p
-                          ? "var(--color-primary-600)"
-                          : undefined,
-                      color: generatePlan === p ? "#ffffff" : undefined,
-                      borderColor:
-                        generatePlan === p
-                          ? "var(--color-primary-600)"
-                          : undefined,
-                    }}
-                    onClick={() => setGeneratePlan(p)}
-                    disabled={generating}
-                  >
-                    {p === "lite"
-                      ? "라이트"
-                      : p === "standard"
-                        ? "스탠다드"
-                        : "프리미엄"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {generateError && (
-              <p
-                style={{
-                  fontSize: "0.8125rem",
-                  color: "var(--color-error-600)",
-                  marginBottom: 16,
-                }}
-              >
-                {generateError}
-              </p>
-            )}
-
-            <div className={styles.modalActions}>
-              <button
-                className={styles.modalCancel}
-                onClick={() => setGenerateModalOpen(false)}
-                disabled={generating}
-              >
-                취소
-              </button>
-              <button
-                className={styles.modalConfirm}
-                onClick={handleGenerate}
-                disabled={generating}
-              >
-                {generating ? (
-                  <>
-                    <Loader2 size={14} className={styles.spinner} />
-                    생성 중...
-                  </>
-                ) : (
-                  "생성하기"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </motion.div>
   );

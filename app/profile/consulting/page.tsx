@@ -12,6 +12,7 @@ import { Header } from "@/app/_components/Header";
 import { Footer } from "@/app/_components/Footer";
 import { createClient } from "@/libs/supabase/server";
 import { GenerateReportButton } from "./_components/GenerateReportButton";
+import { AdminGenerateSection } from "./_components/AdminGenerateSection";
 
 import styles from "./page.module.css";
 
@@ -249,6 +250,14 @@ const ConsultingHistoryPage = async () => {
     redirect("/");
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const isAdmin = profile?.role === "admin";
+
   const { data: orders } = await supabase
     .from("orders")
     .select(
@@ -288,6 +297,7 @@ const ConsultingHistoryPage = async () => {
         </div>
 
         <div className={styles.container}>
+          {isAdmin && <AdminGenerateSection userId={user.id} />}
           {orderList.length > 0 ? (
             orderList.map((order) => <OrderCard key={order.id} order={order} />)
           ) : (

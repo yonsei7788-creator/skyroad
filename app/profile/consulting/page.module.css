@@ -388,6 +388,67 @@
   line-height: 1.5;
 }
 
+/* ---- Admin Generate Section ---- */
+.adminGenerateSection {
+  padding: 20px 24px;
+  border: 1px dashed var(--color-primary-300, #a5b4fc);
+  border-radius: 16px;
+  background: var(--color-primary-50, #eef2ff);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.adminGenerateHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-primary-700, #4338ca);
+}
+
+.adminGeneratePlans {
+  display: flex;
+  gap: 8px;
+}
+
+.adminPlanButton {
+  flex: 1;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: var(--color-bg);
+  color: var(--color-fg-secondary);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.adminPlanButton:hover {
+  border-color: var(--color-primary-400, #818cf8);
+}
+
+.adminPlanButtonActive {
+  background: var(--color-primary-600, #4f46e5);
+  color: #fff;
+  border-color: var(--color-primary-600, #4f46e5);
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ---- Empty State ---- */
 .emptyState {
   padding: 64px 24px;

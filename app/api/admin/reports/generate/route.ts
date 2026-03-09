@@ -4,11 +4,9 @@ import type { NextRequest } from "next/server";
 import { createClient } from "@/libs/supabase/server";
 import { createAdminClient } from "@/libs/supabase/admin";
 import { verifyAdmin } from "../helpers";
-import type { ReportPlan, StudentInfo } from "@/libs/report/types";
-import { executePreprocess } from "@/libs/report/pipeline/wave-executor";
+import type { ReportPlan } from "@/libs/report/types";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
 
 interface GenerateBody {
   userId: string;
@@ -17,15 +15,9 @@ interface GenerateBody {
 
 const VALID_PLANS: ReportPlan[] = ["lite", "standard", "premium"];
 
-const GRADE_MAP: Record<string, number> = {
-  high1: 1,
-  high2: 2,
-  high3: 3,
-};
-
 /**
- * 어드민 전용 리포트 생성 — 결제 없이 플랜별 리포트를 생성한다.
- * 주문(order)을 자동 생성하고 paid 상태로 설정한 뒤 파이프라인을 시작한다.
+ * 어드민 전용 리포트 생성 — 결제 없이 주문+리포트 레코드를 생성한다.
+ * 실제 파이프라인 실행은 generating 페이지가 /api/reports/run-pipeline을 호출하여 수행.
  */
 export const POST = async (request: NextRequest) => {
   const supabase = await createClient();
@@ -102,7 +94,7 @@ export const POST = async (request: NextRequest) => {
     );
   }
 
-  // 4. 리포트 레코드 생성
+  // 4. 리포트 레코드 생성 (pending 상태 — run-pipeline이 processing으로 전환)
   const { data: targetUni } = await dbClient
     .from("target_universities")
     .select("id")
@@ -116,101 +108,24 @@ export const POST = async (request: NextRequest) => {
     .insert({
       order_id: order.id,
       target_university_id: targetUni?.id ?? null,
-      ai_status: "processing",
-      ai_progress: 0,
+      ai_status: "pending",
     })
     .select("id")
     .single();
 
   if (reportError || !report) {
     console.error("리포트 생성 오류:", reportError);
+    await dbClient.from("orders").delete().eq("id", order.id);
     return NextResponse.json(
       { error: "리포트 레코드 생성에 실패했습니다." },
       { status: 500 }
     );
   }
 
-  await dbClient
-    .from("orders")
-    .update({ status: "analyzing" })
-    .eq("id", order.id);
-
-  // 5. 파이프라인 입력 데이터 준비
-  const { data: userProfile } = await dbClient
-    .from("profiles")
-    .select("name, grade, high_school_type")
-    .eq("id", userId)
-    .single();
-
-  const profiles = userProfile ?? {
-    name: "학생",
-    grade: "high2",
-    high_school_type: "일반고",
-  };
-
-  const { data: targetUnis } = await dbClient
-    .from("target_universities")
-    .select("university_name, admission_type, department, sub_field, priority")
-    .eq("user_id", userId)
-    .order("priority", { ascending: true });
-
-  const firstUni = targetUnis?.[0];
-
-  const studentInfo: StudentInfo = {
-    name: profiles.name ?? "학생",
-    grade: GRADE_MAP[profiles.grade] ?? 2,
-    track: "통합",
-    schoolType:
-      (profiles.high_school_type as StudentInfo["schoolType"]) ?? "일반고",
-    targetUniversity: firstUni?.university_name,
-    targetDepartment: firstUni?.department,
-    hasMockExamData: false,
-  };
-
-  const universityCandidatesText =
-    targetUnis && targetUnis.length > 0
-      ? JSON.stringify(
-          targetUnis.map((u) => ({
-            priority: u.priority,
-            university: u.university_name,
-            admissionType: u.admission_type,
-            department: u.department,
-            subField: u.sub_field || undefined,
-          })),
-          null,
-          2
-        )
-      : "[]";
-
-  // 6. 전처리 실행
-  try {
-    const waveState = await executePreprocess(
-      plan,
-      studentInfo,
-      report.id,
-      dbClient,
-      record.id,
-      universityCandidatesText
-    );
-
-    return NextResponse.json({
-      reportId: report.id,
-      orderId: order.id,
-      plan,
-      studentInfo,
-      taskQueue: waveState.taskQueue,
-      status: "ready",
-    });
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "전처리 중 오류가 발생했습니다.";
-
-    await dbClient
-      .from("reports")
-      .update({ ai_status: "failed", ai_error: message })
-      .eq("id", report.id);
-    await dbClient.from("orders").update({ status: "paid" }).eq("id", order.id);
-
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  return NextResponse.json({
+    reportId: report.id,
+    orderId: order.id,
+    plan,
+    status: "ready",
+  });
 };
