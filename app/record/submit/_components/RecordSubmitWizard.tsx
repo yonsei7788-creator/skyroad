@@ -272,8 +272,18 @@ export const RecordSubmitWizard = ({
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "파싱에 실패했습니다.");
+        let message = "파싱에 실패했습니다.";
+        try {
+          const data = await response.json();
+          message = data.error || message;
+        } catch {
+          // Vercel/Next.js 게이트웨이 에러 등 non-JSON 응답
+          if (response.status === 504 || response.status === 502) {
+            message =
+              "AI 분석 시간이 초과되었습니다. 파일 크기를 줄이거나 다시 시도해주세요.";
+          }
+        }
+        throw new Error(message);
       }
 
       const parsed: SchoolRecord = await response.json();

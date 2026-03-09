@@ -34,7 +34,10 @@ const isRetryableError = (
     message.includes("ETIMEDOUT") ||
     message.includes("network") ||
     message.includes("aborted") ||
-    message.includes("AbortError")
+    message.includes("AbortError") ||
+    message.includes("non-JSON response") ||
+    message.includes("no candidates") ||
+    message.includes("response blocked")
   ) {
     return true;
   }

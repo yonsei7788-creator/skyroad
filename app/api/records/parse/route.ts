@@ -290,13 +290,15 @@ export async function POST(request: NextRequest) {
 
     const fileParts = await Promise.all(uploadPromises);
 
-    // Generate content — disable thinking for faster structured extraction
+    // Generate content — thinking OFF for faster structured extraction
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
         maxOutputTokens: MAX_OUTPUT_TOKENS,
+        // @ts-expect-error -- thinkingConfig is supported by Gemini 2.5 but not yet in SDK types
+        thinkingConfig: { thinkingBudget: 0 },
       },
     });
 

@@ -134,6 +134,24 @@ export const createGeminiClient = (apiKey: string) => {
         );
 
         const elapsed = Date.now() - startMs;
+
+        // 차단된 응답 감지 (safety filter, empty candidates)
+        const { candidates } = response.response;
+        if (!candidates || candidates.length === 0) {
+          const blockReason = response.response.promptFeedback?.blockReason;
+          throw new Error(
+            `Gemini returned no candidates${blockReason ? ` (blockReason: ${blockReason})` : ""}`
+          );
+        }
+
+        const [firstCandidate] = candidates;
+        const { finishReason } = firstCandidate;
+        if (finishReason === "SAFETY" || finishReason === "RECITATION") {
+          throw new Error(
+            `Gemini response blocked (finishReason: ${finishReason})`
+          );
+        }
+
         const text = response.response.text();
         const usage = response.response.usageMetadata;
         console.log(
@@ -142,6 +160,13 @@ export const createGeminiClient = (apiKey: string) => {
 
         if (!text || text.trim().length === 0) {
           throw new Error("Gemini returned empty response");
+        }
+
+        // JSON이 아닌 응답 감지 (에러 메시지, 차단된 응답 등)
+        const trimmed = text.trim();
+        if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+          const preview = trimmed.slice(0, 200);
+          throw new Error(`Gemini returned non-JSON response: "${preview}"`);
         }
 
         let parsed: T;
