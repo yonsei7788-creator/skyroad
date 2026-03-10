@@ -41,7 +41,7 @@ const SERVICES: ServiceCardData[] = [
     image: "/images/landing/service-5.png",
   },
   {
-    title: "마지막은, 사람이 결정",
+    title: "마지막은 사람이 결정합니다",
     description:
       "AI가 분석한 결과를 전문가가 직접 점검하고 합격으로 이어질 수 있도록 전략을 다듬습니다",
     image: "/images/landing/service-6.png",

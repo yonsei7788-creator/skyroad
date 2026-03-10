@@ -52,11 +52,9 @@ export const HeroSection = () => {
             <p className={styles.subtext}>
               &ldquo;이 생기부로 어디까지 갈 수 있을까?&rdquo;
               <br />
-              AI 정밀 분석 + 입시 전문가 2차 검수로
-              <br />
-              놓치기 쉬운 약점까지 정확하게 짚어드립니다.
-              <br />
-              막막했던 입시 방향이 48시간 안에 명확해집니다.
+              <strong className={styles.subtextHighlight}>
+                AI 정밀 분석 + 입시 전문가 2차 검수
+              </strong>
             </p>
           </FadeIn>
 

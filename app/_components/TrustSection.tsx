@@ -12,7 +12,7 @@ const STATS = [
   },
   {
     icon: Star,
-    value: "4.9/5.0",
+    value: "4.99/5.0",
     label: "평균 만족도",
     colorClass: "amber" as const,
   },

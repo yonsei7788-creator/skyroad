@@ -111,6 +111,18 @@
   max-width: 480px;
 }
 
+.subtextHighlight {
+  font-weight: 700;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-600),
+    var(--color-primary-400, #818cf8)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 @media (min-width: 1024px) {
   .subtext {
     font-size: 1.125rem;
