@@ -1,8 +1,8 @@
 /**
  * Wave Executor — Task-based
  *
- * 각 Wave는 정확히 1개의 Gemini API 호출(또는 Phase 2의 경우 3개 병렬)을 실행한다.
- * 이를 통해 각 Wave가 Supabase Edge Function의 150초 wall time 안에 완료된다.
+ * 각 태스크는 1개의 Gemini API 호출(또는 Phase 2의 경우 3개)을 실행한다.
+ * run-pipeline API Route에서 의존성 기반 병렬 웨이브로 실행된다.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -205,6 +205,7 @@ export const executeTask = async (
             studentTypeClassification: ser.stuTypeText!,
             competencyExtraction: ser.compExtrText!,
             preprocessedAcademicData: texts.preprocessedAcademicDataText,
+            attendanceSummary: texts.attendanceSummaryText,
             studentProfile: texts.studentProfileText,
           },
           plan
@@ -359,6 +360,7 @@ export const executeTask = async (
             subjectAnalysisResult: ser.subjAnalysisText!,
             academicAnalysisResult: ser.acadSectionText!,
             attendanceAnalysisResult: ser.attendSectionText!,
+            basePassRates: texts.basePassRatesText,
           },
           plan
         )
@@ -379,6 +381,7 @@ export const executeTask = async (
             universityCandidates: texts.universityCandidatesText,
             recommendedCourseMatch: texts.recommendedCourseMatchText,
             studentProfile: texts.studentProfileText,
+            basePassRates: texts.basePassRatesText,
           },
           plan
         )

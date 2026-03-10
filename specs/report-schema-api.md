@@ -2168,7 +2168,7 @@ interface GenerateReportRequest {
 1. `orders` 테이블에서 `order_id`로 주문 정보 조회 (plan_id, record_id, user_id)
 2. `reports` 테이블에 빈 레코드 생성 (content = null, status = ai_pending)
 3. `orders.status` = `analyzing` 으로 변경
-4. 백그라운드 AI 분석 작업 트리거 (Edge Function 또는 서버 액션)
+4. `/api/reports/run-pipeline` API Route에서 SSE 스트리밍으로 AI 분석 실행
 5. AI 분석 완료 시 `reports.content`에 JSONB 저장, `ai_generated_at` 설정
 
 **Response**:

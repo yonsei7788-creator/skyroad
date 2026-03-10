@@ -61,7 +61,33 @@ export const postprocess = (
     validatedSections.push(section);
   }
 
-  // 2. 섹션 정렬 (플랜별 순서)
+  // 2. 크로스 섹션 동기화: competencyScore → studentProfile radarChart
+  const compScore = validatedSections.find(
+    (s) => s.sectionId === "competencyScore"
+  ) as any;
+  const profile = validatedSections.find(
+    (s) => s.sectionId === "studentProfile"
+  ) as any;
+  if (compScore?.scores && profile?.radarChart) {
+    for (const sc of compScore.scores) {
+      if (sc.category === "academic") profile.radarChart.academic = sc.score;
+      if (sc.category === "career") profile.radarChart.career = sc.score;
+      if (sc.category === "community") profile.radarChart.community = sc.score;
+    }
+    if (compScore.growthGrade) {
+      const growthMap: Record<string, number> = {
+        S: 95,
+        A: 80,
+        B: 65,
+        C: 50,
+        D: 35,
+      };
+      profile.radarChart.growth =
+        growthMap[compScore.growthGrade] ?? profile.radarChart.growth;
+    }
+  }
+
+  // 3. 섹션 정렬 (플랜별 순서)
   const sectionOrder = SECTION_ORDER[plan];
   validatedSections.sort((a, b) => {
     const aIdx = sectionOrder.indexOf(a.sectionId);
@@ -111,6 +137,27 @@ const normalizeSection = (
   const s = section as any;
 
   if (s.sectionId === "academicAnalysis") {
+    // ── 핵심 정량 수치: 코드 전처리 결과로 강제 덮어쓰기 ──
+    s.overallAverageGrade = pre.overallAverage;
+
+    s.gradesByYear = pre.averageByGrade.map((g) => ({
+      year: g.year,
+      semester: g.semester,
+      averageGrade: Math.round(g.average * 100) / 100,
+    }));
+
+    s.subjectCombinations = pre.subjectCombinations.map((c) => ({
+      combination: c.name,
+      averageGrade: c.average,
+    }));
+
+    const trendMap: Record<string, string> = {
+      ascending: "상승",
+      stable: "유지",
+      descending: "하락",
+    };
+    s.gradeTrend = trendMap[pre.gradeTrend.direction] || "유지";
+
     // ── gradeDeviationAnalysis: 전처리 gradeVariance에서 확정값 주입 ──
     const gv = pre.gradeVariance;
     const aiDev = s.gradeDeviationAnalysis ?? {};
@@ -133,17 +180,11 @@ const normalizeSection = (
       };
     }
 
-    // ── gradeChangeAnalysis: AI 필드명 매핑 ──
+    // ── gradeChangeAnalysis: AI 필드명 매핑 + 코드값 강제 ──
     if (s.gradeChangeAnalysis) {
       const g = s.gradeChangeAnalysis;
-      const trendMap: Record<string, string> = {
-        ascending: "상승",
-        stable: "유지",
-        descending: "하락",
-      };
       s.gradeChangeAnalysis = {
-        currentTrend:
-          g.currentTrend || trendMap[pre.gradeTrend.direction] || "유지",
+        currentTrend: trendMap[pre.gradeTrend.direction] || "유지",
         prediction: g.prediction || g.analysis || "",
         actionItems: g.actionItems || g.recommendations || [],
         actionItemPriorities: g.actionItemPriorities || [],
@@ -169,8 +210,48 @@ const normalizeSection = (
       });
     }
 
-    // ── fiveGradeSimulation: original/converted → currentGrade/simulatedGrade ──
-    if (Array.isArray(s.fiveGradeSimulation)) {
+    // ── fiveGradeSimulation: 전처리 데이터 기반 강제 주입 (과목별 최종 등급 기준) ──
+    if (
+      Array.isArray(pre.fiveGradeConversion) &&
+      pre.fiveGradeConversion.length > 0
+    ) {
+      // 과목별 최종(가장 최근) 등급만 사용
+      const latestBySubject = new Map<
+        string,
+        { original: number; converted: number }
+      >();
+      for (const fc of pre.fiveGradeConversion) {
+        latestBySubject.set(fc.subject, {
+          original: fc.original,
+          converted: fc.converted,
+        });
+      }
+      // AI가 선택한 주요 5과목의 interpretation은 유지하되, 수치는 코드값으로 대체
+      const aiSimMap = new Map<string, string>(
+        (Array.isArray(s.fiveGradeSimulation) ? s.fiveGradeSimulation : []).map(
+          (sim: any): [string, string] => [
+            sim.subject ?? "",
+            sim.interpretation ?? "",
+          ]
+        )
+      );
+      // 주요 5과목 선정: AI가 선택한 과목이 있으면 그대로, 없으면 전처리에서 상위 5개
+      const targetSubjects: string[] =
+        aiSimMap.size > 0
+          ? [...aiSimMap.keys()].slice(0, 5)
+          : [...latestBySubject.keys()].slice(0, 5);
+      s.fiveGradeSimulation = targetSubjects
+        .filter((subj: string) => latestBySubject.has(subj))
+        .map((subj) => {
+          const data = latestBySubject.get(subj)!;
+          return {
+            subject: subj,
+            currentGrade: data.original,
+            simulatedGrade: data.converted,
+            interpretation: aiSimMap.get(subj) || "",
+          };
+        });
+    } else if (Array.isArray(s.fiveGradeSimulation)) {
       s.fiveGradeSimulation = s.fiveGradeSimulation.map((sim: any) => ({
         subject: sim.subject ?? "",
         currentGrade: sim.currentGrade ?? sim.original ?? null,
@@ -194,6 +275,64 @@ const normalizeSection = (
           (sim: any) =>
             sim.department && sim.reflectionMethod && sim.calculatedScore
         );
+    }
+  }
+
+  if (s.sectionId === "competencyScore") {
+    // ── 성실성 점수: 출결 데이터 기반 강제 감점 ──
+    const attendance = pre.attendanceSummary;
+    if (Array.isArray(s.scores) && attendance.length > 0) {
+      // 연간 최대 미인정결석 일수 산출
+      const maxUnauthorized = Math.max(
+        ...attendance.map((a) => a.unauthorized)
+      );
+
+      // 감점 기준: 연간 1~2일 → -3, 3~5일 → -8, 6~10일 → -13, 11일+ → -18
+      const deduction =
+        maxUnauthorized === 0
+          ? 0
+          : maxUnauthorized <= 2
+            ? 3
+            : maxUnauthorized <= 5
+              ? 8
+              : maxUnauthorized <= 10
+                ? 13
+                : 18;
+
+      if (deduction > 0) {
+        const communityScore = s.scores.find(
+          (sc: any) => sc.category === "community"
+        );
+        if (communityScore && Array.isArray(communityScore.subcategories)) {
+          const integrity = communityScore.subcategories.find(
+            (sub: any) => sub.name === "성실성"
+          );
+          if (integrity) {
+            const maxScore = integrity.maxScore ?? 25;
+            const capped = Math.max(0, maxScore - deduction);
+            if (integrity.score > capped) {
+              integrity.score = capped;
+            }
+          }
+          // 공동체역량 소계 재계산
+          communityScore.score = communityScore.subcategories.reduce(
+            (sum: number, sub: any) => sum + (sub.score ?? 0),
+            0
+          );
+        }
+      }
+    }
+
+    // ── totalScore: 하위 영역 합산으로 강제 재계산 ──
+    if (Array.isArray(s.scores)) {
+      const recalculated = s.scores.reduce(
+        (sum: number, sc: any) => sum + (sc.score ?? 0),
+        0
+      );
+      s.totalScore = recalculated;
+      if (s.comparison) {
+        s.comparison.myScore = recalculated;
+      }
     }
   }
 
