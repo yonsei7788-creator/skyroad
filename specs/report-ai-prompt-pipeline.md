@@ -2213,34 +2213,18 @@ const RETRY_CONFIG = {
 
 리포트 생성은 결제 후 비동기로 처리. 48시간 내 배달 목표이지만, 실제 생성 시간은 2~5분 예상.
 
-**아키텍처 옵션 (권장: Option A)**:
-
-**Option A: Supabase Edge Function + Queue (권장)**
+**아키텍처: Next.js API Route + SSE 스트리밍**
 
 ```
 결제 완료
-  -> reports 테이블에 status='pending' 레코드 생성
-  -> Edge Function 트리거 (혹은 pg_notify -> webhook)
-  -> Edge Function에서 Gemini API 순차/병렬 호출
+  -> /api/reports/run-pipeline API Route 호출
+  -> SSE 스트림으로 실시간 진행률 전송
+  -> 의존성 기반 병렬 웨이브로 Gemini API 호출
   -> 완료 시 reports.content 업데이트 + status='completed'
-  -> 사용자 알림 발송
 ```
 
-**Option B: Next.js API Route + Background Job**
-
-```
-결제 완료
-  -> API Route에서 reports 레코드 생성
-  -> Inngest/Trigger.dev 등 Job Queue에 작업 등록
-  -> Worker에서 Gemini API 호출
-  -> 완료 시 DB 업데이트 + 알림
-```
-
-**권장 이유 (Option A)**:
-
-- 이미 Supabase를 사용 중이므로 인프라 추가 없음
-- Edge Function은 최대 400초(~6.5분) 실행 가능
-- 별도 Job Queue 인프라 불필요
+- Vercel Pro 플랜의 maxDuration=300초 활용
+- 병렬 실행으로 총 생성 시간 2~3분 내 완료
 
 **상태 관리**:
 

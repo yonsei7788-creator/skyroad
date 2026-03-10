@@ -40,68 +40,7 @@ NEXT_PUBLIC_TOSS_CLIENT_KEY=test_ck_xxxxxxxxxxxxxxxx
 
 ---
 
-## 2. Supabase Edge Function 배포
-
-AI 리포트 생성 파이프라인은 Supabase Edge Function에서 실행됩니다.
-Vercel Hobby 플랜의 60초 제한을 우회하기 위한 구조입니다.
-
-### 2-1. Supabase CLI 로그인
-
-```bash
-npx supabase login
-```
-
-브라우저가 열리면 Supabase 계정으로 로그인합니다.
-
-### 2-2. 프로젝트 연결
-
-Supabase 대시보드 → **Settings** → **General** → **Reference ID** 확인 후:
-
-```bash
-npx supabase link --project-ref <YOUR_PROJECT_REF>
-```
-
-### 2-3. 파이프라인 번들 빌드
-
-파이프라인 코드(libs/report/)를 Edge Function용 단일 JS 파일로 번들링합니다:
-
-```bash
-bash scripts/build-edge-fn.sh
-```
-
-> 파이프라인 코드를 수정한 경우 반드시 다시 빌드해야 합니다.
-
-### 2-4. Edge Function 배포
-
-```bash
-npx supabase functions deploy generate-report --no-verify-jwt
-```
-
-`--no-verify-jwt`는 JWT 검증을 비활성화합니다. 이 함수는 `service_role` 키로 인증하므로 JWT가 불필요합니다.
-
-### 2-5. Edge Function 환경변수 (시크릿) 설정
-
-Supabase 대시보드에서 설정합니다:
-
-**대시보드** → **Edge Functions** → **generate-report** → **Secrets**
-
-| 시크릿 이름                 | 설명                  | 자동 설정 여부     |
-| --------------------------- | --------------------- | ------------------ |
-| `SUPABASE_URL`              | Supabase 프로젝트 URL | 자동 (설정 불필요) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Service Role 키       | 자동 (설정 불필요) |
-| `GEMINI_API_KEY`            | Google Gemini API 키  | **수동 설정 필요** |
-
-`GEMINI_API_KEY`만 수동으로 추가하면 됩니다:
-
-```bash
-npx supabase secrets set GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
-```
-
-또는 대시보드에서 직접 추가합니다.
-
----
-
-## 3. Vercel 환경변수 설정
+## 2. Vercel 환경변수 설정
 
 프로덕션 배포를 위해 Vercel에도 환경변수를 설정해야 합니다.
 
@@ -171,11 +110,6 @@ npx supabase secrets set GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
 
 - [ ] `.env.local`에 `TOSS_SECRET_KEY` 추가
 - [ ] `.env.local`에 `NEXT_PUBLIC_TOSS_CLIENT_KEY` 추가
-- [x] `npx supabase login` 실행 ✔
-- [x] `npx supabase link --project-ref nazepcfvvoryqlfxzvvv` 실행 ✔
-- [x] `bash scripts/build-edge-fn.sh` 실행 ✔
-- [x] `npx supabase functions deploy generate-report --no-verify-jwt` 실행 ✔
-- [x] `npx supabase secrets set GEMINI_API_KEY=<KEY>` 실행 ✔
 - [ ] 개발 환경에서 전체 플로우 테스트
 - [ ] Vercel에 `TOSS_SECRET_KEY` 환경변수 추가
 - [ ] Vercel에 `NEXT_PUBLIC_TOSS_CLIENT_KEY` 환경변수 추가
