@@ -33,6 +33,7 @@ const GRADE_MAP: Record<string, number> = {
   high1: 1,
   high2: 2,
   high3: 3,
+  graduate: 3,
 };
 
 const sendEvent = (
@@ -465,21 +466,6 @@ export const POST = async (request: NextRequest) => {
     hasMockExamData: false,
   };
 
-  const universityCandidatesText =
-    targetUnis && targetUnis.length > 0
-      ? JSON.stringify(
-          targetUnis.map((u) => ({
-            priority: u.priority,
-            university: u.university_name,
-            admissionType: u.admission_type,
-            department: u.department,
-            subField: u.sub_field || undefined,
-          })),
-          null,
-          2
-        )
-      : "[]";
-
   // Gemini 클라이언트
   const geminiApiKey = env.GEMINI_API_KEY;
   if (!geminiApiKey) {
@@ -511,7 +497,7 @@ export const POST = async (request: NextRequest) => {
           reportId,
           dbClient,
           recordId,
-          universityCandidatesText,
+          undefined,
           undefined,
           { skipSave: true }
         );

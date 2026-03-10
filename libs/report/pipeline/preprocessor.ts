@@ -12,6 +12,7 @@ import {
   isMedicalMajor,
 } from "../constants/recommended-courses.ts";
 import type { RecommendedCourseMatch } from "../constants/recommended-courses.ts";
+import { generateUniversityCandidates } from "../constants/university-admission-data.ts";
 
 // ─── 생기부 원본 JSONB 타입 ───
 
@@ -396,7 +397,8 @@ export const preprocess = (
   const recommendedCourseMatch = matchRecommendedCourses(
     generalSubjects,
     careerSubjects,
-    studentInfo.targetDepartment ?? ""
+    studentInfo.targetDepartment ?? "",
+    studentInfo.grade
   );
 
   // 12. 교육과정 버전 판별
@@ -448,7 +450,7 @@ export const preprocess = (
     studentTypeInput,
   };
 
-  const texts = buildTexts(data, recordData, studentInfo);
+  const texts = buildTexts(data, recordData, studentInfo, plan);
 
   return { data, texts };
 };
@@ -610,7 +612,8 @@ const extractMajorKeywords = (targetDept: string): string[] => {
 const matchRecommendedCourses = (
   generalSubjects: GeneralSubjectRow[],
   careerSubjects: CareerSubjectRow[],
-  targetDept: string
+  targetDept: string,
+  studentGrade: number
 ): RecommendedCourseMatch => {
   const takenSet = new Set<string>();
   for (const s of generalSubjects) takenSet.add(s.subject);
@@ -627,6 +630,8 @@ const matchRecommendedCourses = (
   const takenCourses = requiredCourses.filter((c) => takenSet.has(c));
   const missingCourses = requiredCourses.filter((c) => !takenSet.has(c));
 
+  const isCompleted = studentGrade >= 3;
+
   return {
     targetMajor: matchingMajor?.major ?? targetDept,
     requiredCourses,
@@ -636,6 +641,7 @@ const matchRecommendedCourses = (
       requiredCourses.length > 0
         ? Math.round((takenCourses.length / requiredCourses.length) * 100)
         : 100,
+    isCompleted,
   };
 };
 
@@ -809,9 +815,13 @@ const computeStudentTypeInput = (
 const buildTexts = (
   data: PreprocessedData,
   recordData: RecordData,
-  studentInfo: StudentInfo
+  studentInfo: StudentInfo,
+  plan: ReportPlan
 ): PreprocessedTexts => {
-  const studentProfileText = formatStudentProfile(studentInfo);
+  const studentProfileText = formatStudentProfile(
+    studentInfo,
+    data.convertedGrade
+  );
   const recordDataText = formatRecordData(recordData);
   const subjectDataText = formatSubjectEvaluations(
     recordData.subjectEvaluations ?? []
@@ -846,18 +856,36 @@ const buildTexts = (
     attendanceSummaryText,
     recommendedCourseMatchText,
     recordVolumeText,
-    universityCandidatesText: "[]",
+    universityCandidatesText: JSON.stringify(
+      generateUniversityCandidates(
+        data.convertedGrade.converted,
+        studentInfo.targetDepartment ?? "",
+        studentInfo.track,
+        studentInfo.schoolType,
+        plan
+      ),
+      null,
+      2
+    ),
     curriculumVersion: data.curriculumVersion,
   };
 };
 
-const formatStudentProfile = (info: StudentInfo): string => {
+const formatStudentProfile = (
+  info: StudentInfo,
+  convertedGrade?: PreprocessedData["convertedGrade"]
+): string => {
   const lines = [
     `이름: ${info.name}`,
     `학년: ${info.grade}학년`,
     `계열: ${info.track}`,
     `학교 유형: ${info.schoolType}`,
   ];
+  if (convertedGrade) {
+    lines.push(
+      `환산 등급: ${convertedGrade.converted} (원래 ${convertedGrade.original}, ${convertedGrade.schoolType} 보정 적용)`
+    );
+  }
   if (info.targetUniversity) lines.push(`목표 대학: ${info.targetUniversity}`);
   if (info.targetDepartment) lines.push(`목표 학과: ${info.targetDepartment}`);
   lines.push(`모의고사 데이터: ${info.hasMockExamData ? "있음" : "없음"}`);
@@ -904,9 +932,9 @@ const formatSubjectEvaluations = (evals: SubjectEvaluationRow[]): string => {
 const formatCreativeActivities = (
   activities: CreativeActivityRow[]
 ): string => {
-  const sorted = [...activities].sort(
-    (a, b) => a.year - b.year || a.area.localeCompare(b.area)
-  );
+  const sorted = [...activities]
+    .filter((a) => a.area !== "봉사활동")
+    .sort((a, b) => a.year - b.year || a.area.localeCompare(b.area));
   return sorted.map((a) => `[${a.year}학년 ${a.area}]\n${a.note}`).join("\n\n");
 };
 

@@ -247,6 +247,7 @@ export const orchestrate = async (
             recommendedCourseMatch: texts.recommendedCourseMatchText,
             competencyExtraction: compExtrText,
             studentProfile: texts.studentProfileText,
+            studentGrade: studentInfo.grade,
           },
           plan
         )
