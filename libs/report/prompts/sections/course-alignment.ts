@@ -6,6 +6,7 @@ export interface CourseAlignmentPromptInput {
   recommendedCourseMatch: string;
   competencyExtraction: string;
   studentProfile: string;
+  studentGrade: number;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -46,6 +47,19 @@ ${input.competencyExtraction}
 
 ### 학생 프로필
 ${input.studentProfile}
+
+### 학년별 분석 방향
+- 학생 학년: ${input.studentGrade}학년
+${
+  input.studentGrade >= 3
+    ? `- 이 학생은 3학년으로 **과목 선택이 완료된 상태**입니다.
+- "남은 기간에 이수하라"는 조언은 부적절합니다.
+- 현재 이수한 과목 기준으로 입시 영향만 분석하세요.
+- 미이수 과목이 있다면: "이미 선택 기회가 지났으므로, 면접에서 해당 과목 미이수 사유를 설명할 준비가 필요합니다"와 같은 방향으로 분석하세요.
+- recommendation 필드는 이수 전략 대신 "미이수 상태에서의 대응 전략"을 작성하세요.`
+    : `- 이 학생은 ${input.studentGrade}학년으로 남은 학기에 추가 이수가 가능합니다.
+- 미이수 과목에 대해 구체적인 이수 전략을 제안하세요.`
+}
 
 ## 출력 JSON 스키마
 

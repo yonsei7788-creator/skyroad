@@ -18,6 +18,7 @@ const GRADE_MAP: Record<string, number> = {
   high1: 1,
   high2: 2,
   high3: 3,
+  graduate: 3,
 };
 
 export const POST = async (request: NextRequest) => {
@@ -265,31 +266,15 @@ export const POST = async (request: NextRequest) => {
     hasMockExamData: false,
   };
 
-  // 목표 대학 후보군 텍스트 (AI 프롬프트용)
-  const universityCandidatesText =
-    targetUnis && targetUnis.length > 0
-      ? JSON.stringify(
-          targetUnis.map((u) => ({
-            priority: u.priority,
-            university: u.university_name,
-            admissionType: u.admission_type,
-            department: u.department,
-            subField: u.sub_field || undefined,
-          })),
-          null,
-          2
-        )
-      : "[]";
-
   // 7. 전처리 실행 (Gemini 호출 없음 — 빠름)
+  // 대학 후보군은 preprocessor에서 환산등급 기반으로 자동 생성됨
   try {
     const waveState = await executePreprocess(
       plan,
       studentInfo,
       reportId,
       dbClient,
-      recordId,
-      universityCandidatesText
+      recordId
     );
 
     return NextResponse.json({

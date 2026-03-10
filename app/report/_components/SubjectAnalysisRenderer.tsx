@@ -8,11 +8,10 @@ import styles from "./report.module.css";
 import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
-/** 텍스트를 maxLen자로 자르고 말줄임 추가 */
-const truncate = (text: string | undefined, maxLen: number): string => {
+/** 텍스트 안전 변환 (말줄임 없이 전체 표시) */
+const safeOrEmpty = (text: string | undefined): string => {
   if (!text) return "";
-  const safe = safeText(text);
-  return safe.length > maxLen ? `${safe.slice(0, maxLen)}…` : safe;
+  return safeText(text);
 };
 
 interface SubjectAnalysisRendererProps {
@@ -92,7 +91,7 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
             <span className={styles.emphasis}>핵심 인용:</span>{" "}
             {subject.keyQuotes
               .slice(0, 2)
-              .map((q) => `"${truncate(q, 120)}"`)
+              .map((q) => `"${safeOrEmpty(q)}"`)
               .join(" / ")}
           </div>
         </div>
@@ -122,7 +121,7 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
               <div className={styles.aiCommentaryContent}>
                 <div className={styles.aiCommentaryLabel}>상세 평가</div>
                 <div className={styles.aiCommentaryText}>
-                  {truncate(subject.detailedEvaluation, 300)}
+                  {safeOrEmpty(subject.detailedEvaluation)}
                 </div>
               </div>
             </div>
@@ -134,7 +133,7 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
                 {subject.improvementDirection && (
                   <>
                     <span className={styles.emphasis}>개선 방향:</span>{" "}
-                    {truncate(subject.improvementDirection, 150)}
+                    {safeOrEmpty(subject.improvementDirection)}
                   </>
                 )}
                 {subject.improvementDirection && subject.improvementExample && (
@@ -143,7 +142,7 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
                 {subject.improvementExample && (
                   <>
                     <span className={styles.emphasis}>개선 예시:</span>{" "}
-                    {truncate(subject.improvementExample, 150)}
+                    {safeOrEmpty(subject.improvementExample)}
                   </>
                 )}
               </div>

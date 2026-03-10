@@ -71,9 +71,8 @@ export const executePreprocess = async (
   const recordData = await loadRecordData(supabase, recordId);
   const { data, texts } = preprocess(recordData, studentInfo, plan);
 
-  if (universityCandidatesText) {
-    texts.universityCandidatesText = universityCandidatesText;
-  }
+  // universityCandidatesText는 preprocessor에서 환산등급 기반으로 자동 생성됨
+  // 외부 주입값은 무시 (희망대학만 반복 추천하는 문제 방지)
 
   const isGrade1Only = studentInfo.grade === 1;
   const taskQueue = buildTaskQueue(plan, isGrade1Only);
@@ -268,6 +267,7 @@ export const executeTask = async (
             recommendedCourseMatch: texts.recommendedCourseMatchText,
             competencyExtraction: ser.compExtrText!,
             studentProfile: texts.studentProfileText,
+            studentGrade: studentInfo.grade,
           },
           plan
         )
