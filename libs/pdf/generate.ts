@@ -2,7 +2,11 @@ import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 
 const A4_WIDTH_MM = 210;
-const A4_HEIGHT_MM = 297;
+const SCALE = 1.5;
+
+/** 메인 스레드 양보 — UI 버벅임 방지 */
+const yieldToMain = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 /**
  * 리포트 컨테이너 내의 [data-page] 요소들을 각각 캡처하여
@@ -21,16 +25,17 @@ export const generatePdfFromElement = async (
   const pdf = new jsPDF("p", "mm", "a4");
 
   for (let i = 0; i < pages.length; i++) {
-    const page = pages[i];
+    // 매 페이지마다 메인 스레드에 제어를 넘겨 UI 프리징 방지
+    await yieldToMain();
 
-    const canvas = await html2canvas(page, {
-      scale: 2,
+    const canvas = await html2canvas(pages[i], {
+      scale: SCALE,
       useCORS: true,
       logging: false,
       backgroundColor: "#ffffff",
     });
 
-    const imgData = canvas.toDataURL("image/jpeg", 0.92);
+    const imgData = canvas.toDataURL("image/jpeg", 0.85);
     const imgWidth = A4_WIDTH_MM;
     const imgHeight = (canvas.height * A4_WIDTH_MM) / canvas.width;
 

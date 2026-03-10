@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   CheckCircle,
+  Download,
   Loader2,
   Mail,
   RefreshCw,
@@ -49,6 +50,7 @@ const ReportDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState<
@@ -324,6 +326,31 @@ const ReportDetailPage = () => {
     }
   };
 
+  const handleExportPdf = async () => {
+    if (!previewRef.current) {
+      addToast("미리보기 패널을 열어주세요.", "error");
+      return;
+    }
+    setExporting(true);
+    try {
+      const pdfBlob = await generatePdfFromElement(previewRef.current);
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `report-${reportId.slice(0, 8)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      addToast("PDF가 다운로드되었습니다.", "success");
+    } catch (err) {
+      console.error("PDF export error:", err);
+      addToast("PDF 생성에 실패했습니다.", "error");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const handleSectionSelect = useCallback(
     (index: number) => {
       setActiveSectionIndex(index);
@@ -469,6 +496,18 @@ const ReportDetailPage = () => {
               <Save size={14} />
             )}
             저장
+          </button>
+          <button
+            className={styles.saveButton}
+            onClick={handleExportPdf}
+            disabled={exporting}
+          >
+            {exporting ? (
+              <Loader2 size={14} className={styles.spinner} />
+            ) : (
+              <Download size={14} />
+            )}
+            PDF 추출
           </button>
           {isDelivered ? (
             <button
