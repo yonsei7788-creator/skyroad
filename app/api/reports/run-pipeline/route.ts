@@ -66,7 +66,7 @@ const TASK_DEPS: Record<string, string[]> = {
     "academicAnalysis",
     "attendanceAnalysis",
   ],
-  admissionStrategy: ["admissionPrediction"],
+  admissionStrategy: ["admissionPrediction", "academicAnalysis"],
   actionRoadmap: ["weaknessAnalysis", "admissionStrategy", "directionGuide"],
 };
 
