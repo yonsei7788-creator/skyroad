@@ -25,6 +25,8 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
    형식: {"enrollmentEffort": "...", "achievement": "...", "recommendedSubjects": ["과목1", "과목2"]}
 3. **gradeChangeAnalysis** (필수): 등급 변화 가능성
    형식: {"currentTrend": "상승|유지|하락", "prediction": "...", "actionItems": ["항목1", "항목2"], "actionItemPriorities": ["high", "medium"]}
+   - **actionItems는 반드시 1~3개의 구체적 실행 항목을 포함**해야 합니다. 빈 배열 금지.
+   - 상승 추세 → 유지/강화 전략, 하락 추세 → 반등 전략, 유지 → 다음 단계 전략을 제시하세요.
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis **3개 필드만** 출력합니다. 이 3개 외 추가 분석 필드는 절대 출력하지 마세요.
@@ -32,7 +34,7 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - careerSubjectAnalyses는 **최대 3개**만 출력하며, 각 interpretation은 **100자 이내**로 작성합니다.
 - smallClassSubjectAnalyses, schoolTypeAdjustment, gradeInflationContext는 출력하지 않습니다.`,
   premium: `## 플랜별 출력: 정밀
-Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 포함)**을 반드시 출력하고, 추가로 다음을 출력합니다:
+Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 포함)**을 반드시 출력하고 (actionItems 빈 배열 금지), 추가로 다음을 출력합니다:
 - 5등급제 전환 시뮬레이션 (fiveGradeSimulation): **주요 5과목만** 배열 형태로 출력
   - **subject, currentGrade, simulatedGrade 필드는 필수입니다. 절대 빈값이면 안 됩니다.**
   - currentGrade: 학생의 현재 9등급제 등급 (정수)
@@ -96,12 +98,19 @@ ${input.studentProfile}
 }
 Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다 (아래 플랜별 출력 참조).
 
-## 데이터 출처 구분
-- **코드 전처리 → 그대로 복사**: overallAverageGrade, gradesByYear, subjectCombinations, gradeTrend, subjectGrades
-  → 이 필드들은 성적 전처리 결과에서 수치를 그대로 옮기세요. 직접 계산하지 마세요.
-  → subjectCombinations 필드명 매핑: 전처리 데이터의 "name" → 출력의 "combination", "average" → "averageGrade"로 변환하세요.
+## 데이터 출처 구분 (필수 준수)
+
+⚠️ **아래 필드는 코드에서 확정된 수치입니다. 절대 직접 계산하거나 다른 값을 출력하지 마세요.**
+후처리에서 코드값으로 강제 덮어쓰기되므로, AI가 다른 값을 출력해도 무시됩니다.
+
+- **코드 전처리 → 그대로 복사** (후처리에서 강제 대체됨):
+  - overallAverageGrade: 전처리 결과의 "overallAverage" 값을 그대로 복사
+  - gradesByYear: 전처리 결과의 "averageByGrade" 배열을 그대로 복사
+  - subjectCombinations: 전처리 결과의 "subjectCombinations" 배열에서 "name" → "combination", "average" → "averageGrade"로 매핑
+  - gradeTrend: 전처리 결과의 "gradeTrend.direction"을 한글로 변환 (ascending→상승, stable→유지, descending→하락)
 - **AI 해석 → 생성**: interpretation, subjectStatAnalyses, gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 등
   → 이 필드들은 전처리 데이터를 바탕으로 해석하여 작성하세요.
+  → interpretation에서 언급하는 평균 등급은 반드시 전처리 결과의 overallAverage 값과 동일해야 합니다.
 
 ## 출력 지시
 

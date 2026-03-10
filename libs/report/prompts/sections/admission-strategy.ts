@@ -9,6 +9,7 @@ export interface AdmissionStrategyPromptInput {
   universityCandidates: string;
   recommendedCourseMatch: string;
   studentProfile: string;
+  basePassRates?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -53,7 +54,13 @@ Standard의 모든 항목에 추가로 다음을 출력합니다:
 - typeStrategies의 각 analysis는 **200자 이내**로 작성합니다.`,
 };
 
-const ADMISSION_CONTEXT = `## 정시 학생부 반영 대학 (2028학년도)
+const ADMISSION_CONTEXT = `## 학교유형별 특수전형 안내
+- **특성화고**: 특성화고 특별전형(정원 외) 지원 가능. 일반대학 지원 시 내신 경쟁력이 일반고 대비 불리할 수 있으며, 특성화고 환산 보정이 적용됨을 안내하세요. 특성화고졸 재직자 전형도 졸업 후 경로로 안내하세요.
+- **자율고/외국어고/국제고**: 2025학년도부터 자사고·외고·국제고 일반고 전환 예정. 전환 이전 학생은 기존 학교 유형으로 평가됨을 안내하세요.
+- **과학고/영재학교**: 조기졸업, 과학특성화대학 추천 입학 등 특수 경로를 안내하세요.
+→ 학생의 학교 유형에 해당하는 특수전형이 있으면 반드시 typeStrategies나 recommendedPath에서 언급하세요.
+
+## 정시 학생부 반영 대학 (2028학년도)
 정시에서 학생부를 반영하는 주요 대학:
 서울대(2023~), 고려대(2024~), 연세대(2026~), 한양대(2026~),
 성균관대 사대(2026~), 동국대(2027~), 중앙대(2027~), 경희대(2028~)
@@ -125,6 +132,12 @@ export const buildAdmissionStrategyPrompt = (
 - \`recommendations\`: Lite/Standard에서 사용. 단일 리스트에 상향/안정/하향 대학을 혼합 배치.
 - \`tierGroupedRecommendations\`: Premium 전용. 상향 위주/안정 위주/하향 위주 3가지 시나리오별로 2개씩 그룹화하여 총 6개 추천. recommendations와 별도 필드.
 
+⚠️ **대학 중복 금지 규칙:**
+- 같은 대학-학과 조합이 recommendations 내에서 2번 이상 나타나면 안 됩니다.
+- tierGroupedRecommendations에서도 같은 대학-학과가 다른 tierGroup에 중복 배치되면 안 됩니다.
+- 각 대학-학과는 하나의 티어에만 속해야 합니다 (상향이면 상향에만).
+- recommendations와 tierGroupedRecommendations 간 합격률/chance가 일치해야 합니다.
+
 ## 대학 추천 규칙
 - 아래 제공된 "대학 후보군"은 코드에서 학생의 환산 등급을 기반으로 사전 산정한 결과입니다.
 - 이 후보군 범위 내에서만 대학을 추천하세요. 후보군에 없는 대학은 추천하지 마세요.
@@ -143,6 +156,11 @@ ${ADMISSION_CONTEXT}
 
 ## 코드 산정 대학 후보군
 ${input.universityCandidates}
+
+## 코드 산정 기본 합격률 (등급-커트라인 기반)
+${input.basePassRates ?? "없음"}
+→ 대학 추천 시 chancePercentLabel은 반드시 이 기본 합격률의 ±10%p 범위 내에서 설정하세요.
+→ gradeDiff가 +0.5 이상인 대학에 50% 이상, +1.0 이상인 대학에 30% 이상 합격률 부여 금지.
 
 ## 합격 예측 결과
 ${input.admissionPredictionResult}

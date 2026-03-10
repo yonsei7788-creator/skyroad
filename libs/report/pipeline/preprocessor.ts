@@ -13,6 +13,7 @@ import {
 } from "../constants/recommended-courses.ts";
 import type { RecommendedCourseMatch } from "../constants/recommended-courses.ts";
 import { generateUniversityCandidates } from "../constants/university-admission-data.ts";
+import type { UniversityCandidate } from "../constants/university-admission-data.ts";
 
 // ─── 생기부 원본 JSONB 타입 ───
 
@@ -184,6 +185,20 @@ export interface PreprocessedData {
     communityScore: number;
     growthScore: number;
   };
+  /** 등급-커트라인 기반 기본 합격률 (AI 조정 제약용) */
+  basePassRates: BasePassRate[];
+}
+
+export interface BasePassRate {
+  university: string;
+  department: string;
+  admissionType: string;
+  tier: string;
+  cutoffGrade: number;
+  studentGrade: number;
+  gradeDiff: number;
+  basePassRate: [number, number];
+  aiAdjustMax: number;
 }
 
 /** 프롬프트에 주입 가능한 텍스트 형태의 전처리 결과 */
@@ -199,6 +214,7 @@ export interface PreprocessedTexts {
   recommendedCourseMatchText: string;
   recordVolumeText: string;
   universityCandidatesText: string;
+  basePassRatesText: string;
   curriculumVersion: "2015" | "2022";
 }
 
@@ -243,8 +259,8 @@ const SCHOOL_TYPE_ADJUSTMENT: Record<string, number> = {
 // ─── 5등급제 환산 ───
 
 const convertToFiveGrade = (nineGrade: number): number => {
+  // 5등급제 전환 기준: 1→1, 2~3→2, 4~5→3, 6~7→4, 8~9→5
   if (nineGrade <= 1) return 1;
-  if (nineGrade <= 2) return 1;
   if (nineGrade <= 3) return 2;
   if (nineGrade <= 5) return 3;
   if (nineGrade <= 7) return 4;
@@ -426,6 +442,19 @@ export const preprocess = (
     attendance
   );
 
+  // 17. 기본 합격률 산출 (대학 후보군 기반)
+  const universityCandidates = generateUniversityCandidates(
+    convertedGrade.converted,
+    studentInfo.targetDepartment ?? "",
+    studentInfo.track,
+    studentInfo.schoolType,
+    plan
+  );
+  const basePassRates = computeBasePassRates(
+    universityCandidates,
+    convertedGrade.converted
+  );
+
   const data: PreprocessedData = {
     overallAverage: Math.round(overallAverage * 100) / 100,
     averageByGrade,
@@ -448,6 +477,7 @@ export const preprocess = (
     recordVolume,
     wordCloudData,
     studentTypeInput,
+    basePassRates,
   };
 
   const texts = buildTexts(data, recordData, studentInfo, plan);
@@ -810,6 +840,45 @@ const computeStudentTypeInput = (
   };
 };
 
+// ─── 등급-커트라인 기반 기본 합격률 산출 ───
+
+const computeBasePassRates = (
+  candidates: UniversityCandidate[],
+  studentGrade: number
+): BasePassRate[] => {
+  return candidates.map((c) => {
+    const gradeDiff = studentGrade - c.cutoffGrade;
+    const [baseLow, baseHigh] = computePassRateRange(gradeDiff);
+    return {
+      university: c.university,
+      department: c.department,
+      admissionType: c.admissionType,
+      tier: c.tier,
+      cutoffGrade: c.cutoffGrade,
+      studentGrade,
+      gradeDiff: Math.round(gradeDiff * 100) / 100,
+      basePassRate: [baseLow, baseHigh],
+      aiAdjustMax: 10,
+    };
+  });
+};
+
+/**
+ * 등급 차이 → 기본 합격률 범위 산출
+ * gradeDiff = 학생등급 - 커트라인 (양수 = 학생이 커트보다 낮음 = 불리)
+ */
+const computePassRateRange = (gradeDiff: number): [number, number] => {
+  if (gradeDiff <= -1.5) return [70, 80];
+  if (gradeDiff <= -1.0) return [60, 70];
+  if (gradeDiff <= -0.5) return [50, 60];
+  if (gradeDiff <= 0) return [40, 50];
+  if (gradeDiff <= 0.3) return [30, 40];
+  if (gradeDiff <= 0.5) return [20, 30];
+  if (gradeDiff <= 1.0) return [10, 20];
+  if (gradeDiff <= 1.5) return [5, 10];
+  return [0, 5];
+};
+
 // ─── 텍스트 빌더 ───
 
 const buildTexts = (
@@ -867,6 +936,7 @@ const buildTexts = (
       null,
       2
     ),
+    basePassRatesText: JSON.stringify(data.basePassRates, null, 2),
     curriculumVersion: data.curriculumVersion,
   };
 };

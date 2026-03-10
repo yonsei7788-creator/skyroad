@@ -13,6 +13,8 @@ export interface AdmissionPredictionPromptInput {
   subjectAnalysisResult?: string;
   academicAnalysisResult?: string;
   attendanceAnalysisResult?: string;
+  /** 코드 산정 기본 합격률 (등급-커트라인 기반) */
+  basePassRates?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -42,6 +44,9 @@ export const buildAdmissionPredictionPrompt = (
   plan: ReportPlan
 ): string => {
   const additionalInputs = [
+    input.basePassRates
+      ? `### 코드 산정 기본 합격률 (등급-커트라인 기반, 필수 참조)\n${input.basePassRates}`
+      : "",
     input.competencyEvaluationResult
       ? `### 역량별 종합 평가 결과\n${input.competencyEvaluationResult}`
       : "",
@@ -118,6 +123,7 @@ ${additionalInputs}
 ### 추천 전형 (recommendedType)
 - "학종", "교과", "정시" 중 학생에게 가장 적합한 전형을 선택합니다.
 - 추천 이유를 2~3줄로 서술합니다.
+- 특성화고/과학고/외고 등 특수 학교유형인 경우, 해당 학교유형 특별전형도 고려하여 안내합니다.
 
 ### 전형별 합격 예측 (predictions)
 **admissionType은 반드시 다음 3개 중 하나:** "학종" | "교과" | "정시". "학생부종합" 등 다른 표현 금지.
@@ -130,17 +136,36 @@ ${additionalInputs}
   - 교과: 내신 등급, 교과 조합 평균 기반
   - 정시: 모의고사 데이터 기반 (없으면 "데이터 부족" 표시)
 
-### 합격 예측 산출 가이드라인
-- 합격률은 학생의 목표 대학/학과군 기준으로 산출합니다.
-- 목표 대학이 없는 경우, 학생의 성적 수준에 맞는 적정 대학군을 기준으로 합니다.
+### 합격 예측 산출 규칙 (필수 준수)
+
+⚠️ **코드 산정 기본 합격률을 반드시 기준으로 사용하세요.**
+입력 데이터의 "코드 산정 기본 합격률"에 대학별 basePassRate가 제공됩니다.
+이 수치는 학생의 환산 등급과 대학별 커트라인 등급 차이(gradeDiff)로 정량 산출된 값입니다.
+
+- **기본 합격률(basePassRate)에서 ±10%p(aiAdjustMax) 범위 내에서만 조정** 가능합니다.
+- 세특 품질, 활동 일관성, 출결 등 정성적 요소로 기본값 대비 최대 +10%p 또는 -10%p 조정합니다.
+- 예시: 기본 합격률 [10, 20]이면 → 최종 합격률은 0~30% 범위 내
+- 예시: 기본 합격률 [40, 50]이면 → 최종 합격률은 30~60% 범위 내
+
+**절대 규칙:**
+- gradeDiff가 +0.5 이상(학생 등급이 커트라인보다 0.5등급 이상 낮음)인 대학에 대해 합격률 50% 이상 부여 금지
+- gradeDiff가 +1.0 이상인 대학에 대해 합격률 30% 이상 부여 금지
+- universityPredictions의 chance 값도 합격률과 일치시키세요: 60%+ → "high", 30~59% → "medium", 0~29% → "low"
+
 - 합격률 범위는 10% 단위로 설정합니다 (예: 50~60%, 70~80%).
-- 합격률 산출 시 고려 요소:
-  - 학종: 역량 점수, 세특 질, 활동 일관성, 출결
-  - 교과: 내신 등급, 과목 조합, 등급 추이
-  - 정시: 모의고사 등급/백분위 (데이터 있는 경우)
+- 전형별 합격률 산출 기준:
+  - 학종: 기본 합격률 + 세특 품질/활동 일관성/출결 보정
+  - 교과: 기본 합격률 기준 (등급이 핵심이므로 조정폭 최소)
+  - 정시: 모의고사 데이터 기반 (없으면 "데이터 부족" 표시)
+
+### 목표 대학 분석 (필수)
+- 학생 프로필에 목표 대학이 있으면, universityPredictions에 **반드시 목표 대학을 포함**하세요.
+- 합격이 어려워도 "왜 어려운지 + 현실적 대안"을 구체적으로 서술하세요.
+- 목표 대학이 후보군에 없으면 가장 유사한 대학의 데이터를 참조하여 분석하세요.
 
 ### 종합 코멘트 (overallComment)
 - 전형별 예측을 종합하여 최종 조언을 2~3줄로 서술합니다.
+- 목표 대학이 비현실적인 경우, 솔직하게 현실적 대안을 제시하세요.
 
 ${PLAN_SPECIFIC[plan]}`;
 };
