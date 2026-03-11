@@ -25,9 +25,10 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - Standard와 동일
 
 ⚠️ **분량 제한 (반드시 준수)**:
-- courses 배열은 **최대 8개**입니다. 9개 이상 절대 출력하지 마세요.
-- 각 course의 관련 설명(reason 등)은 **120자 이내**로 작성합니다.
-- missingCourseImpact는 **150자 이내**, recommendation은 **150자 이내**로 작성합니다.`,
+- courses 배열은 **최대 6개**입니다. 7개 이상 절대 출력하지 마세요.
+- 각 course의 관련 설명(reason 등)은 **80자 이내**로 작성합니다.
+- missingCourseImpact는 **100자 이내**, recommendation은 **100자 이내**로 작성합니다.
+- ⚠️ 이 섹션은 **A4 1페이지 이내**에 들어와야 합니다. 간결하게 작성하세요.`,
 };
 
 export const buildCourseAlignmentPrompt = (

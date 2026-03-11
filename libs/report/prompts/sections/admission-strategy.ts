@@ -16,14 +16,15 @@ export interface AdmissionStrategyPromptInput {
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 간략
 - 추천 전형 방향(recommendedPath, 2~3줄) 출력
-- 대학 추천(recommendations): 상향 1/안정 2/하향 1 = 총 **4개** 고정, 대학명+학과+전형명+티어+간단 rationale(1줄)
-- 4개를 초과하지 않습니다.
+- 대학 추천(recommendations): 상향 1/적정 1/안정 2/하향 2 = 총 **6개** 고정, 대학명+학과+전형명+티어+간단 rationale(1줄)
+- ⚠️ 반드시 "하향" 티어 대학 2개를 포함하세요. 하향 대학은 합격 가능성이 높은 안전 지원 대학입니다.
 - typeStrategies, schoolTypeAnalysis, nextSemesterStrategy, csatMinimumStrategy, applicationSimulation, universityGuideMatching, tierGroupedRecommendations 필드는 출력하지 않습니다.
 
 ⚠️ **분량 제한**: 이 섹션은 A4 1페이지 이내로 작성합니다.`,
   standard: `## 플랜별 출력: 상세
 - 추천 전형 방향(recommendedPath) + 대학 추천(recommendations)
-- 대학 추천 수: 상향 1/적정 2/안정 1 = 총 **4개** 고정. 4개를 초과하면 절대 안 됩니다.
+- 대학 추천 수: 상향 2/적정 2/안정 2/하향 2 = 총 **8개** 고정.
+- ⚠️ 반드시 4개 티어(상향/적정/안정/하향) 모두 포함하세요. 하향 대학은 합격 가능성이 높은 안전 지원 대학입니다.
 - 대학별 합격 가능성(chance + chanceRationale + chancePercentLabel)만 출력합니다. admissionData 필드는 출력하지 않습니다.
 - 전형별 전략(typeStrategies) 출력
 - 주의/유리 학교 유형(schoolTypeAnalysis)
@@ -31,14 +32,15 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - csatMinimumStrategy, applicationSimulation, universityGuideMatching, tierGroupedRecommendations 필드는 출력하지 않습니다.
 
 ⚠️ **분량 제한 (반드시 준수)**:
-- recommendations는 반드시 **4개** 고정. 5개 이상 절대 출력 금지.
+- recommendations는 반드시 **8개** 고정.
 - 각 chanceRationale은 반드시 **80자 이내**로 작성합니다. 80자 초과 금지.
 - typeStrategies의 각 analysis는 **100자 이내**, 각 reason은 **80자 이내**로 작성합니다.
 - schoolTypeAnalysis의 rationale은 **100자 이내**로 작성합니다.
 - nextSemesterStrategy는 **150자 이내**로 작성합니다.`,
   premium: `## 플랜별 출력: 정밀
 Standard의 모든 항목에 추가로 다음을 출력합니다:
-- 대학 추천 수: 상향 2/적정 2/안정 2 = 총 **최대 6개**. 6개를 초과하면 절대 안 됩니다.
+- 대학 추천 수: 상향 3/적정 3/안정 3/하향 3 = 총 **최대 12개**.
+- ⚠️ 반드시 4개 티어(상향/적정/안정/하향) 모두 포함하세요. 하향 대학은 합격 가능성이 높은 안전 지원 대학입니다.
 - 전형별 상세 전략(typeStrategies)
 - 수능 최저 전략(csatMinimumStrategy)
 - 6장 카드 배분 시뮬레이션(applicationSimulation): 반드시 아래 형식. **학생부교과전형도 반드시 포함**하세요.
@@ -50,7 +52,7 @@ Standard의 모든 항목에 추가로 다음을 출력합니다:
 - 서울대학교는 학생부교과전형이 없으므로 교과전형 데이터를 생성하지 않습니다.
 
 ⚠️ **분량 제한 (반드시 준수)**:
-- recommendations는 **최대 6개**. 7개 이상 절대 출력 금지.
+- recommendations는 **최대 12개**.
 - 각 chanceRationale은 반드시 **150자 이내**로 작성합니다. 150자 초과 금지.
 - admissionData 포함 가능.
 - typeStrategies의 각 analysis는 **200자 이내**로 작성합니다.`,
@@ -170,6 +172,8 @@ ${input.universityCandidates}
 ${input.basePassRates ?? "없음"}
 → 대학 추천 시 chancePercentLabel은 반드시 이 기본 합격률의 ±10%p 범위 내에서 설정하세요.
 → gradeDiff가 +0.5 이상인 대학에 50% 이상, +1.0 이상인 대학에 30% 이상 합격률 부여 금지.
+→ ⚠️ 티어와 chance가 일관되어야 합니다: "하향" 대학은 "very_high"/"high", "안정" 대학은 "high"/"medium", "상향" 대학은 "low"/"very_low".
+→ 모든 대학이 "low"/"very_low"만 나오면 안 됩니다. 안정/하향 대학은 반드시 "medium" 이상이어야 합니다.
 
 ## 합격 예측 결과
 ${input.admissionPredictionResult}
