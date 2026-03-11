@@ -1918,6 +1918,7 @@
 
 .partDescription {
   font-size: var(--report-fs-subtitle);
+  font-weight: 700;
   color: var(--report-fg-secondary);
   line-height: 1.7;
   max-width: 520px;
@@ -1950,7 +1951,7 @@
 
 .partSectionTitle {
   font-size: var(--report-fs-body);
-  font-weight: 500;
+  font-weight: 700;
   color: var(--report-fg-secondary);
 }
 
