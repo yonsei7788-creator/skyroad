@@ -97,6 +97,7 @@ export const buildStoryAnalysisPrompt = (
 ### 1. 메인 스토리라인 (mainStoryline)
 - 학생의 생기부가 말하는 핵심 이야기를 3~5줄로 서술합니다.
 - "~하는 학생"이라는 한 문장으로 시작합니다.
+- 사정관이 이 생기부를 10분 안에 읽었을 때 떠올릴 학생 이미지를 담으세요.
 
 ### 2. 학년별 심화 흐름 (yearProgressions)
 - 1학년 -> 2학년 -> 3학년(있는 경우)의 심화 흐름을 분석합니다.
@@ -108,6 +109,7 @@ export const buildStoryAnalysisPrompt = (
 - S/A/B/C/D 등급으로 평가합니다.
 - 일관성 분석 코멘트(careerConsistencyComment)를 포함합니다.
 - 방향 변화가 있다면 그 맥락이 자연스럽게 설명 가능한지 분석합니다.
+- ⚠️ 사정관은 진로 일관성을 "이 학생이 정말 이 분야에 관심이 있는가"의 핵심 판단 기준으로 봅니다. 일관성이 높으면 그 강점을, 낮으면 사정관이 의문을 가질 수 있는 지점을 구체적으로 언급하세요.
 
 ${PLAN_SPECIFIC[plan]}
 
