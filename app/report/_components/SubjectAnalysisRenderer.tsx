@@ -27,9 +27,11 @@ const RATING_LABEL: Record<SubjectRating, string> = {
 };
 
 const IMPACT_LABEL: Record<string, string> = {
+  very_high: "매우 높음",
   high: "높음",
   medium: "보통",
   low: "낮음",
+  very_low: "매우 낮음",
 };
 
 const RATING_ORDER: Record<SubjectRating, number> = {

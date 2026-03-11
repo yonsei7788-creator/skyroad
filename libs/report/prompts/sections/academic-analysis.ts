@@ -113,6 +113,12 @@ Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다
   - gradeTrend: 전처리 결과의 "gradeTrend.direction"을 한글로 변환 (ascending→상승, stable→유지, descending→하락)
 - **AI 해석 → 생성**: interpretation, subjectStatAnalyses, gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 등
   → 이 필드들은 전처리 데이터를 바탕으로 해석하여 작성하세요.
+
+⚠️ **데이터 부족 시 처리 규칙 (필수)**:
+- 전처리 결과에 성적 데이터가 없거나 부족하더라도 interpretation, gradeDeviationAnalysis.riskAssessment 등 AI 해석 필드를 **빈 문자열로 남기지 마세요**.
+- 데이터가 부족한 경우: "일반 교과 성적 데이터가 부족하여 정밀한 분석이 어렵습니다. 세특 및 활동 내용을 기반으로 볼 때..." 등으로 가용한 정보를 활용해 작성하세요.
+- 모든 텍스트 필드는 반드시 의미 있는 내용이 포함되어야 합니다. 빈 문자열("") 출력 금지.
+  → 이 필드들은 전처리 데이터를 바탕으로 해석하여 작성하세요.
   → interpretation에서 언급하는 평균 등급은 반드시 전처리 결과의 overallAverage 값과 동일해야 합니다.
 
 ## 비핵심 과목 구분 (필수 준수)

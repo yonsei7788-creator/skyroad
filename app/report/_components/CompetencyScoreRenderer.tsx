@@ -21,6 +21,14 @@ const CATEGORY_LABEL: Record<string, string> = {
   growth: "발전 가능성",
 };
 
+const GROWTH_SCORE_MAP: Record<CompetencyGrade, number> = {
+  S: 95,
+  A: 80,
+  B: 65,
+  C: 50,
+  D: 35,
+};
+
 const GRADE_BADGE_CLASS: Record<CompetencyGrade, string> = {
   S: styles.ratingExcellent,
   A: styles.ratingGood,
@@ -188,6 +196,10 @@ export const CompetencyScoreRenderer = ({
             {CATEGORY_LABEL.growth}
           </span>
           <div className={styles.competencyDimWideScoreRow}>
+            <span className={styles.competencyDimWideScore}>
+              {GROWTH_SCORE_MAP[data.growthGrade] ?? "—"}
+            </span>
+            <span className={styles.competencyDimWideMax}>/100</span>
             <span
               className={`${styles.competencyDimWideGradeBadge} ${GRADE_BADGE_CLASS[data.growthGrade] ?? ""}`}
             >
@@ -195,6 +207,17 @@ export const CompetencyScoreRenderer = ({
             </span>
           </div>
         </div>
+
+        {showBar && (
+          <div className={styles.competencyDimWideBar}>
+            <div
+              className={styles.competencyDimWideBarFill}
+              style={{
+                width: `${GROWTH_SCORE_MAP[data.growthGrade] ?? 0}%`,
+              }}
+            />
+          </div>
+        )}
 
         {data.growthComment && (
           <div className={styles.competencyDimWideGradeComment}>

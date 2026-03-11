@@ -266,7 +266,10 @@ export const AdmissionStrategyRenderer = ({
                     <td className={styles.tableCellBold}>{match.university}</td>
                     <td>
                       <div className={styles.tagGroup}>
-                        {(match.emphasisKeywords ?? []).map((kw) => (
+                        {(Array.isArray(match.emphasisKeywords)
+                          ? match.emphasisKeywords
+                          : []
+                        ).map((kw) => (
                           <span key={kw} className={styles.tag}>
                             {kw}
                           </span>
@@ -275,7 +278,10 @@ export const AdmissionStrategyRenderer = ({
                     </td>
                     <td>
                       <div className={styles.tagGroup}>
-                        {(match.studentStrengthMatch ?? []).map((s) => (
+                        {(Array.isArray(match.studentStrengthMatch)
+                          ? match.studentStrengthMatch
+                          : []
+                        ).map((s) => (
                           <span key={s} className={styles.tag}>
                             {s}
                           </span>
@@ -284,7 +290,10 @@ export const AdmissionStrategyRenderer = ({
                     </td>
                     <td style={{ minWidth: 120, overflow: "visible" }}>
                       <div className={styles.tagGroup}>
-                        {(match.studentWeaknessMatch ?? []).map((w) => (
+                        {(Array.isArray(match.studentWeaknessMatch)
+                          ? match.studentWeaknessMatch
+                          : []
+                        ).map((w) => (
                           <span key={w} className={styles.tag}>
                             {w}
                           </span>

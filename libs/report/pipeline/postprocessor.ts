@@ -47,7 +47,7 @@ export const postprocess = (
   const validatedSections: ReportSection[] = [];
 
   for (let section of rawSections) {
-    section = normalizeSection(section, preprocessed);
+    section = normalizeSection(section, preprocessed, plan, studentInfo);
     const result = validateSection(section);
     validationResults.push(result);
 
@@ -254,6 +254,38 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   // ── 기타 AI식 표현 ──
   [/발전시켰/g, "보여주었"],
   [/충분히 합격할 겁니다/g, "합격 가능성이 높습니다"],
+  [/충분히 합격/g, "합격 가능성이 높은"],
+  [/다른 요소로 충분히 커버 가능합니다/g, "다른 요소로 보완 가능합니다"],
+  [/충분히 커버 가능합니다/g, "보완 가능합니다"],
+  [/충분히 커버/g, "보완"],
+  [/충분히 경쟁력/g, "경쟁력"],
+  [/충분히 가능/g, "가능"],
+
+  // ── 무의미한 추상 평가 표현 → 제거/대체 ──
+  [/비판적 사고력을?\s*입증/g, "탐구 과정에서 다각적 분석을 시도"],
+  [
+    /비판적 사고력을?\s*(보여주었|드러냈|발휘했|보여줍니다|드러냅니다|발휘합니다)/g,
+    "다각적 분석을 시도했",
+  ],
+  [/실질적 기여 의지/g, "참여 의지"],
+  [/문제 해결 능력을 보여주었습니다/g, "문제 해결 과정이 기록되어 있습니다"],
+  [/창의적 사고를 발휘했습니다/g, "독자적 접근 방식을 시도했습니다"],
+  [/리더십을 발휘했습니다/g, "리더 역할을 수행했습니다"],
+
+  // ── "드러납니다" 계열 (금지 표현) ──
+  [/잘 드러납니다/g, "잘 확인됩니다"],
+  [/잘 드러나며/g, "확인되며"],
+  [/잘 드러나고/g, "확인되고"],
+  [/드러납니다/g, "확인됩니다"],
+  [/드러나며/g, "확인되며"],
+
+  // ── "매우 우수합니다" → 톤 다운 ──
+  [/매우 우수합니다/g, "우수한 편입니다"],
+
+  // ── "~할 수 있습니다" → "~할 겁니다" (평가 맥락) ──
+  [/평가할 수 있습니다/g, "평가할 겁니다"],
+  [/평가될 수 있습니다/g, "평가될 겁니다"],
+  [/작용할 수 있습니다/g, "작용할 겁니다"],
 ];
 
 const sanitizeAiTone = (text: string): string => {
@@ -282,12 +314,185 @@ const sanitizeDeep = (obj: unknown): unknown => {
 
 const normalizeSection = (
   section: ReportSection,
-  pre: PreprocessedData
+  pre: PreprocessedData,
+  plan: ReportPlan,
+  studentInfo: StudentInfo
 ): ReportSection => {
   let s = section as any;
 
   // ── AI 금지 표현 치환 (모든 섹션 공통) ──
   s = sanitizeDeep(s) as any;
+
+  // ── subjectAnalysis: evaluationImpact 정규화 + 플랜별 과목 수 제한 ──
+  if (s.sectionId === "subjectAnalysis" && Array.isArray(s.subjects)) {
+    const impactMap: Record<string, string> = {
+      "very high": "very_high",
+      "매우 높음": "very_high",
+      높음: "high",
+      보통: "medium",
+      낮음: "low",
+      "very low": "very_low",
+      "매우 낮음": "very_low",
+    };
+    for (const subj of s.subjects) {
+      if (subj.evaluationImpact && impactMap[subj.evaluationImpact]) {
+        subj.evaluationImpact = impactMap[subj.evaluationImpact];
+      }
+    }
+
+    // ── 과목 중요도 강제 보정 (전공 계열 기반) ──
+    const targetDept = (studentInfo.targetDepartment ?? "").toLowerCase();
+    const isScienceTrack =
+      /공학|컴퓨터|전자|기계|물리|화학|생명|의학|의예|약학|간호|수학|통계|IT|소프트웨어|AI|로봇|건축|환경|에너지|재료|항공|반도체/.test(
+        targetDept
+      );
+    const isHumanitiesTrack =
+      /인문|사회|경영|경제|법|정치|행정|국어|영어|교육|심리|철학|역사|문학|미디어|언론|광고|외교|국제/.test(
+        targetDept
+      );
+
+    // CS 관련 학과 여부 (정보 과목 예외 처리용)
+    const isCSTrack =
+      /컴퓨터|소프트웨어|정보|IT|AI|인공지능|데이터|사이버|보안|게임/.test(
+        targetDept
+      );
+
+    // 비핵심 과목 패턴 (학종 평가에서 거의 무의미한 과목)
+    // ⚠️ CS 관련 학과 지망 시 "정보"는 핵심 과목이므로 제외
+    const NON_CORE_SUBJECTS = [
+      "기술[·]?가정",
+      "제2외국어",
+      "일본어",
+      "중국어",
+      "독일어",
+      "프랑스어",
+      "스페인어",
+      "러시아어",
+      "아랍어",
+      "베트남어",
+      "한문",
+      "교양",
+      "진로와\\s*직업",
+      "체육",
+      "음악",
+      "미술",
+      "독서",
+      "보건",
+      "환경",
+      "논리학",
+      "실용\\s*국어",
+      "실용\\s*영어",
+      "심화\\s*국어",
+      "심화\\s*영어",
+      "직업",
+      "로봇",
+    ];
+    // CS 관련 학과가 아닐 때만 "정보"를 비핵심에 포함
+    if (!isCSTrack) {
+      NON_CORE_SUBJECTS.unshift("정보");
+    }
+    const NON_CORE_PATTERN = new RegExp(`^(${NON_CORE_SUBJECTS.join("|")})`);
+    const SOCIAL_PATTERN =
+      /^(사회[·]?문화|정치와\s*법|경제|세계지리|한국지리|세계사|동아시아사|윤리와\s*사상|생활과\s*윤리|통합사회)/;
+    const SCIENCE_PATTERN =
+      /^(물리학|화학|생명과학|지구과학|과학탐구실험|통합과학)/;
+    const MATH_PATTERN = /^(수학|미적분|확률과\s*통계|기하)/;
+    const CORE_LANG_PATTERN =
+      /^(국어|영어|문학|언어와\s*매체|화법과\s*작문|영어[ⅠⅡ12])/;
+
+    for (const subj of s.subjects) {
+      const name = (subj.subjectName ?? "").replace(/^\d학년\s*/, "");
+
+      if (NON_CORE_PATTERN.test(name)) {
+        // 비핵심 과목: 중요도 2% (거의 0에 가깝게)
+        subj.importancePercent = 2;
+        subj.evaluationImpact = "very_low";
+      } else if (isCSTrack && /^정보/.test(name)) {
+        // CS 관련 학과 지망: 정보 과목은 전공 핵심
+        subj.importancePercent = Math.max(subj.importancePercent ?? 0, 30);
+        subj.evaluationImpact = "very_high";
+      } else if (isScienceTrack) {
+        // 이공계 전공 특화: 수학/물리/기하 최우선
+        if (MATH_PATTERN.test(name) || /물리학|기하/.test(name)) {
+          subj.importancePercent = Math.max(subj.importancePercent ?? 0, 35);
+          subj.evaluationImpact = "very_high";
+        } else if (
+          SCIENCE_PATTERN.test(name) &&
+          !/과학탐구실험|통합과학/.test(name)
+        ) {
+          // 화학, 생명과학, 지구과학
+          subj.importancePercent = Math.max(subj.importancePercent ?? 0, 20);
+          subj.evaluationImpact = "high";
+        } else if (/과학탐구실험/.test(name)) {
+          subj.importancePercent = Math.min(subj.importancePercent ?? 10, 8);
+          subj.evaluationImpact = "low";
+        } else if (/통합과학/.test(name)) {
+          subj.importancePercent = Math.min(subj.importancePercent ?? 12, 12);
+          subj.evaluationImpact = "medium";
+        } else if (CORE_LANG_PATTERN.test(name)) {
+          // 국영: 중간 수준
+          subj.importancePercent = Math.min(
+            Math.max(subj.importancePercent ?? 10, 10),
+            15
+          );
+          subj.evaluationImpact = "medium";
+        } else if (SOCIAL_PATTERN.test(name)) {
+          // 이공계한테 사회탐구는 비중요
+          subj.importancePercent = Math.min(subj.importancePercent ?? 5, 5);
+          subj.evaluationImpact = "low";
+        }
+      } else if (isHumanitiesTrack) {
+        // 인문사회 전공 특화: 사회탐구 최우선
+        if (SOCIAL_PATTERN.test(name) && !/통합사회|생활과\s*윤리/.test(name)) {
+          subj.importancePercent = Math.max(subj.importancePercent ?? 0, 30);
+          subj.evaluationImpact = "very_high";
+        } else if (/통합사회/.test(name)) {
+          subj.importancePercent = Math.min(subj.importancePercent ?? 12, 12);
+          subj.evaluationImpact = "medium";
+        } else if (CORE_LANG_PATTERN.test(name)) {
+          // 국영: 중간~높음
+          subj.importancePercent = Math.min(
+            Math.max(subj.importancePercent ?? 12, 12),
+            18
+          );
+          subj.evaluationImpact = "medium";
+        } else if (MATH_PATTERN.test(name)) {
+          // 문과한테 수학: 중간
+          subj.importancePercent = Math.min(
+            Math.max(subj.importancePercent ?? 10, 10),
+            15
+          );
+          subj.evaluationImpact = "medium";
+        } else if (SCIENCE_PATTERN.test(name)) {
+          // 인문계한테 과학탐구는 비중요
+          subj.importancePercent = Math.min(subj.importancePercent ?? 5, 5);
+          subj.evaluationImpact = "low";
+        }
+      } else {
+        // 전공 미지정: 국영수 중간, 나머지 기본
+        if (CORE_LANG_PATTERN.test(name) || MATH_PATTERN.test(name)) {
+          subj.importancePercent = Math.max(subj.importancePercent ?? 0, 15);
+          subj.evaluationImpact = "medium";
+        }
+      }
+    }
+
+    // 플랜별 과목 수 강제 제한 — 중요도 높은 순으로 선별
+    const maxSubjects: Record<ReportPlan, number> = {
+      lite: 5,
+      standard: 7,
+      premium: 10,
+    };
+    const limit = maxSubjects[plan];
+    if (s.subjects.length > limit) {
+      // 중요도 높은 순 정렬 후 상위 N개만 유지
+      s.subjects.sort(
+        (a: any, b: any) =>
+          (b.importancePercent ?? 0) - (a.importancePercent ?? 0)
+      );
+      s.subjects = s.subjects.slice(0, limit);
+    }
+  }
 
   if (s.sectionId === "academicAnalysis") {
     // ── 핵심 정량 수치: 코드 전처리 결과로 강제 덮어쓰기 ──
@@ -314,12 +519,17 @@ const normalizeSection = (
     // ── gradeDeviationAnalysis: 전처리 gradeVariance에서 확정값 주입 ──
     const gv = pre.gradeVariance;
     const aiDev = s.gradeDeviationAnalysis ?? {};
+    const riskText =
+      aiDev.riskAssessment || aiDev.analysis || aiDev.recommendation || "";
     s.gradeDeviationAnalysis = {
-      highestSubject: gv.highest,
-      lowestSubject: gv.lowest,
-      deviationRange: gv.spread,
+      highestSubject: gv.highest || "-",
+      lowestSubject: gv.lowest || "-",
+      deviationRange: gv.spread ?? 0,
       riskAssessment:
-        aiDev.riskAssessment || aiDev.analysis || aiDev.recommendation || "",
+        riskText ||
+        (gv.spread > 0
+          ? `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 차이가 있습니다.`
+          : "과목별 성적 데이터가 부족하여 편차 분석이 어렵습니다."),
     };
 
     // ── majorRelevanceAnalysis: AI 필드명 매핑 ──
@@ -476,6 +686,41 @@ const normalizeSection = (
       }
     }
 
+    // ── 진로역량 점수: 생기부-학과 괴리 감지 시 상한 적용 ──
+    if (Array.isArray(s.scores) && studentInfo.targetDepartment) {
+      const targetDept = (studentInfo.targetDepartment ?? "").toLowerCase();
+      const careerScore = s.scores.find((sc: any) => sc.category === "career");
+
+      if (careerScore) {
+        // 전공 관련 과목 성적 확인 (전처리 careerSubjects 활용)
+        const careerSubjects = pre.careerSubjects ?? [];
+        const hasWeakCareerSubjects =
+          careerSubjects.length > 0 &&
+          careerSubjects.some(
+            (cs: any) =>
+              cs.achievement &&
+              /[4-9]등급|4등급|5등급|6등급|7등급|8등급|9등급/.test(
+                cs.achievement
+              )
+          );
+
+        // 괴리 감지: 전공 관련 과목 성적이 4등급 이하면 진로역량 상한 60점
+        if (hasWeakCareerSubjects && careerScore.score > 60) {
+          const originalScore = careerScore.score;
+          careerScore.score = 60;
+          careerScore.grade = "B";
+
+          // 하위항목도 비례 축소
+          if (Array.isArray(careerScore.subcategories)) {
+            const ratio = 60 / originalScore;
+            for (const sub of careerScore.subcategories) {
+              sub.score = Math.round(sub.score * ratio);
+            }
+          }
+        }
+      }
+    }
+
     // ── totalScore: 하위 영역 합산으로 강제 재계산 ──
     if (Array.isArray(s.scores)) {
       const recalculated = s.scores.reduce(
@@ -486,6 +731,21 @@ const normalizeSection = (
       if (s.comparison) {
         s.comparison.myScore = recalculated;
       }
+    }
+
+    // ── interpretation: AI가 누락한 경우 자동 생성 ──
+    if (!s.interpretation && Array.isArray(s.scores)) {
+      const total = s.totalScore ?? 0;
+      const strongest = s.scores.reduce(
+        (best: any, sc: any) => (sc.score > (best?.score ?? 0) ? sc : best),
+        s.scores[0]
+      );
+      const weakest = s.scores.reduce(
+        (worst: any, sc: any) =>
+          sc.score < (worst?.score ?? 999) ? sc : worst,
+        s.scores[0]
+      );
+      s.interpretation = `총점 ${total}점(300점 만점)으로 ${strongest?.label ?? ""}이 가장 우수하며, ${weakest?.label ?? ""}은 상대적으로 보완이 필요합니다.`;
     }
   }
 
@@ -501,6 +761,67 @@ const normalizeSection = (
         (a: any, b: any) =>
           (priorityOrder[a.priority] ?? 1) - (priorityOrder[b.priority] ?? 1)
       );
+    }
+  }
+
+  // ── activityAnalysis: "입학사정관은" 패턴 다양화 (2번째부터 교체) ──
+  if (s.sectionId === "activityAnalysis" && Array.isArray(s.activities)) {
+    let assessorCount = 0;
+    const ASSESSOR_ALTS = [
+      "학종 서류 심사 시",
+      "전형 심사 관점에서",
+      "서류 검토 시",
+      "합격 심사 기준으로 보면",
+      "서류 심사 시",
+    ];
+
+    const diversifyAssessor = (text: string): string => {
+      return text.replace(/입학사정관은/g, () => {
+        assessorCount++;
+        if (assessorCount <= 1) return "입학사정관은";
+        return ASSESSOR_ALTS[(assessorCount - 2) % ASSESSOR_ALTS.length];
+      });
+    };
+
+    for (const activity of s.activities) {
+      if (Array.isArray(activity.yearlyAnalysis)) {
+        for (const ya of activity.yearlyAnalysis) {
+          if (typeof ya.summary === "string") {
+            ya.summary = diversifyAssessor(ya.summary);
+          }
+        }
+      }
+      if (typeof activity.overallComment === "string") {
+        activity.overallComment = diversifyAssessor(activity.overallComment);
+      }
+    }
+    if (typeof s.overallComment === "string") {
+      s.overallComment = diversifyAssessor(s.overallComment);
+    }
+  }
+
+  // ── interviewPrep: Lite 플랜에서 sampleAnswer 강제 제거 ──
+  if (s.sectionId === "interviewPrep" && plan === "lite") {
+    if (Array.isArray(s.questions)) {
+      for (const q of s.questions) {
+        delete q.sampleAnswer;
+        delete q.followUpQuestions;
+        delete q.answerStrategy;
+        delete q.intent;
+      }
+    }
+  }
+
+  // ── admissionStrategy: schoolTypeAnalysis 빈 객체 제거 ──
+  if (s.sectionId === "admissionStrategy") {
+    const sta = s.schoolTypeAnalysis;
+    if (
+      sta &&
+      !sta.rationale &&
+      (!Array.isArray(sta.cautionTypes) || sta.cautionTypes.length === 0) &&
+      (!Array.isArray(sta.advantageTypes) || sta.advantageTypes.length === 0)
+    ) {
+      delete s.schoolTypeAnalysis;
     }
   }
 

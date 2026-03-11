@@ -19,9 +19,21 @@ export const SubjectRatingSchema = z.enum([
   "average",
   "weak",
 ]);
-export const EvaluationImpactSchema = z.enum(["high", "medium", "low"]);
-export const AdmissionChanceSchema = z.enum(["high", "medium", "low"]);
-export const AdmissionTierSchema = z.enum(["상향", "안정", "하향"]);
+export const EvaluationImpactSchema = z.enum([
+  "very_high",
+  "high",
+  "medium",
+  "low",
+  "very_low",
+]);
+export const AdmissionChanceSchema = z.enum([
+  "very_high",
+  "high",
+  "medium",
+  "low",
+  "very_low",
+]);
+export const AdmissionTierSchema = z.enum(["상향", "적정", "안정", "하향"]);
 export const PrioritySchema = z.enum(["high", "medium", "low"]);
 export const CompetencyCategorySchema = z.enum([
   "academic",
@@ -944,7 +956,7 @@ const InterviewQuestionSchema = z.object({
 export const InterviewPrepSectionSchema = z.object({
   sectionId: z.literal("interviewPrep"),
   title: z.string().min(1),
-  questions: z.array(InterviewQuestionSchema).min(10),
+  questions: z.array(InterviewQuestionSchema).min(3),
   // v4
   questionDistribution: z
     .array(
@@ -985,9 +997,9 @@ const AdmissionTypeStrategySchema = z.object({
 });
 
 const SchoolTypeAnalysisSchema = z.object({
-  cautionTypes: z.array(z.string().min(1)),
-  advantageTypes: z.array(z.string().min(1)),
-  rationale: z.string().min(1),
+  cautionTypes: z.array(z.string()),
+  advantageTypes: z.array(z.string()),
+  rationale: z.string(),
 });
 
 const ApplicationSimulationDetailSchema = z.object({
@@ -1310,7 +1322,7 @@ export const ReportSectionSchema = z.discriminatedUnion("sectionId", [
 
 export const ReportContentSchema = z.object({
   meta: ReportMetaSchema,
-  sections: z.array(ReportSectionSchema).min(10),
+  sections: z.array(ReportSectionSchema).min(5),
 });
 
 // ============================================================
