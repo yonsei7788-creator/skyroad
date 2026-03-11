@@ -6,11 +6,17 @@ import { ReportPage } from "./ReportPage";
 
 /**
  * Usable content height within an A4 page.
- * A4 = 297mm, padding-top 20mm, padding-bottom ~15mm + footer ~12mm + header ~10mm
- * Available ≈ 240mm ≈ 907px → generous safety margin → 860px
- * (reduced from 890px to prevent PDF page overflow / clipping)
+ *
+ * Calculation (at 96dpi, 1mm ≈ 3.78px):
+ *   A4 height          = 297mm = 1122px
+ *   .page padding-top  = 20mm  =   76px
+ *   .page padding-bot  = 56px  (calc(32px + 24px))
+ *   .pageHeader         ≈ 50px  (text + padding-bottom 12px + margin-bottom 24px)
+ *   .pageFooter bottom  = 15mm  =   57px (absolute, overlap with padding-bottom)
+ *
+ *   Available = 1122 - 76 - 56 - 50 = 940px → safety margin 20px → 920px
  */
-const AVAILABLE_HEIGHT_PX = 860;
+const AVAILABLE_HEIGHT_PX = 920;
 
 interface AutoPaginatedSectionProps {
   children: ReactNode;
@@ -113,36 +119,42 @@ export const AutoPaginatedSection = ({
 
       {/* Paginated output */}
       {measured &&
-        slices.map((slice, i) => (
-          <ReportPage
-            key={`${sectionTitle}-p${i}`}
-            pageNumber={startPageNumber > 0 ? startPageNumber + i : undefined}
-            sectionTitle={sectionTitle}
-            studentName={studentName}
-          >
-            <div
-              style={{
-                height: `${slice.height}px`,
-                overflow: "hidden",
-                position: "relative",
-              }}
+        slices.map((slice, i) => {
+          const isLastSlice = i === slices.length - 1;
+          return (
+            <ReportPage
+              key={`${sectionTitle}-p${i}`}
+              pageNumber={startPageNumber > 0 ? startPageNumber + i : undefined}
+              sectionTitle={sectionTitle}
+              studentName={studentName}
             >
               <div
                 style={{
-                  position: "absolute",
-                  top: `-${slice.offsetY}px`,
-                  left: 0,
-                  right: 0,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "20px",
+                  // 마지막 페이지는 height 제한 없음 (잘림 방지)
+                  // 중간 페이지는 다음 페이지 콘텐츠가 보이지 않도록 제한
+                  height: isLastSlice ? undefined : `${slice.height}px`,
+                  minHeight: isLastSlice ? `${slice.height}px` : undefined,
+                  overflow: "hidden",
+                  position: "relative",
                 }}
               >
-                {children}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: `-${slice.offsetY}px`,
+                    left: 0,
+                    right: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "20px",
+                  }}
+                >
+                  {children}
+                </div>
               </div>
-            </div>
-          </ReportPage>
-        ))}
+            </ReportPage>
+          );
+        })}
     </>
   );
 };
