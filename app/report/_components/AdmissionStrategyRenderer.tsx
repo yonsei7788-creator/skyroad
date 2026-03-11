@@ -254,10 +254,10 @@ export const AdmissionStrategyRenderer = ({
             <table className={styles.compactTable}>
               <thead>
                 <tr>
-                  <th>대학</th>
+                  <th style={{ whiteSpace: "nowrap" }}>대학</th>
                   <th>핵심 키워드</th>
                   <th>강점 매칭</th>
-                  <th>보완 필요</th>
+                  <th style={{ minWidth: 120 }}>보완 필요</th>
                 </tr>
               </thead>
               <tbody>
@@ -282,7 +282,7 @@ export const AdmissionStrategyRenderer = ({
                         ))}
                       </div>
                     </td>
-                    <td>
+                    <td style={{ minWidth: 120, overflow: "visible" }}>
                       <div className={styles.tagGroup}>
                         {(match.studentWeaknessMatch ?? []).map((w) => (
                           <span key={w} className={styles.tag}>

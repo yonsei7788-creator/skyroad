@@ -78,11 +78,15 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
         </div>
       )}
 
-      <p className={styles.small}>{safeText(subject.activitySummary)}</p>
-      {!subject.detailedEvaluation && subject.evaluationComment && (
-        <p className={`${styles.small} ${styles.mt6}`}>
-          {safeText(subject.evaluationComment)}
-        </p>
+      {!subject.detailedEvaluation && (
+        <>
+          <p className={styles.small}>{safeText(subject.activitySummary)}</p>
+          {subject.evaluationComment && (
+            <p className={`${styles.small} ${styles.mt6}`}>
+              {safeText(subject.evaluationComment)}
+            </p>
+          )}
+        </>
       )}
 
       {subject.keyQuotes && subject.keyQuotes.length > 0 && (

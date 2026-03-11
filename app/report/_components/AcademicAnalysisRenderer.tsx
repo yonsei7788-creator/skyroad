@@ -519,20 +519,32 @@ export const AcademicAnalysisRenderer = ({
                 <table className={`${styles.table} ${styles.mb16}`}>
                   <thead>
                     <tr>
-                      <th>대학</th>
-                      <th>학과</th>
+                      <th style={{ whiteSpace: "nowrap" }}>대학</th>
+                      <th style={{ whiteSpace: "nowrap", minWidth: 80 }}>
+                        학과
+                      </th>
                       <th className={styles.tableAlignCenter}>반영 방법</th>
-                      <th className={styles.tableAlignCenter}>환산 점수</th>
+                      <th
+                        className={styles.tableAlignCenter}
+                        style={{ whiteSpace: "nowrap" }}
+                      >
+                        환산 점수
+                      </th>
                       <th>해석</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.universityGradeSimulations.map((sim) => (
                       <tr key={`${sim.university}-${sim.department}`}>
-                        <td className={styles.tableCellBold}>
+                        <td
+                          className={styles.tableCellBold}
+                          style={{ whiteSpace: "nowrap" }}
+                        >
                           {sim.university}
                         </td>
-                        <td>{sim.department}</td>
+                        <td style={{ whiteSpace: "nowrap" }}>
+                          {sim.department}
+                        </td>
                         <td className={styles.tableAlignCenter}>
                           {sim.reflectionMethod}
                         </td>
