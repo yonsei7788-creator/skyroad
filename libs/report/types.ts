@@ -1529,6 +1529,8 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     // Part 1: 진단
     "studentProfile",
     "competencyScore",
+    "diagnostic",
+    "competencyEvaluation",
     // Part 2: 분석
     "academicAnalysis",
     "activityAnalysis",
