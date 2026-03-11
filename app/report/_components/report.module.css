@@ -988,6 +988,15 @@
   padding: 6px 10px;
 }
 
+.compactTable .tag {
+  white-space: normal;
+  word-break: keep-all;
+}
+
+.compactTable .tagGroup {
+  gap: 4px;
+}
+
 /* ============================================
    8. Badge & Tag System (new)
    ============================================ */
@@ -1077,6 +1086,14 @@
   border: 1px solid #e2e8f0;
 }
 
+.chanceVeryHigh {
+  composes: chanceBadge;
+  background: #d1fae5;
+  color: #047857;
+  border-color: #a7f3d0;
+  white-space: nowrap;
+}
+
 .chanceHigh {
   composes: chanceBadge;
   background: #ecfdf5;
@@ -1097,6 +1114,14 @@
   background: #fef2f2;
   color: #dc2626;
   border-color: #fecaca;
+  white-space: nowrap;
+}
+
+.chanceVeryLow {
+  composes: chanceBadge;
+  background: #fecaca;
+  color: #b91c1c;
+  border-color: #fca5a5;
   white-space: nowrap;
 }
 
@@ -2151,9 +2176,11 @@
   .strategyMatch,
   .strategySafety,
   .chanceBadge,
+  .chanceVeryHigh,
   .chanceHigh,
   .chanceMedium,
   .chanceLow,
+  .chanceVeryLow,
   .categoryTag,
   .categorySubject,
   .categoryActivity,
@@ -3219,6 +3246,10 @@
   font-size: var(--report-fs-caption);
   color: var(--report-fg-secondary);
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ============================================

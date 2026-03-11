@@ -80,7 +80,7 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
 
       <p className={styles.small}>{safeText(subject.activitySummary)}</p>
       {!subject.detailedEvaluation && subject.evaluationComment && (
-        <p className={`${styles.caption} ${styles.mt6}`}>
+        <p className={`${styles.small} ${styles.mt6}`}>
           {safeText(subject.evaluationComment)}
         </p>
       )}

@@ -90,7 +90,7 @@ export const createGeminiClient = (apiKey: string) => {
       systemInstruction,
       prompt,
       responseSchema,
-      temperature = 0.3,
+      temperature = 0,
       retryConfig = DEFAULT_RETRY_CONFIG,
       thinkingBudget,
     } = options;

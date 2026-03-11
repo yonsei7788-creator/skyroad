@@ -7,6 +7,8 @@ export interface ActivityAnalysisPromptInput {
   competencyExtraction: string;
   studentProfile: string;
   curriculumVersion: "2015" | "2022";
+  /** 계열별 입학사정관 평가 기준 */
+  majorEvaluationContext?: string;
 }
 
 const COMPETENCY_TAG_GUIDE = `## 역량 태깅 가이드
@@ -74,6 +76,9 @@ export const buildActivityAnalysisPrompt = (
 4. 기록 분량(바이트 수)도 평가 요소로 고려합니다.
 5. **자율활동, 동아리활동, 진로활동을 반드시 출력하세요.** 봉사활동은 별도 영역으로 출력하지 않습니다.
 6. **summary는 2~3줄(100~150자) 이내**로 간결하게 작성합니다. 핵심 활동과 역량만 포함하세요.
+7. **입학사정관 관점 필수**: "협동심을 길렀다", "배려심을 보였다"와 같은 일반적 평가는 금지합니다. 대신 "이 활동이 학생부종합전형에서 어떤 역량 평가에 해당하는지", "면접에서 질문 가능성이 있는지", "평가에 큰 영향이 없는 일반적 기록인지"를 구체적으로 판단하세요.
+   - 평가에 큰 영향이 없는 일반적 활동(수련회, 체험학습 등)은 "평가에 큰 영향은 없으나, 공동체역량 영역에서 긍정적 요소로 작용할 수 있다"는 식으로 솔직하게 서술하세요.
+   - "인상적입니다", "돋보입니다" 등 AI스러운 칭찬은 절대 사용하지 마세요.
 
 ${COMPETENCY_TAG_GUIDE}
 
@@ -148,6 +153,8 @@ ${input.competencyExtraction}
 
 ### 학생 프로필
 ${input.studentProfile}
+
+${input.majorEvaluationContext ? `### 학과 맞춤 평가 기준 (입학사정관 관점)\n${input.majorEvaluationContext}\n\n⚠️ 활동 평가 시 목표 학과의 핵심 활동(valuedActivities)과 학생의 실제 활동이 일치하는지 확인하세요. 목표 학과와 괴리가 큰 활동은 "이 활동은 목표 학과(컴퓨터공학과 등) 지원 시 직접적인 평가 가치는 낮으나, 공동체역량 영역에서 참고 요소로 작용할 수 있다"는 식으로 솔직하게 평가하세요.` : ""}
 
 ${PLAN_SPECIFIC[plan]}`;
 };

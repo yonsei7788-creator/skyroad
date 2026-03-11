@@ -14,6 +14,10 @@ import {
 import type { RecommendedCourseMatch } from "../constants/recommended-courses.ts";
 import { generateUniversityCandidates } from "../constants/university-admission-data.ts";
 import type { UniversityCandidate } from "../constants/university-admission-data.ts";
+import {
+  matchMajorEvaluationCriteria,
+  formatMajorEvaluationContext,
+} from "../constants/major-evaluation-criteria.ts";
 
 // ─── 생기부 원본 JSONB 타입 ───
 
@@ -216,6 +220,8 @@ export interface PreprocessedTexts {
   universityCandidatesText: string;
   basePassRatesText: string;
   curriculumVersion: "2015" | "2022";
+  /** 계열별 입학사정관 평가 기준 컨텍스트 */
+  majorEvaluationContextText: string;
 }
 
 export interface PreprocessResult {
@@ -622,21 +628,34 @@ const computeMajorRelated = (
 };
 
 const extractMajorKeywords = (targetDept: string): string[] => {
-  const lower = targetDept.toLowerCase();
-  if (lower.includes("의") || lower.includes("약") || lower.includes("치"))
-    return ["수학", "과학", "물리", "화학", "생명"];
-  if (lower.includes("공학") || lower.includes("컴퓨터"))
-    return ["수학", "과학", "물리", "정보"];
-  if (lower.includes("경영") || lower.includes("경제"))
-    return ["수학", "사회", "경제"];
-  if (
-    lower.includes("인문") ||
-    lower.includes("국어") ||
-    lower.includes("문학")
-  )
-    return ["국어", "사회", "영어"];
-  if (lower.includes("사회")) return ["사회", "수학"];
-  return ["수학", "과학", "영어"];
+  // 계열별 평가 기준 데이터와 연동하여 정밀한 교과 키워드를 반환한다.
+  const criteria = matchMajorEvaluationCriteria(targetDept);
+
+  // keySubjects를 기반으로 교과 매칭용 키워드 확장
+  const SUBJECT_KEYWORD_MAP: Record<string, string[]> = {
+    수학: ["수학"],
+    물리: ["물리", "과학"],
+    화학: ["화학", "과학"],
+    생명과학: ["생명", "과학"],
+    정보: ["정보", "프로그래밍"],
+    국어: ["국어"],
+    영어: ["영어"],
+    사회: ["사회"],
+    경제: ["경제", "사회"],
+    역사: ["역사", "사회"],
+  };
+
+  const keywords = new Set<string>();
+  for (const subject of criteria.keySubjects) {
+    const mapped = SUBJECT_KEYWORD_MAP[subject];
+    if (mapped) {
+      for (const k of mapped) keywords.add(k);
+    } else {
+      keywords.add(subject);
+    }
+  }
+
+  return [...keywords];
 };
 
 const matchRecommendedCourses = (
@@ -914,6 +933,13 @@ const buildTexts = (
   );
   const recordVolumeText = JSON.stringify(data.recordVolume, null, 2);
 
+  // 계열별 입학사정관 평가 기준 생성
+  const targetDept = studentInfo.targetDepartment ?? "";
+  const majorCriteria = matchMajorEvaluationCriteria(targetDept);
+  const majorEvaluationContextText = targetDept
+    ? formatMajorEvaluationContext(majorCriteria, targetDept)
+    : "";
+
   return {
     studentProfileText,
     recordDataText,
@@ -928,7 +954,7 @@ const buildTexts = (
     universityCandidatesText: JSON.stringify(
       generateUniversityCandidates(
         data.convertedGrade.converted,
-        studentInfo.targetDepartment ?? "",
+        targetDept,
         studentInfo.track,
         studentInfo.schoolType,
         plan
@@ -938,6 +964,7 @@ const buildTexts = (
     ),
     basePassRatesText: JSON.stringify(data.basePassRates, null, 2),
     curriculumVersion: data.curriculumVersion,
+    majorEvaluationContextText,
   };
 };
 

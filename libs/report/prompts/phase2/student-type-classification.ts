@@ -4,6 +4,7 @@ export interface StudentTypeClassificationInput {
   competencyExtraction: string;
   preprocessedAcademicData: string;
   studentProfile: string;
+  majorEvaluationContext?: string;
 }
 
 export const buildStudentTypeClassificationPrompt = (
@@ -35,6 +36,8 @@ export const buildStudentTypeClassificationPrompt = (
 - 전공 관련 교과 이수 노력: 30%
 - 전공 관련 교과 성취도: 30%
 - 진로 탐색 활동 및 경험: 40%
+
+⚠️ **학과 맞춤 평가**: 아래에 "학과 맞춤 평가 기준"이 제공된 경우, 진로역량 채점 시 해당 계열의 핵심 교과 성취도와 주목 활동 유형을 반드시 반영하세요. 동일 점수라도 전공 관련 핵심 교과의 성취도가 높은 학생이 더 높은 진로역량 점수를 받아야 합니다.
 
 ### 공동체역량 (0~100)
 - 나눔과 배려: 25%
@@ -119,7 +122,9 @@ ${input.competencyExtraction}
 ${input.preprocessedAcademicData}
 
 ### 학생 프로필
-${input.studentProfile}`;
+${input.studentProfile}
+
+${input.majorEvaluationContext ? `### 학과 맞춤 평가 기준 (입학사정관 관점)\n${input.majorEvaluationContext}` : ""}`;
 };
 
 export interface StudentTypeClassificationOutput {
