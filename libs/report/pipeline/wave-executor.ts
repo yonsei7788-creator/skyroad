@@ -151,6 +151,7 @@ export const executeTask = async (
           competencyExtraction: JSON.stringify(competencyExtraction),
           preprocessedAcademicData: texts.preprocessedAcademicDataText,
           studentProfile: texts.studentProfileText,
+          majorEvaluationContext: texts.majorEvaluationContextText,
         })
       );
 
@@ -207,6 +208,7 @@ export const executeTask = async (
             preprocessedAcademicData: texts.preprocessedAcademicDataText,
             attendanceSummary: texts.attendanceSummaryText,
             studentProfile: texts.studentProfileText,
+            majorEvaluationContext: texts.majorEvaluationContextText,
           },
           plan
         )
@@ -255,6 +257,7 @@ export const executeTask = async (
             competencyExtraction: ser.compExtrText!,
             studentProfile: texts.studentProfileText,
             curriculumVersion: texts.curriculumVersion,
+            majorEvaluationContext: texts.majorEvaluationContextText,
           },
           plan
         )
@@ -361,6 +364,7 @@ export const executeTask = async (
             academicAnalysisResult: ser.acadSectionText!,
             attendanceAnalysisResult: ser.attendSectionText!,
             basePassRates: texts.basePassRatesText,
+            majorEvaluationContext: texts.majorEvaluationContextText,
           },
           plan
         )
@@ -382,6 +386,7 @@ export const executeTask = async (
             recommendedCourseMatch: texts.recommendedCourseMatchText,
             studentProfile: texts.studentProfileText,
             basePassRates: texts.basePassRatesText,
+            majorEvaluationContext: texts.majorEvaluationContextText,
           },
           plan
         )

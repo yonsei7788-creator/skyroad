@@ -128,13 +128,63 @@ export const postprocess = (
   };
 };
 
+// ─── AI 금지 표현 치환 ───
+
+const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
+  [/이\s?돋보입니다/g, "이 강점입니다"],
+  [/가\s?돋보입니다/g, "이 강점입니다"],
+  [/돋보입니다/g, "두드러집니다"],
+  [/돋보인다/g, "두드러진다"],
+  [/돋보이는/g, "눈에 띄는"],
+  [/매우 인상적입니다/g, "주요 평가 포인트입니다"],
+  [/인상적입니다/g, "주요 평가 포인트입니다"],
+  [/인상적이다/g, "주요 평가 포인트다"],
+  [/협동심을 길렀/g, "협동심을 보여주었"],
+  [/배려심을 길렀/g, "배려심을 보여주었"],
+  [/을 길렀습니다/g, "을 보여주었습니다"],
+  [/를 길렀습니다/g, "를 보여주었습니다"],
+  [/을 발전시켰습니다/g, "이 향상되었습니다"],
+  [/를 발전시켰습니다/g, "가 향상되었습니다"],
+  [/을 발전시켰다/g, "이 향상되었다"],
+  [/를 발전시켰다/g, "가 향상되었다"],
+  [/충분히 합격할 겁니다/g, "합격 가능성이 있습니다"],
+  [/충분히 합격/g, "합격 가능성이 높다고 판단"],
+  [/긍정적으로 기여합니다/g, "긍정 요소로 작용할 수 있습니다"],
+  [/긍정적으로 기여할/g, "긍정 요소로 작용할"],
+];
+
+const sanitizeAiTone = (text: string): string => {
+  let result = text;
+  for (const [pattern, replacement] of AI_TONE_REPLACEMENTS) {
+    result = result.replace(pattern, replacement);
+  }
+  return result;
+};
+
+/** 객체의 모든 문자열 필드를 재귀적으로 AI 톤 치환 */
+const sanitizeDeep = (obj: unknown): unknown => {
+  if (typeof obj === "string") return sanitizeAiTone(obj);
+  if (Array.isArray(obj)) return obj.map(sanitizeDeep);
+  if (obj && typeof obj === "object") {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      result[key] = sanitizeDeep(value);
+    }
+    return result;
+  }
+  return obj;
+};
+
 // ─── AI 출력 필드명 정규화 + 전처리 데이터 보강 ───
 
 const normalizeSection = (
   section: ReportSection,
   pre: PreprocessedData
 ): ReportSection => {
-  const s = section as any;
+  let s = section as any;
+
+  // ── AI 금지 표현 치환 (모든 섹션 공통) ──
+  s = sanitizeDeep(s) as any;
 
   if (s.sectionId === "academicAnalysis") {
     // ── 핵심 정량 수치: 코드 전처리 결과로 강제 덮어쓰기 ──
@@ -333,6 +383,21 @@ const normalizeSection = (
       if (s.comparison) {
         s.comparison.myScore = recalculated;
       }
+    }
+  }
+
+  if (s.sectionId === "weaknessAnalysis") {
+    // ── areas 배열: priority 기준 내림차순 정렬 (high → medium → low) ──
+    if (Array.isArray(s.areas)) {
+      const priorityOrder: Record<string, number> = {
+        high: 0,
+        medium: 1,
+        low: 2,
+      };
+      s.areas.sort(
+        (a: any, b: any) =>
+          (priorityOrder[a.priority] ?? 1) - (priorityOrder[b.priority] ?? 1)
+      );
     }
   }
 
