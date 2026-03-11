@@ -128,14 +128,14 @@ export const TopicRecommendationRenderer = ({
                 {topic.activityDesign.duration &&
                   ` (${topic.activityDesign.duration})`}
               </div>
-              <div className={styles.caption}>
+              <div className={styles.small}>
                 {(topic.activityDesign.steps ?? []).map((step, sIdx) => (
                   <p key={sIdx} className={sIdx > 0 ? styles.mt4 : undefined}>
                     {step}
                   </p>
                 ))}
               </div>
-              <p className={`${styles.caption} ${styles.mt6}`}>
+              <p className={`${styles.small} ${styles.mt6}`}>
                 <span className={styles.emphasis}>예상 결과물:</span>{" "}
                 {safeText(topic.activityDesign.expectedResult)}
               </p>
