@@ -87,7 +87,91 @@ export const postprocess = (
     }
   }
 
-  // 3. 섹션 정렬 (플랜별 순서)
+  // 3. 크로스 섹션 동기화: admissionStrategy → admissionPrediction chance 일관성
+  const admPred = validatedSections.find(
+    (s) => s.sectionId === "admissionPrediction"
+  ) as any;
+  const admStrat = validatedSections.find(
+    (s) => s.sectionId === "admissionStrategy"
+  ) as any;
+  if (admPred && admStrat) {
+    // admissionStrategy의 대학별 chance를 기준으로 admissionPrediction 동기화
+    const strategyChanceMap = new Map<string, string>();
+    if (Array.isArray(admStrat.universities)) {
+      for (const uni of admStrat.universities) {
+        const key = `${uni.university}|${uni.department}`;
+        strategyChanceMap.set(key, uni.chance);
+        // 대학명만으로도 매핑 (학과가 다를 수 있으므로)
+        strategyChanceMap.set(uni.university, uni.chance);
+      }
+    }
+
+    if (Array.isArray(admPred.predictions)) {
+      for (const pred of admPred.predictions) {
+        if (!Array.isArray(pred.universityPredictions)) continue;
+        for (const uniPred of pred.universityPredictions) {
+          const exactKey = `${uniPred.university}|${uniPred.department}`;
+          const stratChance =
+            strategyChanceMap.get(exactKey) ||
+            strategyChanceMap.get(uniPred.university);
+          if (stratChance && stratChance !== uniPred.chance) {
+            uniPred.chance = stratChance;
+          }
+        }
+      }
+    }
+
+    // basePassRates 기반 tier-chance 일관성 강제 보정
+    if (Array.isArray(admPred.predictions)) {
+      // preprocessed basePassRates에서 대학별 tier 정보 수집
+      const tierMap = new Map<string, string>();
+      for (const bp of preprocessed.basePassRates) {
+        tierMap.set(bp.university, bp.tier);
+      }
+      // admissionStrategy에서도 보충
+      if (Array.isArray(admStrat.universities)) {
+        for (const uni of admStrat.universities) {
+          if (!tierMap.has(uni.university)) {
+            tierMap.set(uni.university, uni.tier);
+          }
+        }
+      }
+
+      for (const pred of admPred.predictions) {
+        if (!Array.isArray(pred.universityPredictions)) continue;
+        for (const uniPred of pred.universityPredictions) {
+          const tier = tierMap.get(uniPred.university);
+          if (!tier) continue;
+
+          // 티어-chance 일관성 강제 보정
+          const { chance } = uniPred;
+          if (tier === "하향") {
+            // 하향 대학은 반드시 high 이상
+            if (
+              chance === "low" ||
+              chance === "very_low" ||
+              chance === "medium"
+            ) {
+              uniPred.chance = "high";
+            }
+          } else if (tier === "안정") {
+            // 안정 대학은 반드시 medium 이상
+            if (chance === "low" || chance === "very_low") {
+              uniPred.chance = "medium";
+            }
+          } else if (tier === "적정") {
+            // 적정 대학은 very_low 불가
+            if (chance === "very_low") {
+              uniPred.chance = "low";
+            }
+          }
+          // 상향 대학은 low/very_low 허용 (도전 지원)
+        }
+      }
+    }
+  }
+
+  // 4. 섹션 정렬 (플랜별 순서)
   const sectionOrder = SECTION_ORDER[plan];
   validatedSections.sort((a, b) => {
     const aIdx = sectionOrder.indexOf(a.sectionId);
@@ -95,7 +179,7 @@ export const postprocess = (
     return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
   });
 
-  // 4. ReportMeta 생성
+  // 5. ReportMeta 생성
   const meta: ReportMeta = {
     reportId,
     plan,
@@ -112,13 +196,13 @@ export const postprocess = (
     version: 4,
   };
 
-  // 5. ReportContent 조합
+  // 6. ReportContent 조합
   const content: ReportContent = {
     meta,
     sections: validatedSections,
   };
 
-  // 6. 플랜별 검증
+  // 7. 플랜별 검증
   const planValidationErrors = validateByPlan(content);
 
   return {
