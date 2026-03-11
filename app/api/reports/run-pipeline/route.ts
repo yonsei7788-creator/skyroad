@@ -58,6 +58,8 @@ const TASK_DEPS: Record<string, string[]> = {
   weaknessAnalysis: [],
   storyAnalysis: [],
   majorExploration: [],
+  diagnostic: [],
+  competencyEvaluation: [],
   directionGuide: [],
   topicRecommendation: ["subjectAnalysis", "weaknessAnalysis"],
   interviewPrep: ["subjectAnalysis"],
