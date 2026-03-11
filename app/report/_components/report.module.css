@@ -153,7 +153,7 @@
   position: relative;
   width: var(--report-page-width);
   max-width: 100%;
-  height: var(--report-page-height);
+  min-height: var(--report-page-height);
   margin: 0 auto var(--report-space-lg);
   padding: var(--report-page-padding);
   padding-bottom: calc(var(--report-space-xl) + 24px);
@@ -162,7 +162,7 @@
     0 1px 3px rgb(0 0 0 / 0.06),
     0 6px 24px rgb(0 0 0 / 0.06);
   border-radius: 2px;
-  overflow: hidden;
+  overflow: visible;
   counter-increment: page-counter;
 }
 
@@ -2148,7 +2148,9 @@
   .aiCommentary,
   .quoteBox,
   .verdict,
-  .timelineItem {
+  .timelineItem,
+  .competencyHero,
+  .competencyDimCardWide {
     page-break-inside: avoid;
     break-inside: avoid;
   }
@@ -2808,6 +2810,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 12px;
   margin-bottom: 8px;
 }
 
@@ -2816,12 +2820,16 @@
   font-weight: 700;
   color: var(--report-fg);
   letter-spacing: 0.02em;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .competencyDimWideScoreRow {
   display: flex;
   align-items: baseline;
   gap: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .competencyDimWideScore {

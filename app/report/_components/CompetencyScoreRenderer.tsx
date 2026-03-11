@@ -112,7 +112,7 @@ export const CompetencyScoreRenderer = ({
 
   return (
     <>
-      {/* ── Page 1: 종합 역량 점수 + 역량별 상세 + 학업역량 + 진로역량 ── */}
+      {/* ── 종합 역량 점수 헤더 + 히어로 ── */}
       <div>
         <SectionHeader number={sectionNumber} title={data.title} />
 
@@ -174,44 +174,42 @@ export const CompetencyScoreRenderer = ({
         </div>
 
         <div className={styles.competencySectionLabel}>역량별 상세</div>
-        {academic && renderDimCard(academic)}
-        {career && renderDimCard(career)}
       </div>
 
-      {/* ── Page 2: 공동체역량 + 발전가능성 + 점수 해석 ── */}
-      <div>
-        {community && renderDimCard(community)}
+      {/* ── 역량 카드: 각각을 개별 블록으로 분리하여 페이지 분할 가능 ── */}
+      {academic && renderDimCard(academic)}
+      {career && renderDimCard(career)}
+      {community && renderDimCard(community)}
 
-        {/* Growth potential — 다른 역량 카드와 동일한 레이아웃 */}
-        <div className={styles.competencyDimCardWide}>
-          <div className={styles.competencyDimWideHeader}>
-            <span className={styles.competencyDimWideLabel}>
-              {CATEGORY_LABEL.growth}
+      {/* Growth potential — 다른 역량 카드와 동일한 레이아웃 */}
+      <div className={styles.competencyDimCardWide}>
+        <div className={styles.competencyDimWideHeader}>
+          <span className={styles.competencyDimWideLabel}>
+            {CATEGORY_LABEL.growth}
+          </span>
+          <div className={styles.competencyDimWideScoreRow}>
+            <span
+              className={`${styles.competencyDimWideGradeBadge} ${GRADE_BADGE_CLASS[data.growthGrade] ?? ""}`}
+            >
+              {data.growthGrade}
             </span>
-            <div className={styles.competencyDimWideScoreRow}>
-              <span
-                className={`${styles.competencyDimWideGradeBadge} ${GRADE_BADGE_CLASS[data.growthGrade] ?? ""}`}
-              >
-                {data.growthGrade}
-              </span>
-            </div>
           </div>
-
-          {data.growthComment && (
-            <div className={styles.competencyDimWideGradeComment}>
-              {safeText(data.growthComment)}
-            </div>
-          )}
         </div>
 
-        {/* AI commentary */}
-        <div className={styles.aiCommentary}>
-          <div className={styles.aiCommentaryIcon}>AI</div>
-          <div className={styles.aiCommentaryContent}>
-            <div className={styles.aiCommentaryLabel}>점수 해석</div>
-            <div className={styles.aiCommentaryText}>
-              {safeText(data.interpretation)}
-            </div>
+        {data.growthComment && (
+          <div className={styles.competencyDimWideGradeComment}>
+            {safeText(data.growthComment)}
+          </div>
+        )}
+      </div>
+
+      {/* AI commentary */}
+      <div className={styles.aiCommentary}>
+        <div className={styles.aiCommentaryIcon}>AI</div>
+        <div className={styles.aiCommentaryContent}>
+          <div className={styles.aiCommentaryLabel}>점수 해석</div>
+          <div className={styles.aiCommentaryText}>
+            {safeText(data.interpretation)}
           </div>
         </div>
       </div>

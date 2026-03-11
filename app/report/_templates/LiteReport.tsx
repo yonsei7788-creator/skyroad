@@ -28,13 +28,8 @@ const PART_CONFIG = [
   {
     partNumber: "PART 2",
     title: "분석",
-    description: "성적 분석, 출결, 창체 활동, 세특 분석",
-    sectionIds: [
-      "academicAnalysis",
-      "attendanceAnalysis",
-      "activityAnalysis",
-      "subjectAnalysis",
-    ],
+    description: "성적 분석, 창체 활동, 세특 분석",
+    sectionIds: ["academicAnalysis", "activityAnalysis", "subjectAnalysis"],
   },
   {
     partNumber: "PART 3",

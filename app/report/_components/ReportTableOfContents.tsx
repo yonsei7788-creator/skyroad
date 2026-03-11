@@ -14,30 +14,22 @@ interface PartDefinition {
   sectionIds: string[];
 }
 
-/** 실제 템플릿 PART_CONFIG와 동기화된 목차 정의 */
+/**
+ * 실제 템플릿 PART_CONFIG와 동기화된 목차 정의.
+ * LiteReport / StandardReport / PremiumReport의 PART_CONFIG sectionIds와
+ * 반드시 일치시켜야 합니다.
+ */
 const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
   lite: [
     {
       partNumber: "PART 1",
       partTitle: "진단",
-      sectionIds: [
-        "studentProfile",
-        "competencyScore",
-        "admissionPrediction",
-        "diagnostic",
-      ],
+      sectionIds: ["studentProfile", "competencyScore"],
     },
     {
       partNumber: "PART 2",
       partTitle: "분석",
-      sectionIds: [
-        "competencyEvaluation",
-        "academicAnalysis",
-        "courseAlignment",
-        "attendanceAnalysis",
-        "activityAnalysis",
-        "subjectAnalysis",
-      ],
+      sectionIds: ["academicAnalysis", "activityAnalysis", "subjectAnalysis"],
     },
     {
       partNumber: "PART 3",
@@ -45,39 +37,27 @@ const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
       sectionIds: [
         "weaknessAnalysis",
         "topicRecommendation",
+        "interviewPrep",
         "admissionStrategy",
-        "directionGuide",
       ],
-    },
-    {
-      partNumber: "부록",
-      partTitle: "부록",
-      sectionIds: ["wordCloud"],
     },
   ],
   standard: [
     {
       partNumber: "PART 1",
       partTitle: "진단",
-      sectionIds: [
-        "studentProfile",
-        "competencyScore",
-        "admissionPrediction",
-        "diagnostic",
-      ],
+      sectionIds: ["studentProfile", "competencyScore", "admissionPrediction"],
     },
     {
       partNumber: "PART 2",
       partTitle: "분석",
       sectionIds: [
-        "competencyEvaluation",
         "academicAnalysis",
         "courseAlignment",
         "attendanceAnalysis",
         "activityAnalysis",
         "subjectAnalysis",
         "behaviorAnalysis",
-        "overallAssessment",
       ],
     },
     {
@@ -88,40 +68,27 @@ const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
         "topicRecommendation",
         "interviewPrep",
         "admissionStrategy",
-        "directionGuide",
         "storyAnalysis",
         "actionRoadmap",
       ],
-    },
-    {
-      partNumber: "부록",
-      partTitle: "부록",
-      sectionIds: ["majorExploration", "wordCloud"],
     },
   ],
   premium: [
     {
       partNumber: "PART 1",
       partTitle: "진단",
-      sectionIds: [
-        "studentProfile",
-        "competencyScore",
-        "admissionPrediction",
-        "diagnostic",
-      ],
+      sectionIds: ["studentProfile", "competencyScore", "admissionPrediction"],
     },
     {
       partNumber: "PART 2",
       partTitle: "정밀 분석",
       sectionIds: [
-        "competencyEvaluation",
         "academicAnalysis",
         "courseAlignment",
         "attendanceAnalysis",
         "activityAnalysis",
         "subjectAnalysis",
         "behaviorAnalysis",
-        "overallAssessment",
       ],
     },
     {
@@ -132,7 +99,6 @@ const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
         "topicRecommendation",
         "interviewPrep",
         "admissionStrategy",
-        "directionGuide",
         "storyAnalysis",
         "actionRoadmap",
       ],

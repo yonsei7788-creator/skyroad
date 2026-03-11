@@ -7,9 +7,10 @@ import { ReportPage } from "./ReportPage";
 /**
  * Usable content height within an A4 page.
  * A4 = 297mm, padding-top 20mm, padding-bottom ~15mm + footer ~12mm + header ~10mm
- * Available ≈ 240mm ≈ 907px → safety margin → 890px
+ * Available ≈ 240mm ≈ 907px → generous safety margin → 860px
+ * (reduced from 890px to prevent PDF page overflow / clipping)
  */
-const AVAILABLE_HEIGHT_PX = 890;
+const AVAILABLE_HEIGHT_PX = 860;
 
 interface AutoPaginatedSectionProps {
   children: ReactNode;
