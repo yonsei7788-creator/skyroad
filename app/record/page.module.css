@@ -209,6 +209,52 @@
   color: var(--color-fg);
 }
 
+.deleteBtn {
+  composes: registrationButton;
+  background: var(--color-bg-secondary);
+  color: var(--color-danger, #dc2626);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.deleteBtn:hover {
+  background: #fef2f2;
+  border-color: var(--color-danger, #dc2626);
+}
+
+.deleteBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.registrationActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.contextBarDelete {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-danger, #dc2626);
+  background: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.contextBarDelete:hover {
+  text-decoration: underline;
+}
+
+.contextBarDelete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ---- Info Note ---- */
 .infoNote {
   display: flex;

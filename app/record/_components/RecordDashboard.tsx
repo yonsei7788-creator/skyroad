@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Pencil,
   ArrowRight,
   Info,
   TrendingUp,
   TrendingDown,
+  Trash2,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -371,7 +373,35 @@ export const RecordDashboard = ({
   record,
   generalSubjects,
 }: RecordDashboardProps) => {
+  const router = useRouter();
   const isRegistered = !!record;
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = useCallback(async () => {
+    if (!record) return;
+    if (
+      !window.confirm(
+        "생기부를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+      )
+    ) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const res = await fetch("/api/records/delete", { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "삭제에 실패했습니다.");
+        return;
+      }
+      router.refresh();
+    } catch {
+      alert("삭제 중 오류가 발생했습니다.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [record, router]);
 
   const [activeCategories, setActiveCategories] = useState<Set<CategoryKey>>(
     new Set(["all", "korEngMathSocSci"])
@@ -538,6 +568,14 @@ export const RecordDashboard = ({
                   <Pencil size={12} />
                   수정
                 </Link>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className={styles.contextBarDelete}
+                >
+                  <Trash2 size={12} />
+                  {isDeleting ? "삭제 중..." : "삭제"}
+                </button>
               </>
             ) : (
               <Link href="/record/submit" className={styles.contextBarRegister}>
@@ -580,10 +618,20 @@ export const RecordDashboard = ({
             </div>
           </div>
           {isRegistered ? (
-            <Link href="/record/submit?mode=edit" className={styles.editBtn}>
-              <Pencil size={14} />
-              수정
-            </Link>
+            <div className={styles.registrationActions}>
+              <Link href="/record/submit?mode=edit" className={styles.editBtn}>
+                <Pencil size={14} />
+                수정
+              </Link>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className={styles.deleteBtn}
+              >
+                <Trash2 size={14} />
+                {isDeleting ? "삭제 중..." : "삭제"}
+              </button>
+            </div>
           ) : (
             <Link href="/record/submit" className={styles.registerBtn}>
               등록하기
