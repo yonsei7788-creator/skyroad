@@ -38,7 +38,12 @@ export const TopicRecommendationRenderer = ({
                 <td className={styles.tableCellBold}>{topic.topic}</td>
                 <td className={styles.tableAlignCenter}>
                   <div className={styles.tagGroup}>
-                    {(topic.relatedSubjects ?? []).map((s) => (
+                    {(Array.isArray(topic.relatedSubjects)
+                      ? topic.relatedSubjects
+                      : typeof topic.relatedSubjects === "string"
+                        ? [topic.relatedSubjects]
+                        : []
+                    ).map((s) => (
                       <span key={s} className={styles.tag}>
                         {s}
                       </span>

@@ -20,6 +20,12 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - ⚠️ 반드시 "하향" 티어 대학 2개를 포함하세요. 하향 대학은 합격 가능성이 높은 안전 지원 대학입니다.
 - typeStrategies, schoolTypeAnalysis, nextSemesterStrategy, csatMinimumStrategy, applicationSimulation, universityGuideMatching, tierGroupedRecommendations 필드는 출력하지 않습니다.
 
+### ⚠️ chanceRationale 현실적 평가 규칙
+- chanceRationale에 "충분히 합격", "높은 경쟁력"만 쓰면 안 됩니다.
+- 반드시 **왜 유리한지 + 어떤 리스크가 있는지** 함께 서술하세요.
+- BAD: "내신 등급이 우수하여 합격 가능성이 높습니다."
+- GOOD: "내신은 적정 수준이나, 세특 내용이 학과와 괴리가 있어 서류 평가에서 불리할 수 있습니다."
+
 ⚠️ **분량 제한**: 이 섹션은 A4 1페이지 이내로 작성합니다.`,
   standard: `## 플랜별 출력: 상세
 - 추천 전형 방향(recommendedPath) + 대학 추천(recommendations)
