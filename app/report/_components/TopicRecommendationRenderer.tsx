@@ -98,7 +98,12 @@ export const TopicRecommendationRenderer = ({
           </div>
 
           <div className={`${styles.tagGroup} ${styles.mb8}`}>
-            {(topic.relatedSubjects ?? []).map((s) => (
+            {(Array.isArray(topic.relatedSubjects)
+              ? topic.relatedSubjects
+              : typeof topic.relatedSubjects === "string"
+                ? [topic.relatedSubjects]
+                : []
+            ).map((s) => (
               <span key={s} className={styles.tag}>
                 {s}
               </span>
