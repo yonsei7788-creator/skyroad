@@ -45,14 +45,17 @@ Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysi
   - **모든 필드(university, department, reflectionMethod, calculatedScore, interpretation)에 값이 있어야 합니다. 빈 문자열 금지.**
   - reflectionMethod: "학생부교과 등급 반영", "교과 평균 등급", "Z점수 환산" 등 구체적 방법
   - calculatedScore: 실제 수치 또는 등급 (예: "2.85", "상위 30%")
+  - ⚠️ interpretation은 반드시 **80자 이내**로 핵심만 작성합니다 (테이블 셀이므로 간결해야 함).
   - 데이터 부족으로 정밀 시뮬이 불가능하면 이 필드를 아예 생략하세요 (빈 배열 출력).
-- 성적 개선 우선순위 (improvementPriority): **3개 이내** 문자열 배열 형태
+- 성적 개선 우선순위 (improvementPriority): **3개 이내** 문자열 배열 형태, 각 항목 **50자 이내**
   예시: "improvementPriority": ["수학 등급 개선 (현 3등급 → 2등급 목표)", "과학탐구 과목 성적 안정화"]
 
 ⚠️ **분량 제한 (반드시 준수)**:
-- 모든 필드 출력 가능하지만, 각 분석 텍스트(riskAssessment, enrollmentEffort, achievement, prediction, interpretation 등)는 반드시 **300자 이내**로 작성합니다. 300자 초과 금지.
+- 모든 필드 출력 가능하지만, 각 분석 텍스트(riskAssessment, enrollmentEffort, achievement, prediction 등)는 반드시 **200자 이내**로 작성합니다. 200자 초과 금지.
+- universityGradeSimulations의 interpretation은 **80자 이내**로 작성합니다 (테이블 내 간결 표시).
 - careerSubjectAnalyses는 **최대 5개**만 출력합니다. 5개 초과 금지.
-- subjectStatAnalyses 등 해석 필드도 각 **200자 이내**로 간결하게 서술합니다.`,
+- subjectStatAnalyses 등 해석 필드도 각 **150자 이내**로 간결하게 서술합니다.
+- ⚠️ 이 섹션의 대학별 반영 방법 시뮬레이션 + 성적 개선 우선순위는 **A4 1페이지 이내**에 들어와야 합니다.`,
 };
 
 export const buildAcademicAnalysisPrompt = (
