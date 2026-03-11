@@ -70,6 +70,13 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - 중요도 퍼센트(importancePercent): 0~100%
 - 평가 영향도(evaluationImpact): high / medium / low
 
+⚠️ **중요도와 평가 영향도 정합성 규칙 (필수 준수)**:
+- importancePercent와 evaluationImpact는 반드시 일치해야 합니다.
+- importancePercent 20% 이상 → evaluationImpact: "high"
+- importancePercent 10~19% → evaluationImpact: "medium"
+- importancePercent 10% 미만 → evaluationImpact: "low"
+- 같은 중요도 퍼센트를 가진 과목이 서로 다른 평가 영향도를 가지면 안 됩니다.
+
 ### crossSubjectConnections 생략
 - 과목 간 연결 분석은 storyAnalysis 섹션에서 수행합니다. subjectAnalysis에서는 crossSubjectConnections를 출력하지 않습니다.
 

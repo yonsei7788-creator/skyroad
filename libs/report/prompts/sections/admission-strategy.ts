@@ -10,6 +10,7 @@ export interface AdmissionStrategyPromptInput {
   recommendedCourseMatch: string;
   studentProfile: string;
   basePassRates?: string;
+  majorEvaluationContext?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -40,8 +41,9 @@ Standard의 모든 항목에 추가로 다음을 출력합니다:
 - 대학 추천 수: 상향 2/적정 2/안정 2 = 총 **최대 6개**. 6개를 초과하면 절대 안 됩니다.
 - 전형별 상세 전략(typeStrategies)
 - 수능 최저 전략(csatMinimumStrategy)
-- 6장 카드 배분 시뮬레이션(applicationSimulation): 반드시 아래 형식
-  "applicationSimulation": {"description": "수시 6개 + 정시 배분 전략...", "details": [{"admissionType": "학생부종합", "count": 4, "targetUniversities": ["한양대", "중앙대", "경희대", "건국대"]}, {"admissionType": "학생부교과", "count": 2, "targetUniversities": ["서울시립대", "숭실대"]}]}
+- 6장 카드 배분 시뮬레이션(applicationSimulation): 반드시 아래 형식. **학생부교과전형도 반드시 포함**하세요.
+  "applicationSimulation": {"description": "수시 6개 + 정시 배분 전략...", "details": [{"admissionType": "학생부종합", "count": 3, "targetUniversities": ["한양대", "중앙대", "경희대"]}, {"admissionType": "학생부교과", "count": 2, "targetUniversities": ["서울시립대", "숭실대"]}, {"admissionType": "논술", "count": 1, "targetUniversities": ["건국대"]}]}
+  ⚠️ **전형 유형별 최소 1개 배정**: 학생부종합과 학생부교과에 각각 최소 1개는 배분하세요. 교과전형이 불리한 학생이라도 안전망 차원에서 최소 1개는 교과전형 하향 안정권 대학에 배정합니다.
 - 대학별 학종 가이드북 키워드 매칭(universityGuideMatching): **상위 3개 대학만** 배열 형식으로 출력
   "universityGuideMatching": [{"university": "한양대학교", "emphasisKeywords": ["자기주도성", "탐구력"], "studentStrengthMatch": ["세특 탐구 깊이"], "studentWeaknessMatch": ["교과 편차"]}]
 - 조합별 대학 추천(tierGroupedRecommendations): "상향 위주" 2개 + "안정 위주" 2개 + "하향 위주" 2개 = 총 6개
@@ -87,7 +89,7 @@ export const buildAdmissionStrategyPrompt = (
 - typeStrategies[].type: "학종" | "교과" | "정시" (다른 표현 금지)
 - typeStrategies[].suitability: "적합" | "보통" | "부적합"
 - recommendations[].tier: "상향" | "안정" | "하향"
-- recommendations[].chance: "high" | "medium" | "low"
+- recommendations[].chance: "very_high" | "high" | "medium" | "low" | "very_low"
 - tierGroupedRecommendations[].tierGroup: "상향 위주" | "안정 위주" | "하향 위주"
 - universityGuideMatching: 반드시 배열 형태 (객체 아님)
 - applicationSimulation: 반드시 {"description": "string", "details": [...]} 형태
@@ -144,6 +146,13 @@ export const buildAdmissionStrategyPrompt = (
 - 커트라인, 경쟁률, 모집인원 등 구체적 입시 수치는 제공된 데이터만 인용하세요. 직접 수치를 생성하지 마세요.
 - 역할: 후보군 중 학생의 역량/세특과 가장 잘 매칭되는 대학을 선별하고 전략적 분석을 제공하세요.
 
+## 생기부-학과 괴리 대응 전략
+- 학과 맞춤 평가 기준이 제공된 경우, 학생의 생기부가 목표 학과와 괴리가 큰지 판단하세요.
+- **괴리가 큰 경우** (핵심 교과 성적 부진 또는 관련 활동 부재):
+  - 학종보다 **면접전형, 교과전형**을 우선 추천합니다.
+  - recommendedPath에서 괴리 사실과 대안 전략을 솔직하게 안내합니다.
+  - "정성 평가 반영"이라는 모호한 표현 대신, 구체적으로 어떤 전형이 유리한지 제시합니다.
+
 ## 주의/유리 학교 유형 판단 기준
 | 학생 특성 | 피해야 할 학교 | 유리한 학교 |
 |-----------|---------------|------------|
@@ -180,6 +189,8 @@ ${input.competencyEvaluation}
 
 ### 학생 프로필
 ${input.studentProfile}
+
+${input.majorEvaluationContext ? `### 학과 맞춤 평가 기준 (입학사정관 관점)\n${input.majorEvaluationContext}\n\n⚠️ 대학 추천 시 이 계열의 핵심 교과 성취도와 관련 활동 일치도를 고려하여 학생의 강점/약점을 분석하세요. universityGuideMatching에서 emphasisKeywords와 studentStrengthMatch/WeaknessMatch를 이 기준에 맞춰 작성하세요.` : ""}
 
 ${PLAN_SPECIFIC[plan]}`;
 };

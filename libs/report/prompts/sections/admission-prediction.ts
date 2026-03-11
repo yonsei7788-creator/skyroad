@@ -15,6 +15,8 @@ export interface AdmissionPredictionPromptInput {
   attendanceAnalysisResult?: string;
   /** 코드 산정 기본 합격률 (등급-커트라인 기반) */
   basePassRates?: string;
+  /** 계열별 입학사정관 평가 기준 */
+  majorEvaluationContext?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -85,6 +87,8 @@ ${input.studentProfile}
 
 ${additionalInputs}
 
+${input.majorEvaluationContext ? `### 학과 맞춤 평가 기준 (입학사정관 관점)\n${input.majorEvaluationContext}` : ""}
+
 ## 출력 JSON 스키마
 
 중요: predictions 배열의 각 요소는 반드시 아래와 같은 완전한 객체여야 합니다.
@@ -127,14 +131,18 @@ ${additionalInputs}
 
 ### 전형별 합격 예측 (predictions)
 **admissionType은 반드시 다음 3개 중 하나:** "학종" | "교과" | "정시". "학생부종합" 등 다른 표현 금지.
-**chance는 반드시 다음 3개 중 하나:** "high" | "medium" | "low". 다른 값 금지.
+**chance는 반드시 다음 5개 중 하나:** "very_high" | "high" | "medium" | "low" | "very_low". 다른 값 금지.
 학종, 교과, 정시 각 전형에 대해:
 - 합격률 표시 (예: "60~70%")
 - 합격률 수치 범위 [하한, 상한] (예: [60, 70])
 - 근거 분석 (2~3줄)
-  - 학종: 역량 점수, 세특 품질, 활동 일관성 기반
+  - 학종: 역량 점수, 세특 품질, 활동 일관성 기반 + **학과 맞춤 평가 기준 반영**
   - 교과: 내신 등급, 교과 조합 평균 기반
   - 정시: 모의고사 데이터 기반 (없으면 "데이터 부족" 표시)
+
+⚠️ **학종 합격률 조정 시 학과 적합성 반영**: 아래에 "학과 맞춤 평가 기준"이 제공된 경우, 해당 계열의 핵심 교과 성취도와 관련 활동 일치도를 기반으로 ±10%p 조정폭을 결정하세요.
+- 핵심 교과 성취도가 전체 평균보다 우수하고, 관련 탐구 활동이 풍부하면 → 상향 조정 (+5~10%p)
+- 핵심 교과 성취도가 전체 평균보다 부진하거나, 관련 활동이 빈약하면 → 하향 조정 (-5~10%p)
 
 ### 합격 예측 산출 규칙 (필수 준수)
 
@@ -150,7 +158,11 @@ ${additionalInputs}
 **절대 규칙:**
 - gradeDiff가 +0.5 이상(학생 등급이 커트라인보다 0.5등급 이상 낮음)인 대학에 대해 합격률 50% 이상 부여 금지
 - gradeDiff가 +1.0 이상인 대학에 대해 합격률 30% 이상 부여 금지
-- universityPredictions의 chance 값도 합격률과 일치시키세요: 60%+ → "high", 30~59% → "medium", 0~29% → "low"
+- universityPredictions의 chance 값도 합격률과 일치시키세요: 80%+ → "very_high", 60~79% → "high", 40~59% → "medium", 20~39% → "low", 0~19% → "very_low"
+
+⚠️ **핵심 교과 부진 시 chance 상한 규칙**:
+- 목표 학과의 핵심 교과(학과 맞춤 평가 기준의 keySubjects) 성적이 6등급 이하인 경우, 해당 학과의 chance를 "medium" 이상으로 부여하지 마세요.
+- 핵심 교과 2개 이상이 6등급 이하인 경우, chance를 "low" 이하로 제한하세요.
 
 - 합격률 범위는 10% 단위로 설정합니다 (예: 50~60%, 70~80%).
 - 전형별 합격률 산출 기준:

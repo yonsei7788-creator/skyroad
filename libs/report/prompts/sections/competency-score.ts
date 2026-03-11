@@ -8,6 +8,7 @@ export interface CompetencyScorePromptInput {
   preprocessedAcademicData: string;
   attendanceSummary: string;
   studentProfile: string;
+  majorEvaluationContext?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -49,6 +50,8 @@ ${input.attendanceSummary}
 
 ### 학생 프로필
 ${input.studentProfile}
+
+${input.majorEvaluationContext ? `### 학과 맞춤 평가 기준 (입학사정관 관점)\n${input.majorEvaluationContext}\n\n⚠️ 위 계열별 가중치를 참고하여 진로역량의 하위항목 점수를 배분하세요. 핵심 교과 성취도가 진로역량 "교과성취도" 점수에 직접 반영되어야 합니다.` : ""}
 
 ## 출력 JSON 스키마
 

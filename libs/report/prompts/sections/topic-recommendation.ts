@@ -11,7 +11,8 @@ export interface TopicRecommendationPromptInput {
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 간략
 - **3개** 주제를 출력합니다.
-- 각 주제: topic + relatedSubjects + description(**1줄**) + importance(high/medium/low)
+- 각 주제: topic + relatedSubjects + description(**2줄 이내**) + importance(high/medium/low)
+- description에 입시 효과를 1문장 포함합니다.
 - rationale, existingConnection, activityDesign, sampleEvaluation 필드는 출력하지 않습니다.
 
 ## 분량 가이드
@@ -21,7 +22,7 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - topics 배열은 **최대 3개**입니다. 4개 이상 절대 출력하지 마세요.
-- 각 description은 반드시 **100자 이내**로 작성합니다. 100자 초과 금지.
+- 각 description은 반드시 **150자 이내**로 작성합니다 (입시 효과 포함 2~3줄).
 - 각 rationale은 **100자 이내**로 작성합니다.`,
   premium: `## 플랜별 출력: 정밀
 - Standard의 모든 항목 + activityDesign(구체적 탐구 설계: steps 3단계 이내/duration/expectedResult 1줄) + sampleEvaluation(세특 서술 예시, 3줄 이내) + importance(high/medium/low)
@@ -57,7 +58,7 @@ export const buildTopicRecommendationPrompt = (
       "existingConnection": "2학년 사회·문화에서 복지 문제를 다룬 것과 연결...",
       "activityDesign": {
         "steps": ["1단계: 지자체별 복지 예산 데이터 수집", "2단계: 정책 효과 비교 기준 설정", "3단계: 분석 및 보고서 작성"],
-        "duration": "4주",
+        "duration": "4주 (예상)",
         "expectedResult": "지역별 복지 정책 비교 분석 보고서"
       },
       "sampleEvaluation": "지역 복지 정책의 효과성에 관심을 갖고..."
@@ -77,6 +78,10 @@ export const buildTopicRecommendationPrompt = (
 - 추천 주제는 고등학생이 실제로 수행 가능한 수준이어야 합니다.
 - 기존 세특에서 이미 다룬 주제와 직접 겹치면 안 됩니다 (확장/심화는 가능).
 - 각 주제는 서로 다른 과목과 연계되어야 합니다.
+- **입시 효과 분석 필수**: 각 주제에 대해 "이 주제를 탐구하면 입시에서 어떤 효과가 있는지"를 반드시 포함하세요.
+  - 예: "기존 탐구의 연장선으로 전공적합성 심화 가능", "부족한 탐구 깊이를 보완하여 학업역량 어필 가능"
+  - rationale 또는 description에 입시 효과를 자연스럽게 녹여내세요.
+- **외부 활동 추천 금지**: 학원, 온라인 강좌, 외부 대회, 사설 프로그램 등 학교 밖 활동은 추천하지 마세요. 교과 수업 내에서 수행 가능한 탐구만 추천합니다.
 
 ## 입력 데이터
 
