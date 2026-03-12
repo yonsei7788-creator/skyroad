@@ -286,18 +286,24 @@ export const RecordSubmitWizard = ({
         throw new Error(message);
       }
 
-      const parsed: SchoolRecord = await response.json();
+      const parsed = await response.json();
+      const warning = parsed._warning as string | undefined;
+      delete parsed._warning;
 
       // AI 파싱 완료 후 draft 자동 저장
-      const draftId = await saveDraft(state.method!, parsed);
+      const draftId = await saveDraft(state.method!, parsed as SchoolRecord);
 
       setState((prev) => ({
         ...prev,
-        record: parsed,
+        record: parsed as SchoolRecord,
         isParsing: false,
         step: 3,
         draftId: draftId ?? prev.draftId,
       }));
+
+      if (warning) {
+        showToast(warning, "error");
+      }
     } catch (err) {
       const message =
         err instanceof Error
