@@ -165,7 +165,7 @@ export const OverallAssessmentRenderer = ({
       </div>
 
       <div className={`${styles.aiCommentary} ${styles.mt16}`}>
-        <div className={styles.aiCommentaryIcon}>AI</div>
+        <div className={styles.aiCommentaryIcon}>✦</div>
         <div className={styles.aiCommentaryContent}>
           <div className={styles.aiCommentaryLabel}>최종 종합 의견</div>
           <div className={styles.aiCommentaryText}>

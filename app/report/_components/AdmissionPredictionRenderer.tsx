@@ -153,7 +153,7 @@ export const AdmissionPredictionRenderer = ({
       {/* Final block: AI commentary */}
       <div>
         <div className={styles.aiCommentary}>
-          <div className={styles.aiCommentaryIcon}>AI</div>
+          <div className={styles.aiCommentaryIcon}>✦</div>
           <div className={styles.aiCommentaryContent}>
             <div className={styles.aiCommentaryLabel}>종합 코멘트</div>
             <div className={styles.aiCommentaryText}>

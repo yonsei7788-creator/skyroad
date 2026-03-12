@@ -10,18 +10,18 @@ export interface InterviewPrepPromptInput {
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 간략
-- **8~10개** 질문만 출력합니다.
+- **3개** 질문만 출력합니다.
 - 각 질문: question + questionType(세특기반/성적기반/진로기반/인성기반) + importance(high/medium/low) 필드만 출력합니다.
 - intent, answerStrategy, sampleAnswer, followUpQuestions 필드는 출력하지 않습니다.
 
-## 분량 가이드
-- 예상 질문 3개 + 답변 가이드. A4 1페이지 이내.`,
+⚠️ **분량 제한 (반드시 준수)**:
+- questions 배열은 **최대 3개**입니다. 4개 이상 절대 출력하지 마세요.`,
   standard: `## 플랜별 출력: 상세
 - 각 질문: question + questionType(세특기반/성적기반/진로기반/인성기반) + intent(출제 의도 1~2줄) + importance(high/medium/low)
 - answerStrategy, sampleAnswer, followUpQuestions 필드는 출력하지 않습니다.
 
 ⚠️ **분량 제한 (반드시 준수)**:
-- questions 배열은 **최대 3개**입니다. 4개 이상 절대 출력하지 마세요.
+- questions 배열은 **최대 5개**입니다. 6개 이상 절대 출력하지 마세요.
 - 각 intent는 **100자 이내**로 작성합니다. 100자 초과 금지.`,
   premium: `## 플랜별 출력: 정밀
 - 각 질문: question + questionType + intent(1~2줄) + importance(high/medium/low) + answerStrategy(답변 전략, 2줄 이내)
@@ -30,7 +30,7 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - **Premium은 반드시 Standard보다 상세해야 합니다**: intent는 1~2줄로 Standard보다 구체적으로, answerStrategy는 Standard에 없는 추가 가치를 제공합니다.
 
 ⚠️ **분량 제한 (반드시 준수)**:
-- questions 배열은 **최대 5개**입니다. 6개 이상 절대 출력하지 마세요.
+- questions 배열은 **최대 8개**입니다. 9개 이상 절대 출력하지 마세요.
 - 각 sampleAnswer는 반드시 **300자 이내**로 작성합니다. 300자 초과 금지.
 - 각 answerStrategy는 **150자 이내**로 작성합니다.`,
 };

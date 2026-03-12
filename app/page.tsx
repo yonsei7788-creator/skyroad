@@ -29,7 +29,7 @@ export default function Home() {
       <Header />
       <main>
         <HeroSection />
-        <TrustSection />
+        <CtaSection />
         <PainPointSection />
         <DualVerificationSection />
         <ProcessSection />
@@ -38,7 +38,7 @@ export default function Home() {
         <PricingSection />
         <ReviewSlider />
         <FaqSection />
-        <CtaSection />
+        <TrustSection />
       </main>
       <Footer />
     </>

@@ -67,7 +67,7 @@ export const ReportCover = ({ meta }: ReportCoverProps) => {
         />
 
         <p className={styles.coverSubtitle}>
-          {studentInfo.name} 학생의 생기부를 AI가 정밀 분석하여
+          {studentInfo.name} 학생의 생기부를 정밀 분석하여
           <br />
           맞춤형 입시 전략을 제안합니다.
         </p>

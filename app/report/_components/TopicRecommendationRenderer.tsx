@@ -136,7 +136,7 @@ export const TopicRecommendationRenderer = ({
               <div className={`${styles.overline} ${styles.mb6}`}>
                 활동 설계
                 {topic.activityDesign.duration &&
-                  ` (${topic.activityDesign.duration} 예상)`}
+                  ` (${topic.activityDesign.duration.replace(/\s*\(예상\)\s*/, "")})`}
               </div>
               <div className={styles.body}>
                 {(topic.activityDesign.steps ?? []).map((step, sIdx) => (

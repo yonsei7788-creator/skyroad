@@ -50,7 +50,7 @@ export const DirectionGuideRenderer = ({
         </div>
 
         <div className={`${styles.aiCommentary} ${styles.mt20}`}>
-          <div className={styles.aiCommentaryIcon}>AI</div>
+          <div className={styles.aiCommentaryIcon}>✦</div>
           <div className={styles.aiCommentaryContent}>
             <div className={styles.aiCommentaryLabel}>준비 조언</div>
             <div className={styles.aiCommentaryText}>

@@ -193,7 +193,7 @@ export const ActionRoadmapRenderer = ({
             <div
               className={`${styles.aiCommentary} ${data.projectedOutcome?.length ? styles.mt20 : ""}`}
             >
-              <div className={styles.aiCommentaryIcon}>AI</div>
+              <div className={styles.aiCommentaryIcon}>✦</div>
               <div className={styles.aiCommentaryContent}>
                 <div className={styles.aiCommentaryLabel}>
                   면접 대비 타임라인

@@ -147,7 +147,7 @@ export const ActivityAnalysisRenderer = ({
       {/* Final Block: Overall AI commentary */}
       <div>
         <div className={`${styles.aiCommentary} ${styles.mt20}`}>
-          <div className={styles.aiCommentaryIcon}>AI</div>
+          <div className={styles.aiCommentaryIcon}>✦</div>
           <div className={styles.aiCommentaryContent}>
             <div className={styles.aiCommentaryLabel}>창체 종합 평가</div>
             <div className={styles.aiCommentaryText}>

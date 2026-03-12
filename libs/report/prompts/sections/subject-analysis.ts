@@ -74,6 +74,14 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - 개선 예시 문장: 약한 부분이 있다면 구체적 예시 1개 제시 (2줄 이내)
 - 교과 간 연결성은 storyAnalysis에서 분석하므로 crossSubjectConnections는 출력하지 않습니다.
 
+### ⚠️ importancePercent / evaluationImpact 일관성 규칙
+같은 importancePercent를 가진 과목은 반드시 같은 evaluationImpact를 가져야 합니다:
+- importancePercent 30% 이상 → evaluationImpact: "very_high"
+- importancePercent 20~29% → evaluationImpact: "high"
+- importancePercent 10~19% → evaluationImpact: "medium"
+- importancePercent 5~9% → evaluationImpact: "low"
+- importancePercent 5% 미만 → evaluationImpact: "very_low"
+
 ⚠️ **분량 제한 (반드시 준수)**:
 - evaluationComment는 반드시 **150자 이내**로 작성합니다. 150자를 초과하는 항목은 절대 출력하지 마세요.
 - strengthPoints/weaknessPoints는 각 **최대 2개**, 각 항목 **80자 이내**로 작성합니다.
