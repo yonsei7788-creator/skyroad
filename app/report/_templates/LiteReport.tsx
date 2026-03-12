@@ -34,12 +34,12 @@ const PART_CONFIG = [
   {
     partNumber: "PART 3",
     title: "전략",
-    description: "부족한 부분 보완 전략, 세특 주제 추천, 면접 대비, 입시 전략",
+    description: "부족한 부분 보완 전략, 세특 주제 추천, 입시 전략, 면접 대비",
     sectionIds: [
       "weaknessAnalysis",
       "topicRecommendation",
-      "interviewPrep",
       "admissionStrategy",
+      "interviewPrep",
     ],
   },
 ];

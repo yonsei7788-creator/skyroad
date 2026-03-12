@@ -44,11 +44,10 @@ const PART_CONFIG = [
     partNumber: "PART 3",
     title: "전략 & 실행",
     description:
-      "보완 전략, 세특 주제 설계, 면접 대비(답변 포함), 입시 전략, 스토리 분석, 실행 로드맵",
+      "보완 전략, 세특 주제 설계, 입시 전략, 스토리 분석, 실행 로드맵",
     sectionIds: [
       "weaknessAnalysis",
       "topicRecommendation",
-      "interviewPrep",
       "admissionStrategy",
       "storyAnalysis",
       "actionRoadmap",
@@ -57,8 +56,8 @@ const PART_CONFIG = [
   {
     partNumber: "부록",
     title: "부록",
-    description: "추천 도서, 전공 추천",
-    sectionIds: ["bookRecommendation", "majorExploration"],
+    description: "면접 대비, 추천 도서, 전공 추천",
+    sectionIds: ["interviewPrep", "bookRecommendation", "majorExploration"],
   },
 ];
 

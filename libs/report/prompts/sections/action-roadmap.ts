@@ -28,7 +28,11 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - phases 배열은 **최대 3개**입니다. 4개 이상 절대 출력하지 마세요.
 - 각 phase의 tasks는 **최대 3개**이며, 각 task는 **80자 이내**로 작성합니다.
 - completionStrategy는 **200자 이내**로 작성합니다.
-- goals는 phase당 **최대 2개**로 제한합니다.`,
+- goals는 phase당 **최대 2개**로 제한합니다.
+
+### ⛔ 본문 영단어 사용 금지 (위반 시 품질 실패)
+- completionStrategy, goals, tasks 등 **모든 한글 서술 필드**에서 "high", "medium", "low", "priority" 등 영단어를 사용하지 마세요.
+- 한글 대체: high→높음, medium→보통, low→낮음, priority→우선순위`,
   premium: `## 출력 수준: 확장
 Standard의 모든 항목 + 다음을 추가로 출력하세요:
 
@@ -50,7 +54,10 @@ Standard의 모든 항목 + 다음을 추가로 출력하세요:
 - 각 phase의 tasks는 **최대 5개**이며, 각 task는 **100자 이내**로 작성합니다.
 - completionStrategy는 **300자 이내**로 작성합니다.
 - prewriteProposals는 **최대 3개**로 제한합니다.
-- interviewTimeline은 **200자 이내**로 작성합니다.`,
+- interviewTimeline은 **200자 이내**로 작성합니다.
+
+### ⛔ 본문 영단어 사용 금지
+- 모든 한글 서술 필드에서 "high", "medium", "low" 등 영단어 사용 금지. 한글로 대체하세요.`,
 };
 
 export const buildActionRoadmapPrompt = (

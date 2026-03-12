@@ -26,7 +26,10 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - BAD: "내신 등급이 우수하여 합격 가능성이 높습니다."
 - GOOD: "내신은 적정 수준이나, 세특 내용이 학과와 괴리가 있어 서류 평가에서 불리할 수 있습니다."
 
-⚠️ **분량 제한**: 이 섹션은 A4 1페이지 이내로 작성합니다.`,
+⚠️ **분량 제한**: 이 섹션은 A4 1페이지 이내로 작성합니다.
+
+### ⛔ 본문 영단어 사용 금지
+- 한글 서술문 안에 "high", "medium", "low" 등 영단어 사용 금지. 한글(높음/보통/낮음)로 대체하세요.`,
   standard: `## 플랜별 출력: 상세
 - 추천 전형 방향(recommendedPath) + 대학 추천(recommendations)
 - 대학 추천 수: 상향 2/적정 2/안정 2/하향 2 = 총 **8개** 고정.
@@ -49,7 +52,13 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - 각 chanceRationale은 반드시 **80자 이내**로 작성합니다. 80자 초과 금지.
 - typeStrategies의 각 analysis는 **100자 이내**, 각 reason은 **80자 이내**로 작성합니다.
 - schoolTypeAnalysis의 rationale은 **100자 이내**로 작성합니다.
-- nextSemesterStrategy는 **150자 이내**로 작성합니다.`,
+- nextSemesterStrategy는 **150자 이내**로 작성합니다.
+
+### ⛔ 본문 영단어 사용 금지 (위반 시 품질 실패)
+- nextSemesterStrategy, typeStrategies, recommendedPath, chanceRationale 등 **모든 한글 서술 필드**에서 영단어를 사용하지 마세요.
+- "high", "medium", "low", "priority", "impact" 등 영단어가 본문에 노출되면 안 됩니다.
+- 한글 대체: high→높음, medium→보통, low→낮음, priority→우선순위, impact→영향
+- JSON 스키마의 enum 값(chance, suitability, tier 등)은 영문 그대로 사용하되, 한글 서술문 안에는 한글만 사용하세요.`,
   premium: `## 플랜별 출력: 정밀
 Standard의 모든 항목에 추가로 다음을 출력합니다:
 - 대학 추천 수: 상향 3/적정 3/안정 3/하향 3 = 총 **최대 12개**.
@@ -73,7 +82,11 @@ Standard의 모든 항목에 추가로 다음을 출력합니다:
 - recommendations는 **최대 12개**.
 - 각 chanceRationale은 반드시 **150자 이내**로 작성합니다. 150자 초과 금지.
 - admissionData 포함 가능.
-- typeStrategies의 각 analysis는 **200자 이내**로 작성합니다.`,
+- typeStrategies의 각 analysis는 **200자 이내**로 작성합니다.
+
+### ⛔ 본문 영단어 사용 금지 (위반 시 품질 실패)
+- 모든 한글 서술 필드(nextSemesterStrategy, typeStrategies, recommendedPath, chanceRationale 등)에서 "high", "medium", "low" 등 영단어 사용 금지.
+- JSON enum 값은 영문 그대로, 한글 서술문 안에는 한글만 사용하세요.`,
 };
 
 const ADMISSION_CONTEXT = `## 학교유형별 특수전형 안내
@@ -188,10 +201,14 @@ export const buildAdmissionStrategyPrompt = (
 - 남학생에게 이화여자대학교, 숙명여자대학교, 성신여자대학교, 덕성여자대학교, 서울여자대학교, 동덕여자대학교 등 여자대학교를 절대 추천하지 마세요.
 - 후보군에서 제외된 여대 자리는 같은 티어의 다른 대학으로 대체하세요.
 
-## 전공 미스매치 대응
+## 전공 미스매치 대응 (최우선 규칙)
 - 생기부의 탐구 내용이 희망 학과와 일치하지 않는 경우:
   - "세특 내용의 질과 탐구 활동의 깊이가 우수하다"라고 평가하지 마세요.
   - 대신 "희망 학과와 생기부 내용 간 괴리가 있어, 서류전형보다 면접 비중이 높은 전형이 유리합니다"로 안내하세요.
+- **성적이 합격선보다 높더라도**, 생기부 내용이 해당 학과와 맞지 않으면 학종에서의 전반적 경쟁력이 약화된다는 점을 반드시 명시하세요.
+  - BAD: "합격선보다 높아 경쟁력이 있다"
+  - GOOD: "등급 경쟁력은 있으나, 생기부 전반에서 [학과명] 관련 서술이 부족하여 학생부종합전형에서는 전공적합성 평가에서 불리하다. 모든 생기부 내용을 해당 학과에 맞춰 준비한 지원자 대비 서류 경쟁력이 약하다."
+- 특정 과목 1개에서만 관련 활동이 있는 경우, 그것만으로 전공적합성을 인정하지 마세요.
 
 ## 생기부-학과 괴리 대응 전략
 - 학과 맞춤 평가 기준이 제공된 경우, 학생의 생기부가 목표 학과와 괴리가 큰지 판단하세요.

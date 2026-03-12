@@ -1542,8 +1542,9 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     // Part 3: 전략
     "weaknessAnalysis",
     "topicRecommendation",
-    "interviewPrep",
     "admissionStrategy",
+    // 부록
+    "interviewPrep",
   ],
   standard: [
     // Part 1: 진단
@@ -1560,8 +1561,9 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     // Part 3: 전략
     "weaknessAnalysis",
     "topicRecommendation",
-    "interviewPrep",
     "admissionStrategy",
+    // 부록
+    "interviewPrep",
   ],
   premium: [
     // Part 1: 진단
@@ -1578,11 +1580,11 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     // Part 3: 전략
     "weaknessAnalysis",
     "topicRecommendation",
-    "interviewPrep",
     "admissionStrategy",
     "storyAnalysis",
     "actionRoadmap",
     // 부록
+    "interviewPrep",
     "bookRecommendation",
     "majorExploration",
   ],

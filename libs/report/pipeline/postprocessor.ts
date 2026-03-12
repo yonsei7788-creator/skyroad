@@ -259,6 +259,18 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/온라인 강의[를을\s]*활용/g, "교내 수업 활동을 활용"],
   [/온라인 강좌/g, "교내 심화 학습"],
 
+  // ── AI식 칭찬/경쟁력 표현 ──
+  [/높은 경쟁력을 가집니다/g, "강점 요소입니다"],
+  [/높은 경쟁력이 있습니다/g, "강점 요소입니다"],
+  [/경쟁력이 있습니다/g, "강점 요소입니다"],
+  [/경쟁력을 가집니다/g, "강점 요소입니다"],
+  [/매우 유리합니다/g, "유리한 편입니다"],
+  [/매우 적합합니다/g, "적합한 편입니다"],
+  [/매우 긍정적입니다/g, "긍정적 요소입니다"],
+  [/우수한 수준입니다/g, "양호한 수준입니다"],
+  [/매우 뛰어나며/g, "양호하며"],
+  [/매우 뛰어난/g, "양호한"],
+
   // ── 기타 AI식 표현 ──
   [/발전시켰/g, "보여주었"],
   [/충분히 합격할 겁니다/g, "합격 가능성이 높습니다"],
@@ -267,6 +279,7 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/충분히 커버 가능합니다/g, "보완 가능합니다"],
   [/충분히 커버/g, "보완"],
   [/충분히 경쟁력/g, "경쟁력"],
+  [/충분히 어필/g, "어필"],
   [/충분히 가능/g, "가능"],
 
   // ── 무의미한 추상 평가 표현 → 제거/대체 ──
@@ -293,8 +306,14 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
 
   // ── "매우 우수합니다" → 톤 다운 ──
   [/매우 우수합니다/g, "우수한 편입니다"],
+  [/매우 우수하여/g, "우수하여"],
+  [/매우 높은 수준/g, "높은 수준"],
+  [/강력한 강점/g, "주요 강점"],
 
   // ── "~할 수 있습니다" → "~할 겁니다" (평가 맥락) ──
+  [/높은 평가를 받을 수 있습니다/g, "긍정적 요소로 작용할 겁니다"],
+  [/매우 높은 평가를 받을 겁니다/g, "긍정적 요소로 작용할 겁니다"],
+  [/높은 평가를 받을 겁니다/g, "긍정적 요소로 작용할 겁니다"],
   [/평가할 수 있습니다/g, "평가할 겁니다"],
   [/평가될 수 있습니다/g, "평가될 겁니다"],
   [/작용할 수 있습니다/g, "작용할 겁니다"],
@@ -312,14 +331,64 @@ const sanitizeAiTone = (text: string): string => {
   return result;
 };
 
-/** 객체의 모든 문자열 필드를 재귀적으로 AI 톤 치환 */
-const sanitizeDeep = (obj: unknown): unknown => {
-  if (typeof obj === "string") return sanitizeAiTone(obj);
-  if (Array.isArray(obj)) return obj.map(sanitizeDeep);
+// ─── 한글 서술문 내 영단어 치환 ───
+
+const ENGLISH_WORD_REPLACEMENTS: [RegExp, string][] = [
+  // 본문에 노출되는 영단어 → 한글 대체 (JSON enum 값은 제외)
+  [/\bhigh\b/gi, "높음"],
+  [/\bmedium\b/gi, "보통"],
+  [/\blow\b/gi, "낮음"],
+  [/\bpriority\b/gi, "우선순위"],
+  [/\bimpact\b/gi, "영향"],
+];
+
+// JSON enum 값으로 사용되는 필드는 영단어 치환 제외
+const ENUM_FIELDS = new Set([
+  "sectionId",
+  "category",
+  "chance",
+  "suitability",
+  "rating",
+  "tier",
+  "tierGroup",
+  "highlight",
+  "connectionType",
+  "depth",
+  "type",
+  "admissionType",
+  "achievement",
+  "grade",
+  "growthGrade",
+  "overallRating",
+  "gradeTrend",
+  "currentTrend",
+  "status",
+  "importance",
+  "evaluationImpact",
+  "questionType",
+]);
+
+const sanitizeEnglishWords = (text: string): string => {
+  let result = text;
+  for (const [pattern, replacement] of ENGLISH_WORD_REPLACEMENTS) {
+    result = result.replace(pattern, replacement);
+  }
+  return result;
+};
+
+/** 객체의 모든 문자열 필드를 재귀적으로 AI 톤 치환 + 영단어 치환 */
+const sanitizeDeep = (obj: unknown, fieldName?: string): unknown => {
+  if (typeof obj === "string") {
+    // enum 필드는 영단어 치환 건너뜀
+    const toned = sanitizeAiTone(obj);
+    if (fieldName && ENUM_FIELDS.has(fieldName)) return toned;
+    return sanitizeEnglishWords(toned);
+  }
+  if (Array.isArray(obj)) return obj.map((item) => sanitizeDeep(item));
   if (obj && typeof obj === "object") {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
-      result[key] = sanitizeDeep(value);
+      result[key] = sanitizeDeep(value, key);
     }
     return result;
   }
@@ -456,6 +525,46 @@ const normalizeSection = (
         subj.evaluationImpact = "low";
       }
     }
+
+    // ── 과목 다양성 강제: 같은 교과 카테고리에서 최대 2개 ──
+    const getSubjectCategory = (name: string): string => {
+      const n = name
+        .replace(/^\d학년\s*/, "")
+        .replace(/\s+/g, "")
+        .replace(/[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ1-9]+$/, "");
+      if (/^(수학|미적분|기하|확률과통계|인공지능수학|경제수학)/.test(n))
+        return "수학";
+      if (/^(물리학|물리)/.test(n)) return "물리";
+      if (/^(화학)/.test(n)) return "화학";
+      if (/^(생명과학|생물)/.test(n)) return "생명과학";
+      if (/^(지구과학|천문)/.test(n)) return "지구과학";
+      if (/^(국어|문학|화법|언어와매체|독서|실용국어|심화국어)/.test(n))
+        return "국어";
+      if (/^(영어|영어Ⅰ|영어Ⅱ|실용영어|심화영어|영어독해|영어회화)/.test(n))
+        return "영어";
+      if (
+        /^(통합사회|사회|정치|경제|세계사|동아시아사|한국지리|세계지리|사회문화|윤리)/.test(
+          n
+        )
+      )
+        return "사회";
+      return "기타";
+    };
+
+    // 중요도 높은 순 정렬 후, 같은 카테고리에서 최대 2개만 유지
+    s.subjects.sort(
+      (a: any, b: any) =>
+        (b.importancePercent ?? 0) - (a.importancePercent ?? 0)
+    );
+    const categoryCounts = new Map<string, number>();
+    const MAX_PER_CATEGORY = 2;
+    s.subjects = s.subjects.filter((subj: any) => {
+      const cat = getSubjectCategory(subj.subjectName ?? "");
+      const count = categoryCounts.get(cat) ?? 0;
+      if (count >= MAX_PER_CATEGORY) return false;
+      categoryCounts.set(cat, count + 1);
+      return true;
+    });
 
     // 플랜별 과목 수 강제 제한 — 중요도 높은 순으로 선별
     const maxSubjects: Record<ReportPlan, number> = {
@@ -809,6 +918,36 @@ const normalizeSection = (
       }
     }
 
+    // ── interpretation: 점수 텍스트를 실제 계산값으로 동기화 ──
+    if (s.interpretation && Array.isArray(s.scores)) {
+      const total = s.totalScore ?? 0;
+      // interpretation 내 "총점 NNN점" 패턴을 실제 totalScore로 교정
+      s.interpretation = s.interpretation.replace(
+        /총점\s*\d+점/g,
+        `총점 ${total}점`
+      );
+      // 역량별 점수 교정: "학업역량(NN점)" 등
+      for (const sc of s.scores) {
+        const label = sc.label ?? "";
+        if (label) {
+          const scoreRegex = new RegExp(`${label}\\(\\d+점\\)`, "g");
+          s.interpretation = s.interpretation.replace(
+            scoreRegex,
+            `${label}(${sc.score}점)`
+          );
+          // "학업역량(NN점)" 형태도 매칭
+          const scoreRegex2 = new RegExp(
+            `${label}\\s*\\(\\s*\\d+\\s*점\\s*\\)`,
+            "g"
+          );
+          s.interpretation = s.interpretation.replace(
+            scoreRegex2,
+            `${label}(${sc.score}점)`
+          );
+        }
+      }
+    }
+
     // ── interpretation: AI가 누락한 경우 자동 생성 ──
     if (!s.interpretation && Array.isArray(s.scores)) {
       const total = s.totalScore ?? 0;
@@ -892,6 +1031,104 @@ const normalizeSection = (
     }
     if (typeof s.overallComment === "string") {
       s.overallComment = diversifyAssessor(s.overallComment);
+    }
+  }
+
+  // ── admissionPrediction/admissionStrategy: 단일 과목 전공적합성 패턴 치환 ──
+  if (
+    s.sectionId === "admissionPrediction" ||
+    s.sectionId === "admissionStrategy"
+  ) {
+    const singleSubjectPatterns: [RegExp, string][] = [
+      // "정보 과목 프로그래밍 경험이 긍정적입니다" — 간결한 형태
+      [
+        /정보\s*과목\s*(세특\s*)?(프로그래밍\s*)?(경험|활동)[이가은는]\s*(매우\s*)?(긍정적|적합|유리)[^.]*\./g,
+        "정보 과목에서 프로그래밍 기록이 있으나, 생기부 전반에 걸쳐 전공 관련 서술이 부족하여 이것만으로는 전공적합성을 인정받기 어렵습니다.",
+      ],
+      // "정보 과목에서 파이썬으로 프로그램을 구현한 경험은 긍정적" 류 (어순 변형 대응)
+      [
+        /정보\s*과목에서\s*[^.]{0,30}(프로그래밍|프로그램|코딩)[^.]{0,20}(경험|활동)[은는이가]\s*(매우\s*)?(긍정적|적합|강점)[^.]*\./g,
+        "정보 과목에서 프로그래밍 기록이 일부 확인되나, 생기부 전반의 전공 관련 서술이 부족하여 서류 경쟁력은 제한적입니다.",
+      ],
+      // "프로그래밍 경험과 수학적 모델링 능력이 긍정적/적합" — rationale에서 반복되는 패턴
+      // (sanitizeAiTone 적용 후 "적합한 편입니다" 등으로 변형될 수 있으므로 문장 끝까지 매칭)
+      [
+        /정보\s*과목\s*프로그래밍\s*(기록|경험)과\s*수학적\s*모델링\s*능력이\s*[^.]*\./g,
+        "프로그래밍 기록과 수학적 능력이 일부 확인되나, 생기부 전반에서 전공 관련 탐구가 부족하여 서류 경쟁력은 제한적입니다.",
+      ],
+    ];
+
+    const fixSingleSubjectRationale = (text: string): string => {
+      let result = text;
+      for (const [pattern, replacement] of singleSubjectPatterns) {
+        result = result.replace(pattern, replacement);
+      }
+      return result;
+    };
+
+    // admissionPrediction: predictions[].analysis, universityPredictions[].rationale, overallComment
+    if (Array.isArray(s.predictions)) {
+      for (const pred of s.predictions) {
+        if (typeof pred.analysis === "string") {
+          pred.analysis = fixSingleSubjectRationale(pred.analysis);
+        }
+        if (Array.isArray(pred.universityPredictions)) {
+          for (const uniPred of pred.universityPredictions) {
+            if (typeof uniPred.rationale === "string") {
+              uniPred.rationale = fixSingleSubjectRationale(uniPred.rationale);
+            }
+          }
+        }
+      }
+    }
+    if (typeof s.overallComment === "string") {
+      s.overallComment = fixSingleSubjectRationale(s.overallComment);
+    }
+
+    // admissionStrategy: recommendations[].chanceRationale, recommendedPath
+    if (Array.isArray(s.recommendations)) {
+      for (const rec of s.recommendations) {
+        if (typeof rec.chanceRationale === "string") {
+          rec.chanceRationale = fixSingleSubjectRationale(rec.chanceRationale);
+        }
+      }
+    }
+    if (typeof s.recommendedPath === "string") {
+      s.recommendedPath = fixSingleSubjectRationale(s.recommendedPath);
+    }
+  }
+
+  // ── behaviorAnalysis: competencyTag subcategory 정규화 ──
+  if (s.sectionId === "behaviorAnalysis") {
+    const SUBCATEGORY_NORM: Record<string, string> = {
+      "진로 탐색 활동 및 경험": "진로탐색",
+      "진로 탐색": "진로탐색",
+      "진로탐색 활동": "진로탐색",
+      "나눔과 배려": "나눔과배려",
+      "소통 및 협업": "소통및협업",
+      "소통과 협업": "소통및협업",
+      "성장 과정": "성장과정",
+      "성장과정 및 잠재력": "성장과정",
+      "자기 주도성": "자기주도성",
+      "창의적 문제해결": "창의적문제해결",
+      "경험 다양성": "경험다양성",
+    };
+    const normalizeTags = (tags: any[]) => {
+      if (!Array.isArray(tags)) return;
+      for (const tag of tags) {
+        if (tag && typeof tag.subcategory === "string") {
+          const normed = SUBCATEGORY_NORM[tag.subcategory];
+          if (normed) tag.subcategory = normed;
+        }
+      }
+    };
+    if (Array.isArray(s.yearlyAnalysis)) {
+      for (const ya of s.yearlyAnalysis) {
+        normalizeTags(ya.competencyTags);
+      }
+    }
+    if (Array.isArray(s.consistentTraitsTags)) {
+      normalizeTags(s.consistentTraitsTags);
     }
   }
 
