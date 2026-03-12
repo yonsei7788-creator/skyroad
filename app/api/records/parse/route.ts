@@ -342,7 +342,10 @@ export async function POST(request: NextRequest) {
 
     let rawJson: unknown;
     try {
-      rawJson = JSON.parse(responseText.trim());
+      const parsed = JSON.parse(responseText.trim());
+      // Gemini가 [{...}] 배열로 감싸서 반환하는 경우 언래핑
+      rawJson =
+        Array.isArray(parsed) && parsed.length === 1 ? parsed[0] : parsed;
     } catch {
       // JSON이 잘린 경우 복구 시도
       console.warn(
@@ -350,7 +353,11 @@ export async function POST(request: NextRequest) {
         `(length=${responseText.length})`
       );
       try {
-        rawJson = JSON.parse(repairTruncatedJson(responseText));
+        const repaired = JSON.parse(repairTruncatedJson(responseText));
+        rawJson =
+          Array.isArray(repaired) && repaired.length === 1
+            ? repaired[0]
+            : repaired;
         console.info("JSON repair succeeded (some sections may be partial)");
       } catch (repairErr) {
         console.error("JSON repair also failed:", repairErr);
