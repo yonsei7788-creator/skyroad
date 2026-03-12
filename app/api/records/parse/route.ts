@@ -290,6 +290,10 @@ export async function POST(request: NextRequest) {
 
     const fileParts = await Promise.all(uploadPromises);
 
+    console.info(
+      `[parse] Files uploaded: ${fileParts.length}, URIs: ${fileParts.map((p) => p.fileData.fileUri).join(", ")}`
+    );
+
     // Generate content — thinking OFF for faster structured extraction
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
@@ -310,6 +314,10 @@ export async function POST(request: NextRequest) {
     const finishReason =
       result.response.candidates?.[0]?.finishReason ?? "UNKNOWN";
     const responseText = result.response.text();
+
+    console.info(
+      `[parse] Gemini response: finishReason=${finishReason}, length=${responseText.length}, preview=${responseText.slice(0, 200)}`
+    );
 
     if (!responseText || responseText.trim().length === 0) {
       console.error("Gemini returned empty response");
@@ -347,6 +355,44 @@ export async function POST(request: NextRequest) {
     }
 
     const enriched = enrichWithIds(rawJson as RawRecord);
+
+    // 핵심 섹션에 데이터가 하나도 없으면 파싱 실패로 처리
+    const coreKeys = [
+      "generalSubjects",
+      "subjectEvaluations",
+      "creativeActivities",
+    ] as const;
+    const hasAnyData = coreKeys.some(
+      (k) => Array.isArray(enriched[k]) && enriched[k]!.length > 0
+    );
+
+    if (!hasAnyData) {
+      console.error(
+        "Parsed result has no data in core sections",
+        `(finishReason=${finishReason}, responseLength=${responseText.length})`
+      );
+      return NextResponse.json(
+        {
+          error:
+            finishReason === "MAX_TOKENS"
+              ? "생기부 파일이 너무 커서 분석이 중단되었습니다. 페이지 수를 줄여서 다시 시도해주세요."
+              : "생기부 데이터를 추출하지 못했습니다. 파일이 정상적인 생기부 PDF인지 확인 후 다시 시도해주세요.",
+        },
+        { status: 422 }
+      );
+    }
+
+    if (finishReason === "MAX_TOKENS") {
+      return NextResponse.json(
+        {
+          ...enriched,
+          _warning:
+            "토큰 한도 초과로 일부 데이터가 누락되었을 수 있습니다. 데이터를 확인해주세요.",
+        },
+        { status: 200 }
+      );
+    }
+
     return NextResponse.json(enriched);
   } catch (err) {
     console.error("Gemini parse error:", err);
