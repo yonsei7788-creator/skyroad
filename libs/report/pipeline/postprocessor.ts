@@ -668,6 +668,42 @@ const normalizeSection = (
       }
     }
 
+    // ── 성실성 최소 점수 보장: 개근/우수 출결 시 ──
+    if (Array.isArray(s.scores) && attendance.length > 0) {
+      const totalUnauthorized = attendance.reduce(
+        (sum, a) => sum + a.unauthorized,
+        0
+      );
+      const totalAbsence = attendance.reduce(
+        (sum, a) => sum + a.totalAbsence,
+        0
+      );
+      const isPerfectAttendance = totalUnauthorized === 0 && totalAbsence === 0;
+      const isGoodAttendance = totalUnauthorized === 0 && totalAbsence <= 3;
+
+      // 개근: 최소 20/25, 우수 출결(질병결석 3일 이하): 최소 18/25
+      const minIntegrity = isPerfectAttendance ? 20 : isGoodAttendance ? 18 : 0;
+
+      if (minIntegrity > 0) {
+        const communityScore = s.scores.find(
+          (sc: any) => sc.category === "community"
+        );
+        if (communityScore && Array.isArray(communityScore.subcategories)) {
+          const integrity = communityScore.subcategories.find(
+            (sub: any) => sub.name === "성실성"
+          );
+          if (integrity && integrity.score < minIntegrity) {
+            integrity.score = minIntegrity;
+            // 공동체역량 소계 재계산
+            communityScore.score = communityScore.subcategories.reduce(
+              (sum: number, sub: any) => sum + (sub.score ?? 0),
+              0
+            );
+          }
+        }
+      }
+    }
+
     // ── 진로역량 점수: 생기부-학과 괴리 감지 시 상한 적용 ──
     if (Array.isArray(s.scores) && studentInfo.targetDepartment) {
       const targetDept = (studentInfo.targetDepartment ?? "").toLowerCase();
@@ -698,6 +734,34 @@ const normalizeSection = (
             for (const sub of careerScore.subcategories) {
               sub.score = Math.round(sub.score * ratio);
             }
+          }
+        }
+      }
+    }
+
+    // ── 균등 배점 감지 및 자동 보정 ──
+    if (Array.isArray(s.scores)) {
+      for (const sc of s.scores) {
+        if (Array.isArray(sc.subcategories) && sc.subcategories.length >= 3) {
+          const scores = sc.subcategories.map((sub: any) => sub.score ?? 0);
+          const allEqual = scores.every((v: number) => v === scores[0]);
+          if (allEqual && scores[0] > 0) {
+            // AI가 균등 배점한 경우 — 증거 기반 차등화가 안 된 것
+            // 약간의 변동을 주어 균등 배점을 깨뜨림
+            console.warn(
+              `[postprocessor] ${sc.category} 하위항목 균등 배점 감지: ${scores.join("/")}. 자동 보정 적용.`
+            );
+            const total = scores.reduce((a: number, b: number) => a + b, 0);
+            const count = scores.length;
+            // 첫 번째 항목 +2, 마지막 항목 -2 (총합 유지)
+            sc.subcategories[0].score = Math.min(
+              sc.subcategories[0].score + 2,
+              sc.subcategories[0].maxScore ?? 25
+            );
+            sc.subcategories[count - 1].score = Math.max(
+              sc.subcategories[count - 1].score - 2,
+              0
+            );
           }
         }
       }

@@ -40,6 +40,25 @@ const repairTruncatedJson = (text: string): string => {
     // 복구 진행
   }
 
+  // ── 구조적 오류 복구: 잘못된 위치의 문자 제거 ──
+  // "Expected double-quoted property name" 오류 대응:
+  // 객체 내부에서 key가 따옴표 없이 나오거나, 후행 콤마 뒤 닫는 괄호 등
+  json = json
+    // 후행 콤마 제거 (객체/배열 닫기 전)
+    .replace(/,\s*}/g, "}")
+    .replace(/,\s*]/g, "]")
+    // 따옴표 없는 프로퍼티 키 보정 (간단한 패턴)
+    .replace(/{\s*([a-zA-Z_]\w*)\s*:/g, '{"$1":')
+    .replace(/,\s*([a-zA-Z_]\w*)\s*:/g, ',"$1":');
+
+  // 2차 시도
+  try {
+    JSON.parse(json);
+    return json;
+  } catch {
+    // 3차 복구 계속
+  }
+
   // 열린 괄호/중괄호를 추적하여 닫기
   let inString = false;
   let escaped = false;

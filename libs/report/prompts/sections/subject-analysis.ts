@@ -82,10 +82,13 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - importancePercent 5~9% → evaluationImpact: "low"
 - importancePercent 5% 미만 → evaluationImpact: "very_low"
 
-⚠️ **분량 제한 (반드시 준수)**:
+⚠️ **분량 제한 (반드시 준수 — JSON 파싱 오류 방지)**:
 - evaluationComment는 반드시 **150자 이내**로 작성합니다. 150자를 초과하는 항목은 절대 출력하지 마세요.
 - strengthPoints/weaknessPoints는 각 **최대 2개**, 각 항목 **80자 이내**로 작성합니다.
-- detailedEvaluation은 **200자 이내**로 작성합니다.`,
+- detailedEvaluation은 **200자 이내**로 작성합니다.
+- improvementDirection은 **100자 이내**, improvementExample은 **150자 이내**로 작성합니다.
+- keyQuotes는 과목당 **최대 2개**, 각 인용 **100자 이내**로 작성합니다.
+- ⛔ 전체 JSON 출력이 20,000자를 초과하면 안 됩니다. 분량이 길어지면 하위 우선순위 과목의 내용을 축약하세요.`,
   premium: `## 분석 수준: 정밀 (핵심 과목 집중)
 
 ### 과목 분류 및 분석 깊이
