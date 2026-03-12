@@ -27,7 +27,7 @@ export async function GET() {
     .from("record_drafts")
     .select("*")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (error || !data) {
     return NextResponse.json(

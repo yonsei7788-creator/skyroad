@@ -30,7 +30,7 @@ const RecordPage = async () => {
     .from("records")
     .select("id, submission_type, text_verified, created_at, updated_at")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   const { data: generalSubjects } = record
     ? await supabase

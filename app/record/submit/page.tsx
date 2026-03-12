@@ -196,7 +196,7 @@ const RecordSubmitPage = async ({ searchParams }: PageProps) => {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (recordRow) {
       const recordId = recordRow.id as string;
