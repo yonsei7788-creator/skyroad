@@ -2799,6 +2799,8 @@
   border: 1px solid var(--report-border);
   border-radius: var(--report-radius-md);
   background: var(--report-bg);
+  min-height: 220px;
+  box-sizing: border-box;
 }
 
 .competencyDimCardWide + .competencyDimCardWide,

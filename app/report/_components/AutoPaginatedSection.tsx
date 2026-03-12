@@ -18,6 +18,12 @@ import { ReportPage } from "./ReportPage";
  */
 const AVAILABLE_HEIGHT_PX = 920;
 
+/**
+ * 측정값과 실제 렌더링 간의 미세 차이를 보정하기 위한 안전 마진 (px).
+ * 마지막 슬라이스의 높이에 이 값을 더해 콘텐츠 잘림을 방지합니다.
+ */
+const LAST_SLICE_PADDING_PX = 40;
+
 interface AutoPaginatedSectionProps {
   children: ReactNode;
   sectionTitle: string;
@@ -121,6 +127,10 @@ export const AutoPaginatedSection = ({
       {measured &&
         slices.map((slice, i) => {
           const isLastSlice = i === slices.length - 1;
+          // 마지막 슬라이스는 측정-렌더 차이로 인한 잘림 방지를 위해 여유 높이 추가
+          const sliceHeight = isLastSlice
+            ? slice.height + LAST_SLICE_PADDING_PX
+            : slice.height;
           return (
             <ReportPage
               key={`${sectionTitle}-p${i}`}
@@ -130,10 +140,7 @@ export const AutoPaginatedSection = ({
             >
               <div
                 style={{
-                  // 마지막 페이지는 height 제한 없음 (잘림 방지)
-                  // 중간 페이지는 다음 페이지 콘텐츠가 보이지 않도록 제한
-                  height: isLastSlice ? undefined : `${slice.height}px`,
-                  minHeight: isLastSlice ? `${slice.height}px` : undefined,
+                  height: `${sliceHeight}px`,
                   overflow: "hidden",
                   position: "relative",
                 }}

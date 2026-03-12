@@ -82,7 +82,7 @@ export const InterviewPrepRenderer = ({
             </div>
             <p className={styles.body}>{q.question}</p>
             {q.intent && (
-              <p className={`${styles.caption} ${styles.mt6}`}>
+              <p className={`${styles.body} ${styles.mt6}`}>
                 <span className={styles.emphasis}>출제 의도:</span>{" "}
                 {safeText(q.intent)}
               </p>
@@ -128,9 +128,9 @@ export const InterviewPrepRenderer = ({
                 <p className={styles.body}>{q.question}</p>
 
                 {q.intent && (
-                  <p className={`${styles.caption} ${styles.mt6}`}>
+                  <p className={`${styles.body} ${styles.mt6}`}>
                     <span className={styles.emphasis}>출제 의도:</span>{" "}
-                    {q.intent}
+                    {safeText(q.intent)}
                   </p>
                 )}
 
