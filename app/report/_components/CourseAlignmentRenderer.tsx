@@ -90,7 +90,7 @@ export const CourseAlignmentRenderer = ({
 
         {data.recommendation && (
           <div className={`${styles.aiCommentary} ${styles.mt16}`}>
-            <div className={styles.aiCommentaryIcon}>AI</div>
+            <div className={styles.aiCommentaryIcon}>✦</div>
             <div className={styles.aiCommentaryContent}>
               <div className={styles.aiCommentaryLabel}>이수 전략</div>
               <div className={styles.aiCommentaryText}>

@@ -57,7 +57,7 @@ const PART_CONFIG = [
   {
     partNumber: "부록",
     title: "부록",
-    description: "추천 도서, AI 전공 추천",
+    description: "추천 도서, 전공 추천",
     sectionIds: ["bookRecommendation", "majorExploration"],
   },
 ];

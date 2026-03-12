@@ -250,7 +250,7 @@ const GeneratingContent = () => {
             <div className={styles.checkIcon} aria-hidden="true">
               &#10003;
             </div>
-            <h1 className={styles.title}>AI 분석이 완료되었습니다</h1>
+            <h1 className={styles.title}>분석이 완료되었습니다</h1>
             <p className={styles.description}>
               리포트 검수 후 <strong>48시간 내에 이메일로 발송</strong>해
               드립니다.
@@ -274,7 +274,9 @@ const GeneratingContent = () => {
               role="status"
               aria-label="리포트 생성 중"
             />
-            <h1 className={styles.title}>AI가 생기부를 분석하고 있습니다</h1>
+            <h1 className={styles.title}>
+              생기부 데이터를 추출하는 중입니다.{" "}
+            </h1>
             {progress > 0 && (
               <div className={styles.progressArea}>
                 <div className={styles.progressBar}>

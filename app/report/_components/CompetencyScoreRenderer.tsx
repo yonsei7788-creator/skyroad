@@ -197,7 +197,7 @@ export const CompetencyScoreRenderer = ({
           </span>
           <div className={styles.competencyDimWideScoreRow}>
             <span className={styles.competencyDimWideScore}>
-              {GROWTH_SCORE_MAP[data.growthGrade] ?? "—"}
+              {data.growthScore ?? GROWTH_SCORE_MAP[data.growthGrade] ?? "—"}
             </span>
             <span className={styles.competencyDimWideMax}>/100</span>
             <span
@@ -213,7 +213,7 @@ export const CompetencyScoreRenderer = ({
             <div
               className={styles.competencyDimWideBarFill}
               style={{
-                width: `${GROWTH_SCORE_MAP[data.growthGrade] ?? 0}%`,
+                width: `${data.growthScore ?? GROWTH_SCORE_MAP[data.growthGrade] ?? 0}%`,
               }}
             />
           </div>
@@ -228,7 +228,7 @@ export const CompetencyScoreRenderer = ({
 
       {/* AI commentary */}
       <div className={styles.aiCommentary}>
-        <div className={styles.aiCommentaryIcon}>AI</div>
+        <div className={styles.aiCommentaryIcon}>✦</div>
         <div className={styles.aiCommentaryContent}>
           <div className={styles.aiCommentaryLabel}>점수 해석</div>
           <div className={styles.aiCommentaryText}>

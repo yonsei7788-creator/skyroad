@@ -32,7 +32,7 @@ export const ReportQuestionCard = ({
       {/* Premium: answer strategy as AI commentary */}
       {question.answerStrategy && (
         <div className={`${styles.aiCommentary} ${styles.mt12}`}>
-          <div className={styles.aiCommentaryIcon}>AI</div>
+          <div className={styles.aiCommentaryIcon}>✦</div>
           <div className={styles.aiCommentaryContent}>
             <div className={styles.aiCommentaryLabel}>답변 전략</div>
             <div className={styles.aiCommentaryText}>

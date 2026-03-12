@@ -118,7 +118,7 @@ export const BehaviorAnalysisRenderer = ({
       {/* Final Block: AI 종합 평가 + 입시 활용 */}
       <div>
         <div className={styles.aiCommentary}>
-          <div className={styles.aiCommentaryIcon}>AI</div>
+          <div className={styles.aiCommentaryIcon}>✦</div>
           <div className={styles.aiCommentaryContent}>
             <div className={styles.aiCommentaryLabel}>종합 평가</div>
             <div className={styles.aiCommentaryText}>

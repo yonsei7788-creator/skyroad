@@ -80,15 +80,17 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
         </div>
       )}
 
-      {!subject.detailedEvaluation && (
-        <>
-          <p className={styles.small}>{safeText(subject.activitySummary)}</p>
-          {subject.evaluationComment && (
-            <p className={`${styles.small} ${styles.mt6}`}>
-              {safeText(subject.evaluationComment)}
-            </p>
-          )}
-        </>
+      {subject.activitySummary && (
+        <p className={styles.body}>
+          <span className={styles.emphasis}>주요 활동 내용:</span>{" "}
+          {safeText(subject.activitySummary)}
+        </p>
+      )}
+
+      {!subject.detailedEvaluation && subject.evaluationComment && (
+        <p className={`${styles.small} ${styles.mt6}`}>
+          {safeText(subject.evaluationComment)}
+        </p>
       )}
 
       {subject.keyQuotes && subject.keyQuotes.length > 0 && (
@@ -123,7 +125,7 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
 
           {subject.detailedEvaluation && (
             <div className={`${styles.aiCommentary} ${styles.mt8}`}>
-              <div className={styles.aiCommentaryIcon}>AI</div>
+              <div className={styles.aiCommentaryIcon}>✦</div>
               <div className={styles.aiCommentaryContent}>
                 <div className={styles.aiCommentaryLabel}>상세 평가</div>
                 <div className={styles.aiCommentaryText}>

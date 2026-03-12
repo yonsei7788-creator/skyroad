@@ -211,7 +211,7 @@ export const AcademicAnalysisRenderer = ({
       {/* Block 3: AI interpretation */}
       <div>
         <div className={styles.aiCommentary}>
-          <div className={styles.aiCommentaryIcon}>AI</div>
+          <div className={styles.aiCommentaryIcon}>✦</div>
           <div className={styles.aiCommentaryContent}>
             <div className={styles.aiCommentaryLabel}>성적 분석</div>
             <div className={styles.aiCommentaryText}>

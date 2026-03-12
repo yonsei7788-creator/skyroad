@@ -120,7 +120,7 @@ export const StoryAnalysisRenderer = ({
 
           {data.interviewStoryGuide && (
             <div className={`${styles.aiCommentary} ${styles.mt20}`}>
-              <div className={styles.aiCommentaryIcon}>AI</div>
+              <div className={styles.aiCommentaryIcon}>✦</div>
               <div className={styles.aiCommentaryContent}>
                 <div className={styles.aiCommentaryLabel}>
                   면접 스토리텔링 가이드
