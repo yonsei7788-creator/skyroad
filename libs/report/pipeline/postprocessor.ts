@@ -82,8 +82,11 @@ export const postprocess = (
         C: 50,
         D: 35,
       };
-      profile.radarChart.growth =
+      const growthNumeric =
         growthMap[compScore.growthGrade] ?? profile.radarChart.growth;
+      profile.radarChart.growth = growthNumeric;
+      // 발전가능성 숫자 점수를 competencyScore 섹션에 주입
+      compScore.growthScore = growthNumeric;
     }
   }
 
@@ -238,6 +241,9 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   // ── 돋보이다 활용형 추가 ──
   [/돋보여\s/g, "강점이 있어 "],
   [/돋보이며/g, "강점이 있으며"],
+  [/돋보이지만/g, "강점이지만"],
+  [/돋보임\./g, "강점입니다."],
+  [/돋보임$/gm, "강점입니다"],
 
   // ── 명령형 어미 → 권유형 전환 ──
   [/작성하세요/g, "작성하는 것이 좋습니다"],
@@ -262,11 +268,15 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/충분히 가능/g, "가능"],
 
   // ── 무의미한 추상 평가 표현 → 제거/대체 ──
-  [/비판적 사고력을?\s*입증/g, "탐구 과정에서 다각적 분석을 시도"],
-  [
-    /비판적 사고력을?\s*(보여주었|드러냈|발휘했|보여줍니다|드러냅니다|발휘합니다)/g,
-    "다각적 분석을 시도했",
-  ],
+  // "비판적 사고력" 치환: 문맥 파괴 방지를 위해 독립 표현만 매칭
+  [/비판적 사고력을\s*입증합니다/g, "다각적 분석 역량을 보여줍니다"],
+  [/비판적 사고력을\s*보여주었습니다/g, "다각적 분석 역량을 보여주었습니다"],
+  [/비판적 사고력을\s*보여줍니다/g, "다각적 분석 역량을 보여줍니다"],
+  [/비판적 사고력을\s*드러냅니다/g, "다각적 분석 역량이 확인됩니다"],
+  [/비판적 사고력을\s*발휘합니다/g, "다각적 분석 역량을 보여줍니다"],
+  [/비판적 사고력을\s*드러냈/g, "다각적 분석 역량을 보여주었"],
+  [/비판적 사고력을\s*발휘했/g, "다각적 분석 역량을 보여주었"],
+  [/비판적 사고력/g, "다각적 분석 역량"],
   [/실질적 기여 의지/g, "참여 의지"],
   [/문제 해결 능력을 보여주었습니다/g, "문제 해결 과정이 기록되어 있습니다"],
   [/창의적 사고를 발휘했습니다/g, "독자적 접근 방식을 시도했습니다"],
@@ -286,6 +296,10 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/평가할 수 있습니다/g, "평가할 겁니다"],
   [/평가될 수 있습니다/g, "평가될 겁니다"],
   [/작용할 수 있습니다/g, "작용할 겁니다"],
+
+  // ── 온점 3개(줄임표) → (중략) ──
+  [/\.{3,}/g, "(중략)"],
+  [/…/g, "(중략)"],
 ];
 
 const sanitizeAiTone = (text: string): string => {
@@ -812,7 +826,7 @@ const normalizeSection = (
     }
   }
 
-  // ── admissionStrategy: schoolTypeAnalysis 빈 객체 제거 ──
+  // ── admissionStrategy: schoolTypeAnalysis 빈 객체 제거 + 괴리 보강 ──
   if (s.sectionId === "admissionStrategy") {
     const sta = s.schoolTypeAnalysis;
     if (
@@ -822,6 +836,44 @@ const normalizeSection = (
       (!Array.isArray(sta.advantageTypes) || sta.advantageTypes.length === 0)
     ) {
       delete s.schoolTypeAnalysis;
+    }
+
+    // ── 생기부-학과 괴리 시 schoolTypeAnalysis 면접형 추천 보강 ──
+    // 괴리 감지: 전공 관련 과목이 4등급 이하이거나 careerSubjects에 약점이 있는 경우
+    const careerSubjects = pre.careerSubjects ?? [];
+    const hasCareerMismatch =
+      careerSubjects.length > 0 &&
+      careerSubjects.some(
+        (cs: any) =>
+          cs.achievement &&
+          /[4-9]등급|4등급|5등급|6등급|7등급|8등급|9등급/.test(cs.achievement)
+      );
+    if (sta && hasCareerMismatch) {
+      // cautionTypes에 "서류 중심 평가 대학" 포함 보장
+      if (Array.isArray(sta.cautionTypes)) {
+        const hasDocCaution = sta.cautionTypes.some(
+          (t: string) => t.includes("서류 중심") || t.includes("서류중심")
+        );
+        if (!hasDocCaution) {
+          sta.cautionTypes.push("서류 중심 평가 대학");
+        }
+      }
+      // advantageTypes에 "면접형 학생부종합전형" 포함 보장
+      if (Array.isArray(sta.advantageTypes)) {
+        const hasInterview = sta.advantageTypes.some(
+          (t: string) => t.includes("면접형") || t.includes("면접 중심")
+        );
+        if (!hasInterview) {
+          sta.advantageTypes.push("면접형 학생부종합전형");
+        }
+        // "서류 중심 평가 대학" 이 advantageTypes에 있으면 제거 (모순)
+        const docIdx = sta.advantageTypes.findIndex(
+          (t: string) => t.includes("서류 중심") || t.includes("서류중심")
+        );
+        if (docIdx !== -1) {
+          sta.advantageTypes.splice(docIdx, 1);
+        }
+      }
     }
   }
 

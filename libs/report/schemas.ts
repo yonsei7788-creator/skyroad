@@ -146,6 +146,7 @@ export const CompetencyScoreSectionSchema = z.object({
   title: z.string().min(1),
   totalScore: z.number().min(0).max(300),
   growthGrade: CompetencyGradeSchema,
+  growthScore: z.number().min(0).max(100).optional(),
   growthComment: z.string().min(1),
   scores: z.tuple([
     CompetencyScoreDetailSchema,

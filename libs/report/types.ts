@@ -197,6 +197,8 @@ export interface CompetencyScoreSection extends BaseSection {
 
   /** 발전가능성 등급 (총점에 미포함, 별도 표시) */
   growthGrade: CompetencyGrade;
+  /** 발전가능성 점수 (0~100, radarChart.growth 기반) */
+  growthScore?: number;
   growthComment: string;
 
   /** 역량별 점수 상세 (학업, 진로, 공동체 3개) */
