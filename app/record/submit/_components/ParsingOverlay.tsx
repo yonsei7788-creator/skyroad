@@ -59,7 +59,9 @@ export const ParsingOverlay = () => {
         />
 
         <div className={styles.phaseText}>
-          <p className={styles.phaseLabel}>AI가 생기부를 분석하고 있습니다</p>
+          <p className={styles.phaseLabel}>
+            생기부 데이터를 추출하는 중입니다.
+          </p>
           <p key={phase} className={styles.phaseStep}>
             {PHASE_LABELS[phase]}
           </p>
@@ -74,9 +76,7 @@ export const ParsingOverlay = () => {
           ))}
         </div>
 
-        <p
-          className={`${styles.tip} ${tipVisible ? "" : styles.tipHidden}`}
-        >
+        <p className={`${styles.tip} ${tipVisible ? "" : styles.tipHidden}`}>
           {TIPS[tipIndex]}
         </p>
       </div>
