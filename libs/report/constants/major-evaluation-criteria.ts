@@ -32,6 +32,11 @@ export interface MajorEvaluationCriteria {
   careerFocusPoints: string[];
   /** 이 계열에서 약점으로 작용할 수 있는 요소 */
   riskFactors: string[];
+
+  /** 핵심 권장과목 (importancePercent 30~40% 대상) */
+  coreSubjects: string[];
+  /** 권장과목 (importancePercent 15~25% 대상) */
+  recommendedSubjects: string[];
 }
 
 // ─── 계열별 평가 기준 데이터 ───
@@ -60,6 +65,15 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
       "탐구 활동이 단순 조사 수준에 그침",
       "진로 방향의 잦은 변경",
     ],
+    coreSubjects: [
+      "수학Ⅰ",
+      "수학Ⅱ",
+      "미적분",
+      "화학Ⅰ",
+      "생명과학Ⅰ",
+      "생명과학Ⅱ",
+    ],
+    recommendedSubjects: ["확률과 통계", "물리학Ⅰ", "화학Ⅱ"],
   },
   {
     majorGroup: "공학",
@@ -84,6 +98,16 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
       "탐구가 이론 나열에 그치고 실제 적용 사례가 없음",
       "공학 관련 활동 경험 부족",
     ],
+    coreSubjects: [
+      "수학Ⅰ",
+      "수학Ⅱ",
+      "미적분",
+      "기하",
+      "물리학Ⅰ",
+      "물리학Ⅱ",
+      "화학Ⅰ",
+    ],
+    recommendedSubjects: ["확률과 통계", "화학Ⅱ"],
   },
   {
     majorGroup: "컴퓨터AI",
@@ -108,6 +132,8 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
       "정보/프로그래밍 과목 미이수",
       "단순 사용 경험만 있고 원리 이해나 개발 경험이 없음",
     ],
+    coreSubjects: ["수학Ⅰ", "수학Ⅱ", "미적분", "기하"],
+    recommendedSubjects: ["확률과 통계", "인공지능 수학", "물리학Ⅰ"],
   },
   {
     majorGroup: "경영경제",
@@ -132,6 +158,8 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
       "사회/경제 관련 탐구 활동 부족",
       "단순 정보 나열형 탐구에 그침",
     ],
+    coreSubjects: ["미적분", "확률과 통계"],
+    recommendedSubjects: ["경제 수학", "경제", "사회·문화"],
   },
   {
     majorGroup: "사회과학",
@@ -155,6 +183,14 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
       "사회 관련 과목 성취도 부진",
       "탐구가 표면적 정보 수집에 그침 (비판적 분석 부족)",
       "진로 관련 활동의 일관성 부족",
+    ],
+    coreSubjects: [],
+    recommendedSubjects: [
+      "세계사",
+      "경제",
+      "정치와 법",
+      "사회·문화",
+      "사회문제 탐구",
     ],
   },
   {
@@ -180,6 +216,14 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
       "독서 이력이 빈약하거나 피상적",
       "인문학적 탐구보다 단순 감상에 그침",
     ],
+    coreSubjects: [],
+    recommendedSubjects: [
+      "세계사",
+      "동아시아사",
+      "한국지리",
+      "세계지리",
+      "윤리와 사상",
+    ],
   },
   {
     majorGroup: "자연과학",
@@ -204,6 +248,8 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
       "탐구가 교과서 수준에 머무름",
       "과학적 방법론 없이 결론만 제시",
     ],
+    coreSubjects: ["수학Ⅰ", "수학Ⅱ", "미적분", "기하"],
+    recommendedSubjects: ["확률과 통계", "물리학Ⅰ", "화학Ⅰ", "생명과학Ⅰ"],
   },
   {
     majorGroup: "교육",
@@ -228,6 +274,8 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
       "타인과의 소통/협업 경험 부족",
       "교육 관련 활동이 전무",
     ],
+    coreSubjects: [],
+    recommendedSubjects: [],
   },
   {
     majorGroup: "간호보건",
@@ -252,6 +300,8 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
       "봉사/돌봄 활동 경험 부족",
       "출결 불량 (성실성 의문)",
     ],
+    coreSubjects: ["수학Ⅰ", "수학Ⅱ", "확률과 통계", "생명과학Ⅰ", "생명과학Ⅱ"],
+    recommendedSubjects: ["미적분", "화학Ⅰ", "화학Ⅱ"],
   },
   {
     majorGroup: "예체능",
@@ -276,8 +326,64 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
       "전공 관련 활동 이력이 빈약",
       "활동의 지속성 없이 산발적",
     ],
+    coreSubjects: [],
+    recommendedSubjects: [],
   },
 ];
+
+// ─── 세특 표현 분석 가이드 ───
+
+export const SESPEC_EXPRESSION_GUIDE = `
+## 입학사정관의 세특 표현 해석 기준
+
+### ⛔ 부정적으로 해석되는 표현 패턴
+| 표현 패턴 | 사정관 해석 | evaluationComment 반영 |
+|-----------|------------|----------------------|
+| "자기주도적으로 탐구함" (구체적 과정 없음) | 형식적 서술, 다른 학생에게도 동일하게 기재 가능 | "구체적 탐구 과정이 서술되지 않아 독창성이 드러나지 않음" |
+| "~을 알게 됨", "~을 이해함" | 단순 조사 수준, 탐구 깊이 부족 | "단순 학습 기록으로, 심화 탐구 활동으로 평가되기 어려움" |
+| "~하고 싶다" 반복 | 의지만 표명, 실천 부재 | "실천 사례 없이 의지만 반복되어 실천력 측면에서 부정적" |
+| "~을 기대함" | 원론적 의견, 평가 영향 없음 | "단순 의견 제시로 평가에 유의미한 영향 없음" |
+| "~을 탐색함" (결과 없음) | 관심 표명 수준, 탐구 아님 | "탐색 수준에 그쳐 탐구력 근거로 불충분" |
+
+### ✅ 긍정적으로 해석되는 표현 패턴
+| 표현 패턴 | 사정관 해석 |
+|-----------|------------|
+| 구체적 해결방안 제시 (학생만의 관점) | 창의적 문제해결 역량 득점 (단, 원론적이면 제한적) |
+| 가설→실험→결론→한계인식 구조 | 과학적 방법론 충실, 탐구력 우수 |
+| 교과 간 연결·융합 탐구 | 통합적 사고, 학업역량 우수 |
+| 문제 인식→추가 탐구→심화 학습 | 자기주도적 탐구 역량 |
+
+### ⚠️ 반드시 단점도 서술
+- 모든 과목의 evaluationComment에 장점뿐 아니라 단점(표현상 한계, 탐구 깊이 부족 등)을 함께 서술하세요.
+- 단점이 전혀 없는 세특은 존재하지 않습니다.
+`;
+
+// ─── 활동 평가 가이드 ───
+
+export const ACTIVITY_EVALUATION_GUIDE = `
+## 입학사정관의 활동 유형별 평가 기준
+
+### 공동체 활동 (토론회, 체육대회, 청소, 수련회 등)
+- 인성/공동체역량의 보조 자료로만 활용됨
+- 전공 적합성 판단에는 무관
+- 책임감 있게 역할을 수행한 경험이 드러나면 협력성·책임감 측면에서 긍정적
+- 면접에서 공동체역량 비율이 높은 전형에서 질문 가능성 있음
+
+### 자율활동 (학급 활동, 발표 등)
+- 전공 관련성은 제한적 — 소재가 전공과 일치해도 변별력 낮음
+- 탐구 과정의 구체성과 깊이가 중요
+- 다수 학생이 참여하는 활동이므로 독창성이 드러나야 의미 있음
+
+### 진로 관련 활동 (대학 연계 프로그램 등)
+- 진로 일관성과 관심 증거로 작용
+- 단순 참여는 평가 영향 미미 → 지식 확장·추가 탐구·심화 학습이 드러나야 함
+- 활동의 깊이가 부족하면 탐구력·학업적 성장 측면에서 높은 평가 어려움
+
+### 세특(세부능력 및 특기사항) 평가
+- 구체적 탐구 과정 없이 결론만 서술된 경우 → 감점 요인
+- 진로 관련 활동인데도 탐구 깊이 부족 → 진로역량 부정적 요인
+- 해결방안 제시 시: 학생만의 관점이면 창의성 득점, 원론적이면 제한적
+`;
 
 // ─── 계열 매칭 유틸리티 ───
 
@@ -414,6 +520,28 @@ export const formatMajorEvaluationContext = (
   lines.push("### 이 계열에서 약점으로 작용하는 요소");
   for (const risk of criteria.riskFactors) {
     lines.push(`- ${risk}`);
+  }
+  lines.push("");
+
+  if (criteria.coreSubjects.length > 0) {
+    lines.push(`### 핵심 권장과목 (importancePercent 30~40%에 해당)`);
+    lines.push(criteria.coreSubjects.join(", "));
+    lines.push("");
+  }
+
+  if (criteria.recommendedSubjects.length > 0) {
+    lines.push(`### 권장과목 (importancePercent 15~25%에 해당)`);
+    lines.push(criteria.recommendedSubjects.join(", "));
+    lines.push("");
+  }
+
+  if (
+    criteria.coreSubjects.length > 0 ||
+    criteria.recommendedSubjects.length > 0
+  ) {
+    lines.push(
+      "⚠️ 위 목록에 없는 과목은 importancePercent 15% 이하로 설정하세요."
+    );
   }
 
   return lines.join("\n");

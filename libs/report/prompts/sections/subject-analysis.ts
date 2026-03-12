@@ -1,6 +1,7 @@
 /** 섹션 10: 교과 세특 분석 (subjectAnalysis) */
 
 import type { ReportPlan } from "../../types.ts";
+import { SESPEC_EXPRESSION_GUIDE } from "../../constants/major-evaluation-criteria.ts";
 
 export interface SubjectAnalysisPromptInput {
   subjectData: string;
@@ -39,8 +40,7 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 3. **전공 관련 탐구과목** (이공계: 생명과학·지구과학, 인문계: 세계사·동아시아사·윤리)
 4. 위 과목이 5개 미만이면 나머지 일반선택과목으로 보충
 
-⚠️ **절대 선택하면 안 되는 과목**: 독서, 기술·가정, 제2외국어, 한문, 교양, 보건, 체육, 음악, 미술. 이 과목들은 학종 핵심 평가 대상이 아니므로 5개 안에 절대 포함하지 마세요.
-⚠️ **정보 과목 예외**: 컴퓨터공학, 소프트웨어, AI, 데이터, 정보보안 등 CS 관련 학과 지망 학생은 "정보"가 전공 핵심 과목입니다. 반드시 5개 안에 포함하세요.
+⚠️ **절대 선택하면 안 되는 과목**: 정보, 독서, 기술·가정, 제2외국어(일본어·중국어·독일어 등), 한문, 교양, 보건, 체육, 음악, 미술. 이 과목들은 학종 핵심 평가 대상이 아니므로 5개 안에 절대 포함하지 마세요. 컴퓨터공학과 지망이라도 정보 과목은 포함하지 마세요.
 
 ### 중요도 규칙 (Lite에서도 적용)
 - importancePercent와 evaluationImpact를 반드시 출력하세요.
@@ -129,6 +129,40 @@ export const buildSubjectAnalysisPrompt = (
   return `## 작업
 학생의 세부능력 및 특기사항(세특)을 과목별로 분석하세요.
 
+## ⛔ 과목 분류 (이 규칙이 모든 다른 규칙보다 우선합니다)
+
+분석을 시작하기 전에, 학생의 목표 학과를 확인하고 아래 기준으로 과목을 분류하세요.
+**이 분류 결과가 importancePercent, evaluationImpact, evaluationComment, detailedEvaluation 등 모든 출력에 반영되어야 합니다.**
+
+### ⚠️ majorEvaluationContext 기반 과목 분류 (최우선)
+1단계: majorEvaluationContext의 "핵심 권장과목"/"권장과목" 목록을 확인하세요.
+2단계: 해당 목록에 포함된 과목은 아래 기본 분류보다 우선합니다.
+- 핵심 권장과목 → importancePercent: 30~40%, evaluationImpact: "very_high"
+- 권장과목 → importancePercent: 15~25%, evaluationImpact: "high"
+- 위 목록에 없는 일반 과목 → 기존 분류 규칙 적용
+
+### 비핵심 과목 (importancePercent: 2~5%, evaluationImpact: "very_low")
+다음 과목들은 **어떤 학과를 지망하든** 학종 평가에서 핵심이 아닙니다:
+- **정보**: 고교 정보는 1학년 1~2단위 기초 과목으로, 컴퓨터공학과 지망이라도 입학사정관은 수학·물리학 세특으로 전공 적합성을 판단합니다. 정보 세특은 "관심 확인" 수준일 뿐 변별력이 없습니다.
+- 제2외국어: 일본어, 중국어, 독일어, 프랑스어, 스페인어, 러시아어, 아랍어, 베트남어
+- 교양/실생활: 기술·가정, 독서, 한문, 교양, 보건, 환경, 논리학
+- 예체능: 체육, 음악, 미술
+
+⚠️ 비핵심 과목의 evaluationComment/detailedEvaluation 작성 시:
+- ❌ "전공 적합성이 높다", "핵심 과목으로서 중요하다", "입학사정관이 주목할 것이다"
+- ✅ "학종 평가에서 보조적 과목으로, 성실성 확인 수준으로 반영됩니다", "전공 핵심 과목은 아니지만 수업 태도를 보여줍니다"
+
+### 전공 핵심 과목 (importancePercent: 25~40%, evaluationImpact: "very_high" 또는 "high")
+- 이공계: 수학, 미적분, 기하, 확률과통계, 물리학, 화학, 생명과학 (전공에 따라)
+- 인문사회: 사회·문화, 정치와법, 경제, 세계사, 동아시아사, 윤리와사상
+- 의약학: 생명과학, 화학, 수학
+
+### 공통 기초 과목 (importancePercent: 10~15%, evaluationImpact: "medium")
+- 국어, 영어, 문학, 언어와매체, 화법과작문
+
+### 비관련 탐구 과목 (importancePercent: 5~10%, evaluationImpact: "low")
+- 이공계 학생의 사회탐구, 인문계 학생의 과학탐구 등
+
 ## 출력 JSON 스키마
 
 중요: subjects 배열의 각 요소는 반드시 아래와 같은 완전한 객체여야 합니다. 문자열 배열 절대 금지.
@@ -172,22 +206,6 @@ export const buildSubjectAnalysisPrompt = (
 플랜별로 불필요한 필드는 생략 가능하지만, subjects 배열의 각 요소는 반드시 위와 같은 객체 형태여야 합니다.
 
 **crossSubjectConnections의 connectionType은 반드시 다음 3개 중 하나:** "주제연결" | "역량연결" | "중복". 다른 값 사용 금지.
-
-## 비핵심 과목 중요도 규칙 (필수)
-- 제2외국어(일본어, 중국어 등), 기술·가정, 독서: 중요도 5% 이하, evaluationImpact: "low"
-- 이 과목들은 학종 평가에서 성실성 확인 수준이며, 핵심 평가 대상이 아닙니다.
-- **정보 과목**: CS 관련 학과(컴퓨터, 소프트웨어, AI 등) 지망 시 중요도 30~40%, evaluationImpact: "very_high". 그 외 학과는 5% 이하.
-
-## 전공별 과목 중요도 조정 규칙 (필수)
-- 이공계(컴퓨터공학, 전자공학, 기계공학 등) 지망 학생:
-  - 물리학, 기하: 중요도 30~40%, evaluationImpact: "very_high"
-  - 과학탐구실험: 중요도 10% 이하, evaluationImpact: "medium"
-  - 통합과학: 중요도 15% 이하, evaluationImpact: "medium"
-  - 세계지리, 한국지리 등 사회탐구: 중요도 10% 이하, evaluationImpact: "low"
-- 인문·사회계열 지망 학생:
-  - 사회·문화, 정치와법, 경제: 중요도 25~35%, evaluationImpact: "high" 또는 "very_high"
-  - 과학탐구실험, 통합과학: 중요도 10% 이하, evaluationImpact: "low"
-- 핵심 원칙: 희망 학과의 핵심 교과일수록 중요도를 높이고, 비관련 교과는 낮추세요.
 
 ## 규칙
 1. **교과 세특만** 분석합니다. 창체(자율·자치/동아리/진로)는 activityAnalysis에서 별도 분석합니다.
@@ -255,5 +273,7 @@ ${input.studentProfile}
 ## 교과 세특 원문 데이터
 ${input.subjectData}
 
-${PLAN_SPECIFIC[plan]}`;
+${PLAN_SPECIFIC[plan]}
+
+${plan !== "lite" ? SESPEC_EXPRESSION_GUIDE : ""}`;
 };

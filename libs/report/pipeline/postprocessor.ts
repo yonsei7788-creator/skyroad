@@ -17,6 +17,7 @@ import type {
   StudentInfo,
 } from "../types.ts";
 import type { PreprocessedData } from "./preprocessor.ts";
+import { matchMajorEvaluationCriteria } from "../constants/major-evaluation-criteria.ts";
 
 // ─── 검증 결과 타입 ───
 
@@ -354,26 +355,17 @@ const normalizeSection = (
       }
     }
 
-    // ── 과목 중요도 강제 보정 (전공 계열 기반) ──
-    const targetDept = (studentInfo.targetDepartment ?? "").toLowerCase();
-    const isScienceTrack =
-      /공학|컴퓨터|전자|기계|물리|화학|생명|의학|의예|약학|간호|수학|통계|IT|소프트웨어|AI|로봇|건축|환경|에너지|재료|항공|반도체/.test(
-        targetDept
-      );
-    const isHumanitiesTrack =
-      /인문|사회|경영|경제|법|정치|행정|국어|영어|교육|심리|철학|역사|문학|미디어|언론|광고|외교|국제/.test(
-        targetDept
-      );
+    // ── 과목 중요도 강제 보정 (계열별 세분화 기준) ──
+    const targetDept = studentInfo.targetDepartment ?? "";
+    const criteria = matchMajorEvaluationCriteria(targetDept);
 
-    // CS 관련 학과 여부 (정보 과목 예외 처리용)
-    const isCSTrack =
-      /컴퓨터|소프트웨어|정보|IT|AI|인공지능|데이터|사이버|보안|게임/.test(
-        targetDept
-      );
-
-    // 비핵심 과목 패턴 (학종 평가에서 거의 무의미한 과목)
-    // ⚠️ CS 관련 학과 지망 시 "정보"는 핵심 과목이므로 제외
+    // 비핵심 과목 패턴 (학종 평가에서 변별력 없는 과목)
+    // "정보" 과목: 어떤 학과든(컴공 포함) 비핵심. 고교 정보는 1학년 1~2단위
+    // 기초 수준으로, 입학사정관은 수학·물리학 세특으로 전공 적합성을 판단함.
+    // 과목명은 정규화 후 매칭 (공백/숫자/로마숫자 제거됨)
     const NON_CORE_SUBJECTS = [
+      "정보",
+      "정보과학",
       "기술[·]?가정",
       "제2외국어",
       "일본어",
@@ -386,7 +378,7 @@ const normalizeSection = (
       "베트남어",
       "한문",
       "교양",
-      "진로와\\s*직업",
+      "진로와?직업",
       "체육",
       "음악",
       "미술",
@@ -394,100 +386,73 @@ const normalizeSection = (
       "보건",
       "환경",
       "논리학",
-      "실용\\s*국어",
-      "실용\\s*영어",
-      "심화\\s*국어",
-      "심화\\s*영어",
+      "실용국어",
+      "실용영어",
+      "심화국어",
+      "심화영어",
       "직업",
       "로봇",
     ];
-    // CS 관련 학과가 아닐 때만 "정보"를 비핵심에 포함
-    if (!isCSTrack) {
-      NON_CORE_SUBJECTS.unshift("정보");
-    }
     const NON_CORE_PATTERN = new RegExp(`^(${NON_CORE_SUBJECTS.join("|")})`);
-    const SOCIAL_PATTERN =
-      /^(사회[·]?문화|정치와\s*법|경제|세계지리|한국지리|세계사|동아시아사|윤리와\s*사상|생활과\s*윤리|통합사회)/;
-    const SCIENCE_PATTERN =
-      /^(물리학|화학|생명과학|지구과학|과학탐구실험|통합과학)/;
-    const MATH_PATTERN = /^(수학|미적분|확률과\s*통계|기하)/;
-    const CORE_LANG_PATTERN =
-      /^(국어|영어|문학|언어와\s*매체|화법과\s*작문|영어[ⅠⅡ12])/;
+    const CORE_LANG_PATTERN = /^(국어|영어|문학|언어와매체|화법과작문)/;
+
+    // 핵심/권장과목 매칭용 정규화 함수
+    const normalizeCourseForMatch = (course: string): string =>
+      course.replace(/[ⅠⅡⅢ\s·]/g, "");
 
     for (const subj of s.subjects) {
-      const name = (subj.subjectName ?? "").replace(/^\d학년\s*/, "");
+      // 과목명 정규화: "2학년 정보", "제2 외국어", "일본어Ⅰ" 등 변형 처리
+      const name = (subj.subjectName ?? "")
+        .replace(/^\d학년\s*/, "")
+        .replace(/\s+/g, "")
+        .replace(/[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ1-9]+$/, "");
+      let matched = false;
 
       if (NON_CORE_PATTERN.test(name)) {
         // 비핵심 과목: 중요도 2% (거의 0에 가깝게)
         subj.importancePercent = 2;
         subj.evaluationImpact = "very_low";
-      } else if (isCSTrack && /^정보/.test(name)) {
-        // CS 관련 학과 지망: 정보 과목은 전공 핵심
-        subj.importancePercent = Math.max(subj.importancePercent ?? 0, 30);
-        subj.evaluationImpact = "very_high";
-      } else if (isScienceTrack) {
-        // 이공계 전공 특화: 수학/물리/기하 최우선
-        if (MATH_PATTERN.test(name) || /물리학|기하/.test(name)) {
+        matched = true;
+      }
+
+      // 핵심 권장과목 매칭 (계열별 세분화)
+      if (!matched) {
+        const isCoreSubject = criteria.coreSubjects.some((core) =>
+          name.includes(normalizeCourseForMatch(core))
+        );
+        if (isCoreSubject) {
           subj.importancePercent = Math.max(subj.importancePercent ?? 0, 35);
           subj.evaluationImpact = "very_high";
-        } else if (
-          SCIENCE_PATTERN.test(name) &&
-          !/과학탐구실험|통합과학/.test(name)
-        ) {
-          // 화학, 생명과학, 지구과학
+          matched = true;
+        }
+      }
+
+      // 권장과목 매칭
+      if (!matched) {
+        const isRecommended = criteria.recommendedSubjects.some((rec) =>
+          name.includes(normalizeCourseForMatch(rec))
+        );
+        if (isRecommended) {
           subj.importancePercent = Math.max(subj.importancePercent ?? 0, 20);
           subj.evaluationImpact = "high";
-        } else if (/과학탐구실험/.test(name)) {
-          subj.importancePercent = Math.min(subj.importancePercent ?? 10, 8);
-          subj.evaluationImpact = "low";
-        } else if (/통합과학/.test(name)) {
-          subj.importancePercent = Math.min(subj.importancePercent ?? 12, 12);
-          subj.evaluationImpact = "medium";
-        } else if (CORE_LANG_PATTERN.test(name)) {
-          // 국영: 중간 수준
-          subj.importancePercent = Math.min(
-            Math.max(subj.importancePercent ?? 10, 10),
-            15
-          );
-          subj.evaluationImpact = "medium";
-        } else if (SOCIAL_PATTERN.test(name)) {
-          // 이공계한테 사회탐구는 비중요
-          subj.importancePercent = Math.min(subj.importancePercent ?? 5, 5);
-          subj.evaluationImpact = "low";
+          matched = true;
         }
-      } else if (isHumanitiesTrack) {
-        // 인문사회 전공 특화: 사회탐구 최우선
-        if (SOCIAL_PATTERN.test(name) && !/통합사회|생활과\s*윤리/.test(name)) {
-          subj.importancePercent = Math.max(subj.importancePercent ?? 0, 30);
-          subj.evaluationImpact = "very_high";
-        } else if (/통합사회/.test(name)) {
-          subj.importancePercent = Math.min(subj.importancePercent ?? 12, 12);
-          subj.evaluationImpact = "medium";
-        } else if (CORE_LANG_PATTERN.test(name)) {
-          // 국영: 중간~높음
-          subj.importancePercent = Math.min(
-            Math.max(subj.importancePercent ?? 12, 12),
-            18
-          );
-          subj.evaluationImpact = "medium";
-        } else if (MATH_PATTERN.test(name)) {
-          // 문과한테 수학: 중간
-          subj.importancePercent = Math.min(
-            Math.max(subj.importancePercent ?? 10, 10),
-            15
-          );
-          subj.evaluationImpact = "medium";
-        } else if (SCIENCE_PATTERN.test(name)) {
-          // 인문계한테 과학탐구는 비중요
-          subj.importancePercent = Math.min(subj.importancePercent ?? 5, 5);
-          subj.evaluationImpact = "low";
-        }
-      } else {
-        // 전공 미지정: 국영수 중간, 나머지 기본
-        if (CORE_LANG_PATTERN.test(name) || MATH_PATTERN.test(name)) {
-          subj.importancePercent = Math.max(subj.importancePercent ?? 0, 15);
-          subj.evaluationImpact = "medium";
-        }
+      }
+
+      // 국어/영어: 공통 기초 과목
+      if (!matched && CORE_LANG_PATTERN.test(name)) {
+        subj.importancePercent = Math.min(
+          Math.max(subj.importancePercent ?? 10, 10),
+          15
+        );
+        subj.evaluationImpact = "medium";
+        matched = true;
+      }
+
+      // 안전장치: 어떤 핵심 패턴에도 매칭되지 않은 과목은 중요도 상한 10%
+      if (!matched && (subj.importancePercent ?? 0) > 10) {
+        subj.importancePercent = 5;
+        subj.evaluationImpact = "low";
       }
     }
 

@@ -1,6 +1,7 @@
 /** 섹션 9: 창체 활동 분석 (activityAnalysis) */
 
 import type { ReportPlan } from "../../types.ts";
+import { ACTIVITY_EVALUATION_GUIDE } from "../../constants/major-evaluation-criteria.ts";
 
 export interface ActivityAnalysisPromptInput {
   creativeActivities: string;
@@ -265,6 +266,12 @@ ${input.competencyExtraction}
 ${input.studentProfile}
 
 ${input.majorEvaluationContext ? `### 학과 맞춤 평가 기준 (입학사정관 관점)\n${input.majorEvaluationContext}\n\n⚠️ 활동 평가 시 목표 학과의 핵심 활동(valuedActivities)과 학생의 실제 활동이 일치하는지 확인하세요. 목표 학과와 괴리가 큰 활동은 "이 활동은 목표 학과(컴퓨터공학과 등) 지원 시 직접적인 평가 가치는 낮으나, 공동체역량 영역에서 참고 요소로 작용할 수 있다"는 식으로 솔직하게 평가하세요.` : ""}
+
+${ACTIVITY_EVALUATION_GUIDE}
+
+### ⛔ 단점 서술 필수 (강화)
+- 모든 활동에 대해 한계점을 반드시 1개 이상 서술하세요.
+- "구체적 성과 서술 부족", "심화 과정 미비", "전공 연결성 부족", "독창성 부족" 등
 
 ${PLAN_SPECIFIC[plan]}`;
 };
