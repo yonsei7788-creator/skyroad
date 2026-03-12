@@ -48,6 +48,11 @@
   color: var(--color-fg-secondary);
 }
 
+.heroHighlight {
+  font-weight: 700;
+  color: var(--color-primary-600);
+}
+
 /* Trust Bar */
 .trustBar {
   display: flex;

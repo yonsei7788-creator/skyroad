@@ -38,7 +38,9 @@ export default function PricingPage() {
                 생기부 분석, 딱 맞는 플랜을 골라보세요
               </h1>
               <p className={styles.heroSubtitle}>
-                AI 정밀 분석 + 전임 컨설턴트 검수 · 48시간 내 리포트 전달
+                <strong className={styles.heroHighlight}>
+                  AI 정밀 분석 + 입시 전문가 2차 검수
+                </strong>
               </p>
             </FadeIn>
 

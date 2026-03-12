@@ -75,6 +75,13 @@
   }
 }
 
+@media (min-width: 1024px) {
+  .subtext {
+    max-width: none;
+    white-space: nowrap;
+  }
+}
+
 .subtext {
   position: relative;
   max-width: 520px;

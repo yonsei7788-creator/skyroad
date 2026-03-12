@@ -570,7 +570,7 @@
   font-weight: 400;
   color: var(--report-fg-secondary);
   line-height: 1.7;
-  max-width: 380px;
+  word-break: keep-all;
 }
 
 /* --- Student info (left-border accent list) --- */

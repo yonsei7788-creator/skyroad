@@ -42,24 +42,30 @@ export const AttendanceAnalysisRenderer = ({
           <thead>
             <tr>
               <th>학년</th>
+              <th className={styles.tableAlignCenter}>수업일수</th>
               <th className={styles.tableAlignCenter}>총 결석</th>
               <th className={styles.tableAlignCenter}>질병</th>
               <th className={styles.tableAlignCenter}>미인정</th>
               <th className={styles.tableAlignCenter}>기타</th>
               <th className={styles.tableAlignCenter}>지각</th>
               <th className={styles.tableAlignCenter}>조퇴</th>
+              <th className={styles.tableAlignCenter}>특기사항</th>
             </tr>
           </thead>
           <tbody>
             {(data.summaryByYear ?? []).map((row) => (
               <tr key={row.year}>
                 <td className={styles.tableCellBold}>{row.year}학년</td>
+                <td className={styles.tableAlignCenter}>
+                  {row.totalDays ?? "-"}
+                </td>
                 <td className={styles.tableAlignCenter}>{row.totalAbsence}</td>
                 <td className={styles.tableAlignCenter}>{row.illness}</td>
                 <td className={styles.tableAlignCenter}>{row.unauthorized}</td>
                 <td className={styles.tableAlignCenter}>{row.etc}</td>
                 <td className={styles.tableAlignCenter}>{row.lateness}</td>
                 <td className={styles.tableAlignCenter}>{row.earlyLeave}</td>
+                <td className={styles.tableAlignCenter}>{row.note || "-"}</td>
               </tr>
             ))}
           </tbody>
