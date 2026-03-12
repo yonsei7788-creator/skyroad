@@ -193,26 +193,43 @@ const repairTruncatedJson = (text: string): string => {
 
 const MAX_OUTPUT_TOKENS = 65536;
 
+/** 스키마에서 문자열이어야 하는 필드 목록 (Gemini가 null을 반환하는 경우 "" 보정) */
+const STRING_FIELDS: Record<string, string[]> = {
+  attendance: ["note"],
+  awards: ["name", "rank", "date", "organization", "participants"],
+  certifications: ["category", "name", "details", "date", "issuer"],
+  creativeActivities: ["area", "note"],
+  volunteerActivities: ["dateRange", "place", "content"],
+  generalSubjects: ["category", "subject", "achievement"],
+  careerSubjects: [
+    "category",
+    "subject",
+    "achievement",
+    "achievementDistribution",
+  ],
+  artsPhysicalSubjects: ["category", "subject", "achievement"],
+  subjectEvaluations: ["subject", "evaluation"],
+  readingActivities: ["subjectOrArea", "content"],
+  behavioralAssessments: ["assessment"],
+};
+
 const enrichWithIds = (raw: RawRecord): RawRecord => {
-  const sections = [
-    "attendance",
-    "awards",
-    "certifications",
-    "creativeActivities",
-    "volunteerActivities",
-    "generalSubjects",
-    "careerSubjects",
-    "artsPhysicalSubjects",
-    "subjectEvaluations",
-    "readingActivities",
-    "behavioralAssessments",
-  ] as const;
+  const sections = Object.keys(STRING_FIELDS) as (keyof typeof STRING_FIELDS)[];
 
   const result: RawRecord = {};
   for (const key of sections) {
     const rows = raw[key];
+    const strFields = STRING_FIELDS[key];
     result[key] = Array.isArray(rows)
-      ? rows.map((row) => ({ ...row, id: crypto.randomUUID() }))
+      ? rows.map((row) => {
+          const fixed: RawRow = { ...row, id: crypto.randomUUID() };
+          for (const f of strFields) {
+            if (fixed[f] === null || fixed[f] === undefined) {
+              fixed[f] = "";
+            }
+          }
+          return fixed;
+        })
       : [];
   }
   return result;
