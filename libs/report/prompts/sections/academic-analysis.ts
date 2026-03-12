@@ -35,12 +35,18 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - smallClassSubjectAnalyses, schoolTypeAdjustment, gradeInflationContext는 출력하지 않습니다.`,
   premium: `## 플랜별 출력: 정밀
 Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 포함)**을 반드시 출력하고 (actionItems 빈 배열 금지), 추가로 다음을 출력합니다:
-- 5등급제 전환 시뮬레이션 (fiveGradeSimulation): **주요 5과목만** 배열 형태로 출력
+- 5등급제 전환 시뮬레이션 (fiveGradeSimulation):
+  - ⚠️ **고1·고2 학생(5등급제 적용)**: 이미 5등급제이므로 9등급 전환 시뮬레이션이 아님.
+    - currentGrade: 학생의 현재 5등급제 등급 (정수, 1~5)
+    - simulatedGrade: currentGrade와 동일 값
+    - interpretation: 5등급제 환경에서의 해당 등급의 의미 해석 (예: "5등급제 1등급(상위 10%)으로, 동일 등급 내 동점자가 많아 원점수와 세특으로 차별화 필요")
+  - ⚠️ **고3/졸업생(9등급제 적용)**: 9등급→5등급 전환 시뮬레이션
+    - currentGrade: 학생의 현재 9등급제 등급 (정수)
+    - simulatedGrade: 5등급제 전환 시 등급 (정수)
+    - 전환 기준: 1등급→1, 2~3등급→2, 4~5등급→3, 6~7등급→4, 8~9등급→5
+    - 예시: {"subject": "국어", "currentGrade": 6, "simulatedGrade": 4, "interpretation": "9등급제 6등급은 5등급제 기준 4등급으로 변환"}
+  - **주요 5과목만** 배열 형태로 출력
   - **subject, currentGrade, simulatedGrade 필드는 필수입니다. 절대 빈값이면 안 됩니다.**
-  - currentGrade: 학생의 현재 9등급제 등급 (정수)
-  - simulatedGrade: 5등급제 전환 시 등급 (정수)
-  - 전환 기준: 1등급→1, 2~3등급→2, 4~5등급→3, 6~7등급→4, 8~9등급→5
-  - 예시: {"subject": "국어", "currentGrade": 6, "simulatedGrade": 4, "interpretation": "5등급제 전환 시 6등급은 4등급으로 변환"}
 - 대학별 반영 방법 시뮬레이션 (universityGradeSimulations): **목표 대학 상위 3개만** 출력
   - **모든 필드(university, department, reflectionMethod, calculatedScore, interpretation)에 값이 있어야 합니다. 빈 문자열 금지.**
   - reflectionMethod: "학생부교과 등급 반영", "교과 평균 등급", "Z점수 환산" 등 구체적 방법

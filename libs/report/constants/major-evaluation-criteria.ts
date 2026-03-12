@@ -133,7 +133,7 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
       "단순 사용 경험만 있고 원리 이해나 개발 경험이 없음",
     ],
     coreSubjects: ["수학Ⅰ", "수학Ⅱ", "미적분", "기하"],
-    recommendedSubjects: ["확률과 통계", "인공지능 수학", "물리학Ⅰ"],
+    recommendedSubjects: ["확률과 통계", "인공지능 수학"],
   },
   {
     majorGroup: "경영경제",

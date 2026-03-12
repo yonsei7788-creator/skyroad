@@ -5861,6 +5861,20 @@ const CANDIDATE_COUNTS: Record<
   premium: { 상향: 4, 적정: 4, 안정: 4, 하향: 4 },
 };
 
+// ─── 후보군 생성 헬퍼 ───
+
+/** 상위 티어 대학 목록 (다양성 제한 대상) */
+const TOP_TIER_UNIVERSITIES = new Set([
+  "서울대학교",
+  "고려대학교",
+  "연세대학교",
+  "성균관대학교",
+  "한양대학교",
+  "서강대학교",
+  "이화여자대학교",
+  "중앙대학교",
+]);
+
 // ─── 후보군 생성 함수 ───
 
 /**
@@ -5872,13 +5886,21 @@ export const generateUniversityCandidates = (
   targetDepartment: string,
   track: string,
   schoolType: string,
-  plan: ReportPlan
+  plan: ReportPlan,
+  gender?: "male" | "female"
 ): UniversityCandidate[] => {
   // 1. 계열 기반 필터링
   const trackFilter = track === "문과" ? "문과" : "이과";
-  const filteredEntries = UNIVERSITY_ADMISSION_DATA.filter(
+  let filteredEntries = UNIVERSITY_ADMISSION_DATA.filter(
     (entry) => entry.track === trackFilter || entry.track === "통합"
   );
+
+  // 1-1. 여자대학교 필터링 (남학생 또는 성별 미지정 시)
+  if (gender !== "female") {
+    filteredEntries = filteredEntries.filter(
+      (entry) => !entry.university.includes("여자")
+    );
+  }
 
   // 2. 학종 기준 커트라인으로 티어 분류
   const classifyTier = (
@@ -5920,14 +5942,30 @@ export const generateUniversityCandidates = (
 
     let relevanceScore = proximityScore;
 
-    // 학과 매칭 보너스 (근접도보다 낮은 가중치)
+    // 학과 매칭 보너스/페널티 (개인화 강화)
     if (targetDepartment && entry.department.includes(targetDepartment)) {
-      relevanceScore += 8;
+      relevanceScore += 15;
     } else if (
       targetDepartment &&
       isSimilarDepartment(entry.department, targetDepartment)
     ) {
-      relevanceScore += 4;
+      relevanceScore += 10;
+    } else if (targetDepartment) {
+      relevanceScore -= 5;
+    }
+
+    // 학교 유형별 보정
+    if (schoolType === "특성화고") {
+      if (entry.tier >= 4) {
+        relevanceScore += 5;
+      }
+      if (entry.tier <= 1) {
+        relevanceScore -= 3;
+      }
+    } else if (schoolType === "과학고" || schoolType === "영재학교") {
+      if (entry.tier <= 2) {
+        relevanceScore += 3;
+      }
     }
 
     // 다양성을 위한 약간의 랜덤성 (같은 점수 내에서 순서 변경)
@@ -5961,7 +5999,7 @@ export const generateUniversityCandidates = (
     grouped[key] = sortByRelevance(grouped[key]);
   }
 
-  // 6. 각 티어에서 필요한 수만큼 선택 (대학 중복 방지)
+  // 6. 각 티어에서 필요한 수만큼 선택 (대학 중복 방지 + 상위 티어 다양성 제한)
   const counts = CANDIDATE_COUNTS[plan];
   const result: UniversityCandidate[] = [];
   const selectedUniversities = new Set<string>();
@@ -5972,10 +6010,14 @@ export const generateUniversityCandidates = (
     count: number
   ) => {
     let selected = 0;
+    // 상위 티어 대학 수 제한 (티어 내 최대 3개)
+    let topTierCount = 0;
+    const MAX_TOP_TIER_PER_GROUP = 3;
+
     for (const scored of group) {
       if (selected >= count) break;
 
-      // 같은 대학 중복 방지 (단, 학과가 다르면 허용)
+      // 같은 대학-학과 중복 방지
       const key = `${scored.entry.university}-${scored.entry.department}`;
       if (selectedUniversities.has(key)) continue;
 
@@ -5984,6 +6026,12 @@ export const generateUniversityCandidates = (
         k.startsWith(scored.entry.university)
       ).length;
       if (sameUnivCount >= 2) continue;
+
+      // 상위 티어 대학 다양성 제한
+      if (TOP_TIER_UNIVERSITIES.has(scored.entry.university)) {
+        if (topTierCount >= MAX_TOP_TIER_PER_GROUP) continue;
+        topTierCount++;
+      }
 
       selectedUniversities.add(key);
 

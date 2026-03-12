@@ -7,7 +7,7 @@
 
 import type { ReportPlan, StudentInfo } from "../types.ts";
 import {
-  MAJOR_COURSE_RECOMMENDATIONS,
+  getMajorCourseRecommendations,
   MEDICAL_COURSE_REQUIREMENTS,
   isMedicalMajor,
 } from "../constants/recommended-courses.ts";
@@ -125,6 +125,8 @@ export interface SubjectStat {
 
 export interface AttendanceSummaryItem {
   year: number;
+  totalDays: number;
+  note: string;
   totalAbsence: number;
   illness: number;
   unauthorized: number;
@@ -162,6 +164,8 @@ export interface PreprocessedData {
     diff: number;
   };
   convertedGrade: { schoolType: string; original: number; converted: number };
+  /** 학생의 등급제: 고1·고2는 "5등급제", 고3/졸업생은 "9등급제" */
+  gradingSystem: "5등급제" | "9등급제";
   fiveGradeConversion?: {
     subject: string;
     original: number;
@@ -395,9 +399,15 @@ export const preprocess = (
     converted: Math.round(Math.max(1, overallAverage + adj) * 100) / 100,
   };
 
-  // 9. 5등급제 환산 (Premium)
+  // 9. 등급제 판별 및 5등급제 환산
+  // 2026년 기준: 고1·고2(grade 1, 2)는 2022 개정 교육과정 → 5등급제
+  // 고3/졸업생(grade 3 이상)은 2015 개정 교육과정 → 9등급제
+  const gradingSystem: "5등급제" | "9등급제" =
+    studentInfo.grade <= 2 ? "5등급제" : "9등급제";
+
+  // 5등급제 환산: 9등급제 학생(고3/졸업생)의 Premium에서만 의미 있음
   const fiveGradeConversion =
-    plan === "premium"
+    plan === "premium" && gradingSystem === "9등급제"
       ? gradesWithRank.map((s) => ({
           subject: s.subject,
           original: s.gradeRank!,
@@ -449,12 +459,19 @@ export const preprocess = (
   );
 
   // 17. 기본 합격률 산출 (대학 후보군 기반)
+  // 여자대학교 필터: 목표 대학이 여대가 아니면 여대 제외
+  const targetIsWomensUniv =
+    studentInfo.targetUniversity?.includes("여자") ?? false;
+  const gender: "male" | "female" | undefined = targetIsWomensUniv
+    ? "female"
+    : undefined;
   const universityCandidates = generateUniversityCandidates(
     convertedGrade.converted,
     studentInfo.targetDepartment ?? "",
     studentInfo.track,
     studentInfo.schoolType,
-    plan
+    plan,
+    gender
   );
   const basePassRates = computeBasePassRates(
     universityCandidates,
@@ -470,6 +487,7 @@ export const preprocess = (
     gradeVariance,
     majorRelated,
     convertedGrade,
+    gradingSystem,
     fiveGradeConversion,
     smallClassSubjects,
     careerSubjects: careerSubjects.map((cs) => ({
@@ -658,26 +676,114 @@ const extractMajorKeywords = (targetDept: string): string[] => {
   return [...keywords];
 };
 
+// ─── 과목명 정규화 (DB 저장 형식 ↔ 권장과목 형식 통일) ───
+
+/**
+ * 과목명에서 로마숫자 표기를 통일한다.
+ * DB: "수학 I", "수학 Ⅱ", "물리학 I", "영어Ⅱ" (공백/문자 혼재)
+ * 권장과목: "수학Ⅰ", "수학Ⅱ", "물리학Ⅰ" (공백 없음 + 전각 로마숫자)
+ * → 모두 "공백 없음 + 전각 로마숫자" 형식으로 통일
+ */
+const normalizeSubjectName = (name: string): string => {
+  return (
+    name
+      // 공백 + ASCII "I"/"II" → 전각 로마숫자
+      .replace(/\s+III\s*$/, "Ⅲ")
+      .replace(/\s+II\s*$/, "Ⅱ")
+      .replace(/\s+I\s*$/, "Ⅰ")
+      // 공백 + 전각 로마숫자 → 공백 제거
+      .replace(/\s+(Ⅰ|Ⅱ|Ⅲ)\s*$/, "$1")
+      // 공백 없이 ASCII "I"/"II" → 전각
+      .replace(/III\s*$/, "Ⅲ")
+      .replace(/II\s*$/, "Ⅱ")
+      .replace(/I\s*$/, "Ⅰ")
+  );
+};
+
+// ─── 학과→계열 매칭 (matchMajorEvaluationCriteria와 통일) ───
+
+/**
+ * matchMajorEvaluationCriteria(targetDept)의 majorGroup을 기반으로
+ * 권장과목 목록에서 일치하는 계열을 찾는다.
+ * → 학과→계열 매칭 로직이 한 곳(major-evaluation-criteria.ts)에만 존재하므로
+ *   매칭 불일치 문제가 발생하지 않는다.
+ */
+const findMatchingMajor = (
+  targetDept: string,
+  recommendations: {
+    major: string;
+    coreSubjects: string[];
+    recommendedCourses: string[];
+  }[]
+): (typeof recommendations)[number] | undefined => {
+  // matchMajorEvaluationCriteria의 정규식 기반 매칭 결과를 활용
+  const criteria = matchMajorEvaluationCriteria(targetDept);
+  const { majorGroup } = criteria;
+
+  // majorGroup과 recommendations의 major명 매핑
+  // (major-evaluation-criteria의 majorGroup과 recommended-courses의 major가 동일한 경우 직접 매칭)
+  const direct = recommendations.find((m) => m.major === majorGroup);
+  if (direct) return direct;
+
+  // majorGroup → recommended-courses major 매핑 (이름이 다른 경우)
+  const GROUP_TO_COURSE_MAJOR: Record<string, string[]> = {
+    의생명: ["의학", "생명바이오"],
+    교육: ["인문", "사회과학"],
+    예체능: ["인문"],
+  };
+
+  const alternatives = GROUP_TO_COURSE_MAJOR[majorGroup];
+  if (alternatives) {
+    for (const alt of alternatives) {
+      const found = recommendations.find((m) => m.major === alt);
+      if (found) return found;
+    }
+  }
+
+  // 폴백: includes 매칭
+  return recommendations.find(
+    (m) =>
+      targetDept.includes(m.major) ||
+      m.major.includes(targetDept.split(" ")[0] ?? "")
+  );
+};
+
 const matchRecommendedCourses = (
   generalSubjects: GeneralSubjectRow[],
   careerSubjects: CareerSubjectRow[],
   targetDept: string,
   studentGrade: number
 ): RecommendedCourseMatch => {
-  const takenSet = new Set<string>();
-  for (const s of generalSubjects) takenSet.add(s.subject);
-  for (const s of careerSubjects) takenSet.add(s.subject);
+  // 학생이 이수한 과목명을 정규화하여 Set 구축
+  const takenRawSet = new Set<string>();
+  const normalizedToRaw = new Map<string, string>();
+  for (const s of generalSubjects) {
+    takenRawSet.add(s.subject);
+    normalizedToRaw.set(normalizeSubjectName(s.subject), s.subject);
+  }
+  for (const s of careerSubjects) {
+    takenRawSet.add(s.subject);
+    normalizedToRaw.set(normalizeSubjectName(s.subject), s.subject);
+  }
+  const takenNormalizedSet = new Set(normalizedToRaw.keys());
 
-  // Find matching major recommendation
-  const matchingMajor = MAJOR_COURSE_RECOMMENDATIONS.find(
-    (m) =>
-      targetDept.includes(m.major) ||
-      m.major.includes(targetDept.split(" ")[0] ?? "")
-  );
+  // Find matching major recommendation (교육과정 버전에 따라 분기)
+  const courseRecommendations = getMajorCourseRecommendations(studentGrade);
+  const matchingMajor = findMatchingMajor(targetDept, courseRecommendations);
 
   const requiredCourses = matchingMajor?.recommendedCourses ?? [];
-  const takenCourses = requiredCourses.filter((c) => takenSet.has(c));
-  const missingCourses = requiredCourses.filter((c) => !takenSet.has(c));
+
+  // 정규화된 이름으로 매칭
+  const takenCourses: string[] = [];
+  const missingCourses: string[] = [];
+  for (const course of requiredCourses) {
+    const normalized = normalizeSubjectName(course);
+    if (takenNormalizedSet.has(normalized) || takenRawSet.has(course)) {
+      takenCourses.push(course);
+    } else {
+      missingCourses.push(course);
+    }
+  }
 
   const isCompleted = studentGrade >= 3;
 
@@ -708,6 +814,8 @@ const normalizeAttendance = (
 ): AttendanceSummaryItem[] => {
   return attendance.map((a) => ({
     year: a.year,
+    totalDays: a.totalDays ?? 0,
+    note: a.note ?? "",
     totalAbsence:
       (a.absenceIllness ?? 0) +
       (a.absenceUnauthorized ?? 0) +
@@ -957,7 +1065,8 @@ const buildTexts = (
         targetDept,
         studentInfo.track,
         studentInfo.schoolType,
-        plan
+        plan,
+        studentInfo.targetUniversity?.includes("여자") ? "female" : undefined
       ),
       null,
       2

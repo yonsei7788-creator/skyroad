@@ -632,6 +632,8 @@ export interface CourseAlignmentSection extends BaseSection {
 
 interface AttendanceSummary {
   year: number;
+  totalDays?: number;
+  note?: string;
   totalAbsence: number;
   illness: number;
   unauthorized: number;

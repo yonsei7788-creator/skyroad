@@ -76,12 +76,13 @@ export const postprocess = (
       if (sc.category === "community") profile.radarChart.community = sc.score;
     }
     if (compScore.growthGrade) {
+      // 등급 기준: S(90~100), A(75~89), B(60~74), C(40~59), D(0~39)
       const growthMap: Record<string, number> = {
         S: 95,
-        A: 80,
-        B: 65,
+        A: 82,
+        B: 67,
         C: 50,
-        D: 35,
+        D: 20,
       };
       const growthNumeric =
         growthMap[compScore.growthGrade] ?? profile.radarChart.growth;
@@ -552,7 +553,9 @@ const normalizeSection = (
       });
     }
 
-    // ── fiveGradeSimulation: 전처리 데이터 기반 강제 주입 (과목별 최종 등급 기준) ──
+    // ── fiveGradeSimulation: 등급제에 따라 처리 분기 ──
+    // 고1·고2 (5등급제): 이미 5등급제이므로 전환 불필요, AI 출력 유지
+    // 고3/졸업 (9등급제): 전처리 데이터 기반 강제 주입
     if (
       Array.isArray(pre.fiveGradeConversion) &&
       pre.fiveGradeConversion.length > 0
@@ -700,6 +703,36 @@ const normalizeSection = (
       }
     }
 
+    // ── 하위항목 합산 → 역량 점수 강제 재계산 ──
+    if (Array.isArray(s.scores)) {
+      for (const sc of s.scores) {
+        if (Array.isArray(sc.subcategories)) {
+          const subTotal = sc.subcategories.reduce(
+            (sum: number, sub: any) => sum + (sub.score ?? 0),
+            0
+          );
+          sc.score = subTotal;
+        }
+        // 등급 강제 보정: S(90~100), A(75~89), B(60~74), C(40~59), D(0~39)
+        const score = sc.score ?? 0;
+        if (score >= 90) sc.grade = "S";
+        else if (score >= 75) sc.grade = "A";
+        else if (score >= 60) sc.grade = "B";
+        else if (score >= 40) sc.grade = "C";
+        else sc.grade = "D";
+      }
+    }
+
+    // ── growthGrade 강제 보정 ──
+    if (typeof s.growthScore === "number") {
+      const gs = s.growthScore;
+      if (gs >= 90) s.growthGrade = "S";
+      else if (gs >= 75) s.growthGrade = "A";
+      else if (gs >= 60) s.growthGrade = "B";
+      else if (gs >= 40) s.growthGrade = "C";
+      else s.growthGrade = "D";
+    }
+
     // ── totalScore: 하위 영역 합산으로 강제 재계산 ──
     if (Array.isArray(s.scores)) {
       const recalculated = s.scores.reduce(
@@ -725,6 +758,25 @@ const normalizeSection = (
         s.scores[0]
       );
       s.interpretation = `총점 ${total}점(300점 만점)으로 ${strongest?.label ?? ""}이 가장 우수하며, ${weakest?.label ?? ""}은 상대적으로 보완이 필요합니다.`;
+    }
+  }
+
+  // ── attendanceAnalysis: 전처리 출결 데이터 강제 주입 ──
+  if (s.sectionId === "attendanceAnalysis") {
+    const attendance = pre.attendanceSummary;
+    if (Array.isArray(s.summaryByYear) && attendance.length > 0) {
+      // 전처리 데이터로 summaryByYear를 강제 대체 (totalDays, note 포함)
+      s.summaryByYear = attendance.map((a) => ({
+        year: a.year,
+        totalDays: a.totalDays,
+        note: a.note,
+        totalAbsence: a.totalAbsence,
+        illness: a.illness,
+        unauthorized: a.unauthorized,
+        etc: a.etc,
+        lateness: a.lateness,
+        earlyLeave: a.earlyLeave,
+      }));
     }
   }
 
@@ -843,10 +895,17 @@ const normalizeSection = (
   }
 
   if (s.sectionId === "courseAlignment") {
-    // matchRate: 전처리 데이터에서 직접 주입
+    // ── 전처리 권장과목 데이터로 courses + matchRate 강제 대체 ──
     const prMatch = pre.recommendedCourseMatch;
-    if (prMatch.matchRate > 0) {
+    if (prMatch.requiredCourses.length > 0) {
+      const takenSet = new Set(prMatch.takenCourses);
+      s.courses = prMatch.requiredCourses.map((course: string) => ({
+        course,
+        status: takenSet.has(course) ? "이수" : "미이수",
+        importance: "필수",
+      }));
       s.matchRate = prMatch.matchRate;
+      s.targetMajor = prMatch.targetMajor;
     } else if (Array.isArray(s.courses) && s.courses.length > 0) {
       const taken = s.courses.filter((c: any) => c.status === "이수").length;
       s.matchRate = Math.round((taken / s.courses.length) * 100);
