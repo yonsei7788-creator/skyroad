@@ -275,6 +275,8 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/발전시켰/g, "보여주었"],
   [/충분히 합격할 겁니다/g, "합격 가능성이 높습니다"],
   [/충분히 합격/g, "합격 가능성이 높은"],
+  // ── 중복 표현 제거 ──
+  [/가능성이 높은 가능성이 높습니다/g, "가능성이 높습니다"],
   [/다른 요소로 충분히 커버 가능합니다/g, "다른 요소로 보완 가능합니다"],
   [/충분히 커버 가능합니다/g, "보완 가능합니다"],
   [/충분히 커버/g, "보완"],
@@ -1032,6 +1034,39 @@ const normalizeSection = (
     if (typeof s.overallComment === "string") {
       s.overallComment = diversifyAssessor(s.overallComment);
     }
+
+    // ── 피드백 반영: keyActivities evaluation에 입학사정관 관점 강제 주입 ──
+    const EVALUATOR_KEYWORDS =
+      /입학사정관|학종|평가|전형|면접|변별력|판단|영향|제한적/;
+    const NEGATIVE_KEYWORDS =
+      /다만|아쉬|부족|한계|제한|약점|약하|불리|없[을는]/;
+    const targetDeptForActivity = studentInfo.targetDepartment ?? "";
+
+    for (const activity of s.activities) {
+      if (!Array.isArray(activity.keyActivities)) continue;
+      for (const ka of activity.keyActivities) {
+        if (typeof ka.evaluation !== "string" || ka.evaluation.length < 10)
+          continue;
+
+        const hasEvaluatorView = EVALUATOR_KEYWORDS.test(ka.evaluation);
+        const hasNegative = NEGATIVE_KEYWORDS.test(ka.evaluation);
+
+        if (!hasEvaluatorView) {
+          if (targetDeptForActivity && !hasNegative) {
+            // 긍정 일변도 + 평가 관점 없음 → 입학사정관 관점 + 전공 연관성 경고
+            ka.evaluation += ` 입학사정관은 이 기록의 구체적 과정과 깊이를 기준으로 평가하며, ${targetDeptForActivity} 지원 시 직접적인 전공적합성 근거로는 부족할 수 있습니다.`;
+          } else if (targetDeptForActivity && hasNegative) {
+            // 부정 서술 있으나 입학사정관 관점 없음 → 평가 관점만 추가
+            ka.evaluation +=
+              " 입학사정관은 이 기록의 구체적 과정과 깊이를 기준으로 평가 반영 여부를 판단합니다.";
+          } else if (!hasNegative) {
+            // 긍정 일변도 + 평가 관점 없음 (학과 정보 없음)
+            ka.evaluation +=
+              " 입학사정관은 이 기록의 구체적 과정과 깊이를 기준으로 평가 반영 여부를 판단합니다.";
+          }
+        }
+      }
+    }
   }
 
   // ── admissionPrediction/admissionStrategy: 단일 과목 전공적합성 패턴 치환 ──
@@ -1055,6 +1090,51 @@ const normalizeSection = (
       [
         /정보\s*과목\s*프로그래밍\s*(기록|경험)과\s*수학적\s*모델링\s*능력이\s*[^.]*\./g,
         "프로그래밍 기록과 수학적 능력이 일부 확인되나, 생기부 전반에서 전공 관련 탐구가 부족하여 서류 경쟁력은 제한적입니다.",
+      ],
+      // ── 피드백 반영: "정보 과목의" (조사 "의" 포함) 패턴 ──
+      // "정보 과목의 [형용사] 성취/경험 ... 긍정적"
+      [
+        /정보\s*과목의\s*[^.]{0,60}긍정적[^.]*\./g,
+        "정보 과목에서 관련 기록이 일부 확인되나, 생기부 전반에서 전공 관련 서술이 부족하여 이것만으로는 전공적합성을 인정받기 어렵습니다.",
+      ],
+      // "정보 과목의 ... 전공적합성을 어필"
+      [
+        /정보\s*과목의\s*[^.]{0,60}전공적합성을?\s*어필[^.]*\./g,
+        "정보 과목에서 관련 기록이 일부 확인되나, 생기부 전반의 전공 관련 서술이 부족하므로 전공적합성 어필에는 한계가 있습니다.",
+      ],
+      // "정보 과목 성취와/과 ... 긍정적"
+      [
+        /정보\s*과목\s*성취[와과]\s*[^.]{0,40}긍정적[^.]*\./g,
+        "정보 과목 성취가 있으나, 생기부 전반의 전공적합성이 부족하여 서류 경쟁력은 제한적입니다.",
+      ],
+      // "정보 과목 성취가/도 좋/우수/양호/높"
+      [
+        /정보\s*과목\s*성취[도]?\s*[가와이은는]\s*[^.]{0,30}(좋|우수|양호|높)[^.]*\./g,
+        "정보 과목 성취가 있으나, 생기부 전반의 전공적합성이 부족하여 서류 경쟁력은 제한적입니다.",
+      ],
+      // "정보 과목의/에서 ... 합격 가능성이 높/안정적인 합격"
+      [
+        /정보\s*과목[의에서]*\s*[^.]{0,60}(합격\s*가능성[이가]\s*(높|매우\s*높|충분)|안정적[인]?\s*합격)[^.]*\./g,
+        "정보 과목에서 관련 기록이 있으나, 생기부 전반의 전공 관련 서술이 부족하여 학종 서류 경쟁력은 제한적입니다.",
+      ],
+      // "정보 과목의 [높은] 성취도와 프로그래밍 경험은/이" (explicit compound)
+      [
+        /정보\s*과목의\s*(높은\s*|우수한\s*)?성취도?[와과]\s*프로그래밍\s*경험[은는이가][^.]*\./g,
+        "정보 과목에서의 기록이 있으나, 생기부 전반에서 전공 관련 서술이 부족하므로 서류 경쟁력은 제한적입니다.",
+      ],
+      // ── "전공적합성에서 일부 아쉬움" 약한 표현 강화 ──
+      [
+        /전공적합성에서\s*일부\s*아쉬움[을를이가]?\s*(남길|있을)\s*수\s*있습니다/g,
+        "전공적합성 평가에서 불리하게 작용하여 학종 서류 경쟁력이 약화됩니다",
+      ],
+      [
+        /전공적합성에서\s*다소\s*아쉬움[을를이가]?\s*(남길|있을)\s*수\s*있습니다/g,
+        "전공적합성 평가에서 불리하게 작용하여 학종 서류 경쟁력이 약화됩니다",
+      ],
+      // "전공적합성에서 일부/다소 아쉽습니다" (chanceRationale 축약형)
+      [
+        /전공적합성에서\s*(일부|다소)\s*아쉽습니다/g,
+        "전공적합성 평가에서 불리하여 학종 서류 경쟁력이 약화됩니다",
       ],
     ];
 
@@ -1095,6 +1175,53 @@ const normalizeSection = (
     }
     if (typeof s.recommendedPath === "string") {
       s.recommendedPath = fixSingleSubjectRationale(s.recommendedPath);
+    }
+
+    // ── 전공 미스매치 시 "등급 경쟁력" 긍정 서술에 전공적합성 경고 강제 추가 ──
+    const courseMatchRate = pre.recommendedCourseMatch?.matchRate ?? 100;
+    const targetDept = studentInfo.targetDepartment ?? "";
+    const hasMajorMismatch = courseMatchRate <= 60 && targetDept;
+
+    if (hasMajorMismatch) {
+      const hasAdequateWarning = (text: string): boolean =>
+        /(전공적합성|전공\s*관련\s*서술)[이가을를에서]*\s*[^.]{0,20}(부족|제한|인정받기\s*어렵|한계|불리|약화|아쉬)|서류\s*경쟁력[이가은는]?\s*[^.]{0,10}(제한|약화|부족)/.test(
+          text
+        );
+      const hasPositiveGrade = (text: string): boolean =>
+        /(등급\s*)?경쟁력[이가]\s*(매우\s*)?(우수|충분|탁월|양호|있|압도|뛰어)/.test(
+          text
+        );
+      const mismatchSuffix = ` 다만, 생기부 전반에서 ${targetDept} 관련 서술이 부족하여 학종에서는 전반적 경쟁력이 약화됩니다.`;
+
+      // admissionPrediction: universityPredictions[].rationale
+      if (Array.isArray(s.predictions)) {
+        for (const pred of s.predictions) {
+          if (Array.isArray(pred.universityPredictions)) {
+            for (const uniPred of pred.universityPredictions) {
+              if (
+                typeof uniPred.rationale === "string" &&
+                hasPositiveGrade(uniPred.rationale) &&
+                !hasAdequateWarning(uniPred.rationale)
+              ) {
+                uniPred.rationale += mismatchSuffix;
+              }
+            }
+          }
+        }
+      }
+
+      // admissionStrategy: recommendations[].chanceRationale
+      if (Array.isArray(s.recommendations)) {
+        for (const rec of s.recommendations) {
+          if (
+            typeof rec.chanceRationale === "string" &&
+            hasPositiveGrade(rec.chanceRationale) &&
+            !hasAdequateWarning(rec.chanceRationale)
+          ) {
+            rec.chanceRationale += mismatchSuffix;
+          }
+        }
+      }
     }
   }
 

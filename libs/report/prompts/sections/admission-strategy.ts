@@ -138,7 +138,7 @@ export const buildAdmissionStrategyPrompt = (
       "admissionType": "학생부종합-서류형",
       "tier": "안정",
       "chance": "medium",
-      "chanceRationale": "세특 내용이 우수하나 내신이...",
+      "chanceRationale": "등급 경쟁력은 있으나, 생기부 전반에서 전공 관련 서술이 부족하여 서류 평가에서 불리할 수 있습니다.",
       "chancePercentLabel": "55~65%",
       "admissionData": {"cutoff50": 2.5, "cutoff70": 3.0, "competitionRate": 5.2, "enrollment": 30}
     }
@@ -267,6 +267,14 @@ ${input.competencyEvaluation}
 ${input.studentProfile}
 
 ${input.majorEvaluationContext ? `### 학과 맞춤 평가 기준 (입학사정관 관점)\n${input.majorEvaluationContext}\n\n⚠️ 대학 추천 시 이 계열의 핵심 교과 성취도와 관련 활동 일치도를 고려하여 학생의 강점/약점을 분석하세요. universityGuideMatching에서 emphasisKeywords와 studentStrengthMatch/WeaknessMatch를 이 기준에 맞춰 작성하세요.` : ""}
+
+## ⛔ 출력 전 자기 검증 (반드시 수행)
+JSON을 출력하기 전에 아래 항목을 점검하세요. 하나라도 위반하면 수정 후 출력합니다:
+1. 모든 chanceRationale에 전공적합성 또는 서류 평가 관련 언급이 포함되었는가? ("경쟁력이 우수합니다"로만 끝나면 위반)
+2. 생기부-학과 괴리가 큰 경우, "서류 경쟁력이 약화" 또는 "전공적합성 부족"을 명시했는가?
+3. 특정 과목 1개만으로 전공적합성을 인정한 항목이 없는가?
+4. 한글 서술문 안에 "high", "medium", "low" 등 영단어가 포함되지 않았는가?
+5. 안정/하향 티어 대학의 chance가 "medium" 이상인가?
 
 ${PLAN_SPECIFIC[plan]}`;
 };
