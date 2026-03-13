@@ -4,7 +4,6 @@ import type { ReportPlan } from "../../types.ts";
 
 export interface AdmissionStrategyPromptInput {
   academicAnalysis: string;
-  competencyEvaluation: string;
   admissionPredictionResult: string;
   universityCandidates: string;
   recommendedCourseMatch: string;
@@ -259,9 +258,6 @@ ${input.recommendedCourseMatch}
 
 ### 성적 분석 결과
 ${input.academicAnalysis}
-
-### 역량별 종합 평가 결과
-${input.competencyEvaluation}
 
 ### 학생 프로필
 ${input.studentProfile}

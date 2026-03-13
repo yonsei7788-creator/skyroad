@@ -51,7 +51,6 @@ const FIELD_LABELS: Record<string, string> = {
 
   // 역량
   competencyScore: "역량 점수",
-  competencyEvaluation: "역량 평가",
   competencyRatings: "역량 등급",
   competencySummary: "역량 요약",
   subcategories: "하위 항목",
@@ -82,8 +81,6 @@ const FIELD_LABELS: Record<string, string> = {
   portfolioScores: "포트폴리오 점수",
   overallStrategy: "종합 전략",
 
-  // 진단
-  diagnostic: "진단",
   strengths: "강점",
   weaknesses: "약점",
   percentileLabel: "백분위 라벨",
@@ -100,7 +97,6 @@ const FIELD_LABELS: Record<string, string> = {
   activityAnalysis: "활동 분석",
   subjectAnalysis: "세특 분석",
   behaviorAnalysis: "행동특성 분석",
-  overallAssessment: "종합 평가",
 
   // 학업
   subjectPerformances: "교과별 성적",
@@ -185,17 +181,9 @@ const FIELD_LABELS: Record<string, string> = {
   action: "실행 항목",
 
   // 부록
-  bookRecommendation: "도서 추천",
   majorExploration: "전공 탐색",
-  wordCloud: "워드 클라우드",
-  books: "추천 도서",
-  bookTitle: "도서명",
-  author: "저자",
-  reason: "추천 이유",
   majors: "관련 전공",
   majorName: "전공명",
-  words: "단어",
-  weight: "가중치",
 
   // 벤치마크
   benchmark: "벤치마크",

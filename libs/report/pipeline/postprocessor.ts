@@ -1,7 +1,7 @@
 /**
  * Phase 4: 후처리
  *
- * Zod 스키마 검증, wordCloud 섹션 주입, ReportContent 조합.
+ * Zod 스키마 검증, ReportContent 조합.
  * 검증 실패 시 섹션별 fallback 전략을 적용한다.
  */
 

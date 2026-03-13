@@ -8,21 +8,16 @@ import {
   AdmissionStrategyRenderer,
   AttendanceAnalysisRenderer,
   BehaviorAnalysisRenderer,
-  BookRecommendationRenderer,
-  CompetencyEvaluationRenderer,
   CompetencyScoreRenderer,
   CourseAlignmentRenderer,
-  DiagnosticRenderer,
   DirectionGuideRenderer,
   InterviewPrepRenderer,
   MajorExplorationRenderer,
-  OverallAssessmentRenderer,
   StoryAnalysisRenderer,
   StudentProfileRenderer,
   SubjectAnalysisRenderer,
   TopicRecommendationRenderer,
   WeaknessAnalysisRenderer,
-  WordCloudRenderer,
 } from "../_components";
 
 interface SectionRendererProps {
@@ -62,19 +57,8 @@ export const SectionRenderer = ({
           plan={plan}
         />
       );
-    case "diagnostic":
-      return (
-        <DiagnosticRenderer data={section} sectionNumber={sectionNumber} />
-      );
 
     // Part 2: 분석
-    case "competencyEvaluation":
-      return (
-        <CompetencyEvaluationRenderer
-          data={section}
-          sectionNumber={sectionNumber}
-        />
-      );
     case "academicAnalysis":
       return (
         <AcademicAnalysisRenderer
@@ -108,13 +92,6 @@ export const SectionRenderer = ({
     case "behaviorAnalysis":
       return (
         <BehaviorAnalysisRenderer
-          data={section}
-          sectionNumber={sectionNumber}
-        />
-      );
-    case "overallAssessment":
-      return (
-        <OverallAssessmentRenderer
           data={section}
           sectionNumber={sectionNumber}
         />
@@ -166,13 +143,6 @@ export const SectionRenderer = ({
       );
 
     // 부록
-    case "bookRecommendation":
-      return (
-        <BookRecommendationRenderer
-          data={section}
-          sectionNumber={sectionNumber}
-        />
-      );
     case "majorExploration":
       return (
         <MajorExplorationRenderer
@@ -180,8 +150,6 @@ export const SectionRenderer = ({
           sectionNumber={sectionNumber}
         />
       );
-    case "wordCloud":
-      return <WordCloudRenderer data={section} sectionNumber={sectionNumber} />;
 
     default:
       return null;

@@ -11,24 +11,19 @@ import type {
   StudentProfileSection,
   CompetencyScoreSection,
   AdmissionPredictionSection,
-  DiagnosticSection,
-  CompetencyEvaluationSection,
   AcademicAnalysisSection,
   CourseAlignmentSection,
   AttendanceAnalysisSection,
   ActivityAnalysisSection,
   SubjectAnalysisSection,
   BehaviorAnalysisSection,
-  OverallAssessmentSection,
   WeaknessAnalysisSection,
   TopicRecommendationSection,
   InterviewPrepSection,
   AdmissionStrategySection,
   StoryAnalysisSection,
   ActionRoadmapSection,
-  BookRecommendationSection,
   MajorExplorationSection,
-  WordCloudSection,
   ReportMeta,
 } from "./types";
 
@@ -376,391 +371,9 @@ const admissionPredictionStandard: AdmissionPredictionSection = {
   ],
 };
 
-// ─── 섹션 4: 종합 진단 ───
-
-const diagnosticLite: DiagnosticSection = {
-  sectionId: "diagnostic",
-  title: "종합 진단",
-  oneLiner:
-    "컴퓨터공학에 대한 뚜렷한 진로 목표와 알고리즘 탐구 역량을 갖추었으나, 공동체 활동과 인문학적 소양 보완이 서울대 합격의 관건입니다.",
-  keywords: [
-    {
-      label: "알고리즘 탐구 역량",
-      description:
-        "정보 교과와 수학 세특에서 알고리즘 설계 및 구현 능력을 꾸준히 보여줌",
-    },
-    {
-      label: "융합적 사고 필요",
-      description:
-        "컴퓨터과학과 타 교과(물리, 사회) 간 융합 활동이 부족하여 사고의 폭 확장 필요",
-    },
-    {
-      label: "공동체 역량 보완",
-      description:
-        "팀 프로젝트 경험은 있으나, 공식적 리더 역할이나 진로 연계 봉사 경험이 제한적",
-    },
-  ],
-  competencySummary: [
-    {
-      category: "academic",
-      label: "학업 역량",
-      summary:
-        "수학과 정보 교과에서 상위권 성취를 유지하며, 알고리즘 기반 문제 해결 역량이 돋보입니다.",
-    },
-    {
-      category: "career",
-      label: "진로 역량",
-      summary:
-        "1학년부터 컴퓨터공학 관련 활동을 일관되게 수행하여 진로 방향이 명확합니다.",
-    },
-    {
-      category: "community",
-      label: "공동체 역량",
-      summary:
-        "협업 프로젝트 경험은 있으나, 리더십과 봉사 활동의 양적·질적 확대가 필요합니다.",
-    },
-    {
-      category: "growth",
-      label: "발전가능성",
-      summary:
-        "1학년 대비 2학년에서 탐구 깊이와 자기주도성이 성장하고 있어 향후 발전 가능성이 높습니다.",
-    },
-  ],
-};
-
-const diagnosticStandard: DiagnosticSection = {
-  ...diagnosticLite,
-  admissionPositioning:
-    "학생부종합전형(학종)을 주력 전형으로, 전공 적합성과 탐구 역량을 중심으로 어필하는 것이 가장 효과적입니다. 3학년 1학기에 공동체 역량과 융합 활동을 보강하면 서울대 합격 가능성이 크게 상승합니다.",
-};
-
-const diagnosticPremium: DiagnosticSection = {
-  ...diagnosticStandard,
-  strategyOverview:
-    "상향 1곳(서울대) + 안정 3곳(KAIST, 고려대, 성균관대) + 하향 2곳(한양대, 서울시립대)의 6개 대학 조합을 추천합니다. 학종 4장 + 교과 1장 + 정시 대비 병행 전략이 최적입니다.",
-  // v4
-  dashboardMetrics: {
-    totalScore: 225,
-    percentileLabel: "상위 22%",
-    gradeTrend: "상승",
-    recordFillRate: 81,
-    recommendedType: "학종",
-  },
-  competencyBars: [
-    {
-      category: "academic",
-      label: "학업 역량",
-      score: 82,
-      maxScore: 100,
-      assessment: "우수",
-    },
-    {
-      category: "career",
-      label: "진로 역량",
-      score: 78,
-      maxScore: 100,
-      assessment: "양호",
-    },
-    {
-      category: "community",
-      label: "공동체 역량",
-      score: 65,
-      maxScore: 100,
-      assessment: "보완필요",
-    },
-    {
-      category: "growth",
-      label: "발전가능성",
-      score: 75,
-      maxScore: 100,
-      assessment: "양호",
-    },
-  ],
-  topStrengths: ["알고리즘 설계 역량", "수학-IT 융합 사고", "진로 일관성"],
-  topWeaknesses: ["리더십 경험 부족", "인문 교과 연계 부재", "봉사 활동 미비"],
-  characterLabel: {
-    label: "논리의 개척자",
-    rationale:
-      "알고리즘과 수학적 사고에 강점을 보이며, 코딩을 통해 문제를 체계적으로 해결하는 유형",
-  },
-};
-
 // ============================================================
 // Part 2: 분석
 // ============================================================
-
-// ─── 섹션 5: 역량별 종합 평가 ───
-
-const competencyEvaluationLite: CompetencyEvaluationSection = {
-  sectionId: "competencyEvaluation",
-  title: "역량별 종합 평가",
-  strengths: [
-    {
-      competencyTag: {
-        category: "academic",
-        subcategory: "탐구 역량",
-        assessment: "우수",
-      },
-      label: "알고리즘 설계 및 구현",
-      evidence:
-        "정보 세특에서 다익스트라 알고리즘을 활용한 최단 경로 탐색 프로그램을 독립적으로 설계하고 Python으로 구현한 경험이 기록됨",
-    },
-    {
-      competencyTag: {
-        category: "academic",
-        subcategory: "교과 성취도",
-        assessment: "우수",
-      },
-      label: "수학 교과 우수 성취",
-      evidence:
-        "수학Ⅱ 1등급, 미적분 2등급으로 수리적 사고력이 높으며, 수학적 모델링 활동도 우수",
-    },
-    {
-      competencyTag: {
-        category: "career",
-        subcategory: "전공 적합성",
-        assessment: "우수",
-      },
-      label: "컴퓨터공학 진로 일관성",
-      evidence:
-        "1학년 정보 교과 → 2학년 알고리즘 심화 탐구 → 코딩 동아리 활동으로 진로가 일관되게 심화됨",
-    },
-  ],
-  weaknesses: [
-    {
-      competencyTag: {
-        category: "community",
-        subcategory: "리더십",
-        assessment: "미흡",
-      },
-      label: "공식적 리더 역할 부족",
-      evidence:
-        "동아리나 학급에서 공식적 임원 경험이 없으며, 주로 기술적 기여에 집중",
-    },
-    {
-      competencyTag: {
-        category: "community",
-        subcategory: "봉사 및 나눔",
-        assessment: "부족",
-      },
-      label: "진로 연계 봉사 부재",
-      evidence:
-        "봉사 활동이 단순 참여 수준이며, 코딩 교육 봉사 등 진로 연계 봉사 경험이 전무",
-    },
-    {
-      competencyTag: {
-        category: "academic",
-        subcategory: "융합 사고",
-        assessment: "미흡",
-      },
-      label: "인문-과학 융합 활동 부족",
-      evidence:
-        "국어, 사회 등 인문 교과에서 IT와의 연결점을 찾는 활동이 기록되지 않음",
-    },
-  ],
-  overallComment:
-    "컴퓨터공학에 대한 학업적 역량과 진로 적합성은 우수하나, 공동체 역량(리더십, 봉사)과 인문학적 융합 사고가 부족합니다. 서울대가 강조하는 '균형 잡힌 인재상'에 부합하기 위해 3학년에 이 부분을 집중적으로 보완해야 합니다.",
-  competencyRatings: [
-    {
-      category: "academic",
-      label: "학업 역량",
-      grade: "A",
-      comment:
-        "주요 교과 성적과 탐구 활동 모두 우수한 수준. 세특 서술의 깊이도 양호함",
-    },
-    {
-      category: "career",
-      label: "진로 역량",
-      grade: "A",
-      comment:
-        "명확한 진로 방향과 일관된 활동이 강점. 외부 대회 실적이 추가되면 더욱 강력해짐",
-    },
-    {
-      category: "community",
-      label: "공동체 역량",
-      grade: "C",
-      comment:
-        "리더십과 봉사 활동이 현저히 부족. 서울대 합격을 위해 반드시 보강해야 하는 영역",
-    },
-    {
-      category: "growth",
-      label: "발전가능성",
-      grade: "B",
-      comment:
-        "1학년 대비 탐구 깊이가 성장 중이나, 성장 서사가 더 명확해질 필요가 있음",
-    },
-  ],
-};
-
-const competencyEvaluationPremium: CompetencyEvaluationSection = {
-  ...competencyEvaluationLite,
-  strengths: [
-    ...competencyEvaluationLite.strengths,
-    {
-      competencyTag: {
-        category: "academic",
-        subcategory: "자기주도 학습",
-        assessment: "양호",
-      },
-      label: "독립적 프로젝트 수행 능력",
-      evidence:
-        "정보 교과 외에도 개인적으로 웹 애플리케이션 개발 프로젝트를 수행한 경험이 세특에 기록됨",
-    },
-    {
-      competencyTag: {
-        category: "career",
-        subcategory: "진로 탐색",
-        assessment: "양호",
-      },
-      label: "IT 산업 트렌드 이해",
-      evidence:
-        "AI, 빅데이터 등 최신 기술 트렌드를 교과 활동과 연결하여 탐구한 경험이 있음",
-    },
-  ],
-  weaknesses: [
-    ...competencyEvaluationLite.weaknesses,
-    {
-      competencyTag: {
-        category: "growth",
-        subcategory: "자기 성찰",
-        assessment: "미흡",
-      },
-      label: "실패 경험 기반 성장 서사 부족",
-      evidence:
-        "도전적 활동에서의 실패와 극복 과정이 세특에 구체적으로 드러나지 않음",
-    },
-    {
-      competencyTag: {
-        category: "academic",
-        subcategory: "학업 관리",
-        assessment: "미흡",
-      },
-      label: "비전공 교과 관리 소홀",
-      evidence:
-        "국어, 사회 교과의 세특이 평이하여 학업 성실성에 대한 의구심을 줄 수 있음",
-    },
-  ],
-  competencyRatings: competencyEvaluationLite.competencyRatings.map((r) => ({
-    ...r,
-    subcategories:
-      r.category === "academic"
-        ? [
-            {
-              name: "교과 성취도",
-              grade: "A" as const,
-              comment: "주요 교과 평균 2.1등급, 수학 1등급",
-            },
-            {
-              name: "탐구 역량",
-              grade: "A" as const,
-              comment: "알고리즘 설계, 코딩 프로젝트 등 심화 탐구 활동 우수",
-            },
-            {
-              name: "세특 충실도",
-              grade: "B" as const,
-              comment: "전공 교과 세특 우수, 비전공 교과 보완 필요",
-            },
-          ]
-        : r.category === "career"
-          ? [
-              {
-                name: "전공 적합성",
-                grade: "A" as const,
-                comment: "컴퓨터공학 관련 활동의 일관성과 깊이가 우수",
-              },
-              {
-                name: "진로 탐색 활동",
-                grade: "B" as const,
-                comment: "교내 활동 중심, 외부 활동 확대 필요",
-              },
-            ]
-          : r.category === "community"
-            ? [
-                {
-                  name: "리더십",
-                  grade: "C" as const,
-                  comment: "공식적 리더 역할 경험 부족",
-                },
-                {
-                  name: "협업 능력",
-                  grade: "B" as const,
-                  comment: "팀 프로젝트 참여 경험은 있으나 조율 역할 제한적",
-                },
-                {
-                  name: "봉사 및 나눔",
-                  grade: "D" as const,
-                  comment: "진로 연계 봉사 경험 전무",
-                },
-              ]
-            : undefined,
-  })),
-  // v4
-  competencyCharacters: [
-    {
-      category: "academic",
-      characterLabel: {
-        label: "분석형 탐구자",
-        rationale: "알고리즘 효율성을 분석하고 최적화하는 체계적 사고 역량",
-      },
-    },
-    {
-      category: "career",
-      characterLabel: {
-        label: "일관된 코딩러",
-        rationale: "1학년부터 컴퓨터공학 진로가 일관되며 점진적으로 심화됨",
-      },
-    },
-  ],
-  citationAnalysis: [
-    {
-      originalText:
-        "다익스트라 알고리즘의 시간 복잡도를 분석하여 O(V²)에서 우선순위 큐를 활용해 O((V+E)logV)로 최적화하는 과정을 탐구함.",
-      source: "2학년 정보 세특",
-      competencyTags: [
-        { category: "academic", subcategory: "탐구 역량", assessment: "우수" },
-      ],
-      assessment: "우수",
-      positivePoint: "알고리즘 최적화 역량을 구체적 수치와 함께 보여줌",
-    },
-    {
-      originalText:
-        "함수의 극한 개념을 활용하여 머신러닝의 경사하강법 원리를 탐구하고 발표함.",
-      source: "2학년 수학Ⅱ 세특",
-      competencyTags: [
-        { category: "academic", subcategory: "융합 사고", assessment: "우수" },
-      ],
-      assessment: "우수",
-      positivePoint: "수학-AI 융합적 사고가 돋보이는 핵심 활동",
-    },
-    {
-      originalText: "모둠 활동에서 프로그램 시연을 담당하여 발표함.",
-      source: "2학년 정보 세특",
-      competencyTags: [{ category: "community", subcategory: "협업 능력" }],
-      assessment: "보완필요",
-      improvementSuggestion:
-        "구체적 역할과 기여도가 드러나지 않음. 팀 내 기술적 리딩 역할을 명시해야 함",
-    },
-  ],
-  competencyBenchmarks: [
-    {
-      category: "academic",
-      comparison: {
-        myValue: 82,
-        targetRangeAvg: 88,
-        overallAvg: 70,
-        estimationBasis: "AI 추정",
-      },
-    },
-    {
-      category: "career",
-      comparison: { myValue: 78, targetRangeAvg: 82, overallAvg: 65 },
-    },
-    {
-      category: "community",
-      comparison: { myValue: 65, targetRangeAvg: 80, overallAvg: 60 },
-    },
-  ],
-};
 
 // ─── 섹션 6: 성적 분석 ───
 
@@ -4052,59 +3665,6 @@ const behaviorAnalysis: BehaviorAnalysisSection = {
     "행동특성에서 '자기주도성'과 '끈기'가 일관되게 드러나는 것은 서울대가 중시하는 '발전가능성' 평가에서 긍정적으로 작용합니다. 3학년에 리더십 관련 서술이 추가되면 '공동체 의식' 항목도 보강됩니다.",
 };
 
-// ─── 섹션 12: 기록 충실도 종합 ───
-
-const overallAssessment: OverallAssessmentSection = {
-  sectionId: "overallAssessment",
-  title: "기록 충실도 종합",
-  volumeAnalysis: [
-    {
-      category: "교과 세특",
-      maxCapacity: "500자 x 전 과목",
-      actualVolume: "평균 420자",
-      fillRate: 84,
-      assessment:
-        "양호. 전공 교과는 480자 이상 충실, 비전공 교과 350자 수준으로 보완 필요",
-    },
-    {
-      category: "창체 - 자율",
-      maxCapacity: "500자",
-      actualVolume: "380자",
-      fillRate: 76,
-      assessment:
-        "보통. IT 관련 자율활동은 기록되었으나 리더십 활동이 빠져 있음",
-    },
-    {
-      category: "창체 - 동아리",
-      maxCapacity: "500자",
-      actualVolume: "470자",
-      fillRate: 94,
-      assessment: "우수. 코딩 동아리 활동이 구체적이고 풍부하게 기록됨",
-    },
-    {
-      category: "창체 - 진로",
-      maxCapacity: "700자",
-      actualVolume: "450자",
-      fillRate: 64,
-      assessment: "미흡. 진로 탐색 활동의 깊이와 분량이 부족",
-    },
-    {
-      category: "행동특성 및 종합의견",
-      maxCapacity: "500자",
-      actualVolume: "440자",
-      fillRate: 88,
-      assessment: "양호. 성실성과 탐구 열정이 잘 드러나나 리더십 언급 부족",
-    },
-  ],
-  overallFillRate: 81,
-  qualityAssessment:
-    "전공 관련 기록(정보, 수학, 동아리)은 질적으로 우수하나, 비전공 교과와 진로 활동 기록의 질적 수준을 높일 필요가 있습니다.",
-  competitivenessSum:
-    "학업: 수학/정보 중심 우수 | 진로: 컴퓨터공학 일관성 확보 | 공동체: 리더십·봉사 보강 시급 | 발전가능성: 상승 추세 긍정적",
-  finalComment:
-    "전체 기록 충실도 81%로 양호한 수준이나, 서울대 합격을 위해서는 90% 이상의 충실도가 권장됩니다. 3학년 1학기에 진로 활동 기록 강화, 비전공 교과 세특 보완, 리더십 활동 추가가 필요합니다.",
-};
-
 // ============================================================
 // Part 3: 전략
 // ============================================================
@@ -6585,81 +6145,7 @@ const actionRoadmapPremium: ActionRoadmapSection = {
   ],
 };
 
-// ============================================================
-// 부록
-// ============================================================
-
-// ─── 섹션 19: 추천 도서 ───
-
-const bookRecommendationStandard: BookRecommendationSection = {
-  sectionId: "bookRecommendation",
-  title: "추천 도서",
-  books: [
-    {
-      title: "알고리즘, 인생을 계산하다",
-      author: "브라이언 크리스천, 톰 그리피스",
-      reason:
-        "알고리즘적 사고를 일상생활에 적용하는 방법을 다루어, 컴퓨터과학의 실용적 가치를 이해하는 데 도움",
-      connectionToRecord:
-        "다익스트라 알고리즘 탐구 경험을 더 넓은 맥락에서 이해할 수 있으며, 면접에서 활용 가능",
-      relatedSubject: "정보",
-    },
-    {
-      title: "이것이 코딩 테스트다",
-      author: "나동빈",
-      reason:
-        "알고리즘 문제 유형별 풀이 전략을 체계적으로 학습할 수 있어 정보올림피아드 대비에 직접적 도움",
-      connectionToRecord:
-        "코딩 동아리 활동과 연계하여 알고리즘 학습의 체계성을 보여줄 수 있음",
-      relatedSubject: "정보",
-    },
-    {
-      title: "수학의 언어로 세상을 본다면",
-      author: "오구리 히로시",
-      reason:
-        "수학적 사고의 본질을 이해하고, 수학이 과학과 기술에 어떻게 활용되는지를 다루는 책",
-      connectionToRecord:
-        "수학-정보 융합 탐구의 배경 지식을 넓히고, 수학적 사고의 가치를 면접에서 설명할 수 있음",
-      relatedSubject: "수학",
-    },
-    {
-      title: "정의란 무엇인가",
-      author: "마이클 샌델",
-      reason:
-        "AI 윤리, 기술과 사회의 관계를 고민하는 데 필요한 철학적 사고의 기초를 다져줌",
-      connectionToRecord:
-        "인문학적 소양을 보여주는 독서 기록으로, 세특에서 IT 윤리 탐구와 연결 가능",
-      relatedSubject: "사회",
-    },
-  ],
-};
-
-const bookRecommendationPremium: BookRecommendationSection = {
-  ...bookRecommendationStandard,
-  books: [
-    ...bookRecommendationStandard.books,
-    {
-      title: "인공지능: 현대적 접근방식",
-      author: "스튜어트 러셀, 피터 노빅",
-      reason:
-        "AI의 이론적 기초부터 최신 기술까지 포괄적으로 다루는 대학 교재 수준의 책. 대학 선행 학습에 도움",
-      connectionToRecord:
-        "경사하강법 탐구를 AI 전체 분야로 확장하는 데 기여하며, 면접에서 전공 깊이를 보여줄 수 있음",
-      relatedSubject: "정보",
-    },
-    {
-      title: "클린 코드",
-      author: "로버트 C. 마틴",
-      reason:
-        "좋은 코드를 작성하는 원칙과 실천 방법을 배울 수 있어, 프로그래밍 역량을 한 단계 높여줌",
-      connectionToRecord:
-        "코딩 동아리에서의 프로젝트 품질을 높이고, 소프트웨어 공학에 대한 이해를 보여줄 수 있음",
-      relatedSubject: "정보",
-    },
-  ],
-};
-
-// ─── 섹션 20: AI 전공 추천 ───
+// ─── AI 전공 추천 ───
 
 const majorExploration: MajorExplorationSection = {
   sectionId: "majorExploration",
@@ -6698,45 +6184,6 @@ const majorExploration: MajorExplorationSection = {
   ],
 };
 
-// ─── 섹션 21: 워드 클라우드 ───
-
-const wordCloud: WordCloudSection = {
-  sectionId: "wordCloud",
-  title: "키워드 분석",
-  words: [
-    { text: "알고리즘", frequency: 15, category: "academic" },
-    { text: "프로그래밍", frequency: 14, category: "career" },
-    { text: "Python", frequency: 12, category: "career" },
-    { text: "탐구", frequency: 11, category: "academic" },
-    { text: "문제해결", frequency: 10, category: "academic" },
-    { text: "수학", frequency: 9, category: "academic" },
-    { text: "다익스트라", frequency: 8, category: "academic" },
-    { text: "코딩", frequency: 8, category: "career" },
-    { text: "경사하강법", frequency: 7, category: "academic" },
-    { text: "인공지능", frequency: 7, category: "career" },
-    { text: "데이터", frequency: 6, category: "academic" },
-    { text: "시간복잡도", frequency: 6, category: "academic" },
-    { text: "동아리", frequency: 5, category: "community" },
-    { text: "해커톤", frequency: 5, category: "community" },
-    { text: "성실성", frequency: 5, category: "growth" },
-    { text: "자기주도", frequency: 5, category: "growth" },
-    { text: "융합", frequency: 4, category: "academic" },
-    { text: "반도체", frequency: 4, category: "academic" },
-    { text: "실험", frequency: 4, category: "academic" },
-    { text: "발표", frequency: 4, category: "community" },
-    { text: "팀프로젝트", frequency: 3, category: "community" },
-    { text: "끈기", frequency: 3, category: "growth" },
-    { text: "논리", frequency: 3, category: "academic" },
-    { text: "최적화", frequency: 3, category: "academic" },
-    { text: "소프트웨어", frequency: 3, category: "career" },
-    { text: "웹개발", frequency: 2, category: "career" },
-    { text: "머신러닝", frequency: 2, category: "career" },
-    { text: "그래프이론", frequency: 2, category: "academic" },
-    { text: "성장", frequency: 2, category: "growth" },
-    { text: "책임감", frequency: 2, category: "growth" },
-  ],
-};
-
 // ============================================================
 // 플랜별 리포트 조합
 // ============================================================
@@ -6765,7 +6212,7 @@ const premiumMeta: ReportMeta = {
   version: 1,
 };
 
-/** Lite 플랜 mock 리포트 (14 섹션) */
+/** Lite 플랜 mock 리포트 (10 섹션) */
 export const LITE_MOCK_REPORT: ReportContent = {
   meta: liteMeta,
   sections: [
@@ -6774,18 +6221,18 @@ export const LITE_MOCK_REPORT: ReportContent = {
     competencyScoreLite,
     // Part 2: 분석
     academicAnalysisLite,
+    courseAlignment,
     attendanceAnalysis,
     activityAnalysisLite,
     subjectAnalysisLite,
+    behaviorAnalysis,
     // Part 3: 전략
-    weaknessAnalysisLite,
-    topicRecommendationLite,
     interviewPrepLite,
-    admissionStrategyLite,
+    majorExploration,
   ],
 };
 
-/** Standard 플랜 mock 리포트 (21 섹션) */
+/** Standard 플랜 mock 리포트 (12 섹션) */
 export const STANDARD_MOCK_REPORT: ReportContent = {
   meta: standardMeta,
   sections: [
@@ -6801,16 +6248,13 @@ export const STANDARD_MOCK_REPORT: ReportContent = {
     subjectAnalysisStandard,
     behaviorAnalysis,
     // Part 3: 전략
-    weaknessAnalysisStandard,
     topicRecommendationStandard,
     interviewPrepStandard,
-    admissionStrategyStandard,
-    storyAnalysisStandard,
-    actionRoadmapStandard,
+    majorExploration,
   ],
 };
 
-/** Premium 플랜 mock 리포트 (21 섹션 + 확장 필드) */
+/** Premium 플랜 mock 리포트 (16 섹션) */
 export const PREMIUM_MOCK_REPORT: ReportContent = {
   meta: premiumMeta,
   sections: [
@@ -6832,8 +6276,6 @@ export const PREMIUM_MOCK_REPORT: ReportContent = {
     admissionStrategyPremium,
     storyAnalysisPremium,
     actionRoadmapPremium,
-    // 부록
-    bookRecommendationPremium,
     majorExploration,
   ],
 };

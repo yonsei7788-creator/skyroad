@@ -254,119 +254,11 @@ export const AdmissionPredictionSectionSchema = z.object({
     .optional(),
 });
 
-// ─── 섹션 4: 종합 진단 ───
-
-const DiagnosticKeywordSchema = z.object({
-  label: z.string().min(1),
-  description: z.string().min(1),
-});
-
-const CompetencySummaryItemSchema = z.object({
-  category: CompetencyCategorySchema,
-  label: z.string().min(1),
-  summary: z.string().min(1),
-});
-
-export const DiagnosticSectionSchema = z.object({
-  sectionId: z.literal("diagnostic"),
-  title: z.string().min(1),
-  oneLiner: z.string().min(10),
-  keywords: z.tuple([
-    DiagnosticKeywordSchema,
-    DiagnosticKeywordSchema,
-    DiagnosticKeywordSchema,
-  ]),
-  competencySummary: z.tuple([
-    CompetencySummaryItemSchema,
-    CompetencySummaryItemSchema,
-    CompetencySummaryItemSchema,
-    CompetencySummaryItemSchema,
-  ]),
-  admissionPositioning: z.string().optional(),
-  strategyOverview: z.string().optional(),
-  // v4
-  dashboardMetrics: z
-    .object({
-      totalScore: z.number(),
-      percentileLabel: z.string().min(1),
-      gradeTrend: z.enum(["상승", "유지", "하락"]),
-      recordFillRate: z.number().min(0).max(100),
-      recommendedType: z.string().min(1),
-    })
-    .optional(),
-  competencyBars: z
-    .array(
-      z.object({
-        category: z.string().min(1),
-        label: z.string().min(1),
-        score: z.number(),
-        maxScore: z.number(),
-        assessment: ThreeTierRatingSchema,
-      })
-    )
-    .optional(),
-  topStrengths: z.array(z.string().min(1)).optional(),
-  topWeaknesses: z.array(z.string().min(1)).optional(),
-  characterLabel: CharacterLabelSchema.optional(),
-});
-
 // ============================================================
 // Part 2: 분석 스키마
 // ============================================================
 
-// ─── 섹션 5: 역량별 종합 평가 ───
-
-const StrengthWeaknessItemSchema = z.object({
-  competencyTag: CompetencyTagSchema,
-  label: z.string().min(1),
-  evidence: z.string().min(1),
-  // v4
-  tier: ThreeTierRatingSchema.optional(),
-  originalQuotes: z.array(OriginalTextCitationSchema).optional(),
-});
-
-const SubcategoryRatingSchema = z.object({
-  name: z.string().min(1),
-  grade: CompetencyGradeSchema,
-  comment: z.string().min(1),
-});
-
-const CompetencyRatingSchema = z.object({
-  category: CompetencyCategorySchema,
-  label: z.string().min(1),
-  grade: CompetencyGradeSchema,
-  comment: z.string().min(1),
-  subcategories: z.array(SubcategoryRatingSchema).optional(),
-});
-
-export const CompetencyEvaluationSectionSchema = z.object({
-  sectionId: z.literal("competencyEvaluation"),
-  title: z.string().min(1),
-  strengths: z.array(StrengthWeaknessItemSchema).min(3),
-  weaknesses: z.array(StrengthWeaknessItemSchema).min(3),
-  overallComment: z.string().min(20),
-  competencyRatings: z.array(CompetencyRatingSchema).min(1),
-  // v4
-  competencyCharacters: z
-    .array(
-      z.object({
-        category: CompetencyCategorySchema,
-        characterLabel: CharacterLabelSchema,
-      })
-    )
-    .optional(),
-  citationAnalysis: z.array(OriginalTextCitationSchema).optional(),
-  competencyBenchmarks: z
-    .array(
-      z.object({
-        category: CompetencyCategorySchema,
-        comparison: BenchmarkComparisonSchema,
-      })
-    )
-    .optional(),
-});
-
-// ─── 섹션 6: 성적 분석 ───
+// ─── 성적 분석 ───
 
 const GradeSummaryByYearSchema = z.object({
   year: z.number().int().min(1).max(3),
@@ -794,47 +686,6 @@ export const BehaviorAnalysisSectionSchema = z.object({
 
 // ─── 섹션 12: 기록 충실도 종합 ───
 
-const RecordVolumeItemSchema = z.object({
-  category: z.string().min(1),
-  maxCapacity: z.string().min(1),
-  actualVolume: z.string().min(1),
-  fillRate: z.number().min(0).max(100),
-  assessment: z.string().min(1),
-});
-
-export const OverallAssessmentSectionSchema = z.object({
-  sectionId: z.literal("overallAssessment"),
-  title: z.string().min(1),
-  volumeAnalysis: z.array(RecordVolumeItemSchema).min(1),
-  overallFillRate: z.number().min(0).max(100),
-  qualityAssessment: z.string().min(1),
-  competitivenessSum: z.string().min(1),
-  finalComment: z.string().min(1),
-  // v4
-  fillRateComparison: BenchmarkComparisonSchema.optional(),
-  competencyProgressBars: z
-    .array(
-      z.object({
-        category: z.string().min(1),
-        label: z.string().min(1),
-        score: z.number(),
-        maxScore: z.number(),
-        assessment: ThreeTierRatingSchema,
-      })
-    )
-    .optional(),
-  overallCompetitivenessScore: z.number().min(0).max(100).optional(),
-  areaGrades: z
-    .array(
-      z.object({
-        area: z.string().min(1),
-        grade: CompetencyGradeSchema,
-        summary: z.string().min(1),
-      })
-    )
-    .optional(),
-});
-
 // ============================================================
 // Part 3: 전략 스키마
 // ============================================================
@@ -1205,21 +1056,7 @@ export const ActionRoadmapSectionSchema = z.object({
 
 // ─── 섹션 19: 추천 도서 ───
 
-const BookItemSchema = z.object({
-  title: z.string().min(1),
-  author: z.string().min(1),
-  reason: z.string().min(1),
-  connectionToRecord: z.string().min(1),
-  relatedSubject: z.string().optional(),
-});
-
-export const BookRecommendationSectionSchema = z.object({
-  sectionId: z.literal("bookRecommendation"),
-  title: z.string().min(1),
-  books: z.array(BookItemSchema).min(3),
-});
-
-// ─── 섹션 20: AI 전공 추천 ───
+// ─── AI 전공 추천 ───
 
 const MajorSuggestionSchema = z.object({
   major: z.string().min(1),
@@ -1246,20 +1083,6 @@ export const MajorExplorationSectionSchema = z.object({
   title: z.string().min(1),
   currentTargetAssessment: z.string().optional(),
   suggestions: z.array(MajorSuggestionSchema).min(3),
-});
-
-// ─── 섹션 21: 워드 클라우드 ───
-
-const WordCloudItemSchema = z.object({
-  text: z.string().min(1),
-  frequency: z.number().int().min(1),
-  category: CompetencyCategorySchema.optional(),
-});
-
-export const WordCloudSectionSchema = z.object({
-  sectionId: z.literal("wordCloud"),
-  title: z.string().min(1),
-  words: z.array(WordCloudItemSchema).min(20).max(50),
 });
 
 // ============================================================
@@ -1300,15 +1123,12 @@ export const ReportSectionSchema = z.discriminatedUnion("sectionId", [
   StudentProfileSectionSchema,
   CompetencyScoreSectionSchema,
   AdmissionPredictionSectionSchema,
-  DiagnosticSectionSchema,
-  CompetencyEvaluationSectionSchema,
   AcademicAnalysisSectionSchema,
   CourseAlignmentSectionSchema,
   AttendanceAnalysisSectionSchema,
   ActivityAnalysisSectionSchema,
   SubjectAnalysisSectionSchema,
   BehaviorAnalysisSectionSchema,
-  OverallAssessmentSectionSchema,
   WeaknessAnalysisSectionSchema,
   TopicRecommendationSectionSchema,
   InterviewPrepSectionSchema,
@@ -1316,9 +1136,7 @@ export const ReportSectionSchema = z.discriminatedUnion("sectionId", [
   DirectionGuideSectionSchema,
   StoryAnalysisSectionSchema,
   ActionRoadmapSectionSchema,
-  BookRecommendationSectionSchema,
   MajorExplorationSectionSchema,
-  WordCloudSectionSchema,
 ]);
 
 export const ReportContentSchema = z.object({

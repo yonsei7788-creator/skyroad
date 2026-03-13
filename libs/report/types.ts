@@ -2,18 +2,17 @@
 // 리포트 Content JSONB 스키마 타입 정의 (v4)
 //
 // 기반 문서: specs/report-ai-spec.md, 바이브온 벤치마크 분석
-// 구조: 3파트 + 부록, 총 21섹션
+// 구조: 3파트 + 부록
 //
-// Part 1 진단: studentProfile, competencyScore,
-//              admissionPrediction, diagnostic
-// Part 2 분석: competencyEvaluation, academicAnalysis,
-//              courseAlignment, attendanceAnalysis,
-//              activityAnalysis, subjectAnalysis,
-//              behaviorAnalysis, overallAssessment
-// Part 3 전략: weaknessAnalysis, topicRecommendation,
-//              interviewPrep, admissionStrategy,
-//              storyAnalysis, actionRoadmap
-// 부록:       bookRecommendation, majorExploration, wordCloud
+// Lite (10): studentProfile, competencyScore,
+//   academicAnalysis, courseAlignment, attendanceAnalysis,
+//   activityAnalysis, subjectAnalysis, behaviorAnalysis,
+//   interviewPrep, majorExploration
+//
+// Standard (12): + admissionPrediction, topicRecommendation
+//
+// Premium (16): + weaknessAnalysis, admissionStrategy,
+//   storyAnalysis, actionRoadmap
 //
 // + 조건부 directionGuide (고1 전용, admissionStrategy 대체)
 //
@@ -301,126 +300,11 @@ export interface AdmissionPredictionSection extends BaseSection {
   }[];
 }
 
-// ─── 섹션 4: 종합 진단 (diagnostic) ───
-
-interface DiagnosticKeyword {
-  label: string;
-  description: string;
-}
-
-interface CompetencySummaryItem {
-  category: CompetencyCategory;
-  label: string;
-  summary: string;
-}
-
-export interface DiagnosticSection extends BaseSection {
-  sectionId: "diagnostic";
-
-  /** 한줄 총평 */
-  oneLiner: string;
-  /** 핵심 키워드 3개 */
-  keywords: [DiagnosticKeyword, DiagnosticKeyword, DiagnosticKeyword];
-  /** 학업/진로/공동체/발전가능성 한줄씩 */
-  competencySummary: [
-    CompetencySummaryItem,
-    CompetencySummaryItem,
-    CompetencySummaryItem,
-    CompetencySummaryItem,
-  ];
-
-  /** Standard+: 입시 포지셔닝 (추천 전형 방향) */
-  admissionPositioning?: string;
-  /** Premium: 합격 가능 전략 요약 */
-  strategyOverview?: string;
-
-  // ─── v4 추가 ───
-
-  /** 대시보드 핵심 지표 */
-  dashboardMetrics?: {
-    totalScore: number;
-    percentileLabel: string;
-    gradeTrend: "상승" | "유지" | "하락";
-    recordFillRate: number;
-    recommendedType: string;
-  };
-  /** 역량별 바 차트 데이터 */
-  competencyBars?: {
-    category: string;
-    label: string;
-    score: number;
-    maxScore: number;
-    assessment: ThreeTierRating;
-  }[];
-  /** 핵심 강점 */
-  topStrengths?: string[];
-  /** 핵심 약점 */
-  topWeaknesses?: string[];
-  /** 캐릭터 라벨 */
-  characterLabel?: CharacterLabel;
-}
-
 // ============================================================
 // Part 2: 분석
 // ============================================================
 
-// ─── 섹션 5: 역량별 종합 평가 (competencyEvaluation) ───
-
-interface StrengthWeaknessItem {
-  competencyTag: CompetencyTag;
-  label: string;
-  evidence: string;
-  /** v4: 3단계 평가 */
-  tier?: ThreeTierRating;
-  /** v4: 원문 인용 근거 */
-  originalQuotes?: OriginalTextCitation[];
-}
-
-interface SubcategoryRating {
-  name: string;
-  grade: CompetencyGrade;
-  comment: string;
-}
-
-interface CompetencyRating {
-  category: CompetencyCategory;
-  label: string;
-  grade: CompetencyGrade;
-  comment: string;
-  /** Premium: 하위항목별 등급 */
-  subcategories?: SubcategoryRating[];
-}
-
-export interface CompetencyEvaluationSection extends BaseSection {
-  sectionId: "competencyEvaluation";
-
-  /** Lite: 3개, Standard: 5개, Premium: 5개+ */
-  strengths: StrengthWeaknessItem[];
-  /** Lite: 3개, Standard: 5개, Premium: 5개+ */
-  weaknesses: StrengthWeaknessItem[];
-  /** Lite: 3~5줄, Standard/Premium: 상세 */
-  overallComment: string;
-
-  /** 4대 역량별 등급 (모든 플랜) */
-  competencyRatings: CompetencyRating[];
-
-  // ─── v4 추가 ───
-
-  /** 역량별 캐릭터 라벨 */
-  competencyCharacters?: {
-    category: CompetencyCategory;
-    characterLabel: CharacterLabel;
-  }[];
-  /** 전체 원문 인용 목록 */
-  citationAnalysis?: OriginalTextCitation[];
-  /** 역량별 벤치마크 비교 */
-  competencyBenchmarks?: {
-    category: CompetencyCategory;
-    comparison: BenchmarkComparison;
-  }[];
-}
-
-// ─── 섹션 6: 성적 분석 (academicAnalysis) ───
+// ─── 섹션 4: 성적 분석 (academicAnalysis) ───
 
 interface GradeSummaryByYear {
   year: number;
@@ -875,52 +759,6 @@ export interface BehaviorAnalysisSection extends BaseSection {
   personalityKeywords?: string[];
 }
 
-// ─── 섹션 12: 기록 충실도 종합 (overallAssessment) ───
-
-interface RecordVolumeItem {
-  category: string;
-  maxCapacity: string;
-  actualVolume: string;
-  fillRate: number;
-  assessment: string;
-}
-
-export interface OverallAssessmentSection extends BaseSection {
-  sectionId: "overallAssessment";
-
-  /** 항목별 기록 분량 분석 */
-  volumeAnalysis: RecordVolumeItem[];
-  /** 전체 기록 충실도 (0~100) */
-  overallFillRate: number;
-  /** 분량 대비 질 평가 */
-  qualityAssessment: string;
-  /** 경쟁력 종합 요약 (학업/진로/공동체/발전가능성 각 한줄) */
-  competitivenessSum: string;
-  /** 최종 종합 의견 */
-  finalComment: string;
-
-  // ─── v4 추가 ───
-
-  /** 기록 충실도 벤치마크 비교 */
-  fillRateComparison?: BenchmarkComparison;
-  /** 역량별 진행 바 */
-  competencyProgressBars?: {
-    category: string;
-    label: string;
-    score: number;
-    maxScore: number;
-    assessment: ThreeTierRating;
-  }[];
-  /** 전체 경쟁력 점수 (0~100) */
-  overallCompetitivenessScore?: number;
-  /** 영역별 등급 */
-  areaGrades?: {
-    area: string;
-    grade: CompetencyGrade;
-    summary: string;
-  }[];
-}
-
 // ============================================================
 // Part 3: 전략
 // ============================================================
@@ -1333,26 +1171,7 @@ export interface ActionRoadmapSection extends BaseSection {
 // 부록
 // ============================================================
 
-// ─── 섹션 19: 추천 도서 (bookRecommendation) ───
-
-interface BookItem {
-  title: string;
-  author: string;
-  /** 추천 이유 */
-  reason: string;
-  /** 학생의 기존 활동과의 연결 */
-  connectionToRecord: string;
-  /** 관련 과목/영역 */
-  relatedSubject?: string;
-}
-
-export interface BookRecommendationSection extends BaseSection {
-  sectionId: "bookRecommendation";
-  /** Standard: 3~5권, Premium: 5~8권 */
-  books: BookItem[];
-}
-
-// ─── 섹션 20: AI 전공 추천 (majorExploration) ───
+// ─── AI 전공 추천 (majorExploration) ───
 
 interface MajorSuggestion {
   major: string;
@@ -1386,20 +1205,6 @@ export interface MajorExplorationSection extends BaseSection {
   suggestions: MajorSuggestion[];
 }
 
-// ─── 섹션 21: 워드 클라우드 (wordCloud) ───
-
-interface WordCloudItem {
-  text: string;
-  frequency: number;
-  category?: CompetencyCategory;
-}
-
-export interface WordCloudSection extends BaseSection {
-  sectionId: "wordCloud";
-  /** 상위 키워드 (20~50개) */
-  words: WordCloudItem[];
-}
-
 // ============================================================
 // 섹션 유니온 타입
 // ============================================================
@@ -1410,16 +1215,13 @@ export type ReportSection =
   | StudentProfileSection
   | CompetencyScoreSection
   | AdmissionPredictionSection
-  | DiagnosticSection
   // Part 2: 분석
-  | CompetencyEvaluationSection
   | AcademicAnalysisSection
   | CourseAlignmentSection
   | AttendanceAnalysisSection
   | ActivityAnalysisSection
   | SubjectAnalysisSection
   | BehaviorAnalysisSection
-  | OverallAssessmentSection
   // Part 3: 전략
   | WeaknessAnalysisSection
   | TopicRecommendationSection
@@ -1429,9 +1231,7 @@ export type ReportSection =
   | StoryAnalysisSection
   | ActionRoadmapSection
   // 부록
-  | BookRecommendationSection
-  | MajorExplorationSection
-  | WordCloudSection;
+  | MajorExplorationSection;
 
 // ============================================================
 // 섹션 ID 매핑
@@ -1443,33 +1243,30 @@ type LiteSectionId =
   | "competencyScore"
   // Part 2: 분석
   | "academicAnalysis"
+  | "courseAlignment"
+  | "attendanceAnalysis"
   | "activityAnalysis"
   | "subjectAnalysis"
+  | "behaviorAnalysis"
   // Part 3: 전략
-  | "weaknessAnalysis"
-  | "topicRecommendation"
   | "interviewPrep"
-  | "admissionStrategy";
+  // 부록
+  | "majorExploration";
 
 type StandardSectionId =
   | LiteSectionId
   // Part 1 추가
   | "admissionPrediction"
-  // Part 2 추가
-  | "courseAlignment"
-  | "attendanceAnalysis"
-  | "behaviorAnalysis";
+  // Part 3 추가
+  | "topicRecommendation";
 
 type PremiumSectionId =
   | StandardSectionId
-  // Part 2 추가
-  | "overallAssessment"
   // Part 3 추가
+  | "weaknessAnalysis"
+  | "admissionStrategy"
   | "storyAnalysis"
-  | "actionRoadmap"
-  // 부록 추가
-  | "bookRecommendation"
-  | "majorExploration";
+  | "actionRoadmap";
 
 /** 플랜별 가능한 섹션 ID 매핑 */
 export type RequiredSectionIds = {
@@ -1533,18 +1330,17 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     // Part 1: 진단
     "studentProfile",
     "competencyScore",
-    "diagnostic",
-    "competencyEvaluation",
     // Part 2: 분석
     "academicAnalysis",
+    "courseAlignment",
+    "attendanceAnalysis",
     "activityAnalysis",
     "subjectAnalysis",
+    "behaviorAnalysis",
     // Part 3: 전략
-    "weaknessAnalysis",
-    "topicRecommendation",
-    "admissionStrategy",
-    // 부록
     "interviewPrep",
+    // 부록
+    "majorExploration",
   ],
   standard: [
     // Part 1: 진단
@@ -1559,17 +1355,16 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     "subjectAnalysis",
     "behaviorAnalysis",
     // Part 3: 전략
-    "weaknessAnalysis",
     "topicRecommendation",
-    "admissionStrategy",
-    // 부록
     "interviewPrep",
+    // 부록
+    "majorExploration",
   ],
   premium: [
     // Part 1: 진단
-    "studentProfile", // diagnostic 통합
-    "competencyScore", // competencyEvaluation 통합
-    "admissionPrediction", // Premium만 별도 유지
+    "studentProfile",
+    "competencyScore",
+    "admissionPrediction",
     // Part 2: 분석
     "academicAnalysis",
     "courseAlignment",
@@ -1577,15 +1372,14 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     "activityAnalysis",
     "subjectAnalysis",
     "behaviorAnalysis",
-    // Part 3: 전략
+    // Part 3: 전략 & 실행
     "weaknessAnalysis",
     "topicRecommendation",
+    "interviewPrep",
     "admissionStrategy",
     "storyAnalysis",
     "actionRoadmap",
     // 부록
-    "interviewPrep",
-    "bookRecommendation",
     "majorExploration",
   ],
 };

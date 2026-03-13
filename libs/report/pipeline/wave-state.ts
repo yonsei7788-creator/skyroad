@@ -66,16 +66,20 @@ export const buildTaskQueue = (
   if (has("behaviorAnalysis")) tasks.push("behaviorAnalysis");
 
   // Group 4
-  tasks.push("weaknessAnalysis", "topicRecommendation", "interviewPrep");
+  if (has("weaknessAnalysis")) tasks.push("weaknessAnalysis");
+  if (has("topicRecommendation")) tasks.push("topicRecommendation");
+  tasks.push("interviewPrep");
   if (has("admissionPrediction")) tasks.push("admissionPrediction");
 
   // Group 5
-  tasks.push(isGrade1Only ? "directionGuide" : "admissionStrategy");
+  if (has("admissionStrategy") || isGrade1Only) {
+    tasks.push(isGrade1Only ? "directionGuide" : "admissionStrategy");
+  }
   if (has("storyAnalysis")) tasks.push("storyAnalysis");
   if (has("actionRoadmap")) tasks.push("actionRoadmap");
 
   // Group 6
-  if (has("majorExploration")) tasks.push("majorExploration");
+  tasks.push("majorExploration");
 
   return tasks;
 };

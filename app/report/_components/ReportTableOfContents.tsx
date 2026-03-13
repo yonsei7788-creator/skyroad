@@ -28,29 +28,7 @@ const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
     },
     {
       partNumber: "PART 2",
-      partTitle: "분석",
-      sectionIds: ["academicAnalysis", "activityAnalysis", "subjectAnalysis"],
-    },
-    {
-      partNumber: "PART 3",
-      partTitle: "전략",
-      sectionIds: [
-        "weaknessAnalysis",
-        "topicRecommendation",
-        "interviewPrep",
-        "admissionStrategy",
-      ],
-    },
-  ],
-  standard: [
-    {
-      partNumber: "PART 1",
-      partTitle: "진단",
-      sectionIds: ["studentProfile", "competencyScore", "admissionPrediction"],
-    },
-    {
-      partNumber: "PART 2",
-      partTitle: "분석",
+      partTitle: "정밀 분석",
       sectionIds: [
         "academicAnalysis",
         "courseAlignment",
@@ -62,15 +40,42 @@ const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
     },
     {
       partNumber: "PART 3",
-      partTitle: "전략",
+      partTitle: "전략 & 실행",
+      sectionIds: ["interviewPrep"],
+    },
+    {
+      partNumber: "부록",
+      partTitle: "부록",
+      sectionIds: ["majorExploration"],
+    },
+  ],
+  standard: [
+    {
+      partNumber: "PART 1",
+      partTitle: "진단",
+      sectionIds: ["studentProfile", "competencyScore", "admissionPrediction"],
+    },
+    {
+      partNumber: "PART 2",
+      partTitle: "정밀 분석",
       sectionIds: [
-        "weaknessAnalysis",
-        "topicRecommendation",
-        "interviewPrep",
-        "admissionStrategy",
-        "storyAnalysis",
-        "actionRoadmap",
+        "academicAnalysis",
+        "courseAlignment",
+        "attendanceAnalysis",
+        "activityAnalysis",
+        "subjectAnalysis",
+        "behaviorAnalysis",
       ],
+    },
+    {
+      partNumber: "PART 3",
+      partTitle: "전략 & 실행",
+      sectionIds: ["topicRecommendation", "interviewPrep"],
+    },
+    {
+      partNumber: "부록",
+      partTitle: "부록",
+      sectionIds: ["majorExploration"],
     },
   ],
   premium: [
@@ -106,7 +111,7 @@ const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
     {
       partNumber: "부록",
       partTitle: "부록",
-      sectionIds: ["bookRecommendation", "majorExploration", "wordCloud"],
+      sectionIds: ["majorExploration"],
     },
   ],
 };

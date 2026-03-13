@@ -9,7 +9,6 @@ export interface AdmissionPredictionPromptInput {
   universityCandidates: string;
   studentProfile: string;
   /** Group 4 시점에서 추가되는 입력 */
-  competencyEvaluationResult?: string;
   subjectAnalysisResult?: string;
   academicAnalysisResult?: string;
   attendanceAnalysisResult?: string;
@@ -50,9 +49,6 @@ export const buildAdmissionPredictionPrompt = (
   const additionalInputs = [
     input.basePassRates
       ? `### 코드 산정 기본 합격률 (등급-커트라인 기반, 필수 참조)\n${input.basePassRates}`
-      : "",
-    input.competencyEvaluationResult
-      ? `### 역량별 종합 평가 결과\n${input.competencyEvaluationResult}`
       : "",
     input.subjectAnalysisResult
       ? `### 교과 세특 분석 결과\n${input.subjectAnalysisResult}`

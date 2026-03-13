@@ -38,8 +38,6 @@ import {
 import { buildStoryAnalysisPrompt } from "../prompts/sections/story-analysis.ts";
 import { buildActionRoadmapPrompt } from "../prompts/sections/action-roadmap.ts";
 import { buildMajorExplorationPrompt } from "../prompts/sections/major-exploration.ts";
-import { buildDiagnosticPrompt } from "../prompts/sections/diagnostic.ts";
-import { buildCompetencyEvaluationPrompt } from "../prompts/sections/competency-evaluation.ts";
 
 import type { GeminiClient } from "./gemini-client.ts";
 import { preprocess } from "./preprocessor.ts";
@@ -361,7 +359,6 @@ export const executeTask = async (
             studentTypeClassification: ser.stuTypeText!,
             universityCandidates: texts.universityCandidatesText,
             studentProfile: texts.studentProfileText,
-            competencyEvaluationResult: "null",
             subjectAnalysisResult: ser.subjAnalysisText!,
             academicAnalysisResult: ser.acadSectionText!,
             attendanceAnalysisResult: ser.attendSectionText!,
@@ -382,7 +379,6 @@ export const executeTask = async (
         buildAdmissionStrategyPrompt(
           {
             academicAnalysis: ser.acadSectionText!,
-            competencyEvaluation: "null",
             admissionPredictionResult: ser.admPredText ?? "null",
             universityCandidates: texts.universityCandidatesText,
             recommendedCourseMatch: texts.recommendedCourseMatchText,
@@ -442,33 +438,6 @@ export const executeTask = async (
     case "majorExploration":
       section = await callGemini<ReportSection>(
         buildMajorExplorationPrompt(
-          {
-            competencyExtraction: ser.compExtrText!,
-            academicAnalysis: ser.acadAnalText!,
-            studentProfile: texts.studentProfileText,
-          },
-          plan
-        )
-      );
-      break;
-
-    case "diagnostic":
-      section = await callGemini<ReportSection>(
-        buildDiagnosticPrompt(
-          {
-            competencyExtraction: ser.compExtrText!,
-            academicAnalysis: ser.acadAnalText!,
-            studentTypeClassification: ser.stuTypeText!,
-            studentProfile: texts.studentProfileText,
-          },
-          plan
-        )
-      );
-      break;
-
-    case "competencyEvaluation":
-      section = await callGemini<ReportSection>(
-        buildCompetencyEvaluationPrompt(
           {
             competencyExtraction: ser.compExtrText!,
             academicAnalysis: ser.acadAnalText!,
