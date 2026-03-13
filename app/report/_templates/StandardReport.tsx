@@ -22,15 +22,16 @@ const PART_CONFIG = [
   {
     partNumber: "PART 1",
     title: "진단",
-    description:
-      "생기부 전체를 기반으로 한 학생 유형 분류, 역량 정량 스코어, 합격 예측",
+    description: "학생 유형 분류, 역량 점수, 합격 예측",
+    color: "#2563eb",
     sectionIds: ["studentProfile", "competencyScore", "admissionPrediction"],
   },
   {
     partNumber: "PART 2",
-    title: "분석",
+    title: "정밀 분석",
     description:
-      "성적 분석, 권장과목 이수, 출결, 창체 활동, 세특, 행동특성 분석",
+      "학업 분석, 과목 적합도, 출결, 활동, 과목별 분석, 행동특성 분석",
+    color: "#1d4ed8",
     sectionIds: [
       "academicAnalysis",
       "courseAlignment",
@@ -42,19 +43,17 @@ const PART_CONFIG = [
   },
   {
     partNumber: "PART 3",
-    title: "전략",
-    description: "보완 전략, 세특 주제 추천, 입시 전략",
-    sectionIds: [
-      "weaknessAnalysis",
-      "topicRecommendation",
-      "admissionStrategy",
-    ],
+    title: "전략 & 실행",
+    description: "주제 추천, 면접 준비",
+    color: "#3b76f0",
+    sectionIds: ["topicRecommendation", "interviewPrep"],
   },
   {
     partNumber: "부록",
     title: "부록",
-    description: "예상 면접 질문",
-    sectionIds: ["interviewPrep"],
+    description: "학과 탐색",
+    color: "#4f83f3",
+    sectionIds: ["majorExploration"],
   },
 ];
 
@@ -107,8 +106,12 @@ export const StandardReport = ({ data }: StandardReportProps) => {
             };
           });
 
+          const partStyle = {
+            "--report-accent": part.color,
+          } as React.CSSProperties;
+
           return (
-            <div key={part.partNumber}>
+            <div key={part.partNumber} style={partStyle}>
               <PartPage
                 partNumber={part.partNumber}
                 title={part.title}

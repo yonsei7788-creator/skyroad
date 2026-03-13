@@ -22,15 +22,16 @@ const PART_CONFIG = [
   {
     partNumber: "PART 1",
     title: "진단",
-    description:
-      "생기부 전체를 기반으로 한 학생 유형 분류, 역량 정밀 스코어, 합격 예측",
+    description: "학생 유형 분류, 역량 점수, 합격 예측",
+    color: "#7c3aed",
     sectionIds: ["studentProfile", "competencyScore", "admissionPrediction"],
   },
   {
     partNumber: "PART 2",
     title: "정밀 분석",
     description:
-      "성적 분석, 권장과목 이수, 출결, 창체 활동, 문장 단위 세특 분석, 행동특성",
+      "학업 분석, 과목 적합도, 출결 분석, 활동 분석, 과목별 분석, 행동특성 분석",
+    color: "#6d28d9",
     sectionIds: [
       "academicAnalysis",
       "courseAlignment",
@@ -44,10 +45,12 @@ const PART_CONFIG = [
     partNumber: "PART 3",
     title: "전략 & 실행",
     description:
-      "보완 전략, 세특 주제 설계, 입시 전략, 스토리 분석, 실행 로드맵",
+      "부족한 부분 + 보완 전략, 주제 추천, 면접 준비, 입시 전략, 스토리 분석, 실행 로드맵",
+    color: "#8b4cf5",
     sectionIds: [
       "weaknessAnalysis",
       "topicRecommendation",
+      "interviewPrep",
       "admissionStrategy",
       "storyAnalysis",
       "actionRoadmap",
@@ -56,8 +59,9 @@ const PART_CONFIG = [
   {
     partNumber: "부록",
     title: "부록",
-    description: "면접 대비, 추천 도서, 전공 추천",
-    sectionIds: ["interviewPrep", "bookRecommendation", "majorExploration"],
+    description: "학과 탐색",
+    color: "#9a5df7",
+    sectionIds: ["majorExploration"],
   },
 ];
 
@@ -111,8 +115,12 @@ export const PremiumReport = ({ data }: PremiumReportProps) => {
             };
           });
 
+          const partStyle = {
+            "--report-accent": part.color,
+          } as React.CSSProperties;
+
           return (
-            <div key={part.partNumber}>
+            <div key={part.partNumber} style={partStyle}>
               <PartPage
                 partNumber={part.partNumber}
                 title={part.title}
