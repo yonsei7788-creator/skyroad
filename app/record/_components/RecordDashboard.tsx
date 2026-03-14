@@ -550,9 +550,13 @@ export const RecordDashboard = ({
                 )}
               </div>
             ) : (
-              <span className={styles.contextBarDetail}>
+              <Link
+                href="/profile/settings?tab=academic"
+                className={styles.contextBarDetail}
+                style={{ textDecoration: "underline" }}
+              >
                 입시 정보가 등록되지 않았습니다
-              </span>
+              </Link>
             )}
           </div>
           <div className={styles.contextBarRight}>
@@ -562,20 +566,12 @@ export const RecordDashboard = ({
                   {formatDate(record.updatedAt)} 수정
                 </span>
                 <Link
-                  href="/record/submit?mode=edit"
+                  href="/profile/settings?tab=academic"
                   className={styles.contextBarLink}
                 >
                   <Pencil size={12} />
                   수정
                 </Link>
-                <button
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className={styles.contextBarDelete}
-                >
-                  <Trash2 size={12} />
-                  {isDeleting ? "삭제 중..." : "삭제"}
-                </button>
               </>
             ) : (
               <Link href="/record/submit" className={styles.contextBarRegister}>

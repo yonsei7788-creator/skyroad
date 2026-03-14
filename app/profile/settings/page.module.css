@@ -20,12 +20,11 @@
 .heroBg {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(
-      ellipse 600px 300px at 50% 0%,
-      rgb(79 70 229 / 0.08),
-      transparent
-    );
+  background: radial-gradient(
+    ellipse 600px 300px at 50% 0%,
+    rgb(79 70 229 / 0.08),
+    transparent
+  );
   pointer-events: none;
 }
 
@@ -199,6 +198,24 @@
   font-size: 0.75rem;
   color: var(--color-success-500);
   font-weight: 500;
+}
+
+.required {
+  color: var(--color-error-500, #ef4444);
+  margin-left: 2px;
+}
+
+.fieldError {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--color-error-500, #ef4444);
+  font-weight: 500;
+}
+
+.inputError {
+  border-color: var(--color-error-500, #ef4444) !important;
 }
 
 /* ---- Input ---- */

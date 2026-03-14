@@ -22,7 +22,7 @@ export const AboutCtaSection = () => {
                 AI + 전문가 이중 검수, 48시간 내 리포트 전달
               </p>
             </div>
-            <Link href="/#pricing" className={styles.ctaButton}>
+            <Link href="/pricing" className={styles.ctaButton}>
               이용권 구매하기
               <ArrowRight size={18} />
             </Link>

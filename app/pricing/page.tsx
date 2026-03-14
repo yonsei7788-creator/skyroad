@@ -70,7 +70,7 @@ export default function PricingPage() {
               <p className={styles.bottomCtaSubtitle}>
                 Standard Report가 가장 많이 선택되는 이유가 있습니다
               </p>
-              <CtaButton className={styles.bottomCtaButton}>
+              <CtaButton className={styles.bottomCtaButton} plan="standard">
                 Standard Report 선택하기
               </CtaButton>
             </FadeIn>

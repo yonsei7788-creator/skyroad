@@ -53,19 +53,6 @@ export const PUT = async (request: NextRequest) => {
     );
   }
 
-  // Delete existing targets and re-insert
-  const { error: deleteError } = await supabase
-    .from("target_universities")
-    .delete()
-    .eq("user_id", user.id);
-
-  if (deleteError) {
-    return NextResponse.json(
-      { error: "기존 데이터 삭제에 실패했습니다." },
-      { status: 500 }
-    );
-  }
-
   const rows = universities.map((u) => ({
     user_id: user.id,
     priority: u.priority,
@@ -75,15 +62,29 @@ export const PUT = async (request: NextRequest) => {
     sub_field: u.subField?.trim() || null,
   }));
 
-  const { error: insertError } = await supabase
-    .from("target_universities")
-    .insert(rows);
+  const submittedPriorities = rows.map((r) => r.priority);
 
-  if (insertError) {
+  // Upsert submitted priorities
+  const { error: upsertError } = await supabase
+    .from("target_universities")
+    .upsert(rows, { onConflict: "user_id,priority" });
+
+  if (upsertError) {
     return NextResponse.json(
       { error: "목표 대학 저장에 실패했습니다." },
       { status: 500 }
     );
+  }
+
+  // Remove priorities no longer in the submission
+  const { error: cleanupError } = await supabase
+    .from("target_universities")
+    .delete()
+    .eq("user_id", user.id)
+    .not("priority", "in", `(${submittedPriorities.join(",")})`);
+
+  if (cleanupError) {
+    console.error("cleanup error (non-critical):", cleanupError);
   }
 
   return NextResponse.json({ success: true });

@@ -12,7 +12,6 @@ import {
   ChevronDown,
   FileText,
   UserCog,
-  Receipt,
   LogOut,
   ClipboardList,
   GraduationCap,
@@ -31,7 +30,6 @@ const PROFILE_MENU_ITEMS = [
   { label: "컨설팅 내역", href: "/profile/consulting", icon: FileText },
   { label: "목표 대학 수정", href: "/profile/target", icon: GraduationCap },
   { label: "내 정보 수정", href: "/profile/settings", icon: UserCog },
-  { label: "구매 내역", href: "/profile/orders", icon: Receipt },
 ] as const;
 
 export const Header = () => {

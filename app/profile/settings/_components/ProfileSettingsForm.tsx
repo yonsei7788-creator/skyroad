@@ -107,6 +107,7 @@ export const ProfileSettingsForm = ({
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [profile, setProfile] = useState<ProfileData>(initialProfile);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<ToastData | null>(null);
 
   // School search modal
@@ -205,6 +206,12 @@ export const ProfileSettingsForm = ({
       highSchoolName: school.name,
       highSchoolType: school.type,
     }));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.highSchoolName;
+      delete next.highSchoolType;
+      return next;
+    });
     handleCloseSchoolModal();
   };
 
@@ -214,6 +221,11 @@ export const ProfileSettingsForm = ({
       highSchoolName: schoolQuery,
       highSchoolType: "",
     }));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.highSchoolName;
+      return next;
+    });
     handleCloseSchoolModal();
   };
 
@@ -228,10 +240,42 @@ export const ProfileSettingsForm = ({
     value: string | number | null
   ) => {
     setProfile((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
+
+  const validateAcademic = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!profile.highSchoolName?.trim()) {
+      newErrors.highSchoolName = "고등학교를 선택해주세요.";
+    }
+    if (!profile.highSchoolType) {
+      newErrors.highSchoolType = "학교 유형을 선택해주세요.";
+    }
+    if (!profile.admissionYear) {
+      newErrors.admissionYear = "입학년도를 선택해주세요.";
+    }
+    if (!profile.grade) {
+      newErrors.grade = "학년을 선택해주세요.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (activeTab === "academic" && !validateAcademic()) {
+      return;
+    }
+
     setIsLoading(true);
 
     const supabase = createClient();
@@ -388,12 +432,13 @@ export const ProfileSettingsForm = ({
                   <label htmlFor="school" className={styles.label}>
                     <School size={14} className={styles.labelIcon} />
                     고등학교
+                    <span className={styles.required}>*</span>
                   </label>
                   <div className={styles.schoolInputRow}>
                     <input
                       id="school"
                       type="text"
-                      className={styles.inputDisabled}
+                      className={`${styles.inputDisabled} ${errors.highSchoolName ? styles.inputError : ""}`}
                       value={profile.highSchoolName || ""}
                       placeholder="학교를 검색해주세요"
                       disabled
@@ -407,11 +452,18 @@ export const ProfileSettingsForm = ({
                       검색
                     </button>
                   </div>
-                  {profile.highSchoolName && (
-                    <span className={styles.fieldSuccess}>
-                      <Check size={12} />
-                      {profile.highSchoolName} 선택됨
+                  {errors.highSchoolName ? (
+                    <span className={styles.fieldError}>
+                      <AlertCircle size={12} />
+                      {errors.highSchoolName}
                     </span>
+                  ) : (
+                    profile.highSchoolName && (
+                      <span className={styles.fieldSuccess}>
+                        <Check size={12} />
+                        {profile.highSchoolName} 선택됨
+                      </span>
+                    )
                   )}
                 </div>
 
@@ -419,10 +471,11 @@ export const ProfileSettingsForm = ({
                   <label htmlFor="schoolType" className={styles.label}>
                     <School size={14} className={styles.labelIcon} />
                     학교 유형
+                    <span className={styles.required}>*</span>
                   </label>
                   <select
                     id="schoolType"
-                    className={styles.select}
+                    className={`${styles.select} ${errors.highSchoolType ? styles.inputError : ""}`}
                     value={profile.highSchoolType}
                     onChange={(e) =>
                       handleChange("highSchoolType", e.target.value)
@@ -435,6 +488,12 @@ export const ProfileSettingsForm = ({
                       </option>
                     ))}
                   </select>
+                  {errors.highSchoolType && (
+                    <span className={styles.fieldError}>
+                      <AlertCircle size={12} />
+                      {errors.highSchoolType}
+                    </span>
+                  )}
                 </div>
 
                 <div className={styles.fieldRow}>
@@ -442,10 +501,11 @@ export const ProfileSettingsForm = ({
                     <label htmlFor="admissionYear" className={styles.label}>
                       <CalendarDays size={14} className={styles.labelIcon} />
                       입학년도
+                      <span className={styles.required}>*</span>
                     </label>
                     <select
                       id="admissionYear"
-                      className={styles.select}
+                      className={`${styles.select} ${errors.admissionYear ? styles.inputError : ""}`}
                       value={profile.admissionYear ?? ""}
                       onChange={(e) =>
                         handleChange(
@@ -461,16 +521,23 @@ export const ProfileSettingsForm = ({
                         </option>
                       ))}
                     </select>
+                    {errors.admissionYear && (
+                      <span className={styles.fieldError}>
+                        <AlertCircle size={12} />
+                        {errors.admissionYear}
+                      </span>
+                    )}
                   </div>
 
                   <div className={styles.field}>
                     <label htmlFor="grade" className={styles.label}>
                       <GraduationCap size={14} className={styles.labelIcon} />
                       학년
+                      <span className={styles.required}>*</span>
                     </label>
                     <select
                       id="grade"
-                      className={styles.select}
+                      className={`${styles.select} ${errors.grade ? styles.inputError : ""}`}
                       value={profile.grade}
                       onChange={(e) => handleChange("grade", e.target.value)}
                     >
@@ -481,6 +548,12 @@ export const ProfileSettingsForm = ({
                         </option>
                       ))}
                     </select>
+                    {errors.grade && (
+                      <span className={styles.fieldError}>
+                        <AlertCircle size={12} />
+                        {errors.grade}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
