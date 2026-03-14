@@ -81,6 +81,9 @@ export const buildTaskQueue = (
   // Group 6
   tasks.push("majorExploration");
 
+  // Group 7: 전임 컨설턴트 총평 (모든 분석 결과 종합)
+  tasks.push("consultantReview");
+
   return tasks;
 };
 

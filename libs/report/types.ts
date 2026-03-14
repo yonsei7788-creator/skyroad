@@ -4,14 +4,14 @@
 // 기반 문서: specs/report-ai-spec.md, 바이브온 벤치마크 분석
 // 구조: 3파트 + 부록
 //
-// Lite (10): studentProfile, competencyScore,
+// Lite (11): studentProfile, competencyScore,
 //   academicAnalysis, courseAlignment, attendanceAnalysis,
 //   activityAnalysis, subjectAnalysis, behaviorAnalysis,
-//   interviewPrep, majorExploration
+//   interviewPrep, majorExploration, consultantReview
 //
-// Standard (12): + admissionPrediction, topicRecommendation
+// Standard (13): + admissionPrediction, topicRecommendation
 //
-// Premium (16): + weaknessAnalysis, admissionStrategy,
+// Premium (17): + weaknessAnalysis, admissionStrategy,
 //   storyAnalysis, actionRoadmap
 //
 // + 조건부 directionGuide (고1 전용, admissionStrategy 대체)
@@ -1206,6 +1206,24 @@ export interface MajorExplorationSection extends BaseSection {
 }
 
 // ============================================================
+// 전임 컨설턴트 총평 (consultantReview)
+// ============================================================
+
+export interface ConsultantReviewSection extends BaseSection {
+  sectionId: "consultantReview";
+  /** 성적 구조 분석 (수강자수, 표준편차, 등급 편차 등) */
+  gradeAnalysis: string;
+  /** 전공 관련 교과 이수 노력 + 성취도 평가 */
+  courseEffort: string;
+  /** 교과/학종/정시 전형 전략 방향 */
+  admissionStrategy: string;
+  /** 생기부 마무리/보완 방향 (Lite에서는 생략 가능) */
+  completionDirection?: string;
+  /** 종합 한줄 조언 */
+  finalAdvice: string;
+}
+
+// ============================================================
 // 섹션 유니온 타입
 // ============================================================
 
@@ -1230,6 +1248,8 @@ export type ReportSection =
   | DirectionGuideSection
   | StoryAnalysisSection
   | ActionRoadmapSection
+  // 전임 컨설턴트 총평
+  | ConsultantReviewSection
   // 부록
   | MajorExplorationSection;
 
@@ -1250,6 +1270,8 @@ type LiteSectionId =
   | "behaviorAnalysis"
   // Part 3: 전략
   | "interviewPrep"
+  // 전임 컨설턴트 총평
+  | "consultantReview"
   // 부록
   | "majorExploration";
 
@@ -1297,6 +1319,13 @@ export interface StudentInfo {
     | "마이스터고";
   targetUniversity?: string;
   targetDepartment?: string;
+  /** 유저가 설정한 1~3지망 희망대학 목록 */
+  targetUniversities?: {
+    priority: number;
+    universityName: string;
+    admissionType: string;
+    department: string;
+  }[];
   hasMockExamData: boolean;
 }
 
@@ -1341,6 +1370,8 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     "interviewPrep",
     // 부록
     "majorExploration",
+    // 전임 컨설턴트 총평
+    "consultantReview",
   ],
   standard: [
     // Part 1: 진단
@@ -1359,6 +1390,8 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     "interviewPrep",
     // 부록
     "majorExploration",
+    // 전임 컨설턴트 총평
+    "consultantReview",
   ],
   premium: [
     // Part 1: 진단
@@ -1381,5 +1414,7 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     "actionRoadmap",
     // 부록
     "majorExploration",
+    // 전임 컨설턴트 총평
+    "consultantReview",
   ],
 };

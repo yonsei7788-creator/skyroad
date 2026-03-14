@@ -1085,6 +1085,18 @@ export const MajorExplorationSectionSchema = z.object({
   suggestions: z.array(MajorSuggestionSchema).min(3),
 });
 
+// ─── 전임 컨설턴트 총평 ───
+
+export const ConsultantReviewSectionSchema = z.object({
+  sectionId: z.literal("consultantReview"),
+  title: z.string().min(1),
+  gradeAnalysis: z.string().min(1),
+  courseEffort: z.string().min(1),
+  admissionStrategy: z.string().min(1),
+  completionDirection: z.string().optional(),
+  finalAdvice: z.string().min(1),
+});
+
 // ============================================================
 // 전체 리포트 콘텐츠 스키마
 // ============================================================
@@ -1137,6 +1149,7 @@ export const ReportSectionSchema = z.discriminatedUnion("sectionId", [
   StoryAnalysisSectionSchema,
   ActionRoadmapSectionSchema,
   MajorExplorationSectionSchema,
+  ConsultantReviewSectionSchema,
 ]);
 
 export const ReportContentSchema = z.object({

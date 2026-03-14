@@ -38,6 +38,7 @@ import {
 import { buildStoryAnalysisPrompt } from "../prompts/sections/story-analysis.ts";
 import { buildActionRoadmapPrompt } from "../prompts/sections/action-roadmap.ts";
 import { buildMajorExplorationPrompt } from "../prompts/sections/major-exploration.ts";
+import { buildConsultantReviewPrompt } from "../prompts/sections/consultant-review.ts";
 
 import type { GeminiClient } from "./gemini-client.ts";
 import { preprocess } from "./preprocessor.ts";
@@ -364,6 +365,7 @@ export const executeTask = async (
             attendanceAnalysisResult: ser.attendSectionText!,
             basePassRates: texts.basePassRatesText,
             majorEvaluationContext: texts.majorEvaluationContextText,
+            targetUniversities: texts.targetUniversitiesText,
           },
           plan
         )
@@ -442,6 +444,22 @@ export const executeTask = async (
             competencyExtraction: ser.compExtrText!,
             academicAnalysis: ser.acadAnalText!,
             studentProfile: texts.studentProfileText,
+          },
+          plan
+        )
+      );
+      break;
+
+    case "consultantReview":
+      section = await callGemini<ReportSection>(
+        buildConsultantReviewPrompt(
+          {
+            competencyExtraction: ser.compExtrText!,
+            academicAnalysis: ser.acadAnalText!,
+            studentProfile: texts.studentProfileText,
+            subjectAnalysisResult: ser.subjAnalysisText!,
+            admissionPredictionResult: ser.admPredText,
+            weaknessAnalysisResult: ser.weaknessText,
           },
           plan
         )

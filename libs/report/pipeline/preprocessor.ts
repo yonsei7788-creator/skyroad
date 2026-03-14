@@ -223,6 +223,8 @@ export interface PreprocessedTexts {
   recordVolumeText: string;
   universityCandidatesText: string;
   basePassRatesText: string;
+  /** 유저 설정 희망대학 텍스트 (없으면 빈 문자열) */
+  targetUniversitiesText: string;
   curriculumVersion: "2015" | "2022";
   /** 계열별 입학사정관 평가 기준 컨텍스트 */
   majorEvaluationContextText: string;
@@ -1048,6 +1050,11 @@ const buildTexts = (
     ? formatMajorEvaluationContext(majorCriteria, targetDept)
     : "";
 
+  // 유저 설정 희망대학 텍스트
+  const targetUniversitiesText = formatTargetUniversities(
+    studentInfo.targetUniversities
+  );
+
   return {
     studentProfileText,
     recordDataText,
@@ -1072,6 +1079,7 @@ const buildTexts = (
       2
     ),
     basePassRatesText: JSON.stringify(data.basePassRates, null, 2),
+    targetUniversitiesText,
     curriculumVersion: data.curriculumVersion,
     majorEvaluationContextText,
   };
@@ -1192,4 +1200,19 @@ const formatRawAcademicData = (
   }
 
   return lines.join("\n");
+};
+
+const formatTargetUniversities = (
+  targetUniversities?: StudentInfo["targetUniversities"]
+): string => {
+  if (!targetUniversities || targetUniversities.length === 0) {
+    return "";
+  }
+
+  const lines = targetUniversities.map(
+    (t) =>
+      `- ${t.priority}지망: ${t.universityName} ${t.department} (${t.admissionType})`
+  );
+
+  return `## 유저 설정 희망대학\n${lines.join("\n")}`;
 };
