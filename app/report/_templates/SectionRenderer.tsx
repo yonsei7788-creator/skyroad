@@ -9,6 +9,7 @@ import {
   AttendanceAnalysisRenderer,
   BehaviorAnalysisRenderer,
   CompetencyScoreRenderer,
+  ConsultantReviewRenderer,
   CourseAlignmentRenderer,
   DirectionGuideRenderer,
   InterviewPrepRenderer,
@@ -136,6 +137,16 @@ export const SectionRenderer = ({
     case "actionRoadmap":
       return (
         <ActionRoadmapRenderer
+          data={section}
+          sectionNumber={sectionNumber}
+          plan={plan}
+        />
+      );
+
+    // 전임 컨설턴트 총평
+    case "consultantReview":
+      return (
+        <ConsultantReviewRenderer
           data={section}
           sectionNumber={sectionNumber}
           plan={plan}

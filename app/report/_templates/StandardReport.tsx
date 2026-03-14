@@ -55,6 +55,13 @@ const PART_CONFIG = [
     color: "#4f83f3",
     sectionIds: ["majorExploration"],
   },
+  {
+    partNumber: "총평",
+    title: "전임 컨설턴트 총평",
+    description: "종합 평가 및 전략 방향",
+    color: "#2563eb",
+    sectionIds: ["consultantReview"],
+  },
 ];
 
 export const StandardReport = ({ data }: StandardReportProps) => {

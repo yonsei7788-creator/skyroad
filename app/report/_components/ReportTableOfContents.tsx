@@ -48,6 +48,11 @@ const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
       partTitle: "부록",
       sectionIds: ["majorExploration"],
     },
+    {
+      partNumber: "총평",
+      partTitle: "전임 컨설턴트 총평",
+      sectionIds: ["consultantReview"],
+    },
   ],
   standard: [
     {
@@ -76,6 +81,11 @@ const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
       partNumber: "부록",
       partTitle: "부록",
       sectionIds: ["majorExploration"],
+    },
+    {
+      partNumber: "총평",
+      partTitle: "전임 컨설턴트 총평",
+      sectionIds: ["consultantReview"],
     },
   ],
   premium: [
@@ -112,6 +122,11 @@ const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
       partNumber: "부록",
       partTitle: "부록",
       sectionIds: ["majorExploration"],
+    },
+    {
+      partNumber: "총평",
+      partTitle: "전임 컨설턴트 총평",
+      sectionIds: ["consultantReview"],
     },
   ],
 };

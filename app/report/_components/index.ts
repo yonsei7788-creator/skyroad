@@ -38,5 +38,8 @@ export { DirectionGuideRenderer } from "./DirectionGuideRenderer";
 export { StoryAnalysisRenderer } from "./StoryAnalysisRenderer";
 export { ActionRoadmapRenderer } from "./ActionRoadmapRenderer";
 
+// Section renderers -- 전임 컨설턴트 총평
+export { ConsultantReviewRenderer } from "./ConsultantReviewRenderer";
+
 // Section renderers -- 부록
 export { MajorExplorationRenderer } from "./MajorExplorationRenderer";
