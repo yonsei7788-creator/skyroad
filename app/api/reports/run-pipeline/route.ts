@@ -68,6 +68,7 @@ const TASK_DEPS: Record<string, string[]> = {
   ],
   admissionStrategy: ["admissionPrediction", "academicAnalysis"],
   actionRoadmap: ["weaknessAnalysis", "admissionStrategy", "directionGuide"],
+  consultantReview: ["competencyScore", "academicAnalysis", "subjectAnalysis"],
 };
 
 const PARALLEL_CONCURRENCY = 3;
@@ -455,6 +456,12 @@ export const POST = async (request: NextRequest) => {
 
   const targetUni = targetUnis?.[0];
 
+  const { data: mockExamsPipeline } = await dbClient
+    .from("record_mock_exams")
+    .select("id")
+    .eq("record_id", recordId)
+    .limit(1);
+
   const studentInfo: StudentInfo = {
     name: profiles.name ?? "학생",
     grade: GRADE_MAP[profiles.grade] ?? 2,
@@ -463,7 +470,16 @@ export const POST = async (request: NextRequest) => {
       (profiles.high_school_type as StudentInfo["schoolType"]) ?? "일반고",
     targetUniversity: targetUni?.university_name,
     targetDepartment: targetUni?.department,
-    hasMockExamData: false,
+    targetUniversities:
+      targetUnis && targetUnis.length > 0
+        ? targetUnis.map((u) => ({
+            priority: u.priority,
+            universityName: u.university_name,
+            admissionType: u.admission_type ?? "학종",
+            department: u.department,
+          }))
+        : undefined,
+    hasMockExamData: (mockExamsPipeline?.length ?? 0) > 0,
   };
 
   // Gemini 클라이언트

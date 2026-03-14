@@ -129,11 +129,17 @@ export const POST = async (request: NextRequest) => {
 
       const { data: targetUnis } = await supabase
         .from("target_universities")
-        .select("university_name, department")
+        .select("university_name, admission_type, department, priority")
         .eq("user_id", order.user_id)
         .order("priority", { ascending: true });
 
       const targetUni = targetUnis?.[0];
+
+      const { data: mockExamsCheck } = await supabase
+        .from("record_mock_exams")
+        .select("id")
+        .eq("record_id", order.record_id as string)
+        .limit(1);
 
       const studentInfo: StudentInfo = {
         name: profiles.name ?? "학생",
@@ -143,7 +149,16 @@ export const POST = async (request: NextRequest) => {
           (profiles.high_school_type as StudentInfo["schoolType"]) ?? "일반고",
         targetUniversity: targetUni?.university_name,
         targetDepartment: targetUni?.department,
-        hasMockExamData: false,
+        targetUniversities:
+          targetUnis && targetUnis.length > 0
+            ? targetUnis.map((u) => ({
+                priority: u.priority,
+                universityName: u.university_name,
+                admissionType: u.admission_type ?? "학종",
+                department: u.department,
+              }))
+            : undefined,
+        hasMockExamData: (mockExamsCheck?.length ?? 0) > 0,
       };
 
       return NextResponse.json({
@@ -255,6 +270,12 @@ export const POST = async (request: NextRequest) => {
 
   const targetUni = targetUnis?.[0];
 
+  const { data: mockExamsMain } = await dbClient
+    .from("record_mock_exams")
+    .select("id")
+    .eq("record_id", recordId)
+    .limit(1);
+
   const studentInfo: StudentInfo = {
     name: profiles.name ?? "학생",
     grade: GRADE_MAP[profiles.grade] ?? 2,
@@ -263,7 +284,16 @@ export const POST = async (request: NextRequest) => {
       (profiles.high_school_type as StudentInfo["schoolType"]) ?? "일반고",
     targetUniversity: targetUni?.university_name,
     targetDepartment: targetUni?.department,
-    hasMockExamData: false,
+    targetUniversities:
+      targetUnis && targetUnis.length > 0
+        ? targetUnis.map((u) => ({
+            priority: u.priority,
+            universityName: u.university_name,
+            admissionType: u.admission_type ?? "학종",
+            department: u.department,
+          }))
+        : undefined,
+    hasMockExamData: (mockExamsMain?.length ?? 0) > 0,
   };
 
   // 7. 전처리 실행 (Gemini 호출 없음 — 빠름)

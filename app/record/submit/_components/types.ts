@@ -138,6 +138,18 @@ export interface BehavioralAssessmentRow {
   assessment: string;
 }
 
+/** 모의고사 성적 */
+export interface MockExamRow {
+  id: string;
+  year: number;
+  month: number;
+  subject: string;
+  score: number | null;
+  gradeRank: number | null;
+  percentile: number | null;
+  standardScore: number | null;
+}
+
 // ============================================
 // 통합 생기부 데이터 구조
 // ============================================
@@ -154,6 +166,7 @@ export interface SchoolRecord {
   subjectEvaluations: SubjectEvaluationRow[];
   readingActivities: ReadingActivityRow[];
   behavioralAssessments: BehavioralAssessmentRow[];
+  mockExams: MockExamRow[];
 }
 
 // ============================================
@@ -171,7 +184,8 @@ export type RecordSectionTab =
   | "readingActivities"
   | "behavioralAssessments"
   | "certifications"
-  | "volunteerActivities";
+  | "volunteerActivities"
+  | "mockExams";
 
 export interface SectionTabConfig {
   key: RecordSectionTab;
@@ -211,6 +225,7 @@ export const SECTION_TABS: SectionTabConfig[] = [
     label: "봉사활동",
     shortLabel: "봉사",
   },
+  { key: "mockExams", label: "모의고사 성적", shortLabel: "모의고사" },
 ];
 
 // ============================================
@@ -252,6 +267,7 @@ export const createEmptySchoolRecord = (): SchoolRecord => ({
   subjectEvaluations: [],
   readingActivities: [],
   behavioralAssessments: [],
+  mockExams: [],
 });
 
 export const INITIAL_WIZARD_STATE: WizardState = {
@@ -384,6 +400,17 @@ export const createEmptyBehavioralAssessmentRow =
     year: 1,
     assessment: "",
   });
+
+export const createEmptyMockExamRow = (): MockExamRow => ({
+  id: crypto.randomUUID(),
+  year: 1,
+  month: 6,
+  subject: "",
+  score: null,
+  gradeRank: null,
+  percentile: null,
+  standardScore: null,
+});
 
 // ============================================
 // 필수 입력 검증 (AI 파이프라인 필수 데이터)
