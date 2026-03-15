@@ -18,12 +18,14 @@ const TYPE_LABEL: Record<string, string> = {
   학종: "학생부종합전형",
   교과: "학생부교과전형",
   정시: "수능(정시)전형",
+  고른기회: "고른기회전형",
 };
 
 const FULL_TYPE_NAME: Record<string, string> = {
   학종: "학생부종합전형",
   교과: "학생부교과전형",
   정시: "수능(정시)전형",
+  고른기회: "고른기회전형",
 };
 
 export const AdmissionPredictionRenderer = ({
