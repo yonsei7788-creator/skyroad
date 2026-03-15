@@ -1026,14 +1026,14 @@
 .ratingGood {
   composes: ratingBadge;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   border: 1px solid #e2e8f0;
 }
 
 .ratingAverage {
   composes: ratingBadge;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   border: 1px solid #e2e8f0;
 }
 
@@ -1059,21 +1059,21 @@
 .strategyReach {
   composes: strategyBadge;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   white-space: nowrap;
 }
 
 .strategyMatch {
   composes: strategyBadge;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   white-space: nowrap;
 }
 
 .strategySafety {
   composes: strategyBadge;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   white-space: nowrap;
 }
 
@@ -1108,7 +1108,7 @@
 .chanceMedium {
   composes: chanceBadge;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   white-space: nowrap;
 }
 
@@ -1142,13 +1142,13 @@
 .categorySubject {
   composes: categoryTag;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
 }
 
 .categoryActivity {
   composes: categoryTag;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
 }
 
 /* ============================================
@@ -1177,7 +1177,7 @@
   height: 24px;
   border-radius: 50%;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   font-size: var(--report-fs-caption);
   font-weight: 700;
   margin-bottom: var(--report-space-sm);
@@ -1206,7 +1206,7 @@
   padding: 2px 10px;
   border-radius: 50px;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   font-size: var(--report-fs-overline);
   font-weight: 600;
   margin-top: var(--report-space-sm);
@@ -1277,7 +1277,7 @@
 .tagAccent {
   composes: tag;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   border-color: #e2e8f0;
 }
 
@@ -1298,14 +1298,14 @@
 .tagTrendUp {
   composes: tag;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   border-color: #e2e8f0;
 }
 
 .tagTrendDown {
   composes: tag;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   border-color: #e2e8f0;
 }
 
@@ -1386,7 +1386,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: #334155;
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -1400,7 +1400,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #94a3b8;
+  color: #334155;
   margin-bottom: 6px;
 }
 
@@ -1761,6 +1761,23 @@
   text-overflow: ellipsis;
 }
 
+.tocUpgrade {
+  background: linear-gradient(180deg, transparent 50%, #fde68a 50%);
+  padding: 0 2px;
+}
+
+.tocUpgradeNote {
+  display: block;
+  font-size: var(--report-fs-caption);
+  color: var(--report-caution);
+  font-weight: 500;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: var(--report-caution-light);
+  border-radius: 4px;
+  border-left: 3px solid var(--report-caution-border);
+}
+
 .tocDots {
   flex: 1;
   border-bottom: 1px dotted var(--report-border-strong);
@@ -2021,7 +2038,7 @@
   height: 32px;
   border-radius: 50%;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   border: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
@@ -2043,7 +2060,7 @@
   padding: 2px 10px;
   border-radius: 4px;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   font-size: var(--report-fs-caption);
   font-weight: 600;
   margin-bottom: 12px;
@@ -2604,7 +2621,7 @@
   font-size: var(--report-fs-small);
   font-weight: 600;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   border: 1px solid #e2e8f0;
 }
 
@@ -3223,7 +3240,7 @@
   font-size: var(--report-fs-overline);
   font-weight: 600;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   border: 1px solid #e2e8f0;
 }
 
@@ -3352,7 +3369,7 @@
   height: 22px;
   border-radius: 50%;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   font-size: var(--report-fs-caption);
   font-weight: 700;
   margin-top: 2px;
@@ -3542,7 +3559,7 @@
   height: 28px;
   border-radius: 50%;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   font-size: 0.875rem;
   font-weight: 700;
   border: 1px solid #e2e8f0;
@@ -4008,7 +4025,7 @@
   padding: 3px 12px;
   border-radius: 50px;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   font-size: var(--report-fs-caption);
   font-weight: 600;
   white-space: nowrap;
@@ -4317,7 +4334,7 @@
   padding: 2px 8px;
   border-radius: 100px;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   white-space: nowrap;
   flex-shrink: 0;
   border: 1px solid #e2e8f0;
@@ -4381,13 +4398,13 @@
 .ceGradeA {
   composes: ceGradeBadge;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
 }
 
 .ceGradeB {
   composes: ceGradeBadge;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
 }
 
 .ceGradeC {
@@ -4472,7 +4489,7 @@
 .gradeComment {
   font-size: 11px;
   line-height: 1.6;
-  color: #475569;
+  color: #1e293b;
   margin: 0;
 }
 
@@ -4480,7 +4497,7 @@
 .ratingRationale {
   font-size: var(--report-fs-small);
   line-height: 1.7;
-  color: #475569;
+  color: #1e293b;
   margin: 6px 0 0;
   padding: 8px 12px;
   background: #f8fafc;

@@ -130,12 +130,30 @@ const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
   ],
 };
 
+/** 플랜별 포함 섹션 (빠른 조회용) */
+const PLAN_SECTION_SET: Record<string, Set<string>> = {
+  lite: new Set(PART_DEFINITIONS.lite.flatMap((p) => p.sectionIds)),
+  standard: new Set(PART_DEFINITIONS.standard.flatMap((p) => p.sectionIds)),
+  premium: new Set(PART_DEFINITIONS.premium.flatMap((p) => p.sectionIds)),
+};
+
+/** 하위 플랜 매핑: 현재 플랜 대비 바로 아래 플랜 */
+const LOWER_PLAN: Record<string, string | null> = {
+  lite: null,
+  standard: "lite",
+  premium: "standard",
+};
+
 export const ReportTableOfContents = ({
   sections,
   plan = "lite",
   studentName,
 }: ReportTableOfContentsProps) => {
+  // 현재 플랜의 목차만 표시, 하위 플랜에 없고 현재 플랜에서 새로 추가된 섹션을 형광펜 표시
   const parts = PART_DEFINITIONS[plan] ?? PART_DEFINITIONS.lite;
+  const currentPlanSections = PLAN_SECTION_SET[plan] ?? PLAN_SECTION_SET.lite;
+  const lowerPlan = LOWER_PLAN[plan];
+  const lowerPlanSections = lowerPlan ? PLAN_SECTION_SET[lowerPlan] : null;
   const isCompact = plan === "standard" || plan === "premium";
 
   const sectionMap = new Map<string, ReportSection>(
@@ -153,13 +171,31 @@ export const ReportTableOfContents = ({
           const section = sectionMap.get(id);
           if (!section) return null;
           globalIndex++;
-          return { section, num: globalIndex };
+          // 현재 플랜에 있지만 하위 플랜에는 없는 섹션 = 이 플랜에서 새로 추가된 항목
+          const isUpgrade = lowerPlanSections
+            ? currentPlanSections.has(id) && !lowerPlanSections.has(id)
+            : false;
+          return {
+            sectionId: id,
+            title: section.title,
+            num: globalIndex,
+            isUpgrade,
+          };
         })
-        .filter(Boolean) as { section: ReportSection; num: number }[];
+        .filter(Boolean) as {
+        sectionId: string;
+        title: string;
+        num: number;
+        isUpgrade: boolean;
+      }[];
 
       return { ...part, resolvedSections: partSections };
     })
     .filter((p) => p.resolvedSections.length > 0);
+
+  const hasUpgrades = resolvedParts.some((p) =>
+    p.resolvedSections.some((s) => s.isUpgrade)
+  );
 
   return (
     <div
@@ -177,7 +213,7 @@ export const ReportTableOfContents = ({
         <div className={styles.tocHeaderLine} />
       </div>
 
-      {/* Parts — 2-column grid for standard/premium */}
+      {/* Parts — 2-column grid */}
       <div
         className={`${styles.tocBody} ${isCompact ? styles.tocBodyGrid : ""}`}
       >
@@ -188,19 +224,32 @@ export const ReportTableOfContents = ({
               <span className={styles.tocPartTitle}>{part.partTitle}</span>
             </div>
             <div className={styles.tocItems}>
-              {part.resolvedSections.map(({ section, num }) => (
-                <div key={section.sectionId} className={styles.tocItem}>
-                  <span className={styles.tocNumber}>
-                    {String(num).padStart(2, "0")}
-                  </span>
-                  <span className={styles.tocTitle}>{section.title}</span>
-                  <span className={styles.tocDots} />
-                </div>
-              ))}
+              {part.resolvedSections.map(
+                ({ sectionId, title, num, isUpgrade }) => (
+                  <div key={sectionId} className={styles.tocItem}>
+                    <span className={styles.tocNumber}>
+                      {String(num).padStart(2, "0")}
+                    </span>
+                    <span
+                      className={`${styles.tocTitle} ${isUpgrade ? styles.tocUpgrade : ""}`}
+                    >
+                      {title}
+                    </span>
+                    <span className={styles.tocDots} />
+                  </div>
+                )
+              )}
             </div>
           </div>
         ))}
       </div>
+
+      {/* Upgrade note */}
+      {hasUpgrades && (
+        <span className={styles.tocUpgradeNote}>
+          형광 표시된 항목은 이 플랜에서 추가로 제공되는 분석입니다.
+        </span>
+      )}
 
       {/* Footer */}
       <div className={styles.tocFooter}>

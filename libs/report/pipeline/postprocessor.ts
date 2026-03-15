@@ -18,6 +18,7 @@ import type {
 } from "../types.ts";
 import type { PreprocessedData } from "./preprocessor.ts";
 import { matchMajorEvaluationCriteria } from "../constants/major-evaluation-criteria.ts";
+import { UNIVERSITY_ADMISSION_DATA } from "../constants/university-admission-data.ts";
 
 // ─── 검증 결과 타입 ───
 
@@ -176,7 +177,8 @@ export const postprocess = (
     }
   }
 
-  // 3-1. AI 생성 대학-학과가 후보군에 실제 존재하는지 검증 (존재하지 않는 학과 제거)
+  // 3-1. AI 생성 대학-학과가 실제 존재하는지 검증
+  // 후보군(candidateSet) + 전체 DB(dbSet) 모두 허용 — AI가 역량 분석 기반으로 후보군 외 대학 추천 가능
   const candidateSet = new Set(
     preprocessed.basePassRates.map((bp) => `${bp.university}|${bp.department}`)
   );
@@ -195,18 +197,31 @@ export const postprocess = (
     }
   }
 
-  // admissionPrediction: 후보군에 없는 대학 제거
+  // 전체 DB에 존재하는 대학-학과 셋 (후보군 외 AI 추천 검증용)
+  const dbUniversitySet = new Set(
+    UNIVERSITY_ADMISSION_DATA.map((e) => e.university)
+  );
+
+  // admissionPrediction: DB에도 없는 대학만 제거 (후보군 외 AI 추천은 허용)
   if (admPred && Array.isArray(admPred.predictions)) {
     for (const pred of admPred.predictions) {
       if (!Array.isArray(pred.universityPredictions)) continue;
       pred.universityPredictions = pred.universityPredictions.filter(
         (up: any) => {
           const exactKey = `${up.university}|${up.department}`;
-          // 대학-학과 정확 매칭 또는 최소한 대학이 후보군에 존재
+          // 후보군 정확 매칭
           if (candidateSet.has(exactKey)) return true;
+          // 후보군 대학명 매칭 (학과 다를 수 있음)
           if (candidateUniversities.has(up.university)) return true;
+          // 전체 DB에 대학이 존재하면 허용 (AI 역량 기반 추천)
+          if (dbUniversitySet.has(up.university)) {
+            console.log(
+              `[report:${reportId}] 후보군 외 AI 추천 대학 허용: ${up.university} ${up.department}`
+            );
+            return true;
+          }
           console.warn(
-            `[report:${reportId}] 후보군에 없는 대학-학과 제거: ${up.university} ${up.department}`
+            `[report:${reportId}] DB에 없는 대학-학과 제거: ${up.university} ${up.department}`
           );
           return false;
         }
@@ -214,14 +229,20 @@ export const postprocess = (
     }
   }
 
-  // admissionStrategy: 후보군에 없는 대학 제거
+  // admissionStrategy: DB에도 없는 대학만 제거
   if (admStrat && Array.isArray(admStrat.recommendations)) {
     admStrat.recommendations = admStrat.recommendations.filter((rec: any) => {
       const exactKey = `${rec.university}|${rec.department}`;
       if (candidateSet.has(exactKey)) return true;
       if (candidateUniversities.has(rec.university)) return true;
+      if (dbUniversitySet.has(rec.university)) {
+        console.log(
+          `[report:${reportId}] 후보군 외 AI 추천 대학 허용: ${rec.university} ${rec.department}`
+        );
+        return true;
+      }
       console.warn(
-        `[report:${reportId}] 후보군에 없는 추천 대학 제거: ${rec.university} ${rec.department}`
+        `[report:${reportId}] DB에 없는 추천 대학 제거: ${rec.university} ${rec.department}`
       );
       return false;
     });

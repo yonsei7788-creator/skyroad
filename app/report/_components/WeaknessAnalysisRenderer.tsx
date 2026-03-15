@@ -52,66 +52,72 @@ export const WeaknessAnalysisRenderer = ({
         <SectionHeader number={sectionNumber} title={data.title} />
 
         {plan !== "lite" && (
-          <table className={styles.compactTable}>
-            <thead>
-              <tr>
-                <th>영역</th>
-                {hasPriority && (
-                  <th className={styles.tableAlignCenter}>우선순위</th>
-                )}
-                {hasUrgency && (
-                  <>
-                    <th className={styles.tableAlignCenter}>시급도</th>
-                    <th className={styles.tableAlignCenter}>효과도</th>
-                  </>
-                )}
-                <th className={styles.tableAlignCenter}>활동 수</th>
-              </tr>
-            </thead>
-            <tbody>
-              {areas.map((area, idx) => (
-                <tr key={idx}>
-                  <td className={styles.tableCellBold}>{area.area}</td>
+          <>
+            <p className={`${styles.caption} ${styles.mb6}`}>
+              아래 표는 부족한 영역별 보완 우선순위와 추천 활동 수를 요약한
+              것입니다. 우선순위가 높을수록 먼저 보완하면 효과적입니다.
+            </p>
+            <table className={styles.compactTable}>
+              <thead>
+                <tr>
+                  <th>영역</th>
                   {hasPriority && (
-                    <td className={styles.tableAlignCenter}>
-                      {area.priority ? (
-                        <span className={styles.tag}>
-                          {PRIORITY_LABEL[area.priority]}
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
+                    <th className={styles.tableAlignCenter}>우선순위</th>
                   )}
                   {hasUrgency && (
                     <>
-                      <td className={styles.tableAlignCenter}>
-                        {area.urgency ? (
-                          <span className={styles.tag}>
-                            {PRIORITY_LABEL[area.urgency]}
-                          </span>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td className={styles.tableAlignCenter}>
-                        {area.effectiveness ? (
-                          <span className={styles.tag}>
-                            {PRIORITY_LABEL[area.effectiveness]}
-                          </span>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
+                      <th className={styles.tableAlignCenter}>시급도</th>
+                      <th className={styles.tableAlignCenter}>효과도</th>
                     </>
                   )}
-                  <td className={styles.tableAlignCenter}>
-                    {(area.suggestedActivities ?? []).length}개
-                  </td>
+                  <th className={styles.tableAlignCenter}>추천 활동</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {areas.map((area, idx) => (
+                  <tr key={idx}>
+                    <td className={styles.tableCellBold}>{area.area}</td>
+                    {hasPriority && (
+                      <td className={styles.tableAlignCenter}>
+                        {area.priority ? (
+                          <span className={styles.tag}>
+                            {PRIORITY_LABEL[area.priority]}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                    )}
+                    {hasUrgency && (
+                      <>
+                        <td className={styles.tableAlignCenter}>
+                          {area.urgency ? (
+                            <span className={styles.tag}>
+                              {PRIORITY_LABEL[area.urgency]}
+                            </span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className={styles.tableAlignCenter}>
+                          {area.effectiveness ? (
+                            <span className={styles.tag}>
+                              {PRIORITY_LABEL[area.effectiveness]}
+                            </span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                      </>
+                    )}
+                    <td className={styles.tableAlignCenter}>
+                      {(area.suggestedActivities ?? []).length}개
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
       </div>
 
