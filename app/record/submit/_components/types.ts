@@ -482,11 +482,11 @@ export const validateRequiredFields = (
   record: SchoolRecord
 ): ValidationError[] =>
   REQUIRED_FIELD_RULES.filter(
-    (rule) => record[rule.key].length < rule.minCount
+    (rule) => (record[rule.key] ?? []).length < rule.minCount
   ).map((rule) => ({
     key: rule.key,
     label: rule.label,
     message: rule.message,
-    current: record[rule.key].length,
+    current: (record[rule.key] ?? []).length,
     required: rule.minCount,
   }));

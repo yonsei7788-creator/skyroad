@@ -21,7 +21,7 @@ const TextReview = ({ record }: { record: SchoolRecord }) => {
   );
 
   const filledSections = SECTION_TABS.filter(
-    (tab) => record[tab.key].length > 0
+    (tab) => (record[tab.key] ?? []).length > 0
   );
 
   return (

@@ -371,10 +371,10 @@ export const AccordionStep = ({
 }: AccordionStepProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
-  const totalRows = step.sections.reduce(
-    (acc, s) => acc + (record[s.key] as unknown as unknown[]).length,
-    0
-  );
+  const totalRows = step.sections.reduce((acc, s) => {
+    const rows = record[s.key];
+    return acc + (Array.isArray(rows) ? rows.length : 0);
+  }, 0);
 
   const handleChange = (
     sectionKey: keyof SchoolRecord,

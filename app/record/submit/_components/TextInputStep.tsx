@@ -1061,7 +1061,7 @@ export const TextInputStep = ({
         </p>
         <ul className={styles.requiredChecklistItems}>
           {REQUIRED_FIELD_RULES.map((rule) => {
-            const count = record[rule.key].length;
+            const count = (record[rule.key] ?? []).length;
             const met = count >= rule.minCount;
             return (
               <li
