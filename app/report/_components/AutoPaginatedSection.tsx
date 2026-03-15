@@ -1,30 +1,30 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { ReportPage } from "./ReportPage";
 
 /**
- * Usable content height within an A4 page (FIXED at 297mm).
+ * A4 페이지 내 가용 콘텐츠 높이 (px).
  *
- * Calculation (at 96dpi, 1mm ≈ 3.78px):
- *   A4 height          = 297mm = 1122px
- *   .page padding-top  = 20mm  =   76px
- *   .page padding-bot  = 56px  (calc(32px + 24px))
- *   .pageHeader         ≈ 50px  (text + padding-bottom 12px + margin-bottom 24px)
- *   .pageFooter bottom  = 8mm   =   30px (absolute positioned)
+ * CSS 기준 (96dpi: 1mm ≈ 3.78px):
+ *   A4 height          = 297mm ≈ 1122px  (border-box)
+ *   .page padding-top  = 20mm  ≈   76px
+ *   .page padding-bot  = calc(32px + 24px) = 56px
+ *   Content box         = 1122 - 76 - 56 = 990px
+ *   .pageHeader         ≈ 58px
+ *   Available           = 990 - 58 = 932px
  *
- *   Available = 1122 - 76 - 56 - 50 = 940px → safety margin 40px → 900px
- *
- * ⚠️ 페이지 크기는 A4 고정. 컨텐츠가 넘치면 신규 페이지로 분리됨.
+ * ⚠️ 여유 마진 132px 적용 → 실측이 아닌 측정 기반이므로
+ *    미리보기-PDF 간 너비 차이에 의한 높이 편차를 충분히 흡수해야 함.
  */
-const AVAILABLE_HEIGHT_PX = 900;
-
-/**
- * 측정값과 실제 렌더링 간의 미세 차이를 보정하기 위한 안전 마진 (px).
- * 마지막 슬라이스의 높이에 이 값을 더해 콘텐츠 잘림을 방지합니다.
- */
-const LAST_SLICE_PADDING_PX = 40;
+const AVAILABLE_HEIGHT_PX = 800;
 
 interface AutoPaginatedSectionProps {
   children: ReactNode;
@@ -38,6 +38,114 @@ interface PageSlice {
   height: number;
 }
 
+interface BlockBound {
+  top: number;
+  height: number;
+}
+
+/**
+ * 재귀적으로 블록 경계를 수집한다.
+ * 직접 자식이 maxHeight보다 크면 그 자식의 하위 요소를
+ * 탐색하여 더 세밀한 분할 지점을 찾는다.
+ */
+const collectBlockBounds = (
+  element: HTMLElement,
+  containerTop: number,
+  maxHeight: number
+): BlockBound[] => {
+  const children = Array.from(element.children) as HTMLElement[];
+  if (children.length === 0) {
+    const rect = element.getBoundingClientRect();
+    const style = window.getComputedStyle(element);
+    const marginTop = parseFloat(style.marginTop) || 0;
+    const marginBottom = parseFloat(style.marginBottom) || 0;
+    return [
+      {
+        top: rect.top - containerTop - marginTop,
+        height: rect.height + marginTop + marginBottom,
+      },
+    ];
+  }
+
+  const bounds: BlockBound[] = [];
+
+  for (const child of children) {
+    const rect = child.getBoundingClientRect();
+    const style = window.getComputedStyle(child);
+    const marginTop = parseFloat(style.marginTop) || 0;
+    const marginBottom = parseFloat(style.marginBottom) || 0;
+    const top = rect.top - containerTop - marginTop;
+    const height = rect.height + marginTop + marginBottom;
+
+    if (height > maxHeight && child.children.length > 0) {
+      bounds.push(...collectBlockBounds(child, containerTop, maxHeight));
+    } else {
+      bounds.push({ top, height });
+    }
+  }
+
+  return bounds;
+};
+
+/**
+ * 블록 경계 목록을 페이지 슬라이스로 변환한다.
+ * 단일 블록이 여전히 페이지 높이를 초과하면 강제 분할한다.
+ */
+const buildPageSlices = (blockBounds: BlockBound[]): PageSlice[] => {
+  const pages: PageSlice[] = [];
+  let pageStart = 0;
+  let pageEnd = 0;
+
+  for (const block of blockBounds) {
+    const blockEnd = block.top + block.height;
+
+    // 단일 블록이 페이지 높이를 초과하는 경우 강제 분할
+    if (block.height > AVAILABLE_HEIGHT_PX) {
+      if (pageEnd > pageStart) {
+        pages.push({
+          offsetY: pageStart,
+          height: pageEnd - pageStart,
+        });
+      }
+
+      let cursor = block.top;
+      while (cursor < blockEnd) {
+        const remaining = blockEnd - cursor;
+        if (remaining <= AVAILABLE_HEIGHT_PX) {
+          pageStart = cursor;
+          pageEnd = blockEnd;
+          break;
+        }
+        pages.push({
+          offsetY: cursor,
+          height: AVAILABLE_HEIGHT_PX,
+        });
+        cursor += AVAILABLE_HEIGHT_PX;
+      }
+      continue;
+    }
+
+    if (blockEnd - pageStart > AVAILABLE_HEIGHT_PX && pageEnd > pageStart) {
+      pages.push({
+        offsetY: pageStart,
+        height: pageEnd - pageStart,
+      });
+      pageStart = block.top;
+    }
+    pageEnd = blockEnd;
+  }
+
+  // 마지막 페이지
+  if (pageEnd > pageStart) {
+    pages.push({
+      offsetY: pageStart,
+      height: pageEnd - pageStart,
+    });
+  }
+
+  return pages;
+};
+
 export const AutoPaginatedSection = ({
   children,
   sectionTitle,
@@ -48,67 +156,46 @@ export const AutoPaginatedSection = ({
   const [slices, setSlices] = useState<PageSlice[]>([]);
   const [measured, setMeasured] = useState(false);
 
-  useLayoutEffect(() => {
+  const computeSlices = useCallback(() => {
     const container = measureRef.current;
     if (!container) return;
 
     const contentHeight = container.scrollHeight;
 
     if (contentHeight <= AVAILABLE_HEIGHT_PX) {
-      // Single page - no splitting needed
       setSlices([{ offsetY: 0, height: contentHeight }]);
       setMeasured(true);
       return;
     }
 
-    // Find split points using direct children as block boundaries
-    const childElements = Array.from(container.children) as HTMLElement[];
     const containerTop = container.getBoundingClientRect().top;
 
-    const blockBounds = childElements.map((child) => {
-      const rect = child.getBoundingClientRect();
-      const style = window.getComputedStyle(child);
-      const marginTop = parseFloat(style.marginTop) || 0;
-      const marginBottom = parseFloat(style.marginBottom) || 0;
-      return {
-        top: rect.top - containerTop - marginTop,
-        height: rect.height + marginTop + marginBottom,
-      };
-    });
+    const blockBounds = collectBlockBounds(
+      container,
+      containerTop,
+      AVAILABLE_HEIGHT_PX
+    );
 
-    const pages: PageSlice[] = [];
-    let pageStart = 0;
-    let pageEnd = 0;
-
-    for (const block of blockBounds) {
-      const blockEnd = block.top + block.height;
-
-      if (blockEnd - pageStart > AVAILABLE_HEIGHT_PX && pageEnd > pageStart) {
-        // This block overflows - finalize current page
-        pages.push({
-          offsetY: pageStart,
-          height: pageEnd - pageStart,
-        });
-        pageStart = block.top;
-      }
-      pageEnd = blockEnd;
-    }
-
-    // Final page
-    if (pageEnd > pageStart) {
-      pages.push({
-        offsetY: pageStart,
-        height: pageEnd - pageStart,
-      });
-    }
+    const pages = buildPageSlices(blockBounds);
 
     setSlices(pages);
     setMeasured(true);
-  }, [children]);
+  }, []);
+
+  useLayoutEffect(() => {
+    // 폰트 로딩 완료 후 측정하여 높이 오차 방지
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(() => {
+        requestAnimationFrame(computeSlices);
+      });
+    } else {
+      computeSlices();
+    }
+  }, [children, computeSlices]);
 
   return (
     <>
-      {/* Hidden measurement container — matches .page content width */}
+      {/* Hidden measurement container — A4 content width 고정 */}
       <div
         ref={measureRef}
         aria-hidden
@@ -127,43 +214,36 @@ export const AutoPaginatedSection = ({
 
       {/* Paginated output */}
       {measured &&
-        slices.map((slice, i) => {
-          const isLastSlice = i === slices.length - 1;
-          // 마지막 슬라이스는 측정-렌더 차이로 인한 잘림 방지를 위해 여유 높이 추가
-          const sliceHeight = isLastSlice
-            ? slice.height + LAST_SLICE_PADDING_PX
-            : slice.height;
-          return (
-            <ReportPage
-              key={`${sectionTitle}-p${i}`}
-              pageNumber={startPageNumber > 0 ? startPageNumber + i : undefined}
-              sectionTitle={sectionTitle}
-              studentName={studentName}
+        slices.map((slice, i) => (
+          <ReportPage
+            key={`${sectionTitle}-p${i}`}
+            pageNumber={startPageNumber > 0 ? startPageNumber + i : undefined}
+            sectionTitle={sectionTitle}
+            studentName={studentName}
+          >
+            <div
+              style={{
+                height: `${slice.height}px`,
+                overflow: "hidden",
+                position: "relative",
+              }}
             >
               <div
                 style={{
-                  height: `${sliceHeight}px`,
-                  overflow: "hidden",
-                  position: "relative",
+                  position: "absolute",
+                  top: `-${slice.offsetY}px`,
+                  left: 0,
+                  width: "174mm", // 측정 컨테이너와 동일한 너비로 고정
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "20px",
                 }}
               >
-                <div
-                  style={{
-                    position: "absolute",
-                    top: `-${slice.offsetY}px`,
-                    left: 0,
-                    right: 0,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "20px",
-                  }}
-                >
-                  {children}
-                </div>
+                {children}
               </div>
-            </ReportPage>
-          );
-        })}
+            </div>
+          </ReportPage>
+        ))}
     </>
   );
 };

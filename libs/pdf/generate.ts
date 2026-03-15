@@ -44,15 +44,21 @@ const createOffscreenContainer = (source: HTMLElement): HTMLElement => {
     div.remove();
   }
 
-  // 복제된 [data-page] 요소들에 A4 높이 고정
+  // 복제된 [data-page] 요소들에 A4 사이즈 고정
   const pages = offscreen.querySelectorAll<HTMLElement>("[data-page]");
   for (const page of pages) {
     page.style.width = "210mm";
-    page.style.height = "297mm";
-    page.style.maxHeight = "297mm";
     page.style.minHeight = "297mm";
-    page.style.overflow = "hidden";
+    page.style.height = "297mm";
+    // ⚠️ maxHeight, overflow: hidden 제거 → 콘텐츠 잘림 방지
+    // AutoPaginatedSection의 slice overflow:hidden이 콘텐츠 경계를 처리하고,
+    // 페이지 레벨에서는 잘리지 않도록 함. 만약 슬라이스가 약간 초과해도
+    // html2canvas가 전체를 캡처한 뒤 A4에 맞춰 배치하므로 안전.
+    page.style.maxHeight = "none";
+    page.style.overflow = "visible";
     page.style.boxShadow = "none";
+    page.style.margin = "0";
+    page.style.borderRadius = "0";
   }
 
   return offscreen;
@@ -92,30 +98,31 @@ export const generatePdfFromElement = async (
     for (let i = 0; i < pages.length; i++) {
       await yieldToMain();
 
+      // offsetWidth/offsetHeight = 실제 렌더링 크기 (border-box)
+      // scrollHeight를 사용하면 overflow된 콘텐츠까지 포함되어
+      // 이미지가 A4보다 커질 수 있으므로 offset 기반 사용
+      const pageWidth = pages[i].offsetWidth;
+      const pageHeight = Math.max(pages[i].offsetHeight, pages[i].scrollHeight);
+
       const canvas = await html2canvas(pages[i], {
         scale: SCALE,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
+        width: pageWidth,
+        height: pageHeight,
       });
 
       // JPEG로 변환하여 Base64 크기 대폭 축소 (Invalid string length 방지)
       const imgData = canvas.toDataURL("image/jpeg", 0.92);
-      const imgWidth = A4_WIDTH_MM;
-      const imgHeight = (canvas.height * A4_WIDTH_MM) / canvas.width;
 
       if (!isFirstPage) {
         pdf.addPage();
       }
 
-      pdf.addImage(
-        imgData,
-        "JPEG",
-        0,
-        0,
-        imgWidth,
-        Math.min(imgHeight, A4_HEIGHT_MM)
-      );
+      // A4 전체에 맞춰 이미지 배치 (여백 없이)
+      // 만약 콘텐츠가 297mm를 약간 초과해도 A4에 맞춰지므로 안전
+      pdf.addImage(imgData, "JPEG", 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM);
       isFirstPage = false;
     }
 
