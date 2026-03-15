@@ -36,8 +36,15 @@ const createOffscreenContainer = (source: HTMLElement): HTMLElement => {
   clone.style.overflow = "visible";
   offscreen.appendChild(clone);
 
+  // AutoPaginatedSection의 hidden 측정 컨테이너 제거 (aria-hidden)
+  // 복제 시 측정용 div가 남아있으면 레이아웃이 깨짐
+  const hiddenMeasureDivs =
+    offscreen.querySelectorAll<HTMLElement>("[aria-hidden]");
+  for (const div of hiddenMeasureDivs) {
+    div.remove();
+  }
+
   // 복제된 [data-page] 요소들에 A4 높이 고정
-  // 페이지 크기는 무조건 A4 고정. 컨텐츠가 넘치면 AutoPaginatedSection이 분리 처리함.
   const pages = offscreen.querySelectorAll<HTMLElement>("[data-page]");
   for (const page of pages) {
     page.style.width = "210mm";
@@ -92,7 +99,8 @@ export const generatePdfFromElement = async (
         backgroundColor: "#ffffff",
       });
 
-      const imgData = canvas.toDataURL("image/png");
+      // JPEG로 변환하여 Base64 크기 대폭 축소 (Invalid string length 방지)
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
       const imgWidth = A4_WIDTH_MM;
       const imgHeight = (canvas.height * A4_WIDTH_MM) / canvas.width;
 
@@ -100,10 +108,9 @@ export const generatePdfFromElement = async (
         pdf.addPage();
       }
 
-      // A4 높이 이하로 강제 (max-height: 297mm 적용 + 소수점 오차 허용)
       pdf.addImage(
         imgData,
-        "PNG",
+        "JPEG",
         0,
         0,
         imgWidth,
