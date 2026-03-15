@@ -3,7 +3,7 @@ import { jsPDF } from "jspdf";
 
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
-const SCALE = 1.5;
+const SCALE = 2;
 
 /** 메인 스레드 양보 — UI 버벅임 방지 */
 const yieldToMain = () =>
@@ -36,11 +36,14 @@ const createOffscreenContainer = (source: HTMLElement): HTMLElement => {
   clone.style.overflow = "visible";
   offscreen.appendChild(clone);
 
-  // 복제된 [data-page] 요소들에 A4 높이 상한 강제
-  // min-height: 297mm 으로 인해 콘텐츠가 조금만 넘쳐도 A4를 초과하는 문제 방지
+  // 복제된 [data-page] 요소들에 A4 높이 고정
+  // 페이지 크기는 무조건 A4 고정. 컨텐츠가 넘치면 AutoPaginatedSection이 분리 처리함.
   const pages = offscreen.querySelectorAll<HTMLElement>("[data-page]");
   for (const page of pages) {
+    page.style.width = "210mm";
+    page.style.height = "297mm";
     page.style.maxHeight = "297mm";
+    page.style.minHeight = "297mm";
     page.style.overflow = "hidden";
     page.style.boxShadow = "none";
   }
@@ -89,7 +92,7 @@ export const generatePdfFromElement = async (
         backgroundColor: "#ffffff",
       });
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.85);
+      const imgData = canvas.toDataURL("image/png");
       const imgWidth = A4_WIDTH_MM;
       const imgHeight = (canvas.height * A4_WIDTH_MM) / canvas.width;
 
@@ -100,7 +103,7 @@ export const generatePdfFromElement = async (
       // A4 높이 이하로 강제 (max-height: 297mm 적용 + 소수점 오차 허용)
       pdf.addImage(
         imgData,
-        "JPEG",
+        "PNG",
         0,
         0,
         imgWidth,

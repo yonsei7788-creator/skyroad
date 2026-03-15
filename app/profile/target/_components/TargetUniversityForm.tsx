@@ -26,7 +26,7 @@ import styles from "../page.module.css";
 
 // ─── Types ───
 
-type UniversityPriority = 1 | 2 | 3;
+type UniversityPriority = 1 | 2 | 3 | 4 | 5 | 6;
 
 interface TargetUniversity {
   id?: string;
@@ -52,6 +52,7 @@ interface ToastData {
 const ADMISSION_TYPES = [
   "학생부종합",
   "학생부교과",
+  "고른기회",
   "논술",
   "실기/실적",
   "기타",
@@ -65,6 +66,9 @@ const PRIORITY_META: {
   { label: "1지망", sublabel: "최우선 목표", color: "primary" },
   { label: "2지망", sublabel: "차선 목표", color: "secondary" },
   { label: "3지망", sublabel: "안전 목표", color: "tertiary" },
+  { label: "4지망", sublabel: "추가 목표", color: "tertiary" },
+  { label: "5지망", sublabel: "추가 목표", color: "tertiary" },
+  { label: "6지망", sublabel: "추가 목표", color: "tertiary" },
 ];
 
 // ─── Helpers ───
@@ -256,7 +260,7 @@ export const TargetUniversityForm = ({
 
   const handleAddSlot = () => {
     const nextPriority = (targets.length + 1) as UniversityPriority;
-    if (nextPriority > 3) return;
+    if (nextPriority > 6) return;
     setTargets((prev) => [...prev, createEmptyTarget(nextPriority)]);
   };
 
@@ -569,7 +573,7 @@ export const TargetUniversityForm = ({
               );
             })}
 
-            {targets.length < 3 && (
+            {targets.length < 6 && (
               <button
                 type="button"
                 className={styles.addTargetBtn}

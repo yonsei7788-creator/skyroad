@@ -31,7 +31,7 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - BAD: "2학년 수학Ⅱ의 '미분을 활용한 태양광 발전 효율성 분석' 탐구와 연결됩니다."
 - GOOD: "2학년 수학Ⅱ에서 미분으로 태양광 발전 효율을 분석한 경험이 있으므로, 이를 인공지능 알고리즘 최적화로 확장하면 탐구의 일관성과 심화를 동시에 보여줄 수 있습니다."`,
   premium: `## 플랜별 출력: 정밀
-- Standard의 모든 항목 + activityDesign(구체적 탐구 설계: steps 3단계 이내/duration/expectedResult 1줄) + sampleEvaluation(세특 서술 예시, 3줄 이내) + importance(high/medium/low)
+- Standard의 모든 항목 + activityDesign(구체적 탐구 설계: steps 3단계 이내/expectedResult 1줄, ⚠️ duration 필드는 출력하지 마세요) + sampleEvaluation(세특 서술 예시, 3줄 이내) + importance(high/medium/low)
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - topics 배열은 **최대 5개**입니다. 6개 이상 절대 출력하지 마세요.
@@ -64,7 +64,6 @@ export const buildTopicRecommendationPrompt = (
       "existingConnection": "2학년 사회·문화에서 복지 문제를 다룬 것과 연결...",
       "activityDesign": {
         "steps": ["1단계: 지자체별 복지 예산 데이터 수집", "2단계: 정책 효과 비교 기준 설정", "3단계: 분석 및 보고서 작성"],
-        "duration": "4주 (예상)",
         "expectedResult": "지역별 복지 정책 비교 분석 보고서"
       },
       "sampleEvaluation": "지역 복지 정책의 효과성에 관심을 갖고..."

@@ -121,34 +121,38 @@ export const AdmissionStrategyRenderer = ({
         </div>
       )}
 
-      {/* Block 3: Chance rationale */}
+      {/* Block 3: Chance rationale — 대학별로 개별 블록 (페이지 분리 지원) */}
       {(data.recommendations ?? []).some((r) => r.chanceRationale) && (
         <div>
           <div className={`${styles.h3} ${styles.mb12}`}>
             대학별 합격 가능성 분석
           </div>
-          <table className={styles.compactTable}>
-            <thead>
-              <tr>
-                <th>대학 · 학과</th>
-                <th>분석</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(data.recommendations ?? [])
-                .filter((r) => r.chanceRationale)
-                .map((rec, idx) => (
-                  <tr key={idx}>
-                    <td className={styles.tableCellBold}>
-                      {rec.university} {rec.department}
-                    </td>
-                    <td className={styles.small}>{rec.chanceRationale}</td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
         </div>
       )}
+      {(data.recommendations ?? [])
+        .filter((r) => r.chanceRationale)
+        .map((rec, idx) => (
+          <div key={`rationale-${idx}`} className={styles.card}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardTitle}>
+                {rec.university} {rec.department}
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                <ReportBadge strategy={rec.tier} />
+                {rec.chance && <ReportBadge chance={rec.chance} />}
+              </div>
+            </div>
+            {rec.chancePercentLabel && (
+              <p className={`${styles.caption} ${styles.mt4}`}>
+                <span className={styles.emphasis}>합격률:</span>{" "}
+                {rec.chancePercentLabel}
+              </p>
+            )}
+            <p className={`${styles.small} ${styles.mt6}`}>
+              {safeText(rec.chanceRationale)}
+            </p>
+          </div>
+        ))}
 
       {/* Block 4: Type strategies */}
       {data.typeStrategies && data.typeStrategies.length > 0 && (
@@ -244,68 +248,61 @@ export const AdmissionStrategyRenderer = ({
         </div>
       )}
 
-      {/* Block 8: University guide matching */}
+      {/* Block 8: University guide matching — 카드 레이아웃 */}
       {data.universityGuideMatching &&
-        data.universityGuideMatching.length > 0 && (
-          <div>
-            <div className={`${styles.h3} ${styles.mb12}`}>
-              대학별 인재상 매칭
+        data.universityGuideMatching.length > 0 &&
+        data.universityGuideMatching.map((match, idx) => (
+          <div key={idx} className={styles.card}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardTitle}>{match.university}</div>
             </div>
-            <table className={styles.compactTable}>
-              <thead>
-                <tr>
-                  <th style={{ whiteSpace: "nowrap" }}>대학</th>
-                  <th>핵심 키워드</th>
-                  <th>강점 매칭</th>
-                  <th style={{ minWidth: 120 }}>보완 필요</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.universityGuideMatching.map((match, idx) => (
-                  <tr key={idx}>
-                    <td className={styles.tableCellBold}>{match.university}</td>
-                    <td>
-                      <div className={styles.tagGroup}>
-                        {(Array.isArray(match.emphasisKeywords)
-                          ? match.emphasisKeywords
-                          : []
-                        ).map((kw) => (
-                          <span key={kw} className={styles.tag}>
-                            {kw}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td>
-                      <div className={styles.tagGroup}>
-                        {(Array.isArray(match.studentStrengthMatch)
-                          ? match.studentStrengthMatch
-                          : []
-                        ).map((s) => (
-                          <span key={s} className={styles.tag}>
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td style={{ minWidth: 120, overflow: "visible" }}>
-                      <div className={styles.tagGroup}>
-                        {(Array.isArray(match.studentWeaknessMatch)
-                          ? match.studentWeaknessMatch
-                          : []
-                        ).map((w) => (
-                          <span key={w} className={styles.tag}>
-                            {w}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
+            <div className={`${styles.mt8}`}>
+              <div className={`${styles.overline} ${styles.mb4}`}>
+                핵심 키워드
+              </div>
+              <div className={styles.tagGroup}>
+                {(Array.isArray(match.emphasisKeywords)
+                  ? match.emphasisKeywords
+                  : []
+                ).map((kw) => (
+                  <span key={kw} className={styles.tagAccent}>
+                    {kw}
+                  </span>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
+            <div className={`${styles.mt12}`}>
+              <div className={`${styles.overline} ${styles.mb4}`}>
+                강점 매칭
+              </div>
+              <div className={styles.tagGroup}>
+                {(Array.isArray(match.studentStrengthMatch)
+                  ? match.studentStrengthMatch
+                  : []
+                ).map((s) => (
+                  <span key={s} className={styles.tagStrength}>
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className={`${styles.mt12}`}>
+              <div className={`${styles.overline} ${styles.mb4}`}>
+                보완 필요
+              </div>
+              <div className={styles.tagGroup}>
+                {(Array.isArray(match.studentWeaknessMatch)
+                  ? match.studentWeaknessMatch
+                  : []
+                ).map((w) => (
+                  <span key={w} className={styles.tagWeakness}>
+                    {w}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
-        )}
+        ))}
 
       {/* Block 9: Risk bands (v4) — hidden for premium */}
       {plan !== "premium" &&

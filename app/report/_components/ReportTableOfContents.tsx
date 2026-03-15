@@ -112,10 +112,9 @@ const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
       sectionIds: [
         "weaknessAnalysis",
         "topicRecommendation",
-        "interviewPrep",
         "admissionStrategy",
-        "storyAnalysis",
         "actionRoadmap",
+        "interviewPrep",
       ],
     },
     {
@@ -125,7 +124,7 @@ const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
     },
     {
       partNumber: "총평",
-      partTitle: "전임 컨설턴트 총평",
+      partTitle: "전임 컨설턴트 2차 검수",
       sectionIds: ["consultantReview"],
     },
   ],

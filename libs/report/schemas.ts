@@ -1210,9 +1210,7 @@ export const validateByPlan = (content: ReportContent): string[] => {
     if (!actualSectionIds.includes("admissionPrediction")) {
       errors.push("Standard 이상: admissionPrediction 섹션 필수");
     }
-    if (!actualSectionIds.includes("storyAnalysis")) {
-      errors.push("Standard 이상: storyAnalysis 섹션 필수");
-    }
+    // storyAnalysis 제외됨 (피드백 반영)
     if (!actualSectionIds.includes("actionRoadmap")) {
       errors.push("Standard 이상: actionRoadmap 섹션 필수");
     }

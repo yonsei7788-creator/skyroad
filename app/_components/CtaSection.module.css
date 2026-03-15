@@ -75,13 +75,6 @@
   }
 }
 
-@media (min-width: 1024px) {
-  .subtext {
-    max-width: none;
-    white-space: nowrap;
-  }
-}
-
 .subtext {
   position: relative;
   max-width: 520px;
@@ -89,6 +82,14 @@
   font-size: 1.0625rem;
   line-height: 1.6;
   color: rgb(255 255 255 / 0.6);
+  text-align: center;
+}
+
+@media (min-width: 1024px) {
+  .subtext {
+    max-width: none;
+    white-space: nowrap;
+  }
 }
 
 .ctaButton {

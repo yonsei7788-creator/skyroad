@@ -44,7 +44,7 @@ const createEmptyTarget = (priority: UniversityPriority): TargetUniversity => ({
 const isTargetFilled = (t: TargetUniversity): boolean =>
   !!(t.universityName.trim() && t.admissionType && t.department.trim());
 
-const PRIORITY_LABELS = ["1지망", "2지망", "3지망"];
+const PRIORITY_LABELS = ["1지망", "2지망", "3지망", "4지망", "5지망", "6지망"];
 
 const highlightMatch = (text: string, query: string): ReactNode => {
   if (!query) return text;
@@ -208,7 +208,7 @@ export const UniversityStep = ({
 
   const handleAddSlot = () => {
     const nextPriority = (targets.length + 1) as UniversityPriority;
-    if (nextPriority > 3) return;
+    if (nextPriority > 6) return;
     setTargets((prev) => [...prev, createEmptyTarget(nextPriority)]);
   };
 
@@ -284,7 +284,7 @@ export const UniversityStep = ({
         <div className={styles.stepHeader}>
           <h2 className={styles.stepTitle}>목표 대학을 설정해주세요</h2>
           <p className={styles.stepDesc}>
-            1지망은 필수이며, 2~3지망은 선택입니다
+            1지망은 필수이며, 2~6지망은 선택입니다
           </p>
         </div>
 
@@ -465,7 +465,7 @@ export const UniversityStep = ({
             );
           })}
 
-          {targets.length < 3 && (
+          {targets.length < 6 && (
             <button
               type="button"
               className={styles.addTargetBtn}

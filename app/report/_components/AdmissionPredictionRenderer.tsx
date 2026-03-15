@@ -57,7 +57,7 @@ export const AdmissionPredictionRenderer = ({
 
   return (
     <>
-      {/* Block 1: Header + Banner + first prediction card */}
+      {/* Block 1: Header + Banner */}
       <div>
         <SectionHeader number={sectionNumber} title={data.title} />
 
@@ -71,57 +71,15 @@ export const AdmissionPredictionRenderer = ({
         </div>
 
         <div className={styles.admissionSectionLabel}>전형별 합격 예측</div>
-
-        {allCards.length > 0 &&
-          (() => {
-            const [pred] = allCards;
-            return (
-              <div className={cardClass}>
-                <div className={styles.admissionCardHeader}>
-                  <span className={styles.admissionCardType}>
-                    {FULL_TYPE_NAME[pred.admissionType] ?? pred.admissionType}
-                  </span>
-                  <span className={styles.admissionCardRate}>
-                    {pred.passRateLabel}
-                  </span>
-                </div>
-                <p className={styles.admissionCardAnalysis}>
-                  {safeText(pred.analysis)}
-                </p>
-                {pred.universityPredictions &&
-                  pred.universityPredictions.length > 0 && (
-                    <div className={styles.admissionUniList}>
-                      {pred.universityPredictions.map((up) => (
-                        <div
-                          key={`${up.university}-${up.department}`}
-                          className={styles.admissionUniRow}
-                        >
-                          <span className={styles.admissionUniName}>
-                            {up.university}
-                          </span>
-                          <span className={styles.admissionUniDept}>
-                            {up.department}
-                          </span>
-                          <ReportBadge chance={up.chance} />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-              </div>
-            );
-          })()}
       </div>
 
-      {/* Remaining prediction cards — each as its own block */}
-      {allCards.slice(1).map((pred, idx) => (
+      {/* Each prediction card as its own block for page splitting */}
+      {allCards.map((pred, idx) => (
         <div key={pred.admissionType ?? idx}>
           <div className={cardClass}>
             <div className={styles.admissionCardHeader}>
               <span className={styles.admissionCardType}>
                 {FULL_TYPE_NAME[pred.admissionType] ?? pred.admissionType}
-              </span>
-              <span className={styles.admissionCardRate}>
-                {pred.passRateLabel}
               </span>
             </div>
             <p className={styles.admissionCardAnalysis}>

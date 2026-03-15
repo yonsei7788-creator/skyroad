@@ -5,18 +5,20 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ReportPage } from "./ReportPage";
 
 /**
- * Usable content height within an A4 page.
+ * Usable content height within an A4 page (FIXED at 297mm).
  *
  * Calculation (at 96dpi, 1mm ≈ 3.78px):
  *   A4 height          = 297mm = 1122px
  *   .page padding-top  = 20mm  =   76px
  *   .page padding-bot  = 56px  (calc(32px + 24px))
  *   .pageHeader         ≈ 50px  (text + padding-bottom 12px + margin-bottom 24px)
- *   .pageFooter bottom  = 15mm  =   57px (absolute, overlap with padding-bottom)
+ *   .pageFooter bottom  = 8mm   =   30px (absolute positioned)
  *
- *   Available = 1122 - 76 - 56 - 50 = 940px → safety margin 20px → 920px
+ *   Available = 1122 - 76 - 56 - 50 = 940px → safety margin 40px → 900px
+ *
+ * ⚠️ 페이지 크기는 A4 고정. 컨텐츠가 넘치면 신규 페이지로 분리됨.
  */
-const AVAILABLE_HEIGHT_PX = 920;
+const AVAILABLE_HEIGHT_PX = 900;
 
 /**
  * 측정값과 실제 렌더링 간의 미세 차이를 보정하기 위한 안전 마진 (px).

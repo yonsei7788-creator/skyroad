@@ -84,8 +84,8 @@
   --report-bg: #ffffff;
   --report-bg-secondary: #f8fafc;
   --report-fg: #0f172a;
-  --report-fg-secondary: #475569;
-  --report-fg-tertiary: #94a3b8;
+  --report-fg-secondary: #1e293b;
+  --report-fg-tertiary: #334155;
   --report-border: #e2e8f0;
   --report-border-strong: #cbd5e1;
 
@@ -857,7 +857,10 @@
   color: var(--report-fg);
   border-bottom: 1px solid var(--report-border);
   vertical-align: top;
+  font-variant-numeric: tabular-nums;
 }
+
+/* th, td에 .tableAlignCenter를 함께 적용하면 칼럼 전체 정렬이 일치됨 */
 
 /* Zebra striping */
 .table tbody tr:nth-child(even) {
@@ -1566,7 +1569,7 @@
 
 .pageFooter {
   position: absolute;
-  bottom: 15mm;
+  bottom: 8mm;
   left: 18mm;
   right: 18mm;
   display: flex;

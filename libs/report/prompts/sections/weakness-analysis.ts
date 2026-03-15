@@ -17,7 +17,7 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 ## 분량 가이드
 - 핵심 약점 3개. A4 1페이지 이내.`,
   standard: `## 플랜별 출력: 상세
-- 각 영역: area + description + suggestedActivities + evidence(상세 근거) + competencyTag(역량 매핑) + priority(보완 우선순위 high/medium/low)
+- 각 영역: area + description + suggestedActivities + evidence(상세 근거) + competencyTag(역량 매핑) + priority(**반드시 "high" | "medium" | "low" 중 하나. 빈 문자열/한글 금지**)
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - areas 배열은 **최대 3개**입니다. 4개 이상 절대 출력하지 마세요.
@@ -25,7 +25,11 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - 각 suggestedActivities의 항목은 **150자 이내**로 작성합니다.
 - evidence는 **100자 이내**로 작성합니다.`,
   premium: `## 플랜별 출력: 정밀
-- Standard의 모든 항목 + urgency(시급도) + effectiveness(효과도) 매트릭스 + executionStrategy(실행 전략, 2줄 이내) + subjectLinkStrategy(진로-선택과목 연계 전략, 1줄)
+- Standard의 모든 항목에 추가로 다음 필드를 **반드시** 출력합니다:
+  - urgency: 시급도 — **반드시 "high" | "medium" | "low" 중 하나**. 빈 문자열이나 한글 값 금지.
+  - effectiveness: 효과도 — **반드시 "high" | "medium" | "low" 중 하나**. 빈 문자열이나 한글 값 금지.
+  - executionStrategy: 실행 전략 (2줄 이내)
+  - subjectLinkStrategy: 진로-선택과목 연계 전략 (1줄)
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - areas 배열은 **최대 5개**입니다. 6개 이상 절대 출력하지 마세요.
@@ -62,9 +66,9 @@ export const buildWeaknessAnalysisPrompt = (
       "suggestedActivities": ["탐구 보고서 작성 시 가설-실험-결론 구조를 갖추기", "교과 내 소논문 작성"],
       "evidence": "2학년 사회·문화 세특에서 '복지 정책을 조사하고 발표함'이라고만...",
       "competencyTag": {"category": "academic", "subcategory": "탐구력"},
-      "priority": "high",
-      "urgency": "high",
-      "effectiveness": "high",
+      "priority": "high (enum: 'high' | 'medium' | 'low' 중 반드시 하나)",
+      "urgency": "high (enum: 'high' | 'medium' | 'low' 중 반드시 하나)",
+      "effectiveness": "high (enum: 'high' | 'medium' | 'low' 중 반드시 하나)",
       "executionStrategy": "3학년 1학기 세특에서 탐구 과정을 구체적으로...",
       "subjectLinkStrategy": "사회·문화와 정치와법 연계 탐구..."
     }

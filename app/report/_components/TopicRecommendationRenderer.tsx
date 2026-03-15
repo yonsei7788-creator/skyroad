@@ -75,11 +75,6 @@ export const TopicRecommendationRenderer = ({
         <div key={idx}>
           <div className={`${styles.h3} ${styles.mb6}`}>
             {String(idx + 1).padStart(2, "0")}. {topic.topic}
-            {topic.estimatedDuration && (
-              <span className={`${styles.caption} ${styles.ml8}`}>
-                {topic.estimatedDuration}
-              </span>
-            )}
             {topic.importance && (
               <span
                 className={
@@ -135,8 +130,6 @@ export const TopicRecommendationRenderer = ({
             <div className={styles.mt12}>
               <div className={`${styles.overline} ${styles.mb6}`}>
                 활동 설계
-                {topic.activityDesign.duration &&
-                  ` (${topic.activityDesign.duration.replace(/\s*\(예상\)\s*/, "")})`}
               </div>
               <div className={styles.body}>
                 {(topic.activityDesign.steps ?? []).map((step, sIdx) => (

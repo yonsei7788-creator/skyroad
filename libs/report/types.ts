@@ -11,8 +11,8 @@
 //
 // Standard (13): + admissionPrediction, topicRecommendation
 //
-// Premium (17): + weaknessAnalysis, admissionStrategy,
-//   storyAnalysis, actionRoadmap
+// Premium (16): + weaknessAnalysis, admissionStrategy,
+//   actionRoadmap (storyAnalysis 제외됨)
 //
 // + 조건부 directionGuide (고1 전용, admissionStrategy 대체)
 //
@@ -1287,7 +1287,6 @@ type PremiumSectionId =
   // Part 3 추가
   | "weaknessAnalysis"
   | "admissionStrategy"
-  | "storyAnalysis"
   | "actionRoadmap";
 
 /** 플랜별 가능한 섹션 ID 매핑 */
@@ -1319,7 +1318,7 @@ export interface StudentInfo {
     | "마이스터고";
   targetUniversity?: string;
   targetDepartment?: string;
-  /** 유저가 설정한 1~3지망 희망대학 목록 */
+  /** 유저가 설정한 1~6지망 희망대학 목록 */
   targetUniversities?: {
     priority: number;
     universityName: string;
@@ -1410,7 +1409,6 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     "topicRecommendation",
     "interviewPrep",
     "admissionStrategy",
-    "storyAnalysis",
     "actionRoadmap",
     // 부록
     "majorExploration",

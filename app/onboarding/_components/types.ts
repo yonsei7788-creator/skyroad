@@ -19,7 +19,7 @@ export interface ProfileStepData {
 }
 
 /** Step 3: 목표 대학 (1~3지망) */
-export type UniversityPriority = 1 | 2 | 3;
+export type UniversityPriority = 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface TargetUniversity {
   id?: string;
@@ -55,6 +55,7 @@ export type SchoolType = (typeof SCHOOL_TYPES)[number];
 export const ADMISSION_TYPES = [
   "학생부종합",
   "학생부교과",
+  "고른기회",
   "논술",
   "실기/실적",
   "기타",

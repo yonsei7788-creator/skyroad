@@ -16,7 +16,8 @@ const STATUS_CLASS: Record<string, string> = {
 };
 
 const IMPORTANCE_CLASS: Record<string, string> = {
-  "\uD544\uC218": styles.tagWeakness,
+  "\uD544\uC218": styles.tagAccent,
+  "\uD575\uC2EC \uAD8C\uC7A5": styles.tagStrength,
   "\uAD8C\uC7A5": styles.tagAccent,
 };
 

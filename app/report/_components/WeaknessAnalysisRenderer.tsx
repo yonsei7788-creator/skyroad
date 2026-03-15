@@ -35,6 +35,15 @@ export const WeaknessAnalysisRenderer = ({
   plan,
 }: WeaknessAnalysisRendererProps) => {
   const areaChunks = chunkAreas(data.areas ?? [], 1);
+  const areas = data.areas ?? [];
+  // 실제 유효한 값(PRIORITY_LABEL에 매칭되는 값)이 있는 경우에만 칼럼 표시
+  const validPriorities: Set<string> = new Set(["high", "medium", "low"]);
+  const hasUrgency = areas.some(
+    (a) => a.urgency && validPriorities.has(a.urgency)
+  );
+  const hasPriority = areas.some(
+    (a) => a.priority && validPriorities.has(a.priority)
+  );
 
   return (
     <>
@@ -47,8 +56,10 @@ export const WeaknessAnalysisRenderer = ({
             <thead>
               <tr>
                 <th>영역</th>
-                <th className={styles.tableAlignCenter}>우선순위</th>
-                {(data.areas ?? [])[0]?.urgency && (
+                {hasPriority && (
+                  <th className={styles.tableAlignCenter}>우선순위</th>
+                )}
+                {hasUrgency && (
                   <>
                     <th className={styles.tableAlignCenter}>시급도</th>
                     <th className={styles.tableAlignCenter}>효과도</th>
@@ -58,19 +69,21 @@ export const WeaknessAnalysisRenderer = ({
               </tr>
             </thead>
             <tbody>
-              {(data.areas ?? []).map((area, idx) => (
+              {areas.map((area, idx) => (
                 <tr key={idx}>
                   <td className={styles.tableCellBold}>{area.area}</td>
-                  <td className={styles.tableAlignCenter}>
-                    {area.priority ? (
-                      <span className={styles.tag}>
-                        {PRIORITY_LABEL[area.priority]}
-                      </span>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  {(data.areas ?? [])[0]?.urgency && (
+                  {hasPriority && (
+                    <td className={styles.tableAlignCenter}>
+                      {area.priority ? (
+                        <span className={styles.tag}>
+                          {PRIORITY_LABEL[area.priority]}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  )}
+                  {hasUrgency && (
                     <>
                       <td className={styles.tableAlignCenter}>
                         {area.urgency ? (

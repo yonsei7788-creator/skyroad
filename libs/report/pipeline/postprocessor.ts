@@ -176,6 +176,57 @@ export const postprocess = (
     }
   }
 
+  // 3-1. AI 생성 대학-학과가 후보군에 실제 존재하는지 검증 (존재하지 않는 학과 제거)
+  const candidateSet = new Set(
+    preprocessed.basePassRates.map((bp) => `${bp.university}|${bp.department}`)
+  );
+  // 유저 설정 희망대학도 허용 목록에 추가
+  if (studentInfo.targetUniversities) {
+    for (const tu of studentInfo.targetUniversities) {
+      candidateSet.add(`${tu.universityName}|${tu.department}`);
+    }
+  }
+  const candidateUniversities = new Set(
+    preprocessed.basePassRates.map((bp) => bp.university)
+  );
+  if (studentInfo.targetUniversities) {
+    for (const tu of studentInfo.targetUniversities) {
+      candidateUniversities.add(tu.universityName);
+    }
+  }
+
+  // admissionPrediction: 후보군에 없는 대학 제거
+  if (admPred && Array.isArray(admPred.predictions)) {
+    for (const pred of admPred.predictions) {
+      if (!Array.isArray(pred.universityPredictions)) continue;
+      pred.universityPredictions = pred.universityPredictions.filter(
+        (up: any) => {
+          const exactKey = `${up.university}|${up.department}`;
+          // 대학-학과 정확 매칭 또는 최소한 대학이 후보군에 존재
+          if (candidateSet.has(exactKey)) return true;
+          if (candidateUniversities.has(up.university)) return true;
+          console.warn(
+            `[report:${reportId}] 후보군에 없는 대학-학과 제거: ${up.university} ${up.department}`
+          );
+          return false;
+        }
+      );
+    }
+  }
+
+  // admissionStrategy: 후보군에 없는 대학 제거
+  if (admStrat && Array.isArray(admStrat.recommendations)) {
+    admStrat.recommendations = admStrat.recommendations.filter((rec: any) => {
+      const exactKey = `${rec.university}|${rec.department}`;
+      if (candidateSet.has(exactKey)) return true;
+      if (candidateUniversities.has(rec.university)) return true;
+      console.warn(
+        `[report:${reportId}] 후보군에 없는 추천 대학 제거: ${rec.university} ${rec.department}`
+      );
+      return false;
+    });
+  }
+
   // 4. 섹션 정렬 (플랜별 순서)
   const sectionOrder = SECTION_ORDER[plan];
   validatedSections.sort((a, b) => {
@@ -246,6 +297,17 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/돋보이지만/g, "강점이지만"],
   [/돋보임\./g, "강점입니다."],
   [/돋보임$/gm, "강점입니다"],
+
+  // ── 3년 개근 → 2년 개근 (현행 교육과정 기준) ──
+  [/3년간\s*개근/g, "재학 기간 동안 개근"],
+  [/3년간\s*무결석/g, "재학 기간 동안 무결석"],
+  [/3년간\s*무단결석/g, "재학 기간 동안 무단결석"],
+  [/3년\s*연속\s*개근/g, "재학 기간 동안 개근"],
+
+  // ── 존재하지 않는 학년 데이터 언급 제거 ──
+  [/3학년\s*생기부\s*기록이\s*부재[했하][^\\.]*\./g, ""],
+  [/3학년\s*(생기부\s*)?기록이\s*없[어다는][^\\.]*\./g, ""],
+  [/3학년\s*데이터가\s*없[어다는][^\\.]*\./g, ""],
 
   // ── 명령형 어미 → 권유형 전환 ──
   [/작성하세요/g, "작성하는 것이 좋습니다"],
@@ -986,8 +1048,40 @@ const normalizeSection = (
   }
 
   if (s.sectionId === "weaknessAnalysis") {
-    // ── areas 배열: priority 기준 내림차순 정렬 (high → medium → low) ──
+    // ── areas 배열: priority/urgency/effectiveness 값 정규화 ──
     if (Array.isArray(s.areas)) {
+      const VALID_PRIORITIES = new Set(["high", "medium", "low"]);
+      const PRIORITY_NORMALIZE: Record<string, string> = {
+        높음: "high",
+        보통: "medium",
+        낮음: "low",
+        상: "high",
+        중: "medium",
+        하: "low",
+      };
+
+      for (const area of s.areas) {
+        // priority 정규화
+        if (area.priority && !VALID_PRIORITIES.has(area.priority)) {
+          area.priority = PRIORITY_NORMALIZE[area.priority] ?? "medium";
+        }
+        if (!area.priority) area.priority = "medium";
+
+        // urgency 정규화
+        if (area.urgency && !VALID_PRIORITIES.has(area.urgency)) {
+          area.urgency = PRIORITY_NORMALIZE[area.urgency] ?? "medium";
+        }
+        if (!area.urgency) area.urgency = "medium";
+
+        // effectiveness 정규화
+        if (area.effectiveness && !VALID_PRIORITIES.has(area.effectiveness)) {
+          area.effectiveness =
+            PRIORITY_NORMALIZE[area.effectiveness] ?? "medium";
+        }
+        if (!area.effectiveness) area.effectiveness = "medium";
+      }
+
+      // priority 기준 내림차순 정렬 (high → medium → low)
       const priorityOrder: Record<string, number> = {
         high: 0,
         medium: 1,
@@ -1330,7 +1424,7 @@ const normalizeSection = (
       s.courses = prMatch.requiredCourses.map((course: string) => ({
         course,
         status: takenSet.has(course) ? "이수" : "미이수",
-        importance: "필수",
+        importance: "권장",
       }));
       s.matchRate = prMatch.matchRate;
       s.targetMajor = prMatch.targetMajor;

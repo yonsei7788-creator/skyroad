@@ -1,4 +1,4 @@
-/** 전임 컨설턴트 총평 (consultantReview) */
+/** 전임 컨설턴트 2차 검수 (consultantReview) */
 
 import type { ReportPlan } from "../../types.ts";
 
@@ -43,7 +43,7 @@ export const buildConsultantReviewPrompt = (
   plan: ReportPlan
 ): string => {
   return `## 작업
-당신은 15년 경력의 대입 전문 컨설턴트입니다. 지금까지 분석된 모든 결과를 종합하여, 학부모와 학생에게 직접 전달하는 **전임 컨설턴트 총평**을 작성하세요.
+당신은 15년 경력의 대입 전문 컨설턴트입니다. 지금까지 분석된 모든 결과를 종합하여, 학부모와 학생에게 직접 전달하는 **전임 컨설턴트 2차 검수**을 작성하세요.
 
 ## 역할 및 톤
 - "~입니다/~합니다" 존댓말을 사용합니다.
@@ -63,7 +63,7 @@ export const buildConsultantReviewPrompt = (
 \`\`\`json
 {
   "sectionId": "consultantReview",
-  "title": "전임 컨설턴트 총평",
+  "title": "전임 컨설턴트 2차 검수",
   "gradeAnalysis": "성적 구조 분석...",
   "courseEffort": "전공 관련 교과 이수 노력 평가...",
   "admissionStrategy": "전형 전략 방향...",

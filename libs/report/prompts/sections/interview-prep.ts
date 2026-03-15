@@ -25,14 +25,14 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - 각 intent는 **100자 이내**로 작성합니다. 100자 초과 금지.`,
   premium: `## 플랜별 출력: 정밀
 - 각 질문: question + questionType + intent(1~2줄) + importance(high/medium/low) + answerStrategy(답변 전략, 2줄 이내)
-- **상위 3개 질문(importance: high)에만** sampleAnswer + followUpQuestions(1개)를 포함합니다.
-- 나머지 질문은 sampleAnswer, followUpQuestions를 출력하지 않습니다.
-- **Premium은 반드시 Standard보다 상세해야 합니다**: intent는 1~2줄로 Standard보다 구체적으로, answerStrategy는 Standard에 없는 추가 가치를 제공합니다.
+- ⚠️ **모든 질문에 sampleAnswer(모범 답변)를 반드시 포함하세요.** sampleAnswer가 없는 질문은 품질 실패입니다.
+- **모든 질문에 answerKeywords(핵심 키워드 2~4개)를 반드시 포함하세요.**
+- importance가 "high"인 질문에는 followUpQuestions(꼬리 질문 1개)도 포함합니다.
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - questions 배열은 **최대 8개**입니다. 9개 이상 절대 출력하지 마세요.
-- 각 sampleAnswer는 반드시 **300자 이내**로 작성합니다. 300자 초과 금지.
-- 각 answerStrategy는 **150자 이내**로 작성합니다.`,
+- 각 sampleAnswer는 반드시 **200자 이내**로 작성합니다. 200자 초과 금지.
+- 각 answerStrategy는 **100자 이내**로 작성합니다.`,
 };
 
 export const buildInterviewPrepPrompt = (

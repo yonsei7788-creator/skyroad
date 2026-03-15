@@ -67,6 +67,10 @@ Standard의 모든 항목에 추가로 다음을 출력합니다:
 - 6장 카드 배분 시뮬레이션(applicationSimulation): 반드시 아래 형식. **학생부교과전형도 반드시 포함**하세요.
   "applicationSimulation": {"description": "수시 6개 + 정시 배분 전략...", "details": [{"admissionType": "학생부종합", "count": 3, "targetUniversities": ["한양대", "중앙대", "경희대"]}, {"admissionType": "학생부교과", "count": 2, "targetUniversities": ["서울시립대", "숭실대"]}, {"admissionType": "논술", "count": 1, "targetUniversities": ["건국대"]}]}
   ⚠️ **전형 유형별 최소 1개 배정**: 학생부종합과 학생부교과에 각각 최소 1개는 배분하세요. 교과전형이 불리한 학생이라도 안전망 차원에서 최소 1개는 교과전형 하향 안정권 대학에 배정합니다.
+  ⚠️ **생기부 기반 추천 (필수)**: 원서 카드 6장은 학생의 **희망 대학 조합이 아닌, AI가 생기부를 자체적으로 판단**하여 상향/안정/하향을 섞어 구성합니다. 생기부에 적합한 학교·학과를 추천하세요.
+  - 학종은 **오로지 생기부에 기반**해 추천해야 합니다. 생기부 내용과 무관한 학과를 학종으로 추천하면 안 됩니다.
+  - 교과전형이 적합하다고 판단될 경우 교과전형 위주로 배분하세요. **무조건 학생부종합 6개를 추천하지 마세요.**
+  - 성적이 좋은 학생에게 하향 대학을 너무 낮게 추천하지 마세요. 예: 내신 1.6 학생에게 지방 중하위권 대학을 추천하면 안 됩니다. 해당 성적이면 서울 중위권 대학도 무난하게 갈 수 있습니다.
 - 대학별 학종 가이드북 키워드 매칭(universityGuideMatching): **상위 3개 대학만** 배열 형식으로 출력
   "universityGuideMatching": [{"university": "한양대학교", "emphasisKeywords": ["자기주도성", "탐구력"], "studentStrengthMatch": ["세특 탐구 깊이"], "studentWeaknessMatch": ["교과 편차"]}]
 - 조합별 대학 추천(tierGroupedRecommendations): "상향 위주" 2개 + "안정 위주" 2개 + "하향 위주" 2개 = 총 6개

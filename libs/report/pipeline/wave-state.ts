@@ -75,7 +75,7 @@ export const buildTaskQueue = (
   if (has("admissionStrategy") || isGrade1Only) {
     tasks.push(isGrade1Only ? "directionGuide" : "admissionStrategy");
   }
-  if (has("storyAnalysis")) tasks.push("storyAnalysis");
+  // storyAnalysis 제외 (피드백 반영: 모든 항목에서 스토리 분석 제외)
   if (has("actionRoadmap")) tasks.push("actionRoadmap");
 
   // Group 6

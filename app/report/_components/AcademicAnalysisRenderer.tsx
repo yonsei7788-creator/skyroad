@@ -449,60 +449,9 @@ export const AcademicAnalysisRenderer = ({
         </div>
       )}
 
-      {/* Block 7: Five grade simulation */}
-      {Array.isArray(data.fiveGradeSimulation) &&
-        data.fiveGradeSimulation.filter(
-          (s) => s.currentGrade && s.simulatedGrade
-        ).length > 0 &&
-        (() => {
-          const fgSim = data.fiveGradeSimulation.filter(
-            (s) => s.currentGrade && s.simulatedGrade
-          );
-          const showPercentile = fgSim.some(
-            (sim) => sim.percentileCumulative !== undefined
-          );
-          return (
-            <div>
-              <div className={styles.ceSubheading}>5등급제 전환 시뮬레이션</div>
-              <table className={styles.compactTable}>
-                <thead>
-                  <tr>
-                    <th>교과</th>
-                    <th className={styles.tableAlignCenter}>현재 등급</th>
-                    <th className={styles.tableAlignCenter}>전환 등급</th>
-                    {showPercentile && (
-                      <th className={styles.tableAlignCenter}>누적 백분위</th>
-                    )}
-                    <th>해석</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fgSim.map((sim) => (
-                    <tr key={sim.subject}>
-                      <td className={styles.tableCellBold}>{sim.subject}</td>
-                      <td className={styles.tableAlignCenter}>
-                        {sim.currentGrade}
-                      </td>
-                      <td className={styles.tableAlignCenter}>
-                        {sim.simulatedGrade}
-                      </td>
-                      {showPercentile && (
-                        <td className={styles.tableAlignCenter}>
-                          {sim.percentileCumulative !== undefined
-                            ? `${sim.percentileCumulative}%`
-                            : "—"}
-                        </td>
-                      )}
-                      <td className={styles.small}>
-                        {safeText(sim.interpretation)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          );
-        })()}
+      {/* Block 7: Five grade simulation — 피드백 반영: 등급 변환 표시 제거
+          5등급제 생기부는 5등급제 기준으로, 9등급제 생기부는 9등급제 기준으로 각 평가.
+          변환 등급을 알려줄 필요 없음 */}
 
       {/* Block 8: University simulations + Improvement priority */}
       {((Array.isArray(data.universityGradeSimulations) &&

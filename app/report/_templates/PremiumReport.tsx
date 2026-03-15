@@ -45,15 +45,14 @@ const PART_CONFIG = [
     partNumber: "PART 3",
     title: "전략 & 실행",
     description:
-      "부족한 부분 + 보완 전략, 주제 추천, 면접 준비, 입시 전략, 스토리 분석, 실행 로드맵",
+      "부족한 부분 + 보완 전략, 주제 추천, 입시 전략, 실행 로드맵, 면접 준비",
     color: "#8b4cf5",
     sectionIds: [
       "weaknessAnalysis",
       "topicRecommendation",
-      "interviewPrep",
       "admissionStrategy",
-      "storyAnalysis",
       "actionRoadmap",
+      "interviewPrep",
     ],
   },
   {

@@ -117,6 +117,7 @@ export const CompetencyScoreRenderer = ({
   const academic = (data.scores ?? []).find((s) => s.category === "academic");
   const career = (data.scores ?? []).find((s) => s.category === "career");
   const community = (data.scores ?? []).find((s) => s.category === "community");
+  const growth = (data.scores ?? []).find((s) => s.category === "growth");
 
   return (
     <>
@@ -189,42 +190,59 @@ export const CompetencyScoreRenderer = ({
       {career && renderDimCard(career)}
       {community && renderDimCard(community)}
 
-      {/* Growth potential — 다른 역량 카드와 동일한 레이아웃 */}
-      <div className={styles.competencyDimCardWide}>
-        <div className={styles.competencyDimWideHeader}>
-          <span className={styles.competencyDimWideLabel}>
-            {CATEGORY_LABEL.growth}
-          </span>
-          <div className={styles.competencyDimWideScoreRow}>
-            <span className={styles.competencyDimWideScore}>
-              {data.growthScore ?? GROWTH_SCORE_MAP[data.growthGrade] ?? "—"}
+      {/* Growth potential — 다른 역량 카드와 동일한 레이아웃 (하위항목 포함) */}
+      {growth ? (
+        renderDimCard(
+          {
+            ...growth,
+            score:
+              growth.score ??
+              data.growthScore ??
+              GROWTH_SCORE_MAP[data.growthGrade] ??
+              0,
+            maxScore: growth.maxScore ?? 100,
+            grade: growth.grade ?? data.growthGrade,
+            gradeComment: growth.gradeComment ?? data.growthComment,
+          },
+          "growth"
+        )
+      ) : (
+        <div className={styles.competencyDimCardWide}>
+          <div className={styles.competencyDimWideHeader}>
+            <span className={styles.competencyDimWideLabel}>
+              {CATEGORY_LABEL.growth}
             </span>
-            <span className={styles.competencyDimWideMax}>/100</span>
-            <span
-              className={`${styles.competencyDimWideGradeBadge} ${GRADE_BADGE_CLASS[data.growthGrade] ?? ""}`}
-            >
-              {data.growthGrade}
-            </span>
+            <div className={styles.competencyDimWideScoreRow}>
+              <span className={styles.competencyDimWideScore}>
+                {data.growthScore ?? GROWTH_SCORE_MAP[data.growthGrade] ?? "—"}
+              </span>
+              <span className={styles.competencyDimWideMax}>/100</span>
+              <span
+                className={`${styles.competencyDimWideGradeBadge} ${GRADE_BADGE_CLASS[data.growthGrade] ?? ""}`}
+              >
+                {data.growthGrade}
+              </span>
+            </div>
           </div>
+
+          {showBar && (
+            <div className={styles.competencyDimWideBar}>
+              <div
+                className={styles.competencyDimWideBarFill}
+                style={{
+                  width: `${data.growthScore ?? GROWTH_SCORE_MAP[data.growthGrade] ?? 0}%`,
+                }}
+              />
+            </div>
+          )}
+
+          {data.growthComment && (
+            <div className={styles.competencyDimWideGradeComment}>
+              {safeText(data.growthComment)}
+            </div>
+          )}
         </div>
-
-        {showBar && (
-          <div className={styles.competencyDimWideBar}>
-            <div
-              className={styles.competencyDimWideBarFill}
-              style={{
-                width: `${data.growthScore ?? GROWTH_SCORE_MAP[data.growthGrade] ?? 0}%`,
-              }}
-            />
-          </div>
-        )}
-
-        {data.growthComment && (
-          <div className={styles.competencyDimWideGradeComment}>
-            {safeText(data.growthComment)}
-          </div>
-        )}
-      </div>
+      )}
 
       {/* AI commentary */}
       <div className={styles.aiCommentary}>
