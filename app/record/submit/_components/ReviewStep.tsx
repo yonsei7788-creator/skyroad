@@ -16,7 +16,7 @@ export const ReviewStep = ({ record }: ReviewStepProps) => (
 
 const TextReview = ({ record }: { record: SchoolRecord }) => {
   const totalItems = Object.values(record).reduce(
-    (sum, arr) => sum + arr.length,
+    (sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0),
     0
   );
 

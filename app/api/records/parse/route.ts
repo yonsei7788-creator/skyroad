@@ -201,6 +201,7 @@ const STRING_FIELDS: Record<string, string[]> = {
   subjectEvaluations: ["subject", "evaluation"],
   readingActivities: ["subjectOrArea", "content"],
   behavioralAssessments: ["assessment"],
+  mockExams: ["subject"],
 };
 
 const enrichWithIds = (raw: RawRecord): RawRecord => {
