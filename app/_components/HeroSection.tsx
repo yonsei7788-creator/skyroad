@@ -53,7 +53,33 @@ export const HeroSection = () => {
               &ldquo;이 생기부로 어디까지 갈 수 있을까?&rdquo;
               <br />
               <strong className={styles.subtextHighlight}>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="#ef4444"
+                  style={{
+                    display: "inline",
+                    verticalAlign: "-2px",
+                    marginRight: 4,
+                  }}
+                >
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01z" />
+                </svg>
                 AI 정밀 분석 + 입시 전문가 2차 검수
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="#ef4444"
+                  style={{
+                    display: "inline",
+                    verticalAlign: "-2px",
+                    marginLeft: 4,
+                  }}
+                >
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01z" />
+                </svg>
               </strong>
             </p>
           </FadeIn>

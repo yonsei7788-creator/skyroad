@@ -113,15 +113,15 @@ const SUBJECT_AREA_MAP: Record<string, string> = {
 const BAR_COLORS = ["#4F46E5", "#6366F1", "#818CF8", "#A5B4FC", "#C7D2FE"];
 
 const WAFFLE_COLORS: Record<number, string> = {
-  1: "#1E1B4B",
-  2: "#3730A3",
-  3: "#4338CA",
-  4: "#4F46E5",
-  5: "#6366F1",
-  6: "#818CF8",
-  7: "#A5B4FC",
-  8: "#C7D2FE",
-  9: "#E0E7FF",
+  1: "#1E40AF", // 진한 파랑
+  2: "#2563EB", // 파랑
+  3: "#3B82F6", // 밝은 파랑
+  4: "#6366F1", // 인디고
+  5: "#F59E0B", // 주황 (중간 경계)
+  6: "#F97316", // 진한 주황
+  7: "#EF4444", // 빨강
+  8: "#DC2626", // 진한 빨강
+  9: "#991B1B", // 매우 진한 빨강
 };
 
 // ============================================
@@ -134,17 +134,20 @@ const formatDate = (dateStr: string) => {
 };
 
 const getGradeColor = (grade: number): string => {
-  if (grade <= 2) return "var(--color-primary-700)";
-  if (grade <= 4) return "var(--color-primary-500)";
-  if (grade <= 6) return "var(--color-primary-300)";
-  return "var(--color-neutral-400)";
+  if (grade <= 2) return "#1E40AF";
+  if (grade <= 3) return "#3B82F6";
+  if (grade <= 4) return "#6366F1";
+  if (grade <= 5) return "#F59E0B";
+  if (grade <= 6) return "#F97316";
+  return "#EF4444";
 };
 
 const getGradeBg = (grade: number): string => {
-  if (grade <= 2) return "var(--color-primary-100)";
-  if (grade <= 4) return "var(--color-primary-50)";
-  if (grade <= 6) return "var(--color-neutral-100)";
-  return "var(--color-neutral-50)";
+  if (grade <= 2) return "#DBEAFE";
+  if (grade <= 4) return "#E0E7FF";
+  if (grade <= 5) return "#FEF3C7";
+  if (grade <= 6) return "#FFEDD5";
+  return "#FEE2E2";
 };
 
 const matchesCategory = (category: string, key: CategoryKey): boolean => {

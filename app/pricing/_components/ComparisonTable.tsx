@@ -19,52 +19,62 @@ const FEATURES: ComparisonFeature[] = [
     standard: "15~18p",
     premium: "20~25p",
   },
-  { name: "전체 요약 분석", lite: true, standard: true, premium: true },
-  { name: "세특 분석", lite: "기본", standard: "상세", premium: "문장 단위" },
-  { name: "보완 활동 추천", lite: true, standard: true, premium: true },
+  { name: "학생 유형 + 역량 점수", lite: true, standard: true, premium: true },
   {
-    name: "탐구 주제 추천",
-    lite: true,
-    standard: true,
-    premium: "+ 활동 설계",
-  },
-  {
-    name: "면접 질문",
-    lite: "8~10개",
-    standard: "8~10개",
-    premium: "+ 모범 답변",
-  },
-  {
-    name: "내신 + 모의고사 분석",
+    name: "성적 분석 + 권장과목 이수",
     lite: true,
     standard: true,
     premium: true,
   },
-  { name: "대학 지원 조합", lite: true, standard: true, premium: true },
-  { name: "등급 변화 가능성", lite: false, standard: true, premium: true },
-  { name: "합격 가능성 분석", lite: false, standard: true, premium: true },
+  { name: "출결 · 창체 · 행동특성", lite: true, standard: true, premium: true },
   {
-    name: "지원 전략 (상향/안정/하향)",
+    name: "교과 세특 분석",
+    lite: "5과목",
+    standard: "7과목",
+    premium: "10과목+",
+  },
+  {
+    name: "면접 질문",
+    lite: "기본",
+    standard: "기본",
+    premium: "+ 모범 답변",
+  },
+  { name: "AI 학과 추천", lite: true, standard: true, premium: true },
+  {
+    name: "전형별 합격 예측",
     lite: false,
     standard: true,
     premium: true,
   },
   {
-    name: "생기부 스토리 분석",
+    name: "세특 주제 추천",
+    lite: false,
+    standard: "5개",
+    premium: "5개 + 활동 설계",
+  },
+  { name: "등급 변화 가능성 분석", lite: false, standard: true, premium: true },
+  {
+    name: "부족한 부분 + 보완 전략",
     lite: false,
     standard: false,
     premium: true,
   },
-  { name: "컨설팅급 보완 전략", lite: false, standard: false, premium: true },
   {
-    name: "중요도 % + 평가 영향도",
+    name: "입시 전략 + 지원 조합 시뮬레이션",
     lite: false,
     standard: false,
     premium: true,
   },
   { name: "실행 로드맵", lite: false, standard: false, premium: true },
   {
-    name: "전임 컨설턴트 검수",
+    name: "대학별 학종 가이드 매칭",
+    lite: false,
+    standard: false,
+    premium: true,
+  },
+  { name: "과목별 평가 영향도", lite: false, standard: false, premium: true },
+  {
+    name: "전임 컨설턴트 2차 검수",
     lite: true,
     standard: true,
     premium: true,
@@ -84,10 +94,7 @@ const CellValue = ({ value }: { value: FeatureValue }) => {
     );
   }
   return (
-    <X
-      size={18}
-      className={`${styles.cellIcon} ${styles.cellIconMuted}`}
-    />
+    <X size={18} className={`${styles.cellIcon} ${styles.cellIconMuted}`} />
   );
 };
 
@@ -110,7 +117,9 @@ export const ComparisonTable = () => {
                 <tr className={styles.headerRow}>
                   <th className={styles.headerFeature}>기능</th>
                   <th className={styles.headerPlan}>Lite</th>
-                  <th className={`${styles.headerPlan} ${styles.headerPopular}`}>
+                  <th
+                    className={`${styles.headerPlan} ${styles.headerPopular}`}
+                  >
                     Standard
                   </th>
                   <th className={styles.headerPlan}>Premium</th>
