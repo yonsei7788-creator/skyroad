@@ -19,13 +19,6 @@ interface SubjectAnalysisRendererProps {
   sectionNumber: number;
 }
 
-const RATING_LABEL: Record<SubjectRating, string> = {
-  excellent: "우수",
-  good: "양호",
-  average: "보통",
-  weak: "미흡",
-};
-
 const IMPACT_LABEL: Record<string, string> = {
   very_high: "매우 높음",
   high: "높음",
@@ -62,9 +55,7 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
     <div key={key}>
       <div className={styles.h3}>{subject.subjectName}</div>
       <div className={`${styles.caption} ${styles.mb8}`}>
-        {subject.year}학년 · {RATING_LABEL[subject.rating]}
-        {subject.importancePercent !== undefined &&
-          ` · 중요도 ${subject.importancePercent}%`}
+        {subject.year}학년
         {subject.evaluationImpact &&
           ` · 평가 영향도 ${IMPACT_LABEL[subject.evaluationImpact] ?? subject.evaluationImpact}`}
       </div>

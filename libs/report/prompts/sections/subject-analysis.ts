@@ -42,18 +42,34 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 
 ⚠️ **절대 선택하면 안 되는 과목**: 정보, 독서, 기술·가정, 제2외국어(일본어·중국어·독일어 등), 한문, 교양, 보건, 체육, 음악, 미술. 이 과목들은 학종 핵심 평가 대상이 아니므로 5개 안에 절대 포함하지 마세요. 컴퓨터공학과 지망이라도 정보 과목은 포함하지 마세요.
 
-### 중요도 규칙 (Lite에서도 적용)
-- importancePercent와 evaluationImpact를 반드시 출력하세요.
-- 전공 핵심 교과: 중요도 25~40%, evaluationImpact: "very_high" 또는 "high"
-- 국어/영어: 중요도 10~15%, evaluationImpact: "medium"
-- 나머지: 중요도 5~10%
+### evaluationImpact 규칙 (Lite에서도 적용 — 필수)
+evaluationImpact를 반드시 출력하세요. importancePercent는 출력하지 마세요.
+
+**계열별 evaluationImpact 기준:**
+
+**이공계 (자연과학/공학/의약학/컴퓨터):**
+- "very_high": 수학(수학Ⅰ, 수학Ⅱ, 미적분, 기하, 확률과통계) + 해당 학과 핵심 과학(물리학Ⅰ·Ⅱ, 화학Ⅰ·Ⅱ, 생명과학Ⅰ·Ⅱ, 지구과학Ⅰ·Ⅱ)
+- "high": 통합과학, 과학탐구실험, 해당 학과 권장 과학
+- "medium": 국어, 영어
+- "low": 사회탐구 계열 (사회·문화, 정치와 법 등)
+- "very_low": 한문, 정보, 기술·가정, 제2외국어, 교양, 보건, 체육, 음악, 미술
+
+**인문·사회계열:**
+- "very_high": 국어, 영어, 해당 학과 핵심 사회탐구(경제학→경제, 정치외교→정치와 법, 사학→세계사·동아시아사)
+- "high": 나머지 사회탐구 과목
+- "medium": 수학(경영·경제 계열은 "high")
+- "low": 과학탐구 계열
+- "very_low": 한문, 정보, 기술·가정, 제2외국어, 교양, 보건, 체육, 음악, 미술
+
+⚠️ **이과 학생에게 수학/과학을 "medium" 이하로 평가하면 품질 실패입니다.** 수학·과학은 이공계의 핵심 교과이므로 반드시 "very_high" 또는 "high"여야 합니다.
+⚠️ **국어/영어는 계열 무관하게 최소 "medium"입니다.** "low" 이하로 내리지 마세요.
 
 ### 출력 필드
 - 평가 등급(rating): excellent / good / average / weak
 - 핵심 활동 요약(activitySummary): **2줄 이내**로 간결 작성
 - 평가 코멘트(evaluationComment): **2줄 이내**로 간결 작성. ⚠️ 생기부 내용을 반복하지 말고, **입학사정관이 이 세특을 어떻게 평가할지**를 판단하세요.
 - 역량 태깅(competencyTags): 해당 세특에서 드러나는 역량 태그 1~3개
-- importancePercent, evaluationImpact
+- evaluationImpact (importancePercent는 출력하지 마세요)
 - keyQuotes, detailedEvaluation, improvementDirection, improvementExample, sentenceAnalysis 필드는 출력하지 않습니다.
 
 ### ⚠️ 장점만 나열 금지
@@ -74,13 +90,8 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - 개선 예시 문장: 약한 부분이 있다면 구체적 예시 1개 제시 (2줄 이내)
 - 교과 간 연결성은 storyAnalysis에서 분석하므로 crossSubjectConnections는 출력하지 않습니다.
 
-### ⚠️ importancePercent / evaluationImpact 일관성 규칙
-같은 importancePercent를 가진 과목은 반드시 같은 evaluationImpact를 가져야 합니다:
-- importancePercent 30% 이상 → evaluationImpact: "very_high"
-- importancePercent 20~29% → evaluationImpact: "high"
-- importancePercent 10~19% → evaluationImpact: "medium"
-- importancePercent 5~9% → evaluationImpact: "low"
-- importancePercent 5% 미만 → evaluationImpact: "very_low"
+### ⚠️ evaluationImpact 일관성 규칙
+Lite 섹션의 "계열별 evaluationImpact 기준"을 그대로 적용하세요. importancePercent는 출력하지 마세요.
 
 ⚠️ **분량 제한 (반드시 준수 — JSON 파싱 오류 방지)**:
 - evaluationComment는 반드시 **150자 이내**로 작성합니다. 150자를 초과하는 항목은 절대 출력하지 마세요.
@@ -101,18 +112,10 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - 나머지 과목은 sentenceAnalysis를 절대 포함하지 않습니다.
 
 ### 모든 과목 공통
-- 중요도 퍼센트(importancePercent): 0~100%
 - 평가 영향도(evaluationImpact): "very_high" / "high" / "medium" / "low" / "very_low"
-
-⚠️ **중요도와 평가 영향도 정합성 규칙 (필수 준수)**:
-- importancePercent와 evaluationImpact는 반드시 일치해야 합니다.
-- importancePercent 30% 이상 → evaluationImpact: "very_high"
-- importancePercent 20~29% → evaluationImpact: "high"
-- importancePercent 10~19% → evaluationImpact: "medium"
-- importancePercent 5~9% → evaluationImpact: "low"
-- importancePercent 5% 미만 → evaluationImpact: "very_low"
-- 같은 중요도 퍼센트를 가진 과목이 서로 다른 평가 영향도를 가지면 안 됩니다.
+- ⚠️ importancePercent는 출력하지 마세요. evaluationImpact만 출력합니다.
 - ⚠️ evaluationImpact는 반드시 영문 값("very_high"/"high"/"medium"/"low"/"very_low")을 사용하세요. "매우 높음", "높음", "보통", "낮음" 등 한글 금지.
+- Lite 섹션의 "계열별 evaluationImpact 기준"을 그대로 적용하세요.
 
 ### crossSubjectConnections 생략
 - 과목 간 연결 분석은 storyAnalysis 섹션에서 수행합니다. subjectAnalysis에서는 crossSubjectConnections를 출력하지 않습니다.
@@ -142,16 +145,16 @@ export const buildSubjectAnalysisPrompt = (
 ## ⛔ 과목 분류 (이 규칙이 모든 다른 규칙보다 우선합니다)
 
 분석을 시작하기 전에, 학생의 목표 학과를 확인하고 아래 기준으로 과목을 분류하세요.
-**이 분류 결과가 importancePercent, evaluationImpact, evaluationComment, detailedEvaluation 등 모든 출력에 반영되어야 합니다.**
+**이 분류 결과가 evaluationImpact, evaluationComment, detailedEvaluation 등 모든 출력에 반영되어야 합니다.**
 
 ### ⚠️ majorEvaluationContext 기반 과목 분류 (최우선)
 1단계: majorEvaluationContext의 "핵심 권장과목"/"권장과목" 목록을 확인하세요.
 2단계: 해당 목록에 포함된 과목은 아래 기본 분류보다 우선합니다.
-- 핵심 권장과목 → importancePercent: 30~40%, evaluationImpact: "very_high"
-- 권장과목 → importancePercent: 15~25%, evaluationImpact: "high"
-- 위 목록에 없는 일반 과목 → 기존 분류 규칙 적용
+- 핵심 권장과목 → evaluationImpact: "very_high"
+- 권장과목 → evaluationImpact: "high"
+- 위 목록에 없는 일반 과목 → Lite의 "계열별 evaluationImpact 기준" 적용
 
-### 비핵심 과목 (importancePercent: 2~5%, evaluationImpact: "very_low")
+### 비핵심 과목 (evaluationImpact: "very_low")
 다음 과목들은 **어떤 학과를 지망하든** 학종 평가에서 핵심이 아닙니다.
 **사정관들은 이 과목들을 학업에 직접적인 영향이 없는 것으로 보고, 성실도를 볼 때 참고하는 정도입니다.**
 
@@ -162,29 +165,9 @@ export const buildSubjectAnalysisPrompt = (
 
 ⚠️ 비핵심 과목의 evaluationComment/detailedEvaluation 작성 시:
 - ❌ "전공 적합성이 높다", "핵심 과목으로서 중요하다", "입학사정관이 주목할 것이다"
-- ❌ importancePercent를 10% 이상 부여하면 안 됩니다 (이과 학생이든 문과 학생이든 동일)
-- ✅ "학종 평가에서 보조적 과목으로, 성실성 확인 수준으로 반영됩니다", "전공 핵심 과목은 아니지만 수업 태도를 보여줍니다"
+- ✅ "학종 평가에서 보조적 과목으로, 성실성 확인 수준으로 반영됩니다"
 
-### ⚠️ 이과 학생 과목 중요도 배분 (필수)
-이과(자연/공학/의약학) 학생의 경우:
-- 수학 관련 과목: importancePercent 25~35%
-- 과학 관련 과목(물리/화학/생명과학/지구과학): importancePercent 25~35%
-- 국어/영어: importancePercent 10~15%
-- 사회탐구: importancePercent 5~10%
-- 비핵심 과목(정보, 한문, 기가, 제2외국어 등): importancePercent **2~5% (절대 10% 이상 부여 금지)**
-
-⚠️ 비핵심 과목의 중요도가 전공 핵심 과목보다 높게 나오면 안 됩니다. 생명과학 지망 학생에게 정보 과목이 10% 이상이면 오류입니다.
-
-### 전공 핵심 과목 (importancePercent: 25~40%, evaluationImpact: "very_high" 또는 "high")
-- 이공계: 수학, 미적분, 기하, 확률과통계, 물리학, 화학, 생명과학 (전공에 따라)
-- 인문사회: 사회·문화, 정치와법, 경제, 세계사, 동아시아사, 윤리와사상
-- 의약학: 생명과학, 화학, 수학
-
-### 공통 기초 과목 (importancePercent: 10~15%, evaluationImpact: "medium")
-- 국어, 영어, 문학, 언어와매체, 화법과작문
-
-### 비관련 탐구 과목 (importancePercent: 5~10%, evaluationImpact: "low")
-- 이공계 학생의 사회탐구, 인문계 학생의 과학탐구 등
+⚠️ 비핵심 과목의 evaluationImpact가 전공 핵심 과목보다 높으면 안 됩니다.
 
 ## 출력 JSON 스키마
 
@@ -220,7 +203,6 @@ export const buildSubjectAnalysisPrompt = (
           "improvementSuggestion": ""
         }
       ],
-      "importancePercent": 15,
       "evaluationImpact": "medium"
     }
   ]
@@ -260,6 +242,17 @@ export const buildSubjectAnalysisPrompt = (
    - "~을 기대함" → "원론적 의견으로 평가에 영향이 미미합니다."
    - "~을 탐색함" (결과 없음) → "관심 표명 수준으로, 탐구력 근거로 불충분합니다."
    - 이러한 표현이 전혀 없는 세특은 거의 없으므로, 최소 절반 이상의 과목에서 표현상 한계를 지적해야 합니다.
+12. **탐구 4단계 체크리스트 (필수)**: 각 세특을 다음 4단계로 분해하여 평가합니다:
+   - ① 문제제기/호기심: 탐구의 시작점이 명확한가?
+   - ② 자료수집/분석: 구체적 자료를 활용했는가?
+   - ③ 탐구과정: 실험/모델링/논증 등 과정이 서술되었는가?
+   - ④ 결과해석/확장: 결론이 있고, 추가 질문이나 확장이 있는가?
+   4단계 중 ①②만 있으면 "조사 수준", ①②③이면 "탐구 수준", 4단계 모두 있으면 "심화 탐구 수준"으로 판단합니다. evaluationComment에 이 판단을 반영하세요.
+13. **학년 간 심화 흐름 판단**: 같은 교과군 내에서 1학년 → 2학년으로 주제가 심화되었는지 확인합니다.
+   - 심화: 같은 주제를 더 깊게 탐구 (개념 → 실험 → 수식/모델)
+   - 유지: 비슷한 수준의 다른 주제
+   - 후퇴: 2학년 세특이 1학년보다 형식적
+   evaluationComment에 해당 판단을 자연스럽게 반영합니다.
 
 ## Few-shot 예시 (반드시 이 톤과 수준으로 작성)
 
