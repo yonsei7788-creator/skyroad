@@ -8,12 +8,14 @@ interface ConsultantReviewRendererProps {
   data: ConsultantReviewSection;
   sectionNumber: number;
   plan?: ReportPlan;
+  isGraduate?: boolean;
 }
 
 export const ConsultantReviewRenderer = ({
   data,
   sectionNumber,
   plan,
+  isGraduate,
 }: ConsultantReviewRendererProps) => {
   const displayTitle = data.title || "전임 컨설턴트 2차 검수";
 
@@ -39,7 +41,7 @@ export const ConsultantReviewRenderer = ({
         <p className={styles.small}>{safeText(data.admissionStrategy)}</p>
       </div>
 
-      {data.completionDirection && (
+      {data.completionDirection && !isGraduate && (
         <div>
           <div className={styles.h3}>생기부 마무리 방향</div>
           <p className={styles.small}>{safeText(data.completionDirection)}</p>

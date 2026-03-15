@@ -239,7 +239,23 @@ export const postprocess = (
     }
   }
 
-  // 3-3. admissionPrediction: 교과전형에서 서울대 제거 (교과전형 미운영)
+  // 3-3. admissionPrediction: 정시 모의고사 미입력 시 "판단 불가"
+  if (
+    admPred &&
+    !studentInfo.hasMockExamData &&
+    Array.isArray(admPred.predictions)
+  ) {
+    for (const pred of admPred.predictions) {
+      if (pred.admissionType !== "정시") continue;
+      pred.passRateLabel = "판단 불가";
+      pred.passRateRange = [0, 0];
+      pred.analysis =
+        "모의고사 데이터가 입력되지 않아 정시 전형의 합격 가능성을 판단할 수 없습니다.";
+      pred.universityPredictions = [];
+    }
+  }
+
+  // 3-4. admissionPrediction: 교과전형에서 서울대 제거 (교과전형 미운영)
   if (admPred && Array.isArray(admPred.predictions)) {
     for (const pred of admPred.predictions) {
       if (pred.admissionType !== "교과") continue;
@@ -250,7 +266,23 @@ export const postprocess = (
     }
   }
 
-  // 3-4. admissionPrediction: 유저 희망대학이 있으면 해당 대학만 남기기
+  // 3-4. admissionPrediction: 정시 전형 모의고사 미입력 시 chance 강제 null 처리
+  if (
+    admPred &&
+    !studentInfo.hasMockExamData &&
+    Array.isArray(admPred.predictions)
+  ) {
+    for (const pred of admPred.predictions) {
+      if (pred.admissionType !== "정시") continue;
+      pred.passRateLabel = "판단 불가";
+      pred.passRateRange = [0, 0];
+      pred.analysis =
+        "모의고사 데이터가 입력되지 않아 정시 전형의 합격 가능성을 판단할 수 없습니다.";
+      pred.universityPredictions = [];
+    }
+  }
+
+  // 3-5. admissionPrediction: 유저 희망대학이 있으면 해당 대학만 남기기
   if (
     admPred &&
     studentInfo.targetUniversities &&
@@ -649,6 +681,11 @@ export const postprocess = (
 
 // 안전한 치환만 수행 (앞뒤 문맥과 무관하게 1:1 대응되는 표현만)
 const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
+  // ── ThreeTierRating/assessment 구값 → 신값 변환 ──
+  // ⚠️ "양호한", "양호하며" 등 형용사 활용은 유지, 독립 명사 "양호"만 변환
+  [/보완필요/g, "미흡"],
+  [/보완 필요/g, "미흡"],
+
   // ── 단독으로 쓰이는 AI식 형용사/부사 → 자연스러운 대체 ──
   [/돋보입니다/g, "강점입니다"],
   [/돋보인다/g, "강점이다"],
@@ -844,6 +881,7 @@ const ENUM_FIELDS = new Set([
   "importance",
   "evaluationImpact",
   "questionType",
+  "assessment",
 ]);
 
 const sanitizeEnglishWords = (text: string): string => {
@@ -857,9 +895,13 @@ const sanitizeEnglishWords = (text: string): string => {
 /** 객체의 모든 문자열 필드를 재귀적으로 AI 톤 치환 + 영단어 치환 */
 const sanitizeDeep = (obj: unknown, fieldName?: string): unknown => {
   if (typeof obj === "string") {
-    // enum 필드는 영단어 치환 건너뜀
+    // enum 필드: "양호"→"보통" 변환만 수행 (톤/영단어 치환은 건너뜀)
+    if (fieldName && ENUM_FIELDS.has(fieldName)) {
+      if (obj === "양호") return "보통";
+      if (obj === "보완필요" || obj === "보완 필요") return "미흡";
+      return obj;
+    }
     const toned = sanitizeAiTone(obj);
-    if (fieldName && ENUM_FIELDS.has(fieldName)) return toned;
     return sanitizeEnglishWords(toned);
   }
   if (Array.isArray(obj)) return obj.map((item) => sanitizeDeep(item));
@@ -1797,6 +1839,23 @@ const normalizeSection = (
         delete q.intent;
       }
     }
+  }
+
+  // ── academicAnalysis: 졸업생은 성적 개선 우선순위 미노출 ──
+  if (s.sectionId === "academicAnalysis" && studentInfo.isGraduate) {
+    delete s.improvementPriority;
+    delete s.gradeChangeAnalysis;
+  }
+
+  // ── consultantReview: 졸업생은 생기부 마무리 방향 미노출 ──
+  if (s.sectionId === "consultantReview" && studentInfo.isGraduate) {
+    delete s.completionDirection;
+  }
+
+  // ── academicAnalysis: 졸업생은 성적 개선 우선순위 + 등급 변화 분석 미노출 ──
+  if (s.sectionId === "academicAnalysis" && studentInfo.isGraduate) {
+    delete s.improvementPriority;
+    delete s.gradeChangeAnalysis;
   }
 
   // ── admissionStrategy: schoolTypeAnalysis 빈 객체 제거 + 괴리 보강 ──

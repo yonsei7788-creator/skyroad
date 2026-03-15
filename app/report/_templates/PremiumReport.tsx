@@ -147,6 +147,7 @@ export const PremiumReport = ({ data }: PremiumReportProps) => {
                     section={item.section}
                     plan="premium"
                     sectionNumber={item.num}
+                    isGraduate={meta.studentInfo.isGraduate}
                   />
                 </AutoPaginatedSection>
               ))}

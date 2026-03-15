@@ -53,13 +53,13 @@ export type CompetencyCategory = "academic" | "career" | "community" | "growth";
 export interface CompetencyTag {
   category: CompetencyCategory;
   subcategory: string;
-  assessment?: "우수" | "양호" | "미흡" | "부족";
+  assessment?: "우수" | "보통" | "미흡" | "부족";
 }
 
 // ─── v4 공통 타입 ───
 
 /** 3단계 평가 (바이브온 스타일) */
-export type ThreeTierRating = "우수" | "양호" | "보완필요";
+export type ThreeTierRating = "우수" | "보통" | "미흡";
 
 /** 5단계 지원 안정도 */
 export type AdmissionRiskBand = "안정" | "적정" | "소신" | "도전" | "위험";
@@ -593,7 +593,7 @@ interface ActivityTypeAnalysis {
 
   // ─── v4 추가 ───
 
-  /** 3단계 티어 평가 (우수/양호/보완필요별 항목 + 인용) */
+  /** 3단계 티어 평가 (우수/보통/미흡별 항목 + 인용) */
   tieredAssessment?: {
     excellent: {
       items: string[];
@@ -822,7 +822,7 @@ export interface WeaknessAnalysisSection extends BaseSection {
 
   // ─── v4 추가 ───
 
-  /** 티어 요약 (우수/양호/보완필요 개수) */
+  /** 티어 요약 (우수/보통/미흡 개수) */
   tierSummary?: {
     excellent: number;
     good: number;

@@ -139,6 +139,7 @@ export const StandardReport = ({ data }: StandardReportProps) => {
                     section={item.section}
                     plan="standard"
                     sectionNumber={item.num}
+                    isGraduate={meta.studentInfo.isGraduate}
                   />
                 </AutoPaginatedSection>
               ))}

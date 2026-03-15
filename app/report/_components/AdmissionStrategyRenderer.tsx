@@ -221,7 +221,9 @@ export const AdmissionStrategyRenderer = ({
             ? m.emphasisKeywords
             : Array.isArray(m.matchingKeywords)
               ? m.matchingKeywords
-              : [];
+              : Array.isArray(m.keywords)
+                ? m.keywords
+                : [];
           const strengths: string[] = Array.isArray(m.studentStrengthMatch)
             ? m.studentStrengthMatch
             : [];
@@ -229,7 +231,19 @@ export const AdmissionStrategyRenderer = ({
             ? m.studentWeaknessMatch
             : [];
           const analysis: string | undefined =
-            typeof m.analysis === "string" ? m.analysis : undefined;
+            typeof m.analysis === "string"
+              ? m.analysis
+              : typeof m.matchingAnalysis === "string"
+                ? m.matchingAnalysis
+                : undefined;
+
+          if (
+            keywords.length === 0 &&
+            strengths.length === 0 &&
+            weaknesses.length === 0 &&
+            !analysis
+          )
+            return null;
 
           return (
             <div key={idx} className={styles.card}>

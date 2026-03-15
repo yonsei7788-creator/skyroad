@@ -25,12 +25,14 @@ interface SectionRendererProps {
   section: ReportSection;
   plan: ReportPlan;
   sectionNumber: number;
+  isGraduate?: boolean;
 }
 
 export const SectionRenderer = ({
   section,
   plan,
   sectionNumber,
+  isGraduate,
 }: SectionRendererProps) => {
   switch (section.sectionId) {
     // Part 1: 진단
@@ -150,6 +152,7 @@ export const SectionRenderer = ({
           data={section}
           sectionNumber={sectionNumber}
           plan={plan}
+          isGraduate={isGraduate}
         />
       );
 

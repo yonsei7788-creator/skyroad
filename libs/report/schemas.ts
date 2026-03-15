@@ -45,12 +45,12 @@ export const CompetencyCategorySchema = z.enum([
 export const CompetencyTagSchema = z.object({
   category: CompetencyCategorySchema,
   subcategory: z.string().min(1),
-  assessment: z.enum(["우수", "양호", "미흡", "부족"]).optional(),
+  assessment: z.enum(["우수", "보통", "미흡", "부족"]).optional(),
 });
 
 // ─── v4 공통 스키마 ───
 
-export const ThreeTierRatingSchema = z.enum(["우수", "양호", "보완필요"]);
+export const ThreeTierRatingSchema = z.enum(["우수", "보통", "미흡"]);
 export const AdmissionRiskBandSchema = z.enum([
   "안정",
   "적정",

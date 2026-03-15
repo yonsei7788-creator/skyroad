@@ -139,6 +139,7 @@ export const LiteReport = ({ data }: LiteReportProps) => {
                     section={item.section}
                     plan="lite"
                     sectionNumber={item.num}
+                    isGraduate={meta.studentInfo.isGraduate}
                   />
                 </AutoPaginatedSection>
               ))}

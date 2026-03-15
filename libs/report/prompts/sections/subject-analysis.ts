@@ -27,7 +27,7 @@ const COMPETENCY_TAG_GUIDE = `## 역량 태깅 가이드
 - {"category": "growth", "subcategory": "성장과정"}
 - {"category": "growth", "subcategory": "창의적문제해결"}
 
-선택적으로 assessment 필드를 추가할 수 있습니다: "우수" | "양호" | "미흡" | "부족"`;
+선택적으로 assessment 필드를 추가할 수 있습니다: "우수" | "보통" | "미흡" | "부족"`;
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 분석 수준: 간략
