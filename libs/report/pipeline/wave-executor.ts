@@ -76,7 +76,7 @@ export const executePreprocess = async (
   // 외부 주입값은 무시 (희망대학만 반복 추천하는 문제 방지)
 
   const isGrade1Only = studentInfo.grade === 1;
-  const taskQueue = buildTaskQueue(plan, isGrade1Only);
+  const taskQueue = buildTaskQueue(plan, isGrade1Only, studentInfo.isGraduate);
 
   const state: WaveState = {
     preprocessedTexts: texts,
@@ -363,7 +363,6 @@ export const executeTask = async (
             subjectAnalysisResult: ser.subjAnalysisText!,
             academicAnalysisResult: ser.acadSectionText!,
             attendanceAnalysisResult: ser.attendSectionText!,
-            basePassRates: texts.basePassRatesText,
             majorEvaluationContext: texts.majorEvaluationContextText,
             targetUniversities: texts.targetUniversitiesText,
           },
@@ -385,7 +384,6 @@ export const executeTask = async (
             universityCandidates: texts.universityCandidatesText,
             recommendedCourseMatch: texts.recommendedCourseMatchText,
             studentProfile: texts.studentProfileText,
-            basePassRates: texts.basePassRatesText,
             majorEvaluationContext: texts.majorEvaluationContextText,
           },
           plan

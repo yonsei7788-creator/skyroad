@@ -40,8 +40,8 @@ export type AdmissionChance =
   | "low"
   | "very_low";
 
-/** 지원 전략 유형 */
-export type AdmissionTier = "상향" | "안정" | "하향";
+/** 지원 카드 리스크 유형 */
+export type CardRiskLevel = "위험" | "안정";
 
 /** 우선순위 */
 export type Priority = "high" | "medium" | "low";
@@ -248,10 +248,10 @@ interface UniversityPrediction {
 
 interface AdmissionPredictionItem {
   admissionType: "학종" | "교과" | "정시";
-  /** 합격률 표시 (예: "60~70%") */
-  passRateLabel: string;
-  /** 합격률 수치 범위 [하한, 상한] */
-  passRateRange: [number, number];
+  /** 합격률 표시 (예: "60~70%") — 커트라인 데이터 미제공 시 "데이터 없음" */
+  passRateLabel?: string;
+  /** 합격률 수치 범위 [하한, 상한] — 커트라인 데이터 미제공 시 [0, 0] */
+  passRateRange?: [number, number];
   /** 근거 분석 (2~3줄) */
   analysis: string;
   /** Standard+: 주요 대학별 예측 */
@@ -939,25 +939,38 @@ export interface InterviewPrepSection extends BaseSection {
 
 // ─── 섹션 16: 입시 전략 + 대학 추천 (admissionStrategy) ───
 
-interface UniversityRecommendation {
+/** 대학 추천 카드: 학종 + 교과 통합 */
+interface UniversityCard {
   university: string;
   department: string;
-  admissionType: string;
-  tier: AdmissionTier;
+  /** 이 카드의 리스크 수준 */
+  riskLevel: CardRiskLevel;
 
-  /** Standard+: 합격 가능성 */
-  chance?: AdmissionChance;
-  /** Standard+: 합격 가능성 근거 (AI 생성) */
-  chanceRationale?: string;
-  /** Standard+: 입시 데이터 (코드에서 정적 데이터로 주입) */
-  admissionData?: {
-    cutoff50?: number;
-    cutoff70?: number;
-    competitionRate?: number;
-    enrollment?: number;
+  /** 학생부종합전형 추천 */
+  comprehensive: {
+    admissionType: string;
+    chance: AdmissionChance;
+    chanceRationale: string;
+    chancePercentLabel?: string;
   };
-  /** 합격 가능성 퍼센트 라벨 (예: "60~70%") */
-  chancePercentLabel?: string;
+
+  /** 학생부교과전형 추천 (교과전형이 없는 대학은 생략) */
+  subject?: {
+    admissionType: string;
+    chance: AdmissionChance;
+    chanceRationale: string;
+    chancePercentLabel?: string;
+  };
+}
+
+/** 지원 조합 시뮬레이션 그룹 */
+interface SimulationGroup {
+  /** 시뮬레이션 유형 */
+  type: "위험형" | "안정형";
+  /** 시뮬레이션 설명 (2~3줄) */
+  description: string;
+  /** 대학 카드 6개 */
+  cards: UniversityCard[];
 }
 
 /** Standard+: 전형별 전략 */
@@ -975,67 +988,35 @@ interface SchoolTypeAnalysis {
   rationale: string;
 }
 
-/** Premium: 지원 조합 시뮬레이션 */
-interface ApplicationSimulation {
-  description: string;
-  details: {
-    admissionType: string;
-    count: number;
-    targetUniversities: string[];
-  }[];
-}
-
 export interface AdmissionStrategySection extends BaseSection {
   sectionId: "admissionStrategy";
 
-  // Lite
+  /** 추천 전형 방향 (2~3줄) */
   recommendedPath: string;
-  recommendations: UniversityRecommendation[];
+
+  /**
+   * 지원 조합 시뮬레이션 (위험형 + 안정형)
+   * - 위험형: 위험 카드 4개 + 안정 카드 2개
+   * - 안정형: 위험 카드 2개 + 안정 카드 4개
+   * - 각 카드에 학종 + 교과 추천 포함
+   */
+  simulations: [SimulationGroup, SimulationGroup];
 
   // Standard+
   typeStrategies?: AdmissionTypeStrategy[];
   schoolTypeAnalysis?: SchoolTypeAnalysis;
 
   // Premium
-  csatMinimumStrategy?: string;
-  applicationSimulation?: ApplicationSimulation;
   universityGuideMatching?: {
     university: string;
-    emphasisKeywords: string[];
-    studentStrengthMatch: string[];
-    studentWeaknessMatch: string[];
-  }[];
-
-  // ─── v4 추가 ───
-
-  /** 대학별 리스크 밴드 */
-  universityRiskBands?: {
-    university: string;
-    department: string;
-    band: AdmissionRiskBand;
-    rationale: string;
-  }[];
-  /** 전형별 적합도 차트 */
-  typeSuitabilityChart?: {
-    type: string;
-    score: number;
-    keyStrengths: string[];
-    keyRisks: string[];
-  }[];
-  /** 전략 매트릭스 (상향/안정/하향별 추천) */
-  strategyMatrix?: {
-    tier: AdmissionTier;
-    recommendations: {
-      university: string;
-      department: string;
-      type: string;
-      band: AdmissionRiskBand;
-    }[];
-  }[];
-  /** 티어 그룹별 추천 */
-  tierGroupedRecommendations?: {
-    tierGroup: "상향 위주" | "안정 위주" | "하향 위주";
-    recommendations: UniversityRecommendation[];
+    department?: string;
+    /** 핵심 키워드 (emphasisKeywords 또는 keywords) */
+    emphasisKeywords?: string[];
+    keywords?: string[];
+    studentStrengthMatch?: string[];
+    studentWeaknessMatch?: string[];
+    /** 매칭 분석 (AI가 생성) */
+    matchingAnalysis?: string;
   }[];
   /** 다음 학기 전략 */
   nextSemesterStrategy?: string;
@@ -1303,6 +1284,8 @@ export type RequiredSectionIds = {
 export interface StudentInfo {
   name: string;
   grade: number;
+  /** 졸업생 여부 (N수생 포함) */
+  isGraduate: boolean;
   track: "문과" | "이과" | "예체능" | "통합";
   schoolType:
     | "일반고"

@@ -12,12 +12,12 @@ import {
   isMedicalMajor,
 } from "../constants/recommended-courses.ts";
 import type { RecommendedCourseMatch } from "../constants/recommended-courses.ts";
-import { generateUniversityCandidates } from "../constants/university-admission-data.ts";
-import type { UniversityCandidate } from "../constants/university-admission-data.ts";
 import {
   matchMajorEvaluationCriteria,
   formatMajorEvaluationContext,
 } from "../constants/major-evaluation-criteria.ts";
+import { findMajorInfo } from "../constants/major-info-data.ts";
+import { findCutoffData } from "../constants/admission-cutoff-data.ts";
 
 // ─── 생기부 원본 JSONB 타입 ───
 
@@ -193,20 +193,6 @@ export interface PreprocessedData {
     communityScore: number;
     growthScore: number;
   };
-  /** 등급-커트라인 기반 기본 합격률 (AI 조정 제약용) */
-  basePassRates: BasePassRate[];
-}
-
-export interface BasePassRate {
-  university: string;
-  department: string;
-  admissionType: string;
-  tier: string;
-  cutoffGrade: number;
-  studentGrade: number;
-  gradeDiff: number;
-  basePassRate: [number, number];
-  aiAdjustMax: number;
 }
 
 /** 프롬프트에 주입 가능한 텍스트 형태의 전처리 결과 */
@@ -222,7 +208,6 @@ export interface PreprocessedTexts {
   recommendedCourseMatchText: string;
   recordVolumeText: string;
   universityCandidatesText: string;
-  basePassRatesText: string;
   /** 유저 설정 희망대학 텍스트 (없으면 빈 문자열) */
   targetUniversitiesText: string;
   curriculumVersion: "2015" | "2022";
@@ -339,12 +324,35 @@ export const preprocess = (
   studentInfo: StudentInfo,
   plan: ReportPlan
 ): PreprocessResult => {
-  const generalSubjects = recordData.generalSubjects ?? [];
-  const careerSubjects = recordData.careerSubjects ?? [];
+  // 학기 범위 필터: 재학생(고3)은 3-1까지, 졸업생/N수생은 3-2까지
+  const maxSemester = studentInfo.isGraduate
+    ? { year: 3, semester: 2 }
+    : studentInfo.grade === 3
+      ? { year: 3, semester: 1 }
+      : { year: studentInfo.grade, semester: 2 };
+
+  const withinScope = (year: number, semester?: number): boolean => {
+    if (year < maxSemester.year) return true;
+    if (year > maxSemester.year) return false;
+    return (semester ?? 1) <= maxSemester.semester;
+  };
+
+  const generalSubjects = (recordData.generalSubjects ?? []).filter((s) =>
+    withinScope(s.year, s.semester)
+  );
+  const careerSubjects = (recordData.careerSubjects ?? []).filter((s) =>
+    withinScope(s.year, s.semester)
+  );
   const attendance = recordData.attendance ?? [];
-  const subjectEvals = recordData.subjectEvaluations ?? [];
-  const creativeActs = recordData.creativeActivities ?? [];
-  const behaviors = recordData.behavioralAssessments ?? [];
+  const subjectEvals = (recordData.subjectEvaluations ?? []).filter((s) =>
+    withinScope(s.year)
+  );
+  const creativeActs = (recordData.creativeActivities ?? []).filter((a) =>
+    withinScope(a.year)
+  );
+  const behaviors = (recordData.behavioralAssessments ?? []).filter((b) =>
+    withinScope(b.year)
+  );
 
   // 1. 평균 등급 계산
   const gradesWithRank = generalSubjects.filter(
@@ -460,26 +468,6 @@ export const preprocess = (
     attendance
   );
 
-  // 17. 기본 합격률 산출 (대학 후보군 기반)
-  // 여자대학교 필터: 목표 대학이 여대가 아니면 여대 제외
-  const targetIsWomensUniv =
-    studentInfo.targetUniversity?.includes("여자") ?? false;
-  const gender: "male" | "female" | undefined = targetIsWomensUniv
-    ? "female"
-    : undefined;
-  const universityCandidates = generateUniversityCandidates(
-    convertedGrade.converted,
-    studentInfo.targetDepartment ?? "",
-    studentInfo.track,
-    studentInfo.schoolType,
-    plan,
-    gender
-  );
-  const basePassRates = computeBasePassRates(
-    universityCandidates,
-    convertedGrade.converted
-  );
-
   const data: PreprocessedData = {
     overallAverage: Math.round(overallAverage * 100) / 100,
     averageByGrade,
@@ -503,7 +491,6 @@ export const preprocess = (
     recordVolume,
     wordCloudData,
     studentTypeInput,
-    basePassRates,
   };
 
   const texts = buildTexts(data, recordData, studentInfo, plan);
@@ -969,45 +956,6 @@ const computeStudentTypeInput = (
   };
 };
 
-// ─── 등급-커트라인 기반 기본 합격률 산출 ───
-
-const computeBasePassRates = (
-  candidates: UniversityCandidate[],
-  studentGrade: number
-): BasePassRate[] => {
-  return candidates.map((c) => {
-    const gradeDiff = studentGrade - c.cutoffGrade;
-    const [baseLow, baseHigh] = computePassRateRange(gradeDiff);
-    return {
-      university: c.university,
-      department: c.department,
-      admissionType: c.admissionType,
-      tier: c.tier,
-      cutoffGrade: c.cutoffGrade,
-      studentGrade,
-      gradeDiff: Math.round(gradeDiff * 100) / 100,
-      basePassRate: [baseLow, baseHigh],
-      aiAdjustMax: 10,
-    };
-  });
-};
-
-/**
- * 등급 차이 → 기본 합격률 범위 산출
- * gradeDiff = 학생등급 - 커트라인 (양수 = 학생이 커트보다 낮음 = 불리)
- */
-const computePassRateRange = (gradeDiff: number): [number, number] => {
-  if (gradeDiff <= -1.5) return [70, 80];
-  if (gradeDiff <= -1.0) return [60, 70];
-  if (gradeDiff <= -0.5) return [50, 60];
-  if (gradeDiff <= 0) return [40, 50];
-  if (gradeDiff <= 0.3) return [30, 40];
-  if (gradeDiff <= 0.5) return [20, 30];
-  if (gradeDiff <= 1.0) return [10, 20];
-  if (gradeDiff <= 1.5) return [5, 10];
-  return [0, 5];
-};
-
 // ─── 텍스트 빌더 ───
 
 const buildTexts = (
@@ -1046,9 +994,19 @@ const buildTexts = (
   // 계열별 입학사정관 평가 기준 생성
   const targetDept = studentInfo.targetDepartment ?? "";
   const majorCriteria = matchMajorEvaluationCriteria(targetDept);
-  const majorEvaluationContextText = targetDept
+  const majorEvalBase = targetDept
     ? formatMajorEvaluationContext(majorCriteria, targetDept)
     : "";
+  // 커리어넷 API 기반 학과 관련 교과 정보 추가
+  const majorInfoFromApi = targetDept ? findMajorInfo(targetDept) : undefined;
+  const careerNetContext = majorInfoFromApi
+    ? `\n\n### 커리어넷 학과 관련 교과 (${majorInfoFromApi.majorName})\n` +
+      `- 계열: ${majorInfoFromApi.lClass}\n` +
+      `- 일반선택 관련 교과: ${majorInfoFromApi.electiveSubjects.join(", ") || "없음"}\n` +
+      `- 진로선택 관련 교과: ${majorInfoFromApi.careerSubjects.join(", ") || "없음"}\n` +
+      `- 개설 대학: ${majorInfoFromApi.universities.slice(0, 10).join(", ")}`
+    : "";
+  const majorEvaluationContextText = majorEvalBase + careerNetContext;
 
   // 유저 설정 희망대학 텍스트
   const targetUniversitiesText = formatTargetUniversities(
@@ -1066,32 +1024,58 @@ const buildTexts = (
     attendanceSummaryText,
     recommendedCourseMatchText,
     recordVolumeText,
-    universityCandidatesText: JSON.stringify(
-      generateUniversityCandidates(
-        data.convertedGrade.converted,
-        targetDept,
-        studentInfo.track,
-        studentInfo.schoolType,
-        plan,
-        studentInfo.targetUniversity?.includes("여자") ? "female" : undefined
-      ),
-      null,
-      2
-    ),
-    basePassRatesText: JSON.stringify(data.basePassRates, null, 2),
+    universityCandidatesText: buildUniversityCandidatesText(targetDept),
     targetUniversitiesText,
     curriculumVersion: data.curriculumVersion,
     majorEvaluationContextText,
   };
 };
 
+/** 커리어넷 데이터 기반 대학 후보군 텍스트 생성 (커트라인 포함) */
+const buildUniversityCandidatesText = (targetDept: string): string => {
+  if (!targetDept) return "[]";
+  const majorInfo = findMajorInfo(targetDept);
+  if (!majorInfo) return "[]";
+
+  const candidates = majorInfo.universities.map((university: string) => {
+    const cutoffs = findCutoffData(university, majorInfo.majorName);
+    const cutoffSummary =
+      cutoffs.length > 0
+        ? cutoffs
+            .map(
+              (c) =>
+                `${c.admissionType}(${c.admissionName}): 50%cut=${c.cutoff50Grade ?? "-"}, 70%cut=${c.cutoff70Grade ?? "-"}, 경쟁률=${c.competitionRate}`
+            )
+            .join(" / ")
+        : null;
+
+    return {
+      university,
+      department: majorInfo.majorName,
+      ...(cutoffSummary ? { cutoffData: cutoffSummary } : {}),
+    };
+  });
+  return JSON.stringify(candidates, null, 2);
+};
+
 const formatStudentProfile = (
   info: StudentInfo,
   convertedGrade?: PreprocessedData["convertedGrade"]
 ): string => {
+  const statusLabel = info.isGraduate
+    ? "졸업생(N수생)"
+    : `${info.grade}학년 재학생`;
+  const semesterScope = info.isGraduate
+    ? "3학년 2학기까지 (전체)"
+    : info.grade === 3
+      ? "3학년 1학기까지"
+      : `${info.grade}학년까지`;
+
   const lines = [
     `이름: ${info.name}`,
     `학년: ${info.grade}학년`,
+    `학생 상태: ${statusLabel}`,
+    `분석 범위: ${semesterScope}`,
     `계열: ${info.track}`,
     `학교 유형: ${info.schoolType}`,
   ];

@@ -47,7 +47,8 @@ export interface WaveState {
 
 export const buildTaskQueue = (
   plan: ReportPlan,
-  isGrade1Only: boolean
+  isGrade1Only: boolean,
+  isGraduate: boolean = false
 ): string[] => {
   const tasks: string[] = ["phase2"];
   const secs = SECTION_ORDER[plan];
@@ -76,7 +77,8 @@ export const buildTaskQueue = (
     tasks.push(isGrade1Only ? "directionGuide" : "admissionStrategy");
   }
   // storyAnalysis 제외 (피드백 반영: 모든 항목에서 스토리 분석 제외)
-  if (has("actionRoadmap")) tasks.push("actionRoadmap");
+  // 졸업생/N수생은 학기별 실행 계획 미노출
+  if (has("actionRoadmap") && !isGraduate) tasks.push("actionRoadmap");
 
   // Group 6
   tasks.push("majorExploration");

@@ -464,6 +464,7 @@ export const POST = async (request: NextRequest) => {
   const studentInfo: StudentInfo = {
     name: profiles.name ?? "학생",
     grade: GRADE_MAP[profiles.grade] ?? 2,
+    isGraduate: profiles.grade === "graduate",
     track: "통합",
     schoolType:
       (profiles.high_school_type as StudentInfo["schoolType"]) ?? "일반고",

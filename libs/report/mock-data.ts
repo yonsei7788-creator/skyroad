@@ -34,6 +34,7 @@ import type {
 const BASE_STUDENT_INFO = {
   name: "김민수",
   grade: 2 as const,
+  isGraduate: false,
   track: "이과" as const,
   schoolType: "일반고" as const,
   targetUniversity: "서울대학교",
@@ -5251,166 +5252,66 @@ const interviewPrepPremium: InterviewPrepSection = {
 
 // ─── 섹션 16: 입시 전략 + 대학 추천 ───
 
+const MOCK_CARD = (uni: string, dept: string, risk: "위험" | "안정") => ({
+  university: uni,
+  department: dept,
+  riskLevel: risk,
+  comprehensive: {
+    admissionType: "학생부종합-일반",
+    chance: risk === "위험" ? ("low" as const) : ("high" as const),
+    chanceRationale:
+      risk === "위험"
+        ? "전공 적합성은 있으나 상위권 경쟁이 치열하여 도전적 지원"
+        : "현재 스펙으로 안정적 합격 가능",
+    chancePercentLabel: risk === "위험" ? "30~40%" : "70~85%",
+  },
+  subject: {
+    admissionType: "학생부교과-지역균형",
+    chance: risk === "위험" ? ("medium" as const) : ("very_high" as const),
+    chanceRationale:
+      risk === "위험"
+        ? "내신 등급 기준 교과전형 지원 가능 수준"
+        : "내신 등급이 합격선을 충족하여 안정적",
+    chancePercentLabel: risk === "위험" ? "45~55%" : "85~95%",
+  },
+});
+
 const admissionStrategyLite: AdmissionStrategySection = {
   sectionId: "admissionStrategy",
   title: "입시 전략 및 대학 추천",
   recommendedPath:
     "학생부종합전형을 주력으로, 전공 적합성과 탐구 역량을 중심으로 어필하는 전략을 추천합니다.",
-  recommendations: [
+  simulations: [
     {
-      university: "서울대학교",
-      department: "컴퓨터공학과",
-      admissionType: "학생부종합 (일반전형)",
-      tier: "상향",
+      type: "위험형",
+      description:
+        "도전적 지원 전략: 상위권 대학에 집중하되, 안정 카드 2개로 안전망 확보",
+      cards: [
+        MOCK_CARD("서울대학교", "컴퓨터공학과", "위험"),
+        MOCK_CARD("KAIST", "전산학부", "위험"),
+        MOCK_CARD("연세대학교", "컴퓨터과학과", "위험"),
+        MOCK_CARD("고려대학교", "컴퓨터학과", "위험"),
+        MOCK_CARD("한양대학교", "컴퓨터소프트웨어학부", "안정"),
+        MOCK_CARD("중앙대학교", "소프트웨어학부", "안정"),
+      ],
     },
     {
-      university: "KAIST",
-      department: "전산학부",
-      admissionType: "학생부종합",
-      tier: "상향",
-    },
-    {
-      university: "고려대학교",
-      department: "컴퓨터학과",
-      admissionType: "학생부종합 (학업우수형)",
-      tier: "안정",
-    },
-    {
-      university: "성균관대학교",
-      department: "소프트웨어학과",
-      admissionType: "학생부종합 (계열모집)",
-      tier: "안정",
-    },
-    {
-      university: "한양대학교",
-      department: "컴퓨터소프트웨어학부",
-      admissionType: "학생부종합 (일반)",
-      tier: "하향",
-    },
-    {
-      university: "서울시립대학교",
-      department: "컴퓨터과학부",
-      admissionType: "학생부종합",
-      tier: "하향",
-    },
-    {
-      university: "연세대학교",
-      department: "컴퓨터과학과",
-      admissionType: "학생부종합 (활동우수형)",
-      tier: "안정",
-    },
-    {
-      university: "서강대학교",
-      department: "컴퓨터공학과",
-      admissionType: "학생부종합 (일반형)",
-      tier: "안정",
-    },
-    {
-      university: "중앙대학교",
-      department: "소프트웨어학부",
-      admissionType: "학생부종합 (다빈치형인재)",
-      tier: "하향",
-    },
-    {
-      university: "건국대학교",
-      department: "컴퓨터공학부",
-      admissionType: "학생부종합 (KU자기추천)",
-      tier: "하향",
+      type: "안정형",
+      description: "안정적 지원 전략: 합격 가능성 높은 대학 위주로 구성",
+      cards: [
+        MOCK_CARD("성균관대학교", "소프트웨어학과", "위험"),
+        MOCK_CARD("서강대학교", "컴퓨터공학과", "위험"),
+        MOCK_CARD("한양대학교", "컴퓨터소프트웨어학부", "안정"),
+        MOCK_CARD("중앙대학교", "소프트웨어학부", "안정"),
+        MOCK_CARD("건국대학교", "컴퓨터공학부", "안정"),
+        MOCK_CARD("서울시립대학교", "컴퓨터과학부", "안정"),
+      ],
     },
   ],
 };
 
-const ADMISSION_RATIONALE_MAP: Record<string, string> = {
-  서울대학교:
-    "전공 적합성은 우수하나 공동체 역량 보완 필요. 3학년 보강 시 합격 가능성 상승.",
-  KAIST: "수학·정보 성적이 강점이나, 외부 대회 실적 추가 시 경쟁력 상승.",
-  고려대학교: "현재 스펙으로 안정적 합격 가능. 학업우수형 전형에 매우 적합.",
-  성균관대학교:
-    "소프트웨어 특성화 학과로 전공 적합성이 높으며, 현재 내신과 활동으로 합격 가능성 높음.",
-  한양대학교:
-    "내신과 세특 활동 기준 안정적 합격 가능. 교과전형도 보조적으로 고려 가능.",
-  서울시립대학교: "현재 스펙 기준 합격 가능성이 매우 높음. 안전한 하향 지원처.",
-  연세대학교:
-    "활동우수형 전형에서 코딩 동아리·해커톤 경험이 강점. 전공 적합성 우수하나 공동체 활동 보강 권장.",
-  서강대학교:
-    "소규모 학과로 전공 적합성을 중시하며, 현재 수학·정보 세특이 강점. 안정적 합격 전망.",
-  중앙대학교:
-    "다빈치형인재 전형에서 자기주도 탐구 역량을 높이 평가. 현재 스펙으로 합격 가능성 매우 높음.",
-  건국대학교:
-    "KU자기추천 전형에서 진로 일관성과 탐구 활동이 강점. 안전한 하향 지원처로 적합.",
-};
-
 const admissionStrategyStandard: AdmissionStrategySection = {
   ...admissionStrategyLite,
-  recommendations: admissionStrategyLite.recommendations.map((r) => ({
-    ...r,
-    chance: r.tier === "상향" ? ("medium" as const) : ("high" as const),
-    chanceRationale:
-      ADMISSION_RATIONALE_MAP[r.university] ??
-      "현재 스펙 기준 합격 가능성이 높음.",
-    chancePercentLabel:
-      r.tier === "상향" ? "40~55%" : r.tier === "안정" ? "65~80%" : "80~90%",
-    admissionData:
-      r.university === "서울대학교"
-        ? { cutoff50: 1.5, cutoff70: 1.8, competitionRate: 3.2, enrollment: 55 }
-        : r.university === "KAIST"
-          ? { cutoff50: 1.6, competitionRate: 2.8, enrollment: 120 }
-          : r.university === "고려대학교"
-            ? {
-                cutoff50: 1.8,
-                cutoff70: 2.1,
-                competitionRate: 4.5,
-                enrollment: 60,
-              }
-            : r.university === "연세대학교"
-              ? {
-                  cutoff50: 1.7,
-                  cutoff70: 2.0,
-                  competitionRate: 5.1,
-                  enrollment: 55,
-                }
-              : r.university === "성균관대학교"
-                ? {
-                    cutoff50: 2.0,
-                    cutoff70: 2.3,
-                    competitionRate: 4.8,
-                    enrollment: 50,
-                  }
-                : r.university === "서강대학교"
-                  ? {
-                      cutoff50: 2.0,
-                      cutoff70: 2.4,
-                      competitionRate: 3.9,
-                      enrollment: 40,
-                    }
-                  : r.university === "한양대학교"
-                    ? {
-                        cutoff50: 2.2,
-                        cutoff70: 2.5,
-                        competitionRate: 5.2,
-                        enrollment: 50,
-                      }
-                    : r.university === "중앙대학교"
-                      ? {
-                          cutoff50: 2.5,
-                          cutoff70: 2.8,
-                          competitionRate: 6.1,
-                          enrollment: 80,
-                        }
-                      : r.university === "건국대학교"
-                        ? {
-                            cutoff50: 2.8,
-                            cutoff70: 3.1,
-                            competitionRate: 5.5,
-                            enrollment: 60,
-                          }
-                        : {
-                            cutoff50: 2.3,
-                            cutoff70: 2.7,
-                            competitionRate: 4.0,
-                            enrollment: 45,
-                          },
-  })),
   typeStrategies: [
     {
       type: "학종",
@@ -5447,429 +5348,26 @@ const admissionStrategyStandard: AdmissionStrategySection = {
 
 const admissionStrategyPremium: AdmissionStrategySection = {
   ...admissionStrategyStandard,
-  csatMinimumStrategy:
-    "수능 최저 충족을 위해 국어 3등급 → 2등급, 영어 2등급 유지가 필요합니다. 수학과 탐구는 현재 수준 유지 시 충족 가능합니다.",
-  applicationSimulation: {
-    description: "수시 6장 최적 배분 시뮬레이션",
-    details: [
-      {
-        admissionType: "학종",
-        count: 4,
-        targetUniversities: ["서울대", "연세대", "고려대", "성균관대"],
-      },
-      {
-        admissionType: "교과",
-        count: 1,
-        targetUniversities: ["서강대"],
-      },
-      {
-        admissionType: "정시 대비",
-        count: 1,
-        targetUniversities: ["중앙대"],
-      },
-    ],
-  },
   universityGuideMatching: [
     {
       university: "서울대학교",
-      emphasisKeywords: [
-        "자기주도성",
-        "학업 역량",
-        "발전가능성",
-        "공동체 의식",
-      ],
+      emphasisKeywords: ["자기주도성", "학업 역량"],
       studentStrengthMatch: ["자기주도성", "학업 역량"],
       studentWeaknessMatch: ["공동체 의식"],
     },
     {
       university: "연세대학교",
-      emphasisKeywords: ["창의성", "도전정신", "리더십", "전공 적합성"],
+      emphasisKeywords: ["창의성", "도전정신", "전공 적합성"],
       studentStrengthMatch: ["전공 적합성", "도전정신"],
       studentWeaknessMatch: ["리더십"],
     },
     {
       university: "고려대학교",
-      emphasisKeywords: ["학업 역량", "자기개발 역량", "인성", "전공 적합성"],
-      studentStrengthMatch: ["학업 역량", "자기개발 역량"],
+      emphasisKeywords: ["학업 역량", "자기개발 역량", "전공 적합성"],
+      studentStrengthMatch: ["학업 역량"],
       studentWeaknessMatch: ["인성"],
     },
-    {
-      university: "성균관대학교",
-      emphasisKeywords: ["소프트웨어 역량", "문제 해결 능력", "협업 역량"],
-      studentStrengthMatch: ["소프트웨어 역량", "문제 해결 능력"],
-      studentWeaknessMatch: ["협업 역량"],
-    },
-    {
-      university: "서강대학교",
-      emphasisKeywords: ["자기주도 학습", "탐구 역량", "전공 관심도"],
-      studentStrengthMatch: ["자기주도 학습", "탐구 역량", "전공 관심도"],
-      studentWeaknessMatch: [],
-    },
-    {
-      university: "중앙대학교",
-      emphasisKeywords: ["자기주도 탐구", "창의적 문제해결", "잠재력"],
-      studentStrengthMatch: ["자기주도 탐구", "창의적 문제해결"],
-      studentWeaknessMatch: [],
-    },
   ],
-  // v4
-  universityRiskBands: [
-    {
-      university: "서울대학교",
-      department: "컴퓨터공학과",
-      band: "소신",
-      rationale: "전공 적합성 우수하나 공동체 역량 보강 필요",
-    },
-    {
-      university: "KAIST",
-      department: "전산학부",
-      band: "도전",
-      rationale:
-        "수학·정보 역량은 강점이나 외부 대회 실적 부족으로 경쟁력 다소 낮음",
-    },
-    {
-      university: "연세대학교",
-      department: "컴퓨터과학과",
-      band: "적정",
-      rationale:
-        "활동우수형 전형에서 세특 기반 활동이 강점. 리더십 보강 시 안정권",
-    },
-    {
-      university: "고려대학교",
-      department: "컴퓨터학과",
-      band: "안정",
-      rationale: "현재 스펙으로 안정적 합격 가능",
-    },
-    {
-      university: "성균관대학교",
-      department: "소프트웨어학과",
-      band: "안정",
-      rationale: "전공 적합성과 내신 모두 합격선 충족",
-    },
-    {
-      university: "서강대학교",
-      department: "컴퓨터공학과",
-      band: "안정",
-      rationale: "소규모 학과 특성상 전공 적합성을 중시하여 현재 스펙으로 충분",
-    },
-    {
-      university: "한양대학교",
-      department: "컴퓨터소프트웨어학부",
-      band: "안정",
-      rationale: "내신과 활동 모두 합격선 충족",
-    },
-    {
-      university: "중앙대학교",
-      department: "소프트웨어학부",
-      band: "안정",
-      rationale: "현재 스펙 기준 안정적 합격 전망",
-    },
-    {
-      university: "건국대학교",
-      department: "컴퓨터공학부",
-      band: "안정",
-      rationale: "합격 가능성 매우 높은 안전 지원처",
-    },
-    {
-      university: "서울시립대학교",
-      department: "컴퓨터과학부",
-      band: "안정",
-      rationale: "합격 가능성 매우 높은 안전 지원처",
-    },
-  ],
-  typeSuitabilityChart: [
-    {
-      type: "학종",
-      score: 78,
-      keyStrengths: ["전공 적합성", "탐구 역량", "진로 일관성"],
-      keyRisks: ["공동체 역량 부족", "인문 교과 연계 미비"],
-    },
-    {
-      type: "교과",
-      score: 52,
-      keyStrengths: ["전공 교과 1등급"],
-      keyRisks: ["전 교과 평균 2.1등급", "비전공 교과 3등급대"],
-    },
-    {
-      type: "정시",
-      score: 65,
-      keyStrengths: ["수학·탐구 영역 강점"],
-      keyRisks: ["국어 영역 변동성", "수능 당일 변수"],
-    },
-  ],
-  strategyMatrix: [
-    {
-      tier: "상향",
-      recommendations: [
-        {
-          university: "서울대학교",
-          department: "컴퓨터공학과",
-          type: "학종",
-          band: "소신",
-        },
-        {
-          university: "KAIST",
-          department: "전산학부",
-          type: "학종",
-          band: "도전",
-        },
-      ],
-    },
-    {
-      tier: "안정",
-      recommendations: [
-        {
-          university: "연세대학교",
-          department: "컴퓨터과학과",
-          type: "학종",
-          band: "적정",
-        },
-        {
-          university: "고려대학교",
-          department: "컴퓨터학과",
-          type: "학종",
-          band: "안정",
-        },
-        {
-          university: "성균관대학교",
-          department: "소프트웨어학과",
-          type: "학종",
-          band: "안정",
-        },
-        {
-          university: "서강대학교",
-          department: "컴퓨터공학과",
-          type: "학종",
-          band: "안정",
-        },
-      ],
-    },
-    {
-      tier: "하향",
-      recommendations: [
-        {
-          university: "한양대학교",
-          department: "컴퓨터소프트웨어학부",
-          type: "학종",
-          band: "안정",
-        },
-        {
-          university: "중앙대학교",
-          department: "소프트웨어학부",
-          type: "학종",
-          band: "안정",
-        },
-        {
-          university: "건국대학교",
-          department: "컴퓨터공학부",
-          type: "학종",
-          band: "안정",
-        },
-        {
-          university: "서울시립대학교",
-          department: "컴퓨터과학부",
-          type: "학종",
-          band: "안정",
-        },
-      ],
-    },
-  ],
-  tierGroupedRecommendations: [
-    {
-      tierGroup: "상향 위주",
-      recommendations: [
-        {
-          university: "서울대학교",
-          department: "컴퓨터공학과",
-          admissionType: "학생부종합 (일반전형)",
-          tier: "상향",
-          chance: "medium",
-          chanceRationale:
-            "전공 적합성은 우수하나 공동체 역량 보완 필요. 3학년 보강 시 합격 가능성 상승.",
-          chancePercentLabel: "40~50%",
-        },
-        {
-          university: "KAIST",
-          department: "전산학부",
-          admissionType: "학생부종합",
-          tier: "상향",
-          chance: "medium",
-          chanceRationale:
-            "수학·정보 성적이 강점이나, 외부 대회 실적 추가 시 경쟁력 상승.",
-          chancePercentLabel: "35~45%",
-        },
-        {
-          university: "포항공과대학교",
-          department: "컴퓨터공학과",
-          admissionType: "학생부종합 (일반전형)",
-          tier: "상향",
-          chance: "medium",
-          chanceRationale:
-            "이공계 특성화 대학으로 수학·과학 역량이 강점. 연구 경험 추가 시 경쟁력 상승.",
-          chancePercentLabel: "40~50%",
-        },
-        {
-          university: "연세대학교",
-          department: "컴퓨터과학과",
-          admissionType: "학생부종합 (활동우수형)",
-          tier: "상향",
-          chance: "medium",
-          chanceRationale:
-            "활동우수형 전형에서 코딩 동아리·해커톤 경험이 강점이나 리더십 보강 권장.",
-          chancePercentLabel: "45~55%",
-        },
-        {
-          university: "고려대학교",
-          department: "컴퓨터학과",
-          admissionType: "학생부종합 (학업우수형)",
-          tier: "상향",
-          chance: "medium",
-          chanceRationale:
-            "학업우수형 전형에서 내신과 세특 활동이 합격선 근접. 3학년 성적 유지 시 가능성 높음.",
-          chancePercentLabel: "50~60%",
-        },
-        {
-          university: "성균관대학교",
-          department: "소프트웨어학과",
-          admissionType: "학생부종합 (계열모집)",
-          tier: "상향",
-          chance: "medium",
-          chanceRationale:
-            "소프트웨어 특성화 학과로 전공 적합성이 높으나, 상향 지원 시 내신 보강 필요.",
-          chancePercentLabel: "50~60%",
-        },
-      ],
-    },
-    {
-      tierGroup: "안정 위주",
-      recommendations: [
-        {
-          university: "고려대학교",
-          department: "컴퓨터학과",
-          admissionType: "학생부종합 (학업우수형)",
-          tier: "안정",
-          chance: "high",
-          chanceRationale:
-            "현재 스펙으로 안정적 합격 가능. 학업우수형 전형에 매우 적합.",
-          chancePercentLabel: "70~80%",
-        },
-        {
-          university: "성균관대학교",
-          department: "소프트웨어학과",
-          admissionType: "학생부종합 (계열모집)",
-          tier: "안정",
-          chance: "high",
-          chanceRationale:
-            "전공 적합성이 높으며 현재 내신과 활동으로 합격 가능성 높음.",
-          chancePercentLabel: "70~80%",
-        },
-        {
-          university: "한양대학교",
-          department: "컴퓨터소프트웨어학부",
-          admissionType: "학생부종합 (일반)",
-          tier: "안정",
-          chance: "high",
-          chanceRationale: "내신과 세특 활동 기준 안정적 합격 가능.",
-          chancePercentLabel: "70~80%",
-        },
-        {
-          university: "서강대학교",
-          department: "컴퓨터공학과",
-          admissionType: "학생부종합 (일반형)",
-          tier: "안정",
-          chance: "high",
-          chanceRationale:
-            "소규모 학과로 전공 적합성을 중시하며 현재 수학·정보 세특이 강점.",
-          chancePercentLabel: "75~85%",
-        },
-        {
-          university: "경희대학교",
-          department: "컴퓨터공학과",
-          admissionType: "학생부종합 (네오르네상스)",
-          tier: "안정",
-          chance: "high",
-          chanceRationale:
-            "네오르네상스 전형에서 자기주도 탐구와 진로 일관성이 강점으로 작용.",
-          chancePercentLabel: "75~85%",
-        },
-        {
-          university: "서울시립대학교",
-          department: "컴퓨터과학부",
-          admissionType: "학생부종합",
-          tier: "안정",
-          chance: "high",
-          chanceRationale: "현재 스펙 기준 합격 가능성이 매우 높음.",
-          chancePercentLabel: "80~90%",
-        },
-      ],
-    },
-    {
-      tierGroup: "하향 위주",
-      recommendations: [
-        {
-          university: "중앙대학교",
-          department: "소프트웨어학부",
-          admissionType: "학생부종합 (다빈치형인재)",
-          tier: "하향",
-          chance: "high",
-          chanceRationale:
-            "다빈치형인재 전형에서 자기주도 탐구 역량을 높이 평가. 합격 가능성 매우 높음.",
-          chancePercentLabel: "85~95%",
-        },
-        {
-          university: "건국대학교",
-          department: "컴퓨터공학부",
-          admissionType: "학생부종합 (KU자기추천)",
-          tier: "하향",
-          chance: "high",
-          chanceRationale:
-            "진로 일관성과 탐구 활동이 강점. 안전한 하향 지원처.",
-          chancePercentLabel: "85~95%",
-        },
-        {
-          university: "동국대학교",
-          department: "컴퓨터공학과",
-          admissionType: "학생부종합 (Do Dream)",
-          tier: "하향",
-          chance: "high",
-          chanceRationale:
-            "Do Dream 전형에서 전공 적합성과 자기주도 활동이 높이 평가됨.",
-          chancePercentLabel: "85~95%",
-        },
-        {
-          university: "숭실대학교",
-          department: "컴퓨터학부",
-          admissionType: "학생부종합 (SSU미래인재)",
-          tier: "하향",
-          chance: "high",
-          chanceRationale:
-            "IT 특성화 대학으로 전공 적합성이 높으며 합격 가능성 매우 높음.",
-          chancePercentLabel: "90~95%",
-        },
-        {
-          university: "세종대학교",
-          department: "컴퓨터공학과",
-          admissionType: "학생부종합 (창의인재)",
-          tier: "하향",
-          chance: "high",
-          chanceRationale: "현재 스펙 기준 합격이 거의 확실한 안전 지원처.",
-          chancePercentLabel: "90~95%",
-        },
-        {
-          university: "국민대학교",
-          department: "소프트웨어학부",
-          admissionType: "학생부종합 (국민프런티어)",
-          tier: "하향",
-          chance: "high",
-          chanceRationale:
-            "소프트웨어 분야 특성화로 전공 적합성 높음. 합격 확실한 안전 지원처.",
-          chancePercentLabel: "90~95%",
-        },
-      ],
-    },
-  ],
-  nextSemesterStrategy:
-    "3학년 1학기에는 국어·한국사 교과 성적을 2등급 이내로 끌어올리는 것을 최우선으로 하되, 전공 교과(수학·정보) 1등급 유지를 병행해야 합니다. 세특에서는 전공 심화 탐구(AI/알고리즘)와 함께 인문·사회 교과에서도 IT 연계 주제를 발굴하여 교과 간 융합 역량을 보여주는 것이 중요합니다. 또한 동아리 부장이나 학급 임원 등 공식 리더 역할을 맡아 공동체 역량을 보강하고, 지역 아동센터 코딩 교육 봉사를 시작하여 진로 연계 봉사 기록을 확보해야 합니다.",
 };
 
 // ─── 섹션 17: 생기부 스토리 구조 분석 ───

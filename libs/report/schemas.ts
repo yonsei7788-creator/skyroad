@@ -33,7 +33,7 @@ export const AdmissionChanceSchema = z.enum([
   "low",
   "very_low",
 ]);
-export const AdmissionTierSchema = z.enum(["상향", "적정", "안정", "하향"]);
+export const CardRiskLevelSchema = z.enum(["위험", "안정"]);
 export const PrioritySchema = z.enum(["high", "medium", "low"]);
 export const CompetencyCategorySchema = z.enum([
   "academic",
@@ -196,11 +196,10 @@ const UniversityPredictionSchema = z.object({
 
 const AdmissionPredictionItemSchema = z.object({
   admissionType: z.enum(["학종", "교과", "정시"]),
-  passRateLabel: z.string().min(1),
-  passRateRange: z.tuple([
-    z.number().min(0).max(100),
-    z.number().min(0).max(100),
-  ]),
+  passRateLabel: z.string().optional(),
+  passRateRange: z
+    .tuple([z.number().min(0).max(100), z.number().min(0).max(100)])
+    .optional(),
   analysis: z.string().min(1),
   universityPredictions: z.array(UniversityPredictionSchema).optional(),
 });
@@ -823,22 +822,25 @@ export const InterviewPrepSectionSchema = z.object({
 
 // ─── 섹션 16: 입시 전략 + 대학 추천 ───
 
-const AdmissionDataSchema = z.object({
-  cutoff50: z.number().optional(),
-  cutoff70: z.number().optional(),
-  competitionRate: z.number().optional(),
-  enrollment: z.number().int().optional(),
+const CardAdmissionInfoSchema = z.object({
+  admissionType: z.string().min(1),
+  chance: AdmissionChanceSchema,
+  chanceRationale: z.string().min(1),
+  chancePercentLabel: z.string().optional(),
 });
 
-const UniversityRecommendationSchema = z.object({
+const UniversityCardSchema = z.object({
   university: z.string().min(1),
   department: z.string().min(1),
-  admissionType: z.string().min(1),
-  tier: AdmissionTierSchema,
-  chance: AdmissionChanceSchema.optional(),
-  chanceRationale: z.string().optional(),
-  admissionData: AdmissionDataSchema.optional(),
-  chancePercentLabel: z.string().optional(),
+  riskLevel: z.enum(["위험", "안정"]),
+  comprehensive: CardAdmissionInfoSchema,
+  subject: CardAdmissionInfoSchema.optional(),
+});
+
+const SimulationGroupSchema = z.object({
+  type: z.enum(["위험형", "안정형"]),
+  description: z.string().min(1),
+  cards: z.array(UniversityCardSchema).length(6),
 });
 
 const AdmissionTypeStrategySchema = z.object({
@@ -854,17 +856,6 @@ const SchoolTypeAnalysisSchema = z.object({
   rationale: z.string(),
 });
 
-const ApplicationSimulationDetailSchema = z.object({
-  admissionType: z.string().min(1),
-  count: z.number().int().min(1),
-  targetUniversities: z.array(z.string().min(1)),
-});
-
-const ApplicationSimulationSchema = z.object({
-  description: z.string().min(1),
-  details: z.array(ApplicationSimulationDetailSchema).min(1),
-});
-
 const UniversityGuideMatchingSchema = z.object({
   university: z.string().min(1),
   emphasisKeywords: z.array(z.string().min(1)),
@@ -876,56 +867,10 @@ export const AdmissionStrategySectionSchema = z.object({
   sectionId: z.literal("admissionStrategy"),
   title: z.string().min(1),
   recommendedPath: z.string().min(1),
-  recommendations: z.array(UniversityRecommendationSchema).min(1),
+  simulations: z.tuple([SimulationGroupSchema, SimulationGroupSchema]),
   typeStrategies: z.array(AdmissionTypeStrategySchema).optional(),
   schoolTypeAnalysis: SchoolTypeAnalysisSchema.optional(),
-  csatMinimumStrategy: z.string().optional(),
-  applicationSimulation: ApplicationSimulationSchema.optional(),
   universityGuideMatching: z.array(UniversityGuideMatchingSchema).optional(),
-  // v4
-  universityRiskBands: z
-    .array(
-      z.object({
-        university: z.string().min(1),
-        department: z.string().min(1),
-        band: AdmissionRiskBandSchema,
-        rationale: z.string().min(1),
-      })
-    )
-    .optional(),
-  typeSuitabilityChart: z
-    .array(
-      z.object({
-        type: z.string().min(1),
-        score: z.number().min(0).max(100),
-        keyStrengths: z.array(z.string().min(1)),
-        keyRisks: z.array(z.string().min(1)),
-      })
-    )
-    .optional(),
-  strategyMatrix: z
-    .array(
-      z.object({
-        tier: AdmissionTierSchema,
-        recommendations: z.array(
-          z.object({
-            university: z.string().min(1),
-            department: z.string().min(1),
-            type: z.string().min(1),
-            band: AdmissionRiskBandSchema,
-          })
-        ),
-      })
-    )
-    .optional(),
-  tierGroupedRecommendations: z
-    .array(
-      z.object({
-        tierGroup: z.enum(["상향 위주", "안정 위주", "하향 위주"]),
-        recommendations: z.array(UniversityRecommendationSchema),
-      })
-    )
-    .optional(),
   nextSemesterStrategy: z.string().optional(),
 });
 

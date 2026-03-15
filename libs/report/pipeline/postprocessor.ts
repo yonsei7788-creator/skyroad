@@ -18,7 +18,12 @@ import type {
 } from "../types.ts";
 import type { PreprocessedData } from "./preprocessor.ts";
 import { matchMajorEvaluationCriteria } from "../constants/major-evaluation-criteria.ts";
-import { UNIVERSITY_ADMISSION_DATA } from "../constants/university-admission-data.ts";
+import { getMajorCourseRecommendations } from "../constants/recommended-courses.ts";
+import {
+  findMajorInfo,
+  getMajorRelatedSubjects,
+  MAJOR_INFO_DATA,
+} from "../constants/major-info-data.ts";
 
 // ─── 검증 결과 타입 ───
 
@@ -101,14 +106,22 @@ export const postprocess = (
     (s) => s.sectionId === "admissionStrategy"
   ) as any;
   if (admPred && admStrat) {
-    // admissionStrategy의 대학별 chance를 기준으로 admissionPrediction 동기화
+    // admissionStrategy의 simulations에서 대학별 chance 수집
     const strategyChanceMap = new Map<string, string>();
-    if (Array.isArray(admStrat.universities)) {
-      for (const uni of admStrat.universities) {
-        const key = `${uni.university}|${uni.department}`;
-        strategyChanceMap.set(key, uni.chance);
-        // 대학명만으로도 매핑 (학과가 다를 수 있으므로)
-        strategyChanceMap.set(uni.university, uni.chance);
+    const riskMap = new Map<string, string>();
+    if (Array.isArray(admStrat.simulations)) {
+      for (const sim of admStrat.simulations) {
+        if (!Array.isArray(sim.cards)) continue;
+        for (const card of sim.cards) {
+          const key = `${card.university}|${card.department}`;
+          if (card.comprehensive?.chance) {
+            strategyChanceMap.set(key, card.comprehensive.chance);
+            strategyChanceMap.set(card.university, card.comprehensive.chance);
+          }
+          if (card.riskLevel) {
+            riskMap.set(card.university, card.riskLevel);
+          }
+        }
       }
     }
 
@@ -116,93 +129,68 @@ export const postprocess = (
       for (const pred of admPred.predictions) {
         if (!Array.isArray(pred.universityPredictions)) continue;
         for (const uniPred of pred.universityPredictions) {
-          const exactKey = `${uniPred.university}|${uniPred.department}`;
-          const stratChance =
-            strategyChanceMap.get(exactKey) ||
-            strategyChanceMap.get(uniPred.university);
-          if (stratChance && stratChance !== uniPred.chance) {
-            uniPred.chance = stratChance;
-          }
-        }
-      }
-    }
+          const risk = riskMap.get(uniPred.university);
+          if (!risk) continue;
 
-    // basePassRates 기반 tier-chance 일관성 강제 보정
-    if (Array.isArray(admPred.predictions)) {
-      // preprocessed basePassRates에서 대학별 tier 정보 수집
-      const tierMap = new Map<string, string>();
-      for (const bp of preprocessed.basePassRates) {
-        tierMap.set(bp.university, bp.tier);
-      }
-      // admissionStrategy에서도 보충
-      if (Array.isArray(admStrat.universities)) {
-        for (const uni of admStrat.universities) {
-          if (!tierMap.has(uni.university)) {
-            tierMap.set(uni.university, uni.tier);
-          }
-        }
-      }
-
-      for (const pred of admPred.predictions) {
-        if (!Array.isArray(pred.universityPredictions)) continue;
-        for (const uniPred of pred.universityPredictions) {
-          const tier = tierMap.get(uniPred.university);
-          if (!tier) continue;
-
-          // 티어-chance 일관성 강제 보정
+          // 리스크-chance 일관성 강제 보정
           const { chance } = uniPred;
-          if (tier === "하향") {
-            // 하향 대학은 반드시 high 이상
-            if (
-              chance === "low" ||
-              chance === "very_low" ||
-              chance === "medium"
-            ) {
+          if (risk === "안정") {
+            if (chance === "low" || chance === "very_low") {
               uniPred.chance = "high";
             }
-          } else if (tier === "안정") {
-            // 안정 대학은 반드시 medium 이상
-            if (chance === "low" || chance === "very_low") {
-              uniPred.chance = "medium";
-            }
-          } else if (tier === "적정") {
-            // 적정 대학은 very_low 불가
-            if (chance === "very_low") {
-              uniPred.chance = "low";
-            }
           }
-          // 상향 대학은 low/very_low 허용 (도전 지원)
         }
       }
     }
   }
 
   // 3-1. AI 생성 대학-학과가 실제 존재하는지 검증
-  // 후보군(candidateSet) + 전체 DB(dbSet) 모두 허용 — AI가 역량 분석 기반으로 후보군 외 대학 추천 가능
-  const candidateSet = new Set(
-    preprocessed.basePassRates.map((bp) => `${bp.university}|${bp.department}`)
-  );
+  // 커리어넷 데이터 기반 대학 후보군 + 유저 희망대학 허용
+  const candidateSet = new Set<string>();
+  const candidateUniversities = new Set<string>();
+
+  // 커리어넷 데이터에서 목표 학과 관련 대학 후보군 구축
+  const targetDept = studentInfo.targetDepartment ?? "";
+  if (targetDept) {
+    const majorInfo = findMajorInfo(targetDept);
+    if (majorInfo) {
+      for (const university of majorInfo.universities) {
+        candidateSet.add(`${university}|${majorInfo.majorName}`);
+        candidateUniversities.add(university);
+      }
+    }
+  }
+
   // 유저 설정 희망대학도 허용 목록에 추가
   if (studentInfo.targetUniversities) {
     for (const tu of studentInfo.targetUniversities) {
       candidateSet.add(`${tu.universityName}|${tu.department}`);
-    }
-  }
-  const candidateUniversities = new Set(
-    preprocessed.basePassRates.map((bp) => bp.university)
-  );
-  if (studentInfo.targetUniversities) {
-    for (const tu of studentInfo.targetUniversities) {
       candidateUniversities.add(tu.universityName);
     }
   }
 
-  // 전체 DB에 존재하는 대학-학과 셋 (후보군 외 AI 추천 검증용)
-  const dbUniversitySet = new Set(
-    UNIVERSITY_ADMISSION_DATA.map((e) => e.university)
-  );
+  // 커리어넷 기반: 대학에 실제 존재하는 학과인지 검증
+  const isRealDepartment = (
+    university: string,
+    department: string
+  ): boolean => {
+    for (const m of MAJOR_INFO_DATA) {
+      const deptMatch =
+        m.majorName === department ||
+        m.departments.some(
+          (d) =>
+            d === department ||
+            department === d ||
+            department.replace(/[과부]$/, "") === d.replace(/[과부]$/, "")
+        );
+      if (!deptMatch) continue;
 
-  // admissionPrediction: DB에도 없는 대학만 제거 (후보군 외 AI 추천은 허용)
+      if (m.universities.includes(university)) return true;
+    }
+    return false;
+  };
+
+  // admissionPrediction: 존재하지 않는 대학-학과 조합 제거
   if (admPred && Array.isArray(admPred.predictions)) {
     for (const pred of admPred.predictions) {
       if (!Array.isArray(pred.universityPredictions)) continue;
@@ -211,17 +199,17 @@ export const postprocess = (
           const exactKey = `${up.university}|${up.department}`;
           // 후보군 정확 매칭
           if (candidateSet.has(exactKey)) return true;
-          // 후보군 대학명 매칭 (학과 다를 수 있음)
-          if (candidateUniversities.has(up.university)) return true;
-          // 전체 DB에 대학이 존재하면 허용 (AI 역량 기반 추천)
-          if (dbUniversitySet.has(up.university)) {
-            console.log(
-              `[report:${reportId}] 후보군 외 AI 추천 대학 허용: ${up.university} ${up.department}`
-            );
+          // 유저 희망대학
+          if (
+            studentInfo.targetUniversities?.some(
+              (tu) => tu.universityName === up.university
+            )
+          )
             return true;
-          }
+          // 대학-학과 존재 검증
+          if (isRealDepartment(up.university, up.department)) return true;
           console.warn(
-            `[report:${reportId}] DB에 없는 대학-학과 제거: ${up.university} ${up.department}`
+            `[report:${reportId}] 존재하지 않는 대학-학과 제거: ${up.university} ${up.department}`
           );
           return false;
         }
@@ -229,23 +217,390 @@ export const postprocess = (
     }
   }
 
-  // admissionStrategy: DB에도 없는 대학만 제거
-  if (admStrat && Array.isArray(admStrat.recommendations)) {
-    admStrat.recommendations = admStrat.recommendations.filter((rec: any) => {
-      const exactKey = `${rec.university}|${rec.department}`;
-      if (candidateSet.has(exactKey)) return true;
-      if (candidateUniversities.has(rec.university)) return true;
-      if (dbUniversitySet.has(rec.university)) {
-        console.log(
-          `[report:${reportId}] 후보군 외 AI 추천 대학 허용: ${rec.university} ${rec.department}`
+  // admissionStrategy: simulations 내 존재하지 않는 대학-학과 조합 제거
+  if (admStrat && Array.isArray(admStrat.simulations)) {
+    for (const sim of admStrat.simulations) {
+      if (!Array.isArray(sim.cards)) continue;
+      sim.cards = sim.cards.filter((card: any) => {
+        const exactKey = `${card.university}|${card.department}`;
+        if (candidateSet.has(exactKey)) return true;
+        if (
+          studentInfo.targetUniversities?.some(
+            (tu) => tu.universityName === card.university
+          )
+        )
+          return true;
+        if (isRealDepartment(card.university, card.department)) return true;
+        console.warn(
+          `[report:${reportId}] 존재하지 않는 추천 대학-학과 제거: ${card.university} ${card.department}`
         );
-        return true;
-      }
-      console.warn(
-        `[report:${reportId}] DB에 없는 추천 대학 제거: ${rec.university} ${rec.department}`
+        return false;
+      });
+    }
+  }
+
+  // 3-3. admissionPrediction: 교과전형에서 서울대 제거 (교과전형 미운영)
+  if (admPred && Array.isArray(admPred.predictions)) {
+    for (const pred of admPred.predictions) {
+      if (pred.admissionType !== "교과") continue;
+      if (!Array.isArray(pred.universityPredictions)) continue;
+      pred.universityPredictions = pred.universityPredictions.filter(
+        (up: any) => up.university !== "서울대학교"
       );
+    }
+  }
+
+  // 3-4. admissionPrediction: 유저 희망대학이 있으면 해당 대학만 남기기
+  if (
+    admPred &&
+    studentInfo.targetUniversities &&
+    studentInfo.targetUniversities.length > 0
+  ) {
+    const targetUniNames = new Set(
+      studentInfo.targetUniversities.map((tu) => tu.universityName)
+    );
+    if (Array.isArray(admPred.predictions)) {
+      for (const pred of admPred.predictions) {
+        if (!Array.isArray(pred.universityPredictions)) continue;
+        const before = pred.universityPredictions.length;
+        pred.universityPredictions = pred.universityPredictions.filter(
+          (up: any) => targetUniNames.has(up.university)
+        );
+        if (pred.universityPredictions.length < before) {
+          console.log(
+            `[report:${reportId}] admissionPrediction: 희망대학 외 ${before - pred.universityPredictions.length}개 대학 제거 (${pred.admissionType})`
+          );
+        }
+      }
+    }
+  }
+
+  // 3-4. subjectAnalysis: evaluationImpact 코드 기반 강제 설정
+  const subjectSection = validatedSections.find(
+    (s) => s.sectionId === "subjectAnalysis"
+  );
+  const subjectData = subjectSection as any;
+  if (subjectData?.subjects) {
+    const { track } = studentInfo; // "문과" | "이과"
+    const grade = studentInfo.grade ?? 3;
+    const recommendations = getMajorCourseRecommendations(grade);
+
+    // 학생의 목표학과에 매칭되는 계열 찾기
+    const targetDept = studentInfo.targetDepartment ?? "";
+    const matchedMajor = recommendations.find((r) => {
+      const majorLower = r.major.toLowerCase();
+      const deptLower = targetDept.toLowerCase();
+      // 학과명에 계열 키워드 포함 여부
+      if (
+        deptLower.includes("컴퓨터") ||
+        deptLower.includes("소프트웨어") ||
+        deptLower.includes("ai") ||
+        deptLower.includes("인공지능")
+      )
+        return majorLower.includes("컴퓨터") || majorLower.includes("ai");
+      if (
+        deptLower.includes("의") ||
+        deptLower.includes("치의") ||
+        deptLower.includes("한의")
+      )
+        return majorLower === "의학";
+      if (deptLower.includes("약")) return majorLower === "약학";
+      if (deptLower.includes("간호") || deptLower.includes("보건"))
+        return majorLower.includes("간호");
+      if (
+        deptLower.includes("생명") ||
+        deptLower.includes("바이오") ||
+        deptLower.includes("생화학") ||
+        deptLower.includes("미생물")
+      )
+        return majorLower.includes("생명");
+      if (
+        deptLower.includes("화학") ||
+        deptLower.includes("재료") ||
+        deptLower.includes("신소재") ||
+        deptLower.includes("화공") ||
+        deptLower.includes("에너지")
+      )
+        return majorLower.includes("화학");
+      if (
+        deptLower.includes("기계") ||
+        deptLower.includes("항공") ||
+        deptLower.includes("조선")
+      )
+        return majorLower === "공학";
+      if (
+        deptLower.includes("전기") ||
+        deptLower.includes("전자") ||
+        deptLower.includes("반도체")
+      )
+        return majorLower === "공학";
+      if (
+        deptLower.includes("건축") ||
+        deptLower.includes("건설") ||
+        deptLower.includes("도시") ||
+        deptLower.includes("토목")
+      )
+        return majorLower === "공학";
+      if (
+        deptLower.includes("지구") ||
+        deptLower.includes("천문") ||
+        deptLower.includes("대기") ||
+        deptLower.includes("해양") ||
+        deptLower.includes("환경")
+      )
+        return majorLower.includes("지구");
+      if (deptLower.includes("수학") || deptLower.includes("통계"))
+        return majorLower === "자연과학";
+      if (deptLower.includes("물리"))
+        return majorLower === "자연과학" || majorLower === "공학";
+      if (
+        deptLower.includes("경영") ||
+        deptLower.includes("경제") ||
+        deptLower.includes("무역") ||
+        deptLower.includes("금융")
+      )
+        return majorLower.includes("경영") || majorLower.includes("경제");
+      if (
+        deptLower.includes("정치") ||
+        deptLower.includes("행정") ||
+        deptLower.includes("사회") ||
+        deptLower.includes("심리") ||
+        deptLower.includes("미디어")
+      )
+        return majorLower.includes("사회");
       return false;
     });
+
+    // 핵심 과목 셋 구성 (기존 recommended-courses + 커리어넷 API 데이터)
+    const coreSubjectsSet = new Set(matchedMajor?.coreSubjects ?? []);
+    const recommendedSet = new Set(matchedMajor?.recommendedCourses ?? []);
+
+    // 커리어넷 API 기반 학과별 관련 교과 (더 정확한 데이터)
+    // 커리어넷 원본은 "수학ⅠㆍⅡ", "과학교과 : 물리학Ⅰ" 등 복합 형태이므로 분해 필요
+    const expandCareerNetSubjects = (subjects: string[]): string[] => {
+      const result: string[] = [];
+      for (const raw of subjects) {
+        // "과학교과 : 물리학Ⅰ" → "물리학Ⅰ"
+        const cleaned = raw.replace(/^[^:]+:\s*/, "").trim();
+        // "수학ⅠㆍⅡ" → ["수학Ⅰ", "수학Ⅱ"]
+        const combined = cleaned.match(/^(.+?)([ⅠⅡⅢ])ㆍ([ⅠⅡⅢ])$/);
+        if (combined) {
+          result.push(`${combined[1]}${combined[2]}`);
+          result.push(`${combined[1]}${combined[3]}`);
+        } else {
+          result.push(cleaned);
+        }
+      }
+      return result;
+    };
+
+    const majorInfo = findMajorInfo(targetDept);
+    const expandedElective = expandCareerNetSubjects(
+      majorInfo?.electiveSubjects ?? []
+    );
+    const expandedCareer = expandCareerNetSubjects(
+      majorInfo?.careerSubjects ?? []
+    );
+    const careerNetElective = new Set(expandedElective);
+    const careerNetCareer = new Set(expandedCareer);
+    const careerNetSubjects = new Set([...expandedElective, ...expandedCareer]);
+
+    // 비핵심 과목 (evaluationImpact: very_low)
+    // ⚠️ "정보"는 컴공/AI 계열에서 핵심이므로 여기서 제외 — 커리어넷 매칭으로 판정
+    const NON_CORE_SUBJECTS = new Set([
+      "기술·가정",
+      "기술가정",
+      "한문",
+      "한문Ⅰ",
+      "한문Ⅱ",
+      "일본어Ⅰ",
+      "일본어Ⅱ",
+      "중국어Ⅰ",
+      "중국어Ⅱ",
+      "독일어Ⅰ",
+      "프랑스어Ⅰ",
+      "스페인어Ⅰ",
+      "러시아어Ⅰ",
+      "아랍어Ⅰ",
+      "베트남어Ⅰ",
+      "독서",
+      "교양",
+      "보건",
+      "환경",
+      "논리학",
+      "체육",
+      "운동과 건강",
+      "스포츠 생활",
+      "음악",
+      "미술",
+      "음악 감상과 비평",
+      "미술 감상과 비평",
+    ]);
+
+    // 공통 기초 과목 (최소 medium)
+    const COMMON_BASE = new Set([
+      "국어",
+      "문학",
+      "화법과 작문",
+      "언어와 매체",
+      "독서",
+      "영어",
+      "영어Ⅰ",
+      "영어Ⅱ",
+      "영어 회화",
+      "영어 독해와 작문",
+      "화법과 언어",
+      "독서와 작문",
+      "문학과 매체",
+    ]);
+
+    // 수학 과목
+    const MATH_SUBJECTS = new Set([
+      "수학",
+      "수학Ⅰ",
+      "수학Ⅱ",
+      "미적분",
+      "기하",
+      "확률과 통계",
+      "인공지능 수학",
+      "경제 수학",
+      "실용 수학",
+      "대수",
+      "미적분Ⅰ",
+      "미적분Ⅱ",
+    ]);
+
+    // 과학 과목
+    const SCIENCE_SUBJECTS = new Set([
+      "통합과학",
+      "과학탐구실험",
+      "물리학Ⅰ",
+      "물리학Ⅱ",
+      "화학Ⅰ",
+      "화학Ⅱ",
+      "생명과학Ⅰ",
+      "생명과학Ⅱ",
+      "지구과학Ⅰ",
+      "지구과학Ⅱ",
+      "물리학",
+      "화학",
+      "생명과학",
+      "지구과학",
+      "역학과 에너지",
+      "전자기와 양자",
+      "물질과 에너지",
+      "화학 반응의 세계",
+      "세포와 물질대사",
+      "생물의 유전",
+      "지구시스템과학",
+      "행성우주과학",
+    ]);
+
+    // 사회 과목
+    const SOCIAL_SUBJECTS = new Set([
+      "한국사",
+      "세계사",
+      "동아시아사",
+      "한국지리",
+      "세계지리",
+      "여행지리",
+      "경제",
+      "정치와 법",
+      "사회·문화",
+      "사회문화",
+      "사회문제 탐구",
+      "생활과 윤리",
+      "윤리와 사상",
+      "철학",
+      "세계시민과 지리",
+    ]);
+
+    type EvalImpact = "very_high" | "high" | "medium" | "low" | "very_low";
+
+    const determineImpact = (subjectName: string): EvalImpact => {
+      // "2학년 수학 Ⅱ" → "수학Ⅱ", "1학년 국어" → "국어"
+      // 1) 학년 접두사 제거  2) 과목명과 로마숫자 사이 공백 제거
+      const name = subjectName
+        .trim()
+        .replace(/^\d학년\s+/, "")
+        .replace(/\s+([ⅠⅡⅢ])/g, "$1");
+
+      // 1. 커리어넷 API 데이터 기반 — 학과별 관련 교과 (최우선)
+      if (careerNetElective.has(name)) return "very_high";
+      if (careerNetCareer.has(name)) return "high";
+
+      // 2. 기존 recommended-courses 데이터 보완
+      if (recommendedSet.has(name)) return "high";
+
+      // 3. 비핵심 과목 → very_low (커리어넷/추천과목에 없는 경우에만)
+      if (NON_CORE_SUBJECTS.has(name)) return "very_low";
+
+      // 4. 계열 기반 기본 판정
+      // "통합" 계열이면 목표학과 기반으로 이과/문과 추정
+      const targetDeptLower = (
+        studentInfo.targetDepartment ?? ""
+      ).toLowerCase();
+      const scienceDeptKeywords = [
+        "공학",
+        "컴퓨터",
+        "소프트웨어",
+        "전자",
+        "기계",
+        "화학",
+        "물리",
+        "수학",
+        "생명",
+        "바이오",
+        "의학",
+        "약학",
+        "간호",
+        "AI",
+        "인공지능",
+        "데이터",
+        "정보",
+        "건축",
+        "토목",
+        "환경",
+        "에너지",
+        "재료",
+        "산업",
+        "시스템",
+      ];
+      const isScience =
+        track === "이과" ||
+        (track === "통합" &&
+          scienceDeptKeywords.some((kw) => targetDeptLower.includes(kw)));
+
+      if (isScience) {
+        if (MATH_SUBJECTS.has(name)) return "very_high";
+        if (SCIENCE_SUBJECTS.has(name)) return "high";
+        if (COMMON_BASE.has(name)) return "medium";
+        if (SOCIAL_SUBJECTS.has(name)) return "low";
+      } else {
+        if (COMMON_BASE.has(name)) return "high";
+        if (SOCIAL_SUBJECTS.has(name)) {
+          return recommendedSet.has(name) ? "very_high" : "high";
+        }
+        if (MATH_SUBJECTS.has(name)) {
+          return coreSubjectsSet.has("수학") ? "high" : "medium";
+        }
+        if (SCIENCE_SUBJECTS.has(name)) return "low";
+      }
+
+      // 5. 커리어넷에 어떤 형태로든 관련 과목이면 medium
+      if (careerNetSubjects.size > 0) return "low";
+
+      return "low";
+    };
+
+    for (const subject of subjectData.subjects as {
+      subjectName: string;
+      evaluationImpact?: string;
+      importancePercent?: number;
+    }[]) {
+      subject.evaluationImpact = determineImpact(subject.subjectName);
+      delete subject.importancePercent;
+    }
   }
 
   // 4. 섹션 정렬 (플랜별 순서)
@@ -263,6 +618,7 @@ export const postprocess = (
     studentInfo: {
       name: studentInfo.name,
       grade: studentInfo.grade,
+      isGraduate: studentInfo.isGraduate,
       track: studentInfo.track,
       schoolType: studentInfo.schoolType,
       targetUniversity: studentInfo.targetUniversity,
@@ -329,6 +685,10 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/3학년\s*생기부\s*기록이\s*부재[했하][^\\.]*\./g, ""],
   [/3학년\s*(생기부\s*)?기록이\s*없[어다는][^\\.]*\./g, ""],
   [/3학년\s*데이터가\s*없[어다는][^\\.]*\./g, ""],
+  [/3학년[^.]*기록이\s*부재[^.]*\./g, ""],
+  [/3학년[^.]*부재[^.]*아쉽[^.]*\./g, ""],
+  [/3학년[^.]*없어[^.]*아쉽[^.]*\./g, ""],
+  [/3학년[^,]*부재[^,]*,\s*/g, ""],
 
   // ── 명령형 어미 → 권유형 전환 ──
   [/작성하세요/g, "작성하는 것이 좋습니다"],
@@ -382,6 +742,18 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/창의적 사고를 발휘했습니다/g, "독자적 접근 방식을 시도했습니다"],
   [/리더십을 발휘했습니다/g, "리더 역할을 수행했습니다"],
 
+  // ── "보여줍니다" 계열 (금지 표현) ──
+  [/을 보여줍니다/g, "이 확인됩니다"],
+  [/를 보여줍니다/g, "가 확인됩니다"],
+  [/보여줍니다/g, "확인됩니다"],
+  [/보여주며/g, "확인되며"],
+  [/보여주고/g, "확인되고"],
+
+  // ── "드러냅니다" 계열 (금지 표현) ──
+  [/드러냅니다/g, "확인됩니다"],
+  [/드러내며/g, "보이며"],
+  [/드러내고/g, "보이고"],
+
   // ── "드러납니다" 계열 (금지 표현) ──
   [/잘 드러납니다/g, "잘 확인됩니다"],
   [/잘 드러나며/g, "확인되며"],
@@ -406,6 +778,27 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   // ── 온점 3개(줄임표) → (중략) ──
   [/\.{3,}/g, "(중략)"],
   [/…/g, "(중략)"],
+
+  // ── AI가 날조한 합격선 수치 제거 ──
+  [
+    /합격자\s*평균\s*등급[은이가]?\s*\d+\.\d+~?\d*\.?\d*등급\s*(내외|수준|정도)?[에서]*\s*형성/g,
+    "합격선 데이터 기준으로 형성",
+  ],
+  [
+    /합격자\s*평균[은이가]?\s*\d+\.\d+~?\d*\.?\d*등급\s*(내외|수준|정도)?/g,
+    "합격선 데이터 참조",
+  ],
+  [
+    /합격선[은이가]?\s*\d+\.\d+~?\d*\.?\d*등급\s*(내외|수준|정도)?[으로에서]?/g,
+    "합격선 데이터 기준",
+  ],
+  [
+    /\d+\.\d+~\d+\.\d+등급\s*(내외|수준|정도)[에의]?\s*(합격선|커트라인)/g,
+    "합격선 데이터 기준",
+  ],
+  // "합격선 데이터 참조으로" → 어색한 표현 수정
+  [/합격선 데이터 참조으로/g, "합격선 데이터 기준으로"],
+  [/합격선 데이터 기준으로\s*매우\s*높습니다/g, "매우 높은 수준입니다"],
 ];
 
 const sanitizeAiTone = (text: string): string => {
@@ -1280,11 +1673,21 @@ const normalizeSection = (
       s.overallComment = fixSingleSubjectRationale(s.overallComment);
     }
 
-    // admissionStrategy: recommendations[].chanceRationale, recommendedPath
-    if (Array.isArray(s.recommendations)) {
-      for (const rec of s.recommendations) {
-        if (typeof rec.chanceRationale === "string") {
-          rec.chanceRationale = fixSingleSubjectRationale(rec.chanceRationale);
+    // admissionStrategy: simulations[].cards[].comprehensive/subject.chanceRationale, recommendedPath
+    if (Array.isArray(s.simulations)) {
+      for (const sim of s.simulations) {
+        if (!Array.isArray(sim.cards)) continue;
+        for (const card of sim.cards) {
+          if (typeof card.comprehensive?.chanceRationale === "string") {
+            card.comprehensive.chanceRationale = fixSingleSubjectRationale(
+              card.comprehensive.chanceRationale
+            );
+          }
+          if (typeof card.subject?.chanceRationale === "string") {
+            card.subject.chanceRationale = fixSingleSubjectRationale(
+              card.subject.chanceRationale
+            );
+          }
         }
       }
     }
@@ -1325,15 +1728,25 @@ const normalizeSection = (
         }
       }
 
-      // admissionStrategy: recommendations[].chanceRationale
-      if (Array.isArray(s.recommendations)) {
-        for (const rec of s.recommendations) {
-          if (
-            typeof rec.chanceRationale === "string" &&
-            hasPositiveGrade(rec.chanceRationale) &&
-            !hasAdequateWarning(rec.chanceRationale)
-          ) {
-            rec.chanceRationale += mismatchSuffix;
+      // admissionStrategy: simulations[].cards[].comprehensive/subject.chanceRationale
+      if (Array.isArray(s.simulations)) {
+        for (const sim of s.simulations) {
+          if (!Array.isArray(sim.cards)) continue;
+          for (const card of sim.cards) {
+            if (
+              typeof card.comprehensive?.chanceRationale === "string" &&
+              hasPositiveGrade(card.comprehensive.chanceRationale) &&
+              !hasAdequateWarning(card.comprehensive.chanceRationale)
+            ) {
+              card.comprehensive.chanceRationale += mismatchSuffix;
+            }
+            if (
+              typeof card.subject?.chanceRationale === "string" &&
+              hasPositiveGrade(card.subject.chanceRationale) &&
+              !hasAdequateWarning(card.subject.chanceRationale)
+            ) {
+              card.subject.chanceRationale += mismatchSuffix;
+            }
           }
         }
       }
