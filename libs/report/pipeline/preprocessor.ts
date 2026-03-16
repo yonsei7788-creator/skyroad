@@ -17,7 +17,10 @@ import {
   formatMajorEvaluationContext,
 } from "../constants/major-evaluation-criteria.ts";
 import { findMajorInfo } from "../constants/major-info-data.ts";
-import { findCutoffData } from "../constants/admission-cutoff-data.ts";
+import {
+  findCutoffData,
+  ADMISSION_CUTOFF_DATA,
+} from "../constants/admission-cutoff-data.ts";
 
 // ─── 생기부 원본 JSONB 타입 ───
 
@@ -1228,38 +1231,70 @@ const buildUniversityCandidatesText = (
   // 학생 등급 기반 필터링: 커트라인이 학생 등급 근처인 대학만 선정
   let filtered = withCutoff;
   if (studentGrade9 != null) {
-    const margin = 1.5; // 9등급제 기준 ±1.5 (약간 상향~약간 하향)
+    const margin = 1.0; // 9등급제 기준 ±1.0 (위험: ~gap1.0, 안정: ~gap0.5)
+
+    // 대학별 중간값 캐시 (학과 매칭 실패 시 대학 전체 중간값으로 fallback)
+    const uniMedianCache = new Map<string, number | null>();
+    const getUniversityMedian = (university: string): number | null => {
+      if (uniMedianCache.has(university))
+        return uniMedianCache.get(university)!;
+      const allCutoffs = ADMISSION_CUTOFF_DATA.filter(
+        (d) => d.university === university && d.cutoff70Grade != null
+      ).map((d) => d.cutoff70Grade!);
+      if (allCutoffs.length === 0) {
+        uniMedianCache.set(university, null);
+        return null;
+      }
+      allCutoffs.sort((a, b) => a - b);
+      const median = allCutoffs[Math.floor(allCutoffs.length / 2)];
+      uniMedianCache.set(university, median);
+      return median;
+    };
+
     filtered = withCutoff.filter((c) => {
-      if (c.repCutoff == null) {
-        // 커트라인 데이터 없는 대학: 하드코딩 맵으로 fallback
-        const cutoffMap =
-          gradingSystem === "5등급제"
-            ? FIVE_GRADE_UNIVERSITY_CUTOFF
-            : NINE_GRADE_UNIVERSITY_CUTOFF;
-        const hardcoded = cutoffMap[c.university];
-        if (hardcoded === undefined) return true; // 데이터 전혀 없는 대학은 유지
-        // 하드코딩 맵은 해당 등급제 기준이므로 직접 비교
-        const studentInSameScale =
-          gradingSystem === "5등급제" ? overallAverage! : overallAverage!;
+      // 1) 해당 학과 커트라인이 있으면 직접 비교
+      if (c.repCutoff != null) {
         return (
-          Math.abs(hardcoded - studentInSameScale) <=
-          (gradingSystem === "5등급제" ? 0.5 : margin)
+          c.repCutoff >= studentGrade9 - margin &&
+          c.repCutoff <= studentGrade9 + margin
         );
       }
-      return (
-        c.repCutoff >= studentGrade9 - margin &&
-        c.repCutoff <= studentGrade9 + margin
-      );
+
+      // 2) 학과 커트라인 없음 → 하드코딩 맵 체크
+      const cutoffMap =
+        gradingSystem === "5등급제"
+          ? FIVE_GRADE_UNIVERSITY_CUTOFF
+          : NINE_GRADE_UNIVERSITY_CUTOFF;
+      const hardcoded = cutoffMap[c.university];
+      if (hardcoded !== undefined) {
+        return (
+          Math.abs(hardcoded - overallAverage!) <=
+          (gradingSystem === "5등급제" ? 0.3 : margin)
+        );
+      }
+
+      // 3) 하드코딩 맵에도 없음 → 대학 전체 학과 중간값으로 fallback
+      const median = getUniversityMedian(c.university);
+      if (median != null) {
+        return (
+          median >= studentGrade9 - margin && median <= studentGrade9 + margin
+        );
+      }
+
+      // 4) 어떤 데이터도 없는 대학 → 제외 (근거 없는 추천 방지)
+      return false;
     });
 
-    // 필터 결과가 3개 미만이면 범위 확대
-    if (filtered.length < 3) {
-      const wider = 2.5;
+    // 필터 결과가 5개 미만이면 범위 확대
+    if (filtered.length < 5) {
+      const wider = 1.5;
       filtered = withCutoff.filter((c) => {
-        if (c.repCutoff == null) return true;
+        const effectiveCutoff =
+          c.repCutoff ?? getUniversityMedian(c.university);
+        if (effectiveCutoff == null) return false;
         return (
-          c.repCutoff >= studentGrade9 - wider &&
-          c.repCutoff <= studentGrade9 + wider
+          effectiveCutoff >= studentGrade9 - wider &&
+          effectiveCutoff <= studentGrade9 + wider
         );
       });
     }

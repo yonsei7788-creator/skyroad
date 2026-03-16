@@ -144,6 +144,8 @@ export const ActivityAnalysisRenderer = ({
         return blocks;
       })}
 
+      {/* 기록 없는 활동 영역은 렌더링하지 않음 */}
+
       {/* Final Block: Overall AI commentary */}
       <div>
         <div className={`${styles.aiCommentary} ${styles.mt20}`}>
