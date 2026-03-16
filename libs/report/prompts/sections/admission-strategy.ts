@@ -9,6 +9,7 @@ export interface AdmissionStrategyPromptInput {
   recommendedCourseMatch: string;
   studentProfile: string;
   majorEvaluationContext?: string;
+  gradingSystem?: "5등급제" | "9등급제";
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -81,7 +82,42 @@ export const buildAdmissionStrategyPrompt = (
   input: AdmissionStrategyPromptInput,
   plan: ReportPlan
 ): string => {
-  return `## 작업
+  const fiveGradeContext =
+    input.gradingSystem === "5등급제"
+      ? `## ⚠️⚠️⚠️ 5등급제 대학 추천 기준 (최우선 — 반드시 적용)
+
+이 학생은 **5등급제** 적용 학생입니다. 커트라인 데이터는 9등급제 기준이므로 직접 비교하면 안 됩니다.
+
+### 5등급제 → 9등급제 환산 (등급 비교 시 필수)
+| 5등급제 | 9등급제 근사치 |
+|---------|--------------|
+| 1.0 | 1.0~2.0 |
+| 1.5 | 3.0~4.0 |
+| 2.0 | 4.0~5.0 |
+| 2.5 | 5.0~6.0 |
+| 3.0 | 6.0~7.0 |
+
+### 5등급제 등급별 대학 라인 (일반고 학종 기준)
+| 5등급제 등급 | 예상 대학 |
+|-------------|----------|
+| 1.0 | 메디컬, 서울대, SKY, KAIST |
+| 1.1 | 서강대, 성균관대, 한양대 |
+| 1.2 | 중앙대, 경희대, 한국외대, 시립대 |
+| 1.3 | 건국대, 동국대, 홍익대 |
+| 1.4 | 아주대, 인하대, 경북대, 부산대 |
+| 1.5 | 국민대, 숭실대, 세종대, 단국대 |
+| 1.6~1.7 | 한양대(ERICA), 광운대, 명지대 |
+| 1.8~2.0 | 인천대, 가천대, 경기대 |
+| 2.0 이상 | 지방 국립대, 수도권 중하위권 |
+
+⚠️ **대학 추천 시 반드시 위 테이블을 기준으로 하세요.**
+- 예: 5등급제 2.42등급 학생에게 서울대/연세대/고려대를 위험형 추천하는 것은 잘못입니다.
+- 5등급제 2.42등급 ≈ 9등급제 5~6등급 → 위험형은 국민대/숭실대급, 안정형은 가천대/경기대급이 현실적입니다.
+- cutoffData의 등급은 9등급제 기준이므로, 위 환산표로 변환 후 비교하세요.
+`
+      : "";
+
+  return `${fiveGradeContext}## 작업
 학생의 성적과 생기부 분석 결과를 바탕으로 입시 전략과 대학을 추천하세요.
 
 ## ⛔ 핵심 원칙: 분석 방향은 생기부가 결정합니다 (최우선 규칙)
@@ -163,8 +199,10 @@ export const buildAdmissionStrategyPrompt = (
 - 총 12개 대학 카드 (위험형 6개 + 안정형 6개)
 
 ### 카드 구성
-- 각 카드에는 **학종(comprehensive)**과 **교과(subject)** 추천을 모두 포함합니다.
-- 서울대학교처럼 교과전형이 없는 대학은 subject 필드를 생략합니다.
+- 각 카드에는 **학종(comprehensive)**과 **교과(subject)** 추천을 **반드시** 모두 포함합니다.
+- ⚠️ **subject 필드를 null로 출력하면 안 됩니다.** 서울대학교처럼 교과전형이 실제로 없는 대학만 예외적으로 생략합니다.
+- 대부분의 대학은 교과전형이 있으므로 subject 필드를 반드시 채우세요.
+- subject 필드에는 admissionType, chance, chanceRationale, chancePercentLabel을 모두 포함합니다.
 - 위험 카드: 합격 가능성이 낮지만 도전할 가치가 있는 대학 (chance: "low" ~ "very_low")
 - 안정 카드: 합격 가능성이 높은 안전 지원 대학 (chance: "high" ~ "very_high")
 

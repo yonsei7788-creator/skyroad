@@ -9,6 +9,7 @@ export interface ConsultantReviewPromptInput {
   subjectAnalysisResult: string;
   admissionPredictionResult?: string;
   weaknessAnalysisResult?: string;
+  gradingSystem?: "5등급제" | "9등급제";
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -42,7 +43,20 @@ export const buildConsultantReviewPrompt = (
   input: ConsultantReviewPromptInput,
   plan: ReportPlan
 ): string => {
-  return `## 작업
+  const fiveGradeContext =
+    input.gradingSystem === "5등급제"
+      ? `## ⚠️ 5등급제 종합평가 맥락
+이 학생은 5등급제 적용 학생입니다. 총평 작성 시 반드시 반영하세요:
+- 5등급제 N등급을 9등급제 N등급과 동일하게 해석하면 안 됩니다.
+- 5등급제 2등급(상위 34%) ≈ 9등급제 3~4등급, 5등급제 3등급(상위 66%) ≈ 9등급제 5~6등급
+- "2.42등급으로 상위권" 같은 표현은 잘못입니다. 5등급제 2.42등급은 중위권입니다.
+- gradeAnalysis에서 등급을 언급할 때 반드시 "5등급제 기준"임을 명시하세요.
+- 5등급제 환경에서는 등급 변별력이 약하므로, 세특·선택과목이 핵심 변별 요소임을 강조하세요.
+
+`
+      : "";
+
+  return `${fiveGradeContext}## 작업
 당신은 15년 경력의 대입 전문 컨설턴트입니다. 지금까지 분석된 모든 결과를 종합하여, 학부모와 학생에게 직접 전달하는 **전임 컨설턴트 2차 검수**을 작성하세요.
 
 ## 역할 및 톤

@@ -9,6 +9,7 @@ export interface CompetencyScorePromptInput {
   attendanceSummary: string;
   studentProfile: string;
   majorEvaluationContext?: string;
+  gradingSystem?: "5등급제" | "9등급제";
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -57,7 +58,26 @@ export const buildCompetencyScorePrompt = (
   input: CompetencyScorePromptInput,
   plan: ReportPlan
 ): string => {
-  return `## 작업
+  const fiveGradeScoring =
+    input.gradingSystem === "5등급제"
+      ? `## ⚠️ 5등급제 채점 보정 (이 학생에게 적용)
+이 학생은 5등급제(2022 개정 교육과정) 적용 학생입니다. 채점 시 반드시 반영하세요:
+
+### 학업성취도 채점 보정
+- 5등급제 등급은 9등급제보다 구간이 넓습니다. 동일 숫자 등급이라도 의미가 다릅니다.
+- 5등급제 1등급(상위 10%) = 9등급제 1~2등급 수준 → 만점 근처
+- 5등급제 2등급(상위 34%) = 9등급제 3~4등급 수준 → 중상위
+- 5등급제 3등급(상위 66%) = 9등급제 5~6등급 수준 → 중위
+- ⚠️ 5등급제 2등급을 9등급제 2등급처럼 높게 채점하면 안 됩니다.
+
+### 교과이수노력 채점 보정
+- 5등급제 환경에서는 등급 변별력이 약하므로, 전공 관련 심화 선택과목 이수 여부가 더 중요합니다.
+- 모집단위별 권장 이수 과목을 이수했는지 확인하고, 이수하지 않았으면 감점하세요.
+
+`
+      : "";
+
+  return `${fiveGradeScoring}## 작업
 학생의 역량을 300점 만점 체계로 정량 평가하고, 발전가능성은 별도 등급으로 평가하세요.
 
 ## 점수 체계

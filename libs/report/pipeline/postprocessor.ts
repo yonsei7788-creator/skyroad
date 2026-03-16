@@ -1162,13 +1162,54 @@ const normalizeSection = (
     };
     s.gradeTrend = trendMap[pre.gradeTrend.direction] || "유지";
 
-    // ── 5등급제 학생: subjectGrades의 grade 값이 5 초과이면 clamp ──
-    if (pre.gradingSystem === "5등급제" && Array.isArray(s.subjectGrades)) {
-      s.subjectGrades = (s.subjectGrades as any[]).map((sg: any) => {
-        if (typeof sg.grade === "number" && sg.grade > 5) {
-          return { ...sg, grade: Math.min(5, Math.ceil(sg.grade / 2)) };
+    // ── subjectGrades: DB 데이터로 null/오류 보정 (등급, 원점수, 평균, 수강자수) ──
+    if (Array.isArray(s.subjectGrades)) {
+      const dbMap = new Map<
+        string,
+        {
+          gradeRank: number | null;
+          rawScore: number | null;
+          average: number | null;
+          studentCount: number | null;
         }
-        return sg;
+      >();
+      for (const sg of pre.allSubjectGrades ?? []) {
+        const key = `${sg.subject}-${sg.year}-${sg.semester}`;
+        dbMap.set(key, sg);
+      }
+
+      s.subjectGrades = (s.subjectGrades as any[]).map((sg: any) => {
+        const key = `${sg.subject}-${sg.year}-${sg.semester}`;
+        const db = dbMap.get(key);
+
+        let { grade } = sg;
+        let { rawScore } = sg;
+        let { classAverage } = sg;
+        let { studentCount } = sg;
+
+        if (db) {
+          const {
+            gradeRank: dbGrade,
+            rawScore: dbRaw,
+            average: dbAvg,
+            studentCount: dbCount,
+          } = db;
+          if (grade == null && dbGrade != null) grade = dbGrade;
+          if (rawScore == null && dbRaw != null) rawScore = dbRaw;
+          if (classAverage == null && dbAvg != null) classAverage = dbAvg;
+          if (studentCount == null && dbCount != null) studentCount = dbCount;
+        }
+
+        // 5등급제: grade > 5이면 clamp
+        if (
+          pre.gradingSystem === "5등급제" &&
+          typeof grade === "number" &&
+          grade > 5
+        ) {
+          grade = Math.min(5, Math.ceil(grade / 2));
+        }
+
+        return { ...sg, grade, rawScore, classAverage, studentCount };
       });
     }
 

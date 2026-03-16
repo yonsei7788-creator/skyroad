@@ -4,12 +4,22 @@ export interface AcademicContextAnalysisInput {
   preprocessedAcademicData: string;
   rawAcademicData: string;
   studentProfile: string;
+  gradingSystem?: "5등급제" | "9등급제";
 }
 
 export const buildAcademicContextAnalysisPrompt = (
   input: AcademicContextAnalysisInput
 ): string => {
-  return `당신은 고등학교 교과 성적 데이터를 해석하는 입시 전문가입니다.
+  const fiveGradeNote =
+    input.gradingSystem === "5등급제"
+      ? `\n\n⚠️ 이 학생은 **5등급제**(2022 개정 교육과정) 적용 학생입니다.
+- 등급 범위: 1~5 (6~9등급 없음)
+- 5등급제 1등급=상위10%, 2등급=상위34%, 3등급=상위66%
+- 등급 해석 시 9등급제와 혼동하지 마세요. 5등급제 2등급은 9등급제 3~4등급 수준입니다.
+- 등급 변별력이 약하므로 원점수, 평균, 표준편차, 수강자수 기반 실질 위치 분석이 더 중요합니다.`
+      : "";
+
+  return `당신은 고등학교 교과 성적 데이터를 해석하는 입시 전문가입니다.${fiveGradeNote}
 
 ## 작업
 아래 성적 분석 결과(코드에서 사전 계산됨)를 바탕으로 학생의 성적 특성을 해석하세요.

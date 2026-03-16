@@ -141,6 +141,7 @@ export const executeTask = async (
           preprocessedAcademicData: texts.preprocessedAcademicDataText,
           rawAcademicData: texts.rawAcademicDataText,
           studentProfile: texts.studentProfileText,
+          gradingSystem: state.preprocessedData?.gradingSystem,
         })
       ),
     ]);
@@ -210,6 +211,7 @@ export const executeTask = async (
             attendanceSummary: texts.attendanceSummaryText,
             studentProfile: texts.studentProfileText,
             majorEvaluationContext: texts.majorEvaluationContextText,
+            gradingSystem: state.preprocessedData!.gradingSystem,
           },
           plan
         )
@@ -389,6 +391,7 @@ export const executeTask = async (
             recommendedCourseMatch: texts.recommendedCourseMatchText,
             studentProfile: texts.studentProfileText,
             majorEvaluationContext: texts.majorEvaluationContextText,
+            gradingSystem: state.preprocessedData!.gradingSystem,
           },
           plan
         )
@@ -432,6 +435,7 @@ export const executeTask = async (
             weaknessAnalysisResult: ser.weaknessText!,
             admissionStrategyResult: JSON.stringify(existingStrategy),
             studentProfile: texts.studentProfileText,
+            currentDate: new Date().toISOString().slice(0, 10),
           },
           plan
         )
@@ -462,6 +466,7 @@ export const executeTask = async (
             subjectAnalysisResult: ser.subjAnalysisText!,
             admissionPredictionResult: ser.admPredText,
             weaknessAnalysisResult: ser.weaknessText,
+            gradingSystem: state.preprocessedData?.gradingSystem,
           },
           plan
         )

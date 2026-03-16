@@ -166,6 +166,16 @@ export interface PreprocessedData {
   convertedGrade: { schoolType: string; original: number; converted: number };
   /** 학생의 등급제: 고1·고2는 "5등급제", 고3/졸업생은 "9등급제" */
   gradingSystem: "5등급제" | "9등급제";
+  /** 모든 과목의 성적 데이터 (postprocessor AI 출력 보정용) */
+  allSubjectGrades?: {
+    subject: string;
+    year: number;
+    semester: number;
+    gradeRank: number | null;
+    rawScore: number | null;
+    average: number | null;
+    studentCount: number | null;
+  }[];
   fiveGradeConversion?: {
     subject: string;
     original: number;
@@ -468,6 +478,17 @@ export const preprocess = (
     attendance
   );
 
+  // 모든 과목의 성적 맵 (postprocessor에서 AI 출력 보정용)
+  const allSubjectGrades = generalSubjects.map((s) => ({
+    subject: s.subject,
+    year: s.year,
+    semester: s.semester,
+    gradeRank: s.gradeRank,
+    rawScore: s.rawScore,
+    average: s.average,
+    studentCount: s.studentCount,
+  }));
+
   const data: PreprocessedData = {
     overallAverage: Math.round(overallAverage * 100) / 100,
     averageByGrade,
@@ -479,6 +500,7 @@ export const preprocess = (
     convertedGrade,
     gradingSystem,
     fiveGradeConversion,
+    allSubjectGrades,
     smallClassSubjects,
     careerSubjects: careerSubjects.map((cs) => ({
       subject: cs.subject,
@@ -1024,20 +1046,69 @@ const buildTexts = (
     attendanceSummaryText,
     recommendedCourseMatchText,
     recordVolumeText,
-    universityCandidatesText: buildUniversityCandidatesText(targetDept),
+    universityCandidatesText: buildUniversityCandidatesText(
+      targetDept,
+      data.gradingSystem,
+      data.overallAverage
+    ),
     targetUniversitiesText,
     curriculumVersion: data.curriculumVersion,
     majorEvaluationContextText,
   };
 };
 
+/**
+ * 5등급제 등급별 대학 라인 (일반고 학종 기준).
+ * 이 등급 이하(숫자가 크면 낮은 등급)인 대학만 후보에 포함.
+ */
+const FIVE_GRADE_UNIVERSITY_CUTOFF: Record<string, number> = {
+  서울대학교: 1.0,
+  KAIST: 1.0,
+  연세대학교: 1.0,
+  고려대학교: 1.0,
+  포항공과대학교: 1.0,
+  서강대학교: 1.1,
+  성균관대학교: 1.1,
+  한양대학교: 1.1,
+  중앙대학교: 1.2,
+  경희대학교: 1.2,
+  한국외국어대학교: 1.2,
+  서울시립대학교: 1.2,
+  건국대학교: 1.3,
+  동국대학교: 1.3,
+  홍익대학교: 1.3,
+  아주대학교: 1.4,
+  인하대학교: 1.4,
+  국민대학교: 1.5,
+  숭실대학교: 1.5,
+  세종대학교: 1.5,
+  단국대학교: 1.5,
+};
+
 /** 커리어넷 데이터 기반 대학 후보군 텍스트 생성 (커트라인 포함) */
-const buildUniversityCandidatesText = (targetDept: string): string => {
+const buildUniversityCandidatesText = (
+  targetDept: string,
+  gradingSystem?: "5등급제" | "9등급제",
+  overallAverage?: number
+): string => {
   if (!targetDept) return "[]";
   const majorInfo = findMajorInfo(targetDept);
   if (!majorInfo) return "[]";
 
-  const candidates = majorInfo.universities.map((university: string) => {
+  let universities = majorInfo.universities as string[];
+
+  // 5등급제 학생: 등급에 맞지 않는 상위 대학 필터링
+  // 학생 등급 + 0.5 여유를 줘서 "도전 가능" 범위까지 포함
+  if (gradingSystem === "5등급제" && overallAverage != null) {
+    const maxReach = overallAverage - 0.5; // 예: 2.42 → 1.92까지 도전 가능
+    universities = universities.filter((uni) => {
+      const cutoff = FIVE_GRADE_UNIVERSITY_CUTOFF[uni];
+      if (cutoff === undefined) return true; // 테이블에 없는 대학은 유지
+      return cutoff >= maxReach; // 대학 커트라인이 학생 도달 범위 내
+    });
+  }
+
+  const candidates = universities.map((university: string) => {
     const cutoffs = findCutoffData(university, majorInfo.majorName);
     const cutoffSummary =
       cutoffs.length > 0

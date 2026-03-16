@@ -6,6 +6,7 @@ export interface ActionRoadmapPromptInput {
   weaknessAnalysisResult: string;
   admissionStrategyResult: string;
   studentProfile: string;
+  currentDate?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -64,7 +65,17 @@ export const buildActionRoadmapPrompt = (
   input: ActionRoadmapPromptInput,
   plan: ReportPlan
 ): string => {
-  return `## 작업
+  const dateStr = input.currentDate || new Date().toISOString().slice(0, 10);
+  const [yearStr, monthStr] = dateStr.split("-");
+  const currentYear = parseInt(yearStr, 10);
+  const currentMonth = parseInt(monthStr, 10);
+
+  return `## ⚠️ 현재 날짜: ${currentYear}년 ${currentMonth}월
+- 모든 타임라인(period)은 **${currentYear}년 ${currentMonth}월 이후**부터 시작해야 합니다.
+- ${currentYear - 1}년 이전의 날짜를 period에 사용하면 안 됩니다.
+- 예시: 현재 ${currentYear}년 ${currentMonth}월이면 → "방학 사전 준비"는 "${currentYear}년 ${currentMonth + 1}~${currentMonth + 2}월" 등으로 작성
+
+## 작업
 학생을 위한 구체적 실행 로드맵을 작성하세요.
 
 ## 출력 JSON 스키마
@@ -102,10 +113,17 @@ export const buildActionRoadmapPrompt = (
 - 학생 프로필의 "학생 상태"와 "분석 범위"를 반드시 확인하세요.
 - **졸업생/N수생**: 이 프롬프트가 호출되지 않습니다 (파이프라인에서 자동 스킵).
 - **고3 재학생**: 3학년 1학기까지의 데이터만 분석되었으므로, 3학년 2학기 및 이후 일정에 대한 실행 계획을 작성합니다.
-- **고2 이하**: 남은 학년에 대한 장기 계획을 작성합니다.
+- **고2 재학생 (2학년 데이터까지 입력)**: "3학년 때~" 시점부터 시작합니다.
+- **고1 재학생 (1학년 데이터만 입력)**: "2학년 때~" 시점부터 시작합니다.
+- ⚠️ **입력된 성적의 최대 학년 기준으로 "다음 학년부터"** 설명을 시작하세요. "3학년 때 모든 주요 과목에서~"라고 일괄 작성하면 안 됩니다.
+
+## ⚠️ 타임라인 시점 규칙 (필수)
+- phases의 period는 **현재 시점(리포트 생성 시점)부터** 시작해야 합니다.
+- 2026년에 생성된 리포트의 타임라인이 "2025년 1~2월"부터 시작하면 안 됩니다.
+- 학생 프로필의 학년과 현재 날짜를 확인하여 현실적인 시점을 산출하세요.
 
 ## 단계별 추론 절차
-1. **현재 시점 파악**: 학생의 학년과 현재 시기(학기 중/방학)를 확인하고, 남은 생기부 작성 기간을 계산합니다.
+1. **현재 시점 파악**: 학생의 학년과 현재 시기(학기 중/방학)를 확인하고, 남은 생기부 작성 기간을 계산합니다. 입력된 성적 데이터의 최대 학년/학기를 확인하여 다음 학년/학기부터의 계획을 세웁니다.
 2. **약점 → 과제 변환**: 약점 분석 결과의 각 area를 구체적 실행 과제로 변환합니다. 추상적 조언("더 노력하세요")이 아닌 행동 가능한 과제("OO 주제로 실험 보고서 작성")를 설계합니다.
 3. **시기별 배분**: 과제를 현재 방학/다음 학기/입시 시즌으로 배분합니다. 학교 내 수행 가능한 활동(수업 중 탐구, 동아리)과 자율 활동을 구분합니다.
 4. **입시 전략과 정합성 확인**: 입시 전략 결과의 추천 전형/대학에 맞춰 로드맵의 우선순위를 조정합니다. 학종이면 세특/활동 중심, 교과면 성적 관리 중심으로 설계합니다.
