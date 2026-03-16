@@ -11,6 +11,7 @@ export interface AdminReport {
   planName: string;
   targetUniversity: string | null;
   status: ReportStatus;
+  createdAt: string;
   aiGeneratedAt: string | null;
   reviewedBy: string | null;
   reviewedAt: string | null;

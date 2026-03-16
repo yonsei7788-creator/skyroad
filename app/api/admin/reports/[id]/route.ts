@@ -22,6 +22,7 @@ export const GET = async (
     .select(
       `
       id,
+      created_at,
       content,
       ai_generated_at,
       reviewed_at,
@@ -103,6 +104,7 @@ export const GET = async (
       reviewed_at: row.reviewed_at,
       delivered_at: row.delivered_at,
     }),
+    createdAt: row.created_at || new Date().toISOString(),
     content: row.content,
     reviewNotes: row.review_notes,
     aiGeneratedAt: row.ai_generated_at,

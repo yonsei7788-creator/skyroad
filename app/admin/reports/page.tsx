@@ -40,6 +40,7 @@ const STATUS_BADGE_MAP: Record<
 
 const DEBOUNCE_DELAY = 300;
 const ITEMS_PER_PAGE = 20;
+const DEADLINE_HOURS = 72;
 
 const formatDate = (dateStr: string | null): string => {
   if (!dateStr) return "-";
@@ -48,6 +49,60 @@ const formatDate = (dateStr: string | null): string => {
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}.${month}.${day}`;
+};
+
+/** 리포트 생성일 기준 72시간 마감까지 남은 시간(h) 계산 */
+const getRemainingHours = (createdAt: string): number => {
+  const deadline =
+    new Date(createdAt).getTime() + DEADLINE_HOURS * 60 * 60 * 1000;
+  return (deadline - Date.now()) / (60 * 60 * 1000);
+};
+
+type Priority = "urgent" | "high" | "medium" | "low" | "done";
+
+const getPriority = (report: AdminReport): Priority => {
+  if (report.status === "delivered") return "done";
+  const remaining = getRemainingHours(report.createdAt);
+  if (remaining <= 0) return "urgent"; // 마감 초과
+  if (remaining <= 12) return "urgent"; // 12시간 이내
+  if (remaining <= 24) return "high"; // 24시간 이내
+  if (remaining <= 48) return "medium"; // 48시간 이내
+  return "low"; // 여유
+};
+
+const PRIORITY_ORDER: Record<Priority, number> = {
+  urgent: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+  done: 4,
+};
+
+const PRIORITY_CONFIG: Record<
+  Priority,
+  {
+    label: string;
+    variant: "success" | "warning" | "info" | "neutral";
+    color: string;
+  }
+> = {
+  urgent: { label: "긴급", variant: "warning", color: "#ef4444" },
+  high: { label: "높음", variant: "warning", color: "#f59e0b" },
+  medium: { label: "보통", variant: "info", color: "#3b82f6" },
+  low: { label: "여유", variant: "neutral", color: "#94a3b8" },
+  done: { label: "완료", variant: "success", color: "#22c55e" },
+};
+
+const formatRemaining = (report: AdminReport): string => {
+  if (report.status === "delivered") return "발송 완료";
+  const remaining = getRemainingHours(report.createdAt);
+  if (remaining <= 0) {
+    const overdue = Math.abs(remaining);
+    if (overdue < 1) return "마감 초과";
+    return `${Math.floor(overdue)}h 초과`;
+  }
+  if (remaining < 1) return `${Math.round(remaining * 60)}분`;
+  return `${Math.floor(remaining)}h ${Math.round((remaining % 1) * 60)}m`;
 };
 
 const ReportsPage = () => {
@@ -123,15 +178,56 @@ const ReportsPage = () => {
     router.push(`/admin/reports/${report.id}`);
   };
 
+  // 우선순위 기준 정렬
+  const sortedReports = useMemo(
+    () =>
+      [...reports].sort(
+        (a, b) =>
+          PRIORITY_ORDER[getPriority(a)] - PRIORITY_ORDER[getPriority(b)]
+      ),
+    [reports]
+  );
+
   const columns: Column<AdminReport>[] = useMemo(
     () => [
       {
-        key: "id",
-        header: "ID",
+        key: "priority",
+        header: "우선순위",
         width: "80px",
-        render: (row: AdminReport) => (
-          <span className={styles.cellMuted}>{row.id.slice(0, 8)}</span>
-        ),
+        align: "center",
+        render: (row: AdminReport) => {
+          const priority = getPriority(row);
+          const config = PRIORITY_CONFIG[priority];
+          return (
+            <span
+              style={{
+                display: "inline-block",
+                padding: "2px 8px",
+                borderRadius: "4px",
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                color: "#fff",
+                background: config.color,
+              }}
+            >
+              {config.label}
+            </span>
+          );
+        },
+      },
+      {
+        key: "remaining",
+        header: "남은 시간",
+        width: "100px",
+        render: (row: AdminReport) => {
+          const priority = getPriority(row);
+          const { color } = PRIORITY_CONFIG[priority];
+          return (
+            <span style={{ fontSize: "0.8125rem", fontWeight: 600, color }}>
+              {formatRemaining(row)}
+            </span>
+          );
+        },
       },
       {
         key: "userName",
@@ -143,7 +239,7 @@ const ReportsPage = () => {
       {
         key: "planName",
         header: "플랜",
-        width: "100px",
+        width: "80px",
         render: (row) => (
           <span className={styles.cellText}>{row.planName}</span>
         ),
@@ -151,7 +247,7 @@ const ReportsPage = () => {
       {
         key: "targetUniversity",
         header: "목표 대학",
-        width: "150px",
+        width: "140px",
         render: (row) => (
           <span className={styles.cellText}>{row.targetUniversity || "-"}</span>
         ),
@@ -159,7 +255,7 @@ const ReportsPage = () => {
       {
         key: "status",
         header: "상태",
-        width: "120px",
+        width: "110px",
         align: "center",
         render: (row) => {
           const { label, variant } = STATUS_BADGE_MAP[row.status];
@@ -169,7 +265,7 @@ const ReportsPage = () => {
       {
         key: "aiGeneratedAt",
         header: "AI 생성일",
-        width: "120px",
+        width: "100px",
         render: (row) => (
           <span className={styles.cellText}>
             {formatDate(row.aiGeneratedAt)}
@@ -179,23 +275,15 @@ const ReportsPage = () => {
       {
         key: "reviewedBy",
         header: "검수자",
-        width: "100px",
+        width: "80px",
         render: (row) => (
           <span className={styles.cellText}>{row.reviewedBy || "-"}</span>
         ),
       },
       {
-        key: "deliveredAt",
-        header: "발송일",
-        width: "120px",
-        render: (row) => (
-          <span className={styles.cellText}>{formatDate(row.deliveredAt)}</span>
-        ),
-      },
-      {
         key: "action",
         header: "액션",
-        width: "120px",
+        width: "100px",
         align: "center",
         render: (row) => {
           const isReviewable =
@@ -303,7 +391,7 @@ const ReportsPage = () => {
           <div className={styles.tableHide}>
             <DataTable
               columns={columns}
-              data={reports}
+              data={sortedReports}
               isLoading={loading}
               onRowClick={handleRowClick}
             />
@@ -322,8 +410,10 @@ const ReportsPage = () => {
                 <Loader2 size={20} className={styles.spinner} />
               </div>
             ) : (
-              reports.map((report) => {
+              sortedReports.map((report) => {
                 const { label, variant } = STATUS_BADGE_MAP[report.status];
+                const priority = getPriority(report);
+                const priorityConfig = PRIORITY_CONFIG[priority];
                 const isReviewable =
                   report.status === "review_pending" ||
                   report.status === "ai_pending";
@@ -343,6 +433,31 @@ const ReportsPage = () => {
                       {report.id.slice(0, 8)} · {report.planName}
                     </div>
                     <div className={styles.cardDivider} />
+                    <div
+                      className={styles.cardMeta}
+                      style={{ marginBottom: 6 }}
+                    >
+                      <span
+                        style={{
+                          padding: "1px 6px",
+                          borderRadius: "4px",
+                          fontSize: "0.6875rem",
+                          fontWeight: 700,
+                          color: "#fff",
+                          background: priorityConfig.color,
+                        }}
+                      >
+                        {priorityConfig.label}
+                      </span>
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          color: priorityConfig.color,
+                        }}
+                      >
+                        {formatRemaining(report)}
+                      </span>
+                    </div>
                     {report.targetUniversity && (
                       <div className={styles.cardTarget}>
                         {report.targetUniversity}

@@ -75,6 +75,7 @@ export const GET = async (request: NextRequest) => {
     .select(
       `
       id,
+      created_at,
       content,
       ai_generated_at,
       reviewed_at,
@@ -209,6 +210,7 @@ export const GET = async (request: NextRequest) => {
           reviewed_at: row.reviewed_at as string | null,
           delivered_at: row.delivered_at as string | null,
         }),
+        createdAt: (row.created_at as string) || new Date().toISOString(),
         aiGeneratedAt: (row.ai_generated_at as string) || null,
         reviewedBy: (reviewer?.name as string) || null,
         reviewedAt: (row.reviewed_at as string) || null,
