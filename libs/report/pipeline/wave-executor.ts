@@ -216,13 +216,15 @@ export const executeTask = async (
       );
       break;
 
-    case "academicAnalysis":
+    case "academicAnalysis": {
+      const preData = state.preprocessedData!;
       section = await callGemini<ReportSection>(
         buildAcademicAnalysisPrompt(
           {
             quantitativeAnalysis: ser.acadAnalText!,
             preprocessedAcademicData: texts.preprocessedAcademicDataText,
             studentProfile: texts.studentProfileText,
+            gradingSystem: preData.gradingSystem,
           },
           plan
         )
@@ -233,6 +235,7 @@ export const executeTask = async (
         acadSectionText: JSON.stringify(section),
       };
       break;
+    }
 
     case "attendanceAnalysis":
       section = await callGemini<ReportSection>(
@@ -365,6 +368,7 @@ export const executeTask = async (
             attendanceAnalysisResult: ser.attendSectionText!,
             majorEvaluationContext: texts.majorEvaluationContextText,
             targetUniversities: texts.targetUniversitiesText,
+            gradingSystem: state.preprocessedData!.gradingSystem,
           },
           plan
         )

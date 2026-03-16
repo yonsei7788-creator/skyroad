@@ -6,6 +6,7 @@ export interface AcademicAnalysisPromptInput {
   quantitativeAnalysis: string;
   preprocessedAcademicData: string;
   studentProfile: string;
+  gradingSystem: "5등급제" | "9등급제";
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -68,7 +69,27 @@ export const buildAcademicAnalysisPrompt = (
   input: AcademicAnalysisPromptInput,
   plan: ReportPlan
 ): string => {
-  return `## 작업
+  const gradingSystemWarning =
+    input.gradingSystem === "5등급제"
+      ? `⚠️⚠️⚠️ **최우선 규칙: 이 학생은 5등급제 적용 학생입니다 (고1·고2, 2022 개정 교육과정)**
+- 이 학생의 등급은 1~5 범위입니다. 절대 6~9등급이 존재하지 않습니다.
+- "9등급제 N등급은 5등급제 N등급으로 변환" 같은 표현을 사용하면 안 됩니다.
+- fiveGradeSimulation 출력 시: currentGrade = 학생의 실제 5등급제 등급, simulatedGrade = currentGrade와 동일 값
+- interpretation: "5등급제 N등급(상위 X%)" 형태로 5등급제 환경에서의 의미를 해석하세요.
+- 5등급제 비율: 1등급(상위 10%), 2등급(상위 34%), 3등급(상위 66%), 4등급(상위 90%), 5등급(하위 10%)
+
+### 5등급제 성적 분석 심화 원칙 (반드시 적용)
+1. **원점수 기반 실질 위치 분석**: 5등급제는 등급 구간이 넓어 동일 등급 내 학생 수가 많습니다. 따라서 등급만으로 평가하지 말고, 반드시 원점수가 과목 평균 대비 어느 위치인지, 표준편차 대비 몇 시그마 위인지를 분석하세요. 예: "2등급이지만 원점수 87점은 평균(66.4) 대비 +20.6점으로, 2등급 내에서도 상위권에 해당합니다."
+2. **성적 인플레이션 맥락**: 5등급제 도입 후 고1 주요 5과목 평균이 70.1점(전년 67.1점 대비 3점 상승)으로 1등급 학생 수가 증가했습니다. 이로 인해 동일 등급 내 동점자가 많아져 실질적 경쟁이 심화되고 있으므로, "N등급은 우수합니다" 같은 단순 평가가 아니라 원점수·수강자수·세특 차별화 관점에서 해석하세요.
+3. **수강자 수와 경쟁 신뢰도**: 수강자 수가 많을수록(200명+) 해당 등급의 신뢰도가 높습니다. 소수 선택과목(5명 이하)은 소인수 과목으로 성취도+등급 병기 대상이므로 맥락적으로 해석하세요.
+4. **교과전형 변화 반영**: 5등급제 도입으로 교과전형에서도 서류종합평가를 부분 반영하는 대학이 확대되고 있습니다(동국대 등). 등급만으로 변별이 어려워져 세특·선택과목 이수 현황이 추가 평가 요소로 활용됩니다.`
+      : `⚠️ 이 학생은 9등급제 적용 학생입니다 (고3/졸업생, 2015 개정 교육과정)
+- 이 학생의 등급은 1~9 범위입니다.
+- fiveGradeSimulation 출력 시: 9등급→5등급 전환 시뮬레이션을 수행하세요.`;
+
+  return `${gradingSystemWarning}
+
+## 작업
 정량 분석 결과를 바탕으로 학생의 교과 성적에 대한 해석과 전략적 분석을 작성하세요.
 
 ## 입력 데이터

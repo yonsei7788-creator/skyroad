@@ -1162,6 +1162,16 @@ const normalizeSection = (
     };
     s.gradeTrend = trendMap[pre.gradeTrend.direction] || "유지";
 
+    // ── 5등급제 학생: subjectGrades의 grade 값이 5 초과이면 clamp ──
+    if (pre.gradingSystem === "5등급제" && Array.isArray(s.subjectGrades)) {
+      s.subjectGrades = (s.subjectGrades as any[]).map((sg: any) => {
+        if (typeof sg.grade === "number" && sg.grade > 5) {
+          return { ...sg, grade: Math.min(5, Math.ceil(sg.grade / 2)) };
+        }
+        return sg;
+      });
+    }
+
     // ── gradeDeviationAnalysis: 전처리 gradeVariance에서 확정값 주입 ──
     const gv = pre.gradeVariance;
     const aiDev = s.gradeDeviationAnalysis ?? {};
@@ -1220,13 +1230,56 @@ const normalizeSection = (
     }
 
     // ── fiveGradeSimulation: 등급제에 따라 처리 분기 ──
-    // 고1·고2 (5등급제): 이미 5등급제이므로 전환 불필요, AI 출력 유지
-    // 고3/졸업 (9등급제): 전처리 데이터 기반 강제 주입
-    if (
+    if (pre.gradingSystem === "5등급제") {
+      // 고1·고2 (5등급제): currentGrade = simulatedGrade = 실제 DB 등급값
+      // AI가 9등급제로 잘못 계산하는 것을 방지하기 위해 전처리 데이터로 강제 덮어쓰기
+      const subjectGradeMap = new Map<string, number>();
+      const gradesWithRank = (pre as any).subjectStats ?? [];
+      // subjectStats가 없으면 overallAverage에서 fallback
+      if (Array.isArray(s.subjectGrades)) {
+        for (const sg of s.subjectGrades as any[]) {
+          if (sg.subject && typeof sg.grade === "number") {
+            subjectGradeMap.set(sg.subject, sg.grade);
+          }
+        }
+      }
+
+      if (Array.isArray(s.fiveGradeSimulation)) {
+        s.fiveGradeSimulation = s.fiveGradeSimulation.map((sim: any) => {
+          const subj = sim.subject ?? "";
+          // DB 기반 실제 등급 사용, fallback으로 AI값 사용 (단, 1~5 범위 강제)
+          let grade =
+            subjectGradeMap.get(subj) ?? sim.currentGrade ?? sim.original ?? 3;
+          // 5등급제인데 6 이상이면 잘못된 값 → 5로 clamp
+          if (typeof grade === "number" && grade > 5)
+            grade = Math.min(5, Math.ceil(grade / 2));
+          // interpretation에서 "9등급제" 언급 제거
+          let interp = sim.interpretation ?? "";
+          if (interp.includes("9등급제")) {
+            interp = interp
+              .replace(
+                /9등급제\s*\d+등급은\s*5등급제\s*기준\s*\d+등급으로\s*변환[됩되]니다\.?\s*/g,
+                ""
+              )
+              .replace(/9등급제/g, "5등급제")
+              .trim();
+            if (!interp) {
+              interp = `5등급제 ${grade}등급으로, 동일 등급 내 변별을 위해 원점수와 세특 차별화가 중요합니다.`;
+            }
+          }
+          return {
+            subject: subj,
+            currentGrade: grade,
+            simulatedGrade: grade, // 5등급제는 전환 불필요 → 동일
+            interpretation: interp,
+          };
+        });
+      }
+    } else if (
       Array.isArray(pre.fiveGradeConversion) &&
       pre.fiveGradeConversion.length > 0
     ) {
-      // 과목별 최종(가장 최근) 등급만 사용
+      // 고3/졸업 (9등급제) + premium: 전처리 데이터 기반 강제 주입
       const latestBySubject = new Map<
         string,
         { original: number; converted: number }
@@ -1237,7 +1290,6 @@ const normalizeSection = (
           converted: fc.converted,
         });
       }
-      // AI가 선택한 주요 5과목의 interpretation은 유지하되, 수치는 코드값으로 대체
       const aiSimMap = new Map<string, string>(
         (Array.isArray(s.fiveGradeSimulation) ? s.fiveGradeSimulation : []).map(
           (sim: any): [string, string] => [
@@ -1246,7 +1298,6 @@ const normalizeSection = (
           ]
         )
       );
-      // 주요 5과목 선정: AI가 선택한 과목이 있으면 그대로, 없으면 전처리에서 상위 5개
       const targetSubjects: string[] =
         aiSimMap.size > 0
           ? [...aiSimMap.keys()].slice(0, 5)
@@ -1263,6 +1314,7 @@ const normalizeSection = (
           };
         });
     } else if (Array.isArray(s.fiveGradeSimulation)) {
+      // 9등급제 + non-premium: AI 출력 유지 (수치 정규화만)
       s.fiveGradeSimulation = s.fiveGradeSimulation.map((sim: any) => ({
         subject: sim.subject ?? "",
         currentGrade: sim.currentGrade ?? sim.original ?? null,
