@@ -6,6 +6,7 @@ interface ReportTableOfContentsProps {
   sections: ReportSection[];
   plan?: ReportPlan;
   studentName?: string;
+  isGraduate?: boolean;
 }
 
 interface PartDefinition {
@@ -148,6 +149,7 @@ export const ReportTableOfContents = ({
   sections,
   plan = "lite",
   studentName,
+  isGraduate,
 }: ReportTableOfContentsProps) => {
   // 현재 플랜의 목차만 표시, 하위 플랜에 없고 현재 플랜에서 새로 추가된 섹션을 형광펜 표시
   const parts = PART_DEFINITIONS[plan] ?? PART_DEFINITIONS.lite;
@@ -167,6 +169,7 @@ export const ReportTableOfContents = ({
   const resolvedParts = parts
     .map((part) => {
       const partSections = part.sectionIds
+        .filter((id) => !(id === "courseAlignment" && isGraduate))
         .map((id) => {
           const section = sectionMap.get(id);
           if (!section) return null;

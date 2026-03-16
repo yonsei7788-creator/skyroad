@@ -96,10 +96,14 @@ export const LiteReport = ({ data }: LiteReportProps) => {
             .filter((s): s is ReportSection => s !== undefined)}
           plan="lite"
           studentName={meta.studentInfo.name}
+          isGraduate={meta.studentInfo.isGraduate}
         />
 
         {PART_CONFIG.map((part) => {
           const partSections = part.sectionIds
+            .filter(
+              (id) => !(id === "courseAlignment" && meta.studentInfo.isGraduate)
+            )
             .map((id) => sectionMap.get(id))
             .filter((s): s is ReportSection => s !== undefined);
 

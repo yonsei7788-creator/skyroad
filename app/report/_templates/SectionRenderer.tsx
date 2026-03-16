@@ -70,6 +70,7 @@ export const SectionRenderer = ({
         />
       );
     case "courseAlignment":
+      if (isGraduate) return null;
       return (
         <CourseAlignmentRenderer data={section} sectionNumber={sectionNumber} />
       );
