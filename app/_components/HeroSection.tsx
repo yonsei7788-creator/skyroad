@@ -57,7 +57,7 @@ export const HeroSection = () => {
               </strong>
               {" + "}
               <strong className={styles.subtextHighlight}>
-                입시 컨설턴트 2차 검수
+                전문 입시 컨설턴트 2차 검수
               </strong>
             </p>
           </FadeIn>
