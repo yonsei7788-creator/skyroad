@@ -18,6 +18,7 @@ import { ReportRenderer } from "@/app/report/_templates";
 import { SingleSectionEditor } from "../_components/ReportContentEditor";
 import { SectionNav } from "../_components/SectionNav";
 import { generatePdfFromElement, downloadPdfBlob } from "@/libs/pdf/generate";
+import type { PdfProgress } from "@/libs/pdf/generate";
 import type { ReportDetail, ReportStatus } from "@/app/admin/types";
 import type { ReportContent } from "@/libs/report/types";
 
@@ -51,6 +52,7 @@ const ReportDetailPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState<PdfProgress | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState<
@@ -170,6 +172,29 @@ const ReportDetailPage = () => {
     }
   };
 
+  /** PDF 생성 — 다운로드와 이메일 발송 모두 이 함수를 사용 */
+  const generatePdf = async (): Promise<Blob | null> => {
+    if (!previewRef.current) {
+      addToast("미리보기 패널을 열어주세요.", "error");
+      return null;
+    }
+
+    setPdfProgress(null);
+    try {
+      const pdfBlob = await generatePdfFromElement(
+        previewRef.current,
+        (progress) => setPdfProgress(progress)
+      );
+      return pdfBlob;
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      addToast("PDF 생성에 실패했습니다.", "error");
+      return null;
+    } finally {
+      setPdfProgress(null);
+    }
+  };
+
   const buildDeliverFormData = async (): Promise<FormData | null> => {
     // 발송 전 자동 저장
     const saved = await saveContentIfNeeded();
@@ -177,16 +202,12 @@ const ReportDetailPage = () => {
 
     const formData = new FormData();
 
-    // 미리보기 패널에서 PDF 생성
-    if (previewRef.current) {
-      try {
-        addToast("PDF 생성 중...", "success");
-        const pdfBlob = await generatePdfFromElement(previewRef.current);
-        formData.append("pdf", pdfBlob, "report.pdf");
-      } catch (pdfError) {
-        console.error("PDF generation error:", pdfError);
-        addToast("PDF 생성에 실패하여 PDF 없이 발송합니다.", "error");
-      }
+    // 미리보기 패널에서 PDF 생성 (다운로드와 동일한 로직)
+    const pdfBlob = await generatePdf();
+    if (pdfBlob) {
+      formData.append("pdf", pdfBlob, "report.pdf");
+    } else {
+      addToast("PDF 생성에 실패하여 PDF 없이 발송합니다.", "error");
     }
 
     return formData;
@@ -327,18 +348,14 @@ const ReportDetailPage = () => {
   };
 
   const handleExportPdf = async () => {
-    if (!previewRef.current) {
-      addToast("미리보기 패널을 열어주세요.", "error");
-      return;
-    }
+    if (exporting) return;
     setExporting(true);
     try {
-      const pdfBlob = await generatePdfFromElement(previewRef.current);
-      downloadPdfBlob(pdfBlob, `report-${reportId.slice(0, 8)}.pdf`);
-      addToast("PDF가 다운로드되었습니다.", "success");
-    } catch (err) {
-      console.error("PDF export error:", err);
-      addToast("PDF 생성에 실패했습니다.", "error");
+      const pdfBlob = await generatePdf();
+      if (pdfBlob) {
+        downloadPdfBlob(pdfBlob, `report-${reportId.slice(0, 8)}.pdf`);
+        addToast("PDF가 다운로드되었습니다.", "success");
+      }
     } finally {
       setExporting(false);
     }
@@ -375,6 +392,11 @@ const ReportDetailPage = () => {
   const checkedCount = checkedSections.size;
   const progressPercent =
     totalSections > 0 ? (checkedCount / totalSections) * 100 : 0;
+
+  // PDF 진행률 텍스트
+  const pdfProgressText = pdfProgress
+    ? `PDF 생성 중... (${pdfProgress.current}/${pdfProgress.total})`
+    : null;
 
   if (loading) {
     return (
@@ -416,6 +438,16 @@ const ReportDetailPage = () => {
               {t.message}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* PDF Progress Overlay */}
+      {pdfProgressText && (
+        <div className={styles.toastContainer}>
+          <div className={`${styles.toast} ${styles.toastSuccess}`}>
+            <Loader2 size={16} className={styles.spinner} />
+            {pdfProgressText}
+          </div>
         </div>
       )}
 
@@ -493,7 +525,7 @@ const ReportDetailPage = () => {
           <button
             className={styles.saveButton}
             onClick={handleExportPdf}
-            disabled={exporting}
+            disabled={exporting || submitting}
           >
             {exporting ? (
               <Loader2 size={14} className={styles.spinner} />
@@ -506,7 +538,7 @@ const ReportDetailPage = () => {
             <button
               className={styles.resendButton}
               onClick={() => openConfirmModal("resend")}
-              disabled={submitting}
+              disabled={submitting || exporting}
             >
               {submitting ? (
                 <Loader2 size={14} className={styles.spinner} />
@@ -521,7 +553,7 @@ const ReportDetailPage = () => {
                 <button
                   className={styles.reviewButton}
                   onClick={handleReview}
-                  disabled={submitting}
+                  disabled={submitting || exporting}
                 >
                   {submitting ? (
                     <Loader2 size={14} className={styles.spinner} />
@@ -534,7 +566,7 @@ const ReportDetailPage = () => {
               <button
                 className={styles.sendEmailButton}
                 onClick={() => openConfirmModal("deliver")}
-                disabled={submitting}
+                disabled={submitting || exporting}
               >
                 {submitting ? (
                   <Loader2 size={14} className={styles.spinner} />
