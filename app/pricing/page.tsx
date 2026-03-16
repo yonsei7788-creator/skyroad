@@ -38,6 +38,8 @@ export default function PricingPage() {
                 생기부 분석, 딱 맞는 플랜을 골라보세요
               </h1>
               <p className={styles.heroSubtitle}>
+                <strong className={styles.heroBold}>고도화 AI 정밀 분석</strong>
+                {" + "}
                 <strong className={styles.heroHighlight}>
                   <svg
                     width="18"
@@ -52,7 +54,7 @@ export default function PricingPage() {
                   >
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01z" />
                   </svg>
-                  AI 정밀 분석 + 입시 전문가 2차 검수
+                  입시 컨설턴트 2차 검수
                   <svg
                     width="18"
                     height="18"

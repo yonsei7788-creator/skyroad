@@ -111,6 +111,11 @@
   max-width: 480px;
 }
 
+.subtextBold {
+  font-weight: 700;
+  color: var(--color-primary-600);
+}
+
 .subtextHighlight {
   font-weight: 700;
   background: linear-gradient(

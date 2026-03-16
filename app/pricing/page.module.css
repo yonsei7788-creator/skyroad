@@ -48,6 +48,11 @@
   color: var(--color-fg-secondary);
 }
 
+.heroBold {
+  font-weight: 700;
+  color: var(--color-primary-600);
+}
+
 .heroHighlight {
   font-weight: 700;
   color: var(--color-primary-600);
