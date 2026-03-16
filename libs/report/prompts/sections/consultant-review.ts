@@ -10,6 +10,8 @@ export interface ConsultantReviewPromptInput {
   admissionPredictionResult?: string;
   weaknessAnalysisResult?: string;
   gradingSystem?: "5등급제" | "9등급제";
+  studentGrade: number;
+  currentDate: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -75,6 +77,23 @@ export const buildConsultantReviewPrompt = (
    - 학업 태도(수업참여, 질문, 토론, 탐구과정)가 강점인 학생은 학종에서 면접까지 유리할 수 있다는 점을 전략에 반영합니다.
 6. **마무리 방향 설정**: 남은 학기에서 생기부를 어떻게 마무리해야 하는지 구체적 방향을 제시합니다.
 7. **종합 조언**: 가장 중요한 한 가지 메시지를 전달합니다.
+
+## ⚠️ completionDirection 시점 규칙 (필수)
+- 현재 날짜: ${input.currentDate}
+- 학생 학년: ${input.studentGrade}학년
+${
+  input.studentGrade <= 2
+    ? `- 이 학생은 아직 ${input.studentGrade}학년입니다. **"남은 기간동안"으로 시작**하세요.
+- ❌ "남은 3학년 기간", "3학년 1학기 내신을 1등급으로" → 아직 3학년이 아닙니다.
+- ✅ "남은 기간동안 성적을 끌어올려야 합니다", "앞으로의 학기에서 ~"
+- 특정 학기(3학년 1학기 등)를 지칭하지 말고 "남은 학기", "앞으로의 기간" 등 유연한 표현을 사용하세요.`
+    : input.studentGrade === 3
+      ? `- 이 학생은 3학년입니다. 현재 시점에서 실행 가능한 전략만 제시하세요.
+- 이미 지난 시기의 조언은 하지 마세요.`
+      : `- 졸업생입니다. completionDirection은 생략하세요.`
+}
+- ❌ 현재 날짜 기준 이미 지난 시기를 언급하지 마세요 (예: 3월인데 "방학 사전 준비").
+- ✅ 현재 시점부터 실행 가능한 전략만 제시하세요.
 
 ## 출력 JSON 스키마
 \`\`\`json

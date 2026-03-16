@@ -10,6 +10,8 @@ export interface AdmissionStrategyPromptInput {
   studentProfile: string;
   majorEvaluationContext?: string;
   gradingSystem?: "5등급제" | "9등급제";
+  studentGrade: number;
+  currentDate: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -145,7 +147,15 @@ export const buildAdmissionStrategyPrompt = (
 `
       : "";
 
-  return `${fiveGradeContext}${nineGradeContext}## 작업
+  const timeContext = `## ⚠️ 시점 규칙
+- 현재 날짜: ${input.currentDate}
+- 학생 학년: ${input.studentGrade}학년
+${input.studentGrade <= 2 ? `- 이 학생은 아직 ${input.studentGrade}학년입니다. "3학년 1학기" 등 특정 학기를 지칭하지 말고 "남은 학기", "앞으로의 기간" 등으로 표현하세요.` : input.studentGrade === 3 ? `- 이 학생은 3학년입니다. 현재 시점에서 실행 가능한 전략만 제시하세요.` : `- 졸업생입니다. nextSemesterStrategy는 생략하세요.`}
+- ❌ 현재 날짜 기준 이미 지난 시기를 언급하지 마세요 (예: 3월인데 "방학 사전 준비").
+
+`;
+
+  return `${fiveGradeContext}${nineGradeContext}${timeContext}## 작업
 학생의 성적과 생기부 분석 결과를 바탕으로 입시 전략과 대학을 추천하세요.
 
 ## ⛔ 핵심 원칙: 분석 방향은 생기부가 결정합니다 (최우선 규칙)
@@ -338,12 +348,24 @@ export interface DirectionGuidePromptInput {
   academicAnalysis: string;
   recommendedCourseMatch: string;
   studentProfile: string;
+  studentGrade: number;
+  currentDate: string;
 }
 
 export const buildDirectionGuidePrompt = (
   input: DirectionGuidePromptInput
 ): string => {
-  return `## 작업 (고1 전용)
+  const timeContext = `## ⚠️ 시점 규칙
+- 현재 날짜: ${input.currentDate}
+- 학생 학년: ${input.studentGrade}학년
+- 이 학생은 아직 ${input.studentGrade}학년입니다. "3학년 1학기" 등 특정 학기를 지칭하지 말고 "남은 학기", "앞으로의 기간" 등 유연한 표현을 사용하세요.
+- ❌ "남은 3학년 기간", "3학년 1학기 내신을 1등급으로" → 아직 ${input.studentGrade}학년이므로 부적절합니다.
+- ✅ "남은 기간동안", "앞으로의 학기에서", "다음 학년에서" 등으로 표현하세요.
+- ❌ 현재 날짜 기준 이미 지난 시기를 언급하지 마세요 (예: 3월인데 "방학 사전 준비").
+
+`;
+
+  return `${timeContext}## 작업 (고1 전용)
 학생의 생기부에서 드러나는 관심 분야를 분석하여 방향 설정 가이드를 작성하세요.
 
 ## 출력 JSON 스키마

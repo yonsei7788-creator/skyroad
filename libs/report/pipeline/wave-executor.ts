@@ -424,6 +424,8 @@ export const executeTask = async (
             studentProfile: texts.studentProfileText,
             majorEvaluationContext: texts.majorEvaluationContextText,
             gradingSystem: state.preprocessedData!.gradingSystem,
+            studentGrade: studentInfo.grade,
+            currentDate: new Date().toISOString().slice(0, 10),
           },
           plan
         )
@@ -437,6 +439,8 @@ export const executeTask = async (
           academicAnalysis: ser.acadAnalText!,
           recommendedCourseMatch: texts.recommendedCourseMatchText,
           studentProfile: texts.studentProfileText,
+          studentGrade: studentInfo.grade,
+          currentDate: new Date().toISOString().slice(0, 10),
         })
       );
       break;
@@ -468,6 +472,7 @@ export const executeTask = async (
             admissionStrategyResult: JSON.stringify(existingStrategy),
             studentProfile: texts.studentProfileText,
             currentDate: new Date().toISOString().slice(0, 10),
+            studentGrade: studentInfo.grade,
           },
           plan
         )
@@ -499,6 +504,8 @@ export const executeTask = async (
             admissionPredictionResult: ser.admPredText,
             weaknessAnalysisResult: ser.weaknessText,
             gradingSystem: state.preprocessedData?.gradingSystem,
+            studentGrade: studentInfo.grade,
+            currentDate: new Date().toISOString().slice(0, 10),
           },
           plan
         )

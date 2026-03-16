@@ -20,8 +20,12 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   standard: `## 플랜별 출력: 상세
 공통 항목에 추가로 **아래 핵심 3개 필드만 반드시 출력**합니다:
 
-1. **gradeDeviationAnalysis** (필수): 과목 간 편차 리스크
-   형식: {"highestSubject": "영어", "lowestSubject": "수학", "deviationRange": 3, "riskAssessment": "과목 간 편차가 3등급으로..."}
+1. **gradeDeviationAnalysis** (필수): 과목 간 편차에 대한 **입학사정관 관점 해석**
+   형식: {"highestSubject": "영어", "lowestSubject": "수학", "deviationRange": 3, "riskAssessment": "입학사정관 해석..."}
+   ⚠️ riskAssessment에 단순히 "N등급 차이가 있다"로 끝내면 안 됩니다. 생기부를 보면 알 수 있는 사실입니다.
+   반드시 **입학사정관이 이 편차를 어떻게 해석하는지** 서술하세요:
+   - 예: "국수영 간 2등급 편차는 사정관이 '특정 교과 편중 학습'으로 판단할 수 있으며, 학종에서 학업역량의 균형성 평가에서 감점 요인입니다."
+   - 예: "수학-과학 간 편차가 작고 둘 다 상위 등급이므로, 사정관은 이공계 학업 기초가 탄탄하다고 판단할 것입니다."
 2. **majorRelevanceAnalysis** (필수): 전공 관련 교과 이수 노력/성취도
    형식: {"enrollmentEffort": "...", "achievement": "...", "recommendedSubjects": ["과목1", "과목2"]}
 3. **gradeChangeAnalysis** (필수): 등급 변화 가능성
@@ -171,7 +175,9 @@ Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다
 - 주요 교과 조합별 평균 (subjectCombinations: 국수영사, 국수영과 등)
 - 학년별 등급 추이 (gradeTrend: 상승/유지/하락)
 - 과목별 등급 요약 테이블 (subjectGrades)
-- 간단 해석 (interpretation: 성적 추이와 특징 요약)
+- 간단 해석 (interpretation): **단순 사실 나열이 아니라 입학사정관이 이 성적 구조를 어떻게 해석할지** 서술
+  - ❌ "전체 평균 2.42등급이며 상승 추세입니다" (사실 나열)
+  - ✅ "5등급제 2.42등급은 중위권으로, 인서울 중하위권 교과전형은 어렵지만 학종에서는 세특 품질에 따라 가능성이 열려 있습니다. 상승 추세(2.57→2.0)는 사정관이 긍정적으로 평가하는 요소입니다."
 
 ${PLAN_SPECIFIC[plan]}`;
 };

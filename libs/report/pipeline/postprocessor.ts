@@ -1332,15 +1332,26 @@ const normalizeSection = (
     const aiDev = s.gradeDeviationAnalysis ?? {};
     const riskText =
       aiDev.riskAssessment || aiDev.analysis || aiDev.recommendation || "";
+
+    // fallback: 사정관 관점 해석 생성 (단순 사실 나열 방지)
+    let fallbackRisk = "";
+    if (gv.spread > 0) {
+      if (gv.spread <= 1) {
+        fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 차이로, 과목 간 편차가 크지 않아 입학사정관이 학업 균형성을 긍정적으로 평가할 수 있는 구조입니다. 다만 전체 등급대에서의 경쟁력은 별도로 판단해야 합니다.`;
+      } else if (gv.spread <= 2) {
+        fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 편차가 있습니다. 입학사정관은 이 정도 편차를 '특정 교과 편중 학습'으로 해석할 수 있으며, 학종에서 학업역량의 균형성 평가에서 약점이 될 수 있습니다. 교과전형에서는 평균 등급에 직접 영향을 주므로 최저 과목 보완이 필요합니다.`;
+      } else {
+        fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급의 큰 편차가 있습니다. 입학사정관은 이를 학업 관리 능력의 부족 또는 특정 교과 회피로 판단할 가능성이 높으며, 학종과 교과 모두에서 불리하게 작용합니다. 최저 과목이 전공 핵심 과목인 경우 영향이 더 크므로 즉각적인 보완이 필요합니다.`;
+      }
+    } else {
+      fallbackRisk = "과목별 성적 데이터가 부족하여 편차 분석이 어렵습니다.";
+    }
+
     s.gradeDeviationAnalysis = {
       highestSubject: gv.highest || "-",
       lowestSubject: gv.lowest || "-",
       deviationRange: gv.spread ?? 0,
-      riskAssessment:
-        riskText ||
-        (gv.spread > 0
-          ? `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 차이가 있습니다.`
-          : "과목별 성적 데이터가 부족하여 편차 분석이 어렵습니다."),
+      riskAssessment: riskText || fallbackRisk,
     };
 
     // ── majorRelevanceAnalysis: AI 필드명 매핑 ──

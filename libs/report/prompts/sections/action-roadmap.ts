@@ -7,6 +7,7 @@ export interface ActionRoadmapPromptInput {
   admissionStrategyResult: string;
   studentProfile: string;
   currentDate?: string;
+  studentGrade?: number;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -69,11 +70,22 @@ export const buildActionRoadmapPrompt = (
   const [yearStr, monthStr] = dateStr.split("-");
   const currentYear = parseInt(yearStr, 10);
   const currentMonth = parseInt(monthStr, 10);
+  const grade = input.studentGrade;
 
-  return `## ⚠️ 현재 날짜: ${currentYear}년 ${currentMonth}월
+  const gradeContext =
+    grade && grade <= 2
+      ? `\n- 이 학생은 아직 ${grade}학년입니다. "3학년 1학기" 등 특정 학기를 지칭하지 말고 "남은 학기", "앞으로의 기간" 등 유연한 표현을 사용하세요.
+- ❌ "3학년 1학기 내신을 1등급으로" → 아직 ${grade}학년이므로 부적절합니다.
+- ✅ "남은 기간동안 성적을 끌어올려야 합니다", "다음 학년에서 ~를 보완"`
+      : grade === 3
+        ? `\n- 이 학생은 3학년입니다. 현재 시점에서 실행 가능한 전략만 제시하세요.`
+        : "";
+
+  return `## ⚠️ 현재 날짜: ${currentYear}년 ${currentMonth}월${grade ? `\n- 학생 학년: ${grade}학년` : ""}
 - 모든 타임라인(period)은 **${currentYear}년 ${currentMonth}월 이후**부터 시작해야 합니다.
 - ${currentYear - 1}년 이전의 날짜를 period에 사용하면 안 됩니다.
-- 예시: 현재 ${currentYear}년 ${currentMonth}월이면 → "방학 사전 준비"는 "${currentYear}년 ${currentMonth + 1}~${currentMonth + 2}월" 등으로 작성
+- ❌ 현재 날짜 기준 이미 지난 시기를 언급하지 마세요 (예: ${currentMonth}월인데 "방학 사전 준비").
+- 예시: 현재 ${currentYear}년 ${currentMonth}월이면 → "${currentYear}년 ${currentMonth}~${currentMonth + 2}월" 등으로 작성${gradeContext}
 
 ## 작업
 학생을 위한 구체적 실행 로드맵을 작성하세요.
