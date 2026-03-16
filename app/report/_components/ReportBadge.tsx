@@ -48,7 +48,7 @@ const RATING_CLASS: Record<BadgeRating, string> = {
 
 const RATING_LABEL: Record<BadgeRating, string> = {
   excellent: "우수",
-  good: "양호",
+  good: "보통",
   average: "보통",
   weak: "미흡",
 };

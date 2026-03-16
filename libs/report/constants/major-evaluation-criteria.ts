@@ -149,7 +149,7 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
     ],
     competencyWeights: { academic: 30, career: 30, community: 20, growth: 20 },
     careerFocusPoints: [
-      "확률과 통계/미적분 이수 및 양호한 성취도",
+      "확률과 통계/미적분 이수 및 보통 이상의 성취도",
       "경제 과목 이수 및 경제 현상에 대한 분석적 시각",
       "리더십 또는 팀 프로젝트 경험 (경영 역량의 간접 증거)",
     ],
@@ -291,7 +291,7 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
     ],
     competencyWeights: { academic: 25, career: 30, community: 30, growth: 15 },
     careerFocusPoints: [
-      "생명과학II/화학II 이수 및 양호한 성취도",
+      "생명과학II/화학II 이수 및 보통 이상의 성취도",
       "봉사/돌봄 경험의 지속성과 진정성",
       "보건/간호 분야에 대한 구체적 관심 증거",
     ],

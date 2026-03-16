@@ -273,7 +273,7 @@ const admissionPredictionLite: AdmissionPredictionSection = {
       passRateLabel: "40~50%",
       passRateRange: [40, 50],
       analysis:
-        "모의고사 성적이 양호하나, 수능 변동성을 고려하면 정시는 보조 전략으로 활용하는 것이 적절합니다.",
+        "모의고사 성적이 보통 수준이나, 수능 변동성을 고려하면 정시는 보조 전략으로 활용하는 것이 적절합니다.",
     },
   ],
   overallComment:
@@ -663,7 +663,7 @@ const attendanceAnalysis: AttendanceAnalysisSection = {
   impactAnalysis:
     "무단결석·지각·조퇴가 전혀 없으며, 질병 결석도 최소 수준으로 입시에서 출결 관련 감점 요인은 없습니다.",
   integrityContribution:
-    "출결 상태가 매우 양호하여 성실성 평가에서 긍정적으로 작용합니다.",
+    "출결 상태가 매우 우수하여 성실성 평가에서 긍정적으로 작용합니다.",
   // v4
   comparisonData: {
     myValue: 3,
@@ -701,7 +701,7 @@ const activityAnalysisLite: ActivityAnalysisSection = {
             },
           ],
           ratingRationale:
-            "학급 환경 개선 프로젝트에서 IT 환경 구축을 제안하고 실행한 점은 문제해결능력과 실행력을 보여주나, 프로젝트의 범위가 교실 내로 한정되어 있고 타 학생과의 협업 깊이나 결과물의 구체적 성과가 생기부에 충분히 드러나지 않아 '양호'로 평가하였습니다.",
+            "학급 환경 개선 프로젝트에서 IT 환경 구축을 제안하고 실행한 점은 문제해결능력과 실행력을 보여주나, 프로젝트의 범위가 교실 내로 한정되어 있고 타 학생과의 협업 깊이나 결과물의 구체적 성과가 생기부에 충분히 드러나지 않아 '보통'으로 평가하였습니다.",
         },
         {
           year: 2,
@@ -743,7 +743,7 @@ const activityAnalysisLite: ActivityAnalysisSection = {
             },
           ],
           ratingRationale:
-            "코딩 동아리에 자발적으로 가입하여 Python 기초를 학습하고 간단한 프로그램을 개발한 점은 진로 탐색의 시작으로 의미 있으나, 1학년 수준의 기초 활동에 머물러 있어 독창적 성과물이나 심화 탐구가 부족합니다. 동아리 내 역할도 일반 부원 수준이어서 '양호'로 평가하였습니다.",
+            "코딩 동아리에 자발적으로 가입하여 Python 기초를 학습하고 간단한 프로그램을 개발한 점은 진로 탐색의 시작으로 의미 있으나, 1학년 수준의 기초 활동에 머물러 있어 독창적 성과물이나 심화 탐구가 부족합니다. 동아리 내 역할도 일반 부원 수준이어서 '보통'으로 평가하였습니다.",
         },
         {
           year: 2,
@@ -794,7 +794,7 @@ const activityAnalysisLite: ActivityAnalysisSection = {
             },
           ],
           ratingRationale:
-            "직업 탐구 보고서를 작성하고 AI 관련 진로 특강에 참여한 점에서 1학년 대비 진로 탐색의 구체성이 향상되었습니다. 다만 보고서의 깊이나 특강 참여 후 후속 탐구 활동이 생기부에 충분히 드러나지 않아 '양호'로 평가하였습니다.",
+            "직업 탐구 보고서를 작성하고 AI 관련 진로 특강에 참여한 점에서 1학년 대비 진로 탐색의 구체성이 향상되었습니다. 다만 보고서의 깊이나 특강 참여 후 후속 탐구 활동이 생기부에 충분히 드러나지 않아 '보통'으로 평가하였습니다.",
         },
       ],
       overallComment:
@@ -1546,7 +1546,7 @@ const subjectAnalysisLite: SubjectAnalysisSection = {
       activitySummary:
         "베이즈 정리를 활용한 스팸 메일 필터링 원리를 탐구하고 확률 모델 보고서 작성",
       evaluationComment:
-        "확률 개념을 실제 IT 기술에 적용한 시도가 좋습니다. 조건부 확률의 이해도가 높으며 데이터 사이언스와의 연결성이 양호합니다.",
+        "확률 개념을 실제 IT 기술에 적용한 시도가 좋습니다. 조건부 확률의 이해도가 높으며 데이터 사이언스와의 연결성이 보통 수준입니다.",
     },
     {
       subjectName: "물리학Ⅰ",
@@ -1724,7 +1724,7 @@ const subjectAnalysisLite: SubjectAnalysisSection = {
       activitySummary:
         "에너지 효율 관련 탐구에서 데이터 수집 및 그래프 분석을 담당하고 결과 보고서 작성",
       evaluationComment:
-        "과학적 탐구 과정에서 데이터 분석 역량이 돋보입니다. 실험 설계의 체계성이 양호하며, 과학적 사고력의 기초가 잘 잡혀 있습니다.",
+        "과학적 탐구 과정에서 데이터 분석 역량이 돋보입니다. 실험 설계의 체계성이 보통 수준이며, 과학적 사고력의 기초가 잘 잡혀 있습니다.",
     },
     {
       subjectName: "통합사회",
@@ -3333,7 +3333,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                 },
                                 {
                                   sentence:
-                                    "수업 참여도는 양호하나 글쓰기에서 논리적 구성력을 더 키울 필요가 있음.",
+                                    "수업 참여도는 보통이나 글쓰기에서 논리적 구성력을 더 키울 필요가 있음.",
                                   evaluation:
                                     "교사 피드백으로 개선 방향을 제시하는 서술.",
                                   competencyTags: [
@@ -5332,7 +5332,7 @@ const admissionStrategyStandard: AdmissionStrategySection = {
     {
       type: "정시",
       analysis:
-        "모의고사 성적이 양호하여 보조 전략으로 활용 가능하나, 수능 변동성을 고려해야 합니다.",
+        "모의고사 성적이 보통 수준이어서 보조 전략으로 활용 가능하나, 수능 변동성을 고려해야 합니다.",
       suitability: "보통",
       reason:
         "현재 모의고사 기준 상위권이나, 수능 당일 변수가 크므로 보조 전략으로 활용",

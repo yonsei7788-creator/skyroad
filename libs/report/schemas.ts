@@ -195,7 +195,7 @@ const UniversityPredictionSchema = z.object({
 });
 
 const AdmissionPredictionItemSchema = z.object({
-  admissionType: z.enum(["학종", "교과", "정시"]),
+  admissionType: z.enum(["학종", "교과", "정시", "논술", "실기/실적"]),
   passRateLabel: z.string().optional(),
   passRateRange: z
     .tuple([z.number().min(0).max(100), z.number().min(0).max(100)])
@@ -215,7 +215,7 @@ export const AdmissionPredictionSectionSchema = z.object({
   riskBands: z
     .array(
       z.object({
-        admissionType: z.enum(["학종", "교과", "정시"]),
+        admissionType: z.enum(["학종", "교과", "정시", "논술", "실기/실적"]),
         band: AdmissionRiskBandSchema,
         rationale: z.string().min(1),
       })
@@ -285,8 +285,8 @@ const SubjectStatAnalysisSchema = z.object({
   subject: z.string().min(1),
   year: z.number().int().min(1).max(3),
   semester: z.number().int().min(1).max(2),
-  zScore: z.number(),
-  percentileEstimate: z.number().min(0).max(100),
+  zScore: z.number().optional().default(0),
+  percentileEstimate: z.number().min(0).max(100).optional().default(50),
   interpretation: z.string().min(1),
 });
 
@@ -483,7 +483,7 @@ export const AttendanceAnalysisSectionSchema = z.object({
   sectionId: z.literal("attendanceAnalysis"),
   title: z.string().min(1),
   summaryByYear: z.array(AttendanceSummarySchema).min(1),
-  overallRating: z.enum(["우수", "양호", "주의", "경고"]),
+  overallRating: z.enum(["우수", "보통", "주의", "경고"]),
   impactAnalysis: z.string().min(1),
   integrityContribution: z.string().min(1),
   improvementAdvice: z.string().optional(),
@@ -744,7 +744,7 @@ export const WeaknessAnalysisSectionSchema = z.object({
 
 const ActivityDesignSchema = z.object({
   steps: z.array(z.string().min(1)).min(1),
-  duration: z.string().min(1),
+  duration: z.string().optional().default(""),
   expectedResult: z.string().min(1),
 });
 
@@ -844,7 +844,7 @@ const SimulationGroupSchema = z.object({
 });
 
 const AdmissionTypeStrategySchema = z.object({
-  type: z.enum(["학종", "교과", "정시"]),
+  type: z.enum(["학종", "교과", "정시", "논술", "실기/실적"]),
   analysis: z.string().min(1),
   suitability: z.enum(["적합", "보통", "부적합"]),
   reason: z.string().min(1),
@@ -858,9 +858,9 @@ const SchoolTypeAnalysisSchema = z.object({
 
 const UniversityGuideMatchingSchema = z.object({
   university: z.string().min(1),
-  emphasisKeywords: z.array(z.string().min(1)),
-  studentStrengthMatch: z.array(z.string().min(1)),
-  studentWeaknessMatch: z.array(z.string().min(1)),
+  emphasisKeywords: z.array(z.string().min(1)).optional().default([]),
+  studentStrengthMatch: z.array(z.string().min(1)).optional().default([]),
+  studentWeaknessMatch: z.array(z.string().min(1)).optional().default([]),
 });
 
 export const AdmissionStrategySectionSchema = z.object({

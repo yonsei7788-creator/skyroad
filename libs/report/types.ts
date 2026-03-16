@@ -531,8 +531,8 @@ export interface AttendanceAnalysisSection extends BaseSection {
 
   /** 학년별 출결 요약 */
   summaryByYear: AttendanceSummary[];
-  /** 전체 평가 (우수/양호/주의/경고) */
-  overallRating: "우수" | "양호" | "주의" | "경고";
+  /** 전체 평가 (우수/보통/주의/경고) */
+  overallRating: "우수" | "보통" | "주의" | "경고";
   /** 출결이 입시에 미치는 영향 */
   impactAnalysis: string;
   /** 성실성 점수 기여도 */

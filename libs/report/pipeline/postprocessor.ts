@@ -24,6 +24,7 @@ import {
   getMajorRelatedSubjects,
   MAJOR_INFO_DATA,
 } from "../constants/major-info-data.ts";
+import { findCutoffData } from "../constants/admission-cutoff-data.ts";
 
 // ─── 검증 결과 타입 ───
 
@@ -302,6 +303,42 @@ export const postprocess = (
           console.log(
             `[report:${reportId}] admissionPrediction: 희망대학 외 ${before - pred.universityPredictions.length}개 대학 제거 (${pred.admissionType})`
           );
+        }
+      }
+    }
+  }
+
+  // 3-6. admissionPrediction: 유저 희망대학 학과가 데이터에 없으면 "(판단 불가)" 처리
+  if (
+    admPred &&
+    studentInfo.targetUniversities &&
+    studentInfo.targetUniversities.length > 0 &&
+    Array.isArray(admPred.predictions)
+  ) {
+    // 데이터에 존재하지 않는 학과를 가진 희망대학 식별
+    const unavailableDepts = new Set<string>();
+    for (const tu of studentInfo.targetUniversities) {
+      const majorInfo = findMajorInfo(tu.department);
+      const hasCutoff =
+        findCutoffData(tu.universityName, tu.department).length > 0;
+      if (!majorInfo && !hasCutoff) {
+        unavailableDepts.add(`${tu.universityName}|${tu.department}`);
+      }
+    }
+
+    if (unavailableDepts.size > 0) {
+      for (const pred of admPred.predictions) {
+        if (!Array.isArray(pred.universityPredictions)) continue;
+        for (const up of pred.universityPredictions) {
+          const key = `${up.university}|${up.department}`;
+          if (unavailableDepts.has(key)) {
+            up.chance = "medium";
+            up.rationale =
+              "(판단 불가) 해당 학과의 입시 데이터가 확보되지 않아 합격 가능성을 판단할 수 없습니다. 유사 학과의 커트라인을 참고하시기 바랍니다.";
+            console.log(
+              `[report:${reportId}] admissionPrediction: 데이터 미확보 학과 "(판단 불가)" 처리: ${up.university} ${up.department}`
+            );
+          }
         }
       }
     }
@@ -682,7 +719,7 @@ export const postprocess = (
 // 안전한 치환만 수행 (앞뒤 문맥과 무관하게 1:1 대응되는 표현만)
 const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   // ── ThreeTierRating/assessment 구값 → 신값 변환 ──
-  // ⚠️ "양호한", "양호하며" 등 형용사 활용은 유지, 독립 명사 "양호"만 변환
+  // ⚠️ 독립 명사 "양호"→"보통" 변환은 sanitizeDeep에서 처리
   [/보완필요/g, "미흡"],
   [/보완 필요/g, "미흡"],
 
@@ -747,9 +784,9 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/매우 유리합니다/g, "유리한 편입니다"],
   [/매우 적합합니다/g, "적합한 편입니다"],
   [/매우 긍정적입니다/g, "긍정적 요소입니다"],
-  [/우수한 수준입니다/g, "양호한 수준입니다"],
-  [/매우 뛰어나며/g, "양호하며"],
-  [/매우 뛰어난/g, "양호한"],
+  [/우수한 수준입니다/g, "보통 수준입니다"],
+  [/매우 뛰어나며/g, "보통이며"],
+  [/매우 뛰어난/g, "보통인"],
 
   // ── 기타 AI식 표현 ──
   [/발전시켰/g, "보여주었"],
@@ -895,7 +932,7 @@ const sanitizeEnglishWords = (text: string): string => {
 /** 객체의 모든 문자열 필드를 재귀적으로 AI 톤 치환 + 영단어 치환 */
 const sanitizeDeep = (obj: unknown, fieldName?: string): unknown => {
   if (typeof obj === "string") {
-    // enum 필드: "양호"→"보통" 변환만 수행 (톤/영단어 치환은 건너뜀)
+    // enum 필드: 구값→신값 변환만 수행 (톤/영단어 치환은 건너뜀)
     if (fieldName && ENUM_FIELDS.has(fieldName)) {
       if (obj === "양호") return "보통";
       if (obj === "보완필요" || obj === "보완 필요") return "미흡";
