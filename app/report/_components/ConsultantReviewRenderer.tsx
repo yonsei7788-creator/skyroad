@@ -54,6 +54,63 @@ export const ConsultantReviewRenderer = ({
           {safeText(data.finalAdvice)}
         </p>
       </div>
+
+      {data.evaluationGuide && (
+        <div>
+          <div className={`${styles.h3} ${styles.mt20}`}>
+            입학사정관은 이렇게 평가합니다
+          </div>
+
+          <div className={styles.card}>
+            <div className={styles.tableCellBold}>전공 적합성</div>
+            <p className={styles.small}>
+              {safeText(data.evaluationGuide.majorFit)}
+            </p>
+          </div>
+
+          <div className={`${styles.card} ${styles.mt12}`}>
+            <div className={styles.tableCellBold}>학업 역량</div>
+            <p className={styles.small}>
+              {safeText(data.evaluationGuide.academicAbility)}
+            </p>
+          </div>
+
+          <div className={`${styles.card} ${styles.mt12}`}>
+            <div className={styles.tableCellBold}>탐구 역량</div>
+            <p className={styles.small}>
+              {safeText(data.evaluationGuide.inquiryAbility)}
+            </p>
+          </div>
+
+          <div className={`${styles.card} ${styles.mt12}`}>
+            <div className={styles.tableCellBold}>발전 가능성</div>
+            <p className={styles.small}>
+              {safeText(data.evaluationGuide.growthPotential)}
+            </p>
+          </div>
+
+          <div
+            className={`${styles.callout} ${styles.calloutCaution} ${styles.mt16}`}
+          >
+            <div className={styles.calloutContent}>
+              <span className={styles.emphasis}>핵심 인사이트:</span>{" "}
+              {safeText(data.evaluationGuide.keyInsights)}
+            </div>
+          </div>
+
+          {data.evaluationGuide.analysisMethodology && (
+            <div className={`${styles.aiCommentary} ${styles.mt16}`}>
+              <div className={styles.aiCommentaryIcon}>✦</div>
+              <div className={styles.aiCommentaryContent}>
+                <div className={styles.aiCommentaryLabel}>분석 방법론</div>
+                <div className={styles.aiCommentaryText}>
+                  {safeText(data.evaluationGuide.analysisMethodology)}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 };

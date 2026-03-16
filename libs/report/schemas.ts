@@ -1032,6 +1032,15 @@ export const MajorExplorationSectionSchema = z.object({
 
 // ─── 전임 컨설턴트 총평 ───
 
+const EvaluationGuideSchema = z.object({
+  majorFit: z.string().min(1),
+  academicAbility: z.string().min(1),
+  inquiryAbility: z.string().min(1),
+  growthPotential: z.string().min(1),
+  keyInsights: z.string().min(1),
+  analysisMethodology: z.string().min(1),
+});
+
 export const ConsultantReviewSectionSchema = z.object({
   sectionId: z.literal("consultantReview"),
   title: z.string().min(1),
@@ -1040,6 +1049,7 @@ export const ConsultantReviewSectionSchema = z.object({
   admissionStrategy: z.string().min(1),
   completionDirection: z.string().optional(),
   finalAdvice: z.string().min(1),
+  evaluationGuide: EvaluationGuideSchema.optional(),
 });
 
 // ============================================================

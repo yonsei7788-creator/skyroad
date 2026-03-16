@@ -1190,6 +1190,22 @@ export interface MajorExplorationSection extends BaseSection {
 // 전임 컨설턴트 총평 (consultantReview)
 // ============================================================
 
+/** 입학사정관 평가 구조 가이드 (학생 제공용) */
+export interface EvaluationGuide {
+  /** 전공 적합성 평가 + 입학사정관 관점 설명 */
+  majorFit: string;
+  /** 학업 역량 평가 + 세특/성적 종합 해석 */
+  academicAbility: string;
+  /** 탐구 역량 평가 + 탐구 구조 분석 */
+  inquiryAbility: string;
+  /** 발전 가능성 평가 + 성장 궤적 분석 */
+  growthPotential: string;
+  /** 핵심 인사이트 (활동 깊이, 세특 핵심, 탐구 > 리더십) */
+  keyInsights: string;
+  /** AI 분석 방법론 설명 (전공 적합성 분석 + 학업 흐름 분석) */
+  analysisMethodology: string;
+}
+
 export interface ConsultantReviewSection extends BaseSection {
   sectionId: "consultantReview";
   /** 성적 구조 분석 (수강자수, 표준편차, 등급 편차 등) */
@@ -1202,6 +1218,8 @@ export interface ConsultantReviewSection extends BaseSection {
   completionDirection?: string;
   /** 종합 한줄 조언 */
   finalAdvice: string;
+  /** 입학사정관 평가 구조 가이드 (학생 제공용) */
+  evaluationGuide?: EvaluationGuide;
 }
 
 // ============================================================
