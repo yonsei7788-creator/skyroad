@@ -17,6 +17,70 @@ const getScale = (): number => {
   return isMobile || lowMemory ? 1 : 2;
 };
 
+/** 캔버스 크기가 브라우저 제한을 초과하는지 확인 (대부분 ~16384px) */
+const MAX_CANVAS_DIMENSION = 16384;
+
+/** 빈 data URL 검증 (최소 JPEG 헤더 길이) */
+const MIN_VALID_DATA_URL_LENGTH = 100;
+
+/**
+ * AutoPaginatedSection의 슬라이스에서 보이지 않는 DOM 노드를 물리적으로 제거.
+ *
+ * 구조: <div overflow:hidden height:Hpx>
+ *         <div position:absolute top:-Ypx>
+ *           <child1/> <child2/> ... ← 전체 콘텐츠
+ *         </div>
+ *       </div>
+ *
+ * visible 범위: offsetY ~ offsetY + viewportH (px)
+ * 이 범위 밖에 있는 최상위 자식 블록을 제거하면
+ * html2canvas의 DOM 파싱 노드 수가 대폭 감소한다.
+ */
+const trimOverflowNodes = (container: HTMLElement): void => {
+  // overflow:hidden인 슬라이스 래퍼 찾기
+  const sliceWrappers = container.querySelectorAll<HTMLElement>(
+    "[data-page] div[style*='overflow']"
+  );
+
+  for (const wrapper of sliceWrappers) {
+    if (!wrapper.style.overflow?.includes("hidden")) continue;
+
+    const viewportH = wrapper.offsetHeight;
+    if (viewportH === 0) continue;
+
+    // 내부 absolute 컨테이너
+    const inner = wrapper.firstElementChild as HTMLElement | null;
+    if (!inner || inner.style.position !== "absolute") continue;
+
+    const offsetY = Math.abs(parseFloat(inner.style.top) || 0);
+    const visibleTop = offsetY;
+    const visibleBottom = offsetY + viewportH;
+
+    // getBoundingClientRect 기준으로 inner 컨테이너의 top 좌표 확보
+    const innerRect = inner.getBoundingClientRect();
+    const innerTop = innerRect.top;
+
+    // 직접 자식 블록들을 순회하며 보이지 않는 노드 제거
+    const children = Array.from(inner.children) as HTMLElement[];
+
+    for (const child of children) {
+      const childRect = child.getBoundingClientRect();
+      // inner 컨테이너 기준 상대 좌표
+      const childTop = childRect.top - innerTop;
+      const childBottom = childTop + childRect.height;
+
+      // 완전히 visible 범위 밖에 있는 블록만 제거 (100px 여유)
+      if (childBottom < visibleTop - 100 || childTop > visibleBottom + 100) {
+        // 제거 대신 빈 placeholder로 교체 (레이아웃 유지)
+        const placeholder = document.createElement("div");
+        placeholder.style.height = `${childRect.height}px`;
+        placeholder.style.visibility = "hidden";
+        child.replaceWith(placeholder);
+      }
+    }
+  }
+};
+
 /**
  * 화면 밖 고정 A4 너비 컨테이너를 생성하고, 원본 DOM을 복제합니다.
  *
@@ -85,6 +149,12 @@ const createOffscreenContainer = (source: HTMLElement): HTMLElement => {
     page.style.borderRadius = "0";
   }
 
+  // ⚡ 성능 최적화: AutoPaginatedSection의 overflow:hidden 슬라이스에서
+  // 보이지 않는 DOM 노드를 물리적으로 제거하여 html2canvas 파싱 부하를 줄임.
+  // 각 슬라이스는 absolute 배치된 전체 콘텐츠 중 일부만 보여주므로
+  // 보이는 영역(offsetY ~ offsetY+height) 밖의 최상위 블록을 제거한다.
+  trimOverflowNodes(offscreen);
+
   return offscreen;
 };
 
@@ -126,16 +196,73 @@ export const generatePdfFromElement = async (
       // 메인 스레드 양보 — UI 업데이트(진행률 표시) 허용
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-      const canvas = await html2canvas(pages[i], {
-        scale,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-        width: pages[i].offsetWidth,
-        height: pages[i].offsetHeight,
-      });
+      const pageWidth = pages[i].offsetWidth;
+      const pageHeight = pages[i].offsetHeight;
+
+      // 방어: 페이지 크기가 0이면 스킵 (offscreen 렌더링 실패)
+      if (pageWidth === 0 || pageHeight === 0) {
+        console.warn(
+          `[PDF] Page ${i + 1} has zero dimensions (${pageWidth}x${pageHeight}), skipping`
+        );
+        onProgress?.({ current: i + 1, total });
+        continue;
+      }
+
+      // 방어: 캔버스 크기 제한 초과 시 scale 자동 축소
+      let pageScale = scale;
+      const scaledWidth = pageWidth * pageScale;
+      const scaledHeight = pageHeight * pageScale;
+      if (
+        scaledWidth > MAX_CANVAS_DIMENSION ||
+        scaledHeight > MAX_CANVAS_DIMENSION
+      ) {
+        pageScale = Math.floor(
+          Math.min(
+            MAX_CANVAS_DIMENSION / pageWidth,
+            MAX_CANVAS_DIMENSION / pageHeight
+          )
+        );
+        pageScale = Math.max(pageScale, 1);
+        console.warn(
+          `[PDF] Page ${i + 1} canvas exceeds limit, reducing scale to ${pageScale}`
+        );
+      }
+
+      let canvas: HTMLCanvasElement;
+      try {
+        canvas = await html2canvas(pages[i], {
+          scale: pageScale,
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#ffffff",
+          width: pageWidth,
+          height: pageHeight,
+        });
+      } catch (canvasErr) {
+        console.error(`[PDF] html2canvas failed on page ${i + 1}:`, canvasErr);
+        throw new Error(
+          `페이지 ${i + 1} 캡처에 실패했습니다. 브라우저를 새로고침 후 다시 시도해주세요.`
+        );
+      }
+
+      // 방어: 캔버스가 빈 이미지인지 확인
+      if (canvas.width === 0 || canvas.height === 0) {
+        console.warn(`[PDF] Page ${i + 1} produced empty canvas, skipping`);
+        onProgress?.({ current: i + 1, total });
+        continue;
+      }
 
       const imgData = canvas.toDataURL("image/jpeg", 0.92);
+
+      // 방어: toDataURL이 빈 데이터 반환 시 (tainted canvas 등)
+      if (imgData.length < MIN_VALID_DATA_URL_LENGTH) {
+        console.error(
+          `[PDF] Page ${i + 1} toDataURL returned invalid data (length: ${imgData.length})`
+        );
+        throw new Error(
+          `페이지 ${i + 1}의 이미지 변환에 실패했습니다. 외부 이미지 로딩 문제일 수 있습니다.`
+        );
+      }
 
       if (i > 0) {
         pdf.addPage();
@@ -156,7 +283,29 @@ export const generatePdfFromElement = async (
  * iOS Safari에서 blob: URL + <a download> 조합이 동작하지 않으므로
  * FileReader → data URL → window.open 방식을 fallback으로 사용합니다.
  */
-export const downloadPdfBlob = (blob: Blob, filename: string): void => {
+/**
+ * PDF Blob을 다운로드합니다.
+ * iOS Safari에서 blob: URL + <a download> 조합이 동작하지 않으므로
+ * FileReader → data URL → window.open 방식을 fallback으로 사용합니다.
+ *
+ * @returns 다운로드 시도 성공 여부 (blob 유효성 기준)
+ */
+export const downloadPdfBlob = (blob: Blob, filename: string): boolean => {
+  // Blob 유효성 검증
+  if (!blob || blob.size === 0) {
+    console.error("[PDF] downloadPdfBlob: blob is empty", {
+      size: blob?.size,
+      type: blob?.type,
+    });
+    return false;
+  }
+
+  console.info("[PDF] downloadPdfBlob: starting", {
+    size: `${(blob.size / 1024 / 1024).toFixed(2)}MB`,
+    type: blob.type,
+    filename,
+  });
+
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
   const isSafari =
     /Safari/i.test(navigator.userAgent) &&
@@ -175,7 +324,7 @@ export const downloadPdfBlob = (blob: Blob, filename: string): void => {
       }
     };
     reader.readAsDataURL(blob);
-    return;
+    return true;
   }
 
   const url = URL.createObjectURL(blob);
@@ -184,6 +333,77 @@ export const downloadPdfBlob = (blob: Blob, filename: string): void => {
   a.download = filename;
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  // 앵커를 즉시 제거하지 않고 잠시 유지 (일부 브라우저 호환)
+  setTimeout(() => {
+    document.body.removeChild(a);
+  }, 100);
+
+  // 다운로드 재시도 배너 표시 (20초)
+  showDownloadBanner(url, filename);
+
+  return true;
+};
+
+const showDownloadBanner = (url: string, filename: string): void => {
+  const existing = document.getElementById("pdf-download-banner");
+  if (existing) existing.remove();
+
+  const banner = document.createElement("div");
+  banner.id = "pdf-download-banner";
+  banner.style.cssText = `
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e1e2e;
+    color: #ffffff;
+    padding: 14px 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  `;
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.textContent = "PDF 다운로드";
+  link.style.cssText = `
+    color: #818cf8;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+  `;
+
+  const closeBtn = document.createElement("button");
+  closeBtn.textContent = "✕";
+  closeBtn.style.cssText = `
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 0 0 8px;
+  `;
+
+  const cleanup = () => {
+    banner.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  closeBtn.onclick = cleanup;
+
+  banner.appendChild(
+    document.createTextNode("다운로드가 시작되지 않았나요? → ")
+  );
+  banner.appendChild(link);
+  banner.appendChild(closeBtn);
+  document.body.appendChild(banner);
+
+  setTimeout(cleanup, 20000);
 };
