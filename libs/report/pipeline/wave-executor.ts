@@ -278,6 +278,7 @@ export const executeTask = async (
             competencyExtraction: ser.compExtrText!,
             studentProfile: texts.studentProfileText,
             studentGrade: studentInfo.grade,
+            gradingSystem: state.preprocessedData!.gradingSystem,
           },
           plan
         )

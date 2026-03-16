@@ -273,14 +273,19 @@ export const AcademicAnalysisRenderer = ({
               {safeText(data.majorRelevanceAnalysis!.achievement)}
             </p>
           )}
-          {data.majorRelevanceAnalysis!.recommendedSubjects &&
+          {Array.isArray(data.majorRelevanceAnalysis!.recommendedSubjects) &&
             data.majorRelevanceAnalysis!.recommendedSubjects.length > 0 && (
               <div className={`${styles.tagGroup} ${styles.mt12}`}>
-                {data.majorRelevanceAnalysis!.recommendedSubjects.map((sub) => (
-                  <span key={sub} className={styles.tagAccent}>
-                    {sub}
-                  </span>
-                ))}
+                {data.majorRelevanceAnalysis!.recommendedSubjects.map(
+                  (sub, i) => (
+                    <span
+                      key={typeof sub === "string" ? sub : i}
+                      className={styles.tagAccent}
+                    >
+                      {typeof sub === "string" ? sub : String(sub)}
+                    </span>
+                  )
+                )}
               </div>
             )}
         </div>

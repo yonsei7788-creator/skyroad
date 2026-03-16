@@ -740,7 +740,7 @@ const findMatchingMajor = (
   const GROUP_TO_COURSE_MAJOR: Record<string, string[]> = {
     의생명: ["의학", "생명바이오"],
     교육: ["인문", "사회과학"],
-    예체능: ["인문"],
+    // 예체능은 recommended-courses.ts에 직접 정의됨 → direct 매칭
   };
 
   const alternatives = GROUP_TO_COURSE_MAJOR[majorGroup];

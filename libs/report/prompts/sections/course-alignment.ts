@@ -7,6 +7,7 @@ export interface CourseAlignmentPromptInput {
   competencyExtraction: string;
   studentProfile: string;
   studentGrade: number;
+  gradingSystem: "5등급제" | "9등급제";
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -35,7 +36,23 @@ export const buildCourseAlignmentPrompt = (
   input: CourseAlignmentPromptInput,
   plan: ReportPlan
 ): string => {
-  return `## 작업
+  const curriculumWarning =
+    input.gradingSystem === "5등급제"
+      ? `⚠️ **교육과정 버전: 2022 개정 교육과정 (5등급제)**
+- 이 학생은 5등급제 적용 학생입니다. 과목명은 반드시 2022 개정 교육과정 기준으로 작성하세요.
+- 2015 교육과정 과목명을 절대 사용하지 마세요:
+  - ❌ 물리학Ⅰ/Ⅱ → ✅ 물리학, 역학과 에너지, 전자기와 양자
+  - ❌ 화학Ⅰ/Ⅱ → ✅ 화학, 물질과 에너지, 화학 반응의 세계
+  - ❌ 생명과학Ⅰ/Ⅱ → ✅ 생명과학, 세포와 물질대사, 생물의 유전
+  - ❌ 지구과학Ⅰ/Ⅱ → ✅ 지구과학, 지구시스템과학, 행성우주과학
+  - ❌ 수학Ⅰ/Ⅱ, 미적분 → ✅ 대수, 미적분Ⅰ, 미적분Ⅱ
+  - ❌ 사회·문화 → ✅ 사회문화`
+      : `⚠️ **교육과정 버전: 2015 개정 교육과정 (9등급제)**
+- 이 학생은 9등급제 적용 학생입니다. 과목명은 반드시 2015 개정 교육과정 기준으로 작성하세요.`;
+
+  return `${curriculumWarning}
+
+## 작업
 학생의 목표 계열 대비 권장과목 이수 상태를 분석하고 영향을 평가하세요.
 
 ## ⚠️ 분석 방향 원칙

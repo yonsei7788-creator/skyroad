@@ -1162,6 +1162,23 @@ const normalizeSection = (
     };
     s.gradeTrend = trendMap[pre.gradeTrend.direction] || "유지";
 
+    // ── subjectGrades: AI가 미생성/빈 배열이면 전처리 데이터로 fallback ──
+    if (
+      (!Array.isArray(s.subjectGrades) || s.subjectGrades.length === 0) &&
+      Array.isArray(pre.allSubjectGrades) &&
+      pre.allSubjectGrades.length > 0
+    ) {
+      s.subjectGrades = pre.allSubjectGrades.map((sg) => ({
+        subject: sg.subject,
+        year: sg.year,
+        semester: sg.semester,
+        grade: sg.gradeRank,
+        rawScore: sg.rawScore,
+        classAverage: sg.average,
+        studentCount: sg.studentCount,
+      }));
+    }
+
     // ── subjectGrades: DB 데이터로 null/오류 보정 (등급, 원점수, 평균, 수강자수) ──
     if (Array.isArray(s.subjectGrades)) {
       const dbMap = new Map<
@@ -1235,8 +1252,13 @@ const normalizeSection = (
       s.majorRelevanceAnalysis = {
         enrollmentEffort: m.enrollmentEffort || m.comparison || "",
         achievement: m.achievement || m.recommendation || "",
-        recommendedSubjects:
-          m.recommendedSubjects || m.weaknesses || m.strengths || [],
+        recommendedSubjects: Array.isArray(m.recommendedSubjects)
+          ? m.recommendedSubjects
+          : Array.isArray(m.weaknesses)
+            ? m.weaknesses
+            : Array.isArray(m.strengths)
+              ? m.strengths
+              : [],
       };
     }
 

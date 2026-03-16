@@ -20,7 +20,9 @@ interface MedicalCourseRequirement {
   scienceCondition: string;
 }
 
-export const MEDICAL_COURSE_REQUIREMENTS: MedicalCourseRequirement[] = [
+// ─── 2015 개정 교육과정 메디컬 요구사항 (고3/졸업생) ───
+
+export const MEDICAL_COURSE_REQUIREMENTS_2015: MedicalCourseRequirement[] = [
   {
     university: "서울대학교",
     department: "의예과",
@@ -64,6 +66,84 @@ export const MEDICAL_COURSE_REQUIREMENTS: MedicalCourseRequirement[] = [
     scienceCondition: "2과목 이상",
   },
 ];
+
+// ─── 2022 개정 교육과정 메디컬 요구사항 (고1·고2, 5등급제) ───
+
+export const MEDICAL_COURSE_REQUIREMENTS_2022: MedicalCourseRequirement[] = [
+  {
+    university: "서울대학교",
+    department: "의예과",
+    math: ["기하", "미적분Ⅱ"],
+    science: ["생명과학", "세포와 물질대사", "생물의 유전"],
+    scienceCondition: "진로선택 3과목 이상 (세포와물질대사, 생물의유전 포함)",
+  },
+  {
+    university: "고려대학교",
+    department: "의예과",
+    math: ["미적분Ⅱ"],
+    science: [
+      "물질과 에너지",
+      "화학 반응의 세계",
+      "세포와 물질대사",
+      "생물의 유전",
+    ],
+    scienceCondition: "2과목 이상",
+  },
+  {
+    university: "경희대학교",
+    department: "의예과",
+    math: ["대수", "미적분Ⅰ", "미적분Ⅱ", "확률과 통계"],
+    science: [
+      "물리학",
+      "화학",
+      "생명과학",
+      "물질과 에너지",
+      "세포와 물질대사",
+      "생물의 유전",
+      "화학 반응의 세계",
+    ],
+    scienceCondition: "3과목",
+  },
+  {
+    university: "중앙대학교",
+    department: "의예과",
+    math: ["미적분Ⅱ", "기하"],
+    science: [
+      "생명과학",
+      "화학",
+      "물질과 에너지",
+      "화학 반응의 세계",
+      "세포와 물질대사",
+      "생물의 유전",
+    ],
+    scienceCondition: "3과목 이상",
+  },
+  {
+    university: "성균관대학교",
+    department: "의예과",
+    math: [],
+    science: [],
+    scienceCondition: "별도 요건 미공시",
+  },
+  {
+    university: "한양대학교",
+    department: "의예과",
+    math: ["기하", "미적분Ⅱ"],
+    science: ["물리학", "화학", "생명과학"],
+    scienceCondition: "1과목 이상 + 진로선택 2과목 이상",
+  },
+];
+
+/** 학년에 따라 적절한 메디컬 요구사항을 반환 */
+export const getMedicalCourseRequirements = (
+  grade: number
+): MedicalCourseRequirement[] =>
+  grade >= 3
+    ? MEDICAL_COURSE_REQUIREMENTS_2015
+    : MEDICAL_COURSE_REQUIREMENTS_2022;
+
+/** @deprecated getMedicalCourseRequirements(grade)를 사용하세요. */
+export const MEDICAL_COURSE_REQUIREMENTS = MEDICAL_COURSE_REQUIREMENTS_2015;
 
 // ─── 일반 계열별 권장과목 ───
 
@@ -224,6 +304,11 @@ export const MAJOR_COURSE_RECOMMENDATIONS_2015: MajorCourseRecommendation[] = [
       "화학Ⅰ",
       "물리학Ⅱ",
     ],
+  },
+  {
+    major: "예체능",
+    coreSubjects: ["국어", "영어"],
+    recommendedCourses: ["국어", "영어", "사회·문화", "생활과 윤리", "한국사"],
   },
 ];
 
@@ -388,6 +473,17 @@ export const MAJOR_COURSE_RECOMMENDATIONS_2022: MajorCourseRecommendation[] = [
       "물리학",
       "화학",
       "생태와 환경",
+    ],
+  },
+  {
+    major: "예체능",
+    coreSubjects: ["국어", "영어"],
+    recommendedCourses: [
+      "화법과 언어",
+      "독서와 작문",
+      "문학과 매체",
+      "윤리와 사상",
+      "사회문화",
     ],
   },
 ];
