@@ -118,25 +118,24 @@
 
 .subtextHighlight {
   font-weight: 700;
-  background: linear-gradient(
-    135deg,
-    var(--color-primary-600),
-    var(--color-primary-400, #818cf8)
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  position: relative;
-  display: inline;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 8'%3E%3Cpath d='M0,5 C10,3 20,7 30,4 C40,2 50,6 60,5 C70,3 80,7 90,4 C100,2 110,6 120,5 C130,3 140,7 150,4 C160,2 170,6 180,5 C190,3 200,6 200,5' stroke='%23ef4444' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: repeat-x;
-  background-position: bottom;
-  background-size: 120px 6px;
-  padding-bottom: 4px;
-  -webkit-background-clip: unset;
-  background-clip: unset;
-  -webkit-text-fill-color: unset;
   color: var(--color-primary-600);
+  display: inline;
+  position: relative;
+  padding: 2px 4px;
+}
+
+.subtextHighlight::before {
+  content: "";
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  bottom: 2px;
+  height: 40%;
+  background: rgba(255, 230, 0, 0.4);
+  border-radius: 2px 4px 3px 4px;
+  transform: rotate(-0.5deg) skewX(-2deg);
+  z-index: -1;
+  filter: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"><filter id="r"><feTurbulence baseFrequency="0.03" numOctaves="4" seed="1"/><feDisplacementMap in="SourceGraphic" scale="3"/></filter></svg>#r');
 }
 
 @media (min-width: 1024px) {
