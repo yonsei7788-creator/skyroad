@@ -48,6 +48,7 @@ export const GET = async (
     planName: displayName,
     targetUniversity: "서울대학교 컴퓨터공학부 (학생부종합)",
     status: "review_pending",
+    createdAt: new Date().toISOString(),
     content: mockReportData,
     reviewNotes: null,
     aiGeneratedAt: new Date().toISOString(),

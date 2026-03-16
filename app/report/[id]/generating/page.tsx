@@ -50,6 +50,7 @@ const GeneratingContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
+  const isFromAdmin = searchParams.get("from") === "admin";
 
   const [phase, setPhase] = useState<
     "idle" | "initializing" | "running" | "completed" | "error"
@@ -220,9 +221,13 @@ const GeneratingContent = () => {
               type="button"
               className={styles.retryButton}
               style={{ marginTop: 24 }}
-              onClick={() => router.push("/profile/consulting")}
+              onClick={() =>
+                router.push(
+                  isFromAdmin ? "/admin/reports" : "/profile/consulting"
+                )
+              }
             >
-              컨설팅 내역으로 이동
+              {isFromAdmin ? "리포트 관리로 이동" : "컨설팅 내역으로 이동"}
             </button>
           </>
         ) : isWorking ? (

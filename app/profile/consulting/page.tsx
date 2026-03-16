@@ -283,6 +283,7 @@ const ConsultingHistoryPage = async () => {
     `
     )
     .eq("user_id", user.id)
+    .or("is_admin_only.is.null,is_admin_only.eq.false")
     .order("created_at", { ascending: false });
 
   const orderList = (orders ?? []) as unknown as OrderRow[];

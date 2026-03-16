@@ -9,8 +9,10 @@ import type { ReportPlan } from "@/libs/report/types";
 export const dynamic = "force-dynamic";
 
 interface GenerateBody {
-  userId: string;
+  userId?: string;
+  recordId?: string;
   plan: ReportPlan;
+  adminOnly?: boolean;
 }
 
 const VALID_PLANS: ReportPlan[] = ["lite", "standard", "premium"];
@@ -18,6 +20,10 @@ const VALID_PLANS: ReportPlan[] = ["lite", "standard", "premium"];
 /**
  * 어드민 전용 리포트 생성 — 결제 없이 주문+리포트 레코드를 생성한다.
  * 실제 파이프라인 실행은 generating 페이지가 /api/reports/run-pipeline을 호출하여 수행.
+ *
+ * 요청 방식:
+ * 1. { userId, plan } — 유저의 최신 생기부 기반 (기존 방식)
+ * 2. { recordId, plan, adminOnly? } — 특정 생기부 기반 (어드민 생기부 관리에서 호출)
  */
 export const POST = async (request: NextRequest) => {
   const supabase = await createClient();
@@ -31,10 +37,17 @@ export const POST = async (request: NextRequest) => {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  const { userId, plan } = body;
-  if (!userId || !plan || !VALID_PLANS.includes(plan)) {
+  const { plan, adminOnly = false } = body;
+  if (!plan || !VALID_PLANS.includes(plan)) {
     return NextResponse.json(
-      { error: "userId와 유효한 plan이 필요합니다." },
+      { error: "유효한 plan이 필요합니다." },
+      { status: 400 }
+    );
+  }
+
+  if (!body.userId && !body.recordId) {
+    return NextResponse.json(
+      { error: "userId 또는 recordId가 필요합니다." },
       { status: 400 }
     );
   }
@@ -42,20 +55,44 @@ export const POST = async (request: NextRequest) => {
   const adminClient = createAdminClient();
   const dbClient = adminClient ?? supabase;
 
-  // 1. 유저의 최신 생기부 레코드 확인
-  const { data: record, error: recordError } = await dbClient
-    .from("records")
-    .select("id")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
+  // 1. 생기부 레코드 + 유저 확인
+  let recordId: string;
+  let userId: string;
 
-  if (recordError || !record) {
-    return NextResponse.json(
-      { error: "해당 유저의 생기부가 등록되지 않았습니다." },
-      { status: 404 }
-    );
+  if (body.recordId) {
+    // recordId 기반: 레코드에서 user_id를 조회
+    const { data: record, error: recordError } = await dbClient
+      .from("records")
+      .select("id, user_id")
+      .eq("id", body.recordId)
+      .single();
+
+    if (recordError || !record) {
+      return NextResponse.json(
+        { error: "해당 생기부를 찾을 수 없습니다." },
+        { status: 404 }
+      );
+    }
+    recordId = record.id;
+    userId = record.user_id;
+  } else {
+    // userId 기반: 최신 레코드 조회 (기존 방식)
+    userId = body.userId!;
+    const { data: record, error: recordError } = await dbClient
+      .from("records")
+      .select("id")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (recordError || !record) {
+      return NextResponse.json(
+        { error: "해당 유저의 생기부가 등록되지 않았습니다." },
+        { status: 404 }
+      );
+    }
+    recordId = record.id;
   }
 
   // 2. 플랜 조회
@@ -78,10 +115,11 @@ export const POST = async (request: NextRequest) => {
     .from("orders")
     .insert({
       user_id: userId,
-      record_id: record.id,
+      record_id: recordId,
       plan_id: planRow.id,
       status: "paid",
       amount: 0,
+      is_admin_only: adminOnly,
     })
     .select("id")
     .single();
@@ -126,6 +164,7 @@ export const POST = async (request: NextRequest) => {
     reportId: report.id,
     orderId: order.id,
     plan,
+    adminOnly,
     status: "ready",
   });
 };
