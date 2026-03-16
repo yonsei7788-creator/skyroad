@@ -17,7 +17,7 @@ import { Badge } from "@/app/admin/_components";
 import { ReportRenderer } from "@/app/report/_templates";
 import { SingleSectionEditor } from "../_components/ReportContentEditor";
 import { SectionNav } from "../_components/SectionNav";
-import { generatePdfFromElement } from "@/libs/pdf/generate";
+import { generatePdfFromElement, downloadPdfBlob } from "@/libs/pdf/generate";
 import type { ReportDetail, ReportStatus } from "@/app/admin/types";
 import type { ReportContent } from "@/libs/report/types";
 
@@ -334,14 +334,7 @@ const ReportDetailPage = () => {
     setExporting(true);
     try {
       const pdfBlob = await generatePdfFromElement(previewRef.current);
-      const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `report-${reportId.slice(0, 8)}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadPdfBlob(pdfBlob, `report-${reportId.slice(0, 8)}.pdf`);
       addToast("PDF가 다운로드되었습니다.", "success");
     } catch (err) {
       console.error("PDF export error:", err);

@@ -3,7 +3,17 @@ import { jsPDF } from "jspdf";
 
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
-const SCALE = 2;
+
+/** 모바일/저사양 기기는 scale을 낮춰 메모리 초과 방지 */
+const getScale = (): number => {
+  if (typeof window === "undefined") return 2;
+  // 모바일이거나 deviceMemory가 낮으면 scale 1
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const lowMemory =
+    "deviceMemory" in navigator &&
+    (navigator as unknown as { deviceMemory: number }).deviceMemory < 4;
+  return isMobile || lowMemory ? 1 : 2;
+};
 
 /** 메인 스레드 양보 — UI 버벅임 방지 */
 const yieldToMain = () =>
@@ -105,7 +115,7 @@ export const generatePdfFromElement = async (
       const pageHeight = Math.max(pages[i].offsetHeight, pages[i].scrollHeight);
 
       const canvas = await html2canvas(pages[i], {
-        scale: SCALE,
+        scale: getScale(),
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
@@ -131,4 +141,45 @@ export const generatePdfFromElement = async (
     // 항상 정리: 화면 밖 컨테이너 제거
     document.body.removeChild(offscreen);
   }
+};
+
+/**
+ * PDF Blob을 다운로드합니다.
+ * iOS Safari에서 blob: URL + <a download> 조합이 동작하지 않으므로
+ * FileReader → data URL → window.open 방식을 fallback으로 사용합니다.
+ */
+export const downloadPdfBlob = (blob: Blob, filename: string): void => {
+  // iOS Safari 감지
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isSafari =
+    /Safari/i.test(navigator.userAgent) &&
+    !/Chrome|CriOS|FxiOS/i.test(navigator.userAgent);
+
+  if (isIOS || isSafari) {
+    // iOS Safari: blob URL이 작동하지 않으므로 새 탭에서 열기
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      const newTab = window.open();
+      if (newTab) {
+        newTab.document.title = filename;
+        newTab.location.href = dataUrl;
+      } else {
+        // 팝업 차단 시 직접 이동
+        window.location.href = dataUrl;
+      }
+    };
+    reader.readAsDataURL(blob);
+    return;
+  }
+
+  // 일반 브라우저: blob URL + <a download>
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
