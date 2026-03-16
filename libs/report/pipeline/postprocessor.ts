@@ -344,98 +344,210 @@ export const postprocess = (
     }
   }
 
-  // 3-7. admissionPrediction + admissionStrategy: 등급-대학 거리 기반 비현실적 예측 제거
-  // 유저 희망대학이라도 등급 차이가 너무 크면 "사실상 불가" 처리
+  // 3-7. admissionStrategy: 학과별 실제 커트라인 기반 검증
+  // riskLevel/chance 일관성 보정 + 비현실적/너무 쉬운 대학 제거
   {
     const avg = preprocessed.overallAverage;
     const gs = preprocessed.gradingSystem;
     if (avg != null && gs) {
-      const cutoffMap: Record<string, number> =
-        gs === "5등급제"
-          ? {
-              서울대학교: 1.0,
-              KAIST: 1.0,
-              연세대학교: 1.0,
-              고려대학교: 1.0,
-              포항공과대학교: 1.0,
-              서강대학교: 1.1,
-              성균관대학교: 1.1,
-              한양대학교: 1.1,
-              중앙대학교: 1.2,
-              경희대학교: 1.2,
-              한국외국어대학교: 1.2,
-              서울시립대학교: 1.2,
-              건국대학교: 1.3,
-              동국대학교: 1.3,
-              홍익대학교: 1.3,
-              아주대학교: 1.4,
-              인하대학교: 1.4,
-              경북대학교: 1.4,
-              부산대학교: 1.4,
-              국민대학교: 1.5,
-              숭실대학교: 1.5,
-              세종대학교: 1.5,
-              단국대학교: 1.5,
-            }
-          : {
-              서울대학교: 1.5,
-              KAIST: 1.5,
-              연세대학교: 1.5,
-              고려대학교: 1.5,
-              포항공과대학교: 1.5,
-              서강대학교: 2.0,
-              성균관대학교: 2.0,
-              한양대학교: 2.0,
-              중앙대학교: 2.5,
-              경희대학교: 2.5,
-              한국외국어대학교: 2.5,
-              서울시립대학교: 2.5,
-              건국대학교: 3.0,
-              동국대학교: 3.0,
-              홍익대학교: 3.0,
-              아주대학교: 3.5,
-              인하대학교: 3.5,
-              국민대학교: 4.0,
-              숭실대학교: 4.0,
-            };
-
-      // 비현실적 도달 거리 기준: 5등급제 0.8, 9등급제 2.0
-      const unreachableGap = gs === "5등급제" ? 0.8 : 2.0;
-
-      const isUnreachable = (university: string): boolean => {
-        const cutoff = cutoffMap[university];
-        if (cutoff === undefined) return false;
-        return avg - cutoff > unreachableGap;
+      // 5→9등급 환산 (커트라인 데이터가 9등급제 기준)
+      const fiveToNine = (five: number): number => {
+        if (five <= 1.0) return 1.5;
+        if (five <= 1.5) return 1.5 + (five - 1.0) * 4;
+        return 3.5 + (five - 1.5) * 2;
       };
+      const studentGrade9 = gs === "5등급제" ? fiveToNine(avg) : avg;
+
+      // 대학별 커트라인 조회: 학과별 실제 데이터 → 하드코딩 fallback
+      const targetDept = studentInfo.targetDepartment ?? "";
+
+      const getRepCutoff9 = (
+        university: string,
+        department?: string
+      ): number | null => {
+        // 1) 학과별 실제 커트라인 (9등급 기준)
+        const dept = department || targetDept;
+        if (dept) {
+          const cutoffs = findCutoffData(university, dept);
+          if (cutoffs.length > 0) {
+            const hakjong = cutoffs.find((c) => c.admissionType === "학종");
+            if (hakjong?.cutoff70Grade != null) return hakjong.cutoff70Grade;
+            if (hakjong?.cutoff50Grade != null) return hakjong.cutoff50Grade;
+            const gyogwa = cutoffs.find((c) => c.admissionType === "교과");
+            if (gyogwa?.cutoff70Grade != null) return gyogwa.cutoff70Grade;
+            if (gyogwa?.cutoff50Grade != null) return gyogwa.cutoff50Grade;
+            for (const c of cutoffs) {
+              if (c.cutoff70Grade != null) return c.cutoff70Grade;
+              if (c.cutoff50Grade != null) return c.cutoff50Grade;
+            }
+          }
+        }
+        // 2) fallback: 대학 전체 하드코딩 맵
+        return null;
+      };
+
+      // 하드코딩 fallback (9등급 기준 통일)
+      const universityFallback9: Record<string, number> = {
+        서울대학교: 1.5,
+        KAIST: 1.5,
+        연세대학교: 1.5,
+        고려대학교: 1.5,
+        포항공과대학교: 1.5,
+        서강대학교: 2.0,
+        성균관대학교: 2.0,
+        한양대학교: 2.0,
+        중앙대학교: 2.5,
+        경희대학교: 2.5,
+        한국외국어대학교: 2.5,
+        서울시립대학교: 2.5,
+        건국대학교: 3.0,
+        동국대학교: 3.0,
+        홍익대학교: 3.0,
+        아주대학교: 3.5,
+        인하대학교: 3.5,
+        경북대학교: 3.5,
+        부산대학교: 3.5,
+        국민대학교: 4.0,
+        숭실대학교: 4.0,
+        세종대학교: 4.0,
+        단국대학교: 4.0,
+        서울과학기술대학교: 4.0,
+        "한양대학교(ERICA)": 4.5,
+        한국항공대학교: 4.5,
+        광운대학교: 4.5,
+        명지대학교: 4.5,
+        인천대학교: 5.0,
+        가천대학교: 5.0,
+        경기대학교: 5.0,
+        충북대학교: 5.0,
+        충남대학교: 5.0,
+      };
+
+      // 대학+학과의 9등급 커트라인 조회
+      const getCutoff9 = (
+        university: string,
+        department?: string
+      ): number | null => {
+        const real = getRepCutoff9(university, department);
+        if (real != null) return real;
+        // ERICA 변형 대응
+        if (university.includes("ERICA"))
+          return universityFallback9["한양대학교(ERICA)"] ?? null;
+        return universityFallback9[university] ?? null;
+      };
+
+      // 거리 기준 (9등급 통일): ±1.5
+      const unreachableGap9 = 1.5;
+      const tooEasyGap9 = 1.5;
 
       // admissionPrediction: 비현실적 대학 제거
       if (admPred && Array.isArray(admPred.predictions)) {
         for (const pred of admPred.predictions) {
           if (!Array.isArray(pred.universityPredictions)) continue;
-          const before = pred.universityPredictions.length;
           pred.universityPredictions = pred.universityPredictions.filter(
             (up: any) => {
-              if (!isUnreachable(up.university)) return true;
-              console.log(
-                `[report:${reportId}] 비현실적 대학 제거 (${gs} ${avg}): ${up.university} (cutoff ${cutoffMap[up.university]})`
-              );
-              return false;
+              const cutoff9 = getCutoff9(up.university, up.department);
+              if (cutoff9 == null) return true;
+              if (studentGrade9 - cutoff9 > unreachableGap9) {
+                console.log(
+                  `[report:${reportId}] 비현실적 대학 제거: ${up.university} (cutoff9=${cutoff9.toFixed(2)}, student9=${studentGrade9.toFixed(2)}, gap=${(studentGrade9 - cutoff9).toFixed(2)})`
+                );
+                return false;
+              }
+              return true;
             }
           );
         }
       }
 
-      // admissionStrategy: 비현실적 대학 제거
+      // admissionStrategy: 비현실적/너무 쉬운 대학 제거 + riskLevel/chance 보정
       if (admStrat && Array.isArray(admStrat.simulations)) {
         for (const sim of admStrat.simulations) {
           if (!Array.isArray(sim.cards)) continue;
+
+          // 1단계: 비현실적/너무 쉬운 대학 제거
           sim.cards = sim.cards.filter((card: any) => {
-            if (!isUnreachable(card.university)) return true;
-            console.log(
-              `[report:${reportId}] 비현실적 추천 대학 제거 (${gs} ${avg}): ${card.university}`
-            );
-            return false;
+            const cutoff9 = getCutoff9(card.university, card.department);
+            if (cutoff9 == null) return true;
+            const gap = studentGrade9 - cutoff9;
+            if (gap > unreachableGap9) {
+              console.log(
+                `[report:${reportId}] 비현실적 추천 제거: ${card.university} (cutoff9=${cutoff9.toFixed(2)}, gap=${gap.toFixed(2)})`
+              );
+              return false;
+            }
+            if (gap < -tooEasyGap9) {
+              console.log(
+                `[report:${reportId}] 하향 과다 추천 제거: ${card.university} (cutoff9=${cutoff9.toFixed(2)}, gap=${gap.toFixed(2)})`
+              );
+              return false;
+            }
+            return true;
           });
+
+          // 2단계: riskLevel 보정 (9등급 커트라인 기반)
+          for (const card of sim.cards) {
+            const cutoff9 = getCutoff9(card.university, card.department);
+            if (cutoff9 == null) continue;
+
+            // cutoff9 < studentGrade9 → 학생이 올라가야 함 → 위험
+            // cutoff9 >= studentGrade9 → 학생이 도달 가능/여유 → 안정
+            const shouldBeRisk = cutoff9 < studentGrade9;
+            const currentRisk = card.riskLevel;
+
+            if (shouldBeRisk && currentRisk === "안정") {
+              console.log(
+                `[report:${reportId}] riskLevel 보정: ${card.university} 안정→위험 (cutoff9=${cutoff9.toFixed(2)} < student9=${studentGrade9.toFixed(2)})`
+              );
+              card.riskLevel = "위험";
+            } else if (!shouldBeRisk && currentRisk === "위험") {
+              console.log(
+                `[report:${reportId}] riskLevel 보정: ${card.university} 위험→안정 (cutoff9=${cutoff9.toFixed(2)} >= student9=${studentGrade9.toFixed(2)})`
+              );
+              card.riskLevel = "안정";
+            }
+          }
+
+          // 3단계: chance-riskLevel 일관성 보정
+          for (const card of sim.cards) {
+            const risk = card.riskLevel;
+
+            // comprehensive (학종) chance 보정
+            if (card.comprehensive?.chance) {
+              if (
+                risk === "안정" &&
+                (card.comprehensive.chance === "low" ||
+                  card.comprehensive.chance === "very_low")
+              ) {
+                card.comprehensive.chance = "high";
+              }
+              if (
+                risk === "위험" &&
+                (card.comprehensive.chance === "very_high" ||
+                  card.comprehensive.chance === "high")
+              ) {
+                card.comprehensive.chance = "medium";
+              }
+            }
+
+            // subject (교과) chance 보정
+            if (card.subject?.chance) {
+              if (
+                risk === "안정" &&
+                (card.subject.chance === "low" ||
+                  card.subject.chance === "very_low")
+              ) {
+                card.subject.chance = "high";
+              }
+              if (
+                risk === "위험" &&
+                (card.subject.chance === "very_high" ||
+                  card.subject.chance === "high")
+              ) {
+                card.subject.chance = "medium";
+              }
+            }
+          }
         }
       }
     }
