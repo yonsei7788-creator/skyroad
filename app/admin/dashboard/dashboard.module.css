@@ -246,25 +246,77 @@
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
   .page {
-    padding: 24px 16px 48px;
+    padding: 20px 16px 48px;
+  }
+
+  .container {
+    gap: 20px;
+  }
+
+  .pageTitle {
+    font-size: 1.25rem;
   }
 
   .chartsGrid {
     grid-template-columns: 1fr;
   }
 
+  .chartCard {
+    padding: 16px;
+  }
+
+  .chartTitle {
+    font-size: 0.875rem;
+    margin-bottom: 12px;
+  }
+
   .chartArea {
-    height: 240px;
+    height: 220px;
   }
 
   .pageHeader {
     flex-direction: column;
     align-items: flex-start;
+    gap: 12px;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
   }
 }
 
 @media (max-width: 480px) {
+  .page {
+    padding: 16px 12px 40px;
+  }
+
+  .container {
+    gap: 16px;
+  }
+
+  .filterGroup {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filterTab {
+    flex: 1;
+    text-align: center;
+    padding: 6px 10px;
+  }
+
+  .chartCard {
+    padding: 14px;
+  }
+
+  .chartArea {
+    height: 180px;
+  }
+}
+
+@media (max-width: 360px) {
   .statsGrid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 }
