@@ -132,6 +132,34 @@ export const TargetUniversityForm = ({
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Department options per university
+  const [departmentMap, setDepartmentMap] = useState<Record<string, string[]>>(
+    {}
+  );
+
+  const fetchDepartments = useCallback(
+    async (universityName: string) => {
+      if (!universityName || departmentMap[universityName]) return;
+      try {
+        const res = await fetch(
+          `/api/universities/departments?university=${encodeURIComponent(universityName)}`
+        );
+        const data: string[] = await res.json();
+        setDepartmentMap((prev) => ({ ...prev, [universityName]: data }));
+      } catch {
+        setDepartmentMap((prev) => ({ ...prev, [universityName]: [] }));
+      }
+    },
+    [departmentMap]
+  );
+
+  // 초기 로드 시 이미 설정된 대학교의 학과 목록 fetch
+  useEffect(() => {
+    initialTargets.forEach((t) => {
+      if (t.universityName) fetchDepartments(t.universityName);
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const showToast = useCallback(
     (message: string, type: "success" | "error" = "success") => {
       setToast({ message, type });
@@ -213,13 +241,23 @@ export const TargetUniversityForm = ({
   };
 
   const handleSelectUniversity = (university: UniversityResult) => {
+    const prev = getTarget(searchingPriority);
+    if (prev.universityName !== university.name) {
+      handleFieldChange(searchingPriority, "department", "");
+    }
     handleFieldChange(searchingPriority, "universityName", university.name);
     clearError(`${searchingPriority}-universityName`);
+    fetchDepartments(university.name);
     handleCloseModal();
   };
 
   const handleManualSelect = () => {
+    const prev = getTarget(searchingPriority);
+    if (prev.universityName !== searchQuery) {
+      handleFieldChange(searchingPriority, "department", "");
+    }
     handleFieldChange(searchingPriority, "universityName", searchQuery);
+    fetchDepartments(searchQuery);
     handleCloseModal();
   };
 
@@ -530,19 +568,53 @@ export const TargetUniversityForm = ({
                             모집단위
                             <span className={styles.required}>*</span>
                           </label>
-                          <input
-                            type="text"
-                            className={`${styles.input} ${errors[`${priority}-department`] ? styles.inputError : ""}`}
-                            placeholder="예: 컴퓨터공학과"
-                            value={target.department}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                priority,
-                                "department",
-                                e.target.value
-                              )
-                            }
-                          />
+                          {(() => {
+                            const depts = departmentMap[target.universityName];
+                            const hasDepts = depts && depts.length > 0;
+                            const noUniv = !target.universityName;
+
+                            return hasDepts ? (
+                              <select
+                                className={`${styles.select} ${errors[`${priority}-department`] ? styles.inputError : ""}`}
+                                value={target.department}
+                                onChange={(e) =>
+                                  handleFieldChange(
+                                    priority,
+                                    "department",
+                                    e.target.value
+                                  )
+                                }
+                              >
+                                <option value="">
+                                  모집단위를 선택해주세요
+                                </option>
+                                {depts.map((dept) => (
+                                  <option key={dept} value={dept}>
+                                    {dept}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                className={`${styles.input} ${errors[`${priority}-department`] ? styles.inputError : ""}`}
+                                placeholder={
+                                  noUniv
+                                    ? "대학교를 먼저 선택해주세요"
+                                    : "예: 컴퓨터공학과"
+                                }
+                                value={target.department}
+                                disabled={noUniv}
+                                onChange={(e) =>
+                                  handleFieldChange(
+                                    priority,
+                                    "department",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            );
+                          })()}
                           {errors[`${priority}-department`] && (
                             <span className={styles.fieldError}>
                               <AlertCircle size={12} />

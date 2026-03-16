@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  type ReactNode,
+} from "react";
 import {
   GraduationCap,
   Plus,
@@ -84,6 +90,33 @@ export const UniversityStep = ({
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Department options per university
+  const [departmentMap, setDepartmentMap] = useState<Record<string, string[]>>(
+    {}
+  );
+
+  const fetchDepartments = useCallback(
+    async (universityName: string) => {
+      if (!universityName || departmentMap[universityName]) return;
+      try {
+        const res = await fetch(
+          `/api/universities/departments?university=${encodeURIComponent(universityName)}`
+        );
+        const data: string[] = await res.json();
+        setDepartmentMap((prev) => ({ ...prev, [universityName]: data }));
+      } catch {
+        setDepartmentMap((prev) => ({ ...prev, [universityName]: [] }));
+      }
+    },
+    [departmentMap]
+  );
+
+  useEffect(() => {
+    initialData.forEach((t) => {
+      if (t.universityName) fetchDepartments(t.universityName);
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Debounced university search
   useEffect(() => {
     if (debounceRef.current) {
@@ -154,6 +187,10 @@ export const UniversityStep = ({
   };
 
   const handleSelectUniversity = (university: UniversityResult) => {
+    const prev = getTarget(searchingPriority);
+    if (prev.universityName !== university.name) {
+      handleFieldChange(searchingPriority, "department", "");
+    }
     handleFieldChange(searchingPriority, "universityName", university.name);
     const errorKey = `${searchingPriority}-universityName`;
     if (errors[errorKey]) {
@@ -163,11 +200,17 @@ export const UniversityStep = ({
         return next;
       });
     }
+    fetchDepartments(university.name);
     handleCloseModal();
   };
 
   const handleManualSelect = () => {
+    const prev = getTarget(searchingPriority);
+    if (prev.universityName !== searchQuery) {
+      handleFieldChange(searchingPriority, "department", "");
+    }
     handleFieldChange(searchingPriority, "universityName", searchQuery);
+    fetchDepartments(searchQuery);
     handleCloseModal();
   };
 
@@ -233,16 +276,21 @@ export const UniversityStep = ({
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    const primary = getTarget(1);
+    const labels = ["1지망", "2지망", "3지망", "4지망", "5지망", "6지망"];
 
-    if (!primary.universityName.trim()) {
-      newErrors["1-universityName"] = "1지망 대학명을 입력해주세요.";
-    }
-    if (!primary.admissionType) {
-      newErrors["1-admissionType"] = "1지망 전형을 선택해주세요.";
-    }
-    if (!primary.department.trim()) {
-      newErrors["1-department"] = "1지망 모집단위를 입력해주세요.";
+    for (const target of targets) {
+      const p = target.priority;
+      const label = labels[p - 1];
+
+      if (!target.universityName.trim()) {
+        newErrors[`${p}-universityName`] = `${label} 대학명을 입력해주세요.`;
+      }
+      if (!target.admissionType) {
+        newErrors[`${p}-admissionType`] = `${label} 전형을 선택해주세요.`;
+      }
+      if (!target.department.trim()) {
+        newErrors[`${p}-department`] = `${label} 모집단위를 입력해주세요.`;
+      }
     }
 
     setErrors(newErrors);
@@ -309,9 +357,9 @@ export const UniversityStep = ({
                   <div className={styles.targetBadge}>
                     <GraduationCap size={14} />
                     {PRIORITY_LABELS[priority - 1]}
-                    {isRequired && (
-                      <span className={styles.requiredBadge}>필수</span>
-                    )}
+                    <span className={styles.requiredBadge}>
+                      {isRequired ? "필수" : "선택"}
+                    </span>
                   </div>
                   <div className={styles.targetHeaderActions}>
                     {isCollapsed && (
@@ -346,9 +394,7 @@ export const UniversityStep = ({
                     <div className={styles.field}>
                       <label className={styles.label}>
                         대학명
-                        {isRequired && (
-                          <span className={styles.required}>*</span>
-                        )}
+                        <span className={styles.required}>*</span>
                       </label>
                       <div className={styles.schoolInputRow}>
                         <input
@@ -385,9 +431,7 @@ export const UniversityStep = ({
                     <div className={styles.field}>
                       <label className={styles.label}>
                         전형
-                        {isRequired && (
-                          <span className={styles.required}>*</span>
-                        )}
+                        <span className={styles.required}>*</span>
                       </label>
                       <select
                         className={`${styles.select} ${errors[`${priority}-admissionType`] ? styles.inputError : ""}`}
@@ -418,23 +462,53 @@ export const UniversityStep = ({
                       <div className={styles.field}>
                         <label className={styles.label}>
                           모집단위
-                          {isRequired && (
-                            <span className={styles.required}>*</span>
-                          )}
+                          <span className={styles.required}>*</span>
                         </label>
-                        <input
-                          type="text"
-                          className={`${styles.input} ${errors[`${priority}-department`] ? styles.inputError : ""}`}
-                          placeholder="예: 컴퓨터공학과"
-                          value={target.department}
-                          onChange={(e) =>
-                            handleFieldChange(
-                              priority,
-                              "department",
-                              e.target.value
-                            )
-                          }
-                        />
+                        {(() => {
+                          const depts = departmentMap[target.universityName];
+                          const hasDepts = depts && depts.length > 0;
+                          const noUniv = !target.universityName;
+
+                          return hasDepts ? (
+                            <select
+                              className={`${styles.select} ${errors[`${priority}-department`] ? styles.inputError : ""}`}
+                              value={target.department}
+                              onChange={(e) =>
+                                handleFieldChange(
+                                  priority,
+                                  "department",
+                                  e.target.value
+                                )
+                              }
+                            >
+                              <option value="">모집단위를 선택해주세요</option>
+                              {depts.map((dept) => (
+                                <option key={dept} value={dept}>
+                                  {dept}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type="text"
+                              className={`${styles.input} ${errors[`${priority}-department`] ? styles.inputError : ""}`}
+                              placeholder={
+                                noUniv
+                                  ? "대학교를 먼저 선택해주세요"
+                                  : "예: 컴퓨터공학과"
+                              }
+                              value={target.department}
+                              disabled={noUniv}
+                              onChange={(e) =>
+                                handleFieldChange(
+                                  priority,
+                                  "department",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          );
+                        })()}
                         {errors[`${priority}-department`] && (
                           <span className={styles.fieldError}>
                             {errors[`${priority}-department`]}
