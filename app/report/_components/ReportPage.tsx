@@ -41,7 +41,7 @@ export const ReportPage = ({
           <span className={styles.pageFooterText}>
             &copy; 2026 SKYROAD{studentName ? ` | ${studentName}` : ""}
           </span>
-          <span className={styles.pageNumber} />
+          <span className={styles.pageNumber} data-page-number />
         </div>
       )}
     </div>

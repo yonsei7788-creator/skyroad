@@ -227,8 +227,7 @@
 .overline {
   font-size: var(--report-fs-overline);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
   color: var(--report-fg-tertiary);
   line-height: 1.4;
 }
@@ -1398,8 +1397,7 @@
 .aiCommentaryLabel {
   font-size: var(--report-fs-overline);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
   color: #334155;
   margin-bottom: 6px;
 }
@@ -1573,23 +1571,20 @@
   left: 18mm;
   right: 18mm;
   display: flex;
-  align-items: center;
   justify-content: space-between;
   padding-top: 12px;
   border-top: 1px solid var(--report-border);
 }
 
 .pageFooterText {
-  font-size: 0.625rem;
+  font-size: var(--report-fs-caption);
   color: var(--report-fg-tertiary);
-  letter-spacing: 0.02em;
 }
 
 .pageNumber {
   font-size: var(--report-fs-caption);
   font-weight: 600;
   color: var(--report-fg-tertiary);
-  font-variant-numeric: tabular-nums;
 }
 
 .pageNumber::after {
@@ -1756,9 +1751,8 @@
 .tocTitle {
   font-weight: 500;
   color: var(--report-fg);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
 }
 
 .tocUpgrade {
@@ -2685,8 +2679,7 @@
 .competencyHeroOverline {
   font-size: var(--report-fs-overline);
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
   color: var(--report-accent);
   margin-bottom: 4px;
 }
@@ -3070,8 +3063,7 @@
 .competencyGrowthLabel {
   font-size: var(--report-fs-overline);
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   color: var(--report-fg-tertiary);
 }
 
@@ -3445,8 +3437,7 @@
 .storyMainQuoteLabel {
   font-size: var(--report-fs-overline);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
   color: var(--report-fg-tertiary);
   margin-bottom: 8px;
 }
@@ -4070,8 +4061,7 @@
 .diagCompLabel {
   font-size: var(--report-fs-overline);
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   color: var(--report-fg-secondary);
   margin-bottom: 8px;
 }

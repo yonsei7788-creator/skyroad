@@ -118,9 +118,6 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
       <div key={`${key}-eval`} className={styles.aiCommentary}>
         <div className={styles.aiCommentaryIcon}>✦</div>
         <div className={styles.aiCommentaryContent}>
-          <div className={styles.aiCommentaryLabel}>
-            {subject.subjectName} 상세 평가
-          </div>
           <div className={styles.aiCommentaryText}>
             {safeOrEmpty(subject.detailedEvaluation)}
           </div>

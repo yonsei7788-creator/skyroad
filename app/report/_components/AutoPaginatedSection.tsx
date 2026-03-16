@@ -33,6 +33,14 @@ const AVAILABLE_HEIGHT_PX = 850;
  */
 const MIN_PAGE_CONTENT_PX = 150;
 
+/**
+ * 페이지 끝 여유 공간 임계값.
+ * 현재 블록 뒤 페이지 남은 공간이 이 값 미만이면,
+ * 이 블록을 현재 페이지에 넣지 않고 다음 페이지로 넘긴다.
+ * (제목만 페이지 끝에 걸리는 것 방지)
+ */
+const MIN_REMAINING_PX = 200;
+
 interface AutoPaginatedSectionProps {
   children: ReactNode;
   sectionTitle: string;
@@ -51,9 +59,26 @@ interface BlockBound {
 }
 
 /**
+ * 요소의 경계를 측정한다.
+ */
+const measureBound = (el: HTMLElement, containerTop: number): BlockBound => {
+  const rect = el.getBoundingClientRect();
+  const style = window.getComputedStyle(el);
+  const mt = parseFloat(style.marginTop) || 0;
+  const mb = parseFloat(style.marginBottom) || 0;
+  return {
+    top: rect.top - containerTop - mt,
+    height: rect.height + mt + mb,
+  };
+};
+
+/**
  * 재귀적으로 블록 경계를 수집한다.
  * 직접 자식이 maxHeight보다 크면 그 자식의 하위 요소를
  * 탐색하여 더 세밀한 분할 지점을 찾는다.
+ *
+ * 핵심: 재귀 분해 시 첫 번째 자식(제목)과 두 번째 자식(콘텐츠)을
+ * 하나의 블록으로 합쳐서 제목만 분리되는 것을 방지한다.
  */
 const collectBlockBounds = (
   element: HTMLElement,
@@ -62,32 +87,31 @@ const collectBlockBounds = (
 ): BlockBound[] => {
   const children = Array.from(element.children) as HTMLElement[];
   if (children.length === 0) {
-    const rect = element.getBoundingClientRect();
-    const style = window.getComputedStyle(element);
-    const marginTop = parseFloat(style.marginTop) || 0;
-    const marginBottom = parseFloat(style.marginBottom) || 0;
-    return [
-      {
-        top: rect.top - containerTop - marginTop,
-        height: rect.height + marginTop + marginBottom,
-      },
-    ];
+    return [measureBound(element, containerTop)];
   }
 
   const bounds: BlockBound[] = [];
 
-  for (const child of children) {
-    const rect = child.getBoundingClientRect();
-    const style = window.getComputedStyle(child);
-    const marginTop = parseFloat(style.marginTop) || 0;
-    const marginBottom = parseFloat(style.marginBottom) || 0;
-    const top = rect.top - containerTop - marginTop;
-    const height = rect.height + marginTop + marginBottom;
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i];
+    const bound = measureBound(child, containerTop);
 
-    if (height > maxHeight && child.children.length > 0) {
-      bounds.push(...collectBlockBounds(child, containerTop, maxHeight));
+    if (bound.height > maxHeight && child.children.length > 0) {
+      const subBounds = collectBlockBounds(child, containerTop, maxHeight);
+
+      // 재귀 분해 결과에서 첫 번째(제목)와 두 번째(콘텐츠)를 합침
+      if (subBounds.length >= 2 && subBounds[0].height < MIN_REMAINING_PX) {
+        const merged: BlockBound = {
+          top: subBounds[0].top,
+          height: subBounds[1].top + subBounds[1].height - subBounds[0].top,
+        };
+        bounds.push(merged);
+        bounds.push(...subBounds.slice(2));
+      } else {
+        bounds.push(...subBounds);
+      }
     } else {
-      bounds.push({ top, height });
+      bounds.push(bound);
     }
   }
 
@@ -107,7 +131,8 @@ const buildPageSlices = (blockBounds: BlockBound[]): PageSlice[] => {
   let pageStart = 0;
   let pageEnd = 0;
 
-  for (const block of blockBounds) {
+  for (let i = 0; i < blockBounds.length; i++) {
+    const block = blockBounds[i];
     const blockEnd = block.top + block.height;
 
     // 이 블록을 현재 페이지에 추가하면 넘치는가?
@@ -118,7 +143,6 @@ const buildPageSlices = (blockBounds: BlockBound[]): PageSlice[] => {
 
       // 빈 페이지 방지: 콘텐츠가 너무 적으면 페이지를 끊지 않고 합침
       if (currentPageHeight < MIN_PAGE_CONTENT_PX) {
-        // 현재 블록을 합쳐서 계속 진행 (블록을 통째로 포함)
         pageEnd = blockEnd;
         continue;
       }
@@ -129,6 +153,23 @@ const buildPageSlices = (blockBounds: BlockBound[]): PageSlice[] => {
         height: pageEnd - pageStart,
       });
       pageStart = block.top;
+    } else if (!wouldOverflow && i + 1 < blockBounds.length) {
+      // 이 블록은 들어가지만, 이 블록 뒤 남은 공간이 너무 적으면
+      // (다음 블록과 함께 못 들어갈 높이) 이 블록까지 포함하고 페이지를 끊음
+      const remainingAfter = AVAILABLE_HEIGHT_PX - (blockEnd - pageStart);
+      if (
+        remainingAfter < MIN_REMAINING_PX &&
+        block.height < MIN_REMAINING_PX
+      ) {
+        // 이 블록이 작은 블록(제목 등)이고 뒤에 공간이 부족하면 → 다음 페이지로 넘김
+        if (pageEnd > pageStart) {
+          pages.push({
+            offsetY: pageStart,
+            height: pageEnd - pageStart,
+          });
+        }
+        pageStart = block.top;
+      }
     }
 
     pageEnd = blockEnd;

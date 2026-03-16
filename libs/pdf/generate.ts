@@ -96,6 +96,10 @@ const trimOverflowNodes = (container: HTMLElement): void => {
  * (한쪽이 hidden이면 다른 쪽은 auto로 강제 변환).
  * overflow: hidden을 설정하면 가로 콘텐츠도 잘리므로 설정하지 않습니다.
  */
+/** Pretendard 폰트 스택 — PDF 내 모든 텍스트에 동일 적용 */
+const PDF_FONT_FAMILY =
+  '"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Noto Sans KR", sans-serif';
+
 const createOffscreenContainer = (source: HTMLElement): HTMLElement => {
   const offscreen = document.createElement("div");
   offscreen.style.cssText = `
@@ -106,6 +110,7 @@ const createOffscreenContainer = (source: HTMLElement): HTMLElement => {
     z-index: -9999;
     background: #ffffff;
     overflow: visible;
+    font-family: ${PDF_FONT_FAMILY};
   `;
   document.body.appendChild(offscreen);
 
@@ -149,10 +154,21 @@ const createOffscreenContainer = (source: HTMLElement): HTMLElement => {
     page.style.borderRadius = "0";
   }
 
-  // ⚠️ trimOverflowNodes 비활성화:
-  // placeholder 교체 시 margin collapse 차이로 블록 위치가 틀어져
-  // 슬라이스 경계와 실제 콘텐츠가 불일치하는 문제 발생.
-  // 성능보다 정확성 우선.
+  // PDF용: ::after pseudo element를 실제 textContent로 대체
+  // (html2canvas에서 ::after의 baseline이 텍스트와 불일치하는 문제 해결)
+  const pageNumberEls =
+    offscreen.querySelectorAll<HTMLElement>("[data-page-number]");
+  for (let i = 0; i < pageNumberEls.length; i++) {
+    const el = pageNumberEls[i];
+    el.textContent = String(i + 1);
+    // ::after를 무효화 (content: none)
+    el.style.setProperty("--pdf-mode", "1");
+  }
+  // ::after 비활성화를 위한 인라인 스타일 시트 주입
+  const pdfStyle = document.createElement("style");
+  pdfStyle.textContent =
+    "[data-page-number] { counter-increment: none; } [data-page-number]::after { content: none !important; }";
+  offscreen.prepend(pdfStyle);
 
   return offscreen;
 };
@@ -176,10 +192,18 @@ export const generatePdfFromElement = async (
   const offscreen = createOffscreenContainer(container);
 
   try {
-    // 레이아웃 재계산을 위해 한 프레임 대기
+    // 오프스크린 컨테이너의 모든 문자에 대해 폰트 서브셋 로딩 트리거
+    // Pretendard dynamic-subset은 사용된 문자만 로드하므로
+    // 오프스크린에 텍스트가 있어야 해당 서브셋이 로드됨
+    await document.fonts.ready;
+
+    // 레이아웃 재계산을 위해 두 프레임 대기 (폰트 로드 후 reflow 필요)
     await new Promise<void>((resolve) =>
-      requestAnimationFrame(() => resolve())
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
     );
+
+    // 폰트 로드 최종 확인
+    await document.fonts.ready;
 
     const pages = offscreen.querySelectorAll<HTMLElement>("[data-page]");
 
