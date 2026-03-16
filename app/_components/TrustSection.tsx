@@ -24,7 +24,7 @@ const STATS = [
   },
   {
     icon: Clock,
-    value: "45시간",
+    value: "70시간",
     label: "평균 리포트 전달",
     colorClass: "purple" as const,
   },

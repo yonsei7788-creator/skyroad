@@ -6,7 +6,7 @@ import styles from "./CtaSection.module.css";
 
 const SUB_ITEMS = [
   "간편 회원가입 후 바로 이용",
-  "48시간 내 리포트 전달",
+  "72시간 내 리포트 전달",
   "전임 컨설턴트 검수 포함",
 ];
 
@@ -19,7 +19,7 @@ export const CtaSection = () => {
             <h2 className={styles.headline}>
               내 생기부, AI + 전문가가
               <br />
-              48시간 안에 분석해드립니다
+              72시간 안에 분석해드립니다
             </h2>
             <p className={styles.subtext}>
               다른 곳의 AI 분석과는 차원이 다릅니다. 전임 컨설턴트가 직접 검수한

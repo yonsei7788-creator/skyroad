@@ -19,7 +19,7 @@ export const AboutCtaSection = () => {
                 을 받아보세요
               </p>
               <p className={styles.statSub}>
-                AI + 전문가 이중 검수, 48시간 내 리포트 전달
+                AI + 전문가 이중 검수, 72시간 내 리포트 전달
               </p>
             </div>
             <Link href="/pricing" className={styles.ctaButton}>

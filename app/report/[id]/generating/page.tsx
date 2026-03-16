@@ -210,7 +210,7 @@ const GeneratingContent = () => {
             </div>
             <h1 className={styles.title}>분석이 완료되었습니다</h1>
             <p className={styles.description}>
-              리포트 검수 후 <strong>48시간 내에 이메일로 발송</strong>해
+              리포트 검수 후 <strong>72시간 내에 이메일로 발송</strong>해
               드립니다.
             </p>
             <p className={styles.warning}>
@@ -259,7 +259,7 @@ const GeneratingContent = () => {
               </p>
             </div>
             <p className={styles.warning}>
-              분석 완료 후 리포트는 검수를 거쳐 48시간 내에 이메일로 발송됩니다.
+              분석 완료 후 리포트는 검수를 거쳐 72시간 내에 이메일로 발송됩니다.
             </p>
           </>
         ) : phase === "error" ? (

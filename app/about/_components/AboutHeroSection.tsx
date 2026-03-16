@@ -107,7 +107,7 @@ export const AboutHeroSection = () => {
                   </div>
                   <h3 className={styles.stepTitle}>리포트 전달</h3>
                   <p className={styles.stepDesc}>
-                    48시간 내에 맞춤형 분석 리포트를 전달해 드립니다.
+                    72시간 내에 맞춤형 분석 리포트를 전달해 드립니다.
                   </p>
                 </div>
               </div>

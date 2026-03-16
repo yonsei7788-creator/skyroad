@@ -23,7 +23,7 @@ const MOCK_SCORES = [
 const TRUST_BADGES = [
   { icon: Shield, label: "AI 정밀 분석" },
   { icon: UserCheck, label: "전임 컨설턴트 검수 포함" },
-  { icon: Clock, label: "48시간 내 전달" },
+  { icon: Clock, label: "72시간 내 전달" },
 ];
 
 export const HeroSection = () => {

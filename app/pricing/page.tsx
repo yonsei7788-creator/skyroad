@@ -19,10 +19,10 @@ export const metadata: Metadata = {
 };
 
 const TRUST_STATS = [
-  { value: "1,000+", label: "누적 분석" },
+  { value: "1,800+", label: "누적 분석" },
   { value: "4.99", label: "만족도" },
   { value: "100%", label: "전문가 검수" },
-  { value: "38시간", label: "평균 전달" },
+  { value: "70시간", label: "평균 전달" },
 ];
 
 export default function PricingPage() {
@@ -41,7 +41,7 @@ export default function PricingPage() {
                 <strong className={styles.heroBold}>고도화 AI 정밀 분석</strong>
                 {" + "}
                 <strong className={styles.heroHighlight}>
-                  입시 컨설턴트 2차 검수
+                  전문 입시 컨설턴트 2차 검수
                 </strong>
               </p>
             </FadeIn>
