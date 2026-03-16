@@ -281,15 +281,22 @@ export const UniversityStep = ({
     for (const target of targets) {
       const p = target.priority;
       const label = labels[p - 1];
+      const hasAnyData =
+        target.universityName.trim() ||
+        target.admissionType ||
+        target.department.trim();
 
-      if (!target.universityName.trim()) {
-        newErrors[`${p}-universityName`] = `${label} 대학명을 입력해주세요.`;
-      }
-      if (!target.admissionType) {
-        newErrors[`${p}-admissionType`] = `${label} 전형을 선택해주세요.`;
-      }
-      if (!target.department.trim()) {
-        newErrors[`${p}-department`] = `${label} 모집단위를 입력해주세요.`;
+      // 1지망은 항상 필수, 2~6지망은 데이터가 하나라도 있으면 필수
+      if (p === 1 || hasAnyData) {
+        if (!target.universityName.trim()) {
+          newErrors[`${p}-universityName`] = `${label} 대학명을 입력해주세요.`;
+        }
+        if (!target.admissionType) {
+          newErrors[`${p}-admissionType`] = `${label} 전형을 선택해주세요.`;
+        }
+        if (!target.department.trim()) {
+          newErrors[`${p}-department`] = `${label} 모집단위를 입력해주세요.`;
+        }
       }
     }
 
