@@ -19,13 +19,30 @@ export const POST = async (
   const { userId, error: authError } = await verifyAdmin(supabase);
   if (authError) return authError;
 
-  // FormData로 PDF 수신
+  // FormData에서 PDF Storage 경로 또는 직접 파일 수신
   const formData = await request.formData();
+  const pdfStoragePath = formData.get("pdfStoragePath") as string | null;
   const pdfFile = formData.get("pdf") as File | null;
   const reviewNotes = (formData.get("reviewNotes") as string) || null;
 
   let pdfBuffer: Buffer | undefined;
-  if (pdfFile) {
+  if (pdfStoragePath) {
+    // Storage에서 PDF 다운로드
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from("report-pdfs")
+      .download(pdfStoragePath);
+    if (!downloadError && fileData) {
+      pdfBuffer = Buffer.from(await fileData.arrayBuffer());
+    } else {
+      console.error("PDF download from storage error:", downloadError);
+    }
+    // 발송 후 Storage 정리 (fire-and-forget)
+    supabase.storage
+      .from("report-pdfs")
+      .remove([pdfStoragePath])
+      .catch(() => {});
+  } else if (pdfFile) {
+    // 레거시 호환: 직접 파일 전송
     const arrayBuffer = await pdfFile.arrayBuffer();
     pdfBuffer = Buffer.from(arrayBuffer);
   }

@@ -19,6 +19,7 @@ import { SingleSectionEditor } from "../_components/ReportContentEditor";
 import { SectionNav } from "../_components/SectionNav";
 import { generatePdfFromElement, downloadPdfBlob } from "@/libs/pdf/generate";
 import type { PdfProgress } from "@/libs/pdf/generate";
+import { createClient as createSupabaseClient } from "@/libs/supabase/client";
 import type { ReportDetail, ReportStatus } from "@/app/admin/types";
 import type { ReportContent } from "@/libs/report/types";
 
@@ -195,6 +196,22 @@ const ReportDetailPage = () => {
     }
   };
 
+  const uploadPdfToStorage = async (blob: Blob): Promise<string | null> => {
+    const supabase = createSupabaseClient();
+    const path = `reports/${reportId}/${Date.now()}.pdf`;
+    const { error } = await supabase.storage
+      .from("report-pdfs")
+      .upload(path, blob, {
+        contentType: "application/pdf",
+        upsert: true,
+      });
+    if (error) {
+      console.error("PDF upload error:", error);
+      return null;
+    }
+    return path;
+  };
+
   const buildDeliverFormData = async (): Promise<FormData | null> => {
     // 발송 전 자동 저장
     const saved = await saveContentIfNeeded();
@@ -202,15 +219,35 @@ const ReportDetailPage = () => {
 
     const formData = new FormData();
 
-    // 미리보기 패널에서 PDF 생성 (다운로드와 동일한 로직)
+    // 미리보기 패널에서 PDF 생성 → Storage 업로드 → 경로만 전달
     const pdfBlob = await generatePdf();
     if (pdfBlob) {
-      formData.append("pdf", pdfBlob, "report.pdf");
+      const storagePath = await uploadPdfToStorage(pdfBlob);
+      if (storagePath) {
+        formData.append("pdfStoragePath", storagePath);
+      } else {
+        addToast("PDF 업로드에 실패하여 PDF 없이 발송합니다.", "error");
+      }
     } else {
       addToast("PDF 생성에 실패하여 PDF 없이 발송합니다.", "error");
     }
 
     return formData;
+  };
+
+  const safeParseJson = async (
+    res: Response
+  ): Promise<Record<string, unknown>> => {
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error(
+        res.status === 413
+          ? "요청 크기가 너무 큽니다. PDF 없이 다시 시도해주세요."
+          : `서버 오류가 발생했습니다. (${res.status})`
+      );
+    }
   };
 
   const handleDeliver = async () => {
@@ -229,16 +266,17 @@ const ReportDetailPage = () => {
         body: formData,
       });
 
-      const data = await res.json();
+      const data = await safeParseJson(res);
 
       if (!res.ok && !data.success) {
         throw new Error(
-          data.error || "이메일 발송에 실패했습니다. 다시 시도해주세요."
+          (data.error as string) ||
+            "이메일 발송에 실패했습니다. 다시 시도해주세요."
         );
       }
 
       if (data.warning) {
-        addToast(data.warning, "error");
+        addToast(data.warning as string, "error");
       } else {
         const pdfNote = data.pdfAttached ? " (PDF 첨부)" : "";
         addToast(`이메일이 발송되었습니다.${pdfNote}`, "success");
@@ -272,12 +310,12 @@ const ReportDetailPage = () => {
         body: formData,
       });
 
-      const data = await res.json();
+      const data = await safeParseJson(res);
 
       if (res.status === 409) {
         addToast("이미 발송된 리포트입니다. 관리자에게 문의하세요.", "error");
       } else if (!res.ok && !data.success) {
-        throw new Error(data.error || "재발송에 실패했습니다.");
+        throw new Error((data.error as string) || "재발송에 실패했습니다.");
       } else {
         const pdfNote = data.pdfAttached ? " (PDF 첨부)" : "";
         addToast(`이메일이 재발송되었습니다.${pdfNote}`, "success");
@@ -353,8 +391,18 @@ const ReportDetailPage = () => {
     try {
       const pdfBlob = await generatePdf();
       if (pdfBlob) {
-        downloadPdfBlob(pdfBlob, `report-${reportId.slice(0, 8)}.pdf`);
-        addToast("PDF가 다운로드되었습니다.", "success");
+        const ok = downloadPdfBlob(
+          pdfBlob,
+          `report-${reportId.slice(0, 8)}.pdf`
+        );
+        if (ok) {
+          addToast("PDF가 다운로드되었습니다.", "success");
+        } else {
+          addToast(
+            "PDF 생성은 완료되었으나 다운로드에 실패했습니다. 브라우저 설정을 확인해주세요.",
+            "error"
+          );
+        }
       }
     } finally {
       setExporting(false);
