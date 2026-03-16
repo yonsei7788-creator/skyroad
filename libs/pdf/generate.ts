@@ -149,11 +149,10 @@ const createOffscreenContainer = (source: HTMLElement): HTMLElement => {
     page.style.borderRadius = "0";
   }
 
-  // ⚡ 성능 최적화: AutoPaginatedSection의 overflow:hidden 슬라이스에서
-  // 보이지 않는 DOM 노드를 물리적으로 제거하여 html2canvas 파싱 부하를 줄임.
-  // 각 슬라이스는 absolute 배치된 전체 콘텐츠 중 일부만 보여주므로
-  // 보이는 영역(offsetY ~ offsetY+height) 밖의 최상위 블록을 제거한다.
-  trimOverflowNodes(offscreen);
+  // ⚠️ trimOverflowNodes 비활성화:
+  // placeholder 교체 시 margin collapse 차이로 블록 위치가 틀어져
+  // 슬라이스 경계와 실제 콘텐츠가 불일치하는 문제 발생.
+  // 성능보다 정확성 우선.
 
   return offscreen;
 };

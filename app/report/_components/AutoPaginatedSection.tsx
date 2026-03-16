@@ -18,13 +18,20 @@ import { ReportPage } from "./ReportPage";
  *   .page padding-top  = 20mm  ≈   76px
  *   .page padding-bot  = calc(32px + 24px) = 56px
  *   Content box         = 1122 - 76 - 56 = 990px
- *   .pageHeader         ≈ 58px
- *   Available           = 990 - 58 = 932px
- *
- * ⚠️ 여유 마진 132px 적용 → 실측이 아닌 측정 기반이므로
- *    미리보기-PDF 간 너비 차이에 의한 높이 편차를 충분히 흡수해야 함.
+ *   .pageHeader         ≈ 52px (text + pb + mb)
+ *   .pageFooter area    ≈ 40px (absolute bottom:8mm)
+ *   Safety margin       = 48px
+ *   Available           = 990 - 52 - 40 - 48 = 850px
  */
-const AVAILABLE_HEIGHT_PX = 800;
+const AVAILABLE_HEIGHT_PX = 850;
+
+/**
+ * 빈 페이지 방지 임계값.
+ * 현재 페이지 콘텐츠가 이 높이 미만이면 페이지를 끊지 않고
+ * 다음 블록을 같은 페이지에 포함시킨다.
+ * (예: SectionHeader만 남은 ~80px 페이지 방지)
+ */
+const MIN_PAGE_CONTENT_PX = 150;
 
 interface AutoPaginatedSectionProps {
   children: ReactNode;
@@ -89,7 +96,11 @@ const collectBlockBounds = (
 
 /**
  * 블록 경계 목록을 페이지 슬라이스로 변환한다.
- * 단일 블록이 여전히 페이지 높이를 초과하면 강제 분할한다.
+ *
+ * 핵심 규칙:
+ * - 블록 단위로만 페이지를 나눈다 (px 단위 강제 분할 없음)
+ * - 블록이 페이지보다 커도 잘리지 않고 통째로 배치된다
+ * - 현재 페이지 콘텐츠가 MIN_PAGE_CONTENT_PX 미만이면 다음 블록과 합친다
  */
 const buildPageSlices = (blockBounds: BlockBound[]): PageSlice[] => {
   const pages: PageSlice[] = [];
@@ -99,39 +110,27 @@ const buildPageSlices = (blockBounds: BlockBound[]): PageSlice[] => {
   for (const block of blockBounds) {
     const blockEnd = block.top + block.height;
 
-    // 단일 블록이 페이지 높이를 초과하는 경우 강제 분할
-    if (block.height > AVAILABLE_HEIGHT_PX) {
-      if (pageEnd > pageStart) {
-        pages.push({
-          offsetY: pageStart,
-          height: pageEnd - pageStart,
-        });
+    // 이 블록을 현재 페이지에 추가하면 넘치는가?
+    const wouldOverflow = blockEnd - pageStart > AVAILABLE_HEIGHT_PX;
+
+    if (wouldOverflow && pageEnd > pageStart) {
+      const currentPageHeight = pageEnd - pageStart;
+
+      // 빈 페이지 방지: 콘텐츠가 너무 적으면 페이지를 끊지 않고 합침
+      if (currentPageHeight < MIN_PAGE_CONTENT_PX) {
+        // 현재 블록을 합쳐서 계속 진행 (블록을 통째로 포함)
+        pageEnd = blockEnd;
+        continue;
       }
 
-      let cursor = block.top;
-      while (cursor < blockEnd) {
-        const remaining = blockEnd - cursor;
-        if (remaining <= AVAILABLE_HEIGHT_PX) {
-          pageStart = cursor;
-          pageEnd = blockEnd;
-          break;
-        }
-        pages.push({
-          offsetY: cursor,
-          height: AVAILABLE_HEIGHT_PX,
-        });
-        cursor += AVAILABLE_HEIGHT_PX;
-      }
-      continue;
-    }
-
-    if (blockEnd - pageStart > AVAILABLE_HEIGHT_PX && pageEnd > pageStart) {
+      // 현재 페이지 마감 → 이 블록은 다음 페이지로
       pages.push({
         offsetY: pageStart,
         height: pageEnd - pageStart,
       });
       pageStart = block.top;
     }
+
     pageEnd = blockEnd;
   }
 
@@ -189,7 +188,7 @@ export const AutoPaginatedSection = ({
         requestAnimationFrame(computeSlices);
       });
     } else {
-      computeSlices();
+      requestAnimationFrame(computeSlices);
     }
   }, [children, computeSlices]);
 

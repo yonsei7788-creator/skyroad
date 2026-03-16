@@ -101,47 +101,66 @@ export const AdmissionStrategyRenderer = ({
             ) === idx
         )
         .filter((card) => card.comprehensive?.chanceRationale)
-        .map((card, idx) => (
-          <div key={`rationale-${idx}`} className={styles.card}>
-            <div className={styles.cardHeader}>
-              <div className={styles.cardTitle}>
-                {card.university} {card.department}
+        .flatMap((card, idx) => {
+          const blocks: React.ReactNode[] = [];
+          // 학종 분석 블록
+          blocks.push(
+            <div key={`rationale-${idx}-comp`} className={styles.card}>
+              <div className={styles.cardHeader}>
+                <div className={styles.cardTitle}>
+                  {card.university} {card.department}
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <span className={styles.tag}>{card.riskLevel}</span>
+                  {card.comprehensive?.chance && (
+                    <ReportBadge chance={card.comprehensive.chance} />
+                  )}
+                </div>
               </div>
-              <div style={{ display: "flex", gap: 6 }}>
-                <span className={styles.tag}>{card.riskLevel}</span>
-                {card.comprehensive?.chance && (
-                  <ReportBadge chance={card.comprehensive.chance} />
-                )}
-              </div>
-            </div>
-            {/* 학종 분석 */}
-            <div className={styles.mt6}>
-              <p className={`${styles.caption} ${styles.mb4}`}>
-                <span className={styles.emphasis}>학종</span>{" "}
-                {card.comprehensive?.admissionType}
-                {card.comprehensive?.chancePercentLabel &&
-                  ` (${card.comprehensive.chancePercentLabel})`}
-              </p>
-              <p className={styles.small}>
-                {safeText(card.comprehensive?.chanceRationale)}
-              </p>
-            </div>
-            {/* 교과 분석 */}
-            {card.subject && (
-              <div className={styles.mt8}>
+              <div className={styles.mt6}>
                 <p className={`${styles.caption} ${styles.mb4}`}>
-                  <span className={styles.emphasis}>교과</span>{" "}
-                  {card.subject.admissionType}
-                  {card.subject.chancePercentLabel &&
-                    ` (${card.subject.chancePercentLabel})`}
+                  <span className={styles.emphasis}>학종</span>{" "}
+                  {card.comprehensive?.admissionType}
+                  {card.comprehensive?.chancePercentLabel &&
+                    ` (${card.comprehensive.chancePercentLabel})`}
                 </p>
                 <p className={styles.small}>
-                  {safeText(card.subject.chanceRationale)}
+                  {safeText(card.comprehensive?.chanceRationale)}
                 </p>
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          );
+          // 교과 분석 블록 (별도)
+          if (card.subject?.chanceRationale) {
+            blocks.push(
+              <div key={`rationale-${idx}-subj`} className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <div className={styles.cardTitle}>
+                    {card.university} {card.department}
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <span className={styles.tag}>{card.riskLevel}</span>
+                    {card.subject.chance && (
+                      <ReportBadge chance={card.subject.chance} />
+                    )}
+                  </div>
+                </div>
+                <div className={styles.mt6}>
+                  <p className={`${styles.caption} ${styles.mb4}`}>
+                    <span className={styles.emphasis}>교과</span>{" "}
+                    {card.subject.admissionType}
+                    {card.subject.chancePercentLabel &&
+                      ` (${card.subject.chancePercentLabel})`}
+                  </p>
+                  <p className={styles.small}>
+                    {safeText(card.subject.chanceRationale)}
+                  </p>
+                </div>
+              </div>
+            );
+          }
+          return blocks;
+        })}
 
       {/* Next semester strategy */}
       {data.nextSemesterStrategy && (
@@ -157,40 +176,27 @@ export const AdmissionStrategyRenderer = ({
         </div>
       )}
 
-      {/* Block 4: Type strategies */}
+      {/* Block 4: Type strategies — 전형별 개별 블록으로 분리 */}
       {data.typeStrategies && data.typeStrategies.length > 0 && (
         <div>
-          <div className={`${styles.h3} ${styles.mb12}`}>전형별 전략</div>
-          <table className={styles.compactTable}>
-            <thead>
-              <tr>
-                <th>전형</th>
-                <th className={styles.tableAlignCenter}>적합도</th>
-                <th>분석</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.typeStrategies.map((ts) => (
-                <tr key={ts.type}>
-                  <td className={styles.tableCellBold}>{ts.type}</td>
-                  <td className={styles.tableAlignCenter}>
-                    <span className={styles.tag}>{ts.suitability}</span>
-                  </td>
-                  <td>
-                    <p className={styles.small}>{ts.analysis}</p>
-                    <p
-                      className={`${styles.caption} ${styles.mt4}`}
-                      style={{ fontWeight: 700 }}
-                    >
-                      근거: {ts.reason}
-                    </p>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className={styles.h3}>전형별 전략</div>
         </div>
       )}
+      {(data.typeStrategies ?? []).map((ts) => (
+        <div key={ts.type} className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardTitle}>{ts.type}</div>
+            <span className={styles.tag}>{ts.suitability}</span>
+          </div>
+          <p className={`${styles.small} ${styles.mt6}`}>{ts.analysis}</p>
+          <p
+            className={`${styles.caption} ${styles.mt4}`}
+            style={{ fontWeight: 700 }}
+          >
+            근거: {ts.reason}
+          </p>
+        </div>
+      ))}
 
       {/* Block 5: School type analysis */}
       {data.schoolTypeAnalysis && (
@@ -212,10 +218,10 @@ export const AdmissionStrategyRenderer = ({
         </div>
       )}
 
-      {/* Block 6: University guide matching */}
+      {/* Block 6: University guide matching — 키워드/태그 블록과 분석 블록 분리 */}
       {data.universityGuideMatching &&
         data.universityGuideMatching.length > 0 &&
-        data.universityGuideMatching.map((match, idx) => {
+        data.universityGuideMatching.flatMap((match, idx) => {
           const m = match as any;
           const keywords: string[] = Array.isArray(m.emphasisKeywords)
             ? m.emphasisKeywords
@@ -243,17 +249,19 @@ export const AdmissionStrategyRenderer = ({
             weaknesses.length === 0 &&
             !analysis
           )
-            return null;
+            return [];
 
-          return (
-            <div key={idx} className={styles.card}>
+          const blocks: React.ReactNode[] = [];
+          const title = `${m.university} ${m.department ?? ""}`;
+
+          // 블록 1: 대학명 + 키워드/강점/약점 태그
+          blocks.push(
+            <div key={`guide-${idx}-tags`} className={styles.card}>
               <div className={styles.cardHeader}>
-                <div className={styles.cardTitle}>
-                  {m.university} {m.department ?? ""}
-                </div>
+                <div className={styles.cardTitle}>{title}</div>
               </div>
               {keywords.length > 0 && (
-                <div className={`${styles.mt8}`}>
+                <div className={styles.mt8}>
                   <div className={`${styles.overline} ${styles.mb4}`}>
                     핵심 키워드
                   </div>
@@ -267,7 +275,7 @@ export const AdmissionStrategyRenderer = ({
                 </div>
               )}
               {strengths.length > 0 && (
-                <div className={`${styles.mt12}`}>
+                <div className={styles.mt12}>
                   <div className={`${styles.overline} ${styles.mb4}`}>
                     강점 매칭
                   </div>
@@ -281,7 +289,7 @@ export const AdmissionStrategyRenderer = ({
                 </div>
               )}
               {weaknesses.length > 0 && (
-                <div className={`${styles.mt12}`}>
+                <div className={styles.mt12}>
                   <div className={`${styles.overline} ${styles.mb4}`}>
                     보완 필요
                   </div>
@@ -294,13 +302,24 @@ export const AdmissionStrategyRenderer = ({
                   </div>
                 </div>
               )}
-              {analysis && (
-                <div className={`${styles.mt12}`}>
-                  <p className={styles.small}>{safeText(analysis)}</p>
-                </div>
-              )}
             </div>
           );
+
+          // 블록 2: 분석 텍스트 (별도 → 페이지 분리 가능)
+          if (analysis) {
+            blocks.push(
+              <div key={`guide-${idx}-analysis`} className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <div className={styles.cardTitle}>{title} — 분석</div>
+                </div>
+                <p className={`${styles.small} ${styles.mt6}`}>
+                  {safeText(analysis)}
+                </p>
+              </div>
+            );
+          }
+
+          return blocks;
         })}
     </>
   );

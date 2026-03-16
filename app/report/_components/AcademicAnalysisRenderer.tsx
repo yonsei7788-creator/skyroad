@@ -221,84 +221,78 @@ export const AcademicAnalysisRenderer = ({
         </div>
       </div>
 
-      {/* Block 4: Deviation + Major relevance + School type */}
-      {(hasContent(data.gradeDeviationAnalysis) ||
-        hasContent(data.majorRelevanceAnalysis) ||
-        data.schoolTypeAdjustment) && (
-        <div>
-          {hasContent(data.gradeDeviationAnalysis) && (
-            <div className={styles.card}>
-              <div className={styles.cardHeader}>
-                <div className={styles.cardTitle}>과목 간 편차 분석</div>
-              </div>
-              <div className={`${styles.cardGridThree} ${styles.mt12}`}>
-                <div className={styles.miniStat}>
-                  <span className={styles.miniStatValue}>
-                    {data.gradeDeviationAnalysis!.highestSubject || "—"}
-                  </span>
-                  <span className={styles.miniStatLabel}>최고 과목</span>
-                </div>
-                <div className={styles.miniStat}>
-                  <span className={styles.miniStatValue}>
-                    {data.gradeDeviationAnalysis!.lowestSubject || "—"}
-                  </span>
-                  <span className={styles.miniStatLabel}>최저 과목</span>
-                </div>
-                <div className={styles.miniStat}>
-                  <span className={styles.miniStatValue}>
-                    {data.gradeDeviationAnalysis!.deviationRange ?? "—"}
-                  </span>
-                  <span className={styles.miniStatLabel}>편차 범위</span>
-                </div>
-              </div>
-              {data.gradeDeviationAnalysis!.riskAssessment && (
-                <p className={`${styles.body} ${styles.mt12}`}>
-                  {safeText(data.gradeDeviationAnalysis!.riskAssessment)}
-                </p>
-              )}
+      {/* Block 4a: Grade deviation analysis */}
+      {hasContent(data.gradeDeviationAnalysis) && (
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardTitle}>과목 간 편차 분석</div>
+          </div>
+          <div className={`${styles.cardGridThree} ${styles.mt12}`}>
+            <div className={styles.miniStat}>
+              <span className={styles.miniStatValue}>
+                {data.gradeDeviationAnalysis!.highestSubject || "—"}
+              </span>
+              <span className={styles.miniStatLabel}>최고 과목</span>
             </div>
+            <div className={styles.miniStat}>
+              <span className={styles.miniStatValue}>
+                {data.gradeDeviationAnalysis!.lowestSubject || "—"}
+              </span>
+              <span className={styles.miniStatLabel}>최저 과목</span>
+            </div>
+            <div className={styles.miniStat}>
+              <span className={styles.miniStatValue}>
+                {data.gradeDeviationAnalysis!.deviationRange ?? "—"}
+              </span>
+              <span className={styles.miniStatLabel}>편차 범위</span>
+            </div>
+          </div>
+          {data.gradeDeviationAnalysis!.riskAssessment && (
+            <p className={`${styles.body} ${styles.mt12}`}>
+              {safeText(data.gradeDeviationAnalysis!.riskAssessment)}
+            </p>
           )}
+        </div>
+      )}
 
-          {hasContent(data.majorRelevanceAnalysis) && (
-            <div className={`${styles.card} ${styles.mt12}`}>
-              <div className={styles.cardHeader}>
-                <div className={styles.cardTitle}>전공 관련 교과 분석</div>
-              </div>
-              {data.majorRelevanceAnalysis!.enrollmentEffort && (
-                <p className={`${styles.small} ${styles.mt8}`}>
-                  <span className={styles.emphasis}>이수 노력:</span>{" "}
-                  {safeText(data.majorRelevanceAnalysis!.enrollmentEffort)}
-                </p>
-              )}
-              {data.majorRelevanceAnalysis!.achievement && (
-                <p className={`${styles.small} ${styles.mt8}`}>
-                  <span className={styles.emphasis}>성취도:</span>{" "}
-                  {safeText(data.majorRelevanceAnalysis!.achievement)}
-                </p>
-              )}
-              {data.majorRelevanceAnalysis!.recommendedSubjects &&
-                data.majorRelevanceAnalysis!.recommendedSubjects.length > 0 && (
-                  <div className={`${styles.tagGroup} ${styles.mt12}`}>
-                    {data.majorRelevanceAnalysis!.recommendedSubjects.map(
-                      (sub) => (
-                        <span key={sub} className={styles.tagAccent}>
-                          {sub}
-                        </span>
-                      )
-                    )}
-                  </div>
-                )}
-            </div>
+      {/* Block 4b: Major relevance analysis */}
+      {hasContent(data.majorRelevanceAnalysis) && (
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardTitle}>전공 관련 교과 분석</div>
+          </div>
+          {data.majorRelevanceAnalysis!.enrollmentEffort && (
+            <p className={`${styles.small} ${styles.mt8}`}>
+              <span className={styles.emphasis}>이수 노력:</span>{" "}
+              {safeText(data.majorRelevanceAnalysis!.enrollmentEffort)}
+            </p>
           )}
+          {data.majorRelevanceAnalysis!.achievement && (
+            <p className={`${styles.small} ${styles.mt8}`}>
+              <span className={styles.emphasis}>성취도:</span>{" "}
+              {safeText(data.majorRelevanceAnalysis!.achievement)}
+            </p>
+          )}
+          {data.majorRelevanceAnalysis!.recommendedSubjects &&
+            data.majorRelevanceAnalysis!.recommendedSubjects.length > 0 && (
+              <div className={`${styles.tagGroup} ${styles.mt12}`}>
+                {data.majorRelevanceAnalysis!.recommendedSubjects.map((sub) => (
+                  <span key={sub} className={styles.tagAccent}>
+                    {sub}
+                  </span>
+                ))}
+              </div>
+            )}
+        </div>
+      )}
 
-          {data.schoolTypeAdjustment && (
-            <div className={`${styles.callout} ${styles.mt12}`}>
-              <div className={styles.calloutContent}>
-                <span className={styles.emphasis}>학교 유형 보정:</span>{" "}
-                {safeText(data.schoolTypeAdjustment)}
-              </div>
-            </div>
-          )}
+      {/* Block 4c: School type adjustment */}
+      {data.schoolTypeAdjustment && (
+        <div className={styles.callout}>
+          <div className={styles.calloutContent}>
+            <span className={styles.emphasis}>학교 유형 보정:</span>{" "}
+            {safeText(data.schoolTypeAdjustment)}
+          </div>
         </div>
       )}
 

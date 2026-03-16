@@ -20,8 +20,8 @@ const PRIORITY_LABEL: Record<Priority, string> = {
   low: "낮음",
 };
 
-/** 영역 2개씩 묶어서 한 블록으로 */
-const chunkAreas = <T,>(arr: T[], size: number): T[][] => {
+/** @deprecated 영역 2개씩 묶어서 한 블록으로 — 페이지 분할 개선으로 미사용 */
+const _chunkAreas = <T,>(arr: T[], size: number): T[][] => {
   const chunks: T[][] = [];
   for (let i = 0; i < arr.length; i += size) {
     chunks.push(arr.slice(i, i + size));
@@ -34,8 +34,8 @@ export const WeaknessAnalysisRenderer = ({
   sectionNumber,
   plan,
 }: WeaknessAnalysisRendererProps) => {
-  const areaChunks = chunkAreas(data.areas ?? [], 1);
   const areas = data.areas ?? [];
+  const sortedAreas = [...areas];
   // 실제 유효한 값(PRIORITY_LABEL에 매칭되는 값)이 있는 경우에만 칼럼 표시
   const validPriorities: Set<string> = new Set(["high", "medium", "low"]);
   const hasUrgency = areas.some(
@@ -121,72 +121,62 @@ export const WeaknessAnalysisRenderer = ({
         )}
       </div>
 
-      {/* 영역 2개씩 묶어서 한 페이지 단위 */}
-      {areaChunks.map((chunk, chunkIdx) => (
-        <div key={chunkIdx}>
-          {chunk.map((area, localIdx) => {
-            const globalIdx = chunkIdx * 2 + localIdx;
-            return (
-              <div
-                key={globalIdx}
-                className={localIdx > 0 ? styles.mt24 : undefined}
-              >
-                <div className={styles.h3}>
-                  {String(globalIdx + 1).padStart(2, "0")}. {area.area}
-                </div>
-                {area.priority && (
-                  <div className={`${styles.caption} ${styles.mb6}`}>
-                    우선순위: {PRIORITY_LABEL[area.priority]}
-                  </div>
-                )}
+      {/* 영역별 개별 블록으로 분리 → 페이지 분할 가능 */}
+      {sortedAreas.map((area, idx) => (
+        <div key={idx}>
+          <div className={styles.h3}>
+            {String(idx + 1).padStart(2, "0")}. {area.area}
+          </div>
+          {area.priority && (
+            <div className={`${styles.caption} ${styles.mb6}`}>
+              우선순위: {PRIORITY_LABEL[area.priority]}
+            </div>
+          )}
 
-                <p className={styles.small}>{safeText(area.description)}</p>
+          <p className={styles.small}>{safeText(area.description)}</p>
 
-                {area.evidence && (
-                  <p className={`${styles.caption} ${styles.mt4}`}>
-                    <span className={styles.emphasis}>근거:</span>{" "}
-                    {safeText(area.evidence)}
-                  </p>
-                )}
+          {area.evidence && (
+            <p className={`${styles.caption} ${styles.mt4}`}>
+              <span className={styles.emphasis}>근거:</span>{" "}
+              {safeText(area.evidence)}
+            </p>
+          )}
 
-                {area.competencyTag && (
-                  <div className={`${styles.tagGroup} ${styles.mt6}`}>
-                    <span className={styles.tag}>
-                      {area.competencyTag.subcategory}
-                      {area.competencyTag.assessment &&
-                        ` (${area.competencyTag.assessment})`}
-                    </span>
-                    {area.recordSource && (
-                      <span className={styles.tag}>{area.recordSource}</span>
-                    )}
-                  </div>
-                )}
+          {area.competencyTag && (
+            <div className={`${styles.tagGroup} ${styles.mt6}`}>
+              <span className={styles.tag}>
+                {area.competencyTag.subcategory}
+                {area.competencyTag.assessment &&
+                  ` (${area.competencyTag.assessment})`}
+              </span>
+              {area.recordSource && (
+                <span className={styles.tag}>{area.recordSource}</span>
+              )}
+            </div>
+          )}
 
-                <div className={`${styles.caption} ${styles.mt8}`}>
-                  <span className={styles.emphasis}>추천 보완 활동:</span>
-                  {(area.suggestedActivities ?? []).map((activity, actIdx) => (
-                    <p key={actIdx} className={styles.mt4}>
-                      {actIdx + 1}. {activity}
-                    </p>
-                  ))}
-                </div>
+          <div className={`${styles.caption} ${styles.mt8}`}>
+            <span className={styles.emphasis}>추천 보완 활동:</span>
+            {(area.suggestedActivities ?? []).map((activity, actIdx) => (
+              <p key={actIdx} className={styles.mt4}>
+                {actIdx + 1}. {activity}
+              </p>
+            ))}
+          </div>
 
-                {(area.executionStrategy || area.detailedStrategy) && (
-                  <p className={`${styles.caption} ${styles.mt6}`}>
-                    <span className={styles.emphasis}>실행 전략:</span>{" "}
-                    {safeText(area.detailedStrategy ?? area.executionStrategy)}
-                  </p>
-                )}
+          {(area.executionStrategy || area.detailedStrategy) && (
+            <p className={`${styles.caption} ${styles.mt6}`}>
+              <span className={styles.emphasis}>실행 전략:</span>{" "}
+              {safeText(area.detailedStrategy ?? area.executionStrategy)}
+            </p>
+          )}
 
-                {area.subjectLinkStrategy && (
-                  <p className={`${styles.caption} ${styles.mt4}`}>
-                    <span className={styles.emphasis}>교과 연계:</span>{" "}
-                    {safeText(area.subjectLinkStrategy)}
-                  </p>
-                )}
-              </div>
-            );
-          })}
+          {area.subjectLinkStrategy && (
+            <p className={`${styles.caption} ${styles.mt4}`}>
+              <span className={styles.emphasis}>교과 연계:</span>{" "}
+              {safeText(area.subjectLinkStrategy)}
+            </p>
+          )}
         </div>
       ))}
     </>

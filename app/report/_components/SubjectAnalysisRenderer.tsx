@@ -50,7 +50,7 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
     subject.improvementDirection ||
     subject.improvementExample;
 
-  // Block 1: 과목 설명 + 심화 분석을 하나의 블록으로 통합
+  // Block 1: 과목 헤더 + 태그 + 활동요약 + 인용
   blocks.push(
     <div key={key}>
       <div className={styles.h3}>{subject.subjectName}</div>
@@ -96,67 +96,70 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
         </div>
       )}
 
-      {hasExtras && (
-        <>
-          {subject.crossSubjectConnections &&
-            subject.crossSubjectConnections.length > 0 && (
-              <div className={styles.mt8}>
-                <span className={`${styles.emphasis} ${styles.small}`}>
-                  교과 연결:
-                </span>{" "}
-                <span className={styles.caption}>
-                  {subject.crossSubjectConnections
-                    .map(
-                      (conn) => `${conn.targetSubject}(${conn.connectionType})`
-                    )
-                    .join(", ")}
-                </span>
-              </div>
-            )}
-
-          {subject.detailedEvaluation && (
-            <div className={`${styles.aiCommentary} ${styles.mt8}`}>
-              <div className={styles.aiCommentaryIcon}>✦</div>
-              <div className={styles.aiCommentaryContent}>
-                <div className={styles.aiCommentaryLabel}>상세 평가</div>
-                <div className={styles.aiCommentaryText}>
-                  {safeOrEmpty(subject.detailedEvaluation)}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {(subject.improvementDirection || subject.improvementExample) && (
-            <div className={`${styles.callout} ${styles.mt8}`}>
-              <div className={styles.calloutContent}>
-                {subject.improvementDirection && (
-                  <>
-                    <span className={styles.emphasis}>개선 방향:</span>{" "}
-                    {safeOrEmpty(subject.improvementDirection)}
-                  </>
-                )}
-                {subject.improvementDirection && subject.improvementExample && (
-                  <br />
-                )}
-                {subject.improvementExample && (
-                  <>
-                    <span className={styles.emphasis}>개선 예시:</span>{" "}
-                    {safeOrEmpty(subject.improvementExample)}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      {subject.crossSubjectConnections &&
+        subject.crossSubjectConnections.length > 0 && (
+          <div className={styles.mt8}>
+            <span className={`${styles.emphasis} ${styles.small}`}>
+              교과 연결:
+            </span>{" "}
+            <span className={styles.caption}>
+              {subject.crossSubjectConnections
+                .map((conn) => `${conn.targetSubject}(${conn.connectionType})`)
+                .join(", ")}
+            </span>
+          </div>
+        )}
     </div>
   );
+
+  // Block 2: 상세 평가 (별도 블록 → 페이지 분리 가능)
+  if (subject.detailedEvaluation) {
+    blocks.push(
+      <div key={`${key}-eval`} className={styles.aiCommentary}>
+        <div className={styles.aiCommentaryIcon}>✦</div>
+        <div className={styles.aiCommentaryContent}>
+          <div className={styles.aiCommentaryLabel}>
+            {subject.subjectName} 상세 평가
+          </div>
+          <div className={styles.aiCommentaryText}>
+            {safeOrEmpty(subject.detailedEvaluation)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Block 3: 개선 방향/예시 (별도 블록 → 페이지 분리 가능)
+  if (subject.improvementDirection || subject.improvementExample) {
+    blocks.push(
+      <div key={`${key}-improve`} className={styles.callout}>
+        <div className={styles.calloutContent}>
+          {subject.improvementDirection && (
+            <>
+              <span className={styles.emphasis}>개선 방향:</span>{" "}
+              {safeOrEmpty(subject.improvementDirection)}
+            </>
+          )}
+          {subject.improvementDirection && subject.improvementExample && <br />}
+          {subject.improvementExample && (
+            <>
+              <span className={styles.emphasis}>개선 예시:</span>{" "}
+              {safeOrEmpty(subject.improvementExample)}
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // Block 3: 문장 단위 분석 (Premium — 분량이 커서 별도 페이지)
   if (subject.sentenceAnalysis && subject.sentenceAnalysis.length > 0) {
     blocks.push(
       <div key={`${key}-sa`}>
-        <div className={`${styles.overline} ${styles.mb6}`}>
+        <div
+          className={`${styles.caption} ${styles.mb6}`}
+          style={{ fontWeight: 600 }}
+        >
           {subject.subjectName} — 문장 단위 분석
         </div>
         <table className={styles.compactTable}>
