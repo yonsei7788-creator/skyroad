@@ -703,7 +703,143 @@
 }
 
 /* ============================================
-   Responsive
+   Mobile Card List (hidden on desktop)
+   ============================================ */
+.cardList {
+  display: none;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.card:hover {
+  background: var(--color-neutral-50);
+}
+
+.card:active {
+  background: var(--color-neutral-100);
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.cardUserName {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-neutral-900);
+}
+
+.cardSub {
+  font-size: 0.75rem;
+  color: var(--color-neutral-400);
+  margin-bottom: 10px;
+}
+
+.cardDivider {
+  height: 1px;
+  background: var(--color-border);
+  margin-bottom: 10px;
+}
+
+.cardTarget {
+  font-size: 0.8125rem;
+  color: var(--color-neutral-700);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--color-neutral-500);
+  margin-bottom: 8px;
+}
+
+.cardMetaDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--color-neutral-300);
+  flex-shrink: 0;
+}
+
+.cardBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardDate {
+  font-size: 0.75rem;
+  color: var(--color-neutral-400);
+}
+
+.cardActionBtn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--color-primary-50);
+  color: var(--color-primary-600);
+  transition: background 0.15s ease;
+}
+
+.cardActionBtn:active {
+  background: var(--color-primary-100);
+}
+
+.cardActionBtnSecondary {
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-600);
+}
+
+/* ============================================
+   Mobile Section Selector (detail page)
+   ============================================ */
+.mobileSectionSelector {
+  display: none;
+}
+
+.mobileSectionSelect {
+  width: 100%;
+  height: 44px;
+  padding: 0 36px 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-neutral-800);
+  background: #ffffff;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+/* ============================================
+   Mobile Bottom Action Bar (detail page)
+   ============================================ */
+.mobileActionBar {
+  display: none;
+}
+
+/* ============================================
+   Responsive — List Page
    ============================================ */
 @media (max-width: 768px) {
   .container {
@@ -717,6 +853,7 @@
 
   .statusTabs {
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .searchWrapper {
@@ -725,5 +862,147 @@
 
   .planSelect {
     width: 100%;
+  }
+
+  .mockTestSection {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .mockTestButtons {
+    width: 100%;
+  }
+
+  .mockTestButton {
+    flex: 1;
+  }
+
+  /* Hide table, show cards */
+  .tableHide {
+    display: none;
+  }
+
+  .cardList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* ============================================
+   Responsive — Detail Page (Review)
+   ============================================ */
+@media (max-width: 768px) {
+  .reviewLayout {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .reviewLayout.previewHidden {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Top Bar — stacked */
+  .topBar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 16px;
+  }
+
+  .topBarTitle {
+    font-size: 0.875rem;
+  }
+
+  .topBarProgress {
+    order: 10;
+    width: 100%;
+  }
+
+  .progressBarContainer {
+    max-width: none;
+    flex: 1;
+  }
+
+  /* Hide desktop-only actions from topBar */
+  .topBarActions {
+    display: none;
+  }
+
+  /* Hide left nav */
+  .leftNav {
+    display: none;
+  }
+
+  /* Show mobile section selector */
+  .mobileSectionSelector {
+    display: block;
+    padding: 0 16px;
+    margin: 12px 0 4px;
+  }
+
+  /* Center editor — full width */
+  .centerEditor {
+    padding: 16px;
+    flex: 1;
+    overflow: visible;
+  }
+
+  .sectionEditorTitle {
+    font-size: 1rem;
+  }
+
+  /* Hide preview panel */
+  .rightPreview {
+    display: none !important;
+  }
+
+  .expandPreviewButton {
+    display: none;
+  }
+
+  /* Mobile bottom action bar */
+  .mobileActionBar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--color-border);
+    background: #ffffff;
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  .mobileActionBar > button {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 8px;
+    font-size: 0.75rem;
+    min-height: 44px;
+  }
+
+  /* Toast positioning */
+  .toastContainer {
+    top: auto;
+    bottom: 80px;
+    right: 16px;
+    left: 16px;
+  }
+
+  .toast {
+    max-width: none;
+    font-size: 0.8125rem;
+  }
+
+  /* Modal */
+  .modal {
+    width: calc(100% - 32px);
   }
 }

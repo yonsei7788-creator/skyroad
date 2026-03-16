@@ -628,7 +628,7 @@ const ReportDetailPage = () => {
         </div>
       </div>
 
-      {/* Left Nav */}
+      {/* Left Nav (desktop) */}
       <div className={styles.leftNav}>
         <SectionNav
           sections={sections}
@@ -641,6 +641,24 @@ const ReportDetailPage = () => {
           planName={report.planName}
         />
       </div>
+
+      {/* Mobile Section Selector */}
+      {sections.length > 0 && (
+        <div className={styles.mobileSectionSelector}>
+          <select
+            className={styles.mobileSectionSelect}
+            value={activeSectionIndex}
+            onChange={(e) => handleSectionSelect(Number(e.target.value))}
+          >
+            {sections.map((s, i) => (
+              <option key={s.sectionId} value={i}>
+                {String(i + 1).padStart(2, "0")}. {s.title || s.sectionId}
+                {checkedSections.has(s.sectionId) ? " \u2713" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Center Editor */}
       <div className={styles.centerEditor}>
@@ -716,6 +734,70 @@ const ReportDetailPage = () => {
           미리보기 열기 →
         </button>
       )}
+
+      {/* Mobile Bottom Action Bar */}
+      <div className={styles.mobileActionBar}>
+        {hasChanges && (
+          <button className={styles.resetButton} onClick={handleResetContent}>
+            <RotateCcw size={14} />
+          </button>
+        )}
+        <button
+          className={styles.saveButton}
+          onClick={handleSaveContent}
+          disabled={saving || !hasChanges}
+        >
+          {saving ? (
+            <Loader2 size={14} className={styles.spinner} />
+          ) : (
+            <Save size={14} />
+          )}
+          저장
+        </button>
+        {isDelivered ? (
+          <button
+            className={styles.resendButton}
+            onClick={() => openConfirmModal("resend")}
+            disabled={submitting || exporting}
+          >
+            {submitting ? (
+              <Loader2 size={14} className={styles.spinner} />
+            ) : (
+              <RefreshCw size={14} />
+            )}
+            재발송
+          </button>
+        ) : (
+          <>
+            {!isReviewed && (
+              <button
+                className={styles.reviewButton}
+                onClick={handleReview}
+                disabled={submitting || exporting}
+              >
+                {submitting ? (
+                  <Loader2 size={14} className={styles.spinner} />
+                ) : (
+                  <CheckCircle size={14} />
+                )}
+                검수
+              </button>
+            )}
+            <button
+              className={styles.sendEmailButton}
+              onClick={() => openConfirmModal("deliver")}
+              disabled={submitting || exporting}
+            >
+              {submitting ? (
+                <Loader2 size={14} className={styles.spinner} />
+              ) : (
+                <Mail size={14} />
+              )}
+              {isReviewed ? "발송" : "검수+발송"}
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 };

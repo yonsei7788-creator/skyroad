@@ -292,7 +292,7 @@ const ReportsPage = () => {
         </select>
       </div>
 
-      {/* Table */}
+      {/* Table (desktop) */}
       {!loading && reports.length === 0 ? (
         <EmptyState
           title="리포트가 없습니다"
@@ -300,15 +300,84 @@ const ReportsPage = () => {
         />
       ) : (
         <>
-          <DataTable
-            columns={columns}
-            data={reports}
-            isLoading={loading}
-            onRowClick={handleRowClick}
-          />
+          <div className={styles.tableHide}>
+            <DataTable
+              columns={columns}
+              data={reports}
+              isLoading={loading}
+              onRowClick={handleRowClick}
+            />
+          </div>
+
+          {/* Mobile card list */}
+          <div className={styles.cardList}>
+            {loading ? (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  padding: "32px",
+                }}
+              >
+                <Loader2 size={20} className={styles.spinner} />
+              </div>
+            ) : (
+              reports.map((report) => {
+                const { label, variant } = STATUS_BADGE_MAP[report.status];
+                const isReviewable =
+                  report.status === "review_pending" ||
+                  report.status === "ai_pending";
+                return (
+                  <div
+                    key={report.id}
+                    className={styles.card}
+                    onClick={() => handleRowClick(report)}
+                  >
+                    <div className={styles.cardTop}>
+                      <span className={styles.cardUserName}>
+                        {report.userName || "-"}
+                      </span>
+                      <Badge variant={variant}>{label}</Badge>
+                    </div>
+                    <div className={styles.cardSub}>
+                      {report.id.slice(0, 8)} · {report.planName}
+                    </div>
+                    <div className={styles.cardDivider} />
+                    {report.targetUniversity && (
+                      <div className={styles.cardTarget}>
+                        {report.targetUniversity}
+                      </div>
+                    )}
+                    <div className={styles.cardMeta}>
+                      <span>AI: {formatDate(report.aiGeneratedAt)}</span>
+                      <span className={styles.cardMetaDot} />
+                      <span>검수: {report.reviewedBy || "-"}</span>
+                    </div>
+                    <div className={styles.cardBottom}>
+                      <span className={styles.cardDate}>
+                        발송: {formatDate(report.deliveredAt)}
+                      </span>
+                      <button
+                        className={`${styles.cardActionBtn} ${
+                          !isReviewable ? styles.cardActionBtnSecondary : ""
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/admin/reports/${report.id}`);
+                        }}
+                      >
+                        {isReviewable ? "검수하기" : "상세보기"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
 
           {loading && (
             <div
+              className={styles.tableHide}
               style={{
                 display: "flex",
                 justifyContent: "center",

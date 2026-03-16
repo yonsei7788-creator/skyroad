@@ -68,6 +68,10 @@
   box-shadow: 0 0 0 3px rgb(79 70 229 / 0.1);
 }
 
+.filterRow {
+  display: contents;
+}
+
 .filterSelect {
   height: 36px;
   padding: 0 32px 0 12px;
@@ -471,6 +475,101 @@
   padding: 8px 0;
 }
 
+/* Mobile card list (hidden on desktop) */
+.cardList {
+  display: none;
+}
+
+.card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.card:hover {
+  background: var(--color-bg-secondary);
+}
+
+.card:active {
+  background: var(--color-bg-tertiary);
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.cardName {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-fg);
+}
+
+.cardEmail {
+  font-size: 0.75rem;
+  color: var(--color-fg-tertiary);
+  margin-bottom: 10px;
+}
+
+.cardDivider {
+  height: 1px;
+  background: var(--color-border);
+  margin-bottom: 10px;
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--color-fg-secondary);
+  margin-bottom: 6px;
+}
+
+.cardMetaDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--color-neutral-300);
+  flex-shrink: 0;
+}
+
+.cardBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--color-fg-tertiary);
+}
+
+.cardStats {
+  display: flex;
+  gap: 12px;
+}
+
+.cardStatItem {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.cardStatLabel {
+  color: var(--color-fg-tertiary);
+}
+
+.cardStatValue {
+  font-weight: 600;
+  color: var(--color-fg-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .container {
@@ -486,8 +585,25 @@
     width: 100%;
   }
 
+  .filterRow {
+    display: flex;
+    gap: 8px;
+  }
+
   .filterSelect {
-    width: 100%;
+    flex: 1;
+    width: auto;
+  }
+
+  /* Hide table, show cards */
+  .tableHide {
+    display: none;
+  }
+
+  .cardList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .modalPanel {

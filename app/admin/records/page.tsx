@@ -1005,28 +1005,30 @@ const RecordsPage = () => {
           />
         </div>
 
-        <select
-          className={styles.selectFilter}
-          value={typeFilter}
-          onChange={(e) => handleTypeChange(e.target.value)}
-        >
-          <option value="">전체 제출 방식</option>
-          <option value="pdf">PDF</option>
-          <option value="image">Image</option>
-          <option value="text">Text</option>
-        </select>
+        <div className={styles.filterRow}>
+          <select
+            className={styles.selectFilter}
+            value={typeFilter}
+            onChange={(e) => handleTypeChange(e.target.value)}
+          >
+            <option value="">전체 제출 방식</option>
+            <option value="pdf">PDF</option>
+            <option value="image">Image</option>
+            <option value="text">Text</option>
+          </select>
 
-        <select
-          className={styles.selectFilter}
-          value={gradeFilter}
-          onChange={(e) => handleGradeChange(e.target.value)}
-        >
-          <option value="">전체 학년</option>
-          <option value="high1">1학년</option>
-          <option value="high2">2학년</option>
-          <option value="high3">3학년</option>
-          <option value="repeat">재수</option>
-        </select>
+          <select
+            className={styles.selectFilter}
+            value={gradeFilter}
+            onChange={(e) => handleGradeChange(e.target.value)}
+          >
+            <option value="">전체 학년</option>
+            <option value="high1">1학년</option>
+            <option value="high2">2학년</option>
+            <option value="high3">3학년</option>
+            <option value="repeat">재수</option>
+          </select>
+        </div>
 
         <label className={styles.checkboxLabel}>
           <input
@@ -1038,8 +1040,8 @@ const RecordsPage = () => {
         </label>
       </div>
 
-      {/* Table */}
-      <div className={styles.tableCard}>
+      {/* Table (desktop) */}
+      <div className={`${styles.tableCard} ${styles.tableHide}`}>
         {!isLoading && records.length === 0 ? (
           <EmptyState
             title="레코드가 없습니다"
@@ -1047,6 +1049,86 @@ const RecordsPage = () => {
           />
         ) : (
           <DataTable columns={columns} data={records} isLoading={isLoading} />
+        )}
+      </div>
+
+      {/* Card List (mobile) */}
+      <div className={styles.cardList}>
+        {isLoading ? (
+          <div className={styles.loader}>
+            <Loader2 size={20} className={styles.spinner} />
+          </div>
+        ) : records.length === 0 ? (
+          <EmptyState
+            title="레코드가 없습니다"
+            description="조건에 맞는 생기부 레코드가 없습니다. 필터를 조정해 보세요."
+          />
+        ) : (
+          records.map((record) => {
+            const orderMapping = record.orderStatus
+              ? ORDER_STATUS_BADGE_MAP[record.orderStatus as OrderStatusKey]
+              : null;
+            return (
+              <div
+                key={record.id}
+                className={styles.card}
+                onClick={() => handleDetailOpen(record.id)}
+              >
+                <div className={styles.cardTop}>
+                  <span className={styles.cardUserName}>
+                    {record.userName ?? "-"}
+                  </span>
+                  <Badge
+                    variant={
+                      record.submissionType === "text" ? "neutral" : "info"
+                    }
+                  >
+                    {SUBMISSION_TYPE_LABEL[record.submissionType] ??
+                      record.submissionType}
+                  </Badge>
+                </div>
+                <div className={styles.cardId}>{truncateId(record.id)}</div>
+                <div className={styles.cardDivider} />
+                <div className={styles.cardMeta}>
+                  <span>
+                    {GRADE_LABEL_MAP[record.gradeLevel] ?? record.gradeLevel}
+                  </span>
+                  <span className={styles.cardMetaDot} />
+                  <span
+                    className={
+                      record.textVerified
+                        ? styles.verifiedTrue
+                        : styles.verifiedFalse
+                    }
+                  >
+                    {record.textVerified ? "\u2713 검증" : "\u2717 미검증"}
+                  </span>
+                  {orderMapping && (
+                    <>
+                      <span className={styles.cardMetaDot} />
+                      <Badge variant={orderMapping.variant}>
+                        {orderMapping.label}
+                      </Badge>
+                    </>
+                  )}
+                </div>
+                <div className={styles.cardBottom}>
+                  <span className={styles.cardDate}>
+                    {formatDate(record.createdAt)}
+                  </span>
+                  <button
+                    className={styles.cardAction}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDetailOpen(record.id);
+                    }}
+                  >
+                    상세보기
+                  </button>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
 

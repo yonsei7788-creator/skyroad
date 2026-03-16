@@ -173,3 +173,27 @@
   font-weight: 500;
   color: #475569;
 }
+
+/* ============================================
+   Responsive — Mobile Editor
+   ============================================ */
+@media (max-width: 768px) {
+  .sectionBody {
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .subSection {
+    margin-left: 8px;
+    padding-left: 10px;
+  }
+
+  .fieldInput,
+  .fieldTextarea {
+    font-size: 1rem;
+  }
+
+  .fieldTextarea {
+    min-height: 60px;
+  }
+}

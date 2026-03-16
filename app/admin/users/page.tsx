@@ -395,27 +395,29 @@ const AdminUsersPage = () => {
           />
         </div>
 
-        <select
-          className={styles.filterSelect}
-          value={roleFilter}
-          onChange={handleRoleFilterChange}
-        >
-          <option value="">전체 역할</option>
-          <option value="admin">관리자</option>
-          <option value="user">사용자</option>
-        </select>
+        <div className={styles.filterRow}>
+          <select
+            className={styles.filterSelect}
+            value={roleFilter}
+            onChange={handleRoleFilterChange}
+          >
+            <option value="">전체 역할</option>
+            <option value="admin">관리자</option>
+            <option value="user">사용자</option>
+          </select>
 
-        <select
-          className={styles.filterSelect}
-          value={gradeFilter}
-          onChange={handleGradeFilterChange}
-        >
-          <option value="">전체 학년</option>
-          <option value="high1">1학년</option>
-          <option value="high2">2학년</option>
-          <option value="high3">3학년</option>
-          <option value="graduate">졸업</option>
-        </select>
+          <select
+            className={styles.filterSelect}
+            value={gradeFilter}
+            onChange={handleGradeFilterChange}
+          >
+            <option value="">전체 학년</option>
+            <option value="high1">1학년</option>
+            <option value="high2">2학년</option>
+            <option value="high3">3학년</option>
+            <option value="graduate">졸업</option>
+          </select>
+        </div>
       </div>
 
       {/* Error */}
@@ -428,22 +430,43 @@ const AdminUsersPage = () => {
         </div>
       )}
 
-      {/* Data Table */}
+      {/* Data Table (desktop) + Card List (mobile) */}
       {!errorMessage && (
         <>
-          <DataTable
-            columns={columns}
-            data={users}
-            keyExtractor={(user) => user.id}
-            onRowClick={handleRowClick}
-            isLoading={isLoading}
-            loadingContent={
+          <div className={styles.tableHide}>
+            <DataTable
+              columns={columns}
+              data={users}
+              keyExtractor={(user) => user.id}
+              onRowClick={handleRowClick}
+              isLoading={isLoading}
+              loadingContent={
+                <div className={styles.loadingWrapper}>
+                  <Loader2 size={20} className={styles.spinner} />
+                  <span>불러오는 중...</span>
+                </div>
+              }
+              emptyContent={
+                <EmptyState
+                  title="사용자가 없습니다"
+                  description={
+                    debouncedSearch || roleFilter || gradeFilter
+                      ? "검색 조건에 맞는 사용자가 없습니다."
+                      : "아직 등록된 사용자가 없습니다."
+                  }
+                />
+              }
+            />
+          </div>
+
+          {/* Mobile card list */}
+          <div className={styles.cardList}>
+            {isLoading ? (
               <div className={styles.loadingWrapper}>
                 <Loader2 size={20} className={styles.spinner} />
                 <span>불러오는 중...</span>
               </div>
-            }
-            emptyContent={
+            ) : users.length === 0 ? (
               <EmptyState
                 title="사용자가 없습니다"
                 description={
@@ -452,8 +475,63 @@ const AdminUsersPage = () => {
                     : "아직 등록된 사용자가 없습니다."
                 }
               />
-            }
-          />
+            ) : (
+              users.map((user) => (
+                <div
+                  key={user.id}
+                  className={styles.card}
+                  onClick={() => handleRowClick(user)}
+                >
+                  <div className={styles.cardTop}>
+                    <span className={styles.cardName}>
+                      {user.name ?? "미입력"}
+                    </span>
+                    <Badge variant={user.role === "admin" ? "info" : "neutral"}>
+                      {user.role === "admin" ? "관리자" : "사용자"}
+                    </Badge>
+                  </div>
+                  <div className={styles.cardEmail}>{user.email}</div>
+                  <div className={styles.cardDivider} />
+                  <div className={styles.cardMeta}>
+                    <span>{user.highSchoolName ?? "-"}</span>
+                    <span className={styles.cardMetaDot} />
+                    <span>
+                      {user.grade
+                        ? (GRADE_DISPLAY[user.grade] ?? user.grade)
+                        : "-"}
+                    </span>
+                    <span className={styles.cardMetaDot} />
+                    <span>
+                      {user.onboardingCompleted ? (
+                        <span className={styles.onboardingYes}>
+                          온보딩 완료
+                        </span>
+                      ) : (
+                        <span className={styles.onboardingNo}>미완료</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className={styles.cardBottom}>
+                    <div className={styles.cardStats}>
+                      <span className={styles.cardStatItem}>
+                        <span className={styles.cardStatLabel}>생기부</span>
+                        <span className={styles.cardStatValue}>
+                          {user.recordCount}
+                        </span>
+                      </span>
+                      <span className={styles.cardStatItem}>
+                        <span className={styles.cardStatLabel}>주문</span>
+                        <span className={styles.cardStatValue}>
+                          {user.orderCount}
+                        </span>
+                      </span>
+                    </div>
+                    <span>{formatDate(user.createdAt)}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
 
           {!isLoading && users.length > 0 && (
             <Pagination
