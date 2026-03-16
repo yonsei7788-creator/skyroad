@@ -1084,8 +1084,11 @@ const formatStudentProfile = (
       `환산 등급: ${convertedGrade.converted} (원래 ${convertedGrade.original}, ${convertedGrade.schoolType} 보정 적용)`
     );
   }
-  if (info.targetUniversity) lines.push(`목표 대학: ${info.targetUniversity}`);
-  if (info.targetDepartment) lines.push(`목표 학과: ${info.targetDepartment}`);
+  if (info.targetUniversity || info.targetDepartment) {
+    lines.push(
+      `[참고] 희망 대학/학과 (합격 예측용 — 분석 방향과 무관): ${info.targetUniversity ?? ""} ${info.targetDepartment ?? ""}`.trim()
+    );
+  }
   lines.push(`모의고사 데이터: ${info.hasMockExamData ? "있음" : "없음"}`);
   return lines.join("\n");
 };
@@ -1193,10 +1196,15 @@ const formatTargetUniversities = (
     return "";
   }
 
-  const lines = targetUniversities.map(
-    (t) =>
-      `- ${t.priority}지망: ${t.universityName} ${t.department} (${t.admissionType})`
-  );
+  const lines = targetUniversities.map((t) => {
+    const majorInfo = findMajorInfo(t.department);
+    const hasCutoff = findCutoffData(t.universityName, t.department).length > 0;
+    const dataAvailable = majorInfo || hasCutoff;
+    const suffix = dataAvailable
+      ? ""
+      : ' ⚠️ 해당 학과 데이터 미확보 — 합격 예측 시 "(판단 불가)"로 표시';
+    return `- ${t.priority}지망: ${t.universityName} ${t.department} (${t.admissionType})${suffix}`;
+  });
 
   return `## 유저 설정 희망대학\n${lines.join("\n")}`;
 };

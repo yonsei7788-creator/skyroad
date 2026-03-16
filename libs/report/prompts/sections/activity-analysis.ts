@@ -102,9 +102,11 @@ summary에 "입학사정관" 또는 "학종" 또는 "평가" 또는 "전형" 또
 - **모든 활동 유형, 모든 학년**의 summary에 예외 없이 키워드를 포함하세요.
 
 ⚠️ **분량 제한 (반드시 준수)**:
-- activities 배열은 **최대 6개**입니다. 7개 이상 절대 출력하지 마세요.
-- 각 activity의 overallComment은 **250자 이내**, improvementDirection은 **150자 이내**로 작성합니다.
-- keyActivities의 각 evaluation은 **150자 이내**로 작성합니다.`,
+- activities 배열은 **최대 5개**입니다. 6개 이상 절대 출력하지 마세요.
+- 각 activity의 overallComment은 **200자 이내**, improvementDirection은 **100자 이내**로 작성합니다.
+- keyActivities의 각 evaluation은 **100자 이내**로 작성합니다.
+- keyActivities 배열은 영역당 **최대 3개**입니다.
+- ⚠️ **전체 JSON 출력은 30,000자를 초과하면 안 됩니다.** 초과 시 내용을 압축하세요.`,
 };
 
 export const buildActivityAnalysisPrompt = (

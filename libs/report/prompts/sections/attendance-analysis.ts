@@ -59,7 +59,7 @@ ${input.studentProfile}
     {"year": 2, "totalAbsence": 1, "illness": 1, "unauthorized": 0, "etc": 0, "lateness": 0, "earlyLeave": 0}
   ],
   "overallRating": "우수",
-  "impactAnalysis": "전체 출결 상황이 매우 양호하며...",
+  "impactAnalysis": "전체 출결 상황이 매우 우수하며...",
   "integrityContribution": "출결 상황이 성실성 평가에 긍정적으로...",
   "improvementAdvice": ""
 }
@@ -81,7 +81,7 @@ ${input.studentProfile}
 | 등급 | 기준 |
 |------|------|
 | 우수 | 미인정 결석 0, 총 결석 3일 이하 |
-| 양호 | 미인정 결석 0, 총 결석 10일 이하 |
+| 보통 | 미인정 결석 0, 총 결석 10일 이하 |
 | 주의 | 미인정 결석 1~2일 또는 총 결석 11~20일 |
 | 경고 | 미인정 결석 3일 이상 또는 총 결석 20일 초과 |
 
