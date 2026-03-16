@@ -20,7 +20,7 @@ export const MajorExplorationRenderer = ({
     <>
       {/* Block 1: Header + target assessment + table */}
       <div>
-        <SectionHeader number={sectionNumber} title={data.title} />
+        <SectionHeader number={sectionNumber} title={data.title} highlighted />
 
         {data.currentTargetAssessment && (
           <div className={styles.cardAccent}>

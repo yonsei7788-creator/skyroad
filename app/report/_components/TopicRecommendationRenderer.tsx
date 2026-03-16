@@ -128,8 +128,13 @@ export const TopicRecommendationRenderer = ({
 
           {topic.activityDesign && (
             <div className={styles.mt12}>
-              <div className={`${styles.overline} ${styles.mb6}`}>
-                활동 설계
+              <div className={`${styles.small} ${styles.mb6}`}>
+                <span
+                  className={styles.markerYellow}
+                  style={{ fontWeight: 600 }}
+                >
+                  활동 설계
+                </span>
               </div>
               <div className={styles.body}>
                 {(topic.activityDesign.steps ?? []).map((step, sIdx) => (

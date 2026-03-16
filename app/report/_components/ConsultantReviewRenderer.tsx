@@ -23,7 +23,11 @@ export const ConsultantReviewRenderer = ({
     <>
       {/* 각 항목을 개별 블록으로 — AutoPaginatedSection이 항목 단위로 페이지 분리 */}
       <div>
-        <SectionHeader number={sectionNumber} title={`★ ${displayTitle}`} />
+        <SectionHeader
+          number={sectionNumber}
+          title={`★ ${displayTitle}`}
+          highlighted
+        />
 
         <div className={styles.mt12}>
           <div className={styles.h3}>성적 및 교과 이수 노력 평가</div>
@@ -58,7 +62,9 @@ export const ConsultantReviewRenderer = ({
       {data.evaluationGuide && (
         <div>
           <div className={`${styles.h3} ${styles.mt20}`}>
-            입학사정관은 이렇게 평가합니다
+            <span className={styles.markerYellow}>
+              입학사정관은 이렇게 평가합니다
+            </span>
           </div>
 
           <div className={styles.card}>

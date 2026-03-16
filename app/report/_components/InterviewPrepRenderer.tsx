@@ -19,7 +19,7 @@ export const InterviewPrepRenderer = ({
     <>
       {/* Block 1: Header + summary */}
       <div>
-        <SectionHeader number={sectionNumber} title={data.title} />
+        <SectionHeader number={sectionNumber} title={data.title} highlighted />
 
         <div className={styles.cardAccent}>
           <div className={styles.cardHeader}>
