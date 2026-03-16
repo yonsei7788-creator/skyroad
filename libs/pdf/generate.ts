@@ -306,27 +306,6 @@ export const downloadPdfBlob = (blob: Blob, filename: string): boolean => {
     filename,
   });
 
-  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const isSafari =
-    /Safari/i.test(navigator.userAgent) &&
-    !/Chrome|CriOS|FxiOS/i.test(navigator.userAgent);
-
-  if (isIOS || isSafari) {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
-      const newTab = window.open();
-      if (newTab) {
-        newTab.document.title = filename;
-        newTab.location.href = dataUrl;
-      } else {
-        window.location.href = dataUrl;
-      }
-    };
-    reader.readAsDataURL(blob);
-    return true;
-  }
-
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
