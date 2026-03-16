@@ -45,6 +45,11 @@ import { preprocess } from "./preprocessor.ts";
 import { loadRecordData } from "./load-record.ts";
 import type { WaveState } from "./wave-state.ts";
 import {
+  matchMajorEvaluationCriteria,
+  findCriteriaByMajorGroup,
+  formatMajorEvaluationContext,
+} from "../constants/major-evaluation-criteria.ts";
+import {
   buildTaskQueue,
   computeProgress,
   saveWaveState,
@@ -164,8 +169,34 @@ export const executeTask = async (
       stuTypeText: JSON.stringify(studentTypeClassification),
     };
 
+    // 3) 생기부 기반 계열 보정: detectedMajorGroup vs targetDepartment 비교
+    let correctedTexts = texts;
+    const detected = competencyExtraction.detectedMajorGroup;
+    if (detected) {
+      const targetDept = studentInfo.targetDepartment ?? "";
+      const targetCriteria = matchMajorEvaluationCriteria(targetDept);
+      // detectedMajorGroup은 이미 계열명 → findCriteriaByMajorGroup으로 직접 조회
+      const detectedCriteria = findCriteriaByMajorGroup(detected);
+
+      if (targetCriteria.majorGroup !== detectedCriteria.majorGroup) {
+        // 생기부 실제 강점 계열이 희망학과 계열과 다름 → 보정
+        const correctedContext = formatMajorEvaluationContext(
+          detectedCriteria,
+          `${detected} (생기부 분석 기반, 희망학과: ${targetDept || "미입력"})`
+        );
+        correctedTexts = {
+          ...texts,
+          majorEvaluationContextText: correctedContext,
+        };
+        console.log(
+          `[report:${reportId}] 계열 보정: ${targetCriteria.majorGroup}(희망) → ${detectedCriteria.majorGroup}(생기부 실제). 근거: ${competencyExtraction.detectedMajorReason ?? ""}`
+        );
+      }
+    }
+
     const nextState: WaveState = {
       ...state,
+      preprocessedTexts: correctedTexts,
       phase2Results: {
         competencyExtraction,
         academicAnalysis,

@@ -34,9 +34,39 @@ export const buildCompetencyExtractionPrompt = (
 - 가장 중요하고 구체적인 증거를 우선 선별합니다.
 - crossSubjectConnections는 **최대 5개**, formalExpressions는 **최대 5개**까지만 기록합니다.
 
+## 생기부 기반 실제 강점 계열 판단 (detectedMajorGroup)
+
+⚠️ **이것은 희망학과가 아닙니다.** 생기부 데이터(세특 탐구 주제, 성적 패턴, 활동 내용)에서 드러나는 **실제 강점 계열**을 판단하세요.
+
+판단 기준:
+1. **세특 탐구 주제의 주요 분야**: 어떤 교과/분야의 탐구가 가장 깊고 반복적인가?
+2. **성적 강점 교과**: 어떤 교과군에서 성적이 가장 높은가?
+3. **활동 패턴**: 창체/동아리/진로 활동이 어떤 분야에 집중되는가?
+4. **crossSubjectConnections의 주요 테마**: 교과 간 연결의 핵심 분야는?
+
+사용 가능한 계열:
+- "인문" (국어/역사/철학/문학 탐구 중심)
+- "사회과학" (사회/정치/법/심리 탐구 중심)
+- "경영경제" (경제/경영/통계 탐구 중심)
+- "자연과학" (수학/과학 전반 탐구 중심)
+- "공학" (물리/기계/전자/건축 탐구 중심)
+- "컴퓨터AI" (정보/코딩/AI/데이터 탐구 중심)
+- "의생명" (생명과학/의학/보건 탐구 중심)
+- "간호보건" (간호/보건/치료 관련)
+- "교육" (교육/교직 관련 활동 중심)
+- "예체능" (예술/체육/음악/미술/디자인/무용 활동 중심)
+- "생명바이오" (생명과학/바이오 심화)
+- "약학" (화학/약학 관련)
+- "화학재료" (화학/재료/화공 관련)
+
+⚠️ 희망학과가 "의학과"여도 생기부에서 사회탐구가 주력이면 "사회과학"으로 판단하세요.
+⚠️ 희망학과가 없거나 불명확해도, 생기부 데이터만으로 계열을 판단할 수 있습니다.
+
 ## 출력 JSON 스키마
 \`\`\`json
 {
+  "detectedMajorGroup": "string (생기부에서 드러나는 실제 강점 계열, 위 목록 중 하나)",
+  "detectedMajorReason": "string (판단 근거 1~2문장, 예: '세특에서 체육·스포츠 관련 탐구가 3년간 일관되며, 체육 실기 관련 활동이 핵심')",
   "academic": {
     "achievement": [{ "evidence": "string (원문 인용 1~2문장)", "source": "string (예: 2학년-물리학I)", "sentiment": "positive | negative" }],
     "attitude": [{ "evidence": "string", "source": "string", "sentiment": "positive | negative" }],
@@ -76,6 +106,10 @@ ${input.recordData}`;
  * 실제 Schema 객체는 schemas/phase2-schemas.ts에서 정의
  */
 export interface CompetencyExtractionOutput {
+  /** 생기부에서 드러나는 실제 강점 계열 (희망학과 무관) */
+  detectedMajorGroup: string;
+  /** 판단 근거 1~2문장 */
+  detectedMajorReason: string;
   academic: {
     achievement: EvidenceItem[];
     attitude: EvidenceItem[];

@@ -1061,31 +1061,135 @@ const buildTexts = (
  * 5등급제 등급별 대학 라인 (일반고 학종 기준).
  * 이 등급 이하(숫자가 크면 낮은 등급)인 대학만 후보에 포함.
  */
+/**
+ * 5등급제 등급별 대학 커트라인 (일반고 학종 기준).
+ * @see require/university-grade-mapping.md
+ */
 const FIVE_GRADE_UNIVERSITY_CUTOFF: Record<string, number> = {
+  // 1.0: 메디컬, SKY, KAIST, 포항공대
   서울대학교: 1.0,
   KAIST: 1.0,
   연세대학교: 1.0,
   고려대학교: 1.0,
   포항공과대학교: 1.0,
+  // 1.1: 서강대, 성균관대, 한양대
   서강대학교: 1.1,
   성균관대학교: 1.1,
   한양대학교: 1.1,
+  // 1.2: 중앙대, 경희대, 한국외대, 서울시립대, 과기원
   중앙대학교: 1.2,
   경희대학교: 1.2,
   한국외국어대학교: 1.2,
   서울시립대학교: 1.2,
+  UNIST: 1.2,
+  DGIST: 1.2,
+  GIST: 1.2,
+  // 1.3: 건국대, 동국대, 홍익대
   건국대학교: 1.3,
   동국대학교: 1.3,
   홍익대학교: 1.3,
+  // 1.4: 아주대, 인하대, 경북대, 부산대
   아주대학교: 1.4,
   인하대학교: 1.4,
+  경북대학교: 1.4,
+  부산대학교: 1.4,
+  // 1.5: 국민대, 숭실대, 세종대, 단국대, 서울과기대
   국민대학교: 1.5,
   숭실대학교: 1.5,
   세종대학교: 1.5,
   단국대학교: 1.5,
+  서울과학기술대학교: 1.5,
+  // 1.6: 한양대(ERICA), 한국항공대
+  "한양대학교(ERICA)": 1.6,
+  한국항공대학교: 1.6,
+  // 1.7: 광운대, 명지대, 상명대, 가톨릭대
+  광운대학교: 1.7,
+  명지대학교: 1.7,
+  상명대학교: 1.7,
+  가톨릭대학교: 1.7,
+  // 1.8: 인천대, 가천대, 경기대
+  인천대학교: 1.8,
+  가천대학교: 1.8,
+  경기대학교: 1.8,
 };
 
-/** 커리어넷 데이터 기반 대학 후보군 텍스트 생성 (커트라인 포함) */
+/**
+ * 9등급제 등급별 대학 커트라인 (일반고 학종 기준).
+ * 5등급→9등급 환산: 1.0→1~2, 1.5→3~4, 2.0→4~5
+ */
+const NINE_GRADE_UNIVERSITY_CUTOFF: Record<string, number> = {
+  서울대학교: 1.5,
+  KAIST: 1.5,
+  연세대학교: 1.5,
+  고려대학교: 1.5,
+  포항공과대학교: 1.5,
+  서강대학교: 2.0,
+  성균관대학교: 2.0,
+  한양대학교: 2.0,
+  중앙대학교: 2.5,
+  경희대학교: 2.5,
+  한국외국어대학교: 2.5,
+  서울시립대학교: 2.5,
+  건국대학교: 3.0,
+  동국대학교: 3.0,
+  홍익대학교: 3.0,
+  아주대학교: 3.5,
+  인하대학교: 3.5,
+  경북대학교: 3.5,
+  부산대학교: 3.5,
+  국민대학교: 4.0,
+  숭실대학교: 4.0,
+  세종대학교: 4.0,
+  단국대학교: 4.0,
+  서울과학기술대학교: 4.0,
+  광운대학교: 4.5,
+  명지대학교: 4.5,
+  인천대학교: 5.0,
+  가천대학교: 5.0,
+  경기대학교: 5.0,
+};
+
+/**
+ * 5등급제 → 9등급제 환산 (커트라인 데이터가 9등급제 기준이므로).
+ * @see require/university-grade-mapping.md
+ */
+const fiveToNineGrade = (five: number): number => {
+  if (five <= 1.0) return 1.5;
+  if (five <= 1.5) return 1.5 + (five - 1.0) * 4; // 1.0→1.5, 1.5→3.5
+  return 3.5 + (five - 1.5) * 2; // 1.5→3.5, 2.0→4.5, 2.5→5.5, 3.0→6.5
+};
+
+/**
+ * 대학의 대표 커트라인 등급 산출 (9등급제 기준).
+ * 학종 70%cut 우선, 없으면 교과 70%cut, 없으면 50%cut fallback.
+ */
+const getRepresentativeCutoff = (
+  cutoffs: {
+    admissionType: string;
+    cutoff50Grade: number | null;
+    cutoff70Grade: number | null;
+  }[]
+): number | null => {
+  // 학종 70%cut 우선
+  const hakjong = cutoffs.find((c) => c.admissionType === "학종");
+  if (hakjong?.cutoff70Grade != null) return hakjong.cutoff70Grade;
+  if (hakjong?.cutoff50Grade != null) return hakjong.cutoff50Grade;
+  // 교과 fallback
+  const gyogwa = cutoffs.find((c) => c.admissionType === "교과");
+  if (gyogwa?.cutoff70Grade != null) return gyogwa.cutoff70Grade;
+  if (gyogwa?.cutoff50Grade != null) return gyogwa.cutoff50Grade;
+  // 아무거나
+  for (const c of cutoffs) {
+    if (c.cutoff70Grade != null) return c.cutoff70Grade;
+    if (c.cutoff50Grade != null) return c.cutoff50Grade;
+  }
+  return null;
+};
+
+/**
+ * 커트라인 데이터 기반 대학 후보군 생성.
+ * 학생 등급과 비슷한 점수대의 대학만 후보로 제공한다.
+ */
 const buildUniversityCandidatesText = (
   targetDept: string,
   gradingSystem?: "5등급제" | "9등급제",
@@ -1095,20 +1199,18 @@ const buildUniversityCandidatesText = (
   const majorInfo = findMajorInfo(targetDept);
   if (!majorInfo) return "[]";
 
-  let universities = majorInfo.universities as string[];
+  const universities = majorInfo.universities as string[];
 
-  // 5등급제 학생: 등급에 맞지 않는 상위 대학 필터링
-  // 학생 등급 + 0.5 여유를 줘서 "도전 가능" 범위까지 포함
-  if (gradingSystem === "5등급제" && overallAverage != null) {
-    const maxReach = overallAverage - 0.5; // 예: 2.42 → 1.92까지 도전 가능
-    universities = universities.filter((uni) => {
-      const cutoff = FIVE_GRADE_UNIVERSITY_CUTOFF[uni];
-      if (cutoff === undefined) return true; // 테이블에 없는 대학은 유지
-      return cutoff >= maxReach; // 대학 커트라인이 학생 도달 범위 내
-    });
-  }
+  // 학생 등급을 9등급제로 환산 (커트라인 데이터가 9등급제 기준)
+  const studentGrade9 =
+    overallAverage != null
+      ? gradingSystem === "5등급제"
+        ? fiveToNineGrade(overallAverage)
+        : overallAverage
+      : null;
 
-  const candidates = universities.map((university: string) => {
+  // 각 대학의 커트라인 데이터 조회 + 대표 등급 산출
+  const withCutoff = universities.map((university) => {
     const cutoffs = findCutoffData(university, majorInfo.majorName);
     const cutoffSummary =
       cutoffs.length > 0
@@ -1119,13 +1221,56 @@ const buildUniversityCandidatesText = (
             )
             .join(" / ")
         : null;
-
-    return {
-      university,
-      department: majorInfo.majorName,
-      ...(cutoffSummary ? { cutoffData: cutoffSummary } : {}),
-    };
+    const repCutoff = getRepresentativeCutoff(cutoffs);
+    return { university, cutoffSummary, repCutoff };
   });
+
+  // 학생 등급 기반 필터링: 커트라인이 학생 등급 근처인 대학만 선정
+  let filtered = withCutoff;
+  if (studentGrade9 != null) {
+    const margin = 1.5; // 9등급제 기준 ±1.5 (약간 상향~약간 하향)
+    filtered = withCutoff.filter((c) => {
+      if (c.repCutoff == null) {
+        // 커트라인 데이터 없는 대학: 하드코딩 맵으로 fallback
+        const cutoffMap =
+          gradingSystem === "5등급제"
+            ? FIVE_GRADE_UNIVERSITY_CUTOFF
+            : NINE_GRADE_UNIVERSITY_CUTOFF;
+        const hardcoded = cutoffMap[c.university];
+        if (hardcoded === undefined) return true; // 데이터 전혀 없는 대학은 유지
+        // 하드코딩 맵은 해당 등급제 기준이므로 직접 비교
+        const studentInSameScale =
+          gradingSystem === "5등급제" ? overallAverage! : overallAverage!;
+        return (
+          Math.abs(hardcoded - studentInSameScale) <=
+          (gradingSystem === "5등급제" ? 0.5 : margin)
+        );
+      }
+      return (
+        c.repCutoff >= studentGrade9 - margin &&
+        c.repCutoff <= studentGrade9 + margin
+      );
+    });
+
+    // 필터 결과가 3개 미만이면 범위 확대
+    if (filtered.length < 3) {
+      const wider = 2.5;
+      filtered = withCutoff.filter((c) => {
+        if (c.repCutoff == null) return true;
+        return (
+          c.repCutoff >= studentGrade9 - wider &&
+          c.repCutoff <= studentGrade9 + wider
+        );
+      });
+    }
+  }
+
+  const candidates = filtered.map(({ university, cutoffSummary }) => ({
+    university,
+    department: majorInfo.majorName,
+    ...(cutoffSummary ? { cutoffData: cutoffSummary } : {}),
+  }));
+
   return JSON.stringify(candidates, null, 2);
 };
 

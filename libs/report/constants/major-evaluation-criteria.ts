@@ -503,6 +503,12 @@ const findCriteria = (majorGroup: string): MajorEvaluationCriteria => {
 };
 
 /**
+ * majorGroup 이름으로 직접 평가 기준을 조회한다.
+ * detectedMajorGroup 등 이미 계열명이 확정된 경우 사용.
+ */
+export const findCriteriaByMajorGroup = findCriteria;
+
+/**
  * 매칭된 계열 평가 기준을 프롬프트용 텍스트로 직렬화한다.
  * AI가 이해하기 쉬운 구조화된 텍스트로 변환한다.
  */

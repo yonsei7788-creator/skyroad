@@ -344,6 +344,103 @@ export const postprocess = (
     }
   }
 
+  // 3-7. admissionPrediction + admissionStrategy: 등급-대학 거리 기반 비현실적 예측 제거
+  // 유저 희망대학이라도 등급 차이가 너무 크면 "사실상 불가" 처리
+  {
+    const avg = preprocessed.overallAverage;
+    const gs = preprocessed.gradingSystem;
+    if (avg != null && gs) {
+      const cutoffMap: Record<string, number> =
+        gs === "5등급제"
+          ? {
+              서울대학교: 1.0,
+              KAIST: 1.0,
+              연세대학교: 1.0,
+              고려대학교: 1.0,
+              포항공과대학교: 1.0,
+              서강대학교: 1.1,
+              성균관대학교: 1.1,
+              한양대학교: 1.1,
+              중앙대학교: 1.2,
+              경희대학교: 1.2,
+              한국외국어대학교: 1.2,
+              서울시립대학교: 1.2,
+              건국대학교: 1.3,
+              동국대학교: 1.3,
+              홍익대학교: 1.3,
+              아주대학교: 1.4,
+              인하대학교: 1.4,
+              경북대학교: 1.4,
+              부산대학교: 1.4,
+              국민대학교: 1.5,
+              숭실대학교: 1.5,
+              세종대학교: 1.5,
+              단국대학교: 1.5,
+            }
+          : {
+              서울대학교: 1.5,
+              KAIST: 1.5,
+              연세대학교: 1.5,
+              고려대학교: 1.5,
+              포항공과대학교: 1.5,
+              서강대학교: 2.0,
+              성균관대학교: 2.0,
+              한양대학교: 2.0,
+              중앙대학교: 2.5,
+              경희대학교: 2.5,
+              한국외국어대학교: 2.5,
+              서울시립대학교: 2.5,
+              건국대학교: 3.0,
+              동국대학교: 3.0,
+              홍익대학교: 3.0,
+              아주대학교: 3.5,
+              인하대학교: 3.5,
+              국민대학교: 4.0,
+              숭실대학교: 4.0,
+            };
+
+      // 비현실적 도달 거리 기준: 5등급제 0.8, 9등급제 2.0
+      const unreachableGap = gs === "5등급제" ? 0.8 : 2.0;
+
+      const isUnreachable = (university: string): boolean => {
+        const cutoff = cutoffMap[university];
+        if (cutoff === undefined) return false;
+        return avg - cutoff > unreachableGap;
+      };
+
+      // admissionPrediction: 비현실적 대학 제거
+      if (admPred && Array.isArray(admPred.predictions)) {
+        for (const pred of admPred.predictions) {
+          if (!Array.isArray(pred.universityPredictions)) continue;
+          const before = pred.universityPredictions.length;
+          pred.universityPredictions = pred.universityPredictions.filter(
+            (up: any) => {
+              if (!isUnreachable(up.university)) return true;
+              console.log(
+                `[report:${reportId}] 비현실적 대학 제거 (${gs} ${avg}): ${up.university} (cutoff ${cutoffMap[up.university]})`
+              );
+              return false;
+            }
+          );
+        }
+      }
+
+      // admissionStrategy: 비현실적 대학 제거
+      if (admStrat && Array.isArray(admStrat.simulations)) {
+        for (const sim of admStrat.simulations) {
+          if (!Array.isArray(sim.cards)) continue;
+          sim.cards = sim.cards.filter((card: any) => {
+            if (!isUnreachable(card.university)) return true;
+            console.log(
+              `[report:${reportId}] 비현실적 추천 대학 제거 (${gs} ${avg}): ${card.university}`
+            );
+            return false;
+          });
+        }
+      }
+    }
+  }
+
   // 3-4. subjectAnalysis: evaluationImpact 코드 기반 강제 설정
   const subjectSection = validatedSections.find(
     (s) => s.sectionId === "subjectAnalysis"
