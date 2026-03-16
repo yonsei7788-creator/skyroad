@@ -4,7 +4,9 @@ import { Footer } from "@/app/_components/Footer";
 import styles from "../legal.module.css";
 
 export const metadata = {
-  title: "이용약관 | SKYROAD",
+  title: "이용약관",
+  description: "SKYROAD 서비스 이용약관입니다.",
+  alternates: { canonical: "/legal/terms" },
 };
 
 const TermsPage = () => {

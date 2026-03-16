@@ -4,7 +4,9 @@ import { Footer } from "@/app/_components/Footer";
 import styles from "../legal.module.css";
 
 export const metadata = {
-  title: "개인정보처리방침 | SKYROAD",
+  title: "개인정보처리방침",
+  description: "SKYROAD 개인정보처리방침입니다.",
+  alternates: { canonical: "/legal/privacy" },
 };
 
 const PrivacyPage = () => {
