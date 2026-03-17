@@ -10,6 +10,9 @@ import { ReportScaler } from "./_components/ReportScaler";
  */
 export const viewport: Viewport = {
   width: 980,
+  initialScale: 0.4,
+  maximumScale: 2,
+  userScalable: true,
   themeColor: "#2563eb",
 };
 
