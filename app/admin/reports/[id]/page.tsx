@@ -180,12 +180,22 @@ const ReportDetailPage = () => {
     const wasHidden = !showPreview;
     if (wasHidden) {
       setShowPreview(true);
-      // DOM 업데이트 대기
-      await new Promise((r) => setTimeout(r, 500));
     }
+
+    // 모바일에서 CSS 미디어 쿼리가 PC 기준으로 동작하도록 viewport 임시 변경
+    const meta = document.querySelector('meta[name="viewport"]');
+    const originalViewport = meta?.getAttribute("content") ?? "";
+    const isMobile = window.screen.width < 980;
+    if (isMobile && meta) {
+      meta.setAttribute("content", "width=980, initial-scale=1");
+    }
+
+    // DOM 업데이트 + 리플로우 대기
+    await new Promise((r) => setTimeout(r, 800));
 
     if (!previewRef.current) {
       addToast("미리보기 패널을 열어주세요.", "error");
+      if (isMobile && meta) meta.setAttribute("content", originalViewport);
       if (wasHidden) setShowPreview(false);
       return null;
     }
@@ -203,6 +213,8 @@ const ReportDetailPage = () => {
       return null;
     } finally {
       setPdfProgress(null);
+      // viewport 복원
+      if (isMobile && meta) meta.setAttribute("content", originalViewport);
       if (wasHidden) setShowPreview(false);
     }
   };
