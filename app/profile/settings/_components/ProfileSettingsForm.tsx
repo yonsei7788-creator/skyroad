@@ -17,11 +17,14 @@ import {
   Phone,
   School,
   CalendarDays,
+  MapPin,
   X,
   AlertCircle,
 } from "lucide-react";
 
 import { createClient } from "@/libs/supabase/client";
+
+import { REGION_OPTIONS } from "@/app/onboarding/_components/types";
 
 import styles from "../page.module.css";
 
@@ -30,6 +33,7 @@ interface ProfileData {
   phone: string;
   highSchoolName: string;
   highSchoolType: string;
+  highSchoolRegion: string;
   admissionYear: number | null;
   grade: string;
 }
@@ -201,10 +205,18 @@ export const ProfileSettingsForm = ({
   };
 
   const handleSelectSchool = (school: SchoolResult) => {
+    const validType = SCHOOL_TYPES.includes(
+      school.type as (typeof SCHOOL_TYPES)[number]
+    )
+      ? school.type
+      : "";
+    // 주소 첫 단어에서 시/도 추출 (예: "서울특별시 강남구..." → "서울특별시")
+    const region = school.address?.split(" ")[0] ?? "";
     setProfile((prev) => ({
       ...prev,
       highSchoolName: school.name,
-      highSchoolType: school.type,
+      highSchoolType: validType,
+      highSchoolRegion: region,
     }));
     setErrors((prev) => {
       const next = { ...prev };
@@ -296,6 +308,7 @@ export const ProfileSettingsForm = ({
         phone: profile.phone || null,
         high_school_name: profile.highSchoolName || null,
         high_school_type: profile.highSchoolType || null,
+        high_school_region: profile.highSchoolRegion || null,
         admission_year: profile.admissionYear,
         grade: profile.grade || null,
         updated_at: new Date().toISOString(),
@@ -494,6 +507,31 @@ export const ProfileSettingsForm = ({
                       {errors.highSchoolType}
                     </span>
                   )}
+                </div>
+
+                <div className={styles.field}>
+                  <label htmlFor="schoolRegion" className={styles.label}>
+                    <MapPin size={14} className={styles.labelIcon} />
+                    고교 소재지
+                  </label>
+                  <select
+                    id="schoolRegion"
+                    className={styles.select}
+                    value={profile.highSchoolRegion}
+                    onChange={(e) =>
+                      handleChange("highSchoolRegion", e.target.value)
+                    }
+                  >
+                    <option value="">선택해주세요</option>
+                    {REGION_OPTIONS.map((region) => (
+                      <option key={region} value={region}>
+                        {region}
+                      </option>
+                    ))}
+                  </select>
+                  <span className={styles.fieldHint}>
+                    학교 검색 시 자동 설정되며, 직접 변경할 수도 있습니다
+                  </span>
                 </div>
 
                 <div className={styles.fieldRow}>

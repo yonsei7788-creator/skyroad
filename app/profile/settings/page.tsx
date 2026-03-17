@@ -23,7 +23,7 @@ const ProfileSettingsPage = async () => {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "name, phone, high_school_name, high_school_type, admission_year, grade"
+      "name, phone, high_school_name, high_school_type, high_school_region, admission_year, grade"
     )
     .eq("id", user.id)
     .single();
@@ -39,6 +39,7 @@ const ProfileSettingsPage = async () => {
             phone: profile?.phone ?? "",
             highSchoolName: profile?.high_school_name ?? "",
             highSchoolType: profile?.high_school_type ?? "",
+            highSchoolRegion: profile?.high_school_region ?? "",
             admissionYear: profile?.admission_year ?? null,
             grade: profile?.grade ?? "",
           }}

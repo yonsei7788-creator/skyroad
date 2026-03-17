@@ -25,6 +25,7 @@ interface OnboardingWizardProps {
     phone: string;
     highSchoolName: string;
     highSchoolType: string;
+    highSchoolRegion: string;
     grade: string;
     admissionYear: number | null;
   };
