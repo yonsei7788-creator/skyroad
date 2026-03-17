@@ -96,6 +96,75 @@ const trimOverflowNodes = (container: HTMLElement): void => {
  * (한쪽이 hidden이면 다른 쪽은 auto로 강제 변환).
  * overflow: hidden을 설정하면 가로 콘텐츠도 잘리므로 설정하지 않습니다.
  */
+/**
+ * 오프스크린 클론에서 모바일 반응형 CSS 영향을 제거.
+ *
+ * CSS media query는 viewport 기준이므로, 모바일에서 클론해도
+ * 내부 grid/flex 요소에 모바일 스타일이 적용됨.
+ * → computed style을 검사하여 모바일 패턴을 PC 기본값으로 강제 복원.
+ */
+const forceDesktopStyles = (container: HTMLElement): void => {
+  // 1) grid-template-columns: 1fr → 모바일에서 단일 컬럼으로 변경된 그리드 복원
+  const allElements = container.querySelectorAll<HTMLElement>("*");
+  for (const el of allElements) {
+    const computed = getComputedStyle(el);
+
+    // 그리드 단일 컬럼 → 2컬럼 복원 (리포트의 카드 그리드 등)
+    if (computed.display === "grid") {
+      const cols = computed.gridTemplateColumns;
+      // "1fr" 단일 컬럼 = 모바일 반응형 결과
+      // 원본 PC는 보통 "1fr 1fr" 또는 "repeat(2, 1fr)" 이상
+      if (cols && !cols.includes(" ")) {
+        // 단일 값 = 1컬럼 → 2컬럼으로 복원
+        el.style.gridTemplateColumns = "repeat(2, 1fr)";
+      }
+    }
+
+    // flex-direction: column → row 복원 (프로필 헤더 등)
+    // 단, 의도적 column 레이아웃(카드 내부 등)과 구분하기 위해
+    // 직접 자식이 2개 이상이고 gap이 있는 경우만 대상
+    if (
+      computed.display === "flex" &&
+      computed.flexDirection === "column" &&
+      el.children.length >= 2
+    ) {
+      // data-page 직계 자식이 아닌 중간 레이아웃 요소만 대상
+      // (섹션 콘텐츠 래퍼는 column이 맞으므로 제외)
+      const parent = el.parentElement;
+      if (parent && !parent.hasAttribute("data-page")) {
+        // class 이름에 identity/profile/stats가 포함된 경우만 복원
+        const cls = el.className.toLowerCase();
+        if (
+          cls.includes("identity") ||
+          cls.includes("profile") ||
+          cls.includes("stats")
+        ) {
+          el.style.flexDirection = "row";
+          el.style.alignItems = "center";
+        }
+      }
+    }
+
+    // border-radius: 0, box-shadow: none → 페이지 카드 스타일 복원
+    // (이미 [data-page]에서 처리하므로 여기선 스킵)
+
+    // width: 100% → 페이지 내부 요소는 100%가 맞으므로 건드리지 않음
+  }
+
+  // 2) 4컬럼 스탯 그리드 복원 (profileStatsGrid: 2→4열)
+  // CSS module 해시 class를 모르므로, 구조로 판단:
+  // grid + 4개 자식 + 현재 2컬럼 = statsGrid
+  for (const el of allElements) {
+    const computed = getComputedStyle(el);
+    if (computed.display !== "grid") continue;
+    const childCount = el.children.length;
+    const cols = computed.gridTemplateColumns.split(" ").length;
+    if (childCount === 4 && cols === 2) {
+      el.style.gridTemplateColumns = "repeat(4, 1fr)";
+    }
+  }
+};
+
 /** Pretendard 폰트 스택 — PDF 내 모든 텍스트에 동일 적용 */
 const PDF_FONT_FAMILY =
   '"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Noto Sans KR", sans-serif';
@@ -152,7 +221,13 @@ const createOffscreenContainer = (source: HTMLElement): HTMLElement => {
     page.style.boxShadow = "none";
     page.style.margin = "0";
     page.style.borderRadius = "0";
+    page.style.padding = "20mm 18mm";
   }
+
+  // 모바일 반응형 CSS 영향 제거: 원본(source)의 PC 스타일을 읽어서 클론에 적용
+  // (오프스크린 클론은 모바일 viewport에서 media query가 적용된 상태이므로
+  //  원본 소스의 computed style도 모바일임 — 대신 기본값으로 강제 리셋)
+  forceDesktopStyles(offscreen);
 
   // PDF용: ::after pseudo element를 실제 textContent로 대체
   // (html2canvas에서 ::after의 baseline이 텍스트와 불일치하는 문제 해결)
