@@ -70,8 +70,8 @@ const TASK_DEPS: Record<string, string[]> = {
   consultantReview: ["competencyScore", "academicAnalysis", "subjectAnalysis"],
 };
 
-const PARALLEL_CONCURRENCY = 3;
-const BATCH_DELAY_MS = 1000;
+const PARALLEL_CONCURRENCY = 5;
+const BATCH_DELAY_MS = 200;
 
 // 태스크 큐를 의존성 기반 병렬 웨이브로 분할
 const buildWaves = (taskQueue: string[]): string[][] => {
