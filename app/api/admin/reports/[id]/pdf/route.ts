@@ -47,12 +47,10 @@ export const POST = async (
     );
   }
 
-  // 관리자 세션 쿠키를 Puppeteer에 전달하기 위해 추출
-  const cookieHeader = request.headers.get("cookie") ?? "";
-
   // 앱의 base URL 결정
   const { origin } = request.nextUrl;
-  const reportUrl = `${origin}/report/${reportId}`;
+  const pdfToken = process.env.PDF_SECRET_TOKEN ?? "";
+  const reportUrl = `${origin}/report/${reportId}?_token=${encodeURIComponent(pdfToken)}`;
 
   let browser;
   try {
@@ -82,20 +80,6 @@ export const POST = async (
 
     // 데스크톱 viewport (PDF 기준)
     await page.setViewport({ width: 1200, height: 900 });
-
-    // 관리자 세션 쿠키 전달 (인증 통과용)
-    if (cookieHeader) {
-      const cookies = cookieHeader.split(";").map((c) => {
-        const [name, ...rest] = c.trim().split("=");
-        return {
-          name,
-          value: rest.join("="),
-          domain: new URL(origin).hostname,
-          path: "/",
-        };
-      });
-      await page.setCookie(...cookies);
-    }
 
     await page.goto(reportUrl, {
       waitUntil: "networkidle2",
