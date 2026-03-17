@@ -40,7 +40,7 @@ import { buildActionRoadmapPrompt } from "../prompts/sections/action-roadmap.ts"
 import { buildMajorExplorationPrompt } from "../prompts/sections/major-exploration.ts";
 import { buildConsultantReviewPrompt } from "../prompts/sections/consultant-review.ts";
 
-import type { GeminiClient, GeminiModelId } from "./gemini-client.ts";
+import type { GeminiClient } from "./gemini-client.ts";
 import {
   preprocess,
   buildUniversityCandidatesText,
@@ -66,19 +66,6 @@ const EMPTY_SCHEMA = {} as never;
 
 // Flash: thinking OFF (타임아웃 방지, 스키마 준수는 프롬프트로 강제)
 const THINKING_BUDGET = 0;
-
-// ─── 모델 혼합 전략: 복잡한 추론이 필요한 태스크만 Flash, 나머지는 Flash Lite ───
-const FLASH_TASKS = new Set([
-  "phase2",
-  "competencyScore",
-  "admissionPrediction",
-  "admissionStrategy",
-  "subjectAnalysis",
-  "consultantReview",
-]);
-
-const getModelForTask = (taskId: string): GeminiModelId =>
-  FLASH_TASKS.has(taskId) ? "gemini-2.5-flash" : "gemini-2.5-flash-lite";
 
 // ─── Wave 0: 전처리 (Gemini 호출 없음) ───
 
@@ -137,18 +124,12 @@ export const executeTask = async (
   const sections = [...(state.completedSections ?? [])];
   const isMedical = isMedicalMajor(studentInfo.targetDepartment ?? "");
 
-  const modelId = getModelForTask(taskId);
-
-  const callGemini = async <T>(
-    prompt: string,
-    overrideModel?: GeminiModelId
-  ): Promise<T> => {
+  const callGemini = async <T>(prompt: string): Promise<T> => {
     const result = await client.call<T>({
       systemInstruction: systemPrompt,
       prompt,
       responseSchema: EMPTY_SCHEMA,
       thinkingBudget: THINKING_BUDGET,
-      modelId: overrideModel ?? modelId,
     });
     return result.data;
   };
