@@ -34,10 +34,10 @@ const FEATURES: ComparisonFeature[] = [
     premium: "10과목+",
   },
   {
-    name: "면접 질문",
-    lite: "기본",
-    standard: "기본",
-    premium: "+ 모범 답변",
+    name: "예상 면접 질문",
+    lite: "3개",
+    standard: "5개 + 출제 의도",
+    premium: "8개 + 모범 답변",
   },
   { name: "AI 학과 추천", lite: true, standard: true, premium: true },
   {
@@ -49,10 +49,9 @@ const FEATURES: ComparisonFeature[] = [
   {
     name: "세특 주제 추천",
     lite: false,
-    standard: "5개",
+    standard: "3개",
     premium: "5개 + 활동 설계",
   },
-  { name: "등급 변화 가능성 분석", lite: false, standard: true, premium: true },
   {
     name: "부족한 부분 + 보완 전략",
     lite: false,
@@ -60,19 +59,12 @@ const FEATURES: ComparisonFeature[] = [
     premium: true,
   },
   {
-    name: "입시 전략 + 지원 조합 시뮬레이션",
+    name: "입시 전략 + 지원 조합 추천",
     lite: false,
     standard: false,
     premium: true,
   },
   { name: "실행 로드맵", lite: false, standard: false, premium: true },
-  {
-    name: "대학별 학종 가이드 매칭",
-    lite: false,
-    standard: false,
-    premium: true,
-  },
-  { name: "과목별 평가 영향도", lite: false, standard: false, premium: true },
   {
     name: "전임 컨설턴트 2차 검수",
     lite: true,

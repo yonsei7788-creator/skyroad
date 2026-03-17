@@ -40,12 +40,12 @@ const PLANS: Plan[] = [
       { text: "성적 분석 + 권장과목 이수 분석", included: true },
       { text: "출결 · 창체 · 행동특성 분석", included: true },
       { text: "교과 세특 분석 (5과목)", included: true },
-      { text: "예상 면접 질문", included: true },
+      { text: "예상 면접 질문 3개", included: true },
       { text: "AI 학과 추천", included: true },
       { text: "전임 컨설턴트 2차 검수", included: true },
       { text: "전형별 합격 예측", included: false },
       { text: "세특 주제 추천", included: false },
-      { text: "입시 전략 + 지원 조합 시뮬레이션", included: false },
+      { text: "부족한 부분 + 보완 전략", included: false },
     ],
   },
   {
@@ -62,13 +62,13 @@ const PLANS: Plan[] = [
       { text: "Lite Report 전체 포함", included: true },
       { text: "교과 세특 분석 확장 (7과목)", included: true },
       { text: "전형별 합격 예측 (학종/교과/정시)", included: true },
-      { text: "세특 주제 추천 5개", included: true },
-      { text: "등급 변화 가능성 분석", included: true },
+      { text: "세특 주제 추천 3개", included: true },
+      { text: "예상 면접 질문 5개 + 출제 의도", included: true },
       { text: "전임 컨설턴트 2차 검수", included: true },
       { text: "부족한 부분 + 보완 전략", included: false },
-      { text: "입시 전략 + 지원 조합 시뮬레이션", included: false },
+      { text: "입시 전략 + 지원 조합 추천", included: false },
       { text: "실행 로드맵", included: false },
-      { text: "면접 심화 대비 + 모범 답변", included: false },
+      { text: "면접 모범 답변 + 꼬리 질문", included: false },
     ],
   },
   {
@@ -85,13 +85,11 @@ const PLANS: Plan[] = [
       { text: "Standard Report 전체 포함", included: true },
       { text: "교과 세특 정밀 분석 (10과목+)", included: true },
       { text: "부족한 부분 + 보완 전략", included: true },
-      { text: "입시 전략 + 지원 조합 시뮬레이션", included: true },
+      { text: "입시 전략 + 지원 조합 추천", included: true },
       { text: "실행 로드맵 (학기별 계획)", included: true },
-      { text: "면접 심화 대비 + 모범 답변", included: true },
-      { text: "대학별 학종 가이드 매칭", included: true },
-      { text: "과목별 평가 영향도 분석", included: true },
+      { text: "세특 주제 추천 5개 + 활동 설계", included: true },
+      { text: "면접 모범 답변 + 꼬리 질문", included: true },
       { text: "전임 컨설턴트 2차 검수", included: true },
-      { text: "커트라인 실데이터 기반 분석", included: true },
     ],
   },
 ];
@@ -102,7 +100,11 @@ export const PlanCards = () => {
       <div className={styles.container}>
         <div className={styles.cardsGrid}>
           {PLANS.map((plan, index) => (
-            <FadeIn key={plan.name} delay={index * 0.12}>
+            <FadeIn
+              key={plan.name}
+              delay={index * 0.12}
+              className={styles.cardWrapper}
+            >
               <div
                 className={`${styles.card} ${plan.popular ? styles.cardPopular : ""}`}
               >
