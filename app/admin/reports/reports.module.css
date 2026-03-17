@@ -5,6 +5,8 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 32px 24px;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .header {
@@ -816,11 +818,11 @@
 
 .mobileSectionSelect {
   width: 100%;
-  height: 44px;
+  height: 48px;
   padding: 0 36px 0 12px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 500;
   color: var(--color-neutral-800);
   background: #ffffff;
@@ -844,6 +846,8 @@
 @media (max-width: 768px) {
   .container {
     padding: 20px 16px;
+    width: 100%;
+    max-width: 100%;
   }
 
   .filters {
@@ -854,14 +858,28 @@
   .statusTabs {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .statusTabs::-webkit-scrollbar {
+    display: none;
   }
 
   .searchWrapper {
     max-width: none;
+    width: 100%;
+  }
+
+  .searchInput {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .planSelect {
     width: 100%;
+    box-sizing: border-box;
   }
 
   .mockTestSection {
@@ -888,6 +906,11 @@
     flex-direction: column;
     gap: 8px;
   }
+
+  .card {
+    width: 100%;
+    box-sizing: border-box;
+  }
 }
 
 /* ============================================
@@ -897,9 +920,9 @@
   .reviewLayout {
     display: flex;
     flex-direction: column;
-    height: auto;
-    min-height: 100vh;
-    overflow: visible;
+    height: calc(100vh - var(--admin-header-height, 56px));
+    height: calc(100dvh - var(--admin-header-height, 56px));
+    overflow: hidden;
   }
 
   .reviewLayout.previewHidden {
@@ -912,6 +935,7 @@
     flex-wrap: wrap;
     gap: 8px;
     padding: 10px 16px;
+    flex-shrink: 0;
   }
 
   .topBarTitle {
@@ -943,29 +967,38 @@
     display: block;
     padding: 0 16px;
     margin: 12px 0 4px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 50;
   }
 
-  /* Center editor — full width */
+  /* Center editor — scrollable area */
   .centerEditor {
     padding: 16px;
     flex: 1;
-    overflow: visible;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
   }
 
   .sectionEditorTitle {
     font-size: 1rem;
   }
 
-  /* Hide preview panel */
+  /* Hide preview panel visually but keep renderable for PDF generation */
   .rightPreview {
-    display: none !important;
+    position: fixed;
+    left: -9999px;
+    top: 0;
+    width: 900px;
+    overflow: auto;
   }
 
   .expandPreviewButton {
     display: none;
   }
 
-  /* Mobile bottom action bar */
+  /* Mobile bottom action bar — fixed at bottom */
   .mobileActionBar {
     display: flex;
     align-items: center;
@@ -974,8 +1007,7 @@
     padding-bottom: max(12px, env(safe-area-inset-bottom));
     border-top: 1px solid var(--color-border);
     background: #ffffff;
-    position: sticky;
-    bottom: 0;
+    flex-shrink: 0;
     z-index: 20;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
   }

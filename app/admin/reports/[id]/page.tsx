@@ -17,6 +17,7 @@ import { Badge } from "@/app/admin/_components";
 import { ReportRenderer } from "@/app/report/_templates";
 import { SingleSectionEditor } from "../_components/ReportContentEditor";
 import { SectionNav } from "../_components/SectionNav";
+import { MobileSectionSelect } from "../_components/MobileSectionSelect";
 import { generatePdfFromElement, downloadPdfBlob } from "@/libs/pdf/generate";
 import type { PdfProgress } from "@/libs/pdf/generate";
 import { createClient as createSupabaseClient } from "@/libs/supabase/client";
@@ -175,8 +176,17 @@ const ReportDetailPage = () => {
 
   /** PDF 생성 — 다운로드와 이메일 발송 모두 이 함수를 사용 */
   const generatePdf = async (): Promise<Blob | null> => {
+    // 모바일에서 미리보기가 숨겨진 경우 잠시 활성화
+    const wasHidden = !showPreview;
+    if (wasHidden) {
+      setShowPreview(true);
+      // DOM 업데이트 대기
+      await new Promise((r) => setTimeout(r, 500));
+    }
+
     if (!previewRef.current) {
       addToast("미리보기 패널을 열어주세요.", "error");
+      if (wasHidden) setShowPreview(false);
       return null;
     }
 
@@ -193,6 +203,7 @@ const ReportDetailPage = () => {
       return null;
     } finally {
       setPdfProgress(null);
+      if (wasHidden) setShowPreview(false);
     }
   };
 
@@ -645,18 +656,12 @@ const ReportDetailPage = () => {
       {/* Mobile Section Selector */}
       {sections.length > 0 && (
         <div className={styles.mobileSectionSelector}>
-          <select
-            className={styles.mobileSectionSelect}
-            value={activeSectionIndex}
-            onChange={(e) => handleSectionSelect(Number(e.target.value))}
-          >
-            {sections.map((s, i) => (
-              <option key={s.sectionId} value={i}>
-                {String(i + 1).padStart(2, "0")}. {s.title || s.sectionId}
-                {checkedSections.has(s.sectionId) ? " \u2713" : ""}
-              </option>
-            ))}
-          </select>
+          <MobileSectionSelect
+            sections={sections}
+            activeIndex={activeSectionIndex}
+            onSelect={handleSectionSelect}
+            checkedSections={checkedSections}
+          />
         </div>
       )}
 
@@ -753,6 +758,18 @@ const ReportDetailPage = () => {
             <Save size={14} />
           )}
           저장
+        </button>
+        <button
+          className={styles.saveButton}
+          onClick={handleExportPdf}
+          disabled={exporting || submitting}
+        >
+          {exporting ? (
+            <Loader2 size={14} className={styles.spinner} />
+          ) : (
+            <Download size={14} />
+          )}
+          PDF
         </button>
         {isDelivered ? (
           <button
