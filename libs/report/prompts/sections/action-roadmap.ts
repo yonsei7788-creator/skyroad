@@ -82,18 +82,99 @@ export const buildActionRoadmapPrompt = (
         ? `\n- 이 학생은 3학년입니다. 현재 시점에서 실행 가능한 전략만 제시하세요.`
         : "";
 
+  // 현재 시점 기준 phase 예시를 동적 생성
+  const examplePhases = (() => {
+    const m = currentMonth;
+    const y = currentYear;
+    if (m >= 3 && m <= 6) {
+      // 1학기 중
+      return [
+        {
+          phase: "1학기 핵심 활동기",
+          period: `${y}년 ${m}~7월`,
+          goals: ["세특 주제 실행", "동아리 심화 활동"],
+          tasks: [
+            "수업 중 탐구 발표 주제 선정 및 실행",
+            "동아리에서 전공 관련 프로젝트 수행",
+          ],
+        },
+        {
+          phase: "여름방학 집중기",
+          period: `${y}년 7~8월`,
+          goals: ["2학기 세특 사전 준비", "부족 과목 보완"],
+          tasks: ["2학기 탐구 보고서 초안 작성", "취약 과목 기초 개념 정리"],
+        },
+        {
+          phase: "2학기 마무리",
+          period: `${y}년 9~12월`,
+          goals: ["생기부 스토리라인 완성"],
+          tasks: ["2학기 세특에서 1학기와 연결되는 심화 탐구 수행"],
+        },
+      ];
+    } else if (m >= 7 && m <= 8) {
+      // 여름방학
+      return [
+        {
+          phase: "여름방학 집중기",
+          period: `${y}년 ${m}~8월`,
+          goals: ["2학기 세특 사전 준비"],
+          tasks: ["탐구 보고서 초안 작성", "관련 문헌 조사"],
+        },
+        {
+          phase: "2학기 실행기",
+          period: `${y}년 9~12월`,
+          goals: ["세특 심화 탐구 완성"],
+          tasks: ["수업 중 탐구 발표 실행", "동아리 프로젝트 마무리"],
+        },
+      ];
+    } else if (m >= 9 && m <= 12) {
+      // 2학기
+      return [
+        {
+          phase: "2학기 핵심 활동기",
+          period: `${y}년 ${m}~12월`,
+          goals: ["세특 스토리라인 완성"],
+          tasks: ["수업 중 심화 탐구 발표", "동아리 최종 결과물 정리"],
+        },
+        {
+          phase: "겨울방학 준비기",
+          period: `${y}년 12월~${y + 1}년 2월`,
+          goals: ["다음 학년 사전 준비"],
+          tasks: ["부족 과목 기초 정리", "다음 학기 탐구 주제 사전 조사"],
+        },
+      ];
+    } else {
+      // 1~2월 (겨울방학)
+      return [
+        {
+          phase: "겨울방학 준비기",
+          period: `${y}년 ${m}~2월`,
+          goals: ["새 학기 탐구 주제 구체화"],
+          tasks: ["관련 문헌 사전 조사", "탐구 보고서 초안 설계"],
+        },
+        {
+          phase: "1학기 실행기",
+          period: `${y}년 3~7월`,
+          goals: ["세특 주제 실행"],
+          tasks: ["수업 중 탐구 발표 수행", "동아리 심화 활동 연계"],
+        },
+      ];
+    }
+  })();
+
   return `## ⚠️⚠️⚠️ 현재 날짜: ${currentYear}년 ${currentMonth}월 (최우선 — 위반 시 품질 실패)${grade ? `\n- 학생 학년: ${grade}학년` : ""}
 
 ### 과거 날짜 절대 금지 규칙
 - ⛔ phases의 period에 **${currentYear}년 ${currentMonth}월 이전** 날짜를 사용하면 품질 실패입니다.
 - ⛔ "${currentYear}년 1~2월", "${currentYear - 1}년" 등 이미 지난 시기는 절대 포함하면 안 됩니다.
-- ⛔ "방학 사전 준비"를 ${currentMonth}월에 제안하면 안 됩니다 — 이미 개학했습니다.
+- ⛔ "방학 사전 준비"라는 이름으로 이미 지난 방학 시기를 제안하면 안 됩니다.
 - ✅ 첫 번째 phase의 period는 반드시 **"${currentYear}년 ${currentMonth}월~"** 이후부터 시작합니다.
-- ✅ 예시: "${currentYear}년 ${currentMonth}~${Math.min(currentMonth + 3, 12)}월" 등
 
-### 출력 전 자기 검증
-JSON을 출력하기 전에 phases 배열의 모든 period를 점검하세요:
-- period에 "${currentYear}년 ${currentMonth}월" 이전 날짜가 포함되면 해당 phase를 삭제하거나 수정하세요.
+### 출력 전 자기 검증 (반드시 수행)
+JSON을 출력하기 직전에 phases 배열의 **모든 period를 하나씩** 점검하세요:
+1. period에 포함된 시작 월이 ${currentMonth}월 이상인가? → 아니면 삭제 또는 수정
+2. period에 ${currentYear - 1}년이 포함되어 있지 않은가? → 포함되면 삭제
+3. 첫 번째 phase가 현재 시점(${currentYear}년 ${currentMonth}월)부터 시작하는가?
 ${gradeContext}
 
 ${
@@ -115,21 +196,8 @@ ${
 {
   "sectionId": "actionRoadmap",
   "title": "실행 로드맵",
-  "completionStrategy": "3학년 1학기에 사회과학 심화 탐구를 중심으로...",
-  "phases": [
-    {
-      "phase": "방학 사전 준비",
-      "period": "2026년 1~2월",
-      "goals": ["복지 정책 탐구 주제 구체화", "관련 문헌 사전 조사"],
-      "tasks": ["지역 복지 정책 비교 분석 보고서 초안 작성", "통계청 KOSIS 데이터 수집"]
-    },
-    {
-      "phase": "3학년 1학기",
-      "period": "2026년 3~7월",
-      "goals": ["세특 주제 실행", "동아리 심화 활동"],
-      "tasks": ["사회·문화 수업에서 복지 정책 탐구 발표", "동아리에서 정책 제안서 작성"]
-    }
-  ],
+  "completionStrategy": "1학기에 사회과학 심화 탐구를 중심으로...",
+  "phases": ${JSON.stringify(examplePhases, null, 4)},
   "prewriteProposals": ["지역 복지 정책 비교 분석 보고서"],
   "evaluationWritingGuide": {
     "structure": ["활동동기", "주제", "방법", "내용", "결과", "소감"],
