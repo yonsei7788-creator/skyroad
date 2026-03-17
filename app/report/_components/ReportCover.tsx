@@ -29,6 +29,7 @@ export const ReportCover = ({ meta }: ReportCoverProps) => {
         isPremium ? styles.coverPremiumBg : ""
       } ${isStandard ? styles.coverStandardBg : ""}`}
       data-page
+      data-cover
     >
       {/* Geometric corner decorations */}
       <div className={styles.coverCornerTR} />

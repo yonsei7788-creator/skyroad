@@ -193,6 +193,7 @@ export const AutoPaginatedSection = ({
   startPageNumber = 0,
 }: AutoPaginatedSectionProps) => {
   const measureRef = useRef<HTMLDivElement>(null);
+  const prevHeight = useRef<number>(0);
   const [slices, setSlices] = useState<PageSlice[]>([]);
   const [measured, setMeasured] = useState(false);
 
@@ -223,14 +224,40 @@ export const AutoPaginatedSection = ({
   }, []);
 
   useLayoutEffect(() => {
-    // 폰트 로딩 완료 후 측정하여 높이 오차 방지
-    if (document.fonts?.ready) {
-      document.fonts.ready.then(() => {
-        requestAnimationFrame(computeSlices);
-      });
-    } else {
-      requestAnimationFrame(computeSlices);
-    }
+    const container = measureRef.current;
+    if (!container) return;
+
+    let cancelled = false;
+
+    const loadFontsAndMeasure = async () => {
+      // 측정 컨테이너의 실제 텍스트를 추출하여
+      // 해당 문자에 필요한 dynamic-subset 폰트를 명시적으로 로드
+      const textContent = container.textContent ?? "";
+      if (textContent && document.fonts?.load) {
+        await document.fonts.load('16px "Pretendard Variable"', textContent);
+      }
+      await document.fonts.ready;
+      // 폰트 로드 후 reflow 반영을 위해 2프레임 대기
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      );
+      if (!cancelled) computeSlices();
+
+      // Safari는 dynamic-subset 폰트 로드가 지연될 수 있으므로
+      // 추가 대기 후 높이가 변했으면 재측정
+      await new Promise<void>((resolve) => setTimeout(resolve, 300));
+      if (!cancelled && container.scrollHeight !== prevHeight.current) {
+        prevHeight.current = container.scrollHeight;
+        computeSlices();
+      }
+    };
+
+    prevHeight.current = container.scrollHeight;
+    loadFontsAndMeasure();
+
+    return () => {
+      cancelled = true;
+    };
   }, [children, computeSlices]);
 
   return (

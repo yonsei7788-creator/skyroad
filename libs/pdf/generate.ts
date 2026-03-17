@@ -120,25 +120,19 @@ const forceDesktopStyles = (container: HTMLElement): void => {
       }
     }
 
-    // flex-direction: column → row 복원 (프로필 헤더 등)
-    // 단, 의도적 column 레이아웃(카드 내부 등)과 구분하기 위해
-    // 직접 자식이 2개 이상이고 gap이 있는 경우만 대상
+    // flex-direction: column → row 복원 (프로필 identity 카드)
+    // 모바일 반응형에서 column으로 바뀐 identity 카드만 row로 복원.
+    // profileTypeInfo 등 내부 요소는 column이 의도된 레이아웃이므로 제외.
     if (
       computed.display === "flex" &&
       computed.flexDirection === "column" &&
       el.children.length >= 2
     ) {
-      // data-page 직계 자식이 아닌 중간 레이아웃 요소만 대상
-      // (섹션 콘텐츠 래퍼는 column이 맞으므로 제외)
       const parent = el.parentElement;
       if (parent && !parent.hasAttribute("data-page")) {
-        // class 이름에 identity/profile/stats가 포함된 경우만 복원
         const cls = el.className.toLowerCase();
-        if (
-          cls.includes("identity") ||
-          cls.includes("profile") ||
-          cls.includes("stats")
-        ) {
+        // identity 카드만 대상 (profileTypeInfo 등 하위 요소 제외)
+        if (cls.includes("identity")) {
           el.style.flexDirection = "row";
           el.style.alignItems = "center";
         }
@@ -221,7 +215,13 @@ const createOffscreenContainer = (source: HTMLElement): HTMLElement => {
     page.style.boxShadow = "none";
     page.style.margin = "0";
     page.style.borderRadius = "0";
-    page.style.padding = "20mm 18mm";
+
+    // 커버 페이지는 고유 padding 유지, 일반 페이지만 표준 padding 적용
+    if (page.hasAttribute("data-cover")) {
+      page.style.padding = "48mm 36mm 36mm";
+    } else {
+      page.style.padding = "20mm 18mm";
+    }
   }
 
   // 모바일 반응형 CSS 영향 제거: 원본(source)의 PC 스타일을 읽어서 클론에 적용
@@ -267,9 +267,14 @@ export const generatePdfFromElement = async (
   const offscreen = createOffscreenContainer(container);
 
   try {
-    // 오프스크린 컨테이너의 모든 문자에 대해 폰트 서브셋 로딩 트리거
-    // Pretendard dynamic-subset은 사용된 문자만 로드하므로
-    // 오프스크린에 텍스트가 있어야 해당 서브셋이 로드됨
+    // 오프스크린 컨테이너의 실제 텍스트로 dynamic-subset 폰트를 명시적으로 로드
+    const textContent = offscreen.textContent ?? "";
+    if (textContent) {
+      await document.fonts.load(
+        `16px ${PDF_FONT_FAMILY.split(",")[0]}`,
+        textContent
+      );
+    }
     await document.fonts.ready;
 
     // 레이아웃 재계산을 위해 두 프레임 대기 (폰트 로드 후 reflow 필요)
