@@ -77,7 +77,7 @@ export const buildMajorExplorationPrompt = (
 
 ### fitScore 산정 시 가중치
 - 세특/창체에서의 전공 관련 탐구 깊이: 40%
-- 교과 선택의 전공 적합성: 25%
+- 교과 선택의 진로 연관성: 25%
 - 역량 프로필 매칭: 20%
 - 성적 경쟁력: 15%
 

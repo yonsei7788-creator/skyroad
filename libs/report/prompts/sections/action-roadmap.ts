@@ -8,6 +8,7 @@ export interface ActionRoadmapPromptInput {
   studentProfile: string;
   currentDate?: string;
   studentGrade?: number;
+  isMedical?: boolean;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -81,13 +82,30 @@ export const buildActionRoadmapPrompt = (
         ? `\n- 이 학생은 3학년입니다. 현재 시점에서 실행 가능한 전략만 제시하세요.`
         : "";
 
-  return `## ⚠️ 현재 날짜: ${currentYear}년 ${currentMonth}월${grade ? `\n- 학생 학년: ${grade}학년` : ""}
-- 모든 타임라인(period)은 **${currentYear}년 ${currentMonth}월 이후**부터 시작해야 합니다.
-- ${currentYear - 1}년 이전의 날짜를 period에 사용하면 안 됩니다.
-- ❌ 현재 날짜 기준 이미 지난 시기를 언급하지 마세요 (예: ${currentMonth}월인데 "방학 사전 준비").
-- 예시: 현재 ${currentYear}년 ${currentMonth}월이면 → "${currentYear}년 ${currentMonth}~${currentMonth + 2}월" 등으로 작성${gradeContext}
+  return `## ⚠️⚠️⚠️ 현재 날짜: ${currentYear}년 ${currentMonth}월 (최우선 — 위반 시 품질 실패)${grade ? `\n- 학생 학년: ${grade}학년` : ""}
 
-## 작업
+### 과거 날짜 절대 금지 규칙
+- ⛔ phases의 period에 **${currentYear}년 ${currentMonth}월 이전** 날짜를 사용하면 품질 실패입니다.
+- ⛔ "${currentYear}년 1~2월", "${currentYear - 1}년" 등 이미 지난 시기는 절대 포함하면 안 됩니다.
+- ⛔ "방학 사전 준비"를 ${currentMonth}월에 제안하면 안 됩니다 — 이미 개학했습니다.
+- ✅ 첫 번째 phase의 period는 반드시 **"${currentYear}년 ${currentMonth}월~"** 이후부터 시작합니다.
+- ✅ 예시: "${currentYear}년 ${currentMonth}~${Math.min(currentMonth + 3, 12)}월" 등
+
+### 출력 전 자기 검증
+JSON을 출력하기 전에 phases 배열의 모든 period를 점검하세요:
+- period에 "${currentYear}년 ${currentMonth}월" 이전 날짜가 포함되면 해당 phase를 삭제하거나 수정하세요.
+${gradeContext}
+
+${
+  input.isMedical
+    ? `## ⚠️ 메디컬 계열 실행 로드맵 규칙 (반드시 적용)
+- 메디컬은 **정시 비중 40% 이상**. 로드맵에 수능 준비 일정을 반드시 포함하세요.
+- **영어 1등급 확보**를 위한 학습 계획을 phases에 포함하세요.
+- 수학·과학 핵심 과목의 성적 관리 + 세특 심화 탐구를 병행하는 계획을 설계하세요.
+- 학종 준비와 정시 준비를 동시에 진행하는 현실적 시간 배분을 제시하세요.
+`
+    : ""
+}## 작업
 학생을 위한 구체적 실행 로드맵을 작성하세요.
 
 ## 출력 JSON 스키마

@@ -6,6 +6,7 @@ export interface InterviewPrepPromptInput {
   subjectAnalysisResult: string;
   studentProfile: string;
   academicData: string;
+  isMedical?: boolean;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -39,7 +40,33 @@ export const buildInterviewPrepPrompt = (
   input: InterviewPrepPromptInput,
   plan: ReportPlan
 ): string => {
-  return `## 작업
+  const medicalInterviewContext = input.isMedical
+    ? `## ⚠️ 메디컬 계열 면접 특화 가이드 (반드시 적용)
+
+이 학생은 의·치·한·약·수 계열(메디컬) 지원 학생입니다.
+
+### 메디컬 면접의 특수성
+메디컬 면접은 일반 학종 면접과 다릅니다. 반드시 아래 유형의 질문을 포함하세요:
+
+1. **의학 윤리/딜레마 질문** (1개 이상 필수):
+   - 예: "연명치료 중단에 대한 의견", "의료 자원 배분의 공정성", "환자의 자기결정권과 의사의 판단이 충돌할 때"
+   - 생기부에서 윤리적 사고를 보여준 활동이 있으면 그것과 연결하세요.
+
+2. **전공 이해도 질문** (1개 이상 필수):
+   - 생기부의 과학 탐구 활동에서 "왜 이 실험을 했는지", "결과의 한계를 어떻게 해석하는지"
+   - 메디컬 지원자에게 과학적 사고력은 핵심 평가 요소입니다.
+
+3. **인성/공감 능력 질문**:
+   - 의사/약사/수의사에게 필요한 공감 능력, 소통 능력 관련 질문
+   - 생기부에서 봉사, 협동, 배려 사례가 있으면 심화 질문으로 연결
+
+4. **진로 변경 질문** (해당 시):
+   - 진로가 변경된 이력이 있으면 "왜 메디컬에서 다른 분야로/다른 분야에서 메디컬로 변경했는가" 질문 포함
+
+`
+    : "";
+
+  return `${medicalInterviewContext}## 작업
 학생의 생기부를 바탕으로 예상 면접 질문을 생성하세요.
 
 ## 출력 JSON 스키마

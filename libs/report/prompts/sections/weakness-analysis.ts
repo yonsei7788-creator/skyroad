@@ -6,6 +6,7 @@ export interface WeaknessAnalysisPromptInput {
   competencyExtraction: string;
   academicAnalysis: string;
   studentProfile: string;
+  isMedical?: boolean;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -42,7 +43,22 @@ export const buildWeaknessAnalysisPrompt = (
   input: WeaknessAnalysisPromptInput,
   plan: ReportPlan
 ): string => {
-  return `## 작업
+  const medicalWeaknessContext = input.isMedical
+    ? `## ⚠️ 메디컬 계열 약점 분석 기준 (반드시 적용)
+
+이 학생은 의·치·한·약·수 계열(메디컬) 지원 학생입니다.
+
+### 메디컬 특화 약점 체크리스트 (해당 시 반드시 포함)
+- **영어 2등급 이하**: 메디컬에서 영어 1등급은 사실상 필수. 2등급 이하이면 priority "high"로 반드시 포함.
+- **수학·과학 핵심 과목 미이수 또는 저성적**: 미적분(2015)/미적분Ⅰ·Ⅱ(2022), 생명과학Ⅱ/화학Ⅱ(2015) 또는 대응 2022 과목 미이수 시 priority "high".
+- **과학 세특의 탐구 깊이 부족**: 실험 기반 탐구(가설→실험→결과→한계인식)가 아닌 단순 조사 수준이면 약점으로 식별.
+- **모의고사 미비**: 메디컬은 정시 비중 40% 이상. 모의고사 데이터가 없거나 수능 준비가 미흡하면 약점으로 식별.
+- **진로 변경 이력 미설명**: 메디컬→비메디컬 또는 비메디컬→메디컬 변경 시 학생부에 변경 계기 설명이 없으면 약점.
+
+`
+    : "";
+
+  return `${medicalWeaknessContext}## 작업
 학생의 생기부에서 부족한 부분을 구체적으로 식별하고 보완 방향을 제시하세요.
 
 ## 단계별 분석 절차
@@ -85,6 +101,12 @@ export const buildWeaknessAnalysisPrompt = (
 
 이 과목들은 성실성 확인 수준이며, 사정관이 이 과목 성적으로 감점하지 않습니다.
 약점 분석은 핵심 교과(국수영 + 전공 관련 탐구과목)에 집중하세요.
+
+## ⛔ 사실 검증 원칙 (최우선 규칙)
+- 약점을 식별할 때 **반드시 제공된 성적 데이터(preprocessedAcademicData, rawAcademicData)에서 실제 등급/점수를 확인**한 후에만 언급하세요.
+- **성적 데이터에 없는 정보를 추측하거나 일반화하면 안 됩니다.** 예: 수학 관련 과목 중 일부만 3등급인데 "수학 과목이 3~4등급"이라고 일반화하면 안 됩니다.
+- evidence 필드에는 **실제 과목명과 등급/점수를 구체적으로 인용**하세요. 예: "2학년 물리학Ⅰ 1학기 3등급, 2학기 3등급"
+- 제공된 데이터에서 확인할 수 없는 약점은 절대 포함하지 마세요.
 
 ## 부족 유형 체크리스트
 다음 유형의 약점이 존재하는지 확인하고, 해당되는 경우 포함하세요:
