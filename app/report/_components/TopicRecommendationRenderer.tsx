@@ -23,7 +23,7 @@ export const TopicRecommendationRenderer = ({
           <thead>
             <tr>
               <th>주제</th>
-              <th className={styles.tableAlignCenter}>엮으면 좋은 과목</th>
+              <th className={styles.tableAlignCenter}>엮으면 좋은 과목 영역</th>
               {(data.topics ?? [])[0]?.difficulty && (
                 <th className={styles.tableAlignCenter}>난이도</th>
               )}
