@@ -2,7 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  serverExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core"],
+  serverExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
+  outputFileTracingIncludes: {
+    "/api/admin/reports/\\[id\\]/pdf": [
+      "./node_modules/@sparticuz/chromium/bin/**",
+      "./node_modules/.pnpm/@sparticuz+chromium@*/node_modules/@sparticuz/chromium/bin/**",
+    ],
+  },
   images: {
     formats: ["image/avif", "image/webp"],
   },
