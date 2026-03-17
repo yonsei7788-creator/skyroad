@@ -4,11 +4,9 @@ import type { ReportPlan } from "../../types.ts";
 
 export interface AdmissionStrategyPromptInput {
   academicAnalysis: string;
-  admissionPredictionResult: string;
   universityCandidates: string;
   recommendedCourseMatch: string;
   studentProfile: string;
-  majorEvaluationContext?: string;
   gradingSystem?: "5등급제" | "9등급제";
   studentGrade: number;
   currentDate: string;
@@ -410,9 +408,6 @@ ${ADMISSION_CONTEXT}
 ## 코드 산정 대학 후보군
 ${input.universityCandidates}
 
-## 합격 예측 결과
-${input.admissionPredictionResult}
-
 ## 권장 이수 과목 매칭
 ${input.recommendedCourseMatch}
 → 학생의 목표 계열 대비 권장과목 이수율을 입시 전략에 반영하세요.
@@ -426,7 +421,6 @@ ${input.academicAnalysis}
 ### 학생 프로필
 ${input.studentProfile}
 
-${input.majorEvaluationContext ? `### 학과 맞춤 평가 기준 (입학사정관 관점)\n${input.majorEvaluationContext}\n\n⚠️ 대학 추천 시 이 계열의 핵심 교과 성취도와 관련 활동 일치도를 고려하여 학생의 강점/약점을 분석하세요.` : ""}
 
 ## ⛔ 출력 전 자기 검증 (반드시 수행)
 JSON을 출력하기 전에 아래 항목을 점검하세요. 하나라도 위반하면 수정 후 출력합니다:

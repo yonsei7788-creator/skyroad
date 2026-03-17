@@ -4,7 +4,6 @@ export interface StudentTypeClassificationInput {
   competencyExtraction: string;
   preprocessedAcademicData: string;
   studentProfile: string;
-  majorEvaluationContext?: string;
 }
 
 export const buildStudentTypeClassificationPrompt = (
@@ -232,8 +231,7 @@ ${input.preprocessedAcademicData}
 
 ### 학생 프로필
 ${input.studentProfile}
-
-${input.majorEvaluationContext ? `### 학과 맞춤 평가 기준 (입학사정관 관점)\n${input.majorEvaluationContext}` : ""}`;
+`;
 };
 
 export interface StudentTypeClassificationOutput {

@@ -40,8 +40,12 @@ import { buildActionRoadmapPrompt } from "../prompts/sections/action-roadmap.ts"
 import { buildMajorExplorationPrompt } from "../prompts/sections/major-exploration.ts";
 import { buildConsultantReviewPrompt } from "../prompts/sections/consultant-review.ts";
 
-import type { GeminiClient } from "./gemini-client.ts";
-import { preprocess, buildUniversityCandidatesText } from "./preprocessor.ts";
+import type { GeminiClient, GeminiModelId } from "./gemini-client.ts";
+import {
+  preprocess,
+  buildUniversityCandidatesText,
+  rebuildRecommendedCourseMatchText,
+} from "./preprocessor.ts";
 import { loadRecordData } from "./load-record.ts";
 import type { WaveState } from "./wave-state.ts";
 import {
@@ -62,6 +66,19 @@ const EMPTY_SCHEMA = {} as never;
 
 // Flash: thinking OFF (타임아웃 방지, 스키마 준수는 프롬프트로 강제)
 const THINKING_BUDGET = 0;
+
+// ─── 모델 혼합 전략: 복잡한 추론이 필요한 태스크만 Flash, 나머지는 Flash Lite ───
+const FLASH_TASKS = new Set([
+  "phase2",
+  "competencyScore",
+  "admissionPrediction",
+  "admissionStrategy",
+  "subjectAnalysis",
+  "consultantReview",
+]);
+
+const getModelForTask = (taskId: string): GeminiModelId =>
+  FLASH_TASKS.has(taskId) ? "gemini-2.5-flash" : "gemini-2.5-flash-lite";
 
 // ─── Wave 0: 전처리 (Gemini 호출 없음) ───
 
@@ -120,12 +137,18 @@ export const executeTask = async (
   const sections = [...(state.completedSections ?? [])];
   const isMedical = isMedicalMajor(studentInfo.targetDepartment ?? "");
 
-  const callGemini = async <T>(prompt: string): Promise<T> => {
+  const modelId = getModelForTask(taskId);
+
+  const callGemini = async <T>(
+    prompt: string,
+    overrideModel?: GeminiModelId
+  ): Promise<T> => {
     const result = await client.call<T>({
       systemInstruction: systemPrompt,
       prompt,
       responseSchema: EMPTY_SCHEMA,
       thinkingBudget: THINKING_BUDGET,
+      modelId: overrideModel ?? modelId,
     });
     return result.data;
   };
@@ -160,7 +183,6 @@ export const executeTask = async (
           competencyExtraction: JSON.stringify(competencyExtraction),
           preprocessedAcademicData: texts.preprocessedAcademicDataText,
           studentProfile: texts.studentProfileText,
-          majorEvaluationContext: texts.majorEvaluationContextText,
         })
       );
 
@@ -171,34 +193,42 @@ export const executeTask = async (
       stuTypeText: JSON.stringify(studentTypeClassification),
     };
 
-    // 3) 생기부 기반 계열 보정: detectedMajorGroup vs targetDepartment 비교
+    // 3) 생기부 기반 계열로 평가 기준 + 대학 후보군 항상 재생성
+    //    희망학과가 아닌, Phase 2에서 감지한 실제 강점 계열을 기준으로 함
     let correctedTexts = texts;
     const detected = competencyExtraction.detectedMajorGroup;
     if (detected) {
+      const detectedCriteria = findCriteriaByMajorGroup(detected);
+      const correctedContext = formatMajorEvaluationContext(
+        detectedCriteria,
+        `${detected} (생기부 분석 기반)`
+      );
+      const correctedCandidates = buildUniversityCandidatesText(
+        detected,
+        state.preprocessedData?.gradingSystem,
+        state.preprocessedData?.overallAverage
+      );
+      const correctedCourseMatch = rebuildRecommendedCourseMatchText(
+        detected,
+        state.preprocessedData!,
+        studentInfo.grade
+      );
+      correctedTexts = {
+        ...texts,
+        majorEvaluationContextText: correctedContext,
+        universityCandidatesText: correctedCandidates,
+        recommendedCourseMatchText: correctedCourseMatch,
+      };
+
       const targetDept = studentInfo.targetDepartment ?? "";
       const targetCriteria = matchMajorEvaluationCriteria(targetDept);
-      // detectedMajorGroup은 이미 계열명 → findCriteriaByMajorGroup으로 직접 조회
-      const detectedCriteria = findCriteriaByMajorGroup(detected);
-
       if (targetCriteria.majorGroup !== detectedCriteria.majorGroup) {
-        // 생기부 실제 강점 계열이 희망학과 계열과 다름 → 보정
-        const correctedContext = formatMajorEvaluationContext(
-          detectedCriteria,
-          `${detected} (생기부 분석 기반)`
-        );
-        // 대학 후보군도 생기부 기반 계열로 재생성
-        const correctedCandidates = buildUniversityCandidatesText(
-          detected,
-          state.preprocessedData?.gradingSystem,
-          state.preprocessedData?.overallAverage
-        );
-        correctedTexts = {
-          ...texts,
-          majorEvaluationContextText: correctedContext,
-          universityCandidatesText: correctedCandidates,
-        };
         console.log(
-          `[report:${reportId}] 계열 보정: ${targetCriteria.majorGroup}(희망) → ${detectedCriteria.majorGroup}(생기부 실제). 대학 후보군도 재생성. 근거: ${competencyExtraction.detectedMajorReason ?? ""}`
+          `[report:${reportId}] 계열 보정: ${targetCriteria.majorGroup}(희망) → ${detectedCriteria.majorGroup}(생기부 실제). 근거: ${competencyExtraction.detectedMajorReason ?? ""}`
+        );
+      } else {
+        console.log(
+          `[report:${reportId}] 생기부 기반 계열 적용: ${detectedCriteria.majorGroup}. 근거: ${competencyExtraction.detectedMajorReason ?? ""}`
         );
       }
     }
@@ -432,11 +462,9 @@ export const executeTask = async (
         buildAdmissionStrategyPrompt(
           {
             academicAnalysis: ser.acadSectionText!,
-            admissionPredictionResult: ser.admPredText ?? "null",
             universityCandidates: texts.universityCandidatesText,
             recommendedCourseMatch: texts.recommendedCourseMatchText,
             studentProfile: texts.studentProfileText,
-            majorEvaluationContext: texts.majorEvaluationContextText,
             gradingSystem: state.preprocessedData!.gradingSystem,
             studentGrade: studentInfo.grade,
             currentDate: new Date().toISOString().slice(0, 10),

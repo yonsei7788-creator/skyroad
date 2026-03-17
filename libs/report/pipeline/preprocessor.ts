@@ -763,7 +763,7 @@ const findMatchingMajor = (
   );
 };
 
-const matchRecommendedCourses = (
+export const matchRecommendedCourses = (
   generalSubjects: GeneralSubjectRow[],
   careerSubjects: CareerSubjectRow[],
   targetDept: string,
@@ -1463,4 +1463,53 @@ const formatTargetUniversities = (
   });
 
   return `## 유저 설정 희망대학\n${lines.join("\n")}`;
+};
+
+/**
+ * Phase 2 이후 생기부 기반 계열로 권장과목 매칭을 재생성한다.
+ * preprocessedData에 저장된 과목 데이터를 활용하여
+ * 희망학과가 아닌 detectedMajorGroup 기준으로 매칭한다.
+ */
+export const rebuildRecommendedCourseMatchText = (
+  detectedMajorGroup: string,
+  preData: PreprocessedData,
+  studentGrade: number
+): string => {
+  // allSubjectGrades를 matchRecommendedCourses 호환 형태로 변환
+  const generalSubjects = (preData.allSubjectGrades ?? []).map((s) => ({
+    subject: s.subject,
+    year: s.year,
+    semester: s.semester,
+    category: "",
+    credits: null as number | null,
+    gradeRank: s.gradeRank,
+    rawScore: s.rawScore,
+    average: s.average,
+    studentCount: s.studentCount,
+    standardDeviation: null as number | null,
+    achievement: "",
+  }));
+
+  const careerSubjects = (preData.careerSubjects ?? []).map((cs) => ({
+    subject: cs.subject,
+    year: 0,
+    semester: 0,
+    category: "",
+    credits: null as number | null,
+    rawScore: null as number | null,
+    average: null as number | null,
+    achievement: cs.achievement,
+    studentCount: null as number | null,
+    achievementDistribution: cs.achievementDistribution,
+  }));
+
+  const result = matchRecommendedCourses(
+    generalSubjects,
+    careerSubjects,
+    detectedMajorGroup,
+    studentGrade,
+    preData.curriculumVersion
+  );
+
+  return JSON.stringify(result, null, 2);
 };
