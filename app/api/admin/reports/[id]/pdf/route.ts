@@ -64,7 +64,7 @@ export const POST = async (
           : "/usr/bin/google-chrome";
 
     const chromiumPack =
-      "https://github.com/nichochar/chromium-min-binaries/raw/main/chromium-v143.0.0-pack.tar";
+      "https://github.com/Sparticuz/chromium/releases/download/v143.0.4/chromium-v143.0.4-pack.x64.tar";
 
     browser = await puppeteerCore.launch({
       args: isProduction
