@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import puppeteerCore from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
+import chromium from "@sparticuz/chromium-min";
 
 import { createClient } from "@/libs/supabase/server";
 import { verifyAdmin } from "../../helpers";
@@ -65,12 +65,15 @@ export const POST = async (
           ? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
           : "/usr/bin/google-chrome";
 
+    const chromiumPack =
+      "https://github.com/nichochar/chromium-min-binaries/raw/main/chromium-v143.0.0-pack.tar";
+
     browser = await puppeteerCore.launch({
       args: isProduction
         ? chromium.args
         : ["--no-sandbox", "--disable-setuid-sandbox"],
       executablePath: isProduction
-        ? await chromium.executablePath()
+        ? await chromium.executablePath(chromiumPack)
         : localChromePath,
       headless: isProduction ? "shell" : true,
     });
