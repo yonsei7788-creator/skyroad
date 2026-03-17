@@ -18,8 +18,9 @@ import { ReportRenderer } from "@/app/report/_templates";
 import { SingleSectionEditor } from "../_components/ReportContentEditor";
 import { SectionNav } from "../_components/SectionNav";
 import { MobileSectionSelect } from "../_components/MobileSectionSelect";
-import { generatePdfFromElement, downloadPdfBlob } from "@/libs/pdf/generate";
+import { downloadPdfBlob } from "@/libs/pdf/generate";
 import type { PdfProgress } from "@/libs/pdf/generate";
+import { generatePdfServerSide } from "@/libs/pdf/server";
 import { createClient as createSupabaseClient } from "@/libs/supabase/client";
 import type { ReportDetail, ReportStatus } from "@/app/admin/types";
 import type { ReportContent } from "@/libs/report/types";
@@ -174,51 +175,28 @@ const ReportDetailPage = () => {
     }
   };
 
-  /** PDF 생성 — 다운로드와 이메일 발송 모두 이 함수를 사용 */
-  const generatePdf = async (): Promise<Blob | null> => {
-    const wasHidden = !showPreview;
-    if (wasHidden) {
-      setShowPreview(true);
-      await new Promise((r) => setTimeout(r, 500));
-    }
-
-    if (!previewRef.current) {
-      addToast("미리보기 패널을 열어주세요.", "error");
-      if (wasHidden) setShowPreview(false);
-      return null;
-    }
-
+  /** 서버사이드 PDF 생성 */
+  const generatePdf = async (
+    mode: "download" | "upload" = "download"
+  ): Promise<Blob | string | null> => {
     setPdfProgress(null);
     try {
-      const pdfBlob = await generatePdfFromElement(
-        previewRef.current,
-        (progress) => setPdfProgress(progress)
-      );
-      return pdfBlob;
+      const result = await generatePdfServerSide({
+        reportId,
+        mode,
+        onProgress: (status) =>
+          setPdfProgress({ current: 0, total: 0, status }),
+      });
+      return result;
     } catch (err) {
-      console.error("PDF generation error:", err);
-      addToast("PDF 생성에 실패했습니다.", "error");
+      console.error("Server PDF generation error:", err);
+      const message =
+        err instanceof Error ? err.message : "PDF 생성에 실패했습니다.";
+      addToast(message, "error");
       return null;
     } finally {
       setPdfProgress(null);
-      if (wasHidden) setShowPreview(false);
     }
-  };
-
-  const uploadPdfToStorage = async (blob: Blob): Promise<string | null> => {
-    const supabase = createSupabaseClient();
-    const path = `reports/${reportId}/${Date.now()}.pdf`;
-    const { error } = await supabase.storage
-      .from("report-pdfs")
-      .upload(path, blob, {
-        contentType: "application/pdf",
-        upsert: true,
-      });
-    if (error) {
-      console.error("PDF upload error:", error);
-      return null;
-    }
-    return path;
   };
 
   const buildDeliverFormData = async (): Promise<FormData | null> => {
@@ -228,15 +206,10 @@ const ReportDetailPage = () => {
 
     const formData = new FormData();
 
-    // 미리보기 패널에서 PDF 생성 → Storage 업로드 → 경로만 전달
-    const pdfBlob = await generatePdf();
-    if (pdfBlob) {
-      const storagePath = await uploadPdfToStorage(pdfBlob);
-      if (storagePath) {
-        formData.append("pdfStoragePath", storagePath);
-      } else {
-        addToast("PDF 업로드에 실패하여 PDF 없이 발송합니다.", "error");
-      }
+    // 서버에서 PDF 생성 + Storage 업로드를 한번에
+    const storagePath = await generatePdf("upload");
+    if (typeof storagePath === "string") {
+      formData.append("pdfStoragePath", storagePath);
     } else {
       addToast("PDF 생성에 실패하여 PDF 없이 발송합니다.", "error");
     }
@@ -398,10 +371,10 @@ const ReportDetailPage = () => {
     if (exporting) return;
     setExporting(true);
     try {
-      const pdfBlob = await generatePdf();
-      if (pdfBlob) {
+      const result = await generatePdf("download");
+      if (result instanceof Blob) {
         const ok = downloadPdfBlob(
-          pdfBlob,
+          result,
           `report-${reportId.slice(0, 8)}.pdf`
         );
         if (ok) {
@@ -452,7 +425,8 @@ const ReportDetailPage = () => {
 
   // PDF 진행률 텍스트
   const pdfProgressText = pdfProgress
-    ? `PDF 생성 중... (${pdfProgress.current}/${pdfProgress.total})`
+    ? (pdfProgress.status ??
+      `PDF 생성 중... (${pdfProgress.current}/${pdfProgress.total})`)
     : null;
 
   if (loading) {

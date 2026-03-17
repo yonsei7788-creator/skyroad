@@ -251,6 +251,8 @@ const createOffscreenContainer = (source: HTMLElement): HTMLElement => {
 export interface PdfProgress {
   current: number;
   total: number;
+  /** 서버사이드 생성 시 상태 텍스트 */
+  status?: string;
 }
 
 /**
