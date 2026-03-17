@@ -1799,18 +1799,6 @@
   padding: 0 2px;
 }
 
-.tocUpgradeNote {
-  display: block;
-  font-size: var(--report-fs-caption);
-  color: var(--report-caution);
-  font-weight: 500;
-  margin-top: 8px;
-  padding: 4px 8px;
-  background: var(--report-caution-light);
-  border-radius: 4px;
-  border-left: 3px solid var(--report-caution-border);
-}
-
 .tocDots {
   flex: 1;
   border-bottom: 1px dotted var(--report-border-strong);

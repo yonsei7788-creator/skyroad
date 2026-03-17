@@ -109,13 +109,16 @@ ${medicalCourseContext}
 ## 입력 데이터
 
 ### 권장과목 매칭 데이터 (코드 전처리 결과)
+⚠️⚠️⚠️ 아래 데이터의 "_referenceTargetMajor" 필드는 **유저가 입력한 희망학과 기반**입니다. 이 값을 출력 JSON의 targetMajor에 절대 복사하지 마세요.
 ${input.recommendedCourseMatch}
 
-### 역량 추출 결과 (⚠️ targetMajor는 이 데이터에서 도출하세요)
+### 역량 추출 결과 (⚠️ targetMajor는 반드시 이 데이터에서 도출하세요)
 ${input.competencyExtraction}
 
-⚠️ 위 역량 추출 결과에서 학생의 실제 강점 계열을 파악하여 targetMajor 필드에 넣으세요.
-위 "권장과목 매칭 데이터"의 targetMajor는 희망학과 기준이므로 무시하세요.
+⚠️⚠️⚠️ **targetMajor 결정 규칙 (최우선)**:
+1. 위 역량 추출 결과에서 detectedMajorGroup 또는 탐구 주제·세특 패턴을 기반으로 학생의 **실제 강점 계열**을 파악하세요.
+2. 그 계열을 targetMajor 필드에 넣으세요. (예: "의생명", "자연과학", "사회과학" 등)
+3. 권장과목 매칭 데이터의 "_referenceTargetMajor"는 참고만 하고, 출력에 절대 사용하지 마세요.
 
 ### 학생 프로필
 ${input.studentProfile}

@@ -518,12 +518,14 @@ export const formatMajorEvaluationContext = (
 ): string => {
   const lines: string[] = [];
 
-  lines.push(`## 학과 맞춤 평가 기준: ${targetDept} (${criteria.label})`);
+  lines.push(`## 생기부 기반 계열 평가 기준: ${criteria.label} 계열`);
   lines.push("");
   lines.push(
     "아래는 입학사정관이 이 계열 지원자를 평가할 때 실제로 중점적으로 보는 기준입니다."
   );
-  lines.push("분석 시 이 기준을 반드시 반영하세요.");
+  lines.push(
+    "⚠️ 이 기준은 생기부에서 도출된 강점 계열 기반입니다. 희망 학과명이 아닌 계열 기준으로 분석하세요."
+  );
   lines.push("");
 
   lines.push(`### 핵심 평가 교과: ${criteria.keySubjects.join(", ")}`);

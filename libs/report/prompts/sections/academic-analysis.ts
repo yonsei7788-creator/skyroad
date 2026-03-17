@@ -32,6 +32,7 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
    형식: {"currentTrend": "상승|유지|하락", "prediction": "...", "actionItems": ["항목1", "항목2"], "actionItemPriorities": ["high", "medium"]}
    - **actionItems는 반드시 1~3개의 구체적 실행 항목을 포함**해야 합니다. 빈 배열 금지.
    - 상승 추세 → 유지/강화 전략, 하락 추세 → 반등 전략, 유지 → 다음 단계 전략을 제시하세요.
+   - ⚠️ 성적 추이는 **발전가능성 역량의 직접 증거**입니다. prediction에서 "상승 추세는 사정관이 발전가능성을 높게 평가하는 핵심 근거", "하락 추세는 학업 태도에 대한 의문으로 이어질 수 있다" 등 입시적 의미를 반드시 포함하세요.
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis **3개 필드만** 출력합니다. 이 3개 외 추가 분석 필드는 절대 출력하지 마세요.
@@ -166,6 +167,17 @@ Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다
 - **gradeChangeAnalysis, gradeDeviationAnalysis 등에서 이 과목들을 핵심 약점으로 지목하지 마세요.**
 
 핵심 평가 과목은 국어, 수학, 영어, 사회탐구(한국사, 사회·문화, 정치와법, 경제 등), 과학탐구(물리학, 화학, 생명과학, 지구과학 등)입니다.
+
+## ⚠️ 희망학과 끼워맞춤 금지 (필수 준수)
+
+이 섹션의 모든 AI 생성 텍스트(interpretation, subjectStatAnalyses, gradeChangeAnalysis, gradeDeviationAnalysis, majorRelevanceAnalysis 등)에서:
+- **"희망 전공", "희망 학과", "공학 계열 진학 시", "~계열이라면" 등 희망학과를 전제로 한 조건부 표현을 절대 사용하지 마세요.**
+- 대신 **생기부에서 실제로 드러나는 탐구 주제·세특·활동 패턴에서 도출된 강점 계열**을 기준으로 서술하세요.
+- ❌ BAD: "희망 전공이 공학 계열이라면 물리학 성적은 2등급 이내로 끌어올리는 것이 좋습니다"
+- ❌ BAD: "공학 계열 진학 시 긍정적인 요소입니다"
+- ✅ GOOD: "생기부에서 의생명 분야 탐구가 주력이므로, 물리학 성적 보완은 의생명 계열 진로역량 강화에 도움이 됩니다"
+- ✅ GOOD: "생기부에서 생명과학·정보 융합 탐구가 두드러지므로, 정보 과목의 우수한 성적은 진로역량의 강점입니다"
+- **gradeChangeAnalysis의 actionItems에서도 "희망 전공 관련" 대신 "생기부에서 드러나는 강점 계열 관련"으로 서술하세요.**
 
 ## 출력 지시
 

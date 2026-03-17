@@ -2292,7 +2292,8 @@ const normalizeSection = (
         importance: "권장",
       }));
       s.matchRate = prMatch.matchRate;
-      s.targetMajor = prMatch.targetMajor;
+      // targetMajor는 AI가 생기부 기반으로 생성한 값을 유지 (희망학과 기반 덮어쓰기 금지)
+      // s.targetMajor = prMatch._referenceTargetMajor;
     } else if (Array.isArray(s.courses) && s.courses.length > 0) {
       const taken = s.courses.filter((c: any) => c.status === "이수").length;
       s.matchRate = Math.round((taken / s.courses.length) * 100);

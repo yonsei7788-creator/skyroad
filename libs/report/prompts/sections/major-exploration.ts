@@ -6,6 +6,7 @@ export interface MajorExplorationPromptInput {
   competencyExtraction: string;
   academicAnalysis: string;
   studentProfile: string;
+  targetDepartment?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -45,7 +46,7 @@ export const buildMajorExplorationPrompt = (
     {
       "major": "행정학과",
       "university": "서울대학교",
-      "fitScore": 85,
+      "fitScore": 72,
       "rationale": "사회 문제 해결에 대한 지속적 관심과 정책 분석 경험이...",
       "strengthMatch": ["사회 문제 분석 역량", "정책 비교 탐구 경험", "리더십"],
       "gapAnalysis": "통계적 분석 역량 보완 필요"
@@ -73,13 +74,28 @@ export const buildMajorExplorationPrompt = (
   - BAD: 체육/교육 생기부인데 "다윈 진화론 한 번 언급" → 생명과학과 추천
   - GOOD: 체육/교육 생기부 → 체육교육과, 스포츠과학과, 교육학과 추천
 - 추천 전공은 반드시 생기부에서 **3개 이상의 구체적 근거**(세특 주제, 활동명, 탐구 키워드)를 인용하여 정당화하세요. 근거가 3개 미만이면 해당 전공을 추천하지 마세요.
-- fitScore가 70점 미만인 전공은 추천하지 마세요.
+- fitScore가 55점 미만인 전공은 추천하지 마세요.
 
 ### fitScore 산정 시 가중치
 - 세특/창체에서의 전공 관련 탐구 깊이: 40%
 - 교과 선택의 진로 연관성: 25%
 - 역량 프로필 매칭: 20%
 - 성적 경쟁력: 15%
+
+### ⚠️ fitScore 채점 구간 (반드시 준수 — 위반 시 품질 실패)
+fitScore의 **최고점은 85점**입니다. 86점 이상은 절대 부여하지 마세요.
+모든 전공이 75점 이상이면 품질 실패입니다.
+
+| 구간 | 의미 | 기준 |
+|------|------|------|
+| 75~85 | 높음 | 세특에서 해당 전공 관련 심화 탐구가 3건 이상 + 교과 선택이 전공과 직결 + 학년별 심화 흐름 확인. 고등학생 수준에서 최상급일 때만 |
+| 65~74 | 보통 | 세특에서 관련 탐구 2건 이상 + 교과 선택 부분 일치 |
+| 55~64 | 낮음 | 관련 탐구 1~2건 있으나 깊이 부족하거나 교과 선택 연관성이 약함 |
+| 50~54 | 매우 낮음 | 간접적 연관만 있고 직접적 탐구 근거가 부족 |
+
+- 추천 전공 간 fitScore 차이가 **최소 5점 이상** 벌어져야 합니다. 모든 전공이 비슷한 점수(예: 78, 77, 76)이면 안 됩니다.
+- 1순위와 3순위 간 점수 차이가 **최소 10점 이상**이어야 합니다.
+- 대부분의 고등학생 생기부는 전공 탐구가 완벽하지 않으므로, **평균 fitScore는 65~70점대**가 자연스럽습니다. 75점 이상은 정말 탐구 깊이가 뛰어난 경우에만 부여하세요.
 
 ## 규칙
 - 학생의 현재 목표 학과가 있다면 그에 대한 평가(currentTargetAssessment)를 먼저 제공합니다.
@@ -97,6 +113,8 @@ ${input.academicAnalysis}
 
 ### 학생 프로필
 ${input.studentProfile}
+
+${input.targetDepartment ? `### 학생의 희망 학과 (currentTargetAssessment 생성용 — 추천 전공 목록에는 영향 없음)\n⚠️ 아래 희망 학과는 currentTargetAssessment에서 "이 학과에 대한 적합도 평가"를 작성하는 용도로만 사용하세요. suggestions 배열의 추천 전공은 반드시 생기부 기반으로 독립 판단하세요.\n희망 학과: ${input.targetDepartment}` : ""}
 
 ${PLAN_SPECIFIC[plan]}`;
 };

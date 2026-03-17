@@ -41,7 +41,7 @@ import { buildMajorExplorationPrompt } from "../prompts/sections/major-explorati
 import { buildConsultantReviewPrompt } from "../prompts/sections/consultant-review.ts";
 
 import type { GeminiClient } from "./gemini-client.ts";
-import { preprocess } from "./preprocessor.ts";
+import { preprocess, buildUniversityCandidatesText } from "./preprocessor.ts";
 import { loadRecordData } from "./load-record.ts";
 import type { WaveState } from "./wave-state.ts";
 import {
@@ -184,14 +184,21 @@ export const executeTask = async (
         // 생기부 실제 강점 계열이 희망학과 계열과 다름 → 보정
         const correctedContext = formatMajorEvaluationContext(
           detectedCriteria,
-          `${detected} (생기부 분석 기반, 희망학과: ${targetDept || "미입력"})`
+          `${detected} (생기부 분석 기반)`
+        );
+        // 대학 후보군도 생기부 기반 계열로 재생성
+        const correctedCandidates = buildUniversityCandidatesText(
+          detected,
+          state.preprocessedData?.gradingSystem,
+          state.preprocessedData?.overallAverage
         );
         correctedTexts = {
           ...texts,
           majorEvaluationContextText: correctedContext,
+          universityCandidatesText: correctedCandidates,
         };
         console.log(
-          `[report:${reportId}] 계열 보정: ${targetCriteria.majorGroup}(희망) → ${detectedCriteria.majorGroup}(생기부 실제). 근거: ${competencyExtraction.detectedMajorReason ?? ""}`
+          `[report:${reportId}] 계열 보정: ${targetCriteria.majorGroup}(희망) → ${detectedCriteria.majorGroup}(생기부 실제). 대학 후보군도 재생성. 근거: ${competencyExtraction.detectedMajorReason ?? ""}`
         );
       }
     }
@@ -243,7 +250,6 @@ export const executeTask = async (
             preprocessedAcademicData: texts.preprocessedAcademicDataText,
             attendanceSummary: texts.attendanceSummaryText,
             studentProfile: texts.studentProfileText,
-            majorEvaluationContext: texts.majorEvaluationContextText,
             gradingSystem: state.preprocessedData!.gradingSystem,
             isMedical,
           },
@@ -297,7 +303,6 @@ export const executeTask = async (
             competencyExtraction: ser.compExtrText!,
             studentProfile: texts.studentProfileText,
             curriculumVersion: texts.curriculumVersion,
-            majorEvaluationContext: texts.majorEvaluationContextText,
             isMedical,
           },
           plan
@@ -498,6 +503,7 @@ export const executeTask = async (
             competencyExtraction: ser.compExtrText!,
             academicAnalysis: ser.acadAnalText!,
             studentProfile: texts.studentProfileText,
+            targetDepartment: studentInfo.targetDepartment,
           },
           plan
         )

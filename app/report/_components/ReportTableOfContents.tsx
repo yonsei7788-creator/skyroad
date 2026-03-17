@@ -196,10 +196,6 @@ export const ReportTableOfContents = ({
     })
     .filter((p) => p.resolvedSections.length > 0);
 
-  const hasUpgrades = resolvedParts.some((p) =>
-    p.resolvedSections.some((s) => s.isUpgrade)
-  );
-
   return (
     <div
       className={`${styles.tocPage} ${isCompact ? styles.tocCompact : ""}`}
@@ -246,13 +242,6 @@ export const ReportTableOfContents = ({
           </div>
         ))}
       </div>
-
-      {/* Upgrade note */}
-      {hasUpgrades && (
-        <span className={styles.tocUpgradeNote}>
-          형광 표시된 항목은 이 플랜에서 추가로 제공되는 분석입니다.
-        </span>
-      )}
 
       {/* Footer */}
       <div className={styles.tocFooter}>

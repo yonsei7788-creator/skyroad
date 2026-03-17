@@ -19,14 +19,6 @@ interface SubjectAnalysisRendererProps {
   sectionNumber: number;
 }
 
-const IMPACT_LABEL: Record<string, string> = {
-  very_high: "매우 높음",
-  high: "높음",
-  medium: "보통",
-  low: "낮음",
-  very_low: "매우 낮음",
-};
-
 const RATING_ORDER: Record<SubjectRating, number> = {
   excellent: 0,
   good: 1,
@@ -53,11 +45,8 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
   // Block 1: 과목 헤더 + 태그 + 활동요약 + 인용
   blocks.push(
     <div key={key}>
-      <div className={styles.h3}>{subject.subjectName}</div>
-      <div className={`${styles.caption} ${styles.mb8}`}>
-        {subject.year}학년
-        {subject.evaluationImpact &&
-          ` · 평가 영향도 ${IMPACT_LABEL[subject.evaluationImpact] ?? subject.evaluationImpact}`}
+      <div className={styles.h3} style={{ marginBottom: 4 }}>
+        {subject.subjectName}
       </div>
 
       {(subject.competencyTags ?? []).length > 0 && (

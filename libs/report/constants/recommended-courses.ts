@@ -521,7 +521,8 @@ export const MAJOR_COURSE_RECOMMENDATIONS = MAJOR_COURSE_RECOMMENDATIONS_2022;
  * AI 프롬프트에 `{recommendedCourseMatch}` 자리표시자로 전달된다.
  */
 export interface RecommendedCourseMatch {
-  targetMajor: string;
+  /** 희망학과 기반 참고용 계열 (AI 출력의 targetMajor에 사용 금지) */
+  _referenceTargetMajor: string;
   requiredCourses: string[];
   takenCourses: string[];
   missingCourses: string[];
