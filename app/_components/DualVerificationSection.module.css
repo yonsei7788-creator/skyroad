@@ -51,6 +51,14 @@
   font-size: 1.0625rem;
   color: var(--color-fg-secondary);
   line-height: 1.6;
+  word-break: keep-all;
+}
+
+@media (min-width: 1024px) {
+  .sectionSubtitle {
+    white-space: nowrap;
+    max-width: none;
+  }
 }
 
 /* Grid */

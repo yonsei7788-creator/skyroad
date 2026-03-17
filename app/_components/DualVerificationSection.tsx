@@ -25,8 +25,8 @@ export const DualVerificationSection = () => {
           <p className={styles.sectionLabel}>Why SKYROAD</p>
           <h2 className={styles.sectionTitle}>왜 AI + 전문가인가?</h2>
           <p className={styles.sectionSubtitle}>
-            AI는 방대한 데이터를 빠짐없이 분석하고, 전문가는 사람만이 할 수 있는
-            판단을 더합니다
+            자체 개발된 고도화 AI는 방대한 데이터를 빠짐없이 분석하고, 전문가는
+            사람만이 할 수 있는 판단을 더합니다
           </p>
         </FadeIn>
 

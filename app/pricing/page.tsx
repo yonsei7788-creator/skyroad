@@ -38,7 +38,9 @@ export default function PricingPage() {
                 생기부 분석, 딱 맞는 플랜을 골라보세요
               </h1>
               <p className={styles.heroSubtitle}>
-                <strong className={styles.heroBold}>고도화 AI 정밀 분석</strong>
+                <strong className={styles.heroBold}>
+                  자체 개발 고도화 AI 정밀 분석
+                </strong>
                 {" + "}
                 <strong className={styles.heroHighlight}>
                   전문 입시 컨설턴트 2차 검수

@@ -53,7 +53,7 @@ export const HeroSection = () => {
               &ldquo;이 생기부로 어디까지 갈 수 있을까?&rdquo;
               <br />
               <strong className={styles.subtextBold}>
-                고도화 AI 정밀 분석
+                자체 개발 고도화 AI 정밀 분석
               </strong>
               {" + "}
               <strong className={styles.subtextHighlight}>
