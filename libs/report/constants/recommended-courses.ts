@@ -491,16 +491,23 @@ export const MAJOR_COURSE_RECOMMENDATIONS_2022: MajorCourseRecommendation[] = [
 // ─── 교육과정 버전 선택 헬퍼 ───
 
 /**
- * 학년에 따라 적절한 교육과정 버전의 권장과목 목록을 반환한다.
- * - grade >= 3 → 2015 개정 교육과정 (고3/졸업생)
- * - grade <= 2 → 2022 개정 교육과정 (고1·고2)
+ * 교육과정 버전에 따라 적절한 권장과목 목록을 반환한다.
+ * - curriculumVersion 우선 사용 (생기부 데이터 기반 정확한 판별)
+ * - curriculumVersion이 없으면 grade 기반 폴백 (하위 호환)
  */
 export const getMajorCourseRecommendations = (
-  grade: number
-): MajorCourseRecommendation[] =>
-  grade >= 3
+  grade: number,
+  curriculumVersion?: "2015" | "2022"
+): MajorCourseRecommendation[] => {
+  if (curriculumVersion) {
+    return curriculumVersion === "2015"
+      ? MAJOR_COURSE_RECOMMENDATIONS_2015
+      : MAJOR_COURSE_RECOMMENDATIONS_2022;
+  }
+  return grade >= 3
     ? MAJOR_COURSE_RECOMMENDATIONS_2015
     : MAJOR_COURSE_RECOMMENDATIONS_2022;
+};
 
 // ─── 하위 호환용 (deprecated) ───
 

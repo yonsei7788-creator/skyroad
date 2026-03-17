@@ -448,16 +448,17 @@ export const preprocess = (
       grade: s.gradeRank !== null ? String(s.gradeRank) : undefined,
     }));
 
-  // 11. 권장과목 이수 매칭
+  // 11. 교육과정 버전 판별 (권장과목 매칭보다 먼저 수행)
+  const curriculumVersion = detectCurriculumVersion(creativeActs);
+
+  // 12. 권장과목 이수 매칭 (교육과정 버전 기반)
   const recommendedCourseMatch = matchRecommendedCourses(
     generalSubjects,
     careerSubjects,
     studentInfo.targetDepartment ?? "",
-    studentInfo.grade
+    studentInfo.grade,
+    curriculumVersion
   );
-
-  // 12. 교육과정 버전 판별
-  const curriculumVersion = detectCurriculumVersion(creativeActs);
 
   // 13. 출결 데이터 정규화
   const attendanceSummary = normalizeAttendance(attendance);
@@ -766,7 +767,8 @@ const matchRecommendedCourses = (
   generalSubjects: GeneralSubjectRow[],
   careerSubjects: CareerSubjectRow[],
   targetDept: string,
-  studentGrade: number
+  studentGrade: number,
+  curriculumVersion?: "2015" | "2022"
 ): RecommendedCourseMatch => {
   // 학생이 이수한 과목명을 정규화하여 Set 구축
   const takenRawSet = new Set<string>();
@@ -782,7 +784,10 @@ const matchRecommendedCourses = (
   const takenNormalizedSet = new Set(normalizedToRaw.keys());
 
   // Find matching major recommendation (교육과정 버전에 따라 분기)
-  const courseRecommendations = getMajorCourseRecommendations(studentGrade);
+  const courseRecommendations = getMajorCourseRecommendations(
+    studentGrade,
+    curriculumVersion
+  );
   const matchingMajor = findMatchingMajor(targetDept, courseRecommendations);
 
   const requiredCourses = matchingMajor?.recommendedCourses ?? [];
@@ -1329,17 +1334,16 @@ const formatStudentProfile = (
     `분석 범위: ${semesterScope}`,
     `계열: ${info.track}`,
     `학교 유형: ${info.schoolType}`,
+    ...(info.highSchoolRegion ? [`고교 소재지: ${info.highSchoolRegion}`] : []),
   ];
   if (convertedGrade) {
     lines.push(
       `환산 등급: ${convertedGrade.converted} (원래 ${convertedGrade.original}, ${convertedGrade.schoolType} 보정 적용)`
     );
   }
-  if (info.targetUniversity || info.targetDepartment) {
-    lines.push(
-      `[참고] 희망 대학/학과 (합격 예측용 — 분석 방향과 무관): ${info.targetUniversity ?? ""} ${info.targetDepartment ?? ""}`.trim()
-    );
-  }
+  // 희망 대학/학과는 studentProfileText에 포함하지 않음
+  // → 합격 판단이 필요한 admissionPrediction에만 targetUniversitiesText로 별도 전달
+  // → 나머지 섹션은 희망학과를 모르는 상태에서 생기부만으로 분석
   lines.push(`모의고사 데이터: ${info.hasMockExamData ? "있음" : "없음"}`);
   return lines.join("\n");
 };

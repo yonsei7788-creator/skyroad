@@ -1319,6 +1319,8 @@ export interface StudentInfo {
     | "마이스터고";
   targetUniversity?: string;
   targetDepartment?: string;
+  /** 고교 소재지 (시/도) — 지역인재전형 판단용 */
+  highSchoolRegion?: string;
   /** 유저가 설정한 1~6지망 희망대학 목록 */
   targetUniversities?: {
     priority: number;

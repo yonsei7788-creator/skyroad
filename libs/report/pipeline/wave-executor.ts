@@ -49,6 +49,7 @@ import {
   findCriteriaByMajorGroup,
   formatMajorEvaluationContext,
 } from "../constants/major-evaluation-criteria.ts";
+import { isMedicalMajor } from "../constants/recommended-courses.ts";
 import {
   buildTaskQueue,
   computeProgress,
@@ -117,6 +118,7 @@ export const executeTask = async (
   const ser = state.serializedTexts!;
   const systemPrompt = buildSystemPrompt(plan);
   const sections = [...(state.completedSections ?? [])];
+  const isMedical = isMedicalMajor(studentInfo.targetDepartment ?? "");
 
   const callGemini = async <T>(prompt: string): Promise<T> => {
     const result = await client.call<T>({
@@ -243,6 +245,7 @@ export const executeTask = async (
             studentProfile: texts.studentProfileText,
             majorEvaluationContext: texts.majorEvaluationContextText,
             gradingSystem: state.preprocessedData!.gradingSystem,
+            isMedical,
           },
           plan
         )
@@ -295,6 +298,7 @@ export const executeTask = async (
             studentProfile: texts.studentProfileText,
             curriculumVersion: texts.curriculumVersion,
             majorEvaluationContext: texts.majorEvaluationContextText,
+            isMedical,
           },
           plan
         )
@@ -310,6 +314,7 @@ export const executeTask = async (
             studentProfile: texts.studentProfileText,
             studentGrade: studentInfo.grade,
             gradingSystem: state.preprocessedData!.gradingSystem,
+            isMedical,
           },
           plan
         )
@@ -322,6 +327,7 @@ export const executeTask = async (
           {
             subjectData: texts.subjectDataText,
             studentProfile: texts.studentProfileText,
+            isMedical,
           },
           plan
         )
@@ -352,6 +358,7 @@ export const executeTask = async (
             competencyExtraction: ser.compExtrText!,
             academicAnalysis: ser.acadAnalText!,
             studentProfile: texts.studentProfileText,
+            isMedical,
           },
           plan
         )
@@ -382,6 +389,7 @@ export const executeTask = async (
             subjectAnalysisResult: ser.subjAnalysisText!,
             studentProfile: texts.studentProfileText,
             academicData: texts.rawAcademicDataText,
+            isMedical,
           },
           plan
         )
@@ -403,6 +411,7 @@ export const executeTask = async (
             majorEvaluationContext: texts.majorEvaluationContextText,
             targetUniversities: texts.targetUniversitiesText,
             gradingSystem: state.preprocessedData!.gradingSystem,
+            isMedical,
           },
           plan
         )
@@ -426,6 +435,7 @@ export const executeTask = async (
             gradingSystem: state.preprocessedData!.gradingSystem,
             studentGrade: studentInfo.grade,
             currentDate: new Date().toISOString().slice(0, 10),
+            isMedical,
           },
           plan
         )
@@ -473,6 +483,7 @@ export const executeTask = async (
             studentProfile: texts.studentProfileText,
             currentDate: new Date().toISOString().slice(0, 10),
             studentGrade: studentInfo.grade,
+            isMedical,
           },
           plan
         )
@@ -506,6 +517,7 @@ export const executeTask = async (
             gradingSystem: state.preprocessedData?.gradingSystem,
             studentGrade: studentInfo.grade,
             currentDate: new Date().toISOString().slice(0, 10),
+            isMedical,
           },
           plan
         )
