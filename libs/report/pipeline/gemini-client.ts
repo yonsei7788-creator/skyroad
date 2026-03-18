@@ -25,78 +25,17 @@ export interface GeminiCallResult<T> {
   };
 }
 
+import { jsonrepair } from "jsonrepair";
+
 /**
- * 잘린 JSON 응답을 복구한다.
- * Gemini가 maxOutputTokens에 도달하면 JSON이 중간에 끊길 수 있음.
+ * 잘못되거나 잘린 JSON 응답을 복구한다.
+ * - 이스케이프되지 않은 따옴표/줄바꿈
+ * - 후행 콤마
+ * - 따옴표 없는 프로퍼티 키
+ * - 잘린 JSON (maxOutputTokens 도달)
  */
-const repairTruncatedJson = (text: string): string => {
-  let json = text.trim();
-
-  // 1차 시도
-  try {
-    JSON.parse(json);
-    return json;
-  } catch {
-    // 복구 진행
-  }
-
-  // ── 구조적 오류 복구: 잘못된 위치의 문자 제거 ──
-  // "Expected double-quoted property name" 오류 대응:
-  // 객체 내부에서 key가 따옴표 없이 나오거나, 후행 콤마 뒤 닫는 괄호 등
-  json = json
-    // 후행 콤마 제거 (객체/배열 닫기 전)
-    .replace(/,\s*}/g, "}")
-    .replace(/,\s*]/g, "]")
-    // 따옴표 없는 프로퍼티 키 보정 (간단한 패턴)
-    .replace(/{\s*([a-zA-Z_]\w*)\s*:/g, '{"$1":')
-    .replace(/,\s*([a-zA-Z_]\w*)\s*:/g, ',"$1":');
-
-  // 2차 시도
-  try {
-    JSON.parse(json);
-    return json;
-  } catch {
-    // 3차 복구 계속
-  }
-
-  // 열린 괄호/중괄호를 추적하여 닫기
-  let inString = false;
-  let escaped = false;
-  const stack: string[] = [];
-
-  for (let i = 0; i < json.length; i++) {
-    const ch = json[i];
-    if (escaped) {
-      escaped = false;
-      continue;
-    }
-    if (ch === "\\" && inString) {
-      escaped = true;
-      continue;
-    }
-    if (ch === '"') {
-      inString = !inString;
-      continue;
-    }
-    if (inString) continue;
-
-    if (ch === "{") stack.push("}");
-    else if (ch === "[") stack.push("]");
-    else if ((ch === "}" || ch === "]") && stack[stack.length - 1] === ch) {
-      stack.pop();
-    }
-  }
-
-  // 문자열이 열려있으면 닫기
-  if (inString) json += '"';
-
-  // 후행 콤마 제거
-  json = json.replace(/,\s*$/, "");
-
-  // 남은 열린 괄호 닫기
-  while (stack.length > 0) json += stack.pop();
-
-  return json;
+const repairJson = (text: string): string => {
+  return jsonrepair(text.trim());
 };
 
 export const createGeminiClient = (apiKey: string) => {
@@ -195,7 +134,7 @@ export const createGeminiClient = (apiKey: string) => {
           console.warn(
             `[gemini] JSON parse failed (length=${text.length}), attempting repair...`
           );
-          const repaired = repairTruncatedJson(text);
+          const repaired = repairJson(text);
           parsed = JSON.parse(repaired) as T;
           console.info(`[gemini] JSON repair succeeded`);
         }

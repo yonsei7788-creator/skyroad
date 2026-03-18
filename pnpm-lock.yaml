@@ -28,6 +28,9 @@ importers:
       html2canvas-pro:
         specifier: ^2.0.2
         version: 2.0.2
+      jsonrepair:
+        specifier: ^3.13.3
+        version: 3.13.3
       jspdf:
         specifier: ^4.2.0
         version: 4.2.0
@@ -3981,6 +3984,13 @@ packages:
         integrity: sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==,
       }
     engines: { node: ">=6" }
+    hasBin: true
+
+  jsonrepair@3.13.3:
+    resolution:
+      {
+        integrity: sha512-BTznj0owIt2CBAH/LTo7+1I5pMvl1e1033LRl/HUowlZmJOIhzC0zbX5bxMngLkfT4WnzPP26QnW5wMr2g9tsQ==,
+      }
     hasBin: true
 
   jspdf@4.2.0:
@@ -8492,6 +8502,8 @@ snapshots:
       minimist: 1.2.8
 
   json5@2.2.3: {}
+
+  jsonrepair@3.13.3: {}
 
   jspdf@4.2.0:
     dependencies:
