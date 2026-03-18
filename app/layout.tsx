@@ -32,6 +32,11 @@ export const metadata: Metadata = {
     "생기부 리포트",
     "수시 준비",
   ],
+  verification: {
+    other: {
+      "naver-site-verification": "606e4f1a9b0f7659ebf697a760b75a3c5d7dab7c",
+    },
+  },
   alternates: {
     canonical: "/",
   },
