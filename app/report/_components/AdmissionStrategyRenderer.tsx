@@ -116,8 +116,6 @@ export const AdmissionStrategyRenderer = ({
               <p className={`${styles.caption} ${styles.mb4}`}>
                 <span className={styles.emphasis}>학종</span>{" "}
                 {card.comprehensive?.admissionType}
-                {card.comprehensive?.chancePercentLabel &&
-                  ` (${card.comprehensive.chancePercentLabel})`}
                 {card.comprehensive?.chance && (
                   <>
                     {" "}
@@ -142,8 +140,6 @@ export const AdmissionStrategyRenderer = ({
                 <p className={`${styles.caption} ${styles.mb4}`}>
                   <span className={styles.emphasis}>교과</span>{" "}
                   {card.subject.admissionType}
-                  {card.subject.chancePercentLabel &&
-                    ` (${card.subject.chancePercentLabel})`}
                   {card.subject.chance && (
                     <>
                       {" "}

@@ -40,9 +40,6 @@ export const MajorExplorationRenderer = ({
           <thead>
             <tr>
               <th>전공</th>
-              {suggestions[0]?.university && (
-                <th style={{ whiteSpace: "nowrap" }}>대학</th>
-              )}
               <th className={styles.tableAlignCenter}>적합도</th>
               <th>강점 매칭</th>
             </tr>
@@ -51,11 +48,6 @@ export const MajorExplorationRenderer = ({
             {suggestions.map((s, idx) => (
               <tr key={idx}>
                 <td className={styles.tableCellBold}>{s.major}</td>
-                {suggestions[0]?.university && (
-                  <td className={styles.small} style={{ whiteSpace: "nowrap" }}>
-                    {s.university ?? "—"}
-                  </td>
-                )}
                 <td
                   className={`${styles.tableAlignCenter} ${styles.tableCellBold}`}
                 >
