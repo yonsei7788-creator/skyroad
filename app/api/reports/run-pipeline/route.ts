@@ -590,7 +590,8 @@ export const POST = async (request: NextRequest) => {
           state.preprocessedData!,
           studentInfo,
           plan,
-          reportId
+          reportId,
+          state.preprocessedTexts?.universityCandidatesText
         );
 
         console.log(

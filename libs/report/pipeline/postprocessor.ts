@@ -47,7 +47,8 @@ export const postprocess = (
   preprocessed: PreprocessedData,
   studentInfo: StudentInfo,
   plan: ReportPlan,
-  reportId: string
+  reportId: string,
+  universityCandidatesText?: string
 ): PostprocessResult => {
   const validationResults: SectionValidationResult[] = [];
 
@@ -237,6 +238,72 @@ export const postprocess = (
         );
         return false;
       });
+    }
+  }
+
+  // 3-2. 전처리 후보군 외 대학 제거 (AI가 후보군 밖 대학을 임의 추가한 경우 필터링)
+  if (universityCandidatesText) {
+    const allowedUniversities = new Set<string>();
+    try {
+      const candidates = JSON.parse(universityCandidatesText) as {
+        university: string;
+      }[];
+      for (const c of candidates) {
+        allowedUniversities.add(c.university);
+      }
+    } catch {
+      // 파싱 실패 시 필터링 건너뜀
+    }
+
+    // 유저 희망대학도 허용
+    if (studentInfo.targetUniversities) {
+      for (const tu of studentInfo.targetUniversities) {
+        allowedUniversities.add(tu.universityName);
+      }
+    }
+
+    if (allowedUniversities.size > 0) {
+      // admissionPrediction: 후보군 외 대학 제거
+      if (admPred && Array.isArray(admPred.predictions)) {
+        for (const pred of admPred.predictions) {
+          if (!Array.isArray(pred.universityPredictions)) continue;
+          const before = pred.universityPredictions.length;
+          pred.universityPredictions = pred.universityPredictions.filter(
+            (up: any) => {
+              if (allowedUniversities.has(up.university)) return true;
+              console.log(
+                `[report:${reportId}] 후보군 외 대학 제거 (admissionPrediction): ${up.university} ${up.department}`
+              );
+              return false;
+            }
+          );
+          if (pred.universityPredictions.length < before) {
+            console.log(
+              `[report:${reportId}] admissionPrediction ${pred.admissionType}: 후보군 외 ${before - pred.universityPredictions.length}개 대학 제거`
+            );
+          }
+        }
+      }
+
+      // admissionStrategy: 후보군 외 대학 제거
+      if (admStrat && Array.isArray(admStrat.simulations)) {
+        for (const sim of admStrat.simulations) {
+          if (!Array.isArray(sim.cards)) continue;
+          const before = sim.cards.length;
+          sim.cards = sim.cards.filter((card: any) => {
+            if (allowedUniversities.has(card.university)) return true;
+            console.log(
+              `[report:${reportId}] 후보군 외 대학 제거 (admissionStrategy): ${card.university} ${card.department}`
+            );
+            return false;
+          });
+          if (sim.cards.length < before) {
+            console.log(
+              `[report:${reportId}] admissionStrategy ${sim.type}: 후보군 외 ${before - sim.cards.length}개 대학 제거`
+            );
+          }
+        }
+      }
     }
   }
 
