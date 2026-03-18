@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/api/", "/onboarding", "/profile/", "/record/"],
     },
-    sitemap: "https://skyroad.co.kr/sitemap.xml",
+    sitemap: "https://skyroadedu.net/sitemap.xml",
   };
 }

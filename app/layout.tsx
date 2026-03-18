@@ -11,7 +11,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://skyroad.co.kr"),
+  metadataBase: new URL("https://skyroadedu.net"),
   title: {
     default: "SKYROAD - AI 기반 생활기록부 분석 서비스",
     template: "%s | SKYROAD",
@@ -57,7 +57,7 @@ const jsonLd = {
     {
       "@type": "Organization",
       name: "SKYROAD",
-      url: "https://skyroad.co.kr",
+      url: "https://skyroadedu.net",
       description:
         "AI + 입시 컨설턴트 이중 검증 생활기록부 분석 서비스. 수시컨설팅·생기부컨설팅 전문.",
     },
