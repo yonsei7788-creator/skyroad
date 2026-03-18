@@ -19,11 +19,20 @@ export const GET = (request: NextRequest) => {
     );
   }
 
-  const departments = MAJOR_INFO_DATA.filter((m) =>
+  const matchingMajors = MAJOR_INFO_DATA.filter((m) =>
     m.universities.includes(university)
-  )
-    .map((m) => m.majorName)
-    .sort((a, b) => a.localeCompare(b, "ko"));
+  );
+
+  const departmentSet = new Set<string>();
+  for (const major of matchingMajors) {
+    for (const dept of major.departments) {
+      departmentSet.add(dept);
+    }
+  }
+
+  const departments = [...departmentSet].sort((a, b) =>
+    a.localeCompare(b, "ko")
+  );
 
   return NextResponse.json(departments);
 };

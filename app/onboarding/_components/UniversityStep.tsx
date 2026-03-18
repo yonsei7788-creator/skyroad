@@ -24,6 +24,8 @@ import {
 import { ADMISSION_TYPES } from "./types";
 import type { TargetUniversity, UniversityPriority } from "./types";
 
+import { SearchableSelect } from "@/app/_components/SearchableSelect";
+
 import styles from "../page.module.css";
 
 interface UniversityStepProps {
@@ -477,24 +479,15 @@ export const UniversityStep = ({
                           const noUniv = !target.universityName;
 
                           return hasDepts ? (
-                            <select
-                              className={`${styles.select} ${errors[`${priority}-department`] ? styles.inputError : ""}`}
+                            <SearchableSelect
+                              options={depts}
                               value={target.department}
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  priority,
-                                  "department",
-                                  e.target.value
-                                )
+                              onChange={(val) =>
+                                handleFieldChange(priority, "department", val)
                               }
-                            >
-                              <option value="">모집단위를 선택해주세요</option>
-                              {depts.map((dept) => (
-                                <option key={dept} value={dept}>
-                                  {dept}
-                                </option>
-                              ))}
-                            </select>
+                              placeholder="모집단위를 선택해주세요"
+                              hasError={!!errors[`${priority}-department`]}
+                            />
                           ) : (
                             <input
                               type="text"
