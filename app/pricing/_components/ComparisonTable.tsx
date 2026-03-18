@@ -41,7 +41,7 @@ const FEATURES: ComparisonFeature[] = [
   },
   { name: "AI 학과 추천", lite: true, standard: true, premium: true },
   {
-    name: "전형별 합격 예측",
+    name: "희망 학교·학과 합격 판단",
     lite: false,
     standard: true,
     premium: true,

@@ -22,7 +22,7 @@ const PART_CONFIG = [
   {
     partNumber: "PART 1",
     title: "진단",
-    description: "학생 유형 분류, 역량 점수, 합격 예측",
+    description: "학생 유형 분류, 역량 점수, 합격 판단",
     color: "#2563eb",
     sectionIds: ["studentProfile", "competencyScore", "admissionPrediction"],
   },

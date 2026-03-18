@@ -23,7 +23,7 @@ const TASK_LABELS: Record<string, string> = {
   weaknessAnalysis: "약점 분석",
   topicRecommendation: "주제 추천",
   interviewPrep: "면접 준비",
-  admissionPrediction: "합격 예측",
+  admissionPrediction: "희망 학교·학과 합격 판단",
   admissionStrategy: "입시 전략",
   directionGuide: "방향 가이드",
   storyAnalysis: "스토리 분석",

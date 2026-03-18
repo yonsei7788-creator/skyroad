@@ -22,6 +22,8 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { SearchableSelect } from "@/app/_components/SearchableSelect";
+
 import styles from "../page.module.css";
 
 // ─── Types ───
@@ -401,7 +403,7 @@ export const TargetUniversityForm = ({
             <span className={styles.sectionLabel}>Target University</span>
             <h1 className={styles.pageTitle}>목표 대학 설정</h1>
             <p className={styles.pageSubtitle}>
-              AI 리포트의 합격 예측 및 입시 전략에 활용됩니다
+              AI 리포트의 합격 판단 및 입시 전략에 활용됩니다
             </p>
           </div>
         </div>
@@ -574,26 +576,15 @@ export const TargetUniversityForm = ({
                             const noUniv = !target.universityName;
 
                             return hasDepts ? (
-                              <select
-                                className={`${styles.select} ${errors[`${priority}-department`] ? styles.inputError : ""}`}
+                              <SearchableSelect
+                                options={depts}
                                 value={target.department}
-                                onChange={(e) =>
-                                  handleFieldChange(
-                                    priority,
-                                    "department",
-                                    e.target.value
-                                  )
+                                onChange={(val) =>
+                                  handleFieldChange(priority, "department", val)
                                 }
-                              >
-                                <option value="">
-                                  모집단위를 선택해주세요
-                                </option>
-                                {depts.map((dept) => (
-                                  <option key={dept} value={dept}>
-                                    {dept}
-                                  </option>
-                                ))}
-                              </select>
+                                placeholder="모집단위를 선택해주세요"
+                                hasError={!!errors[`${priority}-department`]}
+                              />
                             ) : (
                               <input
                                 type="text"
