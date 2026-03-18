@@ -6,7 +6,7 @@ import chromium from "@sparticuz/chromium";
 import { createClient } from "@/libs/supabase/server";
 import { verifyAdmin } from "../../helpers";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /**
  * 서버사이드 PDF 생성.
