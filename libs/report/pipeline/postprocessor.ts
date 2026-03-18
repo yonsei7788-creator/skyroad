@@ -100,6 +100,36 @@ export const postprocess = (
     }
   }
 
+  // 2-1. admissionPrediction: chance 값 정규화 (한글 → 영문)
+  const CHANCE_NORMALIZE: Record<string, string> = {
+    "매우 높음": "very_high",
+    매우높음: "very_high",
+    높음: "high",
+    보통: "medium",
+    낮음: "low",
+    "매우 낮음": "very_low",
+    매우낮음: "very_low",
+  };
+  const normalizeChance = (v: unknown): string => {
+    if (typeof v !== "string") return "medium";
+    const lower = v.trim().toLowerCase();
+    if (["very_high", "high", "medium", "low", "very_low"].includes(lower))
+      return lower;
+    return CHANCE_NORMALIZE[v.trim()] ?? "medium";
+  };
+
+  for (const s of validatedSections) {
+    if (s.sectionId !== "admissionPrediction") continue;
+    const ap = s as any;
+    if (!Array.isArray(ap.predictions)) continue;
+    for (const pred of ap.predictions) {
+      if (!Array.isArray(pred.universityPredictions)) continue;
+      for (const up of pred.universityPredictions) {
+        up.chance = normalizeChance(up.chance);
+      }
+    }
+  }
+
   // 3. 크로스 섹션 동기화: admissionStrategy → admissionPrediction chance 일관성
   const admPred = validatedSections.find(
     (s) => s.sectionId === "admissionPrediction"
@@ -115,6 +145,15 @@ export const postprocess = (
       for (const sim of admStrat.simulations) {
         if (!Array.isArray(sim.cards)) continue;
         for (const card of sim.cards) {
+          // chance 정규화 (한글 → 영문)
+          if (card.comprehensive?.chance) {
+            card.comprehensive.chance = normalizeChance(
+              card.comprehensive.chance
+            );
+          }
+          if (card.subject?.chance) {
+            card.subject.chance = normalizeChance(card.subject.chance);
+          }
           const key = `${card.university}|${card.department}`;
           if (card.comprehensive?.chance) {
             strategyChanceMap.set(key, card.comprehensive.chance);
@@ -350,25 +389,43 @@ export const postprocess = (
     }
   }
 
-  // 3-5. admissionPrediction: 유저 희망대학이 있으면 해당 대학만 남기기
+  // 3-5. admissionPrediction: 유저 희망대학이 있으면, 해당 대학을 유저가 선택한 전형에만 남기기
   if (
     admPred &&
     studentInfo.targetUniversities &&
     studentInfo.targetUniversities.length > 0
   ) {
-    const targetUniNames = new Set(
-      studentInfo.targetUniversities.map((tu) => tu.universityName)
-    );
+    // 유저 입력 admissionType → predictions admissionType 매핑
+    const typeMapping: Record<string, string> = {
+      학생부종합: "학종",
+      학생부교과: "교과",
+      고른기회: "고른기회",
+      정시: "정시",
+      논술: "논술",
+    };
+
+    // 전형별 허용 대학 맵: { "학종": Set["서울대학교", ...], "교과": Set[...] }
+    const allowedByType = new Map<string, Set<string>>();
+    for (const tu of studentInfo.targetUniversities) {
+      const predType = typeMapping[tu.admissionType] ?? tu.admissionType;
+      if (!allowedByType.has(predType)) {
+        allowedByType.set(predType, new Set());
+      }
+      allowedByType.get(predType)!.add(tu.universityName);
+    }
+
     if (Array.isArray(admPred.predictions)) {
       for (const pred of admPred.predictions) {
         if (!Array.isArray(pred.universityPredictions)) continue;
+        const allowed = allowedByType.get(pred.admissionType);
         const before = pred.universityPredictions.length;
+        // 해당 전형에 허용된 대학만 남기기 (허용 목록이 없으면 전부 제거)
         pred.universityPredictions = pred.universityPredictions.filter(
-          (up: any) => targetUniNames.has(up.university)
+          (up: any) => allowed?.has(up.university) ?? false
         );
         if (pred.universityPredictions.length < before) {
           console.log(
-            `[report:${reportId}] admissionPrediction: 희망대학 외 ${before - pred.universityPredictions.length}개 대학 제거 (${pred.admissionType})`
+            `[report:${reportId}] admissionPrediction: 전형 불일치 대학 ${before - pred.universityPredictions.length}개 제거 (${pred.admissionType})`
           );
         }
       }

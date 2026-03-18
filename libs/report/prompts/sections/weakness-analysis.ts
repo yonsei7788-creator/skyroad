@@ -7,6 +7,7 @@ export interface WeaknessAnalysisPromptInput {
   academicAnalysis: string;
   studentProfile: string;
   isMedical?: boolean;
+  gradingSystem?: "5등급제" | "9등급제";
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -105,7 +106,7 @@ export const buildWeaknessAnalysisPrompt = (
 ## ⛔ 사실 검증 원칙 (최우선 규칙)
 - 약점을 식별할 때 **반드시 제공된 성적 데이터(preprocessedAcademicData, rawAcademicData)에서 실제 등급/점수를 확인**한 후에만 언급하세요.
 - **성적 데이터에 없는 정보를 추측하거나 일반화하면 안 됩니다.** 예: 수학 관련 과목 중 일부만 3등급인데 "수학 과목이 3~4등급"이라고 일반화하면 안 됩니다.
-- evidence 필드에는 **실제 과목명과 등급/점수를 구체적으로 인용**하세요. 예: "2학년 물리학Ⅰ 1학기 3등급, 2학기 3등급"
+- evidence 필드에는 **실제 과목명과 등급/점수를 구체적으로 인용**하세요. 예: ${input.gradingSystem === "5등급제" ? '"2학년 물리학 1학기 3등급, 2학기 3등급"' : '"2학년 물리학Ⅰ 1학기 3등급, 2학기 3등급"'}
 - 제공된 데이터에서 확인할 수 없는 약점은 절대 포함하지 마세요.
 
 ## 부족 유형 체크리스트

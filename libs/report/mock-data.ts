@@ -249,7 +249,7 @@ const competencyScoreStandard: CompetencyScoreSection = {
 
 const admissionPredictionLite: AdmissionPredictionSection = {
   sectionId: "admissionPrediction",
-  title: "합격 예측",
+  title: "희망 학교·학과 합격 판단",
   recommendedType: "학종",
   recommendedTypeReason:
     "컴퓨터공학 관련 세특 활동과 탐구 경험이 풍부하여 학생부종합전형에서 전공 적합성을 어필할 수 있습니다. 내신 2.1등급으로 교과전형 상위권 대학 지원은 다소 어려우나, 활동 기반 평가에서 강점을 발휘할 수 있습니다.",

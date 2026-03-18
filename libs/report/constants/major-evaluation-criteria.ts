@@ -463,7 +463,12 @@ export const matchMajorEvaluationCriteria = (
     return findCriteria("경영경제");
   }
 
-  // 교육 계열
+  // 예체능 계열 (교육보다 먼저 체크: "체육교육", "음악교육" 등이 교육이 아닌 예체능으로 분류되도록)
+  if (/예술|미술|음악|체육|무용|디자인|영화|연극|실용음악/.test(lower)) {
+    return findCriteria("예체능");
+  }
+
+  // 교육 계열 (예체능 관련 교육학과는 위에서 이미 처리됨)
   if (/교육|사범|교직/.test(lower)) {
     return findCriteria("교육");
   }
@@ -484,11 +489,6 @@ export const matchMajorEvaluationCriteria = (
     )
   ) {
     return findCriteria("인문");
-  }
-
-  // 예체능 계열
-  if (/예술|미술|음악|체육|무용|디자인|영화|연극|실용음악/.test(lower)) {
-    return findCriteria("예체능");
   }
 
   // 기본값: 자연과학 (이공계 기본)
@@ -512,9 +512,49 @@ export const findCriteriaByMajorGroup = findCriteria;
  * 매칭된 계열 평가 기준을 프롬프트용 텍스트로 직렬화한다.
  * AI가 이해하기 쉬운 구조화된 텍스트로 변환한다.
  */
+/** 2015 → 2022 교육과정 과목명 변환 맵 */
+const SUBJECT_NAME_2015_TO_2022: Record<string, string> = {
+  수학Ⅰ: "대수",
+  수학Ⅱ: "대수",
+  미적분: "미적분Ⅰ",
+  물리학Ⅰ: "물리학",
+  물리학Ⅱ: "역학과 에너지",
+  화학Ⅰ: "화학",
+  화학Ⅱ: "화학 반응의 세계",
+  생명과학Ⅰ: "생명과학",
+  생명과학Ⅱ: "세포와 물질대사",
+  지구과학Ⅰ: "지구과학",
+  지구과학Ⅱ: "지구시스템과학",
+  "사회·문화": "사회와 문화",
+  "경제 수학": "경제",
+  "사회문제 탐구": "사회와 문화",
+};
+
+const convertSubjectsTo2022 = (subjects: string[]): string[] => {
+  const converted = new Set<string>();
+  for (const s of subjects) {
+    converted.add(SUBJECT_NAME_2015_TO_2022[s] ?? s);
+  }
+  return [...converted];
+};
+
+/** 텍스트 내 2015 과목명을 2022 과목명으로 일괄 치환 */
+const convertTextTo2022 = (text: string): string => {
+  let result = text;
+  // 긴 패턴부터 치환 (부분 매칭 방지)
+  const sortedEntries = Object.entries(SUBJECT_NAME_2015_TO_2022).sort(
+    (a, b) => b[0].length - a[0].length
+  );
+  for (const [from, to] of sortedEntries) {
+    result = result.replaceAll(from, to);
+  }
+  return result;
+};
+
 export const formatMajorEvaluationContext = (
   criteria: MajorEvaluationCriteria,
-  targetDept: string
+  targetDept: string,
+  gradingSystem?: "5등급제" | "9등급제"
 ): string => {
   const lines: string[] = [];
 
@@ -528,13 +568,15 @@ export const formatMajorEvaluationContext = (
   );
   lines.push("");
 
+  const t = gradingSystem === "5등급제" ? convertTextTo2022 : (s: string) => s;
+
   lines.push(`### 핵심 평가 교과: ${criteria.keySubjects.join(", ")}`);
-  lines.push(criteria.keySubjectFocus);
+  lines.push(t(criteria.keySubjectFocus));
   lines.push("");
 
   lines.push("### 입학사정관이 주목하는 활동 유형");
   for (const activity of criteria.valuedActivities) {
-    lines.push(`- ${activity}`);
+    lines.push(`- ${t(activity)}`);
   }
   lines.push("");
 
@@ -555,25 +597,34 @@ export const formatMajorEvaluationContext = (
 
   lines.push("### 진로역량 핵심 평가 포인트");
   for (const point of criteria.careerFocusPoints) {
-    lines.push(`- ${point}`);
+    lines.push(`- ${t(point)}`);
   }
   lines.push("");
 
   lines.push("### 이 계열에서 약점으로 작용하는 요소");
   for (const risk of criteria.riskFactors) {
-    lines.push(`- ${risk}`);
+    lines.push(`- ${t(risk)}`);
   }
   lines.push("");
 
-  if (criteria.coreSubjects.length > 0) {
+  const coreSubjects =
+    gradingSystem === "5등급제"
+      ? convertSubjectsTo2022(criteria.coreSubjects)
+      : criteria.coreSubjects;
+  const recommendedSubjects =
+    gradingSystem === "5등급제"
+      ? convertSubjectsTo2022(criteria.recommendedSubjects)
+      : criteria.recommendedSubjects;
+
+  if (coreSubjects.length > 0) {
     lines.push(`### 핵심 권장과목 (importancePercent 30~40%에 해당)`);
-    lines.push(criteria.coreSubjects.join(", "));
+    lines.push(coreSubjects.join(", "));
     lines.push("");
   }
 
-  if (criteria.recommendedSubjects.length > 0) {
+  if (recommendedSubjects.length > 0) {
     lines.push(`### 권장과목 (importancePercent 15~25%에 해당)`);
-    lines.push(criteria.recommendedSubjects.join(", "));
+    lines.push(recommendedSubjects.join(", "));
     lines.push("");
   }
 

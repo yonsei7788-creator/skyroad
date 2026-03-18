@@ -164,6 +164,7 @@ export const executeTask = async (
           competencyExtraction: JSON.stringify(competencyExtraction),
           preprocessedAcademicData: texts.preprocessedAcademicDataText,
           studentProfile: texts.studentProfileText,
+          gradingSystem: state.preprocessedData?.gradingSystem,
         })
       );
 
@@ -177,12 +178,28 @@ export const executeTask = async (
     // 3) 생기부 기반 계열로 평가 기준 + 대학 후보군 항상 재생성
     //    희망학과가 아닌, Phase 2에서 감지한 실제 강점 계열을 기준으로 함
     let correctedTexts = texts;
-    const detected = competencyExtraction.detectedMajorGroup;
+    // detectedMajorGroup이 null이면 생기부 성적 데이터 기반 폴백 (희망학과 사용 금지)
+    let detected = competencyExtraction.detectedMajorGroup;
+    if (!detected && state.preprocessedData?.subjectCombinations) {
+      const combos = state.preprocessedData.subjectCombinations;
+      const sciAvg = combos.find((c) => c.name === "국수영과")?.average;
+      const socAvg = combos.find((c) => c.name === "국수영사")?.average;
+      // 등급 평균이 낮을수록 우수 → 과학 평균이 사회보다 낮으면 이과 성향
+      if (sciAvg != null && socAvg != null) {
+        detected = sciAvg <= socAvg ? "자연과학" : "인문";
+      } else {
+        detected = "자연과학"; // 데이터 부족 시 기본값
+      }
+      console.log(
+        `[report:${reportId}] ⚠️ detectedMajorGroup null — 생기부 성적 기반 폴백: ${detected} (국수영과=${sciAvg}, 국수영사=${socAvg})`
+      );
+    }
     if (detected) {
       const detectedCriteria = findCriteriaByMajorGroup(detected);
       const correctedContext = formatMajorEvaluationContext(
         detectedCriteria,
-        `${detected} (생기부 분석 기반)`
+        `${detected} (생기부 분석 기반)`,
+        state.preprocessedData?.gradingSystem
       );
       const correctedCandidates = buildUniversityCandidatesText(
         detected,
@@ -200,10 +217,17 @@ export const executeTask = async (
         universityCandidatesText: correctedCandidates,
         recommendedCourseMatchText: correctedCourseMatch,
       };
+      // preprocessedData.recommendedCourseMatch 객체도 동기화
+      // (postprocessor가 이 객체로 courses를 강제 덮어쓰므로 반드시 업데이트)
+      state.preprocessedData!.recommendedCourseMatch =
+        JSON.parse(correctedCourseMatch);
 
       const targetDept = studentInfo.targetDepartment ?? "";
       const targetCriteria = matchMajorEvaluationCriteria(targetDept);
-      if (targetCriteria.majorGroup !== detectedCriteria.majorGroup) {
+      const isAIDetected = !!competencyExtraction.detectedMajorGroup;
+      if (!isAIDetected) {
+        // 로그는 위 폴백 블록에서 이미 출력됨
+      } else if (targetCriteria.majorGroup !== detectedCriteria.majorGroup) {
         console.log(
           `[report:${reportId}] 계열 보정: ${targetCriteria.majorGroup}(희망) → ${detectedCriteria.majorGroup}(생기부 실제). 근거: ${competencyExtraction.detectedMajorReason ?? ""}`
         );
@@ -321,11 +345,41 @@ export const executeTask = async (
       );
       break;
 
-    case "courseAlignment":
+    case "courseAlignment": {
+      // Phase 2에서 감지한 계열 기반으로 권장과목 즉시 재생성 (state 전달 문제 방지)
+      let courseMatchText = texts.recommendedCourseMatchText;
+      let detectedGroup =
+        state.phase2Results?.competencyExtraction?.detectedMajorGroup;
+      // phase2Results가 없으면 serializedTexts에서 파싱
+      if (!detectedGroup && ser.compExtrText) {
+        try {
+          const parsed = JSON.parse(ser.compExtrText);
+          detectedGroup = parsed.detectedMajorGroup;
+        } catch {
+          // 파싱 실패 시 무시
+        }
+      }
+      // 그래도 없으면 생기부 성적 기반 폴백
+      if (!detectedGroup && state.preprocessedData?.subjectCombinations) {
+        const combos = state.preprocessedData.subjectCombinations;
+        const sciAvg = combos.find((c) => c.name === "국수영과")?.average;
+        const socAvg = combos.find((c) => c.name === "국수영사")?.average;
+        detectedGroup =
+          sciAvg != null && socAvg != null && sciAvg <= socAvg
+            ? "자연과학"
+            : "인문";
+      }
+      if (detectedGroup) {
+        courseMatchText = rebuildRecommendedCourseMatchText(
+          detectedGroup,
+          state.preprocessedData!,
+          studentInfo.grade
+        );
+      }
       section = await callGemini<ReportSection>(
         buildCourseAlignmentPrompt(
           {
-            recommendedCourseMatch: texts.recommendedCourseMatchText,
+            recommendedCourseMatch: courseMatchText,
             competencyExtraction: ser.compExtrText!,
             studentProfile: texts.studentProfileText,
             studentGrade: studentInfo.grade,
@@ -336,6 +390,7 @@ export const executeTask = async (
         )
       );
       break;
+    }
 
     case "subjectAnalysis":
       section = await callGemini<ReportSection>(
@@ -344,6 +399,7 @@ export const executeTask = async (
             subjectData: texts.subjectDataText,
             studentProfile: texts.studentProfileText,
             isMedical,
+            gradingSystem: state.preprocessedData!.gradingSystem,
           },
           plan
         )
@@ -375,6 +431,7 @@ export const executeTask = async (
             academicAnalysis: ser.acadAnalText!,
             studentProfile: texts.studentProfileText,
             isMedical,
+            gradingSystem: state.preprocessedData!.gradingSystem,
           },
           plan
         )

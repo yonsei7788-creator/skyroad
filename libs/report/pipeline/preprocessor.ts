@@ -731,31 +731,40 @@ const findMatchingMajor = (
     recommendedCourses: string[];
   }[]
 ): (typeof recommendations)[number] | undefined => {
-  // matchMajorEvaluationCriteria의 정규식 기반 매칭 결과를 활용
-  const criteria = matchMajorEvaluationCriteria(targetDept);
-  const { majorGroup } = criteria;
+  // 1) targetDept가 이미 계열명인 경우 직접 매칭 (detectedMajorGroup 등)
+  const directByDept = recommendations.find((m) => m.major === targetDept);
+  if (directByDept) return directByDept;
 
-  // majorGroup과 recommendations의 major명 매핑
-  // (major-evaluation-criteria의 majorGroup과 recommended-courses의 major가 동일한 경우 직접 매칭)
-  const direct = recommendations.find((m) => m.major === majorGroup);
-  if (direct) return direct;
-
-  // majorGroup → recommended-courses major 매핑 (이름이 다른 경우)
+  // 2) detectedMajorGroup ↔ recommended-courses major 이름이 다른 경우 매핑
   const GROUP_TO_COURSE_MAJOR: Record<string, string[]> = {
     의생명: ["의학", "생명바이오"],
-    교육: ["인문", "사회과학"],
-    // 예체능은 recommended-courses.ts에 직접 정의됨 → direct 매칭
   };
 
-  const alternatives = GROUP_TO_COURSE_MAJOR[majorGroup];
-  if (alternatives) {
-    for (const alt of alternatives) {
+  const altsByDept = GROUP_TO_COURSE_MAJOR[targetDept];
+  if (altsByDept) {
+    for (const alt of altsByDept) {
       const found = recommendations.find((m) => m.major === alt);
       if (found) return found;
     }
   }
 
-  // 폴백: includes 매칭
+  // 3) 학과명(예: "체육교육과")에서 계열 추론 (matchMajorEvaluationCriteria 기반)
+  const criteria = matchMajorEvaluationCriteria(targetDept);
+  const { majorGroup } = criteria;
+
+  const direct = recommendations.find((m) => m.major === majorGroup);
+  if (direct) return direct;
+
+  // 4) majorGroup도 매핑이 필요한 경우
+  const altsByGroup = GROUP_TO_COURSE_MAJOR[majorGroup];
+  if (altsByGroup) {
+    for (const alt of altsByGroup) {
+      const found = recommendations.find((m) => m.major === alt);
+      if (found) return found;
+    }
+  }
+
+  // 5) 폴백: includes 매칭
   return recommendations.find(
     (m) =>
       targetDept.includes(m.major) ||
@@ -996,7 +1005,8 @@ const buildTexts = (
 ): PreprocessedTexts => {
   const studentProfileText = formatStudentProfile(
     studentInfo,
-    data.convertedGrade
+    data.convertedGrade,
+    data.gradingSystem
   );
   const recordDataText = formatRecordData(recordData);
   const subjectDataText = formatSubjectEvaluations(
@@ -1025,7 +1035,11 @@ const buildTexts = (
   const targetDept = studentInfo.targetDepartment ?? "";
   const majorCriteria = matchMajorEvaluationCriteria(targetDept);
   const majorEvalBase = targetDept
-    ? formatMajorEvaluationContext(majorCriteria, targetDept)
+    ? formatMajorEvaluationContext(
+        majorCriteria,
+        targetDept,
+        data.gradingSystem
+      )
     : "";
   // 커리어넷 API 기반 학과 관련 교과 정보 추가
   const majorInfoFromApi = targetDept ? findMajorInfo(targetDept) : undefined;
@@ -1110,11 +1124,10 @@ const FIVE_GRADE_UNIVERSITY_CUTOFF: Record<string, number> = {
   // 1.6: 한양대(ERICA), 한국항공대
   "한양대학교(ERICA)": 1.6,
   한국항공대학교: 1.6,
-  // 1.7: 광운대, 명지대, 상명대, 가톨릭대
+  // 1.7: 광운대, 명지대, 상명대
   광운대학교: 1.7,
   명지대학교: 1.7,
   상명대학교: 1.7,
-  가톨릭대학교: 1.7,
   // 1.8: 인천대, 가천대, 경기대
   인천대학교: 1.8,
   가천대학교: 1.8,
@@ -1317,7 +1330,8 @@ export const buildUniversityCandidatesText = (
 
 const formatStudentProfile = (
   info: StudentInfo,
-  convertedGrade?: PreprocessedData["convertedGrade"]
+  convertedGrade?: PreprocessedData["convertedGrade"],
+  gradingSystem?: "5등급제" | "9등급제"
 ): string => {
   const statusLabel = info.isGraduate
     ? "졸업생(N수생)"
@@ -1336,6 +1350,7 @@ const formatStudentProfile = (
     `계열: ${info.track}`,
     `학교 유형: ${info.schoolType}`,
     ...(info.highSchoolRegion ? [`고교 소재지: ${info.highSchoolRegion}`] : []),
+    ...(gradingSystem ? [`적용 등급제: ${gradingSystem}`] : []),
   ];
   if (convertedGrade) {
     lines.push(
