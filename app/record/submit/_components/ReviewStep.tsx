@@ -1,4 +1,6 @@
-import type { InputMethod, SchoolRecord } from "./types";
+import { AlertCircle } from "lucide-react";
+
+import type { InputMethod, SchoolRecord, ValidationError } from "./types";
 import { SECTION_TABS, REQUIRED_SECTION_KEYS } from "./types";
 
 import styles from "../page.module.css";
@@ -6,10 +8,24 @@ import styles from "../page.module.css";
 interface ReviewStepProps {
   method: InputMethod;
   record: SchoolRecord;
+  validationErrors?: ValidationError[];
 }
 
-export const ReviewStep = ({ record }: ReviewStepProps) => (
+export const ReviewStep = ({
+  record,
+  validationErrors = [],
+}: ReviewStepProps) => (
   <div className={styles.reviewStep}>
+    {validationErrors.length > 0 && (
+      <div className={styles.parseErrorBox}>
+        <AlertCircle size={16} />
+        <div>
+          {validationErrors.map((e, i) => (
+            <p key={i}>{e.message}</p>
+          ))}
+        </div>
+      </div>
+    )}
     <TextReview record={record} />
   </div>
 );

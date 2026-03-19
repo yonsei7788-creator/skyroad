@@ -480,13 +480,151 @@ export interface ValidationError {
 /** 필수 필드 검증. 미충족 항목만 반환. */
 export const validateRequiredFields = (
   record: SchoolRecord
-): ValidationError[] =>
-  REQUIRED_FIELD_RULES.filter(
-    (rule) => (record[rule.key] ?? []).length < rule.minCount
-  ).map((rule) => ({
-    key: rule.key,
-    label: rule.label,
-    message: rule.message,
-    current: (record[rule.key] ?? []).length,
-    required: rule.minCount,
-  }));
+): ValidationError[] => {
+  const errors: ValidationError[] = [];
+
+  // ── 1) 섹션별 최소 행 수 검증 ──
+  for (const rule of REQUIRED_FIELD_RULES) {
+    const count = (record[rule.key] ?? []).length;
+    if (count < rule.minCount) {
+      errors.push({
+        key: rule.key,
+        label: rule.label,
+        message: rule.message,
+        current: count,
+        required: rule.minCount,
+      });
+    }
+  }
+
+  // ── 2) 행 내부 필수값 검증 ──
+
+  // 출결: 수업일수 필수
+  for (const row of record.attendance) {
+    if (row.totalDays === null || row.totalDays === undefined) {
+      errors.push({
+        key: "attendance",
+        label: "출결상황",
+        message: `${row.year}학년 수업일수가 비어있습니다`,
+        current: 0,
+        required: 1,
+      });
+      break;
+    }
+  }
+
+  // 일반교과: 과목명, 등급 필수
+  for (const row of record.generalSubjects) {
+    if (!row.subject) {
+      errors.push({
+        key: "generalSubjects",
+        label: "일반교과 성적",
+        message: `${row.year}-${row.semester}학기 과목명이 비어있는 행이 있습니다`,
+        current: 0,
+        required: 1,
+      });
+      break;
+    }
+  }
+  const noGradeRows = record.generalSubjects.filter(
+    (r) => r.gradeRank === null || r.gradeRank === undefined
+  );
+  if (
+    record.generalSubjects.length > 0 &&
+    noGradeRows.length === record.generalSubjects.length
+  ) {
+    errors.push({
+      key: "generalSubjects",
+      label: "일반교과 성적",
+      message: "모든 일반교과의 석차등급이 비어있습니다",
+      current: 0,
+      required: 1,
+    });
+  }
+
+  // 진로선택: 과목명 필수
+  for (const row of record.careerSubjects) {
+    if (!row.subject) {
+      errors.push({
+        key: "careerSubjects",
+        label: "진로선택 성적",
+        message: `${row.year}-${row.semester}학기 과목명이 비어있는 행이 있습니다`,
+        current: 0,
+        required: 1,
+      });
+      break;
+    }
+  }
+
+  // 체육/예술: 과목명 필수
+  for (const row of record.artsPhysicalSubjects) {
+    if (!row.subject) {
+      errors.push({
+        key: "artsPhysicalSubjects",
+        label: "체육/예술 성적",
+        message: `${row.year}-${row.semester}학기 과목명이 비어있는 행이 있습니다`,
+        current: 0,
+        required: 1,
+      });
+      break;
+    }
+  }
+
+  // 세특: 과목명, 내용 필수
+  for (const row of record.subjectEvaluations) {
+    if (!row.subject || !row.evaluation) {
+      errors.push({
+        key: "subjectEvaluations",
+        label: "세부능력 및 특기사항",
+        message: `${row.year}학년 세특에 과목명 또는 내용이 비어있는 행이 있습니다`,
+        current: 0,
+        required: 1,
+      });
+      break;
+    }
+  }
+
+  // 창체: 영역 필수
+  for (const row of record.creativeActivities) {
+    if (!row.area) {
+      errors.push({
+        key: "creativeActivities",
+        label: "창의적 체험활동",
+        message: `${row.year}학년 창체 영역이 비어있는 행이 있습니다`,
+        current: 0,
+        required: 1,
+      });
+      break;
+    }
+  }
+
+  // 행특: 내용 필수
+  for (const row of record.behavioralAssessments) {
+    if (!row.assessment) {
+      errors.push({
+        key: "behavioralAssessments",
+        label: "행동특성 및 종합의견",
+        message: `${row.year}학년 행동특성 내용이 비어있습니다`,
+        current: 0,
+        required: 1,
+      });
+      break;
+    }
+  }
+
+  // 모의고사: 과목명 필수
+  for (const row of record.mockExams) {
+    if (!row.subject) {
+      errors.push({
+        key: "mockExams",
+        label: "모의고사 성적",
+        message: `${row.year}학년 ${row.month}월 모의고사 과목명이 비어있는 행이 있습니다`,
+        current: 0,
+        required: 1,
+      });
+      break;
+    }
+  }
+
+  return errors;
+};

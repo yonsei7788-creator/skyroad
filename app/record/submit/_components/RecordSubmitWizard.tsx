@@ -521,7 +521,11 @@ export const RecordSubmitWizard = ({
           )}
 
           {state.step === reviewStep && state.method && (
-            <ReviewStep method={state.method} record={state.record} />
+            <ReviewStep
+              method={state.method}
+              record={state.record}
+              validationErrors={requiredFieldErrors}
+            />
           )}
 
           {/* Parse error (shown on step 2 for pdf/image) */}
@@ -618,7 +622,7 @@ export const RecordSubmitWizard = ({
                 type="button"
                 className={styles.wizardSubmitBtn}
                 onClick={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !isRequiredFieldsMet}
               >
                 {isSubmitting ? (
                   <>

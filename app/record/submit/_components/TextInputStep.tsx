@@ -1084,6 +1084,20 @@ export const TextInputStep = ({
             );
           })}
         </ul>
+        {/* 행 내부 필수값 검증 에러 */}
+        {requiredFieldErrors
+          .filter(
+            (e) =>
+              !REQUIRED_FIELD_RULES.some(
+                (r) => r.key === e.key && r.message === e.message
+              )
+          )
+          .map((e, i) => (
+            <p key={i} className={styles.requiredChecklistItemUnmet}>
+              <AlertCircle size={14} />
+              <span>{e.message}</span>
+            </p>
+          ))}
       </div>
     </div>
   );
