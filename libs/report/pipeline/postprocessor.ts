@@ -25,6 +25,7 @@ import {
   MAJOR_INFO_DATA,
 } from "../constants/major-info-data.ts";
 import { findCutoffData } from "../constants/admission-cutoff-data.ts";
+import { correctSubjectNamesInText } from "../constants/subject-name-corrections.ts";
 
 // ─── 검증 결과 타입 ───
 
@@ -1106,7 +1107,33 @@ export const postprocess = (
     sections: validatedSections,
   };
 
-  // 7. 플랜별 검증
+  // 7. 5등급제(2022 교육과정) 학생: AI 텍스트 내 과목명 보정
+  if (preprocessed.curriculumVersion === "2022") {
+    const fixText = (obj: unknown): void => {
+      if (!obj || typeof obj !== "object") return;
+      for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {
+        if (typeof val === "string" && val.length > 0) {
+          (obj as Record<string, unknown>)[key] =
+            correctSubjectNamesInText(val);
+        } else if (Array.isArray(val)) {
+          for (let i = 0; i < val.length; i++) {
+            if (typeof val[i] === "string") {
+              val[i] = correctSubjectNamesInText(val[i] as string);
+            } else if (typeof val[i] === "object") {
+              fixText(val[i]);
+            }
+          }
+        } else if (typeof val === "object") {
+          fixText(val);
+        }
+      }
+    };
+    for (const section of content.sections) {
+      fixText(section);
+    }
+  }
+
+  // 8. 플랜별 검증
   const planValidationErrors = validateByPlan(content);
 
   return {
@@ -2427,6 +2454,19 @@ const normalizeSection = (
       }
       return result;
     };
+
+    // overallComment가 객체인 경우 문자열로 강제 변환 (AI가 객체를 반환하는 경우 방어)
+    if (s.overallComment != null && typeof s.overallComment !== "string") {
+      if (typeof s.overallComment === "object") {
+        s.overallComment = Object.values(
+          s.overallComment as Record<string, unknown>
+        )
+          .filter((v) => typeof v === "string")
+          .join(" ");
+      } else {
+        s.overallComment = String(s.overallComment);
+      }
+    }
 
     // admissionPrediction: predictions[].analysis, universityPredictions[].rationale, overallComment
     if (Array.isArray(s.predictions)) {

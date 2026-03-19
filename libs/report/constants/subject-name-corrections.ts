@@ -46,3 +46,34 @@ export const SUBJECT_NAME_CORRECTIONS: Record<string, string> = {
 export const correctSubjectName = (name: string): string => {
   return SUBJECT_NAME_CORRECTIONS[name] ?? name;
 };
+
+/**
+ * AI 생성 텍스트 내 과목명 치환 맵.
+ * AI가 2015 교육과정 과목명이나 약칭을 사용할 때 2022 교육과정 정식 명칭으로 보정.
+ * 키: 잘못된 표현 (정규식 패턴이 아닌 문자열)
+ * 값: 올바른 표현
+ */
+export const AI_TEXT_SUBJECT_CORRECTIONS: [string, string][] = [
+  // 2015 → 2022 과목명 변환
+  ["사회문화", "사회와 문화"],
+  ["사회·문화", "사회와 문화"],
+  ["정치와법", "정치"],
+  ["정치와 법", "정치"],
+  // 약칭 → 정식 명칭
+  ["생활윤리", "생활과 윤리"],
+  ["윤리사상", "윤리와 사상"],
+];
+
+/**
+ * AI 생성 텍스트 내 과목명을 2022 교육과정 정식 명칭으로 보정.
+ * 5등급제(2022 교육과정) 학생의 리포트에서만 사용.
+ */
+export const correctSubjectNamesInText = (text: string): string => {
+  let result = text;
+  for (const [wrong, correct] of AI_TEXT_SUBJECT_CORRECTIONS) {
+    // 이미 올바른 이름의 일부가 아닌 경우에만 치환
+    // 예: "사회와 문화"에 포함된 "사회문화"를 또 치환하면 안 됨
+    result = result.split(wrong).join(correct);
+  }
+  return result;
+};
