@@ -13,6 +13,7 @@ export interface ConsultantReviewPromptInput {
   studentGrade: number;
   currentDate: string;
   isMedical?: boolean;
+  completedSubjectsByYear?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -103,6 +104,17 @@ export const buildConsultantReviewPrompt = (
 ## ⚠️ completionDirection 시점 규칙 (필수)
 - 현재 날짜: ${input.currentDate}
 - 학생 학년: ${input.studentGrade}학년
+
+⛔⛔⛔ **이수 완료 과목 성적 개선 권고 절대 금지 (최우선 규칙)**:
+- "이수 완료 과목 정보"에 나열된 과목은 성적이 확정되어 변경 불가능합니다.
+- completionDirection, gradeAnalysis, courseEffort 등 **모든 필드**에서 이수 완료 과목의 성적을 올리라는 조언을 하면 안 됩니다.
+- ⚠️ **이수 완료 과목명(공통국어1, 통합사회1, 통합과학1 등)을 "성적 향상" 맥락에서 언급하는 것 자체가 금지입니다.**
+- ❌ "국어, 통합사회, 통합과학 성적을 2등급으로 끌어올려야 합니다" (이미 이수 완료 → 불가능)
+- ❌ "통합사회와 같은 사회 교과 영역의 선택과목 성적을 올려야 합니다" (이수 완료 과목명을 예시로 사용 → 금지)
+- ❌ "3등급을 받았던 국어, 통합사회, 통합과학 과목의 2학년 성적을 끌어올려" (이수 완료 과목명 직접 언급 → 금지)
+- ✅ "국어 교과 영역에서 2학년 선택과목(예: 문학, 화법과 언어 등) 성적을 2등급 이내로 확보해야 합니다"
+- ✅ "사회탐구 영역에서 사회와 문화, 윤리와 사상 등 선택과목 성적이 중요합니다"
+- ✅ "1학년에서 약점이었던 **교과 영역**(국어, 사회, 과학)에서 2학년 선택과목으로 만회해야 합니다"
 ${
   input.studentGrade <= 2
     ? `- 이 학생은 아직 ${input.studentGrade}학년입니다. **"남은 기간동안"으로 시작**하세요.
@@ -210,6 +222,8 @@ ${input.academicAnalysis}
 
 ### 학생 프로필
 ${input.studentProfile}
+
+${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}` : ""}
 
 ### 교과 세특 분석 결과
 ${input.subjectAnalysisResult}

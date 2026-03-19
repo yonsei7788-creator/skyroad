@@ -106,13 +106,17 @@ export const POST = async (
       console.log(
         `[report:${reportId}] 마지막 태스크! 총 ${sections.length}개 섹션으로 후처리 시작`
       );
+      const detectedMajor =
+        nextState.phase2Results?.competencyExtraction?.detectedMajorGroup;
+
       const result = postprocess(
         sections,
         nextState.preprocessedData!,
         studentInfo,
         plan,
         reportId,
-        nextState.preprocessedTexts?.universityCandidatesText
+        nextState.preprocessedTexts?.universityCandidatesText,
+        detectedMajor
       );
 
       await dbClient

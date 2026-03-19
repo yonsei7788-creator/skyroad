@@ -48,7 +48,9 @@ export const postprocess = (
   studentInfo: StudentInfo,
   plan: ReportPlan,
   reportId: string,
-  universityCandidatesText?: string
+  universityCandidatesText?: string,
+  /** Phase 2에서 감지된 생기부 기반 강점 계열 (예: "예체능교육") */
+  detectedMajorGroup?: string
 ): PostprocessResult => {
   const validationResults: SectionValidationResult[] = [];
 
@@ -564,12 +566,22 @@ export const postprocess = (
       const unreachableGap9 = 1.5;
       const tooEasyGap9 = 1.5;
 
-      // admissionPrediction: 비현실적 대학 제거
+      // 유저 희망대학 Set (비현실적 제거에서 예외 — 유저가 직접 선택한 대학은 솔직한 분석과 함께 유지)
+      const userTargetUniSet = new Set<string>();
+      if (studentInfo.targetUniversities) {
+        for (const tu of studentInfo.targetUniversities) {
+          userTargetUniSet.add(tu.universityName);
+        }
+      }
+
+      // admissionPrediction: 비현실적 대학 제거 (유저 희망대학 예외)
       if (admPred && Array.isArray(admPred.predictions)) {
         for (const pred of admPred.predictions) {
           if (!Array.isArray(pred.universityPredictions)) continue;
           pred.universityPredictions = pred.universityPredictions.filter(
             (up: any) => {
+              // 유저 희망대학은 등급이 맞지 않더라도 유지
+              if (userTargetUniSet.has(up.university)) return true;
               const cutoff9 = getCutoff9(up.university, up.department);
               if (cutoff9 == null) return true;
               if (studentGrade9 - cutoff9 > unreachableGap9) {
@@ -589,8 +601,10 @@ export const postprocess = (
         for (const sim of admStrat.simulations) {
           if (!Array.isArray(sim.cards)) continue;
 
-          // 1단계: 비현실적/너무 쉬운 대학 제거
+          // 1단계: 비현실적/너무 쉬운 대학 제거 (유저 희망대학 예외)
           sim.cards = sim.cards.filter((card: any) => {
+            // 유저 희망대학은 등급이 맞지 않더라도 유지
+            if (userTargetUniSet.has(card.university)) return true;
             const cutoff9 = getCutoff9(card.university, card.department);
             if (cutoff9 == null) return true;
             const gap = studentGrade9 - cutoff9;
@@ -685,10 +699,13 @@ export const postprocess = (
   if (subjectData?.subjects) {
     const { track } = studentInfo; // "문과" | "이과"
     const grade = studentInfo.grade ?? 3;
-    const recommendations = getMajorCourseRecommendations(grade);
+    const recommendations = getMajorCourseRecommendations(
+      grade,
+      preprocessed.curriculumVersion
+    );
 
-    // 학생의 목표학과에 매칭되는 계열 찾기
-    const targetDept = studentInfo.targetDepartment ?? "";
+    // detectedMajorGroup 우선 사용, 없으면 희망학과 폴백
+    const targetDept = detectedMajorGroup || studentInfo.targetDepartment || "";
     const matchedMajor = recommendations.find((r) => {
       const majorLower = r.major.toLowerCase();
       const deptLower = targetDept.toLowerCase();
@@ -796,16 +813,52 @@ export const postprocess = (
       return result;
     };
 
-    const majorInfo = findMajorInfo(targetDept);
-    const expandedElective = expandCareerNetSubjects(
-      majorInfo?.electiveSubjects ?? []
-    );
-    const expandedCareer = expandCareerNetSubjects(
-      majorInfo?.careerSubjects ?? []
-    );
-    const careerNetElective = new Set(expandedElective);
-    const careerNetCareer = new Set(expandedCareer);
-    const careerNetSubjects = new Set([...expandedElective, ...expandedCareer]);
+    // 커리어넷 API 검색: detectedMajorGroup은 계열명("예체능교육")이므로
+    // 학과명(targetDepartment)으로도 검색하여 합산
+    const majorInfoByDept = findMajorInfo(targetDept);
+    const majorInfoByTarget = studentInfo.targetDepartment
+      ? findMajorInfo(studentInfo.targetDepartment)
+      : undefined;
+    const mergedElective = [
+      ...expandCareerNetSubjects(majorInfoByDept?.electiveSubjects ?? []),
+      ...expandCareerNetSubjects(majorInfoByTarget?.electiveSubjects ?? []),
+    ];
+    const mergedCareer = [
+      ...expandCareerNetSubjects(majorInfoByDept?.careerSubjects ?? []),
+      ...expandCareerNetSubjects(majorInfoByTarget?.careerSubjects ?? []),
+    ];
+    const careerNetElective = new Set(mergedElective);
+    const careerNetCareer = new Set(mergedCareer);
+    const careerNetSubjects = new Set([...mergedElective, ...mergedCareer]);
+
+    // 예체능 과목 목록
+    const ARTS_PHYSICAL_SUBJECTS = new Set([
+      "체육",
+      "체육1",
+      "체육2",
+      "운동과 건강",
+      "스포츠 생활",
+      "스포츠 문화",
+      "체육 탐구",
+      "음악",
+      "음악1",
+      "음악2",
+      "미술",
+      "미술1",
+      "미술2",
+      "음악 감상과 비평",
+      "미술 감상과 비평",
+      "음악 연주와 창작",
+      "미술 창작",
+    ]);
+
+    // 예체능/예체능교육 계열이면 예체능 과목을 비핵심에서 제외
+    const isArtsPhysicalMajor =
+      targetDept === "예체능" ||
+      targetDept === "예체능교육" ||
+      (studentInfo.targetDepartment ?? "")
+        .toLowerCase()
+        .match(/체육|음악|미술|무용|디자인/) !== null;
 
     // 비핵심 과목 (evaluationImpact: very_low)
     // ⚠️ "정보"는 컴공/AI 계열에서 핵심이므로 여기서 제외 — 커리어넷 매칭으로 판정
@@ -830,13 +883,24 @@ export const postprocess = (
       "보건",
       "환경",
       "논리학",
-      "체육",
-      "운동과 건강",
-      "스포츠 생활",
-      "음악",
-      "미술",
-      "음악 감상과 비평",
-      "미술 감상과 비평",
+      // 예체능 과목: 예체능/예체능교육 계열이 아닌 경우에만 비핵심
+      ...(!isArtsPhysicalMajor
+        ? [
+            "체육",
+            "체육1",
+            "체육2",
+            "운동과 건강",
+            "스포츠 생활",
+            "음악",
+            "음악1",
+            "음악2",
+            "미술",
+            "미술1",
+            "미술2",
+            "음악 감상과 비평",
+            "미술 감상과 비평",
+          ]
+        : []),
     ]);
 
     // 공통 기초 과목 (최소 medium)
@@ -933,6 +997,11 @@ export const postprocess = (
 
       // 2. 기존 recommended-courses 데이터 보완
       if (recommendedSet.has(name)) return "high";
+
+      // 2-1. 예체능/예체능교육 계열: 예체능 과목 최소 medium 보장
+      if (isArtsPhysicalMajor && ARTS_PHYSICAL_SUBJECTS.has(name)) {
+        return "medium";
+      }
 
       // 3. 비핵심 과목 → very_low (커리어넷/추천과목에 없는 경우에만)
       if (NON_CORE_SUBJECTS.has(name)) return "very_low";
@@ -1635,9 +1704,20 @@ const normalizeSection = (
     // ── gradeChangeAnalysis: AI 필드명 매핑 + 코드값 강제 ──
     if (s.gradeChangeAnalysis) {
       const g = s.gradeChangeAnalysis;
+      const trend = trendMap[pre.gradeTrend.direction] || "유지";
+      let prediction = g.prediction || g.analysis || "";
+      // prediction 빈 문자열 방지 (Zod 검증 실패 방지)
+      if (!prediction || prediction.trim().length === 0) {
+        const trendPredictions: Record<string, string> = {
+          상승: "성적 상승 추세는 입학사정관이 발전가능성을 긍정적으로 평가하는 핵심 근거입니다. 현재 추세를 유지하면서 약점 과목을 보완하면 경쟁력을 높일 수 있습니다.",
+          유지: "성적이 안정적으로 유지되고 있습니다. 현 수준을 바탕으로 세특과 활동의 깊이를 강화하면 학종에서 경쟁력을 확보할 수 있습니다.",
+          하락: "성적 하락 추세는 학업 태도에 대한 의문으로 이어질 수 있습니다. 조속한 성적 반등이 필요하며, 하락 원인을 파악하고 학습 전략을 재수립해야 합니다.",
+        };
+        prediction = trendPredictions[trend] ?? trendPredictions["유지"];
+      }
       s.gradeChangeAnalysis = {
-        currentTrend: trendMap[pre.gradeTrend.direction] || "유지",
-        prediction: g.prediction || g.analysis || "",
+        currentTrend: trend,
+        prediction,
         actionItems: g.actionItems || g.recommendations || [],
         actionItemPriorities: g.actionItemPriorities || [],
       };

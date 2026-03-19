@@ -414,6 +414,18 @@ export const MAJOR_COURSE_RECOMMENDATIONS_2015: MajorCourseRecommendation[] = [
     coreSubjects: ["국어", "영어"],
     recommendedCourses: ["국어", "영어", "사회·문화", "생활과 윤리", "한국사"],
   },
+  {
+    major: "예체능교육",
+    coreSubjects: ["국어", "영어", "사회"],
+    recommendedCourses: [
+      "국어",
+      "영어",
+      "사회·문화",
+      "생활과 윤리",
+      "한국사",
+      "윤리와 사상",
+    ],
+  },
 ];
 
 // ─── 2022 개정 교육과정 (고1·고2, grade <= 2) ───
@@ -529,6 +541,11 @@ export const MAJOR_COURSE_RECOMMENDATIONS_2022: MajorCourseRecommendation[] = [
     major: "예체능",
     coreSubjects: ["국어", "영어"],
     recommendedCourses: ["사회와 문화", "윤리와 사상"],
+  },
+  {
+    major: "예체능교육",
+    coreSubjects: ["국어", "영어", "사회"],
+    recommendedCourses: ["사회와 문화", "윤리와 사상", "확률과 통계", "세계사"],
   },
 ];
 

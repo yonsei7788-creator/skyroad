@@ -7,6 +7,7 @@ import { join } from "path";
 import crypto from "crypto";
 
 import { createClient } from "@/libs/supabase/server";
+import { correctSubjectName } from "@/libs/report/constants/subject-name-corrections";
 
 export const maxDuration = 120;
 export const dynamic = "force-dynamic";
@@ -223,6 +224,14 @@ const REQUIRED_NUMBER_FIELDS: Record<string, Record<string, number>> = {
   behavioralAssessments: { year: 1 },
 };
 
+/** subject 필드가 있는 섹션들 — 과목명 오타 보정 대상 */
+const SUBJECT_FIELD_SECTIONS = new Set([
+  "generalSubjects",
+  "careerSubjects",
+  "artsPhysicalSubjects",
+  "subjectEvaluations",
+]);
+
 const enrichWithIds = (raw: RawRecord): RawRecord => {
   const sections = Object.keys(STRING_FIELDS) as (keyof typeof STRING_FIELDS)[];
 
@@ -243,6 +252,13 @@ const enrichWithIds = (raw: RawRecord): RawRecord => {
             if (fixed[f] === null || fixed[f] === undefined) {
               fixed[f] = defaultVal;
             }
+          }
+          // 과목명 오타 보정 (PDF OCR 오류 대응)
+          if (
+            SUBJECT_FIELD_SECTIONS.has(key) &&
+            typeof fixed.subject === "string"
+          ) {
+            fixed.subject = correctSubjectName(fixed.subject);
           }
           return fixed;
         })

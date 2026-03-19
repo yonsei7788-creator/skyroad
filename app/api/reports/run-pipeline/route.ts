@@ -585,13 +585,18 @@ export const POST = async (request: NextRequest) => {
           `[report:${reportId}] 후처리 시작: ${sections.length}개 섹션`
         );
 
+        // Phase 2에서 감지된 강점 계열을 postprocessor에 전달
+        const detectedMajor =
+          state.phase2Results?.competencyExtraction?.detectedMajorGroup;
+
         const result = postprocess(
           sections,
           state.preprocessedData!,
           studentInfo,
           plan,
           reportId,
-          state.preprocessedTexts?.universityCandidatesText
+          state.preprocessedTexts?.universityCandidatesText,
+          detectedMajor
         );
 
         console.log(

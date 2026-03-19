@@ -35959,29 +35959,212 @@ const filterOutJuniorCollege = (info: MajorInfo): MajorInfo => ({
 
 // ─── 학과 검색 헬퍼 ───
 
-/** 학과명으로 MajorInfo 검색 (정확 매칭 → 부분 매칭, 전문대 제외) */
+/**
+ * 학과명 정규화: 접미사(과/부/학부/학과/전공) 제거 + 특수문자/괄호 제거.
+ * "건축사회환경공학부" → "건축사회환경공"
+ * "(공과대학)광역" → "광역"
+ * "Aeronautical Science (항공운항학과)" → "항공운항"
+ */
+const normalizeDeptName = (name: string): string => {
+  return (
+    name
+      // 괄호 안의 한글 학과명 추출 (영문+한글 혼합 패턴)
+      .replace(/^[A-Za-z\s]+\((.+?)\)$/, "$1")
+      // 괄호+내용 제거 (예: "(공과대학)" → "")
+      .replace(/\([^)]*\)/g, "")
+      // 접미사 제거 (순서 중요: 긴 것부터)
+      .replace(/(학과|학부|전공|계열|과$|부$)/g, "")
+      .trim()
+  );
+};
+
+/**
+ * 학과명에서 핵심 키워드를 추출.
+ * "건축사회환경공학" → ["건축", "사회", "환경", "공학"]
+ * "전기전자컴퓨터공학" → ["전기", "전자", "컴퓨터", "공학"]
+ */
+const DEPT_KEYWORDS = [
+  "건축",
+  "건설",
+  "토목",
+  "환경",
+  "사회",
+  "기반",
+  "시스템",
+  "산업",
+  "경영",
+  "경제",
+  "전기",
+  "전자",
+  "컴퓨터",
+  "소프트웨어",
+  "정보",
+  "통신",
+  "기계",
+  "항공",
+  "화학",
+  "화공",
+  "재료",
+  "신소재",
+  "생명",
+  "바이오",
+  "생물",
+  "물리",
+  "수학",
+  "통계",
+  "의학",
+  "약학",
+  "간호",
+  "치의",
+  "한의",
+  "보건",
+  "체육",
+  "스포츠",
+  "교육",
+  "국어",
+  "영어",
+  "역사",
+  "철학",
+  "심리",
+  "정치",
+  "외교",
+  "행정",
+  "법학",
+  "미디어",
+  "언론",
+  "디자인",
+  "음악",
+  "미술",
+  "무용",
+  "농업",
+  "식품",
+  "수산",
+  "해양",
+  "지구",
+  "천문",
+  "에너지",
+  "원자력",
+  "로봇",
+  "인공지능",
+  "데이터",
+  "반도체",
+  "광학",
+  "섬유",
+  "도시",
+  "조경",
+  "운항",
+  "자동차",
+  "조선",
+  "글로벌",
+];
+
+const extractKeywords = (name: string): string[] => {
+  const norm = normalizeDeptName(name);
+  return DEPT_KEYWORDS.filter((kw) => norm.includes(kw));
+};
+
+/** 학과명으로 MajorInfo 검색 (정확 매칭 → 키워드 매칭, 전문대 제외) */
 export const findMajorInfo = (
   departmentName: string
 ): MajorInfo | undefined => {
   const name = departmentName.trim();
   if (!name) return undefined;
-  const nameNorm = name.replace(/[과부학]/g, "");
+
   // 1. majorName 정확 매칭
   const exact = MAJOR_INFO_DATA.find((m) => m.majorName === name);
   if (exact) return filterOutJuniorCollege(exact);
-  // 2. departments 정확 매칭
-  const deptExact = MAJOR_INFO_DATA.find((m) =>
+
+  // 2. departments 정확 매칭 (중복 시 가장 관련성 높은 학과 선택)
+  const deptExactCandidates = MAJOR_INFO_DATA.filter((m) =>
     m.departments.some((d) => d === name)
   );
-  if (deptExact) return filterOutJuniorCollege(deptExact);
-  // 3. 정규화 부분 매칭 (과/부/학 제거)
-  const partial = MAJOR_INFO_DATA.find((m) => {
-    const mNorm = m.majorName.replace(/[과부학]/g, "");
-    return (
-      nameNorm === mNorm || nameNorm.includes(mNorm) || mNorm.includes(nameNorm)
+  if (deptExactCandidates.length === 1) {
+    return filterOutJuniorCollege(deptExactCandidates[0]);
+  }
+  if (deptExactCandidates.length > 1) {
+    // 중복 해소: 입력 학과명의 핵심 단어가 departments에 가장 많이 등장하는 학과 선택
+    // 예: "건설환경공학과" → 토목공학과 departments에 "건설환경공학부", "건설환경공학전공" 등 다수 포함
+    const inputCore = normalizeDeptName(name);
+    let [best] = deptExactCandidates;
+    let bestCount = 0;
+    for (const cand of deptExactCandidates) {
+      const relatedCount = cand.departments.filter(
+        (d) => d.includes(inputCore) || normalizeDeptName(d).includes(inputCore)
+      ).length;
+      if (relatedCount > bestCount) {
+        bestCount = relatedCount;
+        best = cand;
+      }
+    }
+    return filterOutJuniorCollege(best);
+  }
+
+  // 3. 정규화 후 정확 매칭
+  const inputNorm = normalizeDeptName(name);
+  if (inputNorm.length >= 2) {
+    const normExact = MAJOR_INFO_DATA.find((m) => {
+      const mNorm = normalizeDeptName(m.majorName);
+      return inputNorm === mNorm;
+    });
+    if (normExact) return filterOutJuniorCollege(normExact);
+
+    // departments 정규화 매칭 (중복 시 키워드 유사도)
+    const normDeptCandidates = MAJOR_INFO_DATA.filter((m) =>
+      m.departments.some((d) => normalizeDeptName(d) === inputNorm)
     );
-  });
-  return partial ? filterOutJuniorCollege(partial) : undefined;
+    if (normDeptCandidates.length === 1) {
+      return filterOutJuniorCollege(normDeptCandidates[0]);
+    }
+    if (normDeptCandidates.length > 1) {
+      const inputKw = extractKeywords(name);
+      let [best] = normDeptCandidates;
+      let bestOverlap = 0;
+      for (const cand of normDeptCandidates) {
+        const candKw = extractKeywords(cand.majorName);
+        const overlap = inputKw.filter((kw) => candKw.includes(kw)).length;
+        if (overlap > bestOverlap) {
+          bestOverlap = overlap;
+          best = cand;
+        }
+      }
+      return filterOutJuniorCollege(best);
+    }
+  }
+
+  // 4. 키워드 기반 매칭 (가장 많이 겹치는 학과 선택)
+  const inputKeywords = extractKeywords(name);
+  if (inputKeywords.length === 0) return undefined;
+
+  // "광역" 같은 키워드 없는 특수 이름은 매칭 포기
+  let bestMatch: MajorInfo | undefined;
+  let bestScore = 0;
+
+  for (const m of MAJOR_INFO_DATA) {
+    const majorKeywords = extractKeywords(m.majorName);
+    if (majorKeywords.length === 0) continue;
+
+    // 교집합 키워드 수
+    const overlap = inputKeywords.filter((kw) =>
+      majorKeywords.includes(kw)
+    ).length;
+    if (overlap === 0) continue;
+
+    // 점수 = 교집합 / 합집합 (Jaccard similarity)
+    const union = new Set([...inputKeywords, ...majorKeywords]).size;
+    const score = overlap / union;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = m;
+    }
+  }
+
+  // 최소 유사도 임계값: 키워드 1개 이상 겹치고, 유사도 0.25 이상
+  if (bestMatch && bestScore >= 0.25) {
+    return filterOutJuniorCollege(bestMatch);
+  }
+
+  return undefined;
 };
 
 /** 학과의 관련 교과 전체 목록 (일반선택 + 진로선택) */

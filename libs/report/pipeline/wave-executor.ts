@@ -204,7 +204,8 @@ export const executeTask = async (
       const correctedCandidates = buildUniversityCandidatesText(
         detected,
         state.preprocessedData?.gradingSystem,
-        state.preprocessedData?.overallAverage
+        state.preprocessedData?.overallAverage,
+        studentInfo.targetDepartment
       );
       const correctedCourseMatch = rebuildRecommendedCourseMatchText(
         detected,
@@ -295,6 +296,17 @@ export const executeTask = async (
 
     case "academicAnalysis": {
       const preData = state.preprocessedData!;
+      // Phase 2에서 감지된 강점 계열을 academicAnalysis에 전달
+      let detectedMajorForAcad =
+        state.phase2Results?.competencyExtraction?.detectedMajorGroup;
+      if (!detectedMajorForAcad && ser.compExtrText) {
+        try {
+          const parsed = JSON.parse(ser.compExtrText);
+          detectedMajorForAcad = parsed.detectedMajorGroup;
+        } catch {
+          // 파싱 실패 시 무시
+        }
+      }
       section = await callGemini<ReportSection>(
         buildAcademicAnalysisPrompt(
           {
@@ -302,6 +314,8 @@ export const executeTask = async (
             preprocessedAcademicData: texts.preprocessedAcademicDataText,
             studentProfile: texts.studentProfileText,
             gradingSystem: preData.gradingSystem,
+            detectedMajorGroup: detectedMajorForAcad,
+            completedSubjectsByYear: texts.completedSubjectsByYearText,
           },
           plan
         )
@@ -508,6 +522,7 @@ export const executeTask = async (
             studentGrade: studentInfo.grade,
             currentDate: new Date().toISOString().slice(0, 10),
             isMedical,
+            completedSubjectsByYear: texts.completedSubjectsByYearText,
           },
           plan
         )
@@ -523,6 +538,7 @@ export const executeTask = async (
           studentProfile: texts.studentProfileText,
           studentGrade: studentInfo.grade,
           currentDate: new Date().toISOString().slice(0, 10),
+          completedSubjectsByYear: texts.completedSubjectsByYearText,
         })
       );
       break;
@@ -556,6 +572,7 @@ export const executeTask = async (
             currentDate: new Date().toISOString().slice(0, 10),
             studentGrade: studentInfo.grade,
             isMedical,
+            completedSubjectsByYear: texts.completedSubjectsByYearText,
           },
           plan
         )
@@ -591,6 +608,7 @@ export const executeTask = async (
             studentGrade: studentInfo.grade,
             currentDate: new Date().toISOString().slice(0, 10),
             isMedical,
+            completedSubjectsByYear: texts.completedSubjectsByYearText,
           },
           plan
         )

@@ -21,6 +21,7 @@ import {
   findCutoffData,
   ADMISSION_CUTOFF_DATA,
 } from "../constants/admission-cutoff-data.ts";
+import { correctSubjectName } from "../constants/subject-name-corrections.ts";
 
 // ─── 생기부 원본 JSONB 타입 ───
 
@@ -230,6 +231,8 @@ export interface PreprocessedTexts {
   curriculumVersion: "2015" | "2022";
   /** 계열별 입학사정관 평가 기준 컨텍스트 */
   majorEvaluationContextText: string;
+  /** 학년별 이수 완료 과목 요약 (AI가 이수 완료 과목 성적 개선 권고를 방지하기 위함) */
+  completedSubjectsByYearText: string;
 }
 
 export interface PreprocessResult {
@@ -464,6 +467,25 @@ const STOPWORDS = new Set([
   "보임",
 ]);
 
+// ─── 과목명 오타 보정 ───
+
+/**
+ * RecordData 내 모든 과목명(subject)을 보정한다.
+ * PDF OCR 오류로 인한 오타를 정규화하여 리포트 품질을 보장.
+ * mutate: 원본 객체를 직접 수정.
+ */
+const correctRecordSubjectNames = (data: RecordData): void => {
+  for (const s of data.generalSubjects ?? []) {
+    s.subject = correctSubjectName(s.subject);
+  }
+  for (const s of data.careerSubjects ?? []) {
+    s.subject = correctSubjectName(s.subject);
+  }
+  for (const s of data.subjectEvaluations ?? []) {
+    s.subject = correctSubjectName(s.subject);
+  }
+};
+
 // ─── 메인 전처리 함수 ───
 
 export const preprocess = (
@@ -471,6 +493,9 @@ export const preprocess = (
   studentInfo: StudentInfo,
   plan: ReportPlan
 ): PreprocessResult => {
+  // 과목명 오타 보정 (기존 DB 데이터 대응)
+  correctRecordSubjectNames(recordData);
+
   // 학기 범위 필터: 재학생(고3)은 3-1까지, 졸업생/N수생은 3-2까지
   const maxSemester = studentInfo.isGraduate
     ? { year: 3, semester: 2 }
@@ -583,7 +608,11 @@ export const preprocess = (
     }));
 
   // 11. 교육과정 버전 판별 (권장과목 매칭보다 먼저 수행)
-  const curriculumVersion = detectCurriculumVersion(creativeActs);
+  // gradingSystem이 이미 grade 기반으로 확정되었으므로 이를 우선 사용
+  const curriculumVersion: "2015" | "2022" =
+    gradingSystem === "5등급제"
+      ? "2022"
+      : detectCurriculumVersion(creativeActs);
 
   // 12. 권장과목 이수 매칭 (교육과정 버전 기반)
   const recommendedCourseMatch = matchRecommendedCourses(
@@ -859,6 +888,44 @@ const normalizeSubjectName = (name: string): string => {
   );
 };
 
+/**
+ * 2022 개정 교육과정의 분할 과목명을 기본 교과명으로 매핑.
+ * "공통국어1", "공통국어2" → "국어" 등.
+ * 권장과목 매칭 시 기본 교과 단위로 이수 여부를 판단하기 위해 사용.
+ */
+const BASE_SUBJECT_MAP: Record<string, string> = {
+  공통국어1: "국어",
+  공통국어2: "국어",
+  공동영어1: "영어",
+  공동영어2: "영어",
+  공동수학1: "수학",
+  공통수학2: "수학",
+  한국사1: "한국사",
+  한국사2: "한국사",
+  통합사회1: "통합사회",
+  통합사회2: "통합사회",
+  통합과학1: "통합과학",
+  통합과학2: "통합과학",
+  // 오타 대응 (실제 생기부 데이터에서 발견된 오타)
+  동합과학1: "통합과학",
+  동합과학2: "통합과학",
+};
+
+/**
+ * 과목명을 기본 교과명으로 정규화 (권장과목 매칭용).
+ * 1) BASE_SUBJECT_MAP으로 2022 분할과목 → 기본 교과 변환
+ * 2) 매핑에 없으면 로마숫자만 정규화
+ */
+const normalizeToBaseSubject = (name: string): string => {
+  const mapped = BASE_SUBJECT_MAP[name];
+  if (mapped) return mapped;
+  // 후행 숫자 제거 (예: "공통국어1" 매핑 누락 시 폴백)
+  const stripped = name.replace(/[0-9]+$/, "").trim();
+  const mappedStripped = BASE_SUBJECT_MAP[stripped];
+  if (mappedStripped) return mappedStripped;
+  return normalizeSubjectName(name);
+};
+
 // ─── 학과→계열 매칭 (matchMajorEvaluationCriteria와 통일) ───
 
 /**
@@ -927,13 +994,16 @@ export const matchRecommendedCourses = (
   // 학생이 이수한 과목명을 정규화하여 Set 구축
   const takenRawSet = new Set<string>();
   const normalizedToRaw = new Map<string, string>();
+  const baseSubjectSet = new Set<string>();
   for (const s of generalSubjects) {
     takenRawSet.add(s.subject);
     normalizedToRaw.set(normalizeSubjectName(s.subject), s.subject);
+    baseSubjectSet.add(normalizeToBaseSubject(s.subject));
   }
   for (const s of careerSubjects) {
     takenRawSet.add(s.subject);
     normalizedToRaw.set(normalizeSubjectName(s.subject), s.subject);
+    baseSubjectSet.add(normalizeToBaseSubject(s.subject));
   }
   const takenNormalizedSet = new Set(normalizedToRaw.keys());
 
@@ -946,12 +1016,18 @@ export const matchRecommendedCourses = (
 
   const requiredCourses = matchingMajor?.recommendedCourses ?? [];
 
-  // 정규화된 이름으로 매칭
+  // 정규화된 이름으로 매칭 (로마숫자 정규화 + 기본 교과명 매칭)
   const takenCourses: string[] = [];
   const missingCourses: string[] = [];
   for (const course of requiredCourses) {
     const normalized = normalizeSubjectName(course);
-    if (takenNormalizedSet.has(normalized) || takenRawSet.has(course)) {
+    const base = normalizeToBaseSubject(course);
+    if (
+      takenNormalizedSet.has(normalized) ||
+      takenRawSet.has(course) ||
+      baseSubjectSet.has(base) ||
+      baseSubjectSet.has(normalized)
+    ) {
       takenCourses.push(course);
     } else {
       missingCourses.push(course);
@@ -977,8 +1053,13 @@ const detectCurriculumVersion = (
   activities: CreativeActivityRow[]
 ): "2015" | "2022" => {
   const areas = new Set(activities.map((a) => a.area));
+  // 2015 확정: 봉사활동은 2015 개정에만 존재
   if (areas.has("봉사활동")) return "2015";
+  // 2022 확정: 자율·자치활동은 2022 개정에만 존재
   if (areas.has("자율·자치활동") || areas.has("자율자치활동")) return "2022";
+  // 폴백: 봉사활동도 자율·자치활동도 없으면 판별 불가 → 2022로 기본
+  // (고1·고2는 상위 호출부에서 이미 grade 기반으로 "2022"를 확정하므로,
+  //  여기 도달하는 것은 고3/졸업생만. 고3 중 봉사활동이 빠진 케이스는 드물지만 안전하게 "2015")
   return "2015";
 };
 
@@ -1221,6 +1302,11 @@ const buildTexts = (
     targetUniversitiesText,
     curriculumVersion: data.curriculumVersion,
     majorEvaluationContextText,
+    completedSubjectsByYearText: formatCompletedSubjectsByYear(
+      recordData,
+      studentInfo.grade,
+      studentInfo.isGraduate
+    ),
   };
 };
 
@@ -1359,10 +1445,21 @@ const getRepresentativeCutoff = (
 export const buildUniversityCandidatesText = (
   targetDept: string,
   gradingSystem?: "5등급제" | "9등급제",
-  overallAverage?: number
+  overallAverage?: number,
+  /** detectedMajorGroup이 계열명일 때 실제 학과명으로 폴백 */
+  fallbackDepartment?: string
 ): string => {
   if (!targetDept) return "[]";
-  const majorInfo = findMajorInfo(targetDept);
+
+  // detectedMajorGroup은 계열명("예체능교육", "의생명" 등)이므로
+  // findMajorInfo에 넣으면 오매칭 위험 (예: "예체능교육" → "가정교육과")
+  // fallbackDepartment(실제 학과명)를 우선 사용
+  let majorInfo = fallbackDepartment
+    ? findMajorInfo(fallbackDepartment)
+    : undefined;
+  if (!majorInfo) {
+    majorInfo = findMajorInfo(targetDept);
+  }
   if (!majorInfo) return "[]";
 
   const universities = majorInfo.universities as string[];
@@ -1453,14 +1550,27 @@ export const buildUniversityCandidatesText = (
             const diff = hardcoded - overallAverage!;
             return diff >= -0.6 && diff <= 0.3;
           }
-          return false;
+          // 커트라인 맵에 없는 대학: 실제 커트라인 데이터가 있으면 9등급 환산 비교
+          if (c.repCutoff != null) {
+            return (
+              c.repCutoff >= studentGrade9 - wider &&
+              c.repCutoff <= studentGrade9 + wider
+            );
+          }
+          // 커트라인 데이터도 없으면 포함 (AI가 판단하도록)
+          return true;
         }
-        if (c.repCutoff == null) return false;
+        if (c.repCutoff == null) return true;
         return (
           c.repCutoff >= studentGrade9 - wider &&
           c.repCutoff <= studentGrade9 + wider
         );
       });
+    }
+
+    // 그래도 5개 미만이면 모든 대학 포함 (AI가 등급 기반으로 적절히 판단)
+    if (filtered.length < 5) {
+      filtered = withCutoff;
     }
   }
 
@@ -1506,6 +1616,71 @@ const formatStudentProfile = (
   // → 합격 판단이 필요한 admissionPrediction에만 targetUniversitiesText로 별도 전달
   // → 나머지 섹션은 희망학과를 모르는 상태에서 생기부만으로 분석
   lines.push(`모의고사 데이터: ${info.hasMockExamData ? "있음" : "없음"}`);
+  return lines.join("\n");
+};
+
+/**
+ * 학년별 이수 완료 과목 요약 텍스트 생성.
+ * AI가 이미 이수 완료한 과목의 성적 향상을 권고하지 않도록 명확한 제약 정보를 제공한다.
+ */
+const formatCompletedSubjectsByYear = (
+  recordData: RecordData,
+  currentGrade: number,
+  isGraduate?: boolean
+): string => {
+  const generalSubjects = recordData.generalSubjects ?? [];
+  const careerSubjects = recordData.careerSubjects ?? [];
+
+  // 학년별 이수 과목 그룹핑
+  const byYear = new Map<number, string[]>();
+  for (const s of generalSubjects) {
+    const list = byYear.get(s.year) ?? [];
+    list.push(s.subject);
+    byYear.set(s.year, list);
+  }
+  for (const s of careerSubjects) {
+    if (s.year > 0) {
+      const list = byYear.get(s.year) ?? [];
+      list.push(`${s.subject}(진로선택)`);
+      byYear.set(s.year, list);
+    }
+  }
+
+  const lines: string[] = ["## 학년별 이수 완료 과목 (성적 변경 불가)"];
+
+  const sortedYears = [...byYear.keys()].sort();
+  for (const year of sortedYears) {
+    const subjects = byYear.get(year) ?? [];
+    const uniqueSubjects = [...new Set(subjects)];
+    lines.push(`- ${year}학년 이수 완료: ${uniqueSubjects.join(", ")}`);
+  }
+
+  // 학년/졸업 상태별 명확한 제약 조건
+  if (isGraduate) {
+    lines.push(
+      "",
+      "⚠️ 이 학생은 졸업생입니다. 모든 과목이 이수 완료되어 성적 변경이 불가능합니다.",
+      "→ 성적 개선 권고 대신, 면접 준비 전략이나 자기소개서 작성 방향을 제시하세요."
+    );
+  } else if (currentGrade >= 3) {
+    lines.push(
+      "",
+      "⚠️ 이 학생은 고3입니다. 위 과목들은 모두 이수 완료되어 성적 변경이 불가능합니다.",
+      "→ 새로운 과목 이수 기회가 극히 제한적입니다. 기존 성적을 활용한 전략을 제시하세요."
+    );
+  } else {
+    const completedYears = sortedYears.join(", ");
+    const nextGrade = currentGrade + 1;
+    lines.push(
+      "",
+      `⚠️ ${completedYears}학년 과목은 이미 이수 완료되어 성적 변경이 불가능합니다.`,
+      `→ 위 과목의 성적을 올리라는 조언은 불가능합니다.`,
+      `→ 대신, 해당 과목이 속한 교과 영역(예: 국어, 수학, 사회탐구 등)에서 ${nextGrade}학년 이후 선택과목 성적을 높이라고 조언하세요.`,
+      `→ 예시: "통합사회 3등급 → 통합사회 성적을 올리세요" (❌ 불가능)`,
+      `→ 예시: "통합사회 3등급 → 사회 교과 영역에서 2학년 선택과목(사회와 문화 등) 성적을 높이세요" (✅ 올바름)`
+    );
+  }
+
   return lines.join("\n");
 };
 

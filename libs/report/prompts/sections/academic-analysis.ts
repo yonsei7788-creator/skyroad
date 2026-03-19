@@ -7,6 +7,10 @@ export interface AcademicAnalysisPromptInput {
   preprocessedAcademicData: string;
   studentProfile: string;
   gradingSystem: "5등급제" | "9등급제";
+  /** Phase 2에서 감지된 생기부 기반 강점 계열 (예: "예체능교육", "의생명") */
+  detectedMajorGroup?: string;
+  /** 학년별 이수 완료 과목 요약 (이수 완료 과목 성적 개선 권고 방지용) */
+  completedSubjectsByYear?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -29,10 +33,15 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 2. **majorRelevanceAnalysis** (필수): 전공 관련 교과 이수 노력/성취도
    형식: {"enrollmentEffort": "...", "achievement": "...", "recommendedSubjects": ["과목1", "과목2"]}
 3. **gradeChangeAnalysis** (필수): 등급 변화 가능성
-   형식: {"currentTrend": "상승|유지|하락", "prediction": "...", "actionItems": ["항목1", "항목2"], "actionItemPriorities": ["high", "medium"]}
+   형식: {"currentTrend": "상승|유지|하락", "prediction": "...", "actionItems": [{"item": "항목명", "detail": "구체적 설명"}], "actionItemPriorities": ["high", "medium"]}
    - **actionItems는 반드시 1~3개의 구체적 실행 항목을 포함**해야 합니다. 빈 배열 금지.
    - 상승 추세 → 유지/강화 전략, 하락 추세 → 반등 전략, 유지 → 다음 단계 전략을 제시하세요.
    - ⚠️ 성적 추이는 **발전가능성 역량의 직접 증거**입니다. prediction에서 "상승 추세는 사정관이 발전가능성을 높게 평가하는 핵심 근거", "하락 추세는 학업 태도에 대한 의문으로 이어질 수 있다" 등 입시적 의미를 반드시 포함하세요.
+   - ⛔ **이수 완료 과목 성적 개선 권고 절대 금지**: 위 "이수 완료 과목 정보"에 나열된 과목은 이미 성적이 확정되어 변경 불가능합니다. 이 과목들의 성적을 올리라는 actionItem을 작성하면 안 됩니다.
+     - ❌ "공통국어1 성적을 2등급으로 올려야 합니다" (이미 이수 완료 → 불가능)
+     - ❌ "통합사회 성적을 끌어올리세요" (이미 이수 완료 → 불가능)
+     - ✅ "국어 교과 영역에서 2학년 선택과목 성적을 높이세요" (향후 이수 가능한 과목)
+     - ✅ "사회탐구 영역에서 사회와 문화, 윤리와 사상 등 선택과목 성적 확보가 중요합니다" (향후 이수 가능)
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis **3개 필드만** 출력합니다. 이 3개 외 추가 분석 필드는 절대 출력하지 마세요.
@@ -60,7 +69,8 @@ Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysi
   - ⚠️ interpretation은 반드시 **80자 이내**로 핵심만 작성합니다 (테이블 셀이므로 간결해야 함).
   - 데이터 부족으로 정밀 시뮬이 불가능하면 이 필드를 아예 생략하세요 (빈 배열 출력).
 - 성적 개선 우선순위 (improvementPriority): **3개 이내** 문자열 배열 형태, 각 항목 **50자 이내**
-  예시: "improvementPriority": ["수학 등급 개선 (현 3등급 → 2등급 목표)", "과학탐구 과목 성적 안정화"]
+  ⛔ 이수 완료 과목의 성적 향상을 우선순위로 제시하면 안 됩니다. 반드시 향후 이수 가능한 과목/영역 기준으로 작성하세요.
+  예시: "improvementPriority": ["사회탐구 영역 선택과목 2등급 확보", "과학탐구 선택과목 성적 안정화"]
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - 모든 필드 출력 가능하지만, 각 분석 텍스트(riskAssessment, enrollmentEffort, achievement, prediction 등)는 반드시 **200자 이내**로 작성합니다. 200자 초과 금지.
@@ -107,6 +117,8 @@ ${input.preprocessedAcademicData}
 
 ### 학생 프로필
 ${input.studentProfile}
+
+${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}` : ""}
 
 ## 출력 JSON 스키마
 
@@ -168,16 +180,18 @@ Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다
 
 핵심 평가 과목은 국어, 수학, 영어, 사회탐구(한국사, ${input.gradingSystem === "5등급제" ? "사회와 문화, 정치, 법과 사회, 경제" : "사회·문화, 정치와법, 경제"} 등), 과학탐구(물리학, 화학, 생명과학, 지구과학 등)입니다.
 
-## ⚠️ 희망학과 끼워맞춤 금지 (필수 준수)
+## ⚠️ 생기부 기반 강점 계열 (필수 준수)
+
+**이 학생의 생기부 기반 강점 계열: "${input.detectedMajorGroup ?? "미확정"}"**
 
 이 섹션의 모든 AI 생성 텍스트(interpretation, subjectStatAnalyses, gradeChangeAnalysis, gradeDeviationAnalysis, majorRelevanceAnalysis 등)에서:
-- **"희망 전공", "희망 학과", "공학 계열 진학 시", "~계열이라면" 등 희망학과를 전제로 한 조건부 표현을 절대 사용하지 마세요.**
-- 대신 **생기부에서 실제로 드러나는 탐구 주제·세특·활동 패턴에서 도출된 강점 계열**을 기준으로 서술하세요.
+- **"희망 전공", "희망 학과", "~계열 진학 시", "~계열이라면" 등 희망학과를 전제로 한 조건부 표현을 절대 사용하지 마세요.**
+- **반드시 위에 명시된 "생기부 기반 강점 계열"을 기준으로 서술하세요.** AI가 독자적으로 계열을 추측하면 안 됩니다.
+- majorRelevanceAnalysis의 enrollmentEffort, achievement에서 반드시 "${input.detectedMajorGroup ?? "미확정"}" 계열을 기준으로 전공 관련 교과를 평가하세요.
+- ❌ BAD: "이공계열 관련 과목에서..." (생기부 강점 계열이 이공계열이 아닌데 임의로 언급)
 - ❌ BAD: "희망 전공이 공학 계열이라면 물리학 성적은 2등급 이내로 끌어올리는 것이 좋습니다"
-- ❌ BAD: "공학 계열 진학 시 긍정적인 요소입니다"
-- ✅ GOOD: "생기부에서 의생명 분야 탐구가 주력이므로, 물리학 성적 보완은 의생명 계열 진로역량 강화에 도움이 됩니다"
-- ✅ GOOD: "생기부에서 생명과학·정보 융합 탐구가 두드러지므로, 정보 과목의 우수한 성적은 진로역량의 강점입니다"
-- **gradeChangeAnalysis의 actionItems에서도 "희망 전공 관련" 대신 "생기부에서 드러나는 강점 계열 관련"으로 서술하세요.**
+- ✅ GOOD: "${input.detectedMajorGroup ?? "해당"} 계열 진학을 위해, 관련 교과의 성적 보완이 필요합니다"
+- **gradeChangeAnalysis의 actionItems에서도 "${input.detectedMajorGroup ?? "해당"}" 계열 기준으로 서술하세요.**
 
 ## 출력 지시
 

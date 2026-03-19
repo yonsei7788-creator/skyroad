@@ -9,6 +9,7 @@ export interface ActionRoadmapPromptInput {
   currentDate?: string;
   studentGrade?: number;
   isMedical?: boolean;
+  completedSubjectsByYear?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -237,6 +238,8 @@ ${input.admissionStrategyResult}
 
 ### 학생 프로필
 ${input.studentProfile}
+
+${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n⛔ 로드맵의 tasks에서 이수 완료 과목의 성적 향상을 과제로 제시하면 안 됩니다. 해당 교과 영역의 향후 선택과목으로 안내하세요.` : ""}
 
 ${PLAN_SPECIFIC[plan]}`;
 };
