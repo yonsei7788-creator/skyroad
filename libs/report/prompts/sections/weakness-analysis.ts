@@ -153,6 +153,16 @@ export const buildWeaknessAnalysisPrompt = (
 - areas 배열은 반드시 priority 기준 내림차순으로 정렬합니다: high → medium → low 순서.
 - 입시 영향도가 높은 약점이 먼저 노출되어야 합니다.
 
+## ⛔ 내부 데이터 노출 금지 (절대 준수)
+- description, evidence, suggestedActivities, executionStrategy 등 **모든 출력 필드에 내부 데이터 형식을 절대 포함하지 마세요.**
+- 금지 예시:
+  - JSON 키-값: \`"overallAverage": 2.5\`, \`{"category": "academic", "score": 72}\`
+  - 변수명/필드명: \`competencyScore\`, \`fillRate\`, \`gradeRank\`, \`rawScore\`
+  - 배열/객체 리터럴: \`[1, 2, 3]\`, \`{key: value}\`
+  - 기술적 수치: \`1500바이트\`, \`fillRate 45%\`
+- evidence에는 "2학년 물리학 1학기 3등급", "세특에서 '조사함'으로 마무리" 등 **자연어로 풀어 쓴 근거**만 작성하세요.
+- 입력 데이터의 JSON 구조나 필드명을 그대로 복사하면 품질 실패입니다.
+
 ## 입력 데이터
 
 ### 역량 추출 결과

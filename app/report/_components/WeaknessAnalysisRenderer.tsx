@@ -70,7 +70,6 @@ export const WeaknessAnalysisRenderer = ({
                       <th className={styles.tableAlignCenter}>효과도</th>
                     </>
                   )}
-                  <th className={styles.tableAlignCenter}>추천 활동</th>
                 </tr>
               </thead>
               <tbody>
@@ -110,9 +109,6 @@ export const WeaknessAnalysisRenderer = ({
                         </td>
                       </>
                     )}
-                    <td className={styles.tableAlignCenter}>
-                      {(area.suggestedActivities ?? []).length}개
-                    </td>
                   </tr>
                 ))}
               </tbody>

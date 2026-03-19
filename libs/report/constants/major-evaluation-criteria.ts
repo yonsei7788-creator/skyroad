@@ -304,6 +304,34 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
     recommendedSubjects: ["미적분", "화학Ⅰ", "화학Ⅱ"],
   },
   {
+    majorGroup: "예체능교육",
+    label: "예체능 교육 계열 (체육교육/음악교육/미술교육 등)",
+    keySubjects: ["국어", "영어", "사회"],
+    keySubjectFocus:
+      "예체능의 전공 실기·활동 역량과 사범대의 교직 소명·교과 균형을 함께 평가한다. 체육/예술 활동의 지속성뿐 아니라, 또래 지도 경험과 인문·사회적 소양도 중요하게 본다.",
+    valuedActivities: [
+      "전공 분야(체육/예술)의 지속적 활동 이력",
+      "또래 튜터링/멘토링 또는 교육 봉사 경험",
+      "수업 참여도와 발표/토론 역량",
+      "교육 관련 탐구 (스포츠 교육학, 교수법 등)",
+    ],
+    competencyWeights: { academic: 20, career: 30, community: 25, growth: 25 },
+    careerFocusPoints: [
+      "전공 분야 활동의 지속성과 성장 과정",
+      "가르치는 경험 또는 또래 학습 도움의 구체적 사례",
+      "기초 교과(국어/영어/사회)의 안정적 성취도 확보",
+      "교직 소명의식과 교육에 대한 관심 증거",
+    ],
+    riskFactors: [
+      "기초 교과 성취도가 지나치게 낮음",
+      "전공 관련 활동 이력이 빈약",
+      "타인과의 소통/협업 경험 부족",
+      "교육 관련 활동이 전무",
+    ],
+    coreSubjects: [],
+    recommendedSubjects: [],
+  },
+  {
     majorGroup: "예체능",
     label: "예술/체육 계열",
     keySubjects: ["국어", "영어"],
@@ -463,12 +491,17 @@ export const matchMajorEvaluationCriteria = (
     return findCriteria("경영경제");
   }
 
-  // 예체능 계열 (교육보다 먼저 체크: "체육교육", "음악교육" 등이 교육이 아닌 예체능으로 분류되도록)
+  // 예체능 교육 계열 (체육교육, 음악교육, 미술교육 등 — 예체능+교육 하이브리드)
+  if (/체육교육|음악교육|미술교육|무용교육/.test(lower)) {
+    return findCriteria("예체능교육");
+  }
+
+  // 예체능 계열 (순수 예체능)
   if (/예술|미술|음악|체육|무용|디자인|영화|연극|실용음악/.test(lower)) {
     return findCriteria("예체능");
   }
 
-  // 교육 계열 (예체능 관련 교육학과는 위에서 이미 처리됨)
+  // 교육 계열
   if (/교육|사범|교직/.test(lower)) {
     return findCriteria("교육");
   }

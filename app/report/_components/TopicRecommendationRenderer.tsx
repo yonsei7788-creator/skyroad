@@ -136,14 +136,14 @@ export const TopicRecommendationRenderer = ({
                   활동 설계
                 </span>
               </div>
-              <div className={styles.body}>
+              <div className={styles.small}>
                 {(topic.activityDesign.steps ?? []).map((step, sIdx) => (
                   <p key={sIdx} className={sIdx > 0 ? styles.mt4 : undefined}>
                     {step}
                   </p>
                 ))}
               </div>
-              <p className={`${styles.body} ${styles.mt6}`}>
+              <p className={`${styles.small} ${styles.mt6}`}>
                 <span className={styles.emphasis}>예상 결과물:</span>{" "}
                 {safeText(topic.activityDesign.expectedResult)}
               </p>

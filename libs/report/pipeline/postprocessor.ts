@@ -1105,6 +1105,13 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/준비하세요/g, "준비하는 것이 좋습니다"],
   [/활용하세요/g, "활용하는 것이 효과적입니다"],
 
+  // ── "희망하는" 패턴 제거 ──
+  [/희망하는\s*[가-힣]+\s*계열\s*학과에?\s*/g, ""],
+  [/희망하는\s*[가-힣]+\s*학과에?\s*/g, ""],
+  [/희망하는\s*학과[에와의]?\s*/g, ""],
+  [/희망\s*학과[에와의]?\s*/g, ""],
+  [/희망학과[에와의]?\s*/g, ""],
+
   // ── 교외 활동 표현 → 교내 활동으로 치환 ──
   [/온라인 강의[를을\s]*활용/g, "교내 수업 활동을 활용"],
   [/온라인 강좌/g, "교내 심화 학습"],
@@ -1181,6 +1188,25 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/평가할 수 있습니다/g, "평가할 겁니다"],
   [/평가될 수 있습니다/g, "평가될 겁니다"],
   [/작용할 수 있습니다/g, "작용할 겁니다"],
+
+  // ── STEP 8: 문법 오류 교정 ──
+  [/가능성을 확인됩니다/g, "가능성이 확인됩니다"],
+  [/발전가능성을 확인됩니다/g, "발전가능성이 확인됩니다"],
+  [/되어지고 있습니다/g, "되고 있습니다"],
+  [/보여지고 있습니다/g, "보이고 있습니다"],
+  [/보여집니다/g, "보입니다"],
+  [/되어집니다/g, "됩니다"],
+  [/되어지는/g, "되는"],
+  [/보여지는/g, "보이는"],
+  [/것으로 보여집니다/g, "것으로 보입니다"],
+  [/할 것으로 보여집니다/g, "할 것으로 보입니다"],
+
+  // ── STEP 9: 가운뎃점(·) 오용 수정 — 문장 중간 부적절 삽입 제거 ──
+  [/([가-힣])\·([가-힣]{4,})/g, "$1 $2"], // "활동·보고서를 작성" → "활동 보고서를 작성" (4글자 이상 연결 시)
+
+  // ── STEP 10: 전형 명칭 풀네임 ──
+  [/(?<![가-힣])학종(?![가-힣])/g, "학생부종합전형"],
+  [/(?<![가-힣])교과전형(?![가-힣])/g, "학생부교과전형"],
 
   // ── 온점 3개(줄임표) → (중략) ──
   [/\.{3,}/g, "(중략)"],
@@ -2043,6 +2069,136 @@ const normalizeSection = (
         (a: any, b: any) =>
           (priorityOrder[a.priority] ?? 1) - (priorityOrder[b.priority] ?? 1)
       );
+
+      // ── STEP 11: 내부 데이터(raw 값) 노출 제거 ──
+      const stripRawData = (text: string): string => {
+        if (typeof text !== "string") return text;
+        return (
+          text
+            // JSON 객체/배열 리터럴 제거
+            .replace(/\{[^}]*"?\w+"?\s*:\s*[^}]*\}/g, "")
+            // 배열 리터럴 제거
+            .replace(/\[[^\]]*,\s*[^\]]*\]/g, "")
+            // camelCase 변수명 제거 (2단어 이상)
+            .replace(
+              /\b(?:overallAverage|fillRate|gradeRank|rawScore|competencyScore|studentCount|achievementLevel|subjectCombinations|gradeTrend|gradeVariance|majorRelated|convertedGrade|fiveGradeConversion|smallClassSubjects|careerSubjects|attendanceSummary|recordVolume|detectedMajorGroup|evaluationImpact|passRateLabel|passRateRange|basePassRate|admissionType|yearlyAnalysis|volumeAssessment|improvementDirection|keyActivities|competencyTags|overallComment)\b/gi,
+              ""
+            )
+            // "바이트" 단위 수치 제거 (기술적 표현)
+            .replace(/\d+바이트/g, "")
+            // 연속 공백 정리
+            .replace(/\s{2,}/g, " ")
+            .trim()
+        );
+      };
+
+      for (const area of s.areas) {
+        if (typeof area.description === "string")
+          area.description = stripRawData(area.description);
+        if (typeof area.evidence === "string")
+          area.evidence = stripRawData(area.evidence);
+        if (Array.isArray(area.suggestedActivities)) {
+          area.suggestedActivities = area.suggestedActivities.map(
+            (a: string) => (typeof a === "string" ? stripRawData(a) : a)
+          );
+        }
+        if (typeof area.executionStrategy === "string")
+          area.executionStrategy = stripRawData(area.executionStrategy);
+      }
+    }
+  }
+
+  // ── activityAnalysis: 데이터 없는 영역/학년 정리 ──
+  if (s.sectionId === "activityAnalysis" && Array.isArray(s.activities)) {
+    const NO_DATA_MSG = "기록이 없어 평가할 수 없습니다.";
+    const slots = pre.existingCreativeSlots ?? [];
+
+    const hasSlot = (actType: string, year: number): boolean => {
+      // 영역명 매칭: "동아리활동" ↔ "동아리활동", "자율·자치활동" ↔ "자율활동" 등
+      const normalize = (s: string) =>
+        s.replace(/[·\s]/g, "").replace("자치", "");
+      const norm = normalize(actType);
+      return slots.some(
+        (sl) => normalize(sl.area) === norm && sl.year === year
+      );
+    };
+
+    for (const activity of s.activities) {
+      if (!Array.isArray(activity.yearlyAnalysis)) continue;
+
+      let allYearsEmpty = true;
+      for (const ya of activity.yearlyAnalysis) {
+        if (!hasSlot(activity.type, ya.year)) {
+          // 데이터 없는 학년: 분석 텍스트 제거, 기본 메시지만 남김
+          ya.summary = NO_DATA_MSG;
+          ya.competencyTags = [];
+          ya.ratingRationale = undefined;
+        } else {
+          allYearsEmpty = false;
+        }
+      }
+
+      if (allYearsEmpty) {
+        // 전체 학년에 데이터가 없는 영역: 부가 필드 모두 정리
+        activity.overallComment = NO_DATA_MSG;
+        activity.volumeAssessment = undefined;
+        activity.keyActivities = [];
+        activity.improvementDirection = undefined;
+      }
+    }
+  }
+
+  // ── behaviorAnalysis: 데이터 없는 학년 정리 ──
+  if (s.sectionId === "behaviorAnalysis" && Array.isArray(s.yearlyAnalysis)) {
+    const NO_DATA_MSG = "기록이 없어 평가할 수 없습니다.";
+    const existingYears = pre.existingBehaviorYears ?? [];
+
+    for (const ya of s.yearlyAnalysis) {
+      if (!existingYears.includes(ya.year)) {
+        ya.summary = NO_DATA_MSG;
+        ya.competencyTags = [];
+        ya.keyQuotes = [];
+      }
+    }
+  }
+
+  // ── 기록 부재 부정 언급 제거 (activityAnalysis + behaviorAnalysis 공통) ──
+  if (
+    s.sectionId === "activityAnalysis" ||
+    s.sectionId === "behaviorAnalysis"
+  ) {
+    // "N학년 기록이 부재하여 아쉽습니다" 류의 문장 제거
+    const ABSENCE_PATTERN =
+      /[^.]*\d학년[^.]*(?:기록|데이터)[^.]*(?:부재|없[어으]|부족|미비)[^.]*(?:아쉽|제한|한계|불가)[^.]*\.\s*/g;
+    const ABSENCE_PATTERN2 =
+      /[^.]*(?:기록|데이터)[^.]*(?:부재|없[어으]|부족|미비)[^.]*(?:아쉽|제한|한계|불가)[^.]*\.\s*/g;
+
+    const stripAbsence = (text: string): string => {
+      if (typeof text !== "string") return text;
+      return text
+        .replace(ABSENCE_PATTERN, "")
+        .replace(ABSENCE_PATTERN2, "")
+        .trim();
+    };
+
+    if (s.sectionId === "behaviorAnalysis") {
+      if (typeof s.overallComment === "string")
+        s.overallComment = stripAbsence(s.overallComment);
+      if (typeof s.admissionRelevance === "string")
+        s.admissionRelevance = stripAbsence(s.admissionRelevance);
+    }
+
+    if (s.sectionId === "activityAnalysis" && Array.isArray(s.activities)) {
+      for (const activity of s.activities) {
+        if (typeof activity.overallComment === "string")
+          activity.overallComment = stripAbsence(activity.overallComment);
+        if (typeof activity.improvementDirection === "string")
+          activity.improvementDirection = stripAbsence(
+            activity.improvementDirection
+          );
+      }
+      if (typeof s.overallComment === "string")
+        s.overallComment = stripAbsence(s.overallComment);
     }
   }
 
@@ -2354,8 +2510,24 @@ const normalizeSection = (
     delete s.gradeChangeAnalysis;
   }
 
-  // ── admissionStrategy: schoolTypeAnalysis 빈 객체 제거 + 괴리 보강 ──
+  // ── admissionStrategy: 빈 대학명 카드 제거 + schoolTypeAnalysis 빈 객체 제거 + 괴리 보강 ──
   if (s.sectionId === "admissionStrategy") {
+    // STEP 13: 대학명이 비어있는 카드 제거
+    if (Array.isArray(s.simulations)) {
+      for (const sim of s.simulations) {
+        if (!Array.isArray(sim.cards)) continue;
+        sim.cards = sim.cards.filter((card: any) => {
+          if (!card.university || card.university.trim() === "") {
+            console.warn(
+              `[postprocessor] 빈 대학명 카드 제거: department=${card.department}`
+            );
+            return false;
+          }
+          return true;
+        });
+      }
+    }
+
     const sta = s.schoolTypeAnalysis;
     if (
       sta &&

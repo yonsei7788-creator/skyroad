@@ -48,9 +48,9 @@ Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysi
     - interpretation: 5등급제 환경에서의 해당 등급의 의미 해석 (예: "5등급제 1등급(상위 10%)으로, 동일 등급 내 동점자가 많아 원점수와 세특으로 차별화 필요")
   - ⚠️ **고3/졸업생(9등급제 적용)**: 9등급→5등급 전환 시뮬레이션
     - currentGrade: 학생의 현재 9등급제 등급 (정수)
-    - simulatedGrade: 5등급제 전환 시 등급 (정수)
-    - 전환 기준: 1등급→1, 2~3등급→2, 4~5등급→3, 6~7등급→4, 8~9등급→5
-    - 예시: {"subject": "국어", "currentGrade": 6, "simulatedGrade": 4, "interpretation": "9등급제 6등급은 5등급제 기준 4등급으로 변환"}
+    - simulatedGrade: 전처리 데이터의 fiveGradeConversion 환산값 사용 (소수점 포함)
+    - 환산 기준: 0.1 단위 정밀 환산 테이블 적용 (예: 9등급 2.0→5등급 1.33, 3.0→1.89, 4.0→2.43, 5.0→3.03, 6.0→3.63, 7.0→4.19, 8.0→4.72)
+    - 예시: {"subject": "국어", "currentGrade": 3, "simulatedGrade": 1.89, "interpretation": "9등급제 3등급은 5등급제 기준 약 1.89등급(2등급 상위)으로 환산"}
   - **주요 5과목만** 배열 형태로 출력
   - **subject, currentGrade, simulatedGrade 필드는 필수입니다. 절대 빈값이면 안 됩니다.**
 - 대학별 반영 방법 시뮬레이션 (universityGradeSimulations): **목표 대학 상위 3개만** 출력

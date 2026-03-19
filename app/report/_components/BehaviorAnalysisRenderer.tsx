@@ -4,6 +4,8 @@ import styles from "./report.module.css";
 import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
+const NO_DATA_MSG = "기록이 없어 평가할 수 없습니다.";
+
 interface BehaviorAnalysisRendererProps {
   data: BehaviorAnalysisSection;
   sectionNumber: number;
@@ -64,24 +66,27 @@ export const BehaviorAnalysisRenderer = ({
               <div className={styles.activityYearCard}>
                 <div className={styles.activityYearHeader}>
                   <span className={styles.tableCellBold}>{year.year}학년</span>
-                  <div className={styles.tagGroup}>
-                    {(year.competencyTags ?? []).map((tag, idx) => (
-                      <span key={idx} className={styles.tag}>
-                        {tag.subcategory}
-                      </span>
-                    ))}
-                  </div>
+                  {year.summary !== NO_DATA_MSG && (
+                    <div className={styles.tagGroup}>
+                      {(year.competencyTags ?? []).map((tag, idx) => (
+                        <span key={idx} className={styles.tag}>
+                          {tag.subcategory}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <p className={styles.small}>{safeText(year.summary)}</p>
-                {year.keyQuotes?.map((q, i) => (
-                  <p
-                    key={i}
-                    className={styles.caption}
-                    style={{ fontStyle: "italic", marginTop: 4 }}
-                  >
-                    &ldquo;{q}&rdquo;
-                  </p>
-                ))}
+                {year.summary !== NO_DATA_MSG &&
+                  year.keyQuotes?.map((q, i) => (
+                    <p
+                      key={i}
+                      className={styles.caption}
+                      style={{ fontStyle: "italic", marginTop: 4 }}
+                    >
+                      &ldquo;{q}&rdquo;
+                    </p>
+                  ))}
               </div>
             );
           })()}
@@ -93,24 +98,27 @@ export const BehaviorAnalysisRenderer = ({
           <div className={styles.activityYearCard}>
             <div className={styles.activityYearHeader}>
               <span className={styles.tableCellBold}>{year.year}학년</span>
-              <div className={styles.tagGroup}>
-                {(year.competencyTags ?? []).map((tag, idx) => (
-                  <span key={idx} className={styles.tag}>
-                    {tag.subcategory}
-                  </span>
-                ))}
-              </div>
+              {year.summary !== NO_DATA_MSG && (
+                <div className={styles.tagGroup}>
+                  {(year.competencyTags ?? []).map((tag, idx) => (
+                    <span key={idx} className={styles.tag}>
+                      {tag.subcategory}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             <p className={styles.small}>{safeText(year.summary)}</p>
-            {year.keyQuotes?.map((q, i) => (
-              <p
-                key={i}
-                className={styles.caption}
-                style={{ fontStyle: "italic", marginTop: 4 }}
-              >
-                &ldquo;{q}&rdquo;
-              </p>
-            ))}
+            {year.summary !== NO_DATA_MSG &&
+              year.keyQuotes?.map((q, i) => (
+                <p
+                  key={i}
+                  className={styles.caption}
+                  style={{ fontStyle: "italic", marginTop: 4 }}
+                >
+                  &ldquo;{q}&rdquo;
+                </p>
+              ))}
           </div>
         </div>
       ))}

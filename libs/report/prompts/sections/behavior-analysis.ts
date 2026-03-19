@@ -6,6 +6,8 @@ export interface BehaviorAnalysisPromptInput {
   behavioralAssessment: string;
   competencyExtraction: string;
   studentProfile: string;
+  /** 학생의 현재 학년 (1, 2, 3) */
+  studentGrade: number;
 }
 
 const PLAN_VOLUME_GUIDE: Record<ReportPlan, string> = {
@@ -58,9 +60,18 @@ export const buildBehaviorAnalysisPrompt = (
   "admissionRelevance": "면접에서 리더십 경험을 구체적으로..."
 }
 
+## 현재 학년 정보
+- 학생의 현재 학년: ${input.studentGrade}학년
+- **현재 학년 이후의 데이터가 없는 것은 당연합니다.** 아직 해당 학년이 종료되지 않았거나 시작되지 않았기 때문입니다.
+
+## ⛔ 기록 부재 언급 금지 (절대 준수)
+- "N학년 기록이 부재하여 아쉽습니다", "N학년 데이터가 없어 분석이 제한됩니다" 등 **기록 부재에 대한 부정적 언급은 절대 금지**합니다.
+- 데이터가 없는 학년은 분석에서 제외하고, 존재하는 학년의 데이터만으로 분석하세요.
+- overallComment, admissionRelevance에서도 "기록이 부재하여", "데이터가 부족하여" 등의 표현을 사용하지 마세요.
+
 ## 규칙
 1. 행동특성 및 종합의견은 담임교사가 작성하는 총평으로, 학생의 인성과 태도를 종합 판단하는 자료입니다.
-2. 학년별로 어떤 특성이 강조되는지 분석합니다.
+2. 학년별로 어떤 특성이 강조되는지 분석합니다. **데이터가 없는 학년은 yearlyAnalysis에 포함하지 마세요.**
 3. 여러 학년에 걸쳐 일관되게 등장하는 특성을 식별합니다 (일관성 = 높은 신뢰도).
 4. 형식적 표현과 구체적 행동 서술을 구분합니다.
 5. 입학사정관이 행동특성에서 주로 확인하는 항목 (우선순위 순):

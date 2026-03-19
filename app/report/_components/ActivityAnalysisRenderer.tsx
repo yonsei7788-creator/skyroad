@@ -12,6 +12,8 @@ interface ActivityAnalysisRendererProps {
   plan?: ReportPlan;
 }
 
+const NO_DATA_MSG = "기록이 없어 평가할 수 없습니다.";
+
 export const ActivityAnalysisRenderer = ({
   data,
   sectionNumber,
@@ -67,19 +69,24 @@ export const ActivityAnalysisRenderer = ({
               </div>
             ))}
 
-            {activity.volumeAssessment && (
-              <p className={`${styles.small} ${styles.mt12}`}>
-                <span className={styles.emphasis}>기록 분량:</span>{" "}
-                {safeText(activity.volumeAssessment)}
-              </p>
-            )}
+            {activity.volumeAssessment &&
+              activity.overallComment !== NO_DATA_MSG && (
+                <p className={`${styles.small} ${styles.mt12}`}>
+                  <span className={styles.emphasis}>기록 분량:</span>{" "}
+                  {safeText(activity.volumeAssessment)}
+                </p>
+              )}
 
-            <p className={`${styles.small} ${styles.mt12}`}>
-              {safeText(activity.overallComment)}
-            </p>
+            {activity.overallComment &&
+              activity.overallComment !== NO_DATA_MSG && (
+                <p className={`${styles.small} ${styles.mt12}`}>
+                  {safeText(activity.overallComment)}
+                </p>
+              )}
 
             {!(activity.keyActivities && activity.keyActivities.length > 0) &&
-              activity.improvementDirection && (
+              activity.improvementDirection &&
+              activity.overallComment !== NO_DATA_MSG && (
                 <div
                   className={`${styles.callout} ${styles.calloutCaution} ${styles.mt16}`}
                 >

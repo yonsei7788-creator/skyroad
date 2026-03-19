@@ -200,6 +200,10 @@ export interface PreprocessedData {
   attendanceSummary: AttendanceSummaryItem[];
   recordVolume: RecordVolumeItem[];
   wordCloudData: WordCloudItem[];
+  /** 데이터가 존재하는 창체 영역/학년 조합 (postprocessor "기록 없음" 판단용) */
+  existingCreativeSlots: { area: string; year: number }[];
+  /** 데이터가 존재하는 행동특성 학년 (postprocessor "기록 없음" 판단용) */
+  existingBehaviorYears: number[];
   studentTypeInput: {
     academicScore: number;
     careerScore: number;
@@ -266,15 +270,145 @@ const SCHOOL_TYPE_ADJUSTMENT: Record<string, number> = {
   마이스터고: 0.3,
 };
 
-// ─── 5등급제 환산 ───
+// ─── 9등급제 → 5등급제 환산 테이블 ───
+// [9등급, 5등급(상), 5등급(평균), 5등급(하)]
+const NINE_TO_FIVE_GRADE_TABLE: [number, number, number, number][] = [
+  [1.0, 1, 1, 1],
+  [1.1, 1, 1.01, 1.03],
+  [1.2, 1, 1.01, 1.04],
+  [1.3, 1, 1.05, 1.07],
+  [1.4, 1, 1.06, 1.13],
+  [1.5, 1.03, 1.09, 1.17],
+  [1.6, 1.11, 1.15, 1.19],
+  [1.7, 1.13, 1.17, 1.24],
+  [1.8, 1.17, 1.22, 1.29],
+  [1.9, 1.22, 1.27, 1.32],
+  [2.0, 1.27, 1.33, 1.39],
+  [2.1, 1.31, 1.38, 1.46],
+  [2.2, 1.39, 1.45, 1.5],
+  [2.3, 1.4, 1.5, 1.59],
+  [2.4, 1.46, 1.54, 1.61],
+  [2.5, 1.54, 1.6, 1.68],
+  [2.6, 1.6, 1.67, 1.77],
+  [2.7, 1.64, 1.72, 1.81],
+  [2.8, 1.7, 1.76, 1.82],
+  [2.9, 1.74, 1.82, 1.9],
+  [3.0, 1.81, 1.89, 1.97],
+  [3.1, 1.83, 1.93, 2.03],
+  [3.2, 1.89, 1.98, 2.07],
+  [3.3, 1.93, 2.03, 2.11],
+  [3.4, 2.0, 2.09, 2.18],
+  [3.5, 2.07, 2.15, 2.23],
+  [3.6, 2.12, 2.21, 2.29],
+  [3.7, 2.17, 2.25, 2.34],
+  [3.8, 2.21, 2.31, 2.4],
+  [3.9, 2.29, 2.37, 2.47],
+  [4.0, 2.35, 2.43, 2.52],
+  [4.1, 2.39, 2.49, 2.6],
+  [4.2, 2.46, 2.56, 2.65],
+  [4.3, 2.53, 2.62, 2.71],
+  [4.4, 2.59, 2.68, 2.75],
+  [4.5, 2.63, 2.73, 2.83],
+  [4.6, 2.69, 2.78, 2.87],
+  [4.7, 2.77, 2.85, 2.93],
+  [4.8, 2.83, 2.91, 3.0],
+  [4.9, 2.88, 2.97, 3.07],
+  [5.0, 2.93, 3.03, 3.12],
+  [5.1, 3.0, 3.09, 3.17],
+  [5.2, 3.06, 3.14, 3.23],
+  [5.3, 3.12, 3.21, 3.29],
+  [5.4, 3.17, 3.26, 3.35],
+  [5.5, 3.25, 3.32, 3.4],
+  [5.6, 3.3, 3.38, 3.48],
+  [5.7, 3.35, 3.45, 3.54],
+  [5.8, 3.41, 3.49, 3.58],
+  [5.9, 3.47, 3.55, 3.64],
+  [6.0, 3.55, 3.63, 3.72],
+  [6.1, 3.59, 3.69, 3.79],
+  [6.2, 3.67, 3.74, 3.83],
+  [6.3, 3.74, 3.81, 3.89],
+  [6.4, 3.79, 3.86, 3.96],
+  [6.5, 3.83, 3.91, 4.0],
+  [6.6, 3.89, 3.97, 4.04],
+  [6.7, 3.96, 4.03, 4.1],
+  [6.8, 4.0, 4.08, 4.16],
+  [6.9, 4.04, 4.11, 4.18],
+  [7.0, 4.11, 4.19, 4.25],
+  [7.1, 4.17, 4.25, 4.33],
+  [7.2, 4.25, 4.31, 4.38],
+  [7.3, 4.29, 4.36, 4.45],
+  [7.4, 4.34, 4.41, 4.5],
+  [7.5, 4.37, 4.47, 4.55],
+  [7.6, 4.41, 4.51, 4.61],
+  [7.7, 4.47, 4.57, 4.63],
+  [7.8, 4.56, 4.62, 4.69],
+  [7.9, 4.63, 4.69, 4.77],
+  [8.0, 4.67, 4.72, 4.83],
+  [8.1, 4.69, 4.76, 4.83],
+  [8.2, 4.75, 4.81, 4.87],
+  [8.3, 4.79, 4.84, 4.88],
+  [8.4, 4.84, 4.89, 4.96],
+  [8.5, 4.86, 4.91, 4.96],
+  [8.6, 4.89, 4.92, 4.97],
+  [8.7, 4.92, 4.96, 5.0],
+  [8.8, 4.93, 4.97, 5.0],
+  [8.9, 5.0, 5.0, 5.0],
+  [9.0, 5.0, 5.0, 5.0],
+];
 
+// 빠른 조회를 위한 Map (key: 9등급 × 10 → 정수화)
+const FIVE_GRADE_MAP = new Map(
+  NINE_TO_FIVE_GRADE_TABLE.map(([nine, upper, avg, lower]) => [
+    Math.round(nine * 10),
+    { upper, avg, lower },
+  ])
+);
+
+/** 9등급 → 5등급 환산 (평균값 기준). 0.1 단위 보간 지원. */
 const convertToFiveGrade = (nineGrade: number): number => {
-  // 5등급제 전환 기준: 1→1, 2~3→2, 4~5→3, 6~7→4, 8~9→5
-  if (nineGrade <= 1) return 1;
-  if (nineGrade <= 3) return 2;
-  if (nineGrade <= 5) return 3;
-  if (nineGrade <= 7) return 4;
-  return 5;
+  const clamped = Math.max(1, Math.min(9, nineGrade));
+  const key = Math.round(clamped * 10);
+  const exact = FIVE_GRADE_MAP.get(key);
+  if (exact) return exact.avg;
+
+  // 테이블에 없는 값은 인접 두 항목 선형 보간
+  const lo = Math.floor(clamped * 10);
+  const hi = lo + 1;
+  const loEntry = FIVE_GRADE_MAP.get(lo);
+  const hiEntry = FIVE_GRADE_MAP.get(hi);
+  if (loEntry && hiEntry) {
+    const t = clamped * 10 - lo;
+    return Math.round((loEntry.avg * (1 - t) + hiEntry.avg * t) * 100) / 100;
+  }
+  return loEntry?.avg ?? hiEntry?.avg ?? clamped;
+};
+
+/** 9등급 → 5등급 환산 범위 (상/평균/하) */
+const convertToFiveGradeRange = (
+  nineGrade: number
+): { upper: number; avg: number; lower: number } => {
+  const clamped = Math.max(1, Math.min(9, nineGrade));
+  const key = Math.round(clamped * 10);
+  const exact = FIVE_GRADE_MAP.get(key);
+  if (exact) return exact;
+
+  const lo = Math.floor(clamped * 10);
+  const hi = lo + 1;
+  const loEntry = FIVE_GRADE_MAP.get(lo);
+  const hiEntry = FIVE_GRADE_MAP.get(hi);
+  if (loEntry && hiEntry) {
+    const t = clamped * 10 - lo;
+    const lerp = (a: number, b: number) =>
+      Math.round((a * (1 - t) + b * t) * 100) / 100;
+    return {
+      upper: lerp(loEntry.upper, hiEntry.upper),
+      avg: lerp(loEntry.avg, hiEntry.avg),
+      lower: lerp(loEntry.lower, hiEntry.lower),
+    };
+  }
+  const fallback = loEntry ??
+    hiEntry ?? { upper: clamped, avg: clamped, lower: clamped };
+  return fallback;
 };
 
 // ─── 불용어 ───
@@ -493,6 +627,14 @@ export const preprocess = (
     studentCount: s.studentCount,
   }));
 
+  // 17. 데이터 존재 여부 맵 (postprocessor에서 "기록 없음" 판단용)
+  const existingCreativeSlots = creativeActs
+    .filter((a) => a.area !== "봉사활동" && a.note.trim().length > 0)
+    .map((a) => ({ area: a.area, year: a.year }));
+  const existingBehaviorYears = behaviors
+    .filter((b) => b.assessment.trim().length > 0)
+    .map((b) => b.year);
+
   const data: PreprocessedData = {
     overallAverage: Math.round(overallAverage * 100) / 100,
     averageByGrade,
@@ -517,6 +659,8 @@ export const preprocess = (
     recordVolume,
     wordCloudData,
     studentTypeInput,
+    existingCreativeSlots,
+    existingBehaviorYears,
   };
 
   const texts = buildTexts(data, recordData, studentInfo, plan);
@@ -738,6 +882,7 @@ const findMatchingMajor = (
   // 2) detectedMajorGroup ↔ recommended-courses major 이름이 다른 경우 매핑
   const GROUP_TO_COURSE_MAJOR: Record<string, string[]> = {
     의생명: ["의학", "생명바이오"],
+    예체능교육: ["예체능", "교육"],
   };
 
   const altsByDept = GROUP_TO_COURSE_MAJOR[targetDept];

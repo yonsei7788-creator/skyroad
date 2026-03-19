@@ -417,6 +417,7 @@ export const executeTask = async (
             behavioralAssessment: texts.behavioralAssessmentText,
             competencyExtraction: ser.compExtrText!,
             studentProfile: texts.studentProfileText,
+            studentGrade: studentInfo.grade,
           },
           plan
         )
