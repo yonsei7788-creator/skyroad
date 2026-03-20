@@ -387,13 +387,15 @@ export async function POST(request: NextRequest) {
       `[parse] Files uploaded: ${fileParts.length}, URIs: ${fileParts.map((p) => p.fileData.fileUri).join(", ")}`
     );
 
-    // Generate content — thinking ON for accurate table structure parsing
+    // Generate content — thinking budget 4096: 테이블 공간 추론에 충분하면서 타임아웃 방지
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
         maxOutputTokens: MAX_OUTPUT_TOKENS,
+        // @ts-expect-error -- thinkingConfig is supported by Gemini 2.5 but not yet in SDK types
+        thinkingConfig: { thinkingBudget: 4096 },
       },
     });
 
