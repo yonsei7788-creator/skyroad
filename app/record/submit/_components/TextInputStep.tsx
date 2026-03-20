@@ -897,6 +897,19 @@ const mockExamColumns: ColumnDef<Record<string, unknown>>[] = [
 const ACCORDION_STEPS: AccordionStepDef[] = [
   {
     stepNumber: 1,
+    title: "모의고사 성적",
+    sections: [
+      {
+        key: "mockExams",
+        title: "모의고사 성적",
+        columns: mockExamColumns,
+        addLabel: "모의고사 추가",
+        createEmpty: createEmptyMockExamRow,
+      },
+    ],
+  },
+  {
+    stepNumber: 2,
     title: "출결상황 · 수상경력 · 자격증",
     sections: [
       {
@@ -923,7 +936,7 @@ const ACCORDION_STEPS: AccordionStepDef[] = [
     ],
   },
   {
-    stepNumber: 2,
+    stepNumber: 3,
     title: "창의적 체험활동 · 봉사활동",
     sections: [
       {
@@ -942,7 +955,7 @@ const ACCORDION_STEPS: AccordionStepDef[] = [
     ],
   },
   {
-    stepNumber: 3,
+    stepNumber: 4,
     title: "교과학습발달상황 · 세부능력 및 특기사항",
     sections: [
       {
@@ -976,7 +989,7 @@ const ACCORDION_STEPS: AccordionStepDef[] = [
     ],
   },
   {
-    stepNumber: 4,
+    stepNumber: 5,
     title: "독서활동 · 행동특성 및 종합의견",
     sections: [
       {
@@ -992,19 +1005,6 @@ const ACCORDION_STEPS: AccordionStepDef[] = [
         columns: behavioralColumns,
         addLabel: "학년 추가",
         createEmpty: createEmptyBehavioralAssessmentRow,
-      },
-    ],
-  },
-  {
-    stepNumber: 5,
-    title: "모의고사 성적",
-    sections: [
-      {
-        key: "mockExams",
-        title: "모의고사 성적",
-        columns: mockExamColumns,
-        addLabel: "모의고사 추가",
-        createEmpty: createEmptyMockExamRow,
       },
     ],
   },
@@ -1031,7 +1031,9 @@ export const TextInputStep = ({
   return (
     <div className={styles.textInputStep}>
       <div className={styles.textInputHeader}>
-        <h3 className={styles.stepSectionTitle}>생활기록부 직접 입력</h3>
+        <h3 className={styles.stepSectionTitle}>
+          생활기록부 및 모의고사 점수 등록
+        </h3>
         <p className={styles.stepSectionDesc}>
           각 STEP을 열어 생기부 데이터를 입력해주세요.{" "}
           <span className={styles.requiredHint}>
