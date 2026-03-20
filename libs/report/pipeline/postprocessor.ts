@@ -687,6 +687,121 @@ export const postprocess = (
               }
             }
           }
+
+          // 4단계: 5등급제 교과전형 현실성 보정
+          // 5등급제 2등급 초반 학생에게 인서울 중위권 교과전형 chance "high" 이상은 비현실적
+          // 인서울 중위권 교과 합격선은 5등급제 기준 1.4~1.6등급
+          if (gs === "5등급제" && avg != null) {
+            for (const card of sim.cards) {
+              if (!card.subject?.chance) continue;
+              const cutoff9 = getCutoff9(card.university, card.department);
+              if (cutoff9 == null) continue;
+
+              // 인서울/수도권 중위권 이상 대학 (9등급 기준 커트라인 3.5 이하)
+              // 이 대학들의 교과전형 합격선은 5등급제 1.4~1.6 수준
+              // 5등급제 2.0 이상 학생에게는 교과 chance를 "medium" 이하로 제한
+              if (cutoff9 <= 3.5 && avg >= 2.0) {
+                const CHANCE_RANK: Record<string, number> = {
+                  very_low: 0,
+                  low: 1,
+                  medium: 2,
+                  high: 3,
+                  very_high: 4,
+                };
+                const currentRank = CHANCE_RANK[card.subject.chance] ?? 2;
+
+                // 교과 합격선(9등급)과 학생 등급(9등급 환산) 격차에 따라 제한
+                const gap = studentGrade9 - cutoff9;
+                let maxChance: string;
+                if (gap > 1.0) {
+                  maxChance = "very_low";
+                } else if (gap > 0.5) {
+                  maxChance = "low";
+                } else {
+                  maxChance = "medium";
+                }
+
+                const maxRank = CHANCE_RANK[maxChance] ?? 2;
+                if (currentRank > maxRank) {
+                  console.warn(
+                    `[report:${reportId}] 5등급제 교과전형 현실성 보정: ${card.university} 교과 ${card.subject.chance}→${maxChance} (5등급 avg=${avg.toFixed(2)}, cutoff9=${cutoff9.toFixed(2)}, gap=${gap.toFixed(2)})`
+                  );
+                  card.subject.chance = maxChance;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 3-8. 학종/교과 chance 강제 분리 (admissionStrategy) — 최종 단계
+  // 모든 chance/riskLevel 보정이 끝난 후 실행해야 재동일화 방지
+  // AI가 같은 카드에서 comprehensive.chance와 subject.chance를 동일하게 출력하는 문제 방지
+  // 학종은 정성평가 포함으로 합격선이 낮아 chance가 교과보다 같거나 높아야 함
+  if (admStrat && Array.isArray(admStrat.simulations)) {
+    const CHANCE_ORDER_FINAL = [
+      "very_low",
+      "low",
+      "medium",
+      "high",
+      "very_high",
+    ] as const;
+    const chanceIdxF = (c: string): number =>
+      CHANCE_ORDER_FINAL.indexOf(c as (typeof CHANCE_ORDER_FINAL)[number]);
+    const chanceUpF = (c: string): string => {
+      const i = chanceIdxF(c);
+      return i < CHANCE_ORDER_FINAL.length - 1 ? CHANCE_ORDER_FINAL[i + 1] : c;
+    };
+    const chanceDownF = (c: string): string => {
+      const i = chanceIdxF(c);
+      return i > 0 ? CHANCE_ORDER_FINAL[i - 1] : c;
+    };
+    const bumpPercent = (label: string, delta: number): string => {
+      const m = label.match(/^(\d+)~(\d+)%$/);
+      if (!m) return label;
+      const lo = Math.max(0, Math.min(100, parseInt(m[1]) + delta));
+      const hi = Math.max(0, Math.min(100, parseInt(m[2]) + delta));
+      return `${lo}~${hi}%`;
+    };
+
+    for (const sim of admStrat.simulations) {
+      if (!Array.isArray(sim.cards)) continue;
+      for (const card of sim.cards) {
+        const comp = card.comprehensive;
+        const subj = card.subject;
+        if (!comp || !subj) continue;
+
+        // chance가 동일하면 → 교과를 한 단계 내림 (학종을 올리면 riskLevel 보정과 충돌)
+        if (comp.chance === subj.chance) {
+          subj.chance = chanceDownF(subj.chance);
+          console.warn(
+            `[report:${reportId}] 학종/교과 chance 동일 보정: ${card.university} → 학종=${comp.chance}, 교과=${subj.chance}`
+          );
+        }
+
+        // 학종 chance가 교과보다 낮으면 → 교과를 학종보다 한 단계 아래로
+        if (chanceIdxF(comp.chance) < chanceIdxF(subj.chance)) {
+          subj.chance =
+            chanceIdxF(comp.chance) > 0
+              ? CHANCE_ORDER_FINAL[chanceIdxF(comp.chance) - 1]
+              : comp.chance;
+          console.warn(
+            `[report:${reportId}] 학종<교과 역전 보정: ${card.university} → 학종=${comp.chance}, 교과=${subj.chance}`
+          );
+        }
+
+        // chancePercentLabel이 동일하면 → 교과 -10%p (학종은 유지)
+        if (
+          comp.chancePercentLabel &&
+          subj.chancePercentLabel &&
+          comp.chancePercentLabel === subj.chancePercentLabel
+        ) {
+          subj.chancePercentLabel = bumpPercent(subj.chancePercentLabel, -10);
+          console.warn(
+            `[report:${reportId}] 학종/교과 퍼센트 동일 보정: ${card.university} → 학종=${comp.chancePercentLabel}, 교과=${subj.chancePercentLabel}`
+          );
         }
       }
     }
