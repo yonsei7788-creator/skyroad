@@ -9,7 +9,7 @@ import crypto from "crypto";
 import { createClient } from "@/libs/supabase/server";
 import { correctSubjectName } from "@/libs/report/constants/subject-name-corrections";
 
-export const maxDuration = 120;
+export const maxDuration = 180;
 export const dynamic = "force-dynamic";
 
 const PARSE_PROMPT = `당신은 한국 고등학교 생활기록부(학생부) 전문 파서입니다.
