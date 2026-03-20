@@ -1077,7 +1077,8 @@ export const TextInputStep = ({
                   {rule.label}
                   <span className={styles.requiredChecklistCount}>
                     {count}/{rule.minCount}
-                    {rule.minCount > 1 ? "건" : "개 학년"}
+                    {rule.minCount > 1 ? "건" : "개 학년"} ({rule.minCount}
+                    {rule.minCount > 1 ? "건" : "개 학년"} 이상 필수 입력)
                   </span>
                 </span>
               </li>
