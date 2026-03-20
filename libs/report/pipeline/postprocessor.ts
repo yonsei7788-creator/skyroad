@@ -143,7 +143,6 @@ export const postprocess = (
   if (admPred && admStrat) {
     // admissionStrategy의 simulations에서 대학별 chance 수집
     const strategyChanceMap = new Map<string, string>();
-    const riskMap = new Map<string, string>();
     if (Array.isArray(admStrat.simulations)) {
       for (const sim of admStrat.simulations) {
         if (!Array.isArray(sim.cards)) continue;
@@ -162,27 +161,8 @@ export const postprocess = (
             strategyChanceMap.set(key, card.comprehensive.chance);
             strategyChanceMap.set(card.university, card.comprehensive.chance);
           }
-          if (card.riskLevel) {
-            riskMap.set(card.university, card.riskLevel);
-          }
-        }
-      }
-    }
-
-    if (Array.isArray(admPred.predictions)) {
-      for (const pred of admPred.predictions) {
-        if (!Array.isArray(pred.universityPredictions)) continue;
-        for (const uniPred of pred.universityPredictions) {
-          const risk = riskMap.get(uniPred.university);
-          if (!risk) continue;
-
-          // 리스크-chance 일관성 강제 보정
-          const { chance } = uniPred;
-          if (risk === "안정") {
-            if (chance === "low" || chance === "very_low") {
-              uniPred.chance = "high";
-            }
-          }
+          // riskLevel 제거 (v5: 더 이상 사용하지 않음)
+          delete card.riskLevel;
         }
       }
     }
@@ -472,7 +452,7 @@ export const postprocess = (
   }
 
   // 3-7. admissionStrategy: 학과별 실제 커트라인 기반 검증
-  // riskLevel/chance 일관성 보정 + 비현실적/너무 쉬운 대학 제거
+  // chance 일관성 보정 + 비현실적/너무 쉬운 대학 제거
   {
     const avg = preprocessed.overallAverage;
     const gs = preprocessed.gradingSystem;
@@ -597,7 +577,7 @@ export const postprocess = (
         }
       }
 
-      // admissionStrategy: 비현실적/너무 쉬운 대학 제거 + riskLevel/chance 보정
+      // admissionStrategy: 비현실적/너무 쉬운 대학 제거 + chance 보정
       if (admStrat && Array.isArray(admStrat.simulations)) {
         for (const sim of admStrat.simulations) {
           if (!Array.isArray(sim.cards)) continue;
@@ -624,68 +604,9 @@ export const postprocess = (
             return true;
           });
 
-          // 2단계: riskLevel 보정 (9등급 커트라인 기반)
+          // 2단계: riskLevel 제거 (v5: 더 이상 사용하지 않음)
           for (const card of sim.cards) {
-            const cutoff9 = getCutoff9(card.university, card.department);
-            if (cutoff9 == null) continue;
-
-            // cutoff9 < studentGrade9 → 학생이 올라가야 함 → 위험
-            // cutoff9 >= studentGrade9 → 학생이 도달 가능/여유 → 안정
-            const shouldBeRisk = cutoff9 < studentGrade9;
-            const currentRisk = card.riskLevel;
-
-            if (shouldBeRisk && currentRisk === "안정") {
-              console.log(
-                `[report:${reportId}] riskLevel 보정: ${card.university} 안정→위험 (cutoff9=${cutoff9.toFixed(2)} < student9=${studentGrade9.toFixed(2)})`
-              );
-              card.riskLevel = "위험";
-            } else if (!shouldBeRisk && currentRisk === "위험") {
-              console.log(
-                `[report:${reportId}] riskLevel 보정: ${card.university} 위험→안정 (cutoff9=${cutoff9.toFixed(2)} >= student9=${studentGrade9.toFixed(2)})`
-              );
-              card.riskLevel = "안정";
-            }
-          }
-
-          // 3단계: chance-riskLevel 일관성 보정
-          for (const card of sim.cards) {
-            const risk = card.riskLevel;
-
-            // comprehensive (학종) chance 보정
-            if (card.comprehensive?.chance) {
-              if (
-                risk === "안정" &&
-                (card.comprehensive.chance === "low" ||
-                  card.comprehensive.chance === "very_low")
-              ) {
-                card.comprehensive.chance = "high";
-              }
-              if (
-                risk === "위험" &&
-                (card.comprehensive.chance === "very_high" ||
-                  card.comprehensive.chance === "high")
-              ) {
-                card.comprehensive.chance = "medium";
-              }
-            }
-
-            // subject (교과) chance 보정
-            if (card.subject?.chance) {
-              if (
-                risk === "안정" &&
-                (card.subject.chance === "low" ||
-                  card.subject.chance === "very_low")
-              ) {
-                card.subject.chance = "high";
-              }
-              if (
-                risk === "위험" &&
-                (card.subject.chance === "very_high" ||
-                  card.subject.chance === "high")
-              ) {
-                card.subject.chance = "medium";
-              }
-            }
+            delete card.riskLevel;
           }
 
           // 4단계: 5등급제 교과전형 현실성 보정
@@ -737,7 +658,7 @@ export const postprocess = (
   }
 
   // 3-8. 학종/교과 chance 강제 분리 (admissionStrategy) — 최종 단계
-  // 모든 chance/riskLevel 보정이 끝난 후 실행해야 재동일화 방지
+  // 모든 chance 보정이 끝난 후 실행해야 재동일화 방지
   // AI가 같은 카드에서 comprehensive.chance와 subject.chance를 동일하게 출력하는 문제 방지
   // 학종은 정성평가 포함으로 합격선이 낮아 chance가 교과보다 같거나 높아야 함
   if (admStrat && Array.isArray(admStrat.simulations)) {
@@ -773,7 +694,7 @@ export const postprocess = (
         const subj = card.subject;
         if (!comp || !subj) continue;
 
-        // chance가 동일하면 → 교과를 한 단계 내림 (학종을 올리면 riskLevel 보정과 충돌)
+        // chance가 동일하면 → 교과를 한 단계 내림
         if (comp.chance === subj.chance) {
           subj.chance = chanceDownF(subj.chance);
           console.warn(

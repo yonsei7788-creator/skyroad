@@ -832,15 +832,15 @@ const CardAdmissionInfoSchema = z.object({
 const UniversityCardSchema = z.object({
   university: z.string().min(1),
   department: z.string().min(1),
-  riskLevel: z.enum(["위험", "안정"]),
+  riskLevel: z.enum(["위험", "안정"]).optional(),
   comprehensive: CardAdmissionInfoSchema,
   subject: CardAdmissionInfoSchema.optional(),
 });
 
 const SimulationGroupSchema = z.object({
-  type: z.enum(["위험형", "안정형"]),
+  type: z.enum(["위험형", "안정형"]).optional(),
   description: z.string().min(1),
-  cards: z.array(UniversityCardSchema).length(6),
+  cards: z.array(UniversityCardSchema).min(1).max(6),
 });
 
 const AdmissionTypeStrategySchema = z.object({
@@ -867,7 +867,11 @@ export const AdmissionStrategySectionSchema = z.object({
   sectionId: z.literal("admissionStrategy"),
   title: z.string().min(1),
   recommendedPath: z.string().min(1),
-  simulations: z.tuple([SimulationGroupSchema, SimulationGroupSchema]),
+  simulations: z.union([
+    z.tuple([SimulationGroupSchema]),
+    z.tuple([SimulationGroupSchema, SimulationGroupSchema]),
+    z.array(SimulationGroupSchema).min(1).max(2),
+  ]),
   typeStrategies: z.array(AdmissionTypeStrategySchema).optional(),
   schoolTypeAnalysis: SchoolTypeAnalysisSchema.optional(),
   universityGuideMatching: z.array(UniversityGuideMatchingSchema).optional(),

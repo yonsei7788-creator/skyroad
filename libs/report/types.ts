@@ -943,8 +943,8 @@ export interface InterviewPrepSection extends BaseSection {
 interface UniversityCard {
   university: string;
   department: string;
-  /** 이 카드의 리스크 수준 */
-  riskLevel: CardRiskLevel;
+  /** @deprecated v5에서 제거됨 — 기존 데이터 호환용 */
+  riskLevel?: CardRiskLevel;
 
   /** 학생부종합전형 추천 */
   comprehensive: {
@@ -963,13 +963,13 @@ interface UniversityCard {
   };
 }
 
-/** 지원 조합 시뮬레이션 그룹 */
+/** 대학 추천 그룹 */
 interface SimulationGroup {
-  /** 시뮬레이션 유형 */
-  type: "위험형" | "안정형";
-  /** 시뮬레이션 설명 (2~3줄) */
+  /** @deprecated v5에서 제거됨 — 기존 데이터 호환용 */
+  type?: "위험형" | "안정형";
+  /** 추천 설명 (2~3줄) */
   description: string;
-  /** 대학 카드 6개 */
+  /** 추천 대학 카드 (최대 6개) */
   cards: UniversityCard[];
 }
 
@@ -995,12 +995,11 @@ export interface AdmissionStrategySection extends BaseSection {
   recommendedPath: string;
 
   /**
-   * 지원 조합 시뮬레이션 (위험형 + 안정형)
-   * - 위험형: 위험 카드 4개 + 안정 카드 2개
-   * - 안정형: 위험 카드 2개 + 안정 카드 4개
+   * 대학 추천 (최대 6개 카드)
    * - 각 카드에 학종 + 교과 추천 포함
+   * - 기존 데이터: 2개 그룹(위험형+안정형) → UI에서 합산 후 최대 6개 표시
    */
-  simulations: [SimulationGroup, SimulationGroup];
+  simulations: SimulationGroup[] | [SimulationGroup, SimulationGroup];
 
   // Standard+
   typeStrategies?: AdmissionTypeStrategy[];

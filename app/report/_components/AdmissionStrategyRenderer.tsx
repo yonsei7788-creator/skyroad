@@ -32,53 +32,65 @@ export const AdmissionStrategyRenderer = ({
         </div>
       </div>
 
-      {/* Block 2: Simulation groups (위험형 + 안정형) */}
-      {data.simulations?.map((sim) => (
-        <div key={sim.type}>
-          <div className={`${styles.h3} ${styles.mb8}`}>
-            지원 조합 — {sim.type} 지원
-          </div>
-          <p className={`${styles.small} ${styles.mb12}`}>
-            {safeText(sim.description)}
-          </p>
-          <table className={styles.compactTable}>
-            <thead>
-              <tr>
-                <th>대학</th>
-                <th>학과</th>
-                <th className={styles.tableAlignCenter}>유형</th>
-                <th>학종</th>
-                <th>교과</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(sim.cards ?? []).map((card, idx) => (
-                <tr key={idx}>
-                  <td className={styles.tableCellBold}>{card.university}</td>
-                  <td className={styles.small}>{card.department}</td>
-                  <td className={styles.tableAlignCenter}>
-                    <span className={styles.tag}>{card.riskLevel}</span>
-                  </td>
-                  <td className={styles.tableAlignCenter}>
-                    {card.comprehensive?.chance ? (
-                      <ReportBadge chance={card.comprehensive.chance} />
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td className={styles.tableAlignCenter}>
-                    {card.subject?.chance ? (
-                      <ReportBadge chance={card.subject.chance} />
-                    ) : (
-                      "—"
-                    )}
-                  </td>
+      {/* Block 2: 대학 추천 (단일 테이블) */}
+      {(() => {
+        const allCards =
+          data.simulations
+            ?.flatMap((sim) => sim.cards ?? [])
+            .filter(
+              (card, idx, arr) =>
+                arr.findIndex(
+                  (c) =>
+                    c.university === card.university &&
+                    c.department === card.department
+                ) === idx
+            )
+            .slice(0, 6) ?? [];
+        if (allCards.length === 0) return null;
+        const desc = data.simulations?.[0]?.description;
+        return (
+          <div>
+            <div className={`${styles.h3} ${styles.mb8}`}>대학 추천</div>
+            {desc && (
+              <p className={`${styles.small} ${styles.mb12}`}>
+                {safeText(desc)}
+              </p>
+            )}
+            <table className={styles.compactTable}>
+              <thead>
+                <tr>
+                  <th>대학</th>
+                  <th>학과</th>
+                  <th>학종</th>
+                  <th>교과</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ))}
+              </thead>
+              <tbody>
+                {allCards.map((card, idx) => (
+                  <tr key={idx}>
+                    <td className={styles.tableCellBold}>{card.university}</td>
+                    <td className={styles.small}>{card.department}</td>
+                    <td className={styles.tableAlignCenter}>
+                      {card.comprehensive?.chance ? (
+                        <ReportBadge chance={card.comprehensive.chance} />
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className={styles.tableAlignCenter}>
+                      {card.subject?.chance ? (
+                        <ReportBadge chance={card.subject.chance} />
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
 
       {/* Block 3: 대학별 합격 가능성 분석 — 1대학 1카드 (학종+교과 통합) */}
       {(() => {
@@ -108,7 +120,6 @@ export const AdmissionStrategyRenderer = ({
               <div className={styles.cardTitle}>
                 {card.university} {card.department}
               </div>
-              <span className={styles.tag}>{card.riskLevel}</span>
             </div>
 
             {/* 학종 */}

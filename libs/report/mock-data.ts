@@ -5252,27 +5252,41 @@ const interviewPrepPremium: InterviewPrepSection = {
 
 // ─── 섹션 16: 입시 전략 + 대학 추천 ───
 
-const MOCK_CARD = (uni: string, dept: string, risk: "위험" | "안정") => ({
+const MOCK_CARD = (
+  uni: string,
+  dept: string,
+  chance: "low" | "medium" | "high" = "medium"
+) => ({
   university: uni,
   department: dept,
-  riskLevel: risk,
   comprehensive: {
     admissionType: "학생부종합-일반",
-    chance: risk === "위험" ? ("low" as const) : ("high" as const),
+    chance,
     chanceRationale:
-      risk === "위험"
-        ? "전공 적합성은 있으나 상위권 경쟁이 치열하여 도전적 지원"
-        : "현재 스펙으로 안정적 합격 가능",
-    chancePercentLabel: risk === "위험" ? "30~40%" : "70~85%",
+      chance === "medium"
+        ? "전공 관련 세특이 확인되나 상위권 경쟁이 치열하여 적정 수준"
+        : chance === "low"
+          ? "전공 적합성은 있으나 상위권 경쟁이 치열하여 도전적 지원"
+          : "현재 스펙으로 안정적 합격 가능",
+    chancePercentLabel:
+      chance === "medium" ? "40~55%" : chance === "low" ? "30~40%" : "70~85%",
   },
   subject: {
     admissionType: "학생부교과-지역균형",
-    chance: risk === "위험" ? ("medium" as const) : ("very_high" as const),
+    chance:
+      chance === "high"
+        ? ("medium" as const)
+        : chance === "medium"
+          ? ("low" as const)
+          : ("very_low" as const),
     chanceRationale:
-      risk === "위험"
+      chance === "medium"
         ? "내신 등급 기준 교과전형 지원 가능 수준"
-        : "내신 등급이 합격선을 충족하여 안정적",
-    chancePercentLabel: risk === "위험" ? "45~55%" : "85~95%",
+        : chance === "low"
+          ? "교과 합격선과 격차가 있어 어려운 편"
+          : "내신 등급이 합격선을 충족하여 안정적",
+    chancePercentLabel:
+      chance === "medium" ? "30~45%" : chance === "low" ? "20~30%" : "60~75%",
   },
 });
 
@@ -5283,28 +5297,14 @@ const admissionStrategyLite: AdmissionStrategySection = {
     "학생부종합전형을 주력으로, 전공 적합성과 탐구 역량을 중심으로 어필하는 전략을 추천합니다.",
   simulations: [
     {
-      type: "위험형",
-      description:
-        "도전적 지원 전략: 상위권 대학에 집중하되, 안정 카드 2개로 안전망 확보",
+      description: "학생의 성적과 생기부를 종합 분석한 대학 추천입니다.",
       cards: [
-        MOCK_CARD("서울대학교", "컴퓨터공학과", "위험"),
-        MOCK_CARD("KAIST", "전산학부", "위험"),
-        MOCK_CARD("연세대학교", "컴퓨터과학과", "위험"),
-        MOCK_CARD("고려대학교", "컴퓨터학과", "위험"),
-        MOCK_CARD("한양대학교", "컴퓨터소프트웨어학부", "안정"),
-        MOCK_CARD("중앙대학교", "소프트웨어학부", "안정"),
-      ],
-    },
-    {
-      type: "안정형",
-      description: "안정적 지원 전략: 합격 가능성 높은 대학 위주로 구성",
-      cards: [
-        MOCK_CARD("성균관대학교", "소프트웨어학과", "위험"),
-        MOCK_CARD("서강대학교", "컴퓨터공학과", "위험"),
-        MOCK_CARD("한양대학교", "컴퓨터소프트웨어학부", "안정"),
-        MOCK_CARD("중앙대학교", "소프트웨어학부", "안정"),
-        MOCK_CARD("건국대학교", "컴퓨터공학부", "안정"),
-        MOCK_CARD("서울시립대학교", "컴퓨터과학부", "안정"),
+        MOCK_CARD("연세대학교", "컴퓨터과학과", "low"),
+        MOCK_CARD("고려대학교", "컴퓨터학과", "medium"),
+        MOCK_CARD("성균관대학교", "소프트웨어학과", "medium"),
+        MOCK_CARD("한양대학교", "컴퓨터소프트웨어학부", "medium"),
+        MOCK_CARD("중앙대학교", "소프트웨어학부", "medium"),
+        MOCK_CARD("건국대학교", "컴퓨터공학부", "high"),
       ],
     },
   ],
