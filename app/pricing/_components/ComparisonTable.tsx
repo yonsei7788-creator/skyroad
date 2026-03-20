@@ -15,9 +15,9 @@ interface ComparisonFeature {
 const FEATURES: ComparisonFeature[] = [
   {
     name: "리포트 분량",
-    lite: "10~12p",
-    standard: "15~18p",
-    premium: "20~25p",
+    lite: "18~20p",
+    standard: "40~50p",
+    premium: "50~60p",
   },
   { name: "학생 유형 + 역량 점수", lite: true, standard: true, premium: true },
   {
