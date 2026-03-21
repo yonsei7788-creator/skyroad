@@ -146,10 +146,10 @@ export const POST = async (request: NextRequest) => {
   if (existingOrder) {
     const payments = existingOrder.payments as unknown as {
       toss_order_id: string;
-    };
+    }[];
     return NextResponse.json({
       orderId: existingOrder.id,
-      tossOrderId: payments.toss_order_id,
+      tossOrderId: payments[0].toss_order_id,
       amount: existingOrder.amount,
       orderName: `SKYROAD ${plan.display_name}`,
     });
