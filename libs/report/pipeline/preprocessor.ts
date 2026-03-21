@@ -614,25 +614,22 @@ export const preprocess = (
     (s) => s.gradeRank !== null && s.gradeRank !== undefined
   );
   const overallAverage =
-    gradesWithRank.length > 0
-      ? gradesWithRank.reduce((sum, s) => sum + (s.gradeRank ?? 0), 0) /
-        gradesWithRank.length
-      : 0;
+    gradesWithRank.length > 0 ? weightedAverage(gradesWithRank) : 0;
 
   // 2. 학년/학기별 평균
-  const gradeGroups = new Map<string, number[]>();
+  const gradeGroups = new Map<string, GeneralSubjectRow[]>();
   for (const s of gradesWithRank) {
     const key = `${s.year}-${s.semester}`;
     if (!gradeGroups.has(key)) gradeGroups.set(key, []);
-    gradeGroups.get(key)!.push(s.gradeRank!);
+    gradeGroups.get(key)!.push(s);
   }
   const averageByGrade = [...gradeGroups.entries()]
-    .map(([key, grades]) => {
+    .map(([key, subjects]) => {
       const [year, semester] = key.split("-").map(Number);
       return {
         year,
         semester,
-        average: grades.reduce((a, b) => a + b, 0) / grades.length,
+        average: weightedAverage(subjects),
       };
     })
     .sort((a, b) => a.year - b.year || a.semester - b.semester);
@@ -782,6 +779,23 @@ export const preprocess = (
 
 // ─── 보조 함수들 ───
 
+const weightedAverage = (subjects: GeneralSubjectRow[]): number => {
+  const withCredits = subjects.filter(
+    (s) => s.credits !== null && s.credits > 0
+  );
+  if (withCredits.length > 0) {
+    const totalCredits = withCredits.reduce((sum, s) => sum + s.credits!, 0);
+    return (
+      withCredits.reduce((sum, s) => sum + (s.gradeRank ?? 0) * s.credits!, 0) /
+      totalCredits
+    );
+  }
+  // credits 데이터가 없으면 단순 평균으로 fallback
+  return subjects.length > 0
+    ? subjects.reduce((sum, s) => sum + (s.gradeRank ?? 0), 0) / subjects.length
+    : 0;
+};
+
 const computeSubjectCombinations = (
   subjects: GeneralSubjectRow[]
 ): PreprocessedData["subjectCombinations"] => {
@@ -795,11 +809,7 @@ const computeSubjectCombinations = (
     const matching = subjects.filter((s) =>
       combSubjects.some((c) => s.category.includes(c) || s.subject.includes(c))
     );
-    const avg =
-      matching.length > 0
-        ? matching.reduce((sum, s) => sum + (s.gradeRank ?? 0), 0) /
-          matching.length
-        : 0;
+    const avg = matching.length > 0 ? weightedAverage(matching) : 0;
     return {
       name,
       subjects: combSubjects,
@@ -905,9 +915,7 @@ const computeMajorRelated = (
   );
 
   const relatedAverage =
-    related.length > 0
-      ? related.reduce((sum, s) => sum + s.gradeRank!, 0) / related.length
-      : overallAvg;
+    related.length > 0 ? weightedAverage(related) : overallAvg;
 
   return {
     relatedAverage: Math.round(relatedAverage * 100) / 100,
