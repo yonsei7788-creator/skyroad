@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { loadTossPayments } from "@tosspayments/tosspayments-sdk";
-import { ArrowLeft, CreditCard, Info, Loader2 } from "lucide-react";
+import { ArrowLeft, CreditCard, Info, Loader2, Tag, X } from "lucide-react";
 import Link from "next/link";
 
 import styles from "../page.module.css";
@@ -11,6 +11,13 @@ interface CheckoutPlan {
   name: string;
   displayName: string;
   price: number;
+}
+
+interface UserCoupon {
+  id: string;
+  discountAmount: number;
+  expiresAt: string;
+  source: string;
 }
 
 interface CheckoutClientProps {
@@ -59,6 +66,36 @@ export const CheckoutClient = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Coupon
+  const [coupons, setCoupons] = useState<UserCoupon[]>([]);
+  const [selectedCoupon, setSelectedCoupon] = useState<UserCoupon | null>(null);
+  const [isCouponLoading, setIsCouponLoading] = useState(true);
+
+  const discount = selectedCoupon?.discountAmount ?? 0;
+  const finalPrice = Math.max(0, plan.price - discount);
+
+  // Fetch available coupons
+  useEffect(() => {
+    const fetchCoupons = async () => {
+      try {
+        const res = await fetch("/api/user-coupons");
+        if (res.ok) {
+          const data = await res.json();
+          setCoupons(data.coupons ?? []);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setIsCouponLoading(false);
+      }
+    };
+    fetchCoupons();
+  }, []);
+
+  const handleSelectCoupon = useCallback((coupon: UserCoupon) => {
+    setSelectedCoupon((prev) => (prev?.id === coupon.id ? null : coupon));
+  }, []);
+
   const features = PLAN_FEATURES[plan.name] ?? [];
 
   const handlePayment = async () => {
@@ -75,7 +112,10 @@ export const CheckoutClient = ({
       const orderRes = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planName: plan.name }),
+        body: JSON.stringify({
+          planName: plan.name,
+          couponId: selectedCoupon?.id ?? null,
+        }),
       });
 
       if (!orderRes.ok) {
@@ -93,7 +133,7 @@ export const CheckoutClient = ({
         method: "CARD",
         amount: {
           currency: "KRW",
-          value: plan.price,
+          value: finalPrice,
         },
         orderId: tossOrderId,
         orderName,
@@ -151,10 +191,42 @@ export const CheckoutClient = ({
             </span>
           </div>
 
+          {/* 쿠폰 */}
+          {!isCouponLoading && coupons.length > 0 && (
+            <div className={styles.couponSection}>
+              <span className={styles.couponLabel}>
+                <Tag size={14} />
+                할인 쿠폰
+              </span>
+              <div className={styles.couponList}>
+                {coupons.map((coupon) => (
+                  <button
+                    key={coupon.id}
+                    type="button"
+                    className={`${styles.couponChip} ${selectedCoupon?.id === coupon.id ? styles.couponChipActive : ""}`}
+                    onClick={() => handleSelectCoupon(coupon)}
+                  >
+                    {formatPrice(coupon.discountAmount)}원 할인
+                    {selectedCoupon?.id === coupon.id && <X size={12} />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {discount > 0 && (
+            <div className={styles.summaryRow}>
+              <span className={styles.discountLabel}>쿠폰 할인</span>
+              <span className={styles.discountValue}>
+                -{formatPrice(discount)}원
+              </span>
+            </div>
+          )}
+
           <div className={styles.totalRow}>
             <span className={styles.totalLabel}>총 결제 금액</span>
             <span className={styles.totalValue}>
-              {formatPrice(plan.price)}원
+              {formatPrice(finalPrice)}원
             </span>
           </div>
         </div>
@@ -185,7 +257,7 @@ export const CheckoutClient = ({
           ) : (
             <>
               <CreditCard size={20} />
-              {formatPrice(plan.price)}원 결제하기
+              {formatPrice(finalPrice)}원 결제하기
             </>
           )}
         </button>

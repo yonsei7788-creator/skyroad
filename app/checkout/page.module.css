@@ -131,6 +131,70 @@
   color: var(--color-fg-primary);
 }
 
+/* ---- Coupon ---- */
+.couponSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 0;
+}
+
+.couponLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-fg);
+}
+
+.couponList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.couponChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-fg-secondary);
+  background: var(--color-bg);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.couponChip:hover {
+  border-color: var(--color-primary-300);
+  color: var(--color-primary-600);
+}
+
+.couponChipActive {
+  border-color: var(--color-primary-600);
+  background: var(--color-bg-primary-subtle);
+  color: var(--color-fg-primary);
+}
+
+.discountLabel {
+  font-size: 0.9375rem;
+  color: var(--color-primary-600);
+  font-weight: 500;
+}
+
+.discountValue {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-primary-600);
+}
+
 /* ---- Widget Box ---- */
 .widgetBox {
   border-radius: 20px;

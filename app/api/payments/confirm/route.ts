@@ -160,10 +160,58 @@ export const POST = async (request: NextRequest) => {
 
   if (updateError) {
     console.error("결제 정보 업데이트 오류:", updateError);
+    // 토스 승인은 완료되었으므로 중단하지 않고 계속 진행
   }
 
   // orders 상태 업데이트
-  await dbClient.from("orders").update({ status: "paid" }).eq("id", orders.id);
+  const { error: orderUpdateError } = await dbClient
+    .from("orders")
+    .update({ status: "paid" })
+    .eq("id", orders.id);
+
+  if (orderUpdateError) {
+    console.error("주문 상태 업데이트 오류:", orderUpdateError);
+  }
+
+  // 5-1. 쿠폰 사용 마킹 + referral_usages 업데이트
+  const { data: orderDetail } = await dbClient
+    .from("orders")
+    .select("coupon_id, plan_id, amount, plans!inner(name)")
+    .eq("id", orders.id)
+    .single();
+
+  if (orderDetail?.coupon_id) {
+    // 쿠폰 사용 완료 처리
+    const { error: couponError } = await dbClient
+      .from("user_coupons")
+      .update({
+        is_used: true,
+        used_at: new Date().toISOString(),
+      })
+      .eq("id", orderDetail.coupon_id);
+
+    if (couponError) {
+      console.error("쿠폰 사용 마킹 실패 — 재사용 위험:", couponError);
+    }
+
+    // referral_usages에 결제 정보 기록
+    const planInfo = orderDetail.plans as unknown as { name: string };
+    const { error: usageUpdateError } = await dbClient
+      .from("referral_usages")
+      .update({
+        order_id: orders.id,
+        plan_name: planInfo?.name ?? null,
+        paid_amount: orderDetail.amount ?? amount,
+      })
+      .eq("coupon_id", orderDetail.coupon_id);
+
+    if (usageUpdateError) {
+      console.error(
+        "referral_usages 업데이트 실패 — 수수료 누락 위험:",
+        usageUpdateError
+      );
+    }
+  }
 
   // 6. 리포트 자동 생성 트리거
   let reportTriggered = false;

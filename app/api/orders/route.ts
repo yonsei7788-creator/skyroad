@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 interface OrderBody {
   planName: "lite" | "standard" | "premium";
+  couponId?: string | null;
 }
 
 const VALID_PLANS = ["lite", "standard", "premium"] as const;
@@ -52,7 +53,7 @@ export const POST = async (request: NextRequest) => {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  const { planName } = body;
+  const { planName, couponId } = body;
   if (!planName || !VALID_PLANS.includes(planName)) {
     return NextResponse.json(
       { error: "유효하지 않은 플랜입니다." },
@@ -74,6 +75,31 @@ export const POST = async (request: NextRequest) => {
       { status: 404 }
     );
   }
+
+  // 3-1. 쿠폰 검증 + 할인 계산
+  let discountAmount = 0;
+  let validCouponId: string | null = null;
+
+  if (couponId) {
+    const couponClient = createAdminClient() ?? supabase;
+    const { data: coupon } = await couponClient
+      .from("user_coupons")
+      .select("id, discount_amount, is_used, expires_at, user_id")
+      .eq("id", couponId)
+      .single();
+
+    if (
+      coupon &&
+      coupon.user_id === user.id &&
+      !coupon.is_used &&
+      new Date(coupon.expires_at) > new Date()
+    ) {
+      discountAmount = coupon.discount_amount;
+      validCouponId = coupon.id;
+    }
+  }
+
+  const finalAmount = Math.max(0, plan.price - discountAmount);
 
   // 4. 생기부 레코드 확인
   const { data: record, error: recordError } = await supabase
@@ -140,7 +166,9 @@ export const POST = async (request: NextRequest) => {
       record_id: record.id,
       plan_id: plan.id,
       status: "pending_payment",
-      amount: plan.price,
+      amount: finalAmount,
+      coupon_id: validCouponId,
+      discount_amount: discountAmount,
     })
     .select("id")
     .single();
@@ -165,7 +193,7 @@ export const POST = async (request: NextRequest) => {
   const { error: paymentError } = await dbClient.from("payments").insert({
     order_id: newOrder.id,
     toss_order_id: tossOrderId,
-    amount: plan.price,
+    amount: finalAmount,
     status: "ready",
   });
 
@@ -182,7 +210,7 @@ export const POST = async (request: NextRequest) => {
   return NextResponse.json({
     orderId: newOrder.id,
     tossOrderId,
-    amount: plan.price,
+    amount: finalAmount,
     orderName: `SKYROAD ${plan.display_name}`,
   });
 };

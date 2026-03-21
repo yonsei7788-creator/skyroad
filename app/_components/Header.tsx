@@ -29,6 +29,7 @@ const NAV_ITEMS = [{ label: "서비스 소개", href: "/about" }];
 const PROFILE_MENU_ITEMS = [
   { label: "컨설팅 내역", href: "/profile/consulting", icon: FileText },
   { label: "목표 대학 수정", href: "/profile/target", icon: GraduationCap },
+  { label: "추천인 코드", href: "/profile/referral", icon: Ticket },
   { label: "내 정보 수정", href: "/profile/settings", icon: UserCog },
 ] as const;
 
@@ -41,8 +42,10 @@ export const Header = () => {
   const onboardingCompleted = useAuthStore((s) => s.onboardingCompleted);
   const openAuthModal = useAuthStore((s) => s.openAuthModal);
 
+  const isProfileLoaded = useAuthStore((s) => s.isProfileLoaded);
   const isLoggedIn = !!user;
   const showRecordLink = isLoggedIn && onboardingCompleted;
+  const showAdmin = isLoggedIn && isProfileLoaded && role === "admin";
 
   const closeDropdown = useCallback(() => {
     setIsDropdownOpen(false);
@@ -81,7 +84,16 @@ export const Header = () => {
 
   const handleSignOut = async () => {
     const supabase = createClient();
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      // signOut 실패 시 쿠키를 수동으로 비우고 강제 이동
+      document.cookie.split(";").forEach((c) => {
+        const name = c.split("=")[0].trim();
+        if (name.startsWith("sb-")) {
+          document.cookie = `${name}=;expires=${new Date(0).toUTCString()};path=/`;
+        }
+      });
+    }
     window.location.href = "/";
   };
 
@@ -123,7 +135,7 @@ export const Header = () => {
           </div>
 
           <div className={styles.desktopRight}>
-            {role === "admin" && (
+            {showAdmin && (
               <Link href="/admin/dashboard" className={styles.adminButton}>
                 <Shield size={14} />
                 어드민
@@ -254,7 +266,7 @@ export const Header = () => {
               </div>
               {isLoggedIn && (
                 <div className={styles.mobileProfileMenu}>
-                  {role === "admin" && (
+                  {showAdmin && (
                     <Link
                       href="/admin/dashboard"
                       className={styles.mobileProfileLink}
