@@ -33,7 +33,7 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 2. **majorRelevanceAnalysis** (필수): 전공 관련 교과 이수 노력/성취도
    형식: {"enrollmentEffort": "...", "achievement": "...", "recommendedSubjects": ["과목1", "과목2"]}
 3. **gradeChangeAnalysis** (필수): 등급 변화 가능성
-   형식: {"currentTrend": "상승|유지|하락", "prediction": "...", "actionItems": [{"item": "항목명", "detail": "구체적 설명"}], "actionItemPriorities": ["high", "medium"]}
+   형식: {"currentTrend": "상승|유지|하락", "prediction": "...", "actionItems": ["구체적 실행 항목 문장1", "구체적 실행 항목 문장2"], "actionItemPriorities": ["high", "medium"]}
    - **actionItems는 반드시 1~3개의 구체적 실행 항목을 포함**해야 합니다. 빈 배열 금지.
    - 상승 추세 → 유지/강화 전략, 하락 추세 → 반등 전략, 유지 → 다음 단계 전략을 제시하세요.
    - ⚠️ 성적 추이는 **발전가능성 역량의 직접 증거**입니다. prediction에서 "상승 추세는 사정관이 발전가능성을 높게 평가하는 핵심 근거", "하락 추세는 학업 태도에 대한 의문으로 이어질 수 있다" 등 입시적 의미를 반드시 포함하세요.

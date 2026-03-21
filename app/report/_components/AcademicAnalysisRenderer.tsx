@@ -41,6 +41,21 @@ const hasRawScore = (grades: AcademicAnalysisSection["subjectGrades"]) =>
 const hasClassAvg = (grades: AcademicAnalysisSection["subjectGrades"]) =>
   (grades ?? []).some((g) => g.classAverage !== undefined);
 
+/** Safely convert an action item (string or {item, detail} object) to a string */
+const toText = (v: unknown): string => {
+  if (typeof v === "string") return v;
+  if (v && typeof v === "object") {
+    const obj = v as Record<string, unknown>;
+    if (typeof obj.item === "string" && typeof obj.detail === "string") {
+      return `${obj.item}: ${obj.detail}`;
+    }
+    return Object.values(obj)
+      .filter((x) => typeof x === "string")
+      .join(" — ");
+  }
+  return String(v ?? "");
+};
+
 /** Check if an object has at least one non-empty value */
 const hasContent = (obj: unknown): boolean => {
   if (!obj || typeof obj !== "object") return false;
@@ -326,11 +341,14 @@ export const AcademicAnalysisRenderer = ({
                   </div>
                   <ol className={styles.numberedList}>
                     {gca.actionItems!.map((item, idx) => (
-                      <li key={item} className={styles.numberedListItem}>
+                      <li
+                        key={toText(item)}
+                        className={styles.numberedListItem}
+                      >
                         <span className={styles.numberedListNumber}>
                           {idx + 1}
                         </span>
-                        {item}
+                        {toText(item)}
                         {gca.actionItemPriorities?.[idx] && (
                           <span
                             className={
@@ -515,11 +533,11 @@ export const AcademicAnalysisRenderer = ({
                 <div className={styles.cardTitle}>성적 개선 우선순위</div>
                 <ol className={`${styles.numberedList} ${styles.mt12}`}>
                   {data.improvementPriority.map((item, idx) => (
-                    <li key={item} className={styles.numberedListItem}>
+                    <li key={toText(item)} className={styles.numberedListItem}>
                       <span className={styles.numberedListNumber}>
                         {idx + 1}
                       </span>
-                      {item}
+                      {toText(item)}
                     </li>
                   ))}
                 </ol>
