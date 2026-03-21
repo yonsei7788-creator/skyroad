@@ -1547,14 +1547,11 @@ export const buildUniversityCandidatesText = (
 ): string => {
   if (!targetDept) return "[]";
 
-  // detectedMajorGroup은 계열명("예체능교육", "의생명" 등)이므로
-  // findMajorInfo에 넣으면 오매칭 위험 (예: "예체능교육" → "가정교육과")
-  // fallbackDepartment(실제 학과명)를 우선 사용
-  let majorInfo = fallbackDepartment
-    ? findMajorInfo(fallbackDepartment)
-    : undefined;
-  if (!majorInfo) {
-    majorInfo = findMajorInfo(targetDept);
+  // targetDept(생기부 기반 계열 또는 학과명)를 우선 사용
+  // fallbackDepartment는 targetDept로 매칭 실패 시에만 사용
+  let majorInfo = findMajorInfo(targetDept);
+  if (!majorInfo && fallbackDepartment) {
+    majorInfo = findMajorInfo(fallbackDepartment);
   }
   if (!majorInfo) return "[]";
 

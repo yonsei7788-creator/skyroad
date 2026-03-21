@@ -45,6 +45,7 @@ import {
   preprocess,
   buildUniversityCandidatesText,
   rebuildRecommendedCourseMatchText,
+  isArtSportPractical as isArtSportPracticalFn,
 } from "./preprocessor.ts";
 import { loadRecordData } from "./load-record.ts";
 import type { WaveState } from "./wave-state.ts";
@@ -122,7 +123,17 @@ export const executeTask = async (
   const ser = state.serializedTexts!;
   const systemPrompt = buildSystemPrompt(plan);
   const sections = [...(state.completedSections ?? [])];
-  const isMedical = isMedicalMajor(studentInfo.targetDepartment ?? "");
+  // 생기부 기반 메디컬 판별 (Phase 2 결과 기반, 희망학과 아님)
+  let detectedMajorForFlags =
+    state.phase2Results?.competencyExtraction?.detectedMajorGroup;
+  if (!detectedMajorForFlags && ser.compExtrText) {
+    try {
+      detectedMajorForFlags = JSON.parse(ser.compExtrText).detectedMajorGroup;
+    } catch {
+      // 파싱 실패 시 무시
+    }
+  }
+  const isMedical = detectedMajorForFlags === "의생명";
 
   const callGemini = async <T>(prompt: string): Promise<T> => {
     const result = await client.call<T>({
@@ -204,8 +215,7 @@ export const executeTask = async (
       const correctedCandidates = buildUniversityCandidatesText(
         detected,
         state.preprocessedData?.gradingSystem,
-        state.preprocessedData?.overallAverage,
-        studentInfo.targetDepartment
+        state.preprocessedData?.overallAverage
       );
       const correctedCourseMatch = rebuildRecommendedCourseMatchText(
         detected,
@@ -217,6 +227,8 @@ export const executeTask = async (
         majorEvaluationContextText: correctedContext,
         universityCandidatesText: correctedCandidates,
         recommendedCourseMatchText: correctedCourseMatch,
+        // 생기부 기반 예체능 실기 판별 (희망학과가 아닌 detected 기준)
+        isArtSportPractical: detected === "예체능",
       };
       // preprocessedData.recommendedCourseMatch 객체도 동기화
       // (postprocessor가 이 객체로 courses를 강제 덮어쓰므로 반드시 업데이트)
@@ -499,8 +511,10 @@ export const executeTask = async (
             majorEvaluationContext: texts.majorEvaluationContextText,
             targetUniversities: texts.targetUniversitiesText,
             gradingSystem: state.preprocessedData!.gradingSystem,
-            isMedical,
-            isArtSportPractical: texts.isArtSportPractical,
+            isMedical: isMedicalMajor(studentInfo.targetDepartment ?? ""),
+            isArtSportPractical: isArtSportPracticalFn(
+              studentInfo.targetDepartment ?? ""
+            ),
           },
           plan
         )

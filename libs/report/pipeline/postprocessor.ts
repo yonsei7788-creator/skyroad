@@ -599,10 +599,8 @@ export const postprocess = (
         for (const sim of admStrat.simulations) {
           if (!Array.isArray(sim.cards)) continue;
 
-          // 1단계: 비현실적/너무 쉬운 대학 제거 (유저 희망대학 예외)
+          // 1단계: 비현실적/너무 쉬운 대학 제거
           sim.cards = sim.cards.filter((card: any) => {
-            // 유저 희망대학은 등급이 맞지 않더라도 유지
-            if (userTargetUniSet.has(card.university)) return true;
             const cutoff9 = getCutoff9(card.university, card.department);
             if (cutoff9 == null) return true;
             const gap = studentGrade9 - cutoff9;
@@ -2564,8 +2562,10 @@ const normalizeSection = (
 
     // ── 전공 미스매치 시 "등급 경쟁력" 긍정 서술에 전공적합성 경고 강제 추가 ──
     const courseMatchRate = pre.recommendedCourseMatch?.matchRate ?? 100;
-    const targetDept = studentInfo.targetDepartment ?? "";
-    const hasMajorMismatch = courseMatchRate <= 60 && targetDept;
+    // recommendedCourseMatch는 Phase 2에서 detectedMajorGroup 기반으로 재생성됨
+    const mismatchDept =
+      pre.recommendedCourseMatch?._referenceTargetMajor ?? "";
+    const hasMajorMismatch = courseMatchRate <= 60 && mismatchDept;
 
     if (hasMajorMismatch) {
       const hasAdequateWarning = (text: string): boolean =>
@@ -2576,7 +2576,7 @@ const normalizeSection = (
         /(등급\s*)?경쟁력[이가]\s*(매우\s*)?(우수|충분|탁월|양호|있|압도|뛰어)/.test(
           text
         );
-      const mismatchSuffix = ` 다만, 생기부 전반에서 ${targetDept} 관련 서술이 부족하여 학종에서는 전반적 경쟁력이 약화됩니다.`;
+      const mismatchSuffix = ` 다만, 생기부 전반에서 ${mismatchDept} 관련 서술이 부족하여 학종에서는 전반적 경쟁력이 약화됩니다.`;
 
       // admissionPrediction: universityPredictions[].rationale
       if (Array.isArray(s.predictions)) {
