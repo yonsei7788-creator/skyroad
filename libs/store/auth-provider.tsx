@@ -22,32 +22,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const supabase = createClient();
 
     const fetchProfile = async (userId: string) => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("onboarding_completed, role")
-        .eq("id", userId)
-        .single();
       const state = store.getState();
-      state.setOnboardingCompleted(data?.onboarding_completed ?? false);
-      state.setRole(data?.role ?? null);
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("onboarding_completed, role")
+          .eq("id", userId)
+          .single();
+        if (error) throw error;
+        state.setOnboardingCompleted(data?.onboarding_completed ?? false);
+        state.setRole(data?.role ?? null);
+      } catch {
+        // 프로필 조회 실패 시 기존 값 유지하되, 최초 로드면 기본값 설정
+        if (!state.isProfileLoaded) {
+          state.setOnboardingCompleted(false);
+          state.setRole(null);
+        }
+      } finally {
+        state.setIsProfileLoaded(true);
+      }
     };
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      store.getState().setUser(session?.user ?? null);
+      const state = store.getState();
+      state.setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+      } else {
+        state.setIsProfileLoaded(true);
       }
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      store.getState().setUser(session?.user ?? null);
+      const state = store.getState();
+      state.setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
       } else {
-        store.getState().setOnboardingCompleted(false);
-        store.getState().setRole(null);
+        state.setOnboardingCompleted(false);
+        state.setRole(null);
+        state.setIsProfileLoaded(true);
       }
     });
 
