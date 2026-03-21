@@ -796,23 +796,34 @@ const weightedAverage = (subjects: GeneralSubjectRow[]): number => {
     : 0;
 };
 
+// 카테고리 → 교과 영역 매핑 (RecordDashboard의 SUBJECT_AREA_MAP과 동일)
+const CATEGORY_TO_AREA: Record<string, string> = {
+  국어: "국어",
+  수학: "수학",
+  영어: "영어",
+  "사회(역사/도덕포함)": "사회",
+  한국사: "사회",
+  과학: "과학",
+};
+
 const computeSubjectCombinations = (
   subjects: GeneralSubjectRow[]
 ): PreprocessedData["subjectCombinations"] => {
-  const combinations: { name: string; subjects: string[] }[] = [
-    { name: "국수영", subjects: ["국어", "수학", "영어"] },
-    { name: "국수영사", subjects: ["국어", "수학", "영어", "사회"] },
-    { name: "국수영과", subjects: ["국어", "수학", "영어", "과학"] },
+  const combinations: { name: string; areas: string[] }[] = [
+    { name: "국수영", areas: ["국어", "수학", "영어"] },
+    { name: "국수영사", areas: ["국어", "수학", "영어", "사회"] },
+    { name: "국수영과", areas: ["국어", "수학", "영어", "과학"] },
   ];
 
-  return combinations.map(({ name, subjects: combSubjects }) => {
-    const matching = subjects.filter((s) =>
-      combSubjects.some((c) => s.category.includes(c) || s.subject.includes(c))
-    );
+  return combinations.map(({ name, areas }) => {
+    const matching = subjects.filter((s) => {
+      const area = CATEGORY_TO_AREA[s.category];
+      return area !== undefined && areas.includes(area);
+    });
     const avg = matching.length > 0 ? weightedAverage(matching) : 0;
     return {
       name,
-      subjects: combSubjects,
+      subjects: areas,
       average: Math.round(avg * 100) / 100,
     };
   });
@@ -911,7 +922,12 @@ const computeMajorRelated = (
   const related = subjects.filter(
     (s) =>
       s.gradeRank !== null &&
-      majorKeywords.some((k) => s.subject.includes(k) || s.category.includes(k))
+      majorKeywords.some((k) => {
+        const area = CATEGORY_TO_AREA[s.category];
+        return (
+          s.subject.includes(k) || (area !== undefined && area.includes(k))
+        );
+      })
   );
 
   const relatedAverage =

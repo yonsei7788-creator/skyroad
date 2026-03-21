@@ -129,7 +129,7 @@ export const POST = async (
           ai_wave_state: null,
           ai_current_wave: null,
           ai_generated_at: new Date().toISOString(),
-          ai_model_version: "gemini-2.5-pro",
+          ai_model_version: "gemini-2.5-flash",
         })
         .eq("id", reportId);
 
