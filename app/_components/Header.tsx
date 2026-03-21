@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   Menu,
@@ -103,12 +102,7 @@ export const Header = () => {
         <div className={styles.inner}>
           <div className={styles.left}>
             <Link href="/" className={styles.logo}>
-              <Image
-                src="/images/skyroad-logo.png"
-                alt="SKYROAD"
-                width={150}
-                height={60}
-              />
+              SKY<span className={styles.logoAccent}>ROAD</span>
             </Link>
 
             <nav className={styles.desktopNav}>

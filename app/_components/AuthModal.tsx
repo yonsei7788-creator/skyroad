@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Check, Loader2 } from "lucide-react";
@@ -376,12 +375,9 @@ export const AuthModal = () => {
             </button>
 
             <div className={styles.logoWrap}>
-              <Image
-                src="/images/skyroad-logo.png"
-                alt="SKYROAD"
-                width={200}
-                height={86}
-              />
+              <p className={styles.logoText}>
+                SKY<span className={styles.logoTextAccent}>ROAD</span>
+              </p>
             </div>
 
             <div className={styles.tabs} role="tablist">

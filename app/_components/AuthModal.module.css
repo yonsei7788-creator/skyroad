@@ -43,6 +43,17 @@
   margin-bottom: 28px;
 }
 
+.logoText {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-fg);
+  letter-spacing: -0.03em;
+}
+
+.logoTextAccent {
+  color: var(--color-primary-600);
+}
+
 .slogan {
   font-size: 0.8125rem;
   color: var(--color-fg-tertiary);
