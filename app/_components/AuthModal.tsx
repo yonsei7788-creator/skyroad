@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Check, Loader2 } from "lucide-react";
 
 import { createClient } from "@/libs/supabase/client";
 import { useAuthStore } from "@/libs/store/auth-provider";
@@ -67,6 +67,15 @@ export const AuthModal = () => {
     password: false,
     passwordConfirm: false,
   });
+
+  // Referral code
+  const [referralCode, setReferralCode] = useState("");
+  const [referralStatus, setReferralStatus] = useState<
+    "idle" | "checking" | "valid" | "invalid"
+  >("idle");
+  const [referralMessage, setReferralMessage] = useState("");
+  const [referralDiscount, setReferralDiscount] = useState(0);
+  const referralTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -167,6 +176,57 @@ export const AuthModal = () => {
         ? "비밀번호가 일치하지 않습니다."
         : null;
 
+  // Referral code validation (debounced)
+  const validateReferralCode = useCallback(async (code: string) => {
+    if (!code.trim()) {
+      setReferralStatus("idle");
+      setReferralMessage("");
+      return;
+    }
+
+    setReferralStatus("checking");
+    try {
+      const response = await fetch("/api/referral-codes/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: code.trim() }),
+      });
+      const data = await response.json();
+      if (data.valid) {
+        setReferralStatus("valid");
+        setReferralMessage(
+          `${data.discountAmount.toLocaleString("ko-KR")}원 할인 쿠폰이 발급됩니다.`
+        );
+        setReferralDiscount(data.discountAmount);
+      } else {
+        setReferralStatus("invalid");
+        setReferralMessage(data.message ?? "유효하지 않은 코드입니다.");
+        setReferralDiscount(0);
+      }
+    } catch {
+      setReferralStatus("invalid");
+      setReferralMessage("코드 확인에 실패했습니다.");
+      setReferralDiscount(0);
+    }
+  }, []);
+
+  const handleReferralChange = useCallback(
+    (value: string) => {
+      const upper = value.toUpperCase();
+      setReferralCode(upper);
+      setReferralStatus("idle");
+      setReferralMessage("");
+
+      if (referralTimerRef.current) clearTimeout(referralTimerRef.current);
+      if (upper.trim().length >= 4) {
+        referralTimerRef.current = setTimeout(() => {
+          validateReferralCode(upper);
+        }, 500);
+      }
+    },
+    [validateReferralCode]
+  );
+
   const handleTabSwitch = (tab: TabType) => {
     setActiveTab(tab);
     setErrorMessage("");
@@ -174,6 +234,10 @@ export const AuthModal = () => {
     setPasswordConfirm("");
     setConsent(INITIAL_CONSENT);
     setTouched({ email: false, password: false, passwordConfirm: false });
+    setReferralCode("");
+    setReferralStatus("idle");
+    setReferralMessage("");
+    setReferralDiscount(0);
   };
 
   const handleSignIn = async () => {
@@ -241,6 +305,19 @@ export const AuthModal = () => {
     }
 
     await supabase.auth.signInWithPassword({ email, password });
+
+    // 추천인 코드 적용 (유효한 경우에만)
+    if (referralCode.trim() && referralStatus === "valid") {
+      try {
+        await fetch("/api/referral-codes/apply", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: referralCode.trim() }),
+        });
+      } catch {
+        // 코드 적용 실패해도 회원가입은 정상 진행
+      }
+    }
 
     setIsLoading(false);
     closeAuthModal();
@@ -413,6 +490,48 @@ export const AuthModal = () => {
                     {passwordConfirmError && (
                       <p className={styles.fieldError}>
                         {passwordConfirmError}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className={styles.field}>
+                    <label htmlFor="auth-referral" className={styles.label}>
+                      추천인 코드
+                      <span className={styles.labelOptional}>(선택)</span>
+                    </label>
+                    <div className={styles.referralInputRow}>
+                      <input
+                        id="auth-referral"
+                        type="text"
+                        className={`${styles.input} ${styles.referralInput} ${
+                          referralStatus === "invalid"
+                            ? styles.inputError
+                            : referralStatus === "valid"
+                              ? styles.inputSuccess
+                              : ""
+                        }`}
+                        placeholder="추천인 코드 입력"
+                        value={referralCode}
+                        onChange={(e) => handleReferralChange(e.target.value)}
+                        maxLength={20}
+                        autoComplete="off"
+                      />
+                      {referralStatus === "checking" && (
+                        <Loader2 size={16} className={styles.referralSpinner} />
+                      )}
+                      {referralStatus === "valid" && (
+                        <Check size={16} className={styles.referralCheck} />
+                      )}
+                    </div>
+                    {referralMessage && (
+                      <p
+                        className={
+                          referralStatus === "valid"
+                            ? styles.referralValid
+                            : styles.referralInvalid
+                        }
+                      >
+                        {referralMessage}
                       </p>
                     )}
                   </div>

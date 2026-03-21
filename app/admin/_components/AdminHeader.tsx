@@ -77,8 +77,15 @@ export const AdminHeader = ({ adminName }: AdminHeaderProps) => {
 
   const handleSignOut = async () => {
     const supabase = createClient();
-    await supabase.auth.signOut();
-    closeDropdown();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      document.cookie.split(";").forEach((c) => {
+        const name = c.split("=")[0].trim();
+        if (name.startsWith("sb-")) {
+          document.cookie = `${name}=;expires=${new Date(0).toUTCString()};path=/`;
+        }
+      });
+    }
     window.location.href = "/";
   };
 
