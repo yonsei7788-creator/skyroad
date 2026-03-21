@@ -13,7 +13,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL("https://skyroadedu.net"),
   title: {
-    default: "SKYROAD - AI 기반 생활기록부 분석 서비스",
+    default: "SKYROAD.스카이로드 생기부분석 · 수시컨설팅 · 생기부컨설팅",
     template: "%s | SKYROAD",
   },
   description:
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "SKYROAD - AI 생기부 분석 | 수시컨설팅 · 생기부컨설팅",
+    title: "SKYROAD.스카이로드 생기부분석 · 수시컨설팅 · 생기부컨설팅",
     description:
       "AI 정밀 분석 + 입시 컨설턴트 2차 검수로 생기부를 진단합니다. 수시컨설팅·생기부컨설팅을 72시간 안에 합리적인 가격으로 받아보세요.",
     type: "website",
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SKYROAD - AI 생기부 분석 | 수시컨설팅 · 생기부컨설팅",
+    title: "SKYROAD.스카이로드 생기부분석 · 수시컨설팅 · 생기부컨설팅",
     description:
       "AI 정밀 분석 + 입시 컨설턴트 2차 검수로 생기부를 진단합니다. 수시컨설팅·생기부컨설팅을 72시간 안에 합리적인 가격으로 받아보세요.",
   },
