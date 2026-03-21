@@ -200,81 +200,153 @@
   }
 }
 
-/* ---- Mobile Menu ---- */
-.mobileMenu {
-  border-top: 1px solid var(--color-border);
-  background: var(--color-bg);
-  padding: 8px 16px 16px;
-  animation: slideDown 0.2s ease-out;
+/* ---- Mobile Overlay ---- */
+.mobileOverlay {
+  display: none;
+  position: fixed;
+  inset: 64px 0 0;
+  z-index: 99;
+  background: rgb(0 0 0 / 0);
+  transition: background 0.25s ease;
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
+.mobileOverlay.open {
+  display: block;
+  background: rgb(0 0 0 / 0.35);
+}
+
+@media (min-width: 768px) {
+  .mobileOverlay {
+    display: none !important;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+}
+
+/* ---- Mobile Menu ---- */
+.mobileMenu {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  background: var(--color-bg);
+  padding: 16px 20px 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  opacity: 0;
+  transform: translateY(-12px);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+  pointer-events: none;
+}
+
+.mobileMenu.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 @media (min-width: 768px) {
   .mobileMenu {
-    display: none;
+    display: none !important;
   }
 }
 
 .mobileNav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 12px;
+  padding-bottom: 32px;
+}
+
+/* ---- Mobile Card Group ---- */
+.mobileGroup {
+  background: var(--color-bg-secondary);
+  border-radius: 16px;
+  padding: 8px;
+}
+
+.mobileGroupLabel {
+  padding: 8px 12px 4px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--color-fg-tertiary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .mobileLink {
-  display: block;
-  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
   min-height: 44px;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 0.9375rem;
   font-weight: 500;
   color: var(--color-fg-secondary);
   transition: all 0.15s;
 }
 
-.mobileLink:hover {
-  background: var(--color-bg-secondary);
+.mobileLink:hover,
+.mobileLink:active {
+  background: var(--color-bg-tertiary);
   color: var(--color-fg);
 }
 
 .mobileLinkAccent {
   composes: mobileLink;
-  display: flex;
-  align-items: center;
-  gap: 8px;
   color: var(--color-primary-600);
   font-weight: 600;
 }
 
-.mobileLinkAccent:hover {
+.mobileLinkAccent:hover,
+.mobileLinkAccent:active {
   color: var(--color-primary-700);
   background: var(--color-primary-50);
 }
 
-.mobileBottom {
+.mobileLinkIcon {
   display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--color-bg);
+  color: var(--color-fg-tertiary);
+  flex-shrink: 0;
+}
+
+.mobileLinkAccent .mobileLinkIcon {
+  background: var(--color-primary-50);
+  color: var(--color-primary-600);
+}
+
+.mobileGroupDivider {
+  height: 1px;
+  margin: 2px 12px;
+  background: var(--color-border);
+}
+
+/* ---- Mobile CTA Area ---- */
+.mobileCta {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-  margin-top: 8px;
+  padding-top: 4px;
 }
 
 .mobileTicket {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  flex: 1;
+  gap: 8px;
+  width: 100%;
   padding: 14px;
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--color-primary-600);
   color: #ffffff;
   font-size: 0.9375rem;
@@ -286,14 +358,14 @@
   background: var(--color-primary-700);
 }
 
-.mobileCta {
+.mobileAuthButton {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  flex: 1;
+  width: 100%;
   padding: 14px;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--color-border);
   color: var(--color-fg-secondary);
   font-size: 0.9375rem;
@@ -301,9 +373,38 @@
   transition: all 0.15s;
 }
 
-.mobileCta:hover {
+.mobileAuthButton:hover {
   background: var(--color-bg-secondary);
   color: var(--color-fg);
+}
+
+/* ---- Mobile Admin Link ---- */
+.mobileAdminLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-fg-tertiary);
+  transition: color 0.15s;
+}
+
+.mobileAdminLink:hover {
+  color: var(--color-fg);
+}
+
+/* ---- Mobile Logout ---- */
+.mobileLogout {
+  composes: mobileLink;
+  color: var(--color-fg-tertiary);
+}
+
+.mobileLogout:hover,
+.mobileLogout:active {
+  background: var(--color-bg-tertiary);
+  color: var(--color-fg-secondary);
 }
 
 /* ---- Profile Dropdown ---- */
@@ -385,33 +486,4 @@
   height: 1px;
   margin: 4px 8px;
   background: var(--color-border);
-}
-
-/* ---- Mobile Profile Menu ---- */
-.mobileProfileMenu {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--color-border);
-}
-
-.mobileProfileLink {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 14px;
-  min-height: 44px;
-  border-radius: 10px;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  color: var(--color-fg-secondary);
-  transition: all 0.15s;
-}
-
-.mobileProfileLink:hover {
-  background: var(--color-bg-secondary);
-  color: var(--color-fg);
 }
