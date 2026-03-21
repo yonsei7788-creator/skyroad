@@ -1,7 +1,13 @@
 import styles from "./report.module.css";
 
 type BadgeStrategy = "상향" | "안정" | "하향";
-type BadgeChance = "very_high" | "high" | "medium" | "low" | "very_low";
+type BadgeChance =
+  | "very_high"
+  | "high"
+  | "medium"
+  | "low"
+  | "very_low"
+  | "unavailable";
 type BadgeRating = "excellent" | "good" | "average" | "weak";
 
 interface ReportBadgeProps {
@@ -29,6 +35,7 @@ const CHANCE_CLASS: Record<BadgeChance, string> = {
   medium: styles.chanceMedium,
   low: styles.chanceLow,
   very_low: styles.chanceVeryLow,
+  unavailable: styles.chanceUnavailable,
 };
 
 const CHANCE_LABEL: Record<BadgeChance, string> = {
@@ -37,6 +44,7 @@ const CHANCE_LABEL: Record<BadgeChance, string> = {
   medium: "합격 가능성 보통",
   low: "합격 가능성 낮음",
   very_low: "합격 가능성 매우 낮음",
+  unavailable: "판단 불가",
 };
 
 const RATING_CLASS: Record<BadgeRating, string> = {

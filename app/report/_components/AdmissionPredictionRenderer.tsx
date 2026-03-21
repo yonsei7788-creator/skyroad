@@ -48,10 +48,15 @@ export const AdmissionPredictionRenderer = ({
       ? styles.admissionCardStandard
       : styles.admissionCard;
 
-  const mainCards = (data.predictions ?? []).filter(
+  const allPredictions = data.predictions ?? [];
+  const hasAnyUniversityPredictions = allPredictions.some(
     (p) => p.universityPredictions && p.universityPredictions.length > 0
   );
-  const simpleCards = (data.predictions ?? []).filter(
+
+  const mainCards = allPredictions.filter(
+    (p) => p.universityPredictions && p.universityPredictions.length > 0
+  );
+  const simpleCards = allPredictions.filter(
     (p) => !p.universityPredictions || p.universityPredictions.length === 0
   );
 
@@ -109,6 +114,18 @@ export const AdmissionPredictionRenderer = ({
           </div>
         </div>
       ))}
+
+      {/* 실기 예체능 안내 */}
+      {!hasAnyUniversityPredictions && (
+        <div>
+          <div className={styles.card}>
+            <p className={styles.small}>
+              실기 전형이 포함된 예체능 학과는 실기 성적에 따라 합격 여부가 크게
+              달라지므로, 추천 대학을 제공하지 않습니다.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Final block: AI commentary */}
       <div>

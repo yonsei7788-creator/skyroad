@@ -18,6 +18,7 @@ import {
   X,
   Check,
   AlertCircle,
+  AlertTriangle,
   Target,
   Sparkles,
 } from "lucide-react";
@@ -139,6 +140,39 @@ export const TargetUniversityForm = ({
     {}
   );
 
+  // Art-sport warning per priority: { isArtSport, isArtSportPractical }
+  const [artSportWarnings, setArtSportWarnings] = useState<
+    Record<number, { isArtSport: boolean; isArtSportPractical: boolean }>
+  >({});
+
+  const checkArtSport = useCallback(
+    async (department: string, priority: number) => {
+      if (!department) {
+        setArtSportWarnings((prev) => ({
+          ...prev,
+          [priority]: { isArtSport: false, isArtSportPractical: false },
+        }));
+        return;
+      }
+      try {
+        const res = await fetch(
+          `/api/universities/check-art-sport?department=${encodeURIComponent(department)}`
+        );
+        const data: {
+          isArtSport: boolean;
+          isArtSportPractical: boolean;
+        } = await res.json();
+        setArtSportWarnings((prev) => ({ ...prev, [priority]: data }));
+      } catch {
+        setArtSportWarnings((prev) => ({
+          ...prev,
+          [priority]: { isArtSport: false, isArtSportPractical: false },
+        }));
+      }
+    },
+    []
+  );
+
   const fetchDepartments = useCallback(
     async (universityName: string) => {
       if (!universityName || departmentMap[universityName]) return;
@@ -155,10 +189,11 @@ export const TargetUniversityForm = ({
     [departmentMap]
   );
 
-  // 초기 로드 시 이미 설정된 대학교의 학과 목록 fetch
+  // 초기 로드 시 이미 설정된 대학교의 학과 목록 fetch + 예체능 실기 체크
   useEffect(() => {
     initialTargets.forEach((t) => {
       if (t.universityName) fetchDepartments(t.universityName);
+      if (t.department) checkArtSport(t.department, t.priority);
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -293,6 +328,10 @@ export const TargetUniversityForm = ({
       return updated;
     });
     clearError(`${priority}-${field}`);
+
+    if (field === "department") {
+      checkArtSport(value, priority);
+    }
   };
 
   const getTarget = (priority: UniversityPriority): TargetUniversity =>
@@ -630,6 +669,20 @@ export const TargetUniversityForm = ({
                           />
                         </div>
                       </div>
+
+                      {artSportWarnings[priority]?.isArtSport && (
+                        <div className={styles.artSportNotice}>
+                          <AlertTriangle size={15} />
+                          <div>
+                            <strong>예체능계열 학과 안내</strong>
+                            <p>
+                              예체능계열 학과는 실기 전형이 포함될 수 있어, 합격
+                              예측 및 추천 대학 분석이 제공되지 않을 수
+                              있습니다.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

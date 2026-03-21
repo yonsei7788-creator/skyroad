@@ -38,7 +38,8 @@ export type AdmissionChance =
   | "high"
   | "medium"
   | "low"
-  | "very_low";
+  | "very_low"
+  | "unavailable";
 
 /** 지원 카드 리스크 유형 */
 export type CardRiskLevel = "위험" | "안정";

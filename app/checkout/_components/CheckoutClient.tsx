@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { loadTossPayments } from "@tosspayments/tosspayments-sdk";
-import { ArrowLeft, CreditCard, Info, Loader2, Tag, X } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CreditCard,
+  Info,
+  Loader2,
+  Tag,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 
 import styles from "../page.module.css";
@@ -25,6 +33,7 @@ interface CheckoutClientProps {
   userEmail: string;
   userName: string;
   userId: string;
+  hasArtSportPractical?: boolean;
 }
 
 const PLAN_FEATURES: Record<string, string[]> = {
@@ -62,6 +71,7 @@ export const CheckoutClient = ({
   userEmail,
   userName,
   userId,
+  hasArtSportPractical,
 }: CheckoutClientProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -230,6 +240,18 @@ export const CheckoutClient = ({
             </span>
           </div>
         </div>
+
+        {/* 예체능 실기 안내 */}
+        {hasArtSportPractical && (
+          <div className={styles.warningBox}>
+            <AlertTriangle size={16} />
+            <span>
+              희망 학과 중 실기 전형이 포함된 예체능 학과가 있습니다. 해당
+              학과는 실기 성적에 따라 합격 여부가 크게 달라지므로, 리포트에서
+              추천 대학 분석이 제공되지 않습니다.
+            </span>
+          </div>
+        )}
 
         {/* 안내 */}
         <div className={styles.infoBox}>

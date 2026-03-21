@@ -201,6 +201,26 @@
   overflow: hidden;
 }
 
+/* ---- Warning Box ---- */
+.warningBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.warningBox > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
 /* ---- Info Box ---- */
 .infoBox {
   display: flex;

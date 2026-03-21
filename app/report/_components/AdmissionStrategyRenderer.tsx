@@ -46,8 +46,20 @@ export const AdmissionStrategyRenderer = ({
                 ) === idx
             )
             .slice(0, 6) ?? [];
-        if (allCards.length === 0) return null;
         const desc = data.simulations?.[0]?.description;
+        if (allCards.length === 0) {
+          return desc ? (
+            <div>
+              <div className={`${styles.h3} ${styles.mb8}`}>대학 추천</div>
+              <div className={styles.card}>
+                <p className={styles.small}>
+                  실기 전형이 포함된 예체능 학과는 실기 성적에 따라 합격 여부가
+                  크게 달라지므로, 추천 대학을 제공하지 않습니다.
+                </p>
+              </div>
+            </div>
+          ) : null;
+        }
         return (
           <div>
             <div className={`${styles.h3} ${styles.mb8}`}>대학 추천</div>

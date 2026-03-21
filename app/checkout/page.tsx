@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 import { createClient } from "@/libs/supabase/server";
+import { isArtSportDepartment } from "@/libs/report/pipeline/preprocessor";
 
 import { CheckoutClient } from "./_components/CheckoutClient";
 
@@ -67,6 +68,15 @@ const CheckoutPage = async ({ searchParams }: CheckoutPageProps) => {
     redirect("/pricing");
   }
 
+  // 예체능 실기 학과 여부 확인
+  const { data: targetUnis } = await supabase
+    .from("target_universities")
+    .select("department")
+    .eq("user_id", user.id);
+
+  const hasArtSportPractical =
+    targetUnis?.some((t) => isArtSportDepartment(t.department)) ?? false;
+
   return (
     <CheckoutClient
       plan={{
@@ -77,6 +87,7 @@ const CheckoutPage = async ({ searchParams }: CheckoutPageProps) => {
       userEmail={profile?.email ?? user.email ?? ""}
       userName={profile?.name ?? ""}
       userId={user.id}
+      hasArtSportPractical={hasArtSportPractical}
     />
   );
 };

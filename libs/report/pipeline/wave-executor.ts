@@ -500,6 +500,7 @@ export const executeTask = async (
             targetUniversities: texts.targetUniversitiesText,
             gradingSystem: state.preprocessedData!.gradingSystem,
             isMedical,
+            isArtSportPractical: texts.isArtSportPractical,
           },
           plan
         )
@@ -523,6 +524,7 @@ export const executeTask = async (
             currentDate: new Date().toISOString().slice(0, 10),
             isMedical,
             completedSubjectsByYear: texts.completedSubjectsByYearText,
+            isArtSportPractical: texts.isArtSportPractical,
           },
           plan
         )

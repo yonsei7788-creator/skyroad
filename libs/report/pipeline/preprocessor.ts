@@ -23,6 +23,87 @@ import {
 } from "../constants/admission-cutoff-data.ts";
 import { correctSubjectName } from "../constants/subject-name-corrections.ts";
 
+/**
+ * 예체능 관련 키워드 (lClass 보완용).
+ * lClass가 "예체능계열"이 아니더라도 학과명에 이 키워드가 포함되면 예체능으로 판단.
+ * 주의: 오탐 방지를 위해 단독으로 사용되는 예체능 실기 키워드만 포함.
+ */
+const ART_SPORT_KEYWORDS = [
+  "체육",
+  "무용",
+  "댄스",
+  "음악",
+  "미술",
+  "회화",
+  "조소",
+  "조형",
+  "공예",
+  "도예",
+  "실용음악",
+  "국악",
+  "작곡",
+  "성악",
+  "기악",
+  "피아노",
+  "관현악",
+  "뮤지컬",
+  "무대",
+];
+
+/**
+ * 예체능 비실기 제외 키워드.
+ * 키워드에 매칭되더라도 이 패턴이 포함되면 예체능 실기가 아닌 것으로 판단.
+ * 예: 스포츠마케팅학과, 스포츠경영학과, 음악치료학과
+ */
+const ART_SPORT_EXCLUDE_PATTERNS = [
+  "마케팅",
+  "경영",
+  "치료",
+  "심리",
+  "산업",
+  "공학",
+  "테크",
+  "미디어",
+  "저널",
+  "행정",
+];
+
+/**
+ * 예체능 학과 여부 판별.
+ * lClass가 "예체능계열"이거나 학과명에 예체능 키워드가 포함되면 예체능으로 판단.
+ * 단, 제외 패턴에 해당하면 예체능이 아닌 것으로 판단.
+ */
+export const isArtSportDepartment = (targetDept: string): boolean => {
+  const majorInfo = findMajorInfo(targetDept);
+  if (majorInfo?.lClass === "예체능계열") return true;
+
+  const hasKeyword = ART_SPORT_KEYWORDS.some((kw) => targetDept.includes(kw));
+  if (!hasKeyword) return false;
+
+  // 제외 패턴 체크
+  if (ART_SPORT_EXCLUDE_PATTERNS.some((ex) => targetDept.includes(ex)))
+    return false;
+
+  return true;
+};
+
+/**
+ * 실기 예체능 학과 판별.
+ * 1차: 예체능 학과인지 판별.
+ * 2차: 커트라인 데이터가 0건이면 실기 전형 학과로 간주.
+ */
+export const isArtSportPractical = (targetDept: string): boolean => {
+  if (!isArtSportDepartment(targetDept)) return false;
+
+  const majorInfo = findMajorInfo(targetDept);
+  if (!majorInfo) return true;
+
+  const hasCutoff = majorInfo.universities.some(
+    (u) => findCutoffData(u, majorInfo.majorName).length > 0
+  );
+  return !hasCutoff;
+};
+
 // ─── 생기부 원본 JSONB 타입 ───
 
 interface AttendanceRow {
@@ -233,6 +314,8 @@ export interface PreprocessedTexts {
   majorEvaluationContextText: string;
   /** 학년별 이수 완료 과목 요약 (AI가 이수 완료 과목 성적 개선 권고를 방지하기 위함) */
   completedSubjectsByYearText: string;
+  /** 실기 예체능 학과 여부 (커트라인 데이터 없는 예체능계열) */
+  isArtSportPractical: boolean;
 }
 
 export interface PreprocessResult {
@@ -1257,8 +1340,18 @@ const buildTexts = (
   );
   const recordVolumeText = JSON.stringify(data.recordVolume, null, 2);
 
-  // 계열별 입학사정관 평가 기준 생성
+  // 실기 예체능 판별: 모든 희망대학이 실기일 때만 전체 제외
   const targetDept = studentInfo.targetDepartment ?? "";
+  const allTargetsPractical =
+    studentInfo.targetUniversities &&
+    studentInfo.targetUniversities.length > 0 &&
+    studentInfo.targetUniversities.every((t) =>
+      isArtSportPractical(t.department)
+    );
+  const artSportPractical =
+    allTargetsPractical ?? isArtSportPractical(targetDept);
+
+  // 계열별 입학사정관 평가 기준 생성
   const majorCriteria = matchMajorEvaluationCriteria(targetDept);
   const majorEvalBase = targetDept
     ? formatMajorEvaluationContext(
@@ -1294,11 +1387,13 @@ const buildTexts = (
     attendanceSummaryText,
     recommendedCourseMatchText,
     recordVolumeText,
-    universityCandidatesText: buildUniversityCandidatesText(
-      targetDept,
-      data.gradingSystem,
-      data.overallAverage
-    ),
+    universityCandidatesText: artSportPractical
+      ? "[]"
+      : buildUniversityCandidatesText(
+          targetDept,
+          data.gradingSystem,
+          data.overallAverage
+        ),
     targetUniversitiesText,
     curriculumVersion: data.curriculumVersion,
     majorEvaluationContextText,
@@ -1307,6 +1402,7 @@ const buildTexts = (
       studentInfo.grade,
       studentInfo.isGraduate
     ),
+    isArtSportPractical: artSportPractical,
   };
 };
 
@@ -1791,9 +1887,16 @@ const formatTargetUniversities = (
     const majorInfo = findMajorInfo(t.department);
     const hasCutoff = findCutoffData(t.universityName, t.department).length > 0;
     const dataAvailable = majorInfo || hasCutoff;
-    const suffix = dataAvailable
-      ? ""
-      : ' ⚠️ 해당 학과 데이터 미확보 — 합격 예측 시 "(판단 불가)"로 표시';
+    const practical = isArtSportPractical(t.department);
+
+    let suffix = "";
+    if (practical) {
+      suffix =
+        " ⚠️ 실기 전형 예체능 학과 — 합격 예측 제외 (universityPredictions에 포함하지 마세요)";
+    } else if (!dataAvailable) {
+      suffix =
+        ' ⚠️ 해당 학과 데이터 미확보 — 합격 예측 시 "(판단 불가)"로 표시';
+    }
     return `- ${t.priority}지망: ${t.universityName} ${t.department} (${t.admissionType})${suffix}`;
   });
 

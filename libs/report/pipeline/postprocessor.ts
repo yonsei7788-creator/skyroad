@@ -16,7 +16,7 @@ import type {
   ReportSection,
   StudentInfo,
 } from "../types.ts";
-import type { PreprocessedData } from "./preprocessor.ts";
+import { isArtSportDepartment, type PreprocessedData } from "./preprocessor.ts";
 import { matchMajorEvaluationCriteria } from "../constants/major-evaluation-criteria.ts";
 import { getMajorCourseRecommendations } from "../constants/recommended-courses.ts";
 import {
@@ -260,6 +260,23 @@ export const postprocess = (
         );
         return false;
       });
+    }
+  }
+
+  // 3-1b. 예체능 학과 → chance를 "unavailable"로 변경 (판단 불가 표시)
+  if (admPred && Array.isArray(admPred.predictions)) {
+    for (const pred of admPred.predictions) {
+      if (!Array.isArray(pred.universityPredictions)) continue;
+      for (const up of pred.universityPredictions) {
+        if (isArtSportDepartment(up.department)) {
+          up.chance = "unavailable";
+          up.rationale =
+            "실기 전형이 포함될 수 있는 예체능계열 학과로, 실기 성적에 따라 합격 여부가 크게 달라지므로 합격 예측을 제공하지 않습니다.";
+          console.log(
+            `[report:${reportId}] 예체능 학과 판단 불가 처리: ${up.university} ${up.department}`
+          );
+        }
+      }
     }
   }
 

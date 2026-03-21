@@ -18,6 +18,7 @@ export interface AdmissionPredictionPromptInput {
   targetUniversities?: string;
   gradingSystem?: "5등급제" | "9등급제";
   isMedical?: boolean;
+  isArtSportPractical?: boolean;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -162,7 +163,17 @@ export const buildAdmissionPredictionPrompt = (
 `
     : "";
 
-  return `${fiveGradeContext}${nineGradeContext}${medicalContext}## 작업
+  const artSportPracticalContext = input.isArtSportPractical
+    ? `## ⚠️ 실기 예체능 학과 규칙 (필수)
+이 학생의 희망학과는 실기 전형이 포함된 예체능 학과입니다.
+전형 추천(recommendedType)과 합격률 범위(passRateRange)는 정상 분석하되,
+universityPredictions는 빈 배열([])로, detailedUniversityPredictions도 빈 배열([])로 출력하세요.
+overallComment에 "실기 전형이 포함된 학과로, 실기 성적에 따라 합격 여부가 크게 달라집니다. 구체적인 대학별 합격 예측은 제공하지 않습니다."를 포함하세요.
+
+`
+    : "";
+
+  return `${fiveGradeContext}${nineGradeContext}${medicalContext}${artSportPracticalContext}## 작업
 학생의 역량 분석 결과와 성적 데이터를 바탕으로 전형별 합격 가능성을 예측하세요.
 
 ## ⛔ 핵심 원칙: 분석 방향은 생기부가 결정합니다 (최우선 규칙)

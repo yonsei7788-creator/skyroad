@@ -19,6 +19,7 @@ import {
   Check,
   ArrowLeft,
   ArrowRight,
+  AlertTriangle,
 } from "lucide-react";
 
 import { ADMISSION_TYPES } from "./types";
@@ -97,6 +98,39 @@ export const UniversityStep = ({
     {}
   );
 
+  // Art-sport warning per priority: { isArtSport, isArtSportPractical }
+  const [artSportWarnings, setArtSportWarnings] = useState<
+    Record<number, { isArtSport: boolean; isArtSportPractical: boolean }>
+  >({});
+
+  const checkArtSport = useCallback(
+    async (department: string, priority: number) => {
+      if (!department) {
+        setArtSportWarnings((prev) => ({
+          ...prev,
+          [priority]: { isArtSport: false, isArtSportPractical: false },
+        }));
+        return;
+      }
+      try {
+        const res = await fetch(
+          `/api/universities/check-art-sport?department=${encodeURIComponent(department)}`
+        );
+        const data: {
+          isArtSport: boolean;
+          isArtSportPractical: boolean;
+        } = await res.json();
+        setArtSportWarnings((prev) => ({ ...prev, [priority]: data }));
+      } catch {
+        setArtSportWarnings((prev) => ({
+          ...prev,
+          [priority]: { isArtSport: false, isArtSportPractical: false },
+        }));
+      }
+    },
+    []
+  );
+
   const fetchDepartments = useCallback(
     async (universityName: string) => {
       if (!universityName || departmentMap[universityName]) return;
@@ -116,6 +150,7 @@ export const UniversityStep = ({
   useEffect(() => {
     initialData.forEach((t) => {
       if (t.universityName) fetchDepartments(t.universityName);
+      if (t.department) checkArtSport(t.department, t.priority);
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -245,6 +280,10 @@ export const UniversityStep = ({
         delete next[errorKey];
         return next;
       });
+    }
+
+    if (field === "department") {
+      checkArtSport(value, priority);
     }
   };
 
@@ -533,6 +572,19 @@ export const UniversityStep = ({
                         />
                       </div>
                     </div>
+
+                    {artSportWarnings[priority]?.isArtSport && (
+                      <div className={styles.artSportNotice}>
+                        <AlertTriangle size={15} />
+                        <div>
+                          <strong>예체능계열 학과 안내</strong>
+                          <p>
+                            예체능계열 학과는 실기 전형이 포함될 수 있어, 합격
+                            예측 및 추천 대학 분석이 제공되지 않을 수 있습니다.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
