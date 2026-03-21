@@ -152,7 +152,9 @@ export const WeaknessAnalysisRenderer = ({
           )}
 
           <div className={`${styles.caption} ${styles.mt8}`}>
-            <span className={styles.emphasis}>추천 보완 활동:</span>
+            <span className={`${styles.emphasis} ${styles.markerSky}`}>
+              추천 보완 활동:
+            </span>
             {(area.suggestedActivities ?? []).map((activity, actIdx) => (
               <p key={actIdx} className={styles.mt4}>
                 {actIdx + 1}. {activity}
@@ -162,7 +164,9 @@ export const WeaknessAnalysisRenderer = ({
 
           {(area.executionStrategy || area.detailedStrategy) && (
             <p className={`${styles.caption} ${styles.mt6}`}>
-              <span className={styles.emphasis}>실행 전략:</span>{" "}
+              <span className={`${styles.emphasis} ${styles.markerSky}`}>
+                실행 전략:
+              </span>{" "}
               {safeText(area.detailedStrategy ?? area.executionStrategy)}
             </p>
           )}

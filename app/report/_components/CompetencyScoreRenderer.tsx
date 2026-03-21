@@ -248,7 +248,9 @@ export const CompetencyScoreRenderer = ({
       <div className={styles.aiCommentary}>
         <div className={styles.aiCommentaryIcon}>✦</div>
         <div className={styles.aiCommentaryContent}>
-          <div className={styles.aiCommentaryLabel}>점수 해석</div>
+          <div className={styles.aiCommentaryLabel}>
+            <span className={styles.markerYellow}>점수 해석</span>
+          </div>
           <div className={styles.aiCommentaryText}>
             {safeText(data.interpretation)}
           </div>

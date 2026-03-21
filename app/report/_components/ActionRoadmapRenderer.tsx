@@ -23,7 +23,9 @@ export const ActionRoadmapRenderer = ({
 
         <div className={styles.cardAccent}>
           <div className={styles.cardHeader}>
-            <div className={styles.cardTitle}>생기부 마무리 전략</div>
+            <div className={styles.cardTitle}>
+              <span className={styles.markerSky}>생기부 마무리 전략</span>
+            </div>
           </div>
           <p className={`${styles.small} ${styles.mt6}`}>
             {safeText(data.completionStrategy)}
@@ -196,7 +198,7 @@ export const ActionRoadmapRenderer = ({
               <div className={styles.aiCommentaryIcon}>✦</div>
               <div className={styles.aiCommentaryContent}>
                 <div className={styles.aiCommentaryLabel}>
-                  면접 대비 타임라인
+                  <span className={styles.markerSky}>면접 대비 타임라인</span>
                 </div>
                 <div className={styles.aiCommentaryText}>
                   {safeText(data.interviewTimeline)}

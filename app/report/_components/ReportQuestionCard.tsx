@@ -23,7 +23,7 @@ export const ReportQuestionCard = ({
       {question.sampleAnswer && (
         <div className={`${styles.cardNeutral} ${styles.mt16}`}>
           <div className={`${styles.overline} ${styles.mb8}`}>
-            <span className={styles.markerYellow}>모범 답변 가이드</span>
+            모범 답변 가이드
           </div>
           <p className={styles.body}>{question.sampleAnswer}</p>
         </div>

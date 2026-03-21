@@ -146,7 +146,9 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
           className={`${styles.caption} ${styles.mb6}`}
           style={{ fontWeight: 600 }}
         >
-          {subject.subjectName} — 문장 단위 분석
+          <span className={styles.markerSky}>
+            {subject.subjectName} — 문장 단위 분석
+          </span>
         </div>
         <table className={styles.compactTable}>
           <thead>

@@ -30,33 +30,25 @@ export const ConsultantReviewRenderer = ({
         />
 
         <div className={styles.mt12}>
-          <div className={styles.h3}>
-            <span className={styles.markerYellow}>
-              성적 및 교과 이수 노력 평가
-            </span>
-          </div>
+          <div className={styles.h3}>성적 및 교과 이수 노력 평가</div>
           <p className={styles.small}>{safeText(data.gradeAnalysis)}</p>
         </div>
       </div>
 
       <div>
-        <div className={styles.h3}>
-          <span className={styles.markerYellow}>전공 관련 교과 성취도</span>
-        </div>
+        <div className={styles.h3}>전공 관련 교과 성취도</div>
         <p className={styles.small}>{safeText(data.courseEffort)}</p>
       </div>
 
       <div>
-        <div className={styles.h3}>
-          <span className={styles.markerYellow}>전형 전략 방향</span>
-        </div>
+        <div className={styles.h3}>전형 전략 방향</div>
         <p className={styles.small}>{safeText(data.admissionStrategy)}</p>
       </div>
 
       {data.completionDirection && !isGraduate && (
         <div>
           <div className={styles.h3}>
-            <span className={styles.markerYellow}>생기부 마무리 방향</span>
+            <span className={styles.markerSky}>생기부 마무리 방향</span>
           </div>
           <p className={styles.small}>{safeText(data.completionDirection)}</p>
         </div>
@@ -64,7 +56,7 @@ export const ConsultantReviewRenderer = ({
 
       <div>
         <div className={styles.h3}>
-          <span className={styles.markerYellow}>종합 조언</span>
+          <span className={styles.markerSky}>종합 조언</span>
         </div>
         <p className={`${styles.small} ${styles.emphasis}`}>
           {safeText(data.finalAdvice)}

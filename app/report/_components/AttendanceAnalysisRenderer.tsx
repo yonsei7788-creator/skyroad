@@ -124,11 +124,15 @@ export const AttendanceAnalysisRenderer = ({
           )}
 
           <p className={`${styles.body} ${styles.mt8}`}>
-            <span className={styles.emphasis}>입시 영향:</span>{" "}
+            <span className={`${styles.emphasis} ${styles.markerYellow}`}>
+              입시 영향:
+            </span>{" "}
             {safeText(data.impactAnalysis)}
           </p>
           <p className={`${styles.body} ${styles.mt8}`}>
-            <span className={styles.emphasis}>성실성 기여:</span>{" "}
+            <span className={`${styles.emphasis} ${styles.markerYellow}`}>
+              성실성 기여:
+            </span>{" "}
             {safeText(data.integrityContribution)}
           </p>
 
@@ -147,7 +151,9 @@ export const AttendanceAnalysisRenderer = ({
             className={`${styles.callout} ${styles.calloutCaution} ${styles.mt16}`}
           >
             <div className={styles.calloutContent}>
-              <span className={styles.emphasis}>개선 방향:</span>{" "}
+              <span className={`${styles.emphasis} ${styles.markerSky}`}>
+                개선 방향:
+              </span>{" "}
               {safeText(data.improvementAdvice)}
             </div>
           </div>

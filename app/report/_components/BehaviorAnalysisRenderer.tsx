@@ -128,12 +128,14 @@ export const BehaviorAnalysisRenderer = ({
         <div className={styles.aiCommentary}>
           <div className={styles.aiCommentaryIcon}>✦</div>
           <div className={styles.aiCommentaryContent}>
-            <div className={styles.aiCommentaryLabel}>종합 평가</div>
+            <div className={styles.aiCommentaryLabel}>
+              <span className={styles.markerSky}>종합 평가</span>
+            </div>
             <div className={styles.aiCommentaryText}>
               {safeText(data.overallComment)}
             </div>
             <div className={`${styles.aiCommentaryLabel} ${styles.mt12}`}>
-              입시 활용 포인트
+              <span className={styles.markerSky}>입시 활용 포인트</span>
             </div>
             <div className={styles.aiCommentaryText}>
               {safeText(data.admissionRelevance)}

@@ -132,7 +132,9 @@ export const AdmissionPredictionRenderer = ({
         <div className={styles.aiCommentary}>
           <div className={styles.aiCommentaryIcon}>✦</div>
           <div className={styles.aiCommentaryContent}>
-            <div className={styles.aiCommentaryLabel}>종합 코멘트</div>
+            <div className={styles.aiCommentaryLabel}>
+              <span className={styles.markerSky}>종합 코멘트</span>
+            </div>
             <div className={styles.aiCommentaryText}>
               {safeText(data.overallComment)}
             </div>

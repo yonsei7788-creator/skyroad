@@ -228,7 +228,9 @@ export const AcademicAnalysisRenderer = ({
         <div className={styles.aiCommentary}>
           <div className={styles.aiCommentaryIcon}>✦</div>
           <div className={styles.aiCommentaryContent}>
-            <div className={styles.aiCommentaryLabel}>성적 분석</div>
+            <div className={styles.aiCommentaryLabel}>
+              <span className={styles.markerSky}>성적 분석</span>
+            </div>
             <div className={styles.aiCommentaryText}>
               {safeText(data.interpretation)}
             </div>
@@ -337,7 +339,7 @@ export const AcademicAnalysisRenderer = ({
                 <>
                   <hr className={styles.dividerDotted} />
                   <div className={`${styles.overline} ${styles.mb8}`}>
-                    실행 항목
+                    <span className={styles.markerSky}>실행 항목</span>
                   </div>
                   <ol className={styles.numberedList}>
                     {gca.actionItems!.map((item, idx) => (
@@ -530,7 +532,9 @@ export const AcademicAnalysisRenderer = ({
           {Array.isArray(data.improvementPriority) &&
             data.improvementPriority.length > 0 && (
               <div className={styles.cardHighlight}>
-                <div className={styles.cardTitle}>성적 개선 우선순위</div>
+                <div className={styles.cardTitle}>
+                  <span className={styles.markerSky}>성적 개선 우선순위</span>
+                </div>
                 <ol className={`${styles.numberedList} ${styles.mt12}`}>
                   {data.improvementPriority.map((item, idx) => (
                     <li key={toText(item)} className={styles.numberedListItem}>

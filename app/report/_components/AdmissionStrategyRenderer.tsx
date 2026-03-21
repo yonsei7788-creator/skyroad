@@ -24,7 +24,9 @@ export const AdmissionStrategyRenderer = ({
 
         <div className={styles.cardAccent}>
           <div className={styles.cardHeader}>
-            <div className={styles.cardTitle}>추천 입시 경로</div>
+            <div className={styles.cardTitle}>
+              <span className={styles.markerSky}>추천 입시 경로</span>
+            </div>
           </div>
           <p className={`${styles.small} ${styles.mt6}`}>
             {safeText(data.recommendedPath)}
@@ -197,7 +199,9 @@ export const AdmissionStrategyRenderer = ({
       {(data.typeStrategies ?? []).map((ts, tsIdx) => (
         <div key={ts.type}>
           {tsIdx === 0 && (
-            <div className={`${styles.h3} ${styles.mb12}`}>전형별 전략</div>
+            <div className={`${styles.h3} ${styles.mb12}`}>
+              <span className={styles.markerSky}>전형별 전략</span>
+            </div>
           )}
           <div className={styles.card}>
             <div className={styles.cardHeader}>

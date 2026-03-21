@@ -99,9 +99,7 @@ export const InterviewPrepRenderer = ({
           {q.sampleAnswer && (
             <div className={`${styles.callout} ${styles.mt12}`}>
               <div className={styles.calloutContent}>
-                <span className={`${styles.emphasis} ${styles.markerYellow}`}>
-                  모범 답변:
-                </span>{" "}
+                <span className={styles.emphasis}>모범 답변:</span>{" "}
                 {safeText(q.sampleAnswer)}
               </div>
             </div>

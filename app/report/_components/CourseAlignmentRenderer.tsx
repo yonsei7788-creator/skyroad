@@ -84,7 +84,9 @@ export const CourseAlignmentRenderer = ({
           className={`${styles.callout} ${styles.calloutCaution} ${styles.mt20}`}
         >
           <div className={styles.calloutContent}>
-            <span className={styles.emphasis}>미이수 과목 영향:</span>{" "}
+            <span className={`${styles.emphasis} ${styles.markerYellow}`}>
+              미이수 과목 영향:
+            </span>{" "}
             {safeText(data.missingCourseImpact)}
           </div>
         </div>
@@ -93,7 +95,9 @@ export const CourseAlignmentRenderer = ({
           <div className={`${styles.aiCommentary} ${styles.mt16}`}>
             <div className={styles.aiCommentaryIcon}>✦</div>
             <div className={styles.aiCommentaryContent}>
-              <div className={styles.aiCommentaryLabel}>이수 전략</div>
+              <div className={styles.aiCommentaryLabel}>
+                <span className={styles.markerSky}>이수 전략</span>
+              </div>
               <div className={styles.aiCommentaryText}>
                 {safeText(data.recommendation)}
               </div>
