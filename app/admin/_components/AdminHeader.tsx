@@ -124,6 +124,14 @@ export const AdminHeader = ({ adminName }: AdminHeaderProps) => {
 
           {isDropdownOpen && (
             <div className={styles.dropdown}>
+              <Link
+                href="/"
+                className={styles.dropdownItem}
+                onClick={closeDropdown}
+              >
+                <ArrowLeftRight size={14} />
+                유저 모드
+              </Link>
               <button
                 type="button"
                 className={styles.dropdownItem}
