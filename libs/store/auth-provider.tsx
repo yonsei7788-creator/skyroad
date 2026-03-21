@@ -20,8 +20,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const supabase = createClient();
+    let fetchVersion = 0;
+    let unmounted = false;
 
     const fetchProfile = async (userId: string) => {
+      const version = ++fetchVersion;
       try {
         const { data, error } = await supabase
           .from("profiles")
@@ -29,31 +32,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .eq("id", userId)
           .single();
         if (error) throw error;
+        if (unmounted || version !== fetchVersion) return;
         const s = store.getState();
         s.setOnboardingCompleted(data?.onboarding_completed ?? false);
         s.setRole(data?.role ?? null);
       } catch {
-        // 프로필 조회 실패 시 기존 값 유지하되, 최초 로드면 기본값 설정
+        if (unmounted || version !== fetchVersion) return;
         const s = store.getState();
         if (!s.isProfileLoaded) {
           s.setOnboardingCompleted(false);
           s.setRole(null);
         }
       } finally {
-        store.getState().setIsProfileLoaded(true);
+        if (!unmounted && version === fetchVersion) {
+          store.getState().setIsProfileLoaded(true);
+        }
       }
     };
 
-    // onAuthStateChange의 INITIAL_SESSION 이벤트가 getSession()을 대체하므로
-    // getSession()을 별도로 호출하지 않음 (중복 호출 시 race condition 발생)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (unmounted) return;
       const s = store.getState();
       s.setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
       } else {
+        fetchVersion++;
         s.setOnboardingCompleted(false);
         s.setRole(null);
         s.setIsProfileLoaded(true);
@@ -61,6 +67,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => {
+      unmounted = true;
       subscription.unsubscribe();
     };
   }, []);
