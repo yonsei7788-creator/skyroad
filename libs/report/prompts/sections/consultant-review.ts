@@ -16,32 +16,14 @@ export interface ConsultantReviewPromptInput {
   completedSubjectsByYear?: string;
 }
 
-const PLAN_SPECIFIC: Record<ReportPlan, string> = {
-  lite: `## 플랜별 출력: Lite (간략 총평)
-- gradeAnalysis: **200자 이내**. 성적 구조의 핵심 특징과 입시적 의미만 간결하게.
-- courseEffort: **150자 이내**. 전공 관련 교과 이수 노력의 핵심 평가.
-- admissionStrategy: **200자 이내**. 가장 유리한 전형 1개와 그 이유.
-- completionDirection: **생략** (필드 자체를 출력하지 마세요)
-- finalAdvice: **100자 이내**. 핵심 권고 한 문장.
-
-총 분량: A4 반 페이지 이내.`,
-  standard: `## 플랜별 출력: Standard (상세 총평)
-- gradeAnalysis: **300자 이내**. 수강자수/표준편차 맥락, 등급 편차 분석, 성적 구조의 전형별 의미 해석.
-- courseEffort: **300자 이내**. 핵심 교과 이수 노력, 전공 관련 교과 성취도, 미이수 과목 영향.
-- admissionStrategy: **300자 이내**. 교과/학종/정시 카드 조합 전략, 추천 전형과 근거.
-- completionDirection: **300자 이내**. 생기부 스토리라인 보완 방향, 3학년 세특 전략.
-- finalAdvice: **100자 이내**. 종합 권고.
-
-총 분량: A4 1페이지 이내.`,
-  premium: `## 플랜별 출력: Premium (정밀 총평)
+const PLAN_SPECIFIC = `## 출력 기준: 정밀 총평 (컨설팅급)
 - gradeAnalysis: **500자 이내**. 수강자수/표준편차/원점수 기반 정밀 분석, 과목 간 등급 편차의 사정관 해석, 학교 유형 보정, 성적 추이의 전략적 의미.
 - courseEffort: **500자 이내**. 핵심/권장 과목별 이수 노력 상세 평가, 진로역량 분석, 소인수 과목 전략, 진로선택과목 성취도 해석.
 - admissionStrategy: **500자 이내**. 교과/학종/정시 각각의 가능성 분석, 모의고사 반영 전략, 6장 카드 조합 시뮬레이션, 상향/안정/하향 배치 방향.
 - completionDirection: **500자 이내**. 생기부 전체 스토리 완성 전략, 세특 보완 우선순위, 창체 마무리 방향, 면접 대비 스토리텔링 구성.
 - finalAdvice: **150자 이내**. 구체적이고 실행 가능한 종합 권고.
 
-총 분량: A4 1.5~2페이지.`,
-};
+총 분량: A4 1.5~2페이지.`;
 
 export const buildConsultantReviewPrompt = (
   input: ConsultantReviewPromptInput,
@@ -230,5 +212,5 @@ ${input.subjectAnalysisResult}
 ${input.admissionPredictionResult ? `\n### 합격 예측 결과\n${input.admissionPredictionResult}` : ""}
 ${input.weaknessAnalysisResult ? `\n### 부족한 부분 분석 결과\n${input.weaknessAnalysisResult}` : ""}
 
-${PLAN_SPECIFIC[plan]}`;
+${PLAN_SPECIFIC}`;
 };
