@@ -22,7 +22,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const supabase = createClient();
 
     const fetchProfile = async (userId: string) => {
-      const state = store.getState();
       try {
         const { data, error } = await supabase
           .from("profiles")
@@ -30,40 +29,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .eq("id", userId)
           .single();
         if (error) throw error;
-        state.setOnboardingCompleted(data?.onboarding_completed ?? false);
-        state.setRole(data?.role ?? null);
+        const s = store.getState();
+        s.setOnboardingCompleted(data?.onboarding_completed ?? false);
+        s.setRole(data?.role ?? null);
       } catch {
         // 프로필 조회 실패 시 기존 값 유지하되, 최초 로드면 기본값 설정
-        if (!state.isProfileLoaded) {
-          state.setOnboardingCompleted(false);
-          state.setRole(null);
+        const s = store.getState();
+        if (!s.isProfileLoaded) {
+          s.setOnboardingCompleted(false);
+          s.setRole(null);
         }
       } finally {
-        state.setIsProfileLoaded(true);
+        store.getState().setIsProfileLoaded(true);
       }
     };
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const state = store.getState();
-      state.setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        state.setIsProfileLoaded(true);
-      }
-    });
-
+    // onAuthStateChange의 INITIAL_SESSION 이벤트가 getSession()을 대체하므로
+    // getSession()을 별도로 호출하지 않음 (중복 호출 시 race condition 발생)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      const state = store.getState();
-      state.setUser(session?.user ?? null);
+      const s = store.getState();
+      s.setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
       } else {
-        state.setOnboardingCompleted(false);
-        state.setRole(null);
-        state.setIsProfileLoaded(true);
+        s.setOnboardingCompleted(false);
+        s.setRole(null);
+        s.setIsProfileLoaded(true);
       }
     });
 
