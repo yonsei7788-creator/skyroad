@@ -10,6 +10,7 @@ import {
   CircleUser,
   ChevronDown,
   FileText,
+  CreditCard,
   UserCog,
   LogOut,
   ClipboardList,
@@ -28,6 +29,7 @@ const NAV_ITEMS = [{ label: "서비스 소개", href: "/about", icon: BookOpen }
 
 const PROFILE_MENU_ITEMS = [
   { label: "컨설팅 내역", href: "/profile/consulting", icon: FileText },
+  { label: "결제내역", href: "/profile/payments", icon: CreditCard },
   { label: "목표 대학 수정", href: "/profile/target", icon: GraduationCap },
   { label: "추천인 코드", href: "/profile/referral", icon: Ticket },
   { label: "내 정보 수정", href: "/profile/settings", icon: UserCog },
