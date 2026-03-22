@@ -8,6 +8,7 @@ interface DashboardStats {
   newUsersYesterday: number;
   totalRecords: number;
   totalDeliveredReports: number;
+  totalPayments: number;
   totalRevenue: number;
 }
 
@@ -77,11 +78,11 @@ export async function GET() {
     supabase.from("payments").select("amount").eq("status", "done"),
   ]);
 
-  const totalRevenue =
-    totalRevenueResult.data?.reduce(
-      (sum, payment) => sum + (payment.amount ?? 0),
-      0
-    ) ?? 0;
+  const paidPayments = totalRevenueResult.data ?? [];
+  const totalRevenue = paidPayments.reduce(
+    (sum, payment) => sum + (payment.amount ?? 0),
+    0
+  );
 
   const stats: DashboardStats = {
     totalUsers: totalUsersResult.count ?? 0,
@@ -89,6 +90,7 @@ export async function GET() {
     newUsersYesterday: newUsersYesterdayResult.count ?? 0,
     totalRecords: totalRecordsResult.count ?? 0,
     totalDeliveredReports: totalDeliveredReportsResult.count ?? 0,
+    totalPayments: paidPayments.length,
     totalRevenue,
   };
 

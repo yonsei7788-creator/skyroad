@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { motion } from "framer-motion";
-import { AlertCircle, BarChart3, FileText, Send, Users } from "lucide-react";
+import {
+  AlertCircle,
+  Banknote,
+  BarChart3,
+  CreditCard,
+  FileText,
+  Send,
+  Users,
+} from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -28,6 +36,7 @@ interface DashboardStats {
   newUsersYesterday: number;
   totalRecords: number;
   totalDeliveredReports: number;
+  totalPayments: number;
   totalRevenue: number;
 }
 
@@ -113,7 +122,7 @@ const CustomTooltip = ({
 
 const StatsSkeleton = () => (
   <div className={styles.statsGrid}>
-    {Array.from({ length: 4 }).map((_, i) => (
+    {Array.from({ length: 6 }).map((_, i) => (
       <div key={i} className={styles.skeletonCard}>
         <div className={styles.skeletonLineShort} />
         <div className={styles.skeletonLineWide} />
@@ -288,6 +297,17 @@ const AdminDashboardPage = () => {
               value={stats.totalDeliveredReports}
               icon={<Send size={20} />}
               suffix="건"
+            />
+            <StatCard
+              label="총 결제"
+              value={stats.totalPayments}
+              icon={<CreditCard size={20} />}
+              suffix="건"
+            />
+            <StatCard
+              label="총 결제액"
+              value={formatCurrency(stats.totalRevenue)}
+              icon={<Banknote size={20} />}
             />
           </div>
         ) : null}
