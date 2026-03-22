@@ -20,10 +20,15 @@ interface RecordSummary {
 interface OrderSummary {
   id: string;
   planId: string | null;
+  planName: string | null;
   status: string;
   amount: number;
   createdAt: string;
   reportDeliveredAt: string | null;
+  paymentMethod: string | null;
+  paymentAmount: number | null;
+  paymentStatus: string | null;
+  approvedAt: string | null;
 }
 
 interface UserDetail {
@@ -117,7 +122,9 @@ export const GET = async (
   // Get orders with reports using regular client (admin RLS)
   const { data: orders } = await supabase
     .from("orders")
-    .select("*, reports(delivered_at)")
+    .select(
+      "*, reports(delivered_at), payments(method, amount, status, approved_at), plans(display_name)"
+    )
     .eq("user_id", id)
     .order("created_at", { ascending: false });
 
@@ -142,13 +149,25 @@ export const GET = async (
     const reportDeliveredAt =
       reportArr.length > 0 ? reportArr[0].delivered_at : null;
 
+    const paymentArr = Array.isArray(o.payments) ? o.payments : [];
+    const donePayment = paymentArr.find(
+      (p: { status: string }) => p.status === "done"
+    );
+
+    const planObj = o.plans as { display_name: string } | null;
+
     return {
       id: o.id,
       planId: o.plan_id,
+      planName: planObj?.display_name ?? null,
       status: o.status,
       amount: o.amount,
       createdAt: o.created_at,
       reportDeliveredAt,
+      paymentMethod: donePayment?.method ?? null,
+      paymentAmount: donePayment?.amount ?? null,
+      paymentStatus: donePayment?.status ?? null,
+      approvedAt: donePayment?.approved_at ?? null,
     };
   });
 

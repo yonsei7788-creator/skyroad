@@ -53,10 +53,15 @@ interface RecordSummary {
 interface OrderSummary {
   id: string;
   planId: string | null;
+  planName: string | null;
   status: string;
   amount: number;
   createdAt: string;
   reportDeliveredAt: string | null;
+  paymentMethod: string | null;
+  paymentAmount: number | null;
+  paymentStatus: string | null;
+  approvedAt: string | null;
 }
 
 interface UserDetail extends AdminUser {
@@ -83,8 +88,13 @@ const GRADE_DISPLAY: Record<string, string> = {
 };
 
 const ORDER_STATUS_DISPLAY: Record<string, string> = {
-  pending: "대기",
-  paid: "결제완료",
+  pending_payment: "결제 대기",
+  paid: "결제 완료",
+  analyzing: "분석 중",
+  analysis_complete: "분석 완료",
+  under_review: "검토 중",
+  review_complete: "검토 완료",
+  delivered: "전달 완료",
   cancelled: "취소",
   refunded: "환불",
 };
@@ -701,37 +711,56 @@ const AdminUsersPage = () => {
                       )}
                     </div>
 
-                    {/* Orders */}
+                    {/* Orders & Payments */}
                     <div className={styles.detailSection}>
                       <h3 className={styles.detailSectionTitle}>
-                        주문 ({userDetail.orders.length})
+                        주문 / 결제 ({userDetail.orders.length})
                       </h3>
                       {userDetail.orders.length > 0 ? (
                         <div className={styles.summaryList}>
-                          {userDetail.orders.map((o) => (
-                            <div key={o.id} className={styles.summaryItem}>
-                              <span className={styles.summaryItemLabel}>
-                                {formatCurrency(o.amount)}{" "}
-                                <Badge
-                                  variant={
-                                    o.status === "paid"
-                                      ? "success"
-                                      : o.status === "pending"
-                                        ? "warning"
-                                        : o.status === "cancelled" ||
-                                            o.status === "refunded"
-                                          ? "error"
-                                          : "neutral"
-                                  }
-                                >
-                                  {ORDER_STATUS_DISPLAY[o.status] ?? o.status}
-                                </Badge>
-                              </span>
-                              <span className={styles.summaryItemValue}>
-                                {formatDate(o.createdAt)}
-                              </span>
-                            </div>
-                          ))}
+                          {userDetail.orders.map((o) => {
+                            const statusVariant =
+                              o.status === "delivered" ||
+                              o.status === "review_complete"
+                                ? "success"
+                                : o.status === "pending_payment"
+                                  ? "warning"
+                                  : o.status === "cancelled" ||
+                                      o.status === "refunded"
+                                    ? "error"
+                                    : "info";
+
+                            return (
+                              <div key={o.id} className={styles.orderItem}>
+                                <div className={styles.orderItemHeader}>
+                                  <span className={styles.orderItemPlan}>
+                                    {o.planName ?? "플랜 없음"}
+                                  </span>
+                                  <Badge variant={statusVariant}>
+                                    {ORDER_STATUS_DISPLAY[o.status] ?? o.status}
+                                  </Badge>
+                                </div>
+                                <div className={styles.orderItemDetails}>
+                                  <span>
+                                    {o.paymentAmount != null
+                                      ? formatCurrency(o.paymentAmount)
+                                      : formatCurrency(o.amount)}
+                                  </span>
+                                  {o.paymentMethod && (
+                                    <span className={styles.orderItemSep}>
+                                      · {o.paymentMethod}
+                                    </span>
+                                  )}
+                                  <span className={styles.orderItemSep}>
+                                    ·{" "}
+                                    {o.approvedAt
+                                      ? formatDate(o.approvedAt)
+                                      : formatDate(o.createdAt)}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       ) : (
                         <p className={styles.noData}>주문 내역이 없습니다.</p>

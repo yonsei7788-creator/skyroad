@@ -341,6 +341,38 @@
   color: var(--color-fg-secondary);
 }
 
+/* Order item */
+.orderItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--color-bg-secondary);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+}
+
+.orderItemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.orderItemPlan {
+  font-weight: 600;
+  color: var(--color-fg);
+}
+
+.orderItemDetails {
+  color: var(--color-fg-secondary);
+  font-size: 0.75rem;
+}
+
+.orderItemSep {
+  color: var(--color-fg-tertiary);
+}
+
 /* Role change */
 .roleChangeSection {
   border-top: 1px solid var(--color-border);
