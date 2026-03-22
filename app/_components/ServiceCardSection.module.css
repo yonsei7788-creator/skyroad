@@ -188,3 +188,36 @@
     height: 114px;
   }
 }
+
+/* ---- Mobile Optimization ---- */
+@media (max-width: 767px) {
+  .grid {
+    gap: 12px;
+  }
+
+  .card {
+    padding: 20px;
+  }
+
+  .cardImage {
+    order: -1;
+    margin-top: 0;
+    margin-bottom: 12px;
+    height: 120px;
+  }
+
+  .image {
+    border-radius: 10px;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .cardTitle {
+    margin-top: 0;
+    font-size: 1.125rem;
+  }
+
+  .cardDesc {
+    font-size: 0.8125rem;
+  }
+}

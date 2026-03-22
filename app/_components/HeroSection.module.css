@@ -111,9 +111,36 @@
   max-width: 480px;
 }
 
+.subtextFeatures {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+@media (max-width: 639px) {
+  .subtextFeatures {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
 .subtextBold {
   font-weight: 700;
   color: var(--color-primary-600);
+}
+
+.subtextPlus {
+  font-weight: 600;
+  color: var(--color-fg-tertiary);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 639px) {
+  .subtextPlus {
+    font-size: 1.125rem;
+  }
 }
 
 .subtextHighlight {
@@ -406,4 +433,37 @@
 .barFill {
   height: 100%;
   border-radius: 9999px;
+}
+
+/* ---- Mobile Optimization ---- */
+@media (max-width: 639px) {
+  .textBlock {
+    padding: 48px 0 32px;
+  }
+
+  .headline {
+    font-size: 1.75rem;
+  }
+
+  .subtext {
+    font-size: 0.9375rem;
+  }
+
+  .ctaButton {
+    padding: 14px 28px;
+    font-size: 1rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .trustBadges {
+    gap: 8px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .trustBadge {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
 }

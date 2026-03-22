@@ -284,3 +284,35 @@
   font-size: 0.8125rem;
   color: var(--color-fg-tertiary);
 }
+
+/* ---- Mobile Optimization ---- */
+@media (max-width: 639px) {
+  .section {
+    padding: 72px 0;
+  }
+
+  .sectionTitle {
+    font-size: 1.625rem;
+  }
+
+  .cardsGrid {
+    gap: 16px;
+    margin-top: 48px;
+  }
+
+  .priceValue {
+    font-size: 2rem;
+  }
+
+  .divider {
+    margin: 20px 0;
+  }
+
+  .features {
+    gap: 10px;
+  }
+
+  .cardCta {
+    margin-top: 24px;
+  }
+}

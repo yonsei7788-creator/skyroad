@@ -78,3 +78,14 @@
   font-size: 0.75rem;
   color: var(--color-neutral-600);
 }
+
+/* ---- Mobile Optimization ---- */
+@media (max-width: 767px) {
+  .inner {
+    padding: 40px 20px;
+  }
+
+  .businessInfo {
+    margin-top: 32px;
+  }
+}

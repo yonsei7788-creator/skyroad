@@ -123,3 +123,23 @@
   color: var(--color-fg-secondary);
   line-height: 1.6;
 }
+
+/* ---- Mobile Optimization ---- */
+@media (max-width: 767px) {
+  .section {
+    padding: 72px 0;
+  }
+
+  .sectionTitle {
+    font-size: 1.625rem;
+  }
+
+  .grid {
+    gap: 16px;
+    margin-top: 40px;
+  }
+
+  .card {
+    padding: 24px 20px;
+  }
+}

@@ -487,3 +487,10 @@
   margin: 4px 8px;
   background: var(--color-border);
 }
+
+/* ---- Mobile Optimization ---- */
+@media (max-width: 767px) {
+  .inner {
+    padding: 0 16px;
+  }
+}

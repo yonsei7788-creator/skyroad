@@ -131,3 +131,34 @@
   align-items: center;
   gap: 6px;
 }
+
+/* ---- Mobile Optimization ---- */
+@media (max-width: 639px) {
+  .section {
+    padding: 64px 0;
+  }
+
+  .card {
+    padding: 56px 20px;
+    border-radius: 20px;
+  }
+
+  .headline {
+    font-size: 1.625rem;
+  }
+
+  .subtext {
+    font-size: 0.9375rem;
+  }
+
+  .ctaButton {
+    padding: 16px 36px;
+    font-size: 1rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .subtext {
+    word-break: keep-all;
+  }
+}

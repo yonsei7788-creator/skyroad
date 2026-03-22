@@ -149,3 +149,24 @@
   font-size: 0.8125rem;
   color: var(--color-fg-tertiary);
 }
+
+/* ---- Mobile Optimization ---- */
+@media (max-width: 639px) {
+  .section {
+    padding: 72px 0;
+  }
+
+  .card {
+    width: 280px;
+    padding: 24px;
+  }
+
+  .track {
+    gap: 16px;
+  }
+
+  .reviewText {
+    font-size: 0.875rem;
+    -webkit-line-clamp: 3;
+  }
+}

@@ -51,15 +51,16 @@ export const HeroSection = () => {
           <FadeIn delay={0.2} direction="up">
             <p className={styles.subtext}>
               &ldquo;이 생기부로 어디까지 갈 수 있을까?&rdquo;
-              <br />
+            </p>
+            <div className={styles.subtextFeatures}>
               <strong className={styles.subtextBold}>
                 자체 개발 고도화 AI 정밀 분석
               </strong>
-              {" + "}
+              <span className={styles.subtextPlus}>+</span>
               <strong className={styles.subtextHighlight}>
                 전문 입시 컨설턴트 2차 검수
               </strong>
-            </p>
+            </div>
           </FadeIn>
 
           <FadeIn delay={0.3} direction="up">
