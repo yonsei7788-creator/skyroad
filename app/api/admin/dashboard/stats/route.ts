@@ -10,6 +10,8 @@ interface DashboardStats {
   totalDeliveredReports: number;
   totalPayments: number;
   totalRevenue: number;
+  todayPayments: number;
+  todayRevenue: number;
 }
 
 export async function GET() {
@@ -59,6 +61,7 @@ export async function GET() {
     totalRecordsResult,
     totalDeliveredReportsResult,
     totalRevenueResult,
+    todayRevenueResult,
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase
@@ -76,10 +79,21 @@ export async function GET() {
       .select("*", { count: "exact", head: true })
       .not("delivered_at", "is", null),
     supabase.from("payments").select("amount").eq("status", "done"),
+    supabase
+      .from("payments")
+      .select("amount")
+      .eq("status", "done")
+      .gte("created_at", todayStart),
   ]);
 
   const paidPayments = totalRevenueResult.data ?? [];
   const totalRevenue = paidPayments.reduce(
+    (sum, payment) => sum + (payment.amount ?? 0),
+    0
+  );
+
+  const todayPaidPayments = todayRevenueResult.data ?? [];
+  const todayRevenue = todayPaidPayments.reduce(
     (sum, payment) => sum + (payment.amount ?? 0),
     0
   );
@@ -92,6 +106,8 @@ export async function GET() {
     totalDeliveredReports: totalDeliveredReportsResult.count ?? 0,
     totalPayments: paidPayments.length,
     totalRevenue,
+    todayPayments: todayPaidPayments.length,
+    todayRevenue,
   };
 
   return NextResponse.json(stats);

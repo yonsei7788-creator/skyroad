@@ -38,6 +38,8 @@ interface DashboardStats {
   totalDeliveredReports: number;
   totalPayments: number;
   totalRevenue: number;
+  todayPayments: number;
+  todayRevenue: number;
 }
 
 interface ChartDataPoint {
@@ -299,14 +301,14 @@ const AdminDashboardPage = () => {
               suffix="건"
             />
             <StatCard
-              label="총 결제"
-              value={stats.totalPayments}
+              label="오늘 결제"
+              value={stats.todayPayments}
               icon={<CreditCard size={20} />}
               suffix="건"
             />
             <StatCard
-              label="총 결제액"
-              value={formatCurrency(stats.totalRevenue)}
+              label="오늘 매출"
+              value={formatCurrency(stats.todayRevenue)}
               icon={<Banknote size={20} />}
             />
           </div>
