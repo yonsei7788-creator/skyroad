@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 
 import { AuthProvider } from "@/libs/store/auth-provider";
 
 import "./globals.css";
+
+const GA_ID = "G-C61D02N2X0";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -88,6 +91,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className="scroll-smooth">
+      <head>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="gtag-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_ID}');
+          `}
+        </Script>
+      </head>
       <body className="font-sans antialiased">
         <script
           type="application/ld+json"
