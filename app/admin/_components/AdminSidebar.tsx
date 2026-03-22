@@ -8,6 +8,7 @@ import {
   FileText,
   ClipboardCheck,
   Gift,
+  CreditCard,
 } from "lucide-react";
 
 import { useSidebar } from "./AdminLayoutClient";
@@ -33,6 +34,11 @@ const MENU_ITEMS = [
     label: "리포트 관리",
     href: "/admin/reports",
     icon: ClipboardCheck,
+  },
+  {
+    label: "결제 관리",
+    href: "/admin/payments",
+    icon: CreditCard,
   },
   {
     label: "추천인 코드",
