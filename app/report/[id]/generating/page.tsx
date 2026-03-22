@@ -254,7 +254,7 @@ const GeneratingContent = () => {
               </div>
             )}
             <p className={styles.description}>
-              잠시만 기다려 주세요. 분석에 5~10분 정도 소요됩니다.
+              잠시만 기다려 주세요. 분석에 2~3분 정도 소요됩니다.
             </p>
             <div className={styles.noticeBox}>
               <p className={styles.noticeText}>
