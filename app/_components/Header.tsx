@@ -220,35 +220,55 @@ export const Header = () => {
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
+      </header>
 
-        {/* Mobile Overlay */}
-        <div
-          className={`${styles.mobileOverlay} ${isMobileMenuOpen ? styles.open : ""}`}
-          onClick={closeMobileMenu}
-          aria-hidden="true"
-        />
+      {/* Mobile Overlay — header 밖에 배치 (backdrop-filter containing block 회피) */}
+      <div
+        className={`${styles.mobileOverlay} ${isMobileMenuOpen ? styles.open : ""}`}
+        onClick={closeMobileMenu}
+        aria-hidden="true"
+      />
 
-        {/* Mobile Menu */}
-        <div
-          className={`${styles.mobileMenu} ${isMobileMenuOpen ? styles.open : ""}`}
-        >
-          <nav className={styles.mobileNav}>
-            {/* Group 1: Navigation */}
+      {/* Mobile Menu */}
+      <div
+        className={`${styles.mobileMenu} ${isMobileMenuOpen ? styles.open : ""}`}
+      >
+        <nav className={styles.mobileNav}>
+          {/* Group 1: Navigation */}
+          <div className={styles.mobileGroup}>
+            <div className={styles.mobileGroupLabel}>메뉴</div>
+            {showRecordLink && (
+              <Link
+                href="/record"
+                className={styles.mobileLinkAccent}
+                onClick={closeMobileMenu}
+              >
+                <span className={styles.mobileLinkIcon}>
+                  <ClipboardList size={16} />
+                </span>
+                생기부 분석
+              </Link>
+            )}
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={styles.mobileLink}
+                onClick={closeMobileMenu}
+              >
+                <span className={styles.mobileLinkIcon}>
+                  <item.icon size={16} />
+                </span>
+                {item.label}
+              </Link>
+            ))}
+          </div>
+
+          {/* Group 2: Account (logged in) */}
+          {isLoggedIn && (
             <div className={styles.mobileGroup}>
-              <div className={styles.mobileGroupLabel}>메뉴</div>
-              {showRecordLink && (
-                <Link
-                  href="/record"
-                  className={styles.mobileLinkAccent}
-                  onClick={closeMobileMenu}
-                >
-                  <span className={styles.mobileLinkIcon}>
-                    <ClipboardList size={16} />
-                  </span>
-                  생기부 분석
-                </Link>
-              )}
-              {NAV_ITEMS.map((item) => (
+              <div className={styles.mobileGroupLabel}>내 계정</div>
+              {PROFILE_MENU_ITEMS.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -261,75 +281,55 @@ export const Header = () => {
                   {item.label}
                 </Link>
               ))}
-            </div>
-
-            {/* Group 2: Account (logged in) */}
-            {isLoggedIn && (
-              <div className={styles.mobileGroup}>
-                <div className={styles.mobileGroupLabel}>내 계정</div>
-                {PROFILE_MENU_ITEMS.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={styles.mobileLink}
-                    onClick={closeMobileMenu}
-                  >
-                    <span className={styles.mobileLinkIcon}>
-                      <item.icon size={16} />
-                    </span>
-                    {item.label}
-                  </Link>
-                ))}
-                <div className={styles.mobileGroupDivider} />
-                <button
-                  type="button"
-                  className={styles.mobileLogout}
-                  onClick={handleSignOut}
-                >
-                  <span className={styles.mobileLinkIcon}>
-                    <LogOut size={16} />
-                  </span>
-                  로그아웃
-                </button>
-              </div>
-            )}
-
-            {/* CTA Area */}
-            <div className={styles.mobileCta}>
-              <Link
-                href="/pricing"
-                className={styles.mobileTicket}
-                onClick={closeMobileMenu}
+              <div className={styles.mobileGroupDivider} />
+              <button
+                type="button"
+                className={styles.mobileLogout}
+                onClick={handleSignOut}
               >
-                <Ticket size={16} className={styles.ticketIcon} />
-                이용권 구매
-              </Link>
-              {!isLoggedIn && (
-                <button
-                  type="button"
-                  className={styles.mobileAuthButton}
-                  onClick={handleOpenAuthModal}
-                >
-                  로그인
-                  <ArrowRight size={16} />
-                </button>
-              )}
+                <span className={styles.mobileLinkIcon}>
+                  <LogOut size={16} />
+                </span>
+                로그아웃
+              </button>
             </div>
+          )}
 
-            {/* Admin Link */}
-            {showAdmin && (
-              <Link
-                href="/admin/dashboard"
-                className={styles.mobileAdminLink}
-                onClick={closeMobileMenu}
+          {/* CTA Area */}
+          <div className={styles.mobileCta}>
+            <Link
+              href="/pricing"
+              className={styles.mobileTicket}
+              onClick={closeMobileMenu}
+            >
+              <Ticket size={16} className={styles.ticketIcon} />
+              이용권 구매
+            </Link>
+            {!isLoggedIn && (
+              <button
+                type="button"
+                className={styles.mobileAuthButton}
+                onClick={handleOpenAuthModal}
               >
-                <Shield size={14} />
-                어드민
-              </Link>
+                로그인
+                <ArrowRight size={16} />
+              </button>
             )}
-          </nav>
-        </div>
-      </header>
+          </div>
+
+          {/* Admin Link */}
+          {showAdmin && (
+            <Link
+              href="/admin/dashboard"
+              className={styles.mobileAdminLink}
+              onClick={closeMobileMenu}
+            >
+              <Shield size={14} />
+              어드민
+            </Link>
+          )}
+        </nav>
+      </div>
       <div className={styles.spacer} />
 
       <AuthModal />
