@@ -11,7 +11,8 @@ export const GaDisableAdmin = () => {
 
   useEffect(() => {
     if (role === "admin") {
-      (window as Record<string, unknown>)[`ga-disable-${GA_ID}`] = true;
+      (window as unknown as Record<string, unknown>)[`ga-disable-${GA_ID}`] =
+        true;
     }
   }, [role]);
 
