@@ -233,6 +233,94 @@
   }
 }
 
+/* ---- Gov24 Banner ---- */
+.gov24Banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  max-width: 520px;
+  margin: 24px auto 0;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border-left: 3px solid var(--color-primary-600);
+  background: rgb(79 70 229 / 0.04);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+
+.gov24Banner:hover {
+  background: rgb(79 70 229 / 0.08);
+  box-shadow: 0 2px 12px rgb(79 70 229 / 0.08);
+}
+
+.gov24Left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.gov24Icon {
+  flex-shrink: 0;
+  color: var(--color-primary-600);
+}
+
+.gov24Text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.gov24Label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--color-fg);
+  letter-spacing: -0.01em;
+}
+
+.gov24Desc {
+  font-size: 0.75rem;
+  color: var(--color-fg-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gov24Link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-primary-600);
+  white-space: nowrap;
+}
+
+@media (max-width: 1023px) {
+  .gov24Banner {
+    margin-left: 24px;
+    margin-right: 24px;
+    width: auto;
+  }
+}
+
+@media (max-width: 639px) {
+  .gov24Banner {
+    padding: 12px 14px;
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+
+  .gov24Desc {
+    white-space: normal;
+  }
+}
+
 .previewCard {
   width: 100%;
   max-width: 520px;
@@ -244,6 +332,11 @@
 }
 
 @media (max-width: 1023px) {
+  .previewWrapper {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
   .previewCard {
     max-width: 560px;
     border-bottom: none;
@@ -458,6 +551,11 @@
 
 /* ---- Mobile Optimization ---- */
 @media (max-width: 639px) {
+  .previewWrapper {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
   .textBlock {
     padding: 48px 0 32px;
   }

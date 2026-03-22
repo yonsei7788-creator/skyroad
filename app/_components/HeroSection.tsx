@@ -4,6 +4,8 @@ import {
   Bot,
   CheckCircle2,
   Clock,
+  ExternalLink,
+  FileText,
   Shield,
   ShieldCheck,
   UserCheck,
@@ -21,7 +23,7 @@ const MOCK_SCORES = [
 ];
 
 const TRUST_BADGES = [
-  { icon: Shield, label: "AI 정밀 분석" },
+  { icon: Shield, label: "자체 개발 고도화 AI 분석" },
   { icon: UserCheck, label: "전임 컨설턴트 검수 포함" },
   { icon: Clock, label: "72시간 내 전달" },
 ];
@@ -116,6 +118,28 @@ export const HeroPreview = () => {
           </div>
         </div>
       </div>
+      <a
+        href="https://plus.gov.kr/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.gov24Banner}
+      >
+        <div className={styles.gov24Left}>
+          <FileText size={18} className={styles.gov24Icon} />
+          <div className={styles.gov24Text}>
+            <span className={styles.gov24Label}>
+              생기부 발급이 필요하신가요?
+            </span>
+            <span className={styles.gov24Desc}>
+              정부24에서 학생부 PDF를 발급받은 뒤 업로드하세요.
+            </span>
+          </div>
+        </div>
+        <span className={styles.gov24Link}>
+          바로가기
+          <ExternalLink size={14} />
+        </span>
+      </a>
     </FadeIn>
   );
 };
