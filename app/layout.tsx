@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 
 import { AuthProvider } from "@/libs/store/auth-provider";
+import { GaDisableAdmin } from "./_components/GaDisableAdmin";
 
 import "./globals.css";
 
@@ -110,7 +111,10 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <GaDisableAdmin />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
