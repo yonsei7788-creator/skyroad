@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const fetchProfile = async (userId: string) => {
       const version = ++fetchVersion;
+      store.getState().setIsProfileLoaded(false);
       try {
         const { data, error } = await supabase
           .from("profiles")
@@ -39,10 +40,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch {
         if (unmounted || version !== fetchVersion) return;
         const s = store.getState();
-        if (!s.isProfileLoaded) {
-          s.setOnboardingCompleted(false);
-          s.setRole(null);
-        }
+        s.setOnboardingCompleted(false);
+        s.setRole(null);
       } finally {
         if (!unmounted && version === fetchVersion) {
           store.getState().setIsProfileLoaded(true);
