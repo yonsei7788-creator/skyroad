@@ -340,20 +340,119 @@ const normalCdf = (z: number): number => {
   return 0.5 * (1.0 + sign * y);
 };
 
-// ─── 고교 유형별 등급 환산 ───
+// ─── 고교 유형별 등급 환산 (docx 환산표 기반) ───
+// 특목·자사고: 학생 등급 → 일반고 환산 등급 (breakpoints for linear interpolation)
+const SPECIAL_TO_GENERAL: [number, number][] = [
+  [1.4, 1.0],
+  [1.8, 1.2],
+  [2.2, 1.4],
+  [2.6, 1.6],
+  [3.0, 1.8],
+  [3.3, 2.0],
+  [3.6, 2.2],
+  [3.9, 2.4],
+  [4.3, 2.6],
+  [4.6, 2.8],
+  [4.9, 3.0],
+  [5.1, 3.2],
+  [5.3, 3.4],
+  [5.5, 3.6],
+  [5.7, 3.8],
+  [5.9, 4.0],
+  [6.1, 4.2],
+  [6.3, 4.4],
+  [6.5, 4.6],
+  [6.7, 4.8],
+  [6.9, 5.0],
+  [7.1, 5.2],
+  [7.3, 5.4],
+  [7.5, 5.6],
+  [7.7, 5.8],
+  [7.9, 6.0],
+  [8.1, 6.2],
+  [8.3, 6.4],
+  [8.5, 6.6],
+  [8.7, 6.8],
+  [8.9, 7.0],
+];
 
-const SCHOOL_TYPE_ADJUSTMENT: Record<string, number> = {
-  일반고: 0,
-  자율고: -0.3,
-  특목고: -0.5,
-  과학고: -0.7,
-  외국어고: -0.5,
-  국제고: -0.5,
-  영재학교: -0.8,
-  예술고: 0.2,
-  체육고: 0.2,
-  특성화고: 0.3,
-  마이스터고: 0.3,
+// 특성화고: 학생 등급 → 일반고 환산 등급
+const VOCATIONAL_TO_GENERAL: [number, number][] = [
+  [1.0, 2.0],
+  [1.2, 2.2],
+  [1.4, 2.4],
+  [1.6, 2.6],
+  [1.8, 2.8],
+  [2.0, 3.0],
+  [2.2, 3.2],
+  [2.4, 3.4],
+  [2.6, 3.6],
+  [2.8, 3.8],
+  [3.0, 4.0],
+  [3.2, 4.2],
+  [3.4, 4.4],
+  [3.6, 4.6],
+  [3.8, 4.8],
+  [4.0, 5.0],
+  [4.2, 5.2],
+  [4.4, 5.4],
+  [4.6, 5.6],
+  [4.8, 5.8],
+  [5.0, 6.0],
+  [5.2, 6.2],
+  [5.4, 6.4],
+  [5.6, 6.6],
+  [5.8, 6.8],
+  [6.0, 7.0],
+  [6.2, 7.2],
+  [6.4, 7.4],
+  [6.6, 7.6],
+  [6.8, 7.8],
+  [7.0, 8.0],
+  [7.2, 8.2],
+  [7.4, 8.4],
+  [7.6, 8.6],
+  [7.8, 8.8],
+  [8.0, 9.0],
+];
+
+// 학교 유형 → 환산 테이블 매핑
+const SCHOOL_TYPE_TABLE: Record<string, [number, number][] | null> = {
+  일반고: null,
+  자율고: SPECIAL_TO_GENERAL,
+  특목고: SPECIAL_TO_GENERAL,
+  과학고: SPECIAL_TO_GENERAL,
+  외국어고: SPECIAL_TO_GENERAL,
+  국제고: SPECIAL_TO_GENERAL,
+  영재학교: SPECIAL_TO_GENERAL,
+  예술고: null,
+  체육고: null,
+  특성화고: VOCATIONAL_TO_GENERAL,
+  마이스터고: VOCATIONAL_TO_GENERAL,
+};
+
+/** breakpoint 테이블 기반 선형 보간으로 등급 환산 */
+const convertGradeBySchoolType = (
+  schoolType: string,
+  grade: number
+): number => {
+  const table = SCHOOL_TYPE_TABLE[schoolType];
+  if (!table) return grade; // 일반고, 예술고, 체육고는 그대로
+
+  // 테이블 범위 밖 처리
+  if (grade <= table[0][0]) return table[0][1];
+  if (grade >= table[table.length - 1][0]) return table[table.length - 1][1];
+
+  // 선형 보간
+  for (let i = 0; i < table.length - 1; i++) {
+    const [x0, y0] = table[i];
+    const [x1, y1] = table[i + 1];
+    if (grade >= x0 && grade <= x1) {
+      const t = (grade - x0) / (x1 - x0);
+      return y0 + t * (y1 - y0);
+    }
+  }
+  return grade;
 };
 
 // ─── 9등급제 → 5등급제 환산 테이블 ───
@@ -653,12 +752,15 @@ export const preprocess = (
     overallAverage
   );
 
-  // 8. 고교 유형별 등급 환산
-  const adj = SCHOOL_TYPE_ADJUSTMENT[studentInfo.schoolType] ?? 0;
+  // 8. 고교 유형별 등급 환산 (환산표 기반 선형 보간)
+  const convertedValue = convertGradeBySchoolType(
+    studentInfo.schoolType,
+    overallAverage
+  );
   const convertedGrade = {
     schoolType: studentInfo.schoolType,
     original: Math.round(overallAverage * 100) / 100,
-    converted: Math.round(Math.max(1, overallAverage + adj) * 100) / 100,
+    converted: Math.round(Math.max(1, convertedValue) * 100) / 100,
   };
 
   // 9. 등급제 판별 및 5등급제 환산
