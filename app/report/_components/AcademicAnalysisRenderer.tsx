@@ -308,16 +308,6 @@ export const AcademicAnalysisRenderer = ({
         </div>
       )}
 
-      {/* Block 4c: School type adjustment */}
-      {data.schoolTypeAdjustment && (
-        <div className={styles.callout}>
-          <div className={styles.calloutContent}>
-            <span className={styles.emphasis}>학교 유형 보정:</span>{" "}
-            {safeText(data.schoolTypeAdjustment)}
-          </div>
-        </div>
-      )}
-
       {/* Block 5: Grade change analysis */}
       {hasContent(data.gradeChangeAnalysis) &&
         (() => {
