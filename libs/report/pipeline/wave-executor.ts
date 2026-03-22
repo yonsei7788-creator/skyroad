@@ -150,34 +150,41 @@ export const executeTask = async (
 
   // ─── Phase 2: competencyExtraction + academicAnalysis 병렬 → studentTypeClassification ───
   if (taskId === "phase2") {
-    // 1) competencyExtraction + academicAnalysis 병렬 (서로 독립적)
-    const [competencyExtraction, academicAnalysis] = await Promise.all([
-      callGemini<CompetencyExtractionOutput>(
-        buildCompetencyExtractionPrompt({
-          studentProfile: texts.studentProfileText,
-          recordData: texts.recordDataText,
-        })
-      ),
-      callGemini<AcademicContextAnalysisOutput>(
-        buildAcademicContextAnalysisPrompt({
-          preprocessedAcademicData: texts.preprocessedAcademicDataText,
-          rawAcademicData: texts.rawAcademicDataText,
-          studentProfile: texts.studentProfileText,
-          gradingSystem: state.preprocessedData?.gradingSystem,
-        })
-      ),
-    ]);
+    // 1) competencyExtraction + academicAnalysis 병렬 시작
+    const compExtrPromise = callGemini<CompetencyExtractionOutput>(
+      buildCompetencyExtractionPrompt({
+        studentProfile: texts.studentProfileText,
+        recordData: texts.recordDataText,
+      })
+    );
+    const acadAnalPromise = callGemini<AcademicContextAnalysisOutput>(
+      buildAcademicContextAnalysisPrompt({
+        preprocessedAcademicData: texts.preprocessedAcademicDataText,
+        rawAcademicData: texts.rawAcademicDataText,
+        studentProfile: texts.studentProfileText,
+        gradingSystem: state.preprocessedData?.gradingSystem,
+      })
+    );
+    // compExtrPromise 실패 시 acadAnalPromise가 미처리 rejection이 되지 않도록 방어
+    acadAnalPromise.catch(() => {});
 
-    // 2) studentTypeClassification (competencyExtraction 결과 필요)
-    const studentTypeClassification =
-      await callGemini<StudentTypeClassificationOutput>(
-        buildStudentTypeClassificationPrompt({
-          competencyExtraction: JSON.stringify(competencyExtraction),
-          preprocessedAcademicData: texts.preprocessedAcademicDataText,
-          studentProfile: texts.studentProfileText,
-          gradingSystem: state.preprocessedData?.gradingSystem,
-        })
-      );
+    // 2) competencyExtraction 완료 즉시 studentTypeClassification 시작
+    //    (academicAnalysis 완료를 기다리지 않음)
+    const competencyExtraction = await compExtrPromise;
+    const stuTypePromise = callGemini<StudentTypeClassificationOutput>(
+      buildStudentTypeClassificationPrompt({
+        competencyExtraction: JSON.stringify(competencyExtraction),
+        preprocessedAcademicData: texts.preprocessedAcademicDataText,
+        studentProfile: texts.studentProfileText,
+        gradingSystem: state.preprocessedData?.gradingSystem,
+      })
+    );
+
+    // 3) academicAnalysis + studentTypeClassification 동시 대기
+    const [academicAnalysis, studentTypeClassification] = await Promise.all([
+      acadAnalPromise,
+      stuTypePromise,
+    ]);
 
     updatedSer = {
       ...updatedSer,
