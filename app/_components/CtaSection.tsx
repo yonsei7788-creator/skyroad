@@ -22,8 +22,8 @@ export const CtaSection = () => {
               72시간 안에 분석해드립니다
             </h2>
             <p className={styles.subtext}>
-              다른 곳의 AI 분석과는 차원이 다릅니다. 전임 컨설턴트가 직접 검수한
-              리포트를 받아보세요.
+              대학이 보는 기준을 반영한 실전형 분석입니다. 전임 컨설턴트가 직접
+              검수한 리포트를 받아보세요.
             </p>
 
             <CtaButton className={styles.ctaButton}>

@@ -435,6 +435,27 @@
   border-radius: 9999px;
 }
 
+/* ---- Responsive visibility ---- */
+.desktopOnly {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .desktopOnly {
+    display: block;
+  }
+}
+
+.mobileOnly {
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .mobileOnly {
+    display: none;
+  }
+}
+
 /* ---- Mobile Optimization ---- */
 @media (max-width: 639px) {
   .textBlock {

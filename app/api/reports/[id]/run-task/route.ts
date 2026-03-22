@@ -135,7 +135,7 @@ export const POST = async (
 
       await dbClient
         .from("orders")
-        .update({ status: "analysis_complete" })
+        .update({ status: "under_review" })
         .eq("id", orderId);
 
       return NextResponse.json({

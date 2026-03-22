@@ -26,6 +26,100 @@ const TRUST_BADGES = [
   { icon: Clock, label: "72시간 내 전달" },
 ];
 
+export const HeroPreview = () => {
+  return (
+    <FadeIn delay={0.5} direction="up" distance={50}>
+      <div className={styles.previewWrapper}>
+        <div className={styles.previewCard}>
+          <div className={styles.stepIndicator}>
+            <div className={styles.stepItem}>
+              <div className={styles.stepIconAi}>
+                <Bot size={14} />
+              </div>
+              <span className={styles.stepLabel}>AI 분석</span>
+            </div>
+            <div className={styles.stepArrow}>
+              <ArrowRight size={14} />
+            </div>
+            <div className={styles.stepItem}>
+              <div className={styles.stepIconExpert}>
+                <UserCheck size={14} />
+              </div>
+              <span className={styles.stepLabel}>전문가 검수</span>
+            </div>
+            <div className={styles.stepBadgeComplete}>
+              <CheckCircle2 size={12} />
+              완료
+            </div>
+          </div>
+
+          <div className={styles.analysisHeader}>
+            <div className={styles.analysisHeaderLeft}>
+              <BarChart3 size={16} />
+              <span>종합 분석 결과</span>
+            </div>
+            <div className={styles.analysisBadge}>
+              <CheckCircle2 size={12} />
+              검수 완료
+            </div>
+          </div>
+
+          <div className={styles.scoreSection}>
+            <div className={styles.totalScore}>
+              <svg viewBox="0 0 100 100" className={styles.scoreRing}>
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  fill="none"
+                  stroke="#e2e8f0"
+                  strokeWidth="8"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  fill="none"
+                  stroke="#6366f1"
+                  strokeWidth="8"
+                  strokeDasharray="221"
+                  strokeDashoffset="44"
+                  strokeLinecap="round"
+                  transform="rotate(-90 50 50)"
+                />
+              </svg>
+              <div className={styles.scoreCenter}>
+                <span className={styles.scoreNum}>258.89</span>
+                <span className={styles.scoreTotal}>/300점</span>
+              </div>
+            </div>
+
+            <div className={styles.barList}>
+              {MOCK_SCORES.map((item) => (
+                <div key={item.label} className={styles.barItem}>
+                  <div className={styles.barMeta}>
+                    <span className={styles.barLabel}>{item.label}</span>
+                    <span className={styles.barValue}>{item.score}%</span>
+                  </div>
+                  <div className={styles.barTrack}>
+                    <div
+                      className={styles.barFill}
+                      style={{
+                        width: `${item.score}%`,
+                        background: item.color,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </FadeIn>
+  );
+};
+
 export const HeroSection = () => {
   return (
     <section className={styles.section}>
@@ -82,97 +176,10 @@ export const HeroSection = () => {
           </FadeIn>
         </div>
 
-        {/* Right: Product Preview */}
-        <FadeIn delay={0.5} direction="up" distance={50}>
-          <div className={styles.previewWrapper}>
-            <div className={styles.previewCard}>
-              {/* Step indicator */}
-              <div className={styles.stepIndicator}>
-                <div className={styles.stepItem}>
-                  <div className={styles.stepIconAi}>
-                    <Bot size={14} />
-                  </div>
-                  <span className={styles.stepLabel}>AI 분석</span>
-                </div>
-                <div className={styles.stepArrow}>
-                  <ArrowRight size={14} />
-                </div>
-                <div className={styles.stepItem}>
-                  <div className={styles.stepIconExpert}>
-                    <UserCheck size={14} />
-                  </div>
-                  <span className={styles.stepLabel}>전문가 검수</span>
-                </div>
-                <div className={styles.stepBadgeComplete}>
-                  <CheckCircle2 size={12} />
-                  완료
-                </div>
-              </div>
-
-              <div className={styles.analysisHeader}>
-                <div className={styles.analysisHeaderLeft}>
-                  <BarChart3 size={16} />
-                  <span>종합 분석 결과</span>
-                </div>
-                <div className={styles.analysisBadge}>
-                  <CheckCircle2 size={12} />
-                  검수 완료
-                </div>
-              </div>
-
-              <div className={styles.scoreSection}>
-                <div className={styles.totalScore}>
-                  <svg viewBox="0 0 100 100" className={styles.scoreRing}>
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="42"
-                      fill="none"
-                      stroke="#e2e8f0"
-                      strokeWidth="8"
-                    />
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="42"
-                      fill="none"
-                      stroke="#6366f1"
-                      strokeWidth="8"
-                      strokeDasharray="221"
-                      strokeDashoffset="44"
-                      strokeLinecap="round"
-                      transform="rotate(-90 50 50)"
-                    />
-                  </svg>
-                  <div className={styles.scoreCenter}>
-                    <span className={styles.scoreNum}>258.89</span>
-                    <span className={styles.scoreTotal}>/300점</span>
-                  </div>
-                </div>
-
-                <div className={styles.barList}>
-                  {MOCK_SCORES.map((item) => (
-                    <div key={item.label} className={styles.barItem}>
-                      <div className={styles.barMeta}>
-                        <span className={styles.barLabel}>{item.label}</span>
-                        <span className={styles.barValue}>{item.score}%</span>
-                      </div>
-                      <div className={styles.barTrack}>
-                        <div
-                          className={styles.barFill}
-                          style={{
-                            width: `${item.score}%`,
-                            background: item.color,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </FadeIn>
+        {/* Right: Product Preview — 데스크톱에서만 표시 */}
+        <div className={styles.desktopOnly}>
+          <HeroPreview />
+        </div>
       </div>
     </section>
   );

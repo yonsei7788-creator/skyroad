@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
 import { Header } from "./_components/Header";
-import { HeroSection } from "./_components/HeroSection";
+import { HeroSection, HeroPreview } from "./_components/HeroSection";
+import heroStyles from "./_components/HeroSection.module.css";
 import { TrustSection } from "./_components/TrustSection";
 import { PainPointSection } from "./_components/PainPointSection";
 import { DualVerificationSection } from "./_components/DualVerificationSection";
@@ -30,6 +31,9 @@ export default function Home() {
       <main>
         <HeroSection />
         <CtaSection />
+        <div className={heroStyles.mobileOnly}>
+          <HeroPreview />
+        </div>
         <PainPointSection />
         <DualVerificationSection />
         <ProcessSection />

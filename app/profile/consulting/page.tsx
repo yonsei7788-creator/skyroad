@@ -98,7 +98,13 @@ const getReportIconClass = (aiStatus: string) => {
   return "";
 };
 
-const OrderCard = ({ order }: { order: OrderRow }) => {
+const OrderCard = ({
+  order,
+  isAdmin,
+}: {
+  order: OrderRow;
+  isAdmin: boolean;
+}) => {
   const currentStepIdx = getStepIndex(order.status);
   const isDelivered = order.status === "delivered";
   const isAnalyzing = order.status === "analyzing" || order.status === "paid";
@@ -255,7 +261,8 @@ const OrderCard = ({ order }: { order: OrderRow }) => {
                           : "대기중"}
                 </div>
               </div>
-              {report.ai_status === "completed" ? (
+              {report.ai_status === "completed" &&
+              (isAdmin || order.status === "delivered") ? (
                 <Link
                   href={`/report/${report.id}`}
                   className={styles.reportAction}
@@ -265,7 +272,11 @@ const OrderCard = ({ order }: { order: OrderRow }) => {
                 </Link>
               ) : (
                 <span className={styles.reportActionDisabled}>
-                  {report.ai_status === "processing" ? "분석중..." : "준비중"}
+                  {report.ai_status === "processing"
+                    ? "분석중..."
+                    : report.ai_status === "completed"
+                      ? "검수중"
+                      : "준비중"}
                 </span>
               )}
             </div>
@@ -336,7 +347,9 @@ const ConsultingHistoryPage = async () => {
         <div className={styles.container}>
           {isAdmin && <AdminGenerateSection userId={user.id} />}
           {orderList.length > 0 ? (
-            orderList.map((order) => <OrderCard key={order.id} order={order} />)
+            orderList.map((order) => (
+              <OrderCard key={order.id} order={order} isAdmin={isAdmin} />
+            ))
           ) : (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>

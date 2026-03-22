@@ -209,10 +209,10 @@ const GeneratingContent = () => {
             <div className={styles.checkIcon} aria-hidden="true">
               &#10003;
             </div>
-            <h1 className={styles.title}>분석이 완료되었습니다</h1>
+            <h1 className={styles.title}>컨설턴트에게 자료가 전송되었습니다</h1>
             <p className={styles.description}>
-              리포트 검수 후 <strong>72시간 내에 이메일로 발송</strong>해
-              드립니다.
+              전문 컨설턴트의 검수를 거쳐{" "}
+              <strong>72시간 이내에 이메일로 결과물이 발송</strong>됩니다.
             </p>
             <p className={styles.warning}>
               발송 완료 시 가입하신 이메일로 안내 드리겠습니다.
