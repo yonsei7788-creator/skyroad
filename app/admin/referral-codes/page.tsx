@@ -16,6 +16,7 @@ import {
   ToggleRight,
   X,
   Pencil,
+  Gift,
 } from "lucide-react";
 
 import {
@@ -28,6 +29,7 @@ import {
 import type { Column } from "@/app/admin/_components";
 
 import { CreateCodeModal } from "./_components/CreateCodeModal";
+import { GrantCouponModal } from "./_components/GrantCouponModal";
 import styles from "./referral-codes.module.css";
 
 /* ============================================
@@ -143,6 +145,9 @@ const ReferralCodesPage = () => {
   // Create/Edit modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ReferralCode | null>(null);
+
+  // Grant coupon modal
+  const [isGrantOpen, setIsGrantOpen] = useState(false);
 
   // Detail drawer
   const [selectedCode, setSelectedCode] = useState<ReferralCode | null>(null);
@@ -518,13 +523,22 @@ const ReferralCodesPage = () => {
           </select>
         </div>
 
-        <button
-          className={styles.createButton}
-          onClick={() => setIsCreateOpen(true)}
-        >
-          <Plus size={16} />
-          코드 생성
-        </button>
+        <div className={styles.buttonGroup}>
+          <button
+            className={styles.grantButton}
+            onClick={() => setIsGrantOpen(true)}
+          >
+            <Gift size={16} />
+            쿠폰 지급
+          </button>
+          <button
+            className={styles.createButton}
+            onClick={() => setIsCreateOpen(true)}
+          >
+            <Plus size={16} />
+            코드 생성
+          </button>
+        </div>
       </div>
 
       {/* Error */}
@@ -643,6 +657,17 @@ const ReferralCodesPage = () => {
         onSuccess={() => {
           setIsCreateOpen(false);
           fetchCodes();
+        }}
+      />
+
+      {/* Grant Coupon Modal */}
+      <GrantCouponModal
+        isOpen={isGrantOpen}
+        onClose={() => setIsGrantOpen(false)}
+        onSuccess={() => {
+          setIsGrantOpen(false);
+          setToastMessage("쿠폰이 성공적으로 지급되었습니다.");
+          setTimeout(() => setToastMessage(null), 3000);
         }}
       />
 
