@@ -10,13 +10,38 @@ import {
 import { useStore } from "zustand";
 
 import { createClient } from "@/libs/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 import { createAuthStore, type AuthState, type AuthStore } from "./auth-store";
 
 const AuthStoreContext = createContext<AuthStore | null>(null);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [store] = useState(() => createAuthStore());
+interface AuthProviderProps {
+  children: ReactNode;
+  initialUser?: User;
+  initialProfile?: {
+    role: string | null;
+    onboardingCompleted: boolean;
+  };
+}
+
+export const AuthProvider = ({
+  children,
+  initialUser,
+  initialProfile,
+}: AuthProviderProps) => {
+  const [store] = useState(() => {
+    const s = createAuthStore();
+    if (initialUser) {
+      s.getState().setUser(initialUser);
+      s.getState().setRole(initialProfile?.role ?? null);
+      s.getState().setOnboardingCompleted(
+        initialProfile?.onboardingCompleted ?? false
+      );
+      s.getState().setIsProfileLoaded(true);
+    }
+    return s;
+  });
 
   useEffect(() => {
     const supabase = createClient();
@@ -51,11 +76,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (unmounted) return;
       const s = store.getState();
       s.setUser(session?.user ?? null);
       if (session?.user) {
+        // 초기 세션은 서버에서 이미 주입했으므로 스킵
+        if (event === "INITIAL_SESSION" && initialUser) return;
         fetchProfile(session.user.id);
       } else {
         fetchVersion++;

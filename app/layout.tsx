@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 
 import { AuthProvider } from "@/libs/store/auth-provider";
+import { createClient } from "@/libs/supabase/server";
 import { GaDisableAdmin } from "./_components/GaDisableAdmin";
 
 import "./globals.css";
@@ -85,11 +86,35 @@ const jsonLd = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let initialProfile: {
+    role: string | null;
+    onboardingCompleted: boolean;
+  } = { role: null, onboardingCompleted: false };
+
+  if (user) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("role, onboarding_completed")
+      .eq("id", user.id)
+      .single();
+    if (data) {
+      initialProfile = {
+        role: data.role ?? null,
+        onboardingCompleted: data.onboarding_completed ?? false,
+      };
+    }
+  }
+
   return (
     <html lang="ko" className="scroll-smooth">
       <head>
@@ -111,7 +136,10 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <AuthProvider>
+        <AuthProvider
+          initialUser={user ?? undefined}
+          initialProfile={initialProfile}
+        >
           <GaDisableAdmin />
           {children}
         </AuthProvider>
