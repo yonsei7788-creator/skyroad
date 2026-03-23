@@ -65,7 +65,7 @@ export const InterviewPrepRenderer = ({
                   ? "★ 중요"
                   : q.importance === "medium"
                     ? "● 보통"
-                    : "○ 참고"}
+                    : ""}
               </span>
             )}
           </div>

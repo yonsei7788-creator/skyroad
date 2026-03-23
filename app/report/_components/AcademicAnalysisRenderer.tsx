@@ -354,7 +354,7 @@ export const AcademicAnalysisRenderer = ({
                               ? "★ 중요"
                               : gca.actionItemPriorities[idx] === "medium"
                                 ? "● 보통"
-                                : "○ 참고"}
+                                : ""}
                           </span>
                         )}
                       </li>

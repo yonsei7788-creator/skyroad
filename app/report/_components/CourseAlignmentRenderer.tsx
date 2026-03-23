@@ -26,6 +26,9 @@ export const CourseAlignmentRenderer = ({
   sectionNumber,
 }: CourseAlignmentRendererProps) => {
   const courses = data.courses ?? [];
+
+  // 필수 데이터 없으면 섹션 렌더링 스킵
+  if (courses.length === 0 && !data.targetMajor) return null;
   const matchRate =
     data.matchRate > 0
       ? data.matchRate

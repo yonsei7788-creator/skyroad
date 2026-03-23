@@ -87,7 +87,7 @@ export const TopicRecommendationRenderer = ({
                   ? "★ 중요"
                   : topic.importance === "medium"
                     ? "● 보통"
-                    : "○ 참고"}
+                    : ""}
               </span>
             )}
           </div>
