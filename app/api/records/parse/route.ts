@@ -7,6 +7,7 @@ import { join } from "path";
 import crypto from "crypto";
 
 import { createClient } from "@/libs/supabase/server";
+import { createAdminClient } from "@/libs/supabase/admin";
 import { correctSubjectName } from "@/libs/report/constants/subject-name-corrections";
 
 export const maxDuration = 180;
@@ -336,37 +337,63 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Parse request body: { files: [{ data, mimeType }] }
-  interface FilePayload {
-    data: string;
+  // Parse request body: { storagePaths: [{ path, mimeType }] }
+  interface StorageFileRef {
+    path: string;
     mimeType: string;
   }
-  let files: FilePayload[];
+  let storagePaths: StorageFileRef[];
   try {
     const body = await request.json();
-    ({ files } = body);
-    if (!Array.isArray(files) || files.length === 0) {
+    ({ storagePaths } = body);
+    if (!Array.isArray(storagePaths) || storagePaths.length === 0) {
       return NextResponse.json(
         { error: "파일 데이터가 필요합니다." },
         { status: 400 }
       );
     }
+    // 보안: 본인 폴더의 파일만 접근 가능
+    for (const sp of storagePaths) {
+      if (!sp.path.startsWith(`${user.id}/`)) {
+        return NextResponse.json(
+          { error: "잘못된 파일 경로입니다." },
+          { status: 403 }
+        );
+      }
+    }
   } catch {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
+  }
+
+  const admin = createAdminClient();
+  if (!admin) {
+    return NextResponse.json(
+      { error: "서버 설정 오류입니다." },
+      { status: 500 }
+    );
   }
 
   const tempPaths: string[] = [];
 
   try {
-    // Upload files via File API in parallel
+    // Download files from Supabase Storage → write to temp → upload to Google File API
     const fileManager = new GoogleAIFileManager(apiKey);
 
-    const uploadPromises = files.map(async ({ data, mimeType }, i) => {
+    const uploadPromises = storagePaths.map(async ({ path, mimeType }, i) => {
+      const { data: fileData, error: dlError } = await admin.storage
+        .from("record-uploads")
+        .download(path);
+
+      if (dlError || !fileData) {
+        throw new Error(`파일 다운로드 실패: ${dlError?.message ?? "unknown"}`);
+      }
+
       const ext = mimeType.includes("pdf") ? "pdf" : "img";
       const tempPath = join(tmpdir(), `parse-${crypto.randomUUID()}.${ext}`);
       tempPaths.push(tempPath);
 
-      await writeFile(tempPath, Buffer.from(data, "base64"));
+      const buffer = Buffer.from(await fileData.arrayBuffer());
+      await writeFile(tempPath, buffer);
 
       const uploadResult = await fileManager.uploadFile(tempPath, {
         mimeType,
@@ -517,6 +544,14 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   } finally {
+    // 임시 파일 정리
     await Promise.all(tempPaths.map((p) => unlink(p).catch(() => {})));
+    // Storage 파일 정리
+    if (admin && storagePaths.length > 0) {
+      await admin.storage
+        .from("record-uploads")
+        .remove(storagePaths.map((sp) => sp.path))
+        .catch(() => {});
+    }
   }
 }

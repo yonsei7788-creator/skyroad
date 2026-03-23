@@ -12,6 +12,8 @@ import {
   Save,
 } from "lucide-react";
 
+import { createClient } from "@/libs/supabase/client";
+
 import { StepIndicator } from "./StepIndicator";
 import { MethodSelectStep } from "./MethodSelectStep";
 import { PdfUploadStep } from "./PdfUploadStep";
@@ -36,17 +38,6 @@ interface ToastData {
 }
 
 type DraftSaveStatus = "idle" | "saving" | "saved" | "error";
-
-const fileToBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(",")[1]);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 
 const saveDraft = async (
   method: InputMethod,
@@ -249,26 +240,38 @@ export const RecordSubmitWizard = ({
     setState((prev) => ({ ...prev, isParsing: true, parseError: null }));
 
     try {
-      let files: { data: string; mimeType: string }[];
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("로그인이 필요합니다.");
 
-      if (state.method === "pdf") {
-        if (!state.pdfFile) return;
-        const base64 = await fileToBase64(state.pdfFile);
-        files = [{ data: base64, mimeType: "application/pdf" }];
-      } else {
-        // image mode — convert all images to base64
-        files = await Promise.all(
-          state.images.map(async (img) => {
-            const base64 = await fileToBase64(img.file);
-            return { data: base64, mimeType: img.file.type };
-          })
-        );
+      // 파일을 Supabase Storage에 업로드
+      const filesToUpload: File[] =
+        state.method === "pdf" && state.pdfFile
+          ? [state.pdfFile]
+          : state.images.map((img) => img.file);
+
+      const uploadedPaths: { path: string; mimeType: string }[] = [];
+
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
+        const ext = file.name.split(".").pop() || "pdf";
+        const storagePath = `${user.id}/${Date.now()}-${i}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("record-uploads")
+          .upload(storagePath, file);
+
+        if (uploadError)
+          throw new Error(`파일 업로드 실패: ${uploadError.message}`);
+        uploadedPaths.push({ path: storagePath, mimeType: file.type });
       }
 
       const response = await fetch("/api/records/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ files }),
+        body: JSON.stringify({ storagePaths: uploadedPaths }),
       });
 
       if (!response.ok) {
