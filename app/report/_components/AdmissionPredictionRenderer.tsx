@@ -3,7 +3,6 @@ import type {
   ReportPlan,
 } from "@/libs/report/types";
 
-import { ReportBadge } from "./ReportBadge";
 import styles from "./report.module.css";
 import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
@@ -106,7 +105,6 @@ export const AdmissionPredictionRenderer = ({
                       <span className={styles.admissionUniDept}>
                         {up.department}
                       </span>
-                      <ReportBadge chance={up.chance} />
                     </div>
                   ))}
                 </div>
