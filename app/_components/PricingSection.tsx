@@ -39,7 +39,7 @@ const PLANS: Plan[] = [
       { text: "예상 면접 질문 3개", included: true },
       { text: "AI 학과 추천", included: true },
       { text: "전임 컨설턴트 2차 검수", included: true },
-      { text: "희망 학교·학과 합격 판단", included: false },
+      { text: "희망 학교·학과 판단", included: false },
       { text: "세특 주제 추천", included: false },
       { text: "부족한 부분 + 보완 전략", included: false },
     ],
@@ -56,7 +56,7 @@ const PLANS: Plan[] = [
     features: [
       { text: "Lite Report 전체 포함", included: true },
       { text: "교과 세특 분석 확장 (7과목)", included: true },
-      { text: "희망 학교·학과 합격 판단 (학종/교과/정시)", included: true },
+      { text: "희망 학교·학과 판단 (학종/교과/정시)", included: true },
       { text: "세특 주제 추천 3개", included: true },
       { text: "예상 면접 질문 5개 + 출제 의도", included: true },
       { text: "전임 컨설턴트 2차 검수", included: true },

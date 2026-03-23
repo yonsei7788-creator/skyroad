@@ -17,6 +17,7 @@ import {
   formatMajorEvaluationContext,
 } from "../constants/major-evaluation-criteria.ts";
 import { findMajorInfo } from "../constants/major-info-data.ts";
+import type { MajorInfo } from "../constants/major-info-data.ts";
 import {
   findCutoffData,
   ADMISSION_CUTOFF_DATA,
@@ -1801,11 +1802,57 @@ export const buildUniversityCandidatesText = (
 
   const candidates = filtered.map(({ university, cutoffSummary }) => ({
     university,
-    department: majorInfo.majorName,
+    department: resolveActualDepartment(university, majorInfo),
     ...(cutoffSummary ? { cutoffData: cutoffSummary } : {}),
   }));
 
   return JSON.stringify(candidates, null, 2);
+};
+
+/**
+ * 대학에 실제 개설된 학과명을 찾아 반환.
+ * 1순위: ADMISSION_CUTOFF_DATA에서 대학+학과 정확 매칭
+ * 2순위: departments 변형으로 재조회
+ * 3순위: majorInfo.majorName (커리어넷 표준명 fallback)
+ */
+const resolveActualDepartment = (
+  university: string,
+  majorInfo: MajorInfo
+): string => {
+  const uniNorm = university.replace(/대학교$/, "").trim();
+
+  // 해당 대학의 모든 커트라인 엔트리
+  const uniEntries = ADMISSION_CUTOFF_DATA.filter((e) => {
+    const eUni = e.university.replace(/대학교$/, "").trim();
+    return eUni === uniNorm || e.university === university;
+  });
+
+  if (uniEntries.length === 0) return majorInfo.majorName;
+
+  // 1. majorName으로 정확 매칭
+  const exactByMajorName = uniEntries.find(
+    (e) => e.department === majorInfo.majorName
+  );
+  if (exactByMajorName) return exactByMajorName.department;
+
+  // 2. departments 배열의 각 변형으로 정확 매칭
+  for (const dept of majorInfo.departments) {
+    const exactByDept = uniEntries.find((e) => e.department === dept);
+    if (exactByDept) return exactByDept.department;
+  }
+
+  // 3. 정규화 매칭 (접미사 제거 후 비교)
+  const majorNorm = majorInfo.majorName.replace(/[과부학]$/, "").trim();
+  for (const dept of [majorInfo.majorName, ...majorInfo.departments]) {
+    const deptNorm = dept.replace(/[과부학]$/, "").trim();
+    const match = uniEntries.find((e) => {
+      const eNorm = e.department.replace(/[과부학]$/, "").trim();
+      return eNorm === deptNorm || eNorm === majorNorm;
+    });
+    if (match) return match.department;
+  }
+
+  return majorInfo.majorName;
 };
 
 const formatStudentProfile = (

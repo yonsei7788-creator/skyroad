@@ -77,7 +77,7 @@ export const AdmissionPredictionRenderer = ({
           </div>
         </div>
 
-        <div className={styles.admissionSectionLabel}>전형별 합격 판단</div>
+        <div className={styles.admissionSectionLabel}>전형별 희망학과 판단</div>
       </div>
 
       {/* Each prediction card as its own block for page splitting */}

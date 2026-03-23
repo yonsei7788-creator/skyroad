@@ -442,7 +442,7 @@ export const TargetUniversityForm = ({
             <span className={styles.sectionLabel}>Target University</span>
             <h1 className={styles.pageTitle}>목표 대학 설정</h1>
             <p className={styles.pageSubtitle}>
-              AI 리포트의 합격 판단 및 입시 전략에 활용됩니다
+              AI 리포트의 희망학과 판단 및 입시 전략에 활용됩니다
             </p>
           </div>
         </div>
