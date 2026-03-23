@@ -1457,7 +1457,13 @@ const buildTexts = (
     recordData.generalSubjects ?? [],
     recordData.careerSubjects ?? []
   );
-  const preprocessedAcademicDataText = JSON.stringify(data, null, 2);
+  // convertedGrade는 내부 계산용이므로 AI에 전달하지 않음
+  const { convertedGrade: _cg, ...dataWithoutConvertedGrade } = data;
+  const preprocessedAcademicDataText = JSON.stringify(
+    dataWithoutConvertedGrade,
+    null,
+    2
+  );
   const attendanceSummaryText = JSON.stringify(data.attendanceSummary, null, 2);
   const recommendedCourseMatchText = JSON.stringify(
     data.recommendedCourseMatch,
@@ -1804,7 +1810,7 @@ export const buildUniversityCandidatesText = (
 
 const formatStudentProfile = (
   info: StudentInfo,
-  convertedGrade?: PreprocessedData["convertedGrade"],
+  _convertedGrade?: PreprocessedData["convertedGrade"],
   gradingSystem?: "5등급제" | "9등급제"
 ): string => {
   const statusLabel = info.isGraduate
@@ -1826,11 +1832,7 @@ const formatStudentProfile = (
     ...(info.highSchoolRegion ? [`고교 소재지: ${info.highSchoolRegion}`] : []),
     ...(gradingSystem ? [`적용 등급제: ${gradingSystem}`] : []),
   ];
-  if (convertedGrade) {
-    lines.push(
-      `환산 등급: ${convertedGrade.converted} (원래 ${convertedGrade.original}, ${convertedGrade.schoolType} 보정 적용)`
-    );
-  }
+  // 환산등급은 내부 계산용으로만 사용 — AI 텍스트에 노출 금지
   // 희망 대학/학과는 studentProfileText에 포함하지 않음
   // → 합격 판단이 필요한 admissionPrediction에만 targetUniversitiesText로 별도 전달
   // → 나머지 섹션은 희망학과를 모르는 상태에서 생기부만으로 분석

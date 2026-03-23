@@ -48,7 +48,7 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - 각 필드의 텍스트(riskAssessment, enrollmentEffort, achievement, prediction 등)는 반드시 **200자 이내**로 작성합니다. 200자 초과 금지.
 - careerSubjectAnalyses는 **최대 3개**만 출력하며, 각 interpretation은 **100자 이내**로 작성합니다.
 - smallClassSubjectAnalyses, schoolTypeAdjustment, gradeInflationContext는 출력하지 않습니다.
-- ⚠️ schoolTypeAdjustment는 절대 출력하지 마세요. 환산 등급 정보는 내부 분석용이며, 리포트에 노출하면 안 됩니다.`,
+- ⚠️ schoolTypeAdjustment는 절대 출력하지 마세요.`,
   premium: `## 플랜별 출력: 정밀
 Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 포함)**을 반드시 출력하고 (actionItems 빈 배열 금지), 추가로 다음을 출력합니다:
 - 5등급제 전환 시뮬레이션 (fiveGradeSimulation):
@@ -73,7 +73,7 @@ Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysi
   ⛔ 이수 완료 과목의 성적 향상을 우선순위로 제시하면 안 됩니다. 반드시 향후 이수 가능한 과목/영역 기준으로 작성하세요.
   예시: "improvementPriority": ["사회탐구 영역 선택과목 2등급 확보", "과학탐구 선택과목 성적 안정화"]
 
-⚠️ **schoolTypeAdjustment 출력 금지**: 환산 등급 보정 정보는 내부 분석용이며, 이 필드를 절대 출력하지 마세요.
+⚠️ **schoolTypeAdjustment 출력 금지.**
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - 모든 필드 출력 가능하지만, 각 분석 텍스트(riskAssessment, enrollmentEffort, achievement, prediction 등)는 반드시 **200자 이내**로 작성합니다. 200자 초과 금지.
@@ -107,12 +107,10 @@ export const buildAcademicAnalysisPrompt = (
 
   return `${gradingSystemWarning}
 
-## ⚠️ 고교 유형별 환산 등급 규칙 (필수)
-학생 프로필에 "환산 등급(converted)"과 "원래 등급(original)"이 포함되어 있습니다.
-- ⚠️ **리포트에 노출되는 수치(overallAverageGrade, gradesByYear 등)는 반드시 보정 전 원래 등급을 사용하세요.**
-- ⚠️ **schoolTypeAdjustment 필드를 출력하지 마세요.** 환산 등급 수치나 보정 사실을 텍스트에 직접 언급하지 마세요.
-- interpretation에서 학종 관점의 대학 라인, 경쟁력 평가는 환산 등급 기준으로 판단하되, 수치를 직접 노출하지 않고 자연스럽게 반영하세요.
-- ⚠️ **교과전형 관점의 경쟁력 언급 시에는 원래 등급(original) 기준으로 판단하세요.** 교과전형은 고교 유형 구분 없이 내신을 그대로 산출합니다.
+## ⚠️ 환산 등급 노출 금지 (필수)
+- ⚠️ **"환산 등급", "보정 등급", "환산 내신", "보정 내신" 등의 표현을 리포트 텍스트에 절대 사용하지 마세요.**
+- ⚠️ **schoolTypeAdjustment 필드를 출력하지 마세요.**
+- 리포트에 노출되는 모든 수치(overallAverageGrade, gradesByYear 등)는 원래 등급을 그대로 사용하세요.
 
 ## 작업
 정량 분석 결과를 바탕으로 학생의 교과 성적에 대한 해석과 전략적 분석을 작성하세요.

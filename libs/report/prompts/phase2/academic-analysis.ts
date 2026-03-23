@@ -34,8 +34,7 @@ export const buildAcademicContextAnalysisPrompt = (
 2. **과목별 실질 위치 해석**: Z-score와 수강자수를 종합한 각 과목의 실질 경쟁력 분석
 3. **과목 간 편차 해석**: 학종에서의 리스크 + 편차가 큰 이유 추론
 4. **전공 관련 교과 해석**: 전공 관련 과목 성적이 전체 대비 어떤 의미인지
-5. **고교 유형 환산 해석**: 환산 등급이 의미하는 대학 경쟁력
-6. **진로선택과목 해석**: 성취도 분포 기반 실질 위치 분석
+5. **진로선택과목 해석**: 성취도 분포 기반 실질 위치 분석
 
 ## 해석 항목 → JSON 키 매핑
 | 해석 항목 | JSON 키 |
@@ -44,8 +43,7 @@ export const buildAcademicContextAnalysisPrompt = (
 | 2. 과목별 실질 위치 해석 | subjectInterpretations (array) |
 | 3. 과목 간 편차 해석 | varianceInterpretation (object) |
 | 4. 전공 관련 교과 해석 | majorRelevanceInterpretation (object) |
-| 5. 고교 유형 환산 해석 | convertedGradeInterpretation (object) |
-| 6. 진로선택과목 해석 | careerSubjectInterpretations (array) |
+| 5. 진로선택과목 해석 | careerSubjectInterpretations (array) |
 | (종합) | overallAssessment (string) |
 
 ## 경쟁력(competitiveness) 판정 기준
@@ -90,10 +88,6 @@ export const buildAcademicContextAnalysisPrompt = (
     "strengths": ["string (전공 관련 강점 과목)"],
     "weaknesses": ["string (전공 관련 약점 과목)"]
   },
-  "convertedGradeInterpretation": {
-    "universityLine": "string (환산 등급이 의미하는 대학 수준)",
-    "competitivenessAnalysis": "string (대학별 경쟁력 분석)"
-  },
   "careerSubjectInterpretations": [
     {
       "subject": "string (진로선택과목명)",
@@ -132,10 +126,6 @@ export interface AcademicContextAnalysisOutput {
     comparison: string;
     strengths: string[];
     weaknesses: string[];
-  };
-  convertedGradeInterpretation: {
-    universityLine: string;
-    competitivenessAnalysis: string;
   };
   careerSubjectInterpretations: {
     subject: string;
