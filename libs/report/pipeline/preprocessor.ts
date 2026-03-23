@@ -1690,6 +1690,25 @@ export const buildUniversityCandidatesText = (
 
   const universities = majorInfo.universities as string[];
 
+  // 커트라인 데이터에서 추가 대학 보충 (findMajorInfo 누락 대학 포함)
+  const deptNorm = majorInfo.majorName.replace(/[과부학]$/, "").trim();
+  const cutoffUniversities = new Set<string>();
+  for (const e of ADMISSION_CUTOFF_DATA) {
+    const eDept = e.department.replace(/[과부학]$/, "").trim();
+    if (
+      eDept === deptNorm ||
+      eDept.includes(deptNorm) ||
+      deptNorm.includes(eDept)
+    ) {
+      cutoffUniversities.add(e.university);
+    }
+  }
+  // majorInfo 대학 + 커트라인 데이터 대학 합집합 (중복 제거)
+  const allUniversities = [
+    ...universities,
+    ...[...cutoffUniversities].filter((u) => !universities.includes(u)),
+  ];
+
   // 학생 등급을 9등급제로 환산 (커트라인 데이터가 9등급제 기준)
   const studentGrade9 =
     overallAverage != null
@@ -1698,8 +1717,8 @@ export const buildUniversityCandidatesText = (
         : overallAverage
       : null;
 
-  // 각 대학의 커트라인 데이터 조회 + 대표 등급 산출
-  const withCutoff = universities.map((university) => {
+  // 각 대학의 커트라인 데이터 조회 + 전형별 등급 산출
+  const withCutoff = allUniversities.map((university) => {
     const cutoffs = findCutoffData(university, majorInfo.majorName);
     const cutoffSummary =
       cutoffs.length > 0
@@ -1711,7 +1730,11 @@ export const buildUniversityCandidatesText = (
             .join(" / ")
         : null;
     const repCutoff = getRepresentativeCutoff(cutoffs);
-    return { university, cutoffSummary, repCutoff };
+    // 학종/교과 각각의 70%cut (필터링에서 어느 쪽이든 범위 안이면 포함)
+    const allCutoff70s = cutoffs
+      .map((c) => c.cutoff70Grade)
+      .filter((g): g is number => g != null);
+    return { university, cutoffSummary, repCutoff, allCutoff70s };
   });
 
   // 학생 등급 기반 필터링: 커트라인이 학생 등급 근처인 대학만 선정
@@ -1739,21 +1762,20 @@ export const buildUniversityCandidatesText = (
 
     filtered = withCutoff.filter((c) => {
       // 5등급제 학생: 하드코딩 맵 기반 필터링 (9등급 커트라인 변환 오차 방지)
-      // 비대칭 범위: 상향(-0.5)은 넓게, 하향(+0.2)은 좁게
+      // 5등급제에서 0.1등급 = 대학 1~2티어 차이이므로 ±0.2로 좁게 필터링
       if (gradingSystem === "5등급제") {
         const hardcoded = FIVE_GRADE_UNIVERSITY_CUTOFF[c.university];
         if (hardcoded !== undefined) {
           const diff = hardcoded - overallAverage!; // 음수=상향, 양수=하향
-          return diff >= -0.4 && diff <= 0.2;
+          return diff >= -0.2 && diff <= 0.2;
         }
         return false;
       }
 
-      // 9등급제 학생: 커트라인 직접 비교
-      if (c.repCutoff != null) {
-        return (
-          c.repCutoff >= studentGrade9 - margin &&
-          c.repCutoff <= studentGrade9 + margin
+      // 9등급제 학생: 학종/교과 중 하나라도 범위 안이면 포함
+      if (c.allCutoff70s.length > 0) {
+        return c.allCutoff70s.some(
+          (g) => g >= studentGrade9 - margin && g <= studentGrade9 + margin
         );
       }
 
@@ -1768,13 +1790,13 @@ export const buildUniversityCandidatesText = (
 
     // 필터 결과가 5개 미만이면 범위 소폭 확대
     if (filtered.length < 5) {
-      const wider = 0.8;
+      const wider = 0.6;
       filtered = withCutoff.filter((c) => {
         if (gradingSystem === "5등급제") {
           const hardcoded = FIVE_GRADE_UNIVERSITY_CUTOFF[c.university];
           if (hardcoded !== undefined) {
             const diff = hardcoded - overallAverage!;
-            return diff >= -0.6 && diff <= 0.3;
+            return diff >= -0.3 && diff <= 0.3;
           }
           // 커트라인 맵에 없는 대학: 실제 커트라인 데이터가 있으면 9등급 환산 비교
           if (c.repCutoff != null) {
@@ -1783,20 +1805,21 @@ export const buildUniversityCandidatesText = (
               c.repCutoff <= studentGrade9 + wider
             );
           }
-          // 커트라인 데이터도 없으면 포함 (AI가 판단하도록)
-          return true;
+          return false;
         }
-        if (c.repCutoff == null) return true;
-        return (
-          c.repCutoff >= studentGrade9 - wider &&
-          c.repCutoff <= studentGrade9 + wider
-        );
+        // 9등급제: 학종/교과 중 하나라도 wider 범위 안이면 포함
+        if (c.allCutoff70s.length > 0) {
+          return c.allCutoff70s.some(
+            (g) => g >= studentGrade9 - wider && g <= studentGrade9 + wider
+          );
+        }
+        // 커트라인 데이터 없으면 하드코딩 맵 체크
+        const hardcoded = NINE_GRADE_UNIVERSITY_CUTOFF[c.university];
+        if (hardcoded !== undefined) {
+          return Math.abs(hardcoded - overallAverage!) <= wider;
+        }
+        return false;
       });
-    }
-
-    // 그래도 5개 미만이면 모든 대학 포함 (AI가 등급 기반으로 적절히 판단)
-    if (filtered.length < 5) {
-      filtered = withCutoff;
     }
   }
 
