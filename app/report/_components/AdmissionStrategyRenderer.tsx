@@ -1,5 +1,6 @@
 import type { AdmissionStrategySection, ReportPlan } from "@/libs/report/types";
 
+import { ReportBadge } from "./ReportBadge";
 import styles from "./report.module.css";
 import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
@@ -74,6 +75,8 @@ export const AdmissionStrategyRenderer = ({
                 <tr>
                   <th>대학</th>
                   <th>학과</th>
+                  <th>학종</th>
+                  <th>교과</th>
                 </tr>
               </thead>
               <tbody>
@@ -81,6 +84,20 @@ export const AdmissionStrategyRenderer = ({
                   <tr key={idx}>
                     <td className={styles.tableCellBold}>{card.university}</td>
                     <td className={styles.small}>{card.department}</td>
+                    <td className={styles.tableAlignCenter}>
+                      {card.comprehensive?.chance ? (
+                        <ReportBadge chance={card.comprehensive.chance} />
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className={styles.tableAlignCenter}>
+                      {card.subject?.chance ? (
+                        <ReportBadge chance={card.subject.chance} />
+                      ) : (
+                        "—"
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -124,6 +141,12 @@ export const AdmissionStrategyRenderer = ({
               <p className={`${styles.caption} ${styles.mb4}`}>
                 <span className={styles.emphasis}>학종</span>{" "}
                 {card.comprehensive?.admissionType}
+                {card.comprehensive?.chance && (
+                  <>
+                    {" "}
+                    <ReportBadge chance={card.comprehensive.chance} />
+                  </>
+                )}
               </p>
               <p className={styles.small}>
                 {safeText(card.comprehensive?.chanceRationale)}
@@ -142,6 +165,12 @@ export const AdmissionStrategyRenderer = ({
                 <p className={`${styles.caption} ${styles.mb4}`}>
                   <span className={styles.emphasis}>교과</span>{" "}
                   {card.subject.admissionType}
+                  {card.subject.chance && (
+                    <>
+                      {" "}
+                      <ReportBadge chance={card.subject.chance} />
+                    </>
+                  )}
                 </p>
                 <p className={styles.small}>
                   {safeText(card.subject.chanceRationale)}
