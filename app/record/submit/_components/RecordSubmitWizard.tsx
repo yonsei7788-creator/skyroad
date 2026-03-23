@@ -126,11 +126,13 @@ export const RecordSubmitWizard = ({
         const response = await fetch("/api/records/drafts");
         if (response.ok) {
           const draft = await response.json();
-          setPendingDraft({
-            method: draft.submission_type as InputMethod,
-            record: draft.record_data as SchoolRecord,
-            draftId: draft.id as string,
-          });
+          if (draft) {
+            setPendingDraft({
+              method: draft.submission_type as InputMethod,
+              record: draft.record_data as SchoolRecord,
+              draftId: draft.id as string,
+            });
+          }
         }
       } catch {
         // draft 없음 또는 에러 → 무시

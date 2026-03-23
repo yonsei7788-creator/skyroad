@@ -29,11 +29,16 @@ export async function GET() {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (error || !data) {
+  if (error) {
+    console.error("draft fetch error:", error);
     return NextResponse.json(
-      { error: "저장된 임시 데이터가 없습니다." },
-      { status: 404 }
+      { error: "임시 데이터 조회에 실패했습니다." },
+      { status: 500 }
     );
+  }
+
+  if (!data) {
+    return NextResponse.json(null);
   }
 
   return NextResponse.json(data);
