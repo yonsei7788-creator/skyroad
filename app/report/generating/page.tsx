@@ -35,6 +35,7 @@ const GeneratingContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
+  const isAdmin = searchParams.get("from") === "admin";
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);
@@ -71,7 +72,7 @@ const GeneratingContent = () => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
           if (res.status === 409 && body.error?.includes("완료")) {
-            router.replace("/profile/consulting");
+            router.replace(isAdmin ? "/admin/reports" : "/profile/consulting");
             return;
           }
           setPhase("error");
@@ -262,9 +263,11 @@ const GeneratingContent = () => {
               type="button"
               className={styles.retryButton}
               style={{ marginTop: 24 }}
-              onClick={() => router.push("/profile/consulting")}
+              onClick={() =>
+                router.push(isAdmin ? "/admin/reports" : "/profile/consulting")
+              }
             >
-              컨설팅 내역으로 이동
+              {isAdmin ? "리포트 관리로 이동" : "컨설팅 내역으로 이동"}
             </button>
           </>
         ) : phase === "running" ? (
