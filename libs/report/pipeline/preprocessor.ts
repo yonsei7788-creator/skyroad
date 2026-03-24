@@ -1520,17 +1520,8 @@ const buildTexts = (
     attendanceSummaryText,
     recommendedCourseMatchText,
     recordVolumeText,
-    universityCandidatesText: artSportPractical
-      ? "[]"
-      : buildUniversityCandidatesText(
-          targetDept,
-          data.gradingSystem,
-          data.overallAverage,
-          undefined,
-          studentInfo.targetUniversities?.some(
-            (t) => t.admissionType === "고른기회"
-          ) ?? false
-        ),
+    // 전처리 단계에서는 빈 후보군 — Phase 2 이후 키워드 기반으로 재생성됨
+    universityCandidatesText: "[]",
     targetUniversitiesText,
     curriculumVersion: data.curriculumVersion,
     majorEvaluationContextText,
@@ -1673,6 +1664,7 @@ const getRepresentativeCutoff = (
 
 /**
  * 커트라인 데이터 기반 대학 후보군 생성.
+ * Phase 2에서 감지된 학과 키워드로 커트라인을 직접 검색한다.
  * 학생 등급과 비슷한 점수대의 대학만 후보로 제공한다.
  */
 export const buildUniversityCandidatesText = (
@@ -1682,12 +1674,198 @@ export const buildUniversityCandidatesText = (
   /** detectedMajorGroup이 계열명일 때 실제 학과명으로 폴백 */
   fallbackDepartment?: string,
   /** 고른기회전형(기회균형 등) 포함 여부 (기본: false) */
-  includeSpecialAdmission?: boolean
+  includeSpecialAdmission?: boolean,
+  /** Phase 2에서 감지된 학과 검색 키워드 (예: ["전기전자", "전자공학"]) */
+  departmentKeywords?: string[]
 ): string => {
+  const SPECIAL_ADMISSION_KEYWORDS = [
+    "기회균형",
+    "고른기회",
+    "기회균등",
+    "농어촌",
+    "사회배려",
+    "국가보훈",
+    "특성화고",
+  ];
+
+  // ── 키워드 기반 커트라인 직접 검색 (Phase 2 이후 주 경로) ──
+  if (departmentKeywords && departmentKeywords.length > 0) {
+    // 키워드로 커트라인 데이터에서 대학-학과 매칭
+    const matchedEntries = new Map<
+      string,
+      {
+        university: string;
+        department: string;
+        cutoffs: typeof ADMISSION_CUTOFF_DATA;
+      }
+    >();
+    for (const e of ADMISSION_CUTOFF_DATA) {
+      const eDeptNorm = e.department.replace(/[과부학전공]$/g, "").trim();
+      const matched = departmentKeywords.some(
+        (kw) => eDeptNorm.includes(kw) || kw.includes(eDeptNorm)
+      );
+      if (!matched) continue;
+
+      const key = `${e.university}|${e.department}`;
+      if (!matchedEntries.has(key)) {
+        matchedEntries.set(key, {
+          university: e.university,
+          department: e.department,
+          cutoffs: [],
+        });
+      }
+      (matchedEntries.get(key)!.cutoffs as typeof ADMISSION_CUTOFF_DATA).push(
+        e
+      );
+    }
+
+    // 학생 등급 환산
+    const studentGrade9 =
+      overallAverage != null
+        ? gradingSystem === "5등급제"
+          ? fiveToNineGrade(overallAverage)
+          : overallAverage
+        : null;
+
+    // 대학별 최적 학과 선택 (같은 대학에 여러 학과 매칭 시 키워드 매칭도가 높은 것 우선)
+    const byUniversity = new Map<
+      string,
+      {
+        department: string;
+        cutoffs: typeof ADMISSION_CUTOFF_DATA;
+        score: number;
+      }
+    >();
+    for (const [, entry] of matchedEntries) {
+      const existing = byUniversity.get(entry.university);
+      // 키워드 매칭 점수: 정확 매칭 > 부분 매칭
+      const deptNorm = entry.department.replace(/[과부학전공]$/g, "").trim();
+      const matchScore = departmentKeywords.reduce((sum, kw) => {
+        if (deptNorm === kw) return sum + 3;
+        if (deptNorm.includes(kw)) return sum + 2;
+        if (kw.includes(deptNorm)) return sum + 1;
+        return sum;
+      }, 0);
+      if (!existing || matchScore > existing.score) {
+        byUniversity.set(entry.university, {
+          department: entry.department,
+          cutoffs: entry.cutoffs,
+          score: matchScore,
+        });
+      }
+    }
+
+    // 커트라인 + 등급 필터링
+    const withCutoff = [...byUniversity.entries()].map(
+      ([university, { department, cutoffs: rawCutoffs }]) => {
+        const cutoffs = includeSpecialAdmission
+          ? rawCutoffs
+          : rawCutoffs.filter(
+              (c) =>
+                !SPECIAL_ADMISSION_KEYWORDS.some((kw) =>
+                  c.admissionName.includes(kw)
+                )
+            );
+        const cutoffSummary =
+          cutoffs.length > 0
+            ? cutoffs
+                .map(
+                  (c) =>
+                    `${c.admissionType}(${c.admissionName}): 50%cut=${c.cutoff50Grade ?? "-"}, 70%cut=${c.cutoff70Grade ?? "-"}, 경쟁률=${c.competitionRate}`
+                )
+                .join(" / ")
+            : null;
+        const allCutoff70s = cutoffs
+          .map((c) => c.cutoff70Grade)
+          .filter((g): g is number => g != null);
+        const repCutoff = getRepresentativeCutoff(cutoffs);
+        return {
+          university,
+          department,
+          cutoffSummary,
+          repCutoff,
+          allCutoff70s,
+        };
+      }
+    );
+
+    // 등급 필터링
+    let filtered = withCutoff;
+    if (studentGrade9 != null) {
+      const margin = 0.5;
+      filtered = withCutoff.filter((c) => {
+        if (gradingSystem === "5등급제") {
+          const hardcoded = FIVE_GRADE_UNIVERSITY_CUTOFF[c.university];
+          if (hardcoded !== undefined) {
+            const diff = hardcoded - overallAverage!;
+            return diff >= -0.2 && diff <= 0.2;
+          }
+          if (c.repCutoff != null) {
+            return (
+              c.repCutoff >= studentGrade9 - margin &&
+              c.repCutoff <= studentGrade9 + margin
+            );
+          }
+          return false;
+        }
+        if (c.allCutoff70s.length > 0) {
+          return c.allCutoff70s.some(
+            (g) => g >= studentGrade9 - margin && g <= studentGrade9 + margin
+          );
+        }
+        const hardcoded = NINE_GRADE_UNIVERSITY_CUTOFF[c.university];
+        if (hardcoded !== undefined) {
+          return Math.abs(hardcoded - overallAverage!) <= margin;
+        }
+        return false;
+      });
+
+      // 5개 미만이면 범위 확대
+      if (filtered.length < 5) {
+        const wider = 0.6;
+        filtered = withCutoff.filter((c) => {
+          if (gradingSystem === "5등급제") {
+            const hardcoded = FIVE_GRADE_UNIVERSITY_CUTOFF[c.university];
+            if (hardcoded !== undefined) {
+              const diff = hardcoded - overallAverage!;
+              return diff >= -0.3 && diff <= 0.3;
+            }
+            if (c.repCutoff != null) {
+              return (
+                c.repCutoff >= studentGrade9 - wider &&
+                c.repCutoff <= studentGrade9 + wider
+              );
+            }
+            return false;
+          }
+          if (c.allCutoff70s.length > 0) {
+            return c.allCutoff70s.some(
+              (g) => g >= studentGrade9 - wider && g <= studentGrade9 + wider
+            );
+          }
+          const hardcoded = NINE_GRADE_UNIVERSITY_CUTOFF[c.university];
+          if (hardcoded !== undefined) {
+            return Math.abs(hardcoded - overallAverage!) <= wider;
+          }
+          return false;
+        });
+      }
+    }
+
+    const candidates = filtered.map(
+      ({ university, department, cutoffSummary }) => ({
+        university,
+        department,
+        ...(cutoffSummary ? { cutoffData: cutoffSummary } : {}),
+      })
+    );
+
+    return JSON.stringify(candidates, null, 2);
+  }
+
+  // ── 기존 커리어넷 기반 경로 (Phase 2 이전 또는 키워드 없을 때 폴백) ──
   if (!targetDept) return "[]";
 
-  // targetDept(생기부 기반 계열 또는 학과명)를 우선 사용
-  // fallbackDepartment는 targetDept로 매칭 실패 시에만 사용
   let majorInfo = findMajorInfo(targetDept);
   if (!majorInfo && fallbackDepartment) {
     majorInfo = findMajorInfo(fallbackDepartment);
@@ -1696,7 +1874,7 @@ export const buildUniversityCandidatesText = (
 
   const universities = majorInfo.universities as string[];
 
-  // 커트라인 데이터에서 추가 대학 보충 (findMajorInfo 누락 대학 포함)
+  // 커트라인 데이터에서 추가 대학 보충
   const deptNorm = majorInfo.majorName.replace(/[과부학]$/, "").trim();
   const cutoffUniversities = new Set<string>();
   for (const e of ADMISSION_CUTOFF_DATA) {
@@ -1709,13 +1887,11 @@ export const buildUniversityCandidatesText = (
       cutoffUniversities.add(e.university);
     }
   }
-  // majorInfo 대학 + 커트라인 데이터 대학 합집합 (중복 제거)
   const allUniversities = [
     ...universities,
     ...[...cutoffUniversities].filter((u) => !universities.includes(u)),
   ];
 
-  // 학생 등급을 9등급제로 환산 (커트라인 데이터가 9등급제 기준)
   const studentGrade9 =
     overallAverage != null
       ? gradingSystem === "5등급제"
@@ -1723,17 +1899,7 @@ export const buildUniversityCandidatesText = (
         : overallAverage
       : null;
 
-  // 각 대학의 커트라인 데이터 조회 + 전형별 등급 산출
   const withCutoff = allUniversities.map((university) => {
-    const SPECIAL_ADMISSION_KEYWORDS = [
-      "기회균형",
-      "고른기회",
-      "기회균등",
-      "농어촌",
-      "사회배려",
-      "국가보훈",
-      "특성화고",
-    ];
     const rawCutoffs = findCutoffData(university, majorInfo.majorName);
     const cutoffs = includeSpecialAdmission
       ? rawCutoffs
@@ -1753,7 +1919,6 @@ export const buildUniversityCandidatesText = (
             .join(" / ")
         : null;
     const repCutoff = getRepresentativeCutoff(cutoffs);
-    // 학종/교과 각각의 70%cut (필터링에서 어느 쪽이든 범위 안이면 포함)
     const allCutoff70s = cutoffs
       .map((c) => c.cutoff70Grade)
       .filter((g): g is number => g != null);

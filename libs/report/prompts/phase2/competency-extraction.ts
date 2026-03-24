@@ -63,11 +63,30 @@ export const buildCompetencyExtractionPrompt = (
 ⚠️ 희망학과가 "의학과"여도 생기부에서 사회탐구가 주력이면 "사회과학"으로 판단하세요.
 ⚠️ 희망학과가 없거나 불명확해도, 생기부 데이터만으로 계열을 판단할 수 있습니다.
 
+## 학과 검색 키워드 (detectedDepartmentKeywords)
+
+detectedMajorGroup과 함께, 실제 대학 학과명을 검색할 수 있는 **구체적 키워드 2~3개**를 출력하세요.
+이 키워드는 대학의 실제 학과/학부명에 포함되는 단어여야 합니다.
+
+예시:
+- 전기전자 관련 생기부 → ["전기전자", "전자공학", "반도체"]
+- 컴퓨터 관련 생기부 → ["컴퓨터", "소프트웨어", "인공지능"]
+- 기계공학 관련 생기부 → ["기계공학", "기계", "로봇"]
+- 경영 관련 생기부 → ["경영", "경제", "통상"]
+- 간호 관련 생기부 → ["간호", "보건"]
+- 체육교육 관련 생기부 → ["체육교육", "체육", "스포츠"]
+- 화학 관련 생기부 → ["화학", "화공", "재료"]
+- 건축 관련 생기부 → ["건축", "건설환경"]
+
+⚠️ "공학", "자연과학", "인문" 같은 너무 넓은 키워드는 사용하지 마세요.
+⚠️ 실제 대학 학과명에 포함될 만한 구체적 단어만 사용하세요.
+
 ## 출력 JSON 스키마
 \`\`\`json
 {
   "detectedMajorGroup": "string (생기부에서 드러나는 실제 강점 계열, 위 목록 중 하나)",
   "detectedMajorReason": "string (판단 근거 1~2문장, 예: '세특에서 체육·스포츠 관련 탐구가 3년간 일관되며, 체육 실기 관련 활동이 핵심')",
+  "detectedDepartmentKeywords": ["string (학과 검색용 키워드 2~3개)"],
   "academic": {
     "achievement": [{ "evidence": "string (원문 인용 1~2문장)", "source": "string (예: 2학년-물리학I)", "sentiment": "positive | negative" }],
     "attitude": [{ "evidence": "string", "source": "string", "sentiment": "positive | negative" }],
@@ -111,6 +130,8 @@ export interface CompetencyExtractionOutput {
   detectedMajorGroup: string;
   /** 판단 근거 1~2문장 */
   detectedMajorReason: string;
+  /** 학과 검색용 키워드 2~3개 (대학 실제 학과명에 포함되는 구체적 단어) */
+  detectedDepartmentKeywords?: string[];
   academic: {
     achievement: EvidenceItem[];
     attitude: EvidenceItem[];
