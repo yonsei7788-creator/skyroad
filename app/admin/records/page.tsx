@@ -653,9 +653,7 @@ const RecordDetailModal = ({
         throw new Error(data.error || "리포트 생성에 실패했습니다.");
       }
       const data = await res.json();
-      router.push(
-        `/report/${data.reportId}/generating?orderId=${data.orderId}&from=admin`
-      );
+      router.push(`/report/generating?orderId=${data.orderId}&from=admin`);
     } catch (err) {
       setGenerateError(
         err instanceof Error ? err.message : "리포트 생성에 실패했습니다."
