@@ -46,12 +46,11 @@ const toText = (v: unknown): string => {
   if (typeof v === "string") return v;
   if (v && typeof v === "object") {
     const obj = v as Record<string, unknown>;
-    if (typeof obj.item === "string" && typeof obj.detail === "string") {
-      return `${obj.item}: ${obj.detail}`;
+    if (typeof obj.item === "string") {
+      return typeof obj.detail === "string"
+        ? `${obj.item}: ${obj.detail}`
+        : obj.item;
     }
-    return Object.values(obj)
-      .filter((x) => typeof x === "string")
-      .join(" — ");
   }
   return String(v ?? "");
 };

@@ -41,6 +41,22 @@ export interface PostprocessResult {
   planValidationErrors: string[];
 }
 
+/**
+ * Gemini가 string[] 대신 object[]를 반환하는 경우 string[]으로 정규화.
+ * 예: [{item: "전략1", note: "참고"}] → ["전략1"]
+ */
+const normalizeStringArray = (arr: unknown[]): string[] =>
+  arr.map((item) => {
+    if (typeof item === "string") return item;
+    if (item && typeof item === "object") {
+      const obj = item as Record<string, unknown>;
+      if (typeof obj.item === "string") return obj.item;
+      const first = Object.values(obj).find((v) => typeof v === "string");
+      return typeof first === "string" ? first : JSON.stringify(item);
+    }
+    return String(item);
+  });
+
 // ─── 메인 후처리 함수 ───
 
 export const postprocess = (
@@ -1347,6 +1363,13 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   // ── STEP 8: 문법 오류 교정 (조사 불일치) ──
   [/가능성을 나타납니다/g, "가능성이 나타납니다"],
   [/발전가능성을 나타납니다/g, "발전가능성이 나타납니다"],
+  // 부사가 끼어있는 경우도 처리 ("을 잘 나타납니다" → "이 잘 나타납니다")
+  [/을 잘 나타납니다/g, "이 잘 나타납니다"],
+  [/를 잘 나타납니다/g, "가 잘 나타납니다"],
+  [/을 명확히 나타납니다/g, "이 명확히 나타납니다"],
+  [/를 명확히 나타납니다/g, "가 명확히 나타납니다"],
+  [/을 충분히 나타납니다/g, "이 충분히 나타납니다"],
+  [/를 충분히 나타납니다/g, "가 충분히 나타납니다"],
   [/을 나타납니다/g, "이 나타납니다"],
   [/를 나타납니다/g, "가 나타납니다"],
   [/되어지고 있습니다/g, "되고 있습니다"],
@@ -1806,7 +1829,9 @@ const normalizeSection = (
       s.gradeChangeAnalysis = {
         currentTrend: trend,
         prediction,
-        actionItems: g.actionItems || g.recommendations || [],
+        actionItems: normalizeStringArray(
+          g.actionItems || g.recommendations || []
+        ),
         actionItemPriorities: g.actionItemPriorities || [],
       };
     }
