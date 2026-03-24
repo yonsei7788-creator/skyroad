@@ -1525,7 +1525,11 @@ const buildTexts = (
       : buildUniversityCandidatesText(
           targetDept,
           data.gradingSystem,
-          data.overallAverage
+          data.overallAverage,
+          undefined,
+          studentInfo.targetUniversities?.some(
+            (t) => t.admissionType === "고른기회"
+          ) ?? false
         ),
     targetUniversitiesText,
     curriculumVersion: data.curriculumVersion,
@@ -1676,7 +1680,9 @@ export const buildUniversityCandidatesText = (
   gradingSystem?: "5등급제" | "9등급제",
   overallAverage?: number,
   /** detectedMajorGroup이 계열명일 때 실제 학과명으로 폴백 */
-  fallbackDepartment?: string
+  fallbackDepartment?: string,
+  /** 고른기회전형(기회균형 등) 포함 여부 (기본: false) */
+  includeSpecialAdmission?: boolean
 ): string => {
   if (!targetDept) return "[]";
 
@@ -1719,7 +1725,24 @@ export const buildUniversityCandidatesText = (
 
   // 각 대학의 커트라인 데이터 조회 + 전형별 등급 산출
   const withCutoff = allUniversities.map((university) => {
-    const cutoffs = findCutoffData(university, majorInfo.majorName);
+    const SPECIAL_ADMISSION_KEYWORDS = [
+      "기회균형",
+      "고른기회",
+      "기회균등",
+      "농어촌",
+      "사회배려",
+      "국가보훈",
+      "특성화고",
+    ];
+    const rawCutoffs = findCutoffData(university, majorInfo.majorName);
+    const cutoffs = includeSpecialAdmission
+      ? rawCutoffs
+      : rawCutoffs.filter(
+          (c) =>
+            !SPECIAL_ADMISSION_KEYWORDS.some((kw) =>
+              c.admissionName.includes(kw)
+            )
+        );
     const cutoffSummary =
       cutoffs.length > 0
         ? cutoffs
@@ -1951,7 +1974,7 @@ const formatCompletedSubjectsByYear = (
     lines.push(
       "",
       "⚠️ 이 학생은 졸업생입니다. 모든 과목이 이수 완료되어 성적 변경이 불가능합니다.",
-      "→ 성적 개선 권고 대신, 면접 준비 전략이나 자기소개서 작성 방향을 제시하세요."
+      "→ 성적 개선 권고 대신, 면접 준비 전략이나 전형별 지원 방향을 제시하세요."
     );
   } else if (currentGrade >= 3) {
     lines.push(

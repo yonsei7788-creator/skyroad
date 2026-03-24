@@ -18,7 +18,7 @@ interface LiteReportProps {
   data: ReportContent;
 }
 
-const PART_CONFIG = [
+const buildPartConfig = (isGraduate?: boolean) => [
   {
     partNumber: "PART 1",
     title: "진단",
@@ -29,12 +29,13 @@ const PART_CONFIG = [
   {
     partNumber: "PART 2",
     title: "정밀 분석",
-    description:
-      "학업 분석, 과목 적합도, 출결, 활동, 과목별 분석, 행동특성 분석",
+    description: isGraduate
+      ? "학업 분석, 출결, 활동, 과목별 분석, 행동특성 분석"
+      : "학업 분석, 과목 적합도, 출결, 활동, 과목별 분석, 행동특성 분석",
     color: "#4338ca",
     sectionIds: [
       "academicAnalysis",
-      "courseAlignment",
+      ...(isGraduate ? [] : ["courseAlignment"]),
       "attendanceAnalysis",
       "activityAnalysis",
       "subjectAnalysis",
@@ -99,11 +100,8 @@ export const LiteReport = ({ data }: LiteReportProps) => {
           isGraduate={meta.studentInfo.isGraduate}
         />
 
-        {PART_CONFIG.map((part) => {
+        {buildPartConfig(meta.studentInfo.isGraduate).map((part) => {
           const partSections = part.sectionIds
-            .filter(
-              (id) => !(id === "courseAlignment" && meta.studentInfo.isGraduate)
-            )
             .map((id) => sectionMap.get(id))
             .filter((s): s is ReportSection => s !== undefined);
 

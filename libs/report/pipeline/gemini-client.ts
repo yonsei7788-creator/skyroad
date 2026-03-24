@@ -113,7 +113,7 @@ export const createGeminiClient = (apiKey: string) => {
         const text = response.response.text();
         const usage = response.response.usageMetadata;
         console.log(
-          `[gemini] call done (${elapsed}ms, in=${usage?.promptTokenCount ?? "?"}, out=${usage?.candidatesTokenCount ?? "?"}, len=${text?.length ?? 0})`
+          `[gemini] call done (${elapsed}ms, in=${usage?.promptTokenCount ?? "?"}, out=${usage?.candidatesTokenCount ?? "?"}, len=${text?.length ?? 0}, finish=${finishReason})`
         );
 
         if (!text || text.trim().length === 0) {

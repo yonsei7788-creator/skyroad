@@ -7,6 +7,8 @@ export interface MajorExplorationPromptInput {
   academicAnalysis: string;
   studentProfile: string;
   targetDepartment?: string;
+  /** Phase 2에서 감지된 생기부 기반 강점 계열 */
+  detectedMajorGroup?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -58,7 +60,19 @@ export const buildMajorExplorationPrompt = (
 - 학생 프로필에 목표 학과(targetDepartment)가 있으면 → currentTargetAssessment를 생성하여 적합도 평가를 서술
 - 학생 프로필에 목표 학과가 없으면 → currentTargetAssessment는 null로 설정
 
-**strengthMatch 형식 주의:** 문자열이 아닌 문자열 배열(string[])입니다. 각 매칭 포인트를 개별 항목으로 분리하세요.
+**strengthMatch 형식 주의:** 문자열이 아닌 문자열 배열(string[])입니다. 각 매칭 포인트를 개별 항목으로 분리하세요. 각 항목은 **10자 이내의 핵심 키워드**로 작성하세요.
+- ❌ "전기전자공학 분야에 대한 명확한 진로 희망" (너무 김)
+- ❌ "인공지능 기초 알고리즘(코사인 유사도) 학습 및 코딩 경험" (너무 김)
+- ✅ "전기전자 진로 일관성"
+- ✅ "AI 알고리즘 실습"
+
+## ⚠️ 생기부 기반 강점 계열 (필수 준수)
+
+**이 학생의 생기부 기반 강점 계열: "${input.detectedMajorGroup ?? "미확정"}"**
+
+- 추천 전공의 **1순위는 반드시 위 강점 계열** 내에서 선정하세요. AI가 독자적으로 다른 계열을 1순위로 판단하면 안 됩니다.
+- 2~3순위도 강점 계열과 관련된 전공이어야 합니다.
+- 강점 계열이 "미확정"이면 competencyExtraction에서 가장 두드러진 탐구 분야를 기준으로 판단하세요.
 
 ## ⛔ 추천 기준 (최우선 — 생기부 기반 필수)
 1. **세특에서 가장 많이, 깊게 탐구한 분야**가 추천 전공의 1순위입니다.

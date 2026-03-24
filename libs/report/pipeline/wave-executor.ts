@@ -135,6 +135,13 @@ export const executeTask = async (
   }
   const isMedical = detectedMajorForFlags === "의생명";
 
+  // 모든 희망대학이 학생부교과전형인지 판별
+  const isGyogwaOnly =
+    (studentInfo.targetUniversities?.length ?? 0) > 0 &&
+    studentInfo.targetUniversities!.every(
+      (t) => t.admissionType === "학생부교과"
+    );
+
   const callGemini = async <T>(prompt: string): Promise<T> => {
     const result = await client.call<T>({
       systemInstruction: systemPrompt,
@@ -603,7 +610,18 @@ export const executeTask = async (
       break;
     }
 
-    case "majorExploration":
+    case "majorExploration": {
+      let detectedMajorForExploration =
+        state.phase2Results?.competencyExtraction?.detectedMajorGroup;
+      if (!detectedMajorForExploration && ser.compExtrText) {
+        try {
+          detectedMajorForExploration = JSON.parse(
+            ser.compExtrText
+          ).detectedMajorGroup;
+        } catch {
+          // 파싱 실패 시 무시
+        }
+      }
       section = await callGemini<ReportSection>(
         buildMajorExplorationPrompt(
           {
@@ -611,11 +629,13 @@ export const executeTask = async (
             academicAnalysis: ser.acadAnalText!,
             studentProfile: texts.studentProfileText,
             targetDepartment: studentInfo.targetDepartment,
+            detectedMajorGroup: detectedMajorForExploration,
           },
           plan
         )
       );
       break;
+    }
 
     case "consultantReview":
       section = await callGemini<ReportSection>(
@@ -632,6 +652,7 @@ export const executeTask = async (
             currentDate: new Date().toISOString().slice(0, 10),
             isMedical,
             completedSubjectsByYear: texts.completedSubjectsByYearText,
+            isGyogwaOnly,
           },
           plan
         )

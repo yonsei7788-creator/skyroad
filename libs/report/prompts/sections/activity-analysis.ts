@@ -89,7 +89,8 @@ summary에 "입학사정관" 또는 "학종" 또는 "평가" 또는 "전형" 또
 - activities 배열은 **최대 4개**입니다. 5개 이상 절대 출력하지 마세요.
 - 각 activity의 overallComment은 **150자 이내**, improvementDirection은 **100자 이내**로 작성합니다.
 - keyActivities의 각 evaluation은 **100자 이내**로 작성합니다.
-- keyActivities 배열은 영역당 **최대 3개**입니다.`,
+- keyActivities 배열은 영역당 **최대 3개**입니다.
+- ⚠️ **최상위 overallComment(창체 종합 평가)은 activity별 overallComment과 다릅니다. 400자 이내로 장점과 부족한 점을 모두 포함하여 완결된 문장으로 작성하세요.**`,
   premium: `## 플랜별 출력: 정밀
 - Standard와 동일 항목을 출력하되 더 상세하게 작성합니다.
 
@@ -112,6 +113,7 @@ summary에 "입학사정관" 또는 "학종" 또는 "평가" 또는 "전형" 또
 - 각 activity의 overallComment은 **200자 이내**, improvementDirection은 **100자 이내**로 작성합니다.
 - keyActivities의 각 evaluation은 **100자 이내**로 작성합니다.
 - keyActivities 배열은 영역당 **최대 3개**입니다.
+- ⚠️ **최상위 overallComment(창체 종합 평가)은 activity별 overallComment과 다릅니다. 500자 이내로 장점과 부족한 점을 모두 포함하여 완결된 문장으로 작성하세요.**
 - ⚠️ **전체 JSON 출력은 30,000자를 초과하면 안 됩니다.** 초과 시 내용을 압축하세요.`,
 };
 

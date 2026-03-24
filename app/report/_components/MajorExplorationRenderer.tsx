@@ -33,39 +33,44 @@ export const MajorExplorationRenderer = ({
           </div>
         )}
 
-        <div className={`${styles.h3} ${styles.mt24} ${styles.mb12}`}>
-          추천 전공
-        </div>
-        <table className={styles.compactTable} style={{ tableLayout: "auto" }}>
-          <thead>
-            <tr>
-              <th>전공</th>
-              <th className={styles.tableAlignCenter}>적합도</th>
-              <th>강점 매칭</th>
-            </tr>
-          </thead>
-          <tbody>
-            {suggestions.map((s, idx) => (
-              <tr key={idx}>
-                <td className={styles.tableCellBold}>{s.major}</td>
-                <td
-                  className={`${styles.tableAlignCenter} ${styles.tableCellBold}`}
-                >
-                  {s.fitScore}%
-                </td>
-                <td>
-                  <div className={styles.tagGroup}>
-                    {(s.strengthMatch ?? []).map((sm) => (
-                      <span key={sm} className={styles.tag}>
-                        {sm}
-                      </span>
-                    ))}
-                  </div>
-                </td>
+        <div className={styles.avoidBreak}>
+          <div className={`${styles.h3} ${styles.mt24} ${styles.mb12}`}>
+            추천 전공
+          </div>
+          <table
+            className={styles.compactTable}
+            style={{ tableLayout: "auto" }}
+          >
+            <thead>
+              <tr>
+                <th>전공</th>
+                <th className={styles.tableAlignCenter}>적합도</th>
+                <th>강점 매칭</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {suggestions.map((s, idx) => (
+                <tr key={idx}>
+                  <td className={styles.tableCellBold}>{s.major}</td>
+                  <td
+                    className={`${styles.tableAlignCenter} ${styles.tableCellBold}`}
+                  >
+                    {s.fitScore}%
+                  </td>
+                  <td>
+                    <div className={styles.tagGroup}>
+                      {(s.strengthMatch ?? []).slice(0, 4).map((sm) => (
+                        <span key={sm} className={styles.tag}>
+                          {sm}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Block 2: Detailed analysis per major */}
