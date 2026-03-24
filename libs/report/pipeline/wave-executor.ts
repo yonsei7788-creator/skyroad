@@ -237,7 +237,8 @@ export const executeTask = async (
         studentInfo.targetUniversities?.some(
           (t) => t.admissionType === "고른기회"
         ) ?? false,
-        deptKeywords.length > 0 ? deptKeywords : undefined
+        deptKeywords.length > 0 ? deptKeywords : undefined,
+        studentInfo.schoolType
       );
       const correctedCourseMatch = rebuildRecommendedCourseMatchText(
         detected,

@@ -1676,7 +1676,9 @@ export const buildUniversityCandidatesText = (
   /** 고른기회전형(기회균형 등) 포함 여부 (기본: false) */
   includeSpecialAdmission?: boolean,
   /** Phase 2에서 감지된 학과 검색 키워드 (예: ["전기전자", "전자공학"]) */
-  departmentKeywords?: string[]
+  departmentKeywords?: string[],
+  /** 고교 유형 (특성화고/특목고 등 환산 적용용) */
+  schoolType?: string
 ): string => {
   const SPECIAL_ADMISSION_KEYWORDS = [
     "기회균형",
@@ -1687,6 +1689,19 @@ export const buildUniversityCandidatesText = (
     "국가보훈",
     "특성화고",
   ];
+
+  // ── 커트라인 비교용 9등급 일반고 환산 등급 계산 ──
+  // 순서: 5등급제면 9등급 환산 → 특성화고/특목고면 고교유형 환산
+  const computeGrade9ForCutoff = (): number | null => {
+    if (overallAverage == null) return null;
+    // Step 1: 5등급제면 9등급으로 환산
+    const asNine =
+      gradingSystem === "5등급제"
+        ? fiveToNineGrade(overallAverage)
+        : overallAverage;
+    // Step 2: 고교유형 환산 (일반고는 그대로)
+    return schoolType ? convertGradeBySchoolType(schoolType, asNine) : asNine;
+  };
 
   // ── 키워드 기반 커트라인 직접 검색 (Phase 2 이후 주 경로) ──
   if (departmentKeywords && departmentKeywords.length > 0) {
@@ -1719,13 +1734,8 @@ export const buildUniversityCandidatesText = (
       );
     }
 
-    // 학생 등급 환산
-    const studentGrade9 =
-      overallAverage != null
-        ? gradingSystem === "5등급제"
-          ? fiveToNineGrade(overallAverage)
-          : overallAverage
-        : null;
+    // 학생 등급 환산 (5등급→9등급→고교유형 환산 순서 적용)
+    const studentGrade9 = computeGrade9ForCutoff();
 
     // 대학별 최적 학과 선택 (같은 대학에 여러 학과 매칭 시 키워드 매칭도가 높은 것 우선)
     const byUniversity = new Map<
@@ -1789,25 +1799,11 @@ export const buildUniversityCandidatesText = (
       }
     );
 
-    // 등급 필터링
+    // 등급 필터링 (studentGrade9는 이미 5등급→9등급→고교유형 환산 완료된 9등급 일반고 기준)
     let filtered = withCutoff;
     if (studentGrade9 != null) {
       const margin = 0.5;
       filtered = withCutoff.filter((c) => {
-        if (gradingSystem === "5등급제") {
-          const hardcoded = FIVE_GRADE_UNIVERSITY_CUTOFF[c.university];
-          if (hardcoded !== undefined) {
-            const diff = hardcoded - overallAverage!;
-            return diff >= -0.2 && diff <= 0.2;
-          }
-          if (c.repCutoff != null) {
-            return (
-              c.repCutoff >= studentGrade9 - margin &&
-              c.repCutoff <= studentGrade9 + margin
-            );
-          }
-          return false;
-        }
         if (c.allCutoff70s.length > 0) {
           return c.allCutoff70s.some(
             (g) => g >= studentGrade9 - margin && g <= studentGrade9 + margin
@@ -1815,7 +1811,7 @@ export const buildUniversityCandidatesText = (
         }
         const hardcoded = NINE_GRADE_UNIVERSITY_CUTOFF[c.university];
         if (hardcoded !== undefined) {
-          return Math.abs(hardcoded - overallAverage!) <= margin;
+          return Math.abs(hardcoded - studentGrade9) <= margin;
         }
         return false;
       });
@@ -1824,20 +1820,6 @@ export const buildUniversityCandidatesText = (
       if (filtered.length < 5) {
         const wider = 0.6;
         filtered = withCutoff.filter((c) => {
-          if (gradingSystem === "5등급제") {
-            const hardcoded = FIVE_GRADE_UNIVERSITY_CUTOFF[c.university];
-            if (hardcoded !== undefined) {
-              const diff = hardcoded - overallAverage!;
-              return diff >= -0.3 && diff <= 0.3;
-            }
-            if (c.repCutoff != null) {
-              return (
-                c.repCutoff >= studentGrade9 - wider &&
-                c.repCutoff <= studentGrade9 + wider
-              );
-            }
-            return false;
-          }
           if (c.allCutoff70s.length > 0) {
             return c.allCutoff70s.some(
               (g) => g >= studentGrade9 - wider && g <= studentGrade9 + wider
@@ -1845,7 +1827,7 @@ export const buildUniversityCandidatesText = (
           }
           const hardcoded = NINE_GRADE_UNIVERSITY_CUTOFF[c.university];
           if (hardcoded !== undefined) {
-            return Math.abs(hardcoded - overallAverage!) <= wider;
+            return Math.abs(hardcoded - studentGrade9) <= wider;
           }
           return false;
         });
