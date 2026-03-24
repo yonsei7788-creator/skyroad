@@ -27,7 +27,7 @@ export const AboutHeroSection = () => {
           <FadeIn delay={0.16}>
             <p className={styles.description}>
               {
-                "SKYROAD는 AI 정밀 분석과 입시 전문가 검수를 결합하여,\n생활기록부의 숨겨진 강점과 보완점을 찾아드립니다."
+                "SKYROAD는 자체 개발 고도화 AI 정밀 분석과 입시 전문가 검수를 결합하여,\n생활기록부의 숨겨진 강점과 보완점을 찾아드립니다."
               }
             </p>
           </FadeIn>
@@ -60,7 +60,7 @@ export const AboutHeroSection = () => {
                   >
                     <Brain size={20} />
                   </div>
-                  <h3 className={styles.stepTitle}>AI 분석</h3>
+                  <h3 className={styles.stepTitle}>자체 개발 고도화 AI 분석</h3>
                   <p className={styles.stepDesc}>
                     생기부 전체를 문장 단위로 정밀 분석하여 강점과 보완점을
                     파악합니다.
