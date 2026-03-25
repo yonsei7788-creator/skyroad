@@ -432,7 +432,62 @@ export const postprocess = (
     }
   }
 
-  // 3-4. admissionPrediction: 정시 전형 모의고사 미입력 시 chance 강제 null 처리
+  // 3-5. admissionPrediction: 누락된 희망대학 강제 주입
+  // AI가 간헐적으로 희망대학을 universityPredictions에서 누락하므로 코드에서 보장
+  if (
+    admPred &&
+    studentInfo.targetUniversities &&
+    studentInfo.targetUniversities.length > 0 &&
+    Array.isArray(admPred.predictions)
+  ) {
+    for (const tu of studentInfo.targetUniversities) {
+      // 이 희망대학이 어떤 전형 타입에 속하는지 결정
+      const admType =
+        tu.admissionType === "학생부교과"
+          ? "교과"
+          : tu.admissionType === "학생부종합"
+            ? "학종"
+            : tu.admissionType === "고른기회"
+              ? "고른기회"
+              : null;
+      if (!admType) continue;
+
+      // 해당 전형의 prediction 찾기
+      const pred = admPred.predictions.find(
+        (p: any) => p.admissionType === admType
+      );
+      if (!pred) continue;
+      if (!Array.isArray(pred.universityPredictions)) {
+        pred.universityPredictions = [];
+      }
+
+      // 이미 포함되어 있는지 확인 (대학명+학과명)
+      const exists = pred.universityPredictions.some(
+        (up: any) =>
+          up.university === tu.universityName && up.department === tu.department
+      );
+      if (exists) continue;
+
+      // 대학명만 일치하는 항목이 있는지 (학과명이 다른 경우)
+      const sameUni = pred.universityPredictions.some(
+        (up: any) => up.university === tu.universityName
+      );
+      if (sameUni) continue;
+
+      // 누락된 희망대학 강제 주입
+      console.log(
+        `[report:${reportId}] 누락된 희망대학 강제 주입: ${tu.universityName} ${tu.department} (${admType})`
+      );
+      pred.universityPredictions.push({
+        university: tu.universityName,
+        department: tu.department,
+        chance: "medium",
+        rationale: `${tu.universityName} ${tu.department}에 대한 합격 가능성은 최종 등급과 합격선을 기준으로 판단이 필요합니다.`,
+      });
+    }
+  }
+
+  // 3-6. admissionPrediction: 정시 전형 모의고사 미입력 시 chance 강제 null 처리
   if (
     admPred &&
     !studentInfo.hasMockExamData &&
