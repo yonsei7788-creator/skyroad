@@ -578,7 +578,28 @@ yearlyAnalysis: [{"year": 1, "summary": "...", "rating": "good", ...}, ...]
 - 피동형 최소화: "확인됩니다", "보여집니다" 대신 능동형 사용
 - 자연스럽고 간결한 문장 유지, 장황하게 늘려 쓰지 않기`;
 
-export const buildSystemPrompt = (plan: ReportPlan): string => {
+export const buildSystemPrompt = (
+  plan: ReportPlan,
+  options?: { isGyogwaOnly?: boolean }
+): string => {
   const planInstructions = getPlanInstructions(plan);
-  return `${COMMON_SYSTEM_PROMPT}\n\n${planInstructions}`;
+
+  const gyogwaContext = options?.isGyogwaOnly
+    ? `
+
+## ⛔ 교과전형 전용 리포트 (최우선 규칙 — 모든 섹션에 적용)
+
+이 학생은 모든 희망대학이 **학생부교과전형**입니다. 리포트 전체를 교과전형 관점에서 작성하세요.
+
+### 교과전형 리포트에서 반드시 지킬 규칙
+- **학생부종합전형(학종)을 추천하거나 학종에서의 유불리를 분석하지 마세요.** 이 학생은 학종을 지원하지 않습니다.
+- "학종에서 경쟁력이 있다", "입학사정관이 ~를 평가한다", "학종 서류평가에서 ~" 등의 표현을 사용하지 마세요.
+- **성적의 상승/하락 추세, 등급 편차를 합격 가능성과 연결하지 마세요.** 교과전형은 최종 등급만 반영합니다.
+- 세특/활동 분석은 학생의 학업 역량과 성실성을 파악하는 용도로 작성하되, "학종에서 유리/불리"라는 프레임은 사용하지 마세요.
+- 면접 준비(interviewPrep)는 일부 대학의 교과전형 면접을 대비하는 관점에서 작성하세요.
+- 역량 점수(competencyScore)는 학생의 강약점 파악 용도로 활용하되, "학종 경쟁력"이라는 표현은 사용하지 마세요.
+`
+    : "";
+
+  return `${COMMON_SYSTEM_PROMPT}\n\n${planInstructions}${gyogwaContext}`;
 };

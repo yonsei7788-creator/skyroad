@@ -1678,7 +1678,9 @@ export const buildUniversityCandidatesText = (
   /** Phase 2에서 감지된 학과 검색 키워드 (예: ["전기전자", "전자공학"]) */
   departmentKeywords?: string[],
   /** 고교 유형 (특성화고/특목고 등 환산 적용용) */
-  schoolType?: string
+  schoolType?: string,
+  /** 교과전형만 선택한 학생 — 학종 커트라인 제외 */
+  isGyogwaOnly?: boolean
 ): string => {
   const SPECIAL_ADMISSION_KEYWORDS = [
     "기회균형",
@@ -1768,7 +1770,7 @@ export const buildUniversityCandidatesText = (
     // 커트라인 + 등급 필터링
     const withCutoff = [...byUniversity.entries()].map(
       ([university, { department, cutoffs: rawCutoffs }]) => {
-        const cutoffs = includeSpecialAdmission
+        let cutoffs = includeSpecialAdmission
           ? rawCutoffs
           : rawCutoffs.filter(
               (c) =>
@@ -1776,6 +1778,10 @@ export const buildUniversityCandidatesText = (
                   c.admissionName.includes(kw)
                 )
             );
+        // 교과전형만 선택 → 학종 커트라인 제외
+        if (isGyogwaOnly) {
+          cutoffs = cutoffs.filter((c) => c.admissionType !== "학종");
+        }
         const cutoffSummary =
           cutoffs.length > 0
             ? cutoffs
@@ -1870,7 +1876,7 @@ export const buildUniversityCandidatesText = (
 
   const withCutoff = allUniversities.map((university) => {
     const rawCutoffs = findCutoffData(university, majorInfo.majorName);
-    const cutoffs = includeSpecialAdmission
+    let cutoffs = includeSpecialAdmission
       ? rawCutoffs
       : rawCutoffs.filter(
           (c) =>
@@ -1878,6 +1884,10 @@ export const buildUniversityCandidatesText = (
               c.admissionName.includes(kw)
             )
         );
+    // 교과전형만 선택 → 학종 커트라인 제외
+    if (isGyogwaOnly) {
+      cutoffs = cutoffs.filter((c) => c.admissionType !== "학종");
+    }
     const cutoffSummary =
       cutoffs.length > 0
         ? cutoffs

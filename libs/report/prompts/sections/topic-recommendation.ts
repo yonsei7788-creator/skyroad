@@ -6,6 +6,7 @@ export interface TopicRecommendationPromptInput {
   subjectAnalysisResult: string;
   weaknessAnalysisResult: string;
   studentProfile: string;
+  isGyogwaOnly?: boolean;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -44,7 +45,17 @@ export const buildTopicRecommendationPrompt = (
   input: TopicRecommendationPromptInput,
   plan: ReportPlan
 ): string => {
-  return `## 작업
+  const gyogwaOnlyContext = input.isGyogwaOnly
+    ? `## ⛔ 교과전형 전용 (이 규칙이 다른 모든 지시보다 우선)
+이 학생은 모든 희망대학이 학생부교과전형입니다.
+- description에 "학생부종합전형에서 ~역량을 평가", "학종에서 긍정적 평가" 등의 표현을 사용하지 마세요.
+- 대신 "교과 학습 역량 강화에 도움", "교과전형 서류평가에서 긍정적 요소" 등으로 작성하세요.
+- 탐구 주제 추천은 학생의 학업 역량 강화와 교과 성적 향상 관점에서 제시합니다.
+
+`
+    : "";
+
+  return `${gyogwaOnlyContext}## 작업
 학생의 향후 세특에 활용할 수 있는 탐구 주제를 맞춤 추천하세요.
 
 ## ⚠️ 분석 방향 원칙 (최우선 — 반드시 준수)

@@ -11,6 +11,7 @@ export interface ActivityAnalysisPromptInput {
   /** 계열별 입학사정관 평가 기준 */
   majorEvaluationContext?: string;
   isMedical?: boolean;
+  isGyogwaOnly?: boolean;
 }
 
 const COMPETENCY_TAG_GUIDE = `## 역량 태깅 가이드
@@ -147,7 +148,18 @@ export const buildActivityAnalysisPrompt = (
 `
     : "";
 
-  return `${medicalActivityContext}## 작업
+  const gyogwaOnlyContext = input.isGyogwaOnly
+    ? `## ⛔ 교과전형 전용 (이 규칙이 다른 모든 지시보다 우선)
+이 학생은 모든 희망대학이 학생부교과전형입니다.
+- "학종", "학생부종합전형", "입학사정관" 키워드를 사용하지 마세요.
+- "학종에서 유리/불리", "학종 서류평가에서 ~" 등의 프레임 대신 "교과전형에서 ~", "전형 평가에서 ~"로 작성하세요.
+- summary의 평가 관점 키워드는 "평가", "전형", "변별력", "경쟁력" 중에서 사용하세요.
+- 활동 분석은 학생의 학업 성실성과 탐구 역량 파악 용도로 작성합니다.
+
+`
+    : "";
+
+  return `${gyogwaOnlyContext}${medicalActivityContext}## 작업
 학생의 창의적 체험활동(창체)을 영역별로 분석하세요.
 
 ## 교육과정 버전 확인

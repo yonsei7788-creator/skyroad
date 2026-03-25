@@ -20,15 +20,28 @@ import type { StudentTypeClassificationOutput } from "../prompts/phase2/student-
 
 // Section prompts
 import { buildStudentProfilePrompt } from "../prompts/sections/student-profile.ts";
-import { buildCompetencyScorePrompt } from "../prompts/sections/competency-score.ts";
-import { buildAdmissionPredictionPrompt } from "../prompts/sections/admission-prediction.ts";
-import { buildAcademicAnalysisPrompt } from "../prompts/sections/academic-analysis.ts";
+import {
+  buildCompetencyScorePrompt,
+  buildGyogwaCompetencyScorePrompt,
+} from "../prompts/sections/competency-score.ts";
+import {
+  buildAdmissionPredictionPrompt,
+  buildGyogwaPredictionPrompt,
+  buildHakjongJeongsiPredictionPrompt,
+} from "../prompts/sections/admission-prediction.ts";
+import {
+  buildAcademicAnalysisPrompt,
+  buildGyogwaAcademicAnalysisPrompt,
+} from "../prompts/sections/academic-analysis.ts";
 import { buildCourseAlignmentPrompt } from "../prompts/sections/course-alignment.ts";
 import { buildAttendanceAnalysisPrompt } from "../prompts/sections/attendance-analysis.ts";
 import { buildActivityAnalysisPrompt } from "../prompts/sections/activity-analysis.ts";
 import { buildSubjectAnalysisPrompt } from "../prompts/sections/subject-analysis.ts";
 import { buildBehaviorAnalysisPrompt } from "../prompts/sections/behavior-analysis.ts";
-import { buildWeaknessAnalysisPrompt } from "../prompts/sections/weakness-analysis.ts";
+import {
+  buildWeaknessAnalysisPrompt,
+  buildGyogwaWeaknessAnalysisPrompt,
+} from "../prompts/sections/weakness-analysis.ts";
 import { buildTopicRecommendationPrompt } from "../prompts/sections/topic-recommendation.ts";
 import { buildInterviewPrepPrompt } from "../prompts/sections/interview-prep.ts";
 import {
@@ -38,7 +51,10 @@ import {
 import { buildStoryAnalysisPrompt } from "../prompts/sections/story-analysis.ts";
 import { buildActionRoadmapPrompt } from "../prompts/sections/action-roadmap.ts";
 import { buildMajorExplorationPrompt } from "../prompts/sections/major-exploration.ts";
-import { buildConsultantReviewPrompt } from "../prompts/sections/consultant-review.ts";
+import {
+  buildConsultantReviewPrompt,
+  buildGyogwaConsultantReviewPrompt,
+} from "../prompts/sections/consultant-review.ts";
 
 import type { GeminiClient } from "./gemini-client.ts";
 import {
@@ -121,7 +137,20 @@ export const executeTask = async (
 ): Promise<WaveState> => {
   const texts = state.preprocessedTexts!;
   const ser = state.serializedTexts!;
-  const systemPrompt = buildSystemPrompt(plan);
+
+  // 모든 희망대학이 학생부교과전형인지 판별 (시스템 프롬프트에서 사용)
+  const isGyogwaOnly =
+    (studentInfo.targetUniversities?.length ?? 0) > 0 &&
+    studentInfo.targetUniversities!.every(
+      (t) => t.admissionType === "학생부교과"
+    );
+
+  // 학생이 선택한 전형 목록 (중복 제거)
+  const selectedAdmissionTypes = studentInfo.targetUniversities?.length
+    ? [...new Set(studentInfo.targetUniversities.map((t) => t.admissionType))]
+    : undefined;
+
+  const systemPrompt = buildSystemPrompt(plan, { isGyogwaOnly });
   const sections = [...(state.completedSections ?? [])];
   // 생기부 기반 메디컬 판별 (Phase 2 결과 기반, 희망학과 아님)
   let detectedMajorForFlags =
@@ -135,12 +164,31 @@ export const executeTask = async (
   }
   const isMedical = detectedMajorForFlags === "의생명";
 
-  // 모든 희망대학이 학생부교과전형인지 판별
-  const isGyogwaOnly =
-    (studentInfo.targetUniversities?.length ?? 0) > 0 &&
-    studentInfo.targetUniversities!.every(
-      (t) => t.admissionType === "학생부교과"
-    );
+  /** 교과전형 전용: 정량분석 결과(acadAnalText)에서 학기별 데이터 제거 */
+  const stripSemesterData = (jsonText: string): string => {
+    try {
+      const parsed = JSON.parse(jsonText);
+      delete parsed.gradesByYear;
+      delete parsed.averageByGrade;
+      delete parsed.gradeTrend;
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      return jsonText;
+    }
+  };
+
+  /** 교과전형 전용: 섹션 결과(acadSectionText)에서 추세 분석 제거 */
+  const stripSectionTrendData = (jsonText: string): string => {
+    try {
+      const parsed = JSON.parse(jsonText);
+      delete parsed.gradeChangeAnalysis;
+      delete parsed.gradesByYear;
+      delete parsed.gradeTrend;
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      return jsonText;
+    }
+  };
 
   const callGemini = async <T>(prompt: string): Promise<T> => {
     const result = await client.call<T>({
@@ -238,7 +286,8 @@ export const executeTask = async (
           (t) => t.admissionType === "고른기회"
         ) ?? false,
         deptKeywords.length > 0 ? deptKeywords : undefined,
-        studentInfo.schoolType
+        studentInfo.schoolType,
+        isGyogwaOnly
       );
       const correctedCourseMatch = rebuildRecommendedCourseMatchText(
         detected,
@@ -312,22 +361,24 @@ export const executeTask = async (
       );
       break;
 
-    case "competencyScore":
+    case "competencyScore": {
+      const compScoreInput = {
+        studentTypeClassification: ser.stuTypeText!,
+        competencyExtraction: ser.compExtrText!,
+        preprocessedAcademicData: texts.preprocessedAcademicDataText,
+        attendanceSummary: texts.attendanceSummaryText,
+        studentProfile: texts.studentProfileText,
+        gradingSystem: state.preprocessedData!.gradingSystem,
+        isMedical,
+        isGyogwaOnly,
+      };
       section = await callGemini<ReportSection>(
-        buildCompetencyScorePrompt(
-          {
-            studentTypeClassification: ser.stuTypeText!,
-            competencyExtraction: ser.compExtrText!,
-            preprocessedAcademicData: texts.preprocessedAcademicDataText,
-            attendanceSummary: texts.attendanceSummaryText,
-            studentProfile: texts.studentProfileText,
-            gradingSystem: state.preprocessedData!.gradingSystem,
-            isMedical,
-          },
-          plan
-        )
+        isGyogwaOnly
+          ? buildGyogwaCompetencyScorePrompt(compScoreInput, plan)
+          : buildCompetencyScorePrompt(compScoreInput, plan)
       );
       break;
+    }
 
     case "academicAnalysis": {
       const preData = state.preprocessedData!;
@@ -342,18 +393,33 @@ export const executeTask = async (
           // 파싱 실패 시 무시
         }
       }
+      // isGyogwaOnly → 학기별 데이터 제거 (AI가 추세를 추론하지 못하게)
+      let acadPreprocessedText = texts.preprocessedAcademicDataText;
+      if (isGyogwaOnly) {
+        try {
+          const parsed = JSON.parse(acadPreprocessedText);
+          delete parsed.subjectCombinations;
+          delete parsed.averageByGrade;
+          delete parsed.gradeTrend;
+          acadPreprocessedText = JSON.stringify(parsed, null, 2);
+        } catch {
+          // 파싱 실패 시 원본 유지
+        }
+      }
+
+      const acadInput = {
+        quantitativeAnalysis: ser.acadAnalText!,
+        preprocessedAcademicData: acadPreprocessedText,
+        studentProfile: texts.studentProfileText,
+        gradingSystem: preData.gradingSystem,
+        detectedMajorGroup: detectedMajorForAcad,
+        completedSubjectsByYear: texts.completedSubjectsByYearText,
+        isGyogwaOnly,
+      };
       section = await callGemini<ReportSection>(
-        buildAcademicAnalysisPrompt(
-          {
-            quantitativeAnalysis: ser.acadAnalText!,
-            preprocessedAcademicData: texts.preprocessedAcademicDataText,
-            studentProfile: texts.studentProfileText,
-            gradingSystem: preData.gradingSystem,
-            detectedMajorGroup: detectedMajorForAcad,
-            completedSubjectsByYear: texts.completedSubjectsByYearText,
-          },
-          plan
-        )
+        isGyogwaOnly
+          ? buildGyogwaAcademicAnalysisPrompt(acadInput, plan)
+          : buildAcademicAnalysisPrompt(acadInput, plan)
       );
       // 후속 태스크에서 사용할 직렬화 텍스트 저장
       updatedSer = {
@@ -388,6 +454,7 @@ export const executeTask = async (
             studentProfile: texts.studentProfileText,
             curriculumVersion: texts.curriculumVersion,
             isMedical,
+            isGyogwaOnly,
           },
           plan
         )
@@ -434,6 +501,7 @@ export const executeTask = async (
             studentGrade: studentInfo.grade,
             gradingSystem: state.preprocessedData!.gradingSystem,
             isMedical,
+            isGyogwaOnly,
           },
           plan
         )
@@ -449,6 +517,7 @@ export const executeTask = async (
             studentProfile: texts.studentProfileText,
             isMedical,
             gradingSystem: state.preprocessedData!.gradingSystem,
+            isGyogwaOnly,
           },
           plan
         )
@@ -473,24 +542,30 @@ export const executeTask = async (
       );
       break;
 
-    case "weaknessAnalysis":
+    case "weaknessAnalysis": {
+      // isGyogwaOnly → acadAnalText에서 학기별 데이터 제거 (추세 추론 방지)
+      const weaknessAcadText = isGyogwaOnly
+        ? stripSemesterData(ser.acadAnalText!)
+        : ser.acadAnalText!;
+      const weaknessInput = {
+        competencyExtraction: ser.compExtrText!,
+        academicAnalysis: weaknessAcadText,
+        studentProfile: texts.studentProfileText,
+        isMedical,
+        gradingSystem: state.preprocessedData!.gradingSystem,
+        isGyogwaOnly,
+      };
       section = await callGemini<ReportSection>(
-        buildWeaknessAnalysisPrompt(
-          {
-            competencyExtraction: ser.compExtrText!,
-            academicAnalysis: ser.acadAnalText!,
-            studentProfile: texts.studentProfileText,
-            isMedical,
-            gradingSystem: state.preprocessedData!.gradingSystem,
-          },
-          plan
-        )
+        isGyogwaOnly
+          ? buildGyogwaWeaknessAnalysisPrompt(weaknessInput, plan)
+          : buildWeaknessAnalysisPrompt(weaknessInput, plan)
       );
       updatedSer = {
         ...updatedSer,
         weaknessText: JSON.stringify(section),
       };
       break;
+    }
 
     case "topicRecommendation":
       section = await callGemini<ReportSection>(
@@ -499,6 +574,7 @@ export const executeTask = async (
             subjectAnalysisResult: ser.subjAnalysisText!,
             weaknessAnalysisResult: ser.weaknessText ?? "[]",
             studentProfile: texts.studentProfileText,
+            isGyogwaOnly,
           },
           plan
         )
@@ -519,54 +595,129 @@ export const executeTask = async (
       );
       break;
 
-    case "admissionPrediction":
-      section = await callGemini<ReportSection>(
-        buildAdmissionPredictionPrompt(
-          {
-            competencyExtraction: ser.compExtrText!,
-            academicAnalysis: ser.acadAnalText!,
-            studentTypeClassification: ser.stuTypeText!,
-            universityCandidates: texts.universityCandidatesText,
-            studentProfile: texts.studentProfileText,
-            subjectAnalysisResult: ser.subjAnalysisText!,
-            academicAnalysisResult: ser.acadSectionText!,
-            attendanceAnalysisResult: ser.attendSectionText!,
-            majorEvaluationContext: texts.majorEvaluationContextText,
-            targetUniversities: texts.targetUniversitiesText,
-            gradingSystem: state.preprocessedData!.gradingSystem,
-            isMedical: isMedicalMajor(studentInfo.targetDepartment ?? ""),
-            isArtSportPractical: isArtSportPracticalFn(
-              studentInfo.targetDepartment ?? ""
-            ),
-          },
-          plan
-        )
+    case "admissionPrediction": {
+      // 교과 / 학종+정시 분리 호출 — 교과 프롬프트에는 추세/발전가능성 개념 없음
+      const isArtSportPractical = isArtSportPracticalFn(
+        studentInfo.targetDepartment ?? ""
       );
+
+      // isGyogwaOnly → 학기별 데이터 제거 (추세 추론 방지)
+      const predAcadText = isGyogwaOnly
+        ? stripSemesterData(ser.acadAnalText!)
+        : ser.acadAnalText!;
+      const predAcadSectionText = isGyogwaOnly
+        ? stripSectionTrendData(ser.acadSectionText!)
+        : ser.acadSectionText!;
+
+      const gyogwaInput = {
+        academicAnalysis: predAcadText,
+        universityCandidates: texts.universityCandidatesText,
+        studentProfile: texts.studentProfileText,
+        academicAnalysisResult: predAcadSectionText,
+        targetUniversities: texts.targetUniversitiesText,
+        gradingSystem: state.preprocessedData!.gradingSystem,
+        isMedical,
+        isArtSportPractical,
+      };
+
+      if (isGyogwaOnly) {
+        // 모든 희망대학이 학생부교과 → 교과 전용 호출만 실행
+        const gyogwaResult = await callGemini<Record<string, unknown>>(
+          buildGyogwaPredictionPrompt(gyogwaInput, plan)
+        );
+
+        section = {
+          sectionId: "admissionPrediction",
+          title: "희망 학교·학과 판단",
+          recommendedType: "교과",
+          recommendedTypeReason:
+            (gyogwaResult as any).analysis ??
+            "모든 희망대학이 학생부교과전형으로, 교과전형을 추천합니다.",
+          predictions: [gyogwaResult],
+          overallComment:
+            (gyogwaResult as any).overallComment ??
+            "모든 희망대학이 학생부교과전형입니다. 최종 등급과 합격선을 기준으로 지원 전략을 수립하세요.",
+        } as unknown as ReportSection;
+      } else {
+        // 혼합 — 교과 / 학종+정시 병렬 호출
+        const [gyogwaResult, hakjongResult] = await Promise.all([
+          callGemini<Record<string, unknown>>(
+            buildGyogwaPredictionPrompt(gyogwaInput, plan)
+          ),
+          callGemini<Record<string, unknown>>(
+            buildHakjongJeongsiPredictionPrompt(
+              {
+                competencyExtraction: ser.compExtrText!,
+                academicAnalysis: ser.acadAnalText!,
+                studentTypeClassification: ser.stuTypeText!,
+                universityCandidates: texts.universityCandidatesText,
+                studentProfile: texts.studentProfileText,
+                subjectAnalysisResult: ser.subjAnalysisText!,
+                academicAnalysisResult: ser.acadSectionText!,
+                attendanceAnalysisResult: ser.attendSectionText!,
+                majorEvaluationContext: texts.majorEvaluationContextText,
+                targetUniversities: texts.targetUniversitiesText,
+                gradingSystem: state.preprocessedData!.gradingSystem,
+                isMedical,
+                isArtSportPractical,
+              },
+              plan
+            )
+          ),
+        ]);
+
+        // 병합: 학종+정시를 base로, 교과 prediction 삽입
+        const hakjongPredictions = Array.isArray(
+          (hakjongResult as any).predictions
+        )
+          ? (hakjongResult as any).predictions
+          : [];
+        const merged = {
+          ...hakjongResult,
+          predictions: [...hakjongPredictions, gyogwaResult],
+        };
+
+        // recommendedType override: 교과가 가장 유리하면 교과로 변경
+        const gyogwaMax = (gyogwaResult as any).passRateRange?.[1] ?? 0;
+        const hakjongMax = hakjongPredictions.reduce(
+          (max: number, p: any) => Math.max(max, p.passRateRange?.[1] ?? 0),
+          0
+        );
+        if (gyogwaMax > hakjongMax && gyogwaMax > 0) {
+          (merged as any).recommendedType = "교과";
+          (merged as any).recommendedTypeReason =
+            (gyogwaResult as any).analysis ??
+            "교과전형의 합격 가능성이 가장 높습니다.";
+        }
+
+        section = merged as ReportSection;
+      }
       updatedSer = {
         ...updatedSer,
         admPredText: JSON.stringify(section),
       };
       break;
+    }
 
-    case "admissionStrategy":
+    case "admissionStrategy": {
+      const stratInput = {
+        academicAnalysis: ser.acadSectionText!,
+        universityCandidates: texts.universityCandidatesText,
+        recommendedCourseMatch: texts.recommendedCourseMatchText,
+        studentProfile: texts.studentProfileText,
+        gradingSystem: state.preprocessedData!.gradingSystem,
+        studentGrade: studentInfo.grade,
+        currentDate: new Date().toISOString().slice(0, 10),
+        isMedical,
+        completedSubjectsByYear: texts.completedSubjectsByYearText,
+        isArtSportPractical: texts.isArtSportPractical,
+        selectedAdmissionTypes,
+      };
       section = await callGemini<ReportSection>(
-        buildAdmissionStrategyPrompt(
-          {
-            academicAnalysis: ser.acadSectionText!,
-            universityCandidates: texts.universityCandidatesText,
-            recommendedCourseMatch: texts.recommendedCourseMatchText,
-            studentProfile: texts.studentProfileText,
-            gradingSystem: state.preprocessedData!.gradingSystem,
-            studentGrade: studentInfo.grade,
-            currentDate: new Date().toISOString().slice(0, 10),
-            isMedical,
-            completedSubjectsByYear: texts.completedSubjectsByYearText,
-            isArtSportPractical: texts.isArtSportPractical,
-          },
-          plan
-        )
+        buildAdmissionStrategyPrompt(stratInput, plan)
       );
       break;
+    }
 
     case "directionGuide":
       section = await callGemini<ReportSection>(
@@ -646,27 +797,36 @@ export const executeTask = async (
       break;
     }
 
-    case "consultantReview":
+    case "consultantReview": {
+      // isGyogwaOnly → acadAnalText에서 학기별 데이터 제거 (추세 추론 방지)
+      const consultAcadText = isGyogwaOnly
+        ? stripSemesterData(ser.acadAnalText!)
+        : ser.acadAnalText!;
+
+      const consultInput = {
+        competencyExtraction: ser.compExtrText!,
+        academicAnalysis: consultAcadText,
+        studentProfile: texts.studentProfileText,
+        subjectAnalysisResult: ser.subjAnalysisText!,
+        admissionPredictionResult: ser.admPredText,
+        weaknessAnalysisResult: ser.weaknessText,
+        gradingSystem: state.preprocessedData?.gradingSystem,
+        studentGrade: studentInfo.grade,
+        currentDate: new Date().toISOString().slice(0, 10),
+        isMedical,
+        completedSubjectsByYear: texts.completedSubjectsByYearText,
+        isGyogwaOnly,
+        selectedAdmissionTypes,
+        detectedMajorGroup: detectedMajorForFlags,
+        targetDepartment: studentInfo.targetDepartment,
+      };
       section = await callGemini<ReportSection>(
-        buildConsultantReviewPrompt(
-          {
-            competencyExtraction: ser.compExtrText!,
-            academicAnalysis: ser.acadAnalText!,
-            studentProfile: texts.studentProfileText,
-            subjectAnalysisResult: ser.subjAnalysisText!,
-            admissionPredictionResult: ser.admPredText,
-            weaknessAnalysisResult: ser.weaknessText,
-            gradingSystem: state.preprocessedData?.gradingSystem,
-            studentGrade: studentInfo.grade,
-            currentDate: new Date().toISOString().slice(0, 10),
-            isMedical,
-            completedSubjectsByYear: texts.completedSubjectsByYearText,
-            isGyogwaOnly,
-          },
-          plan
-        )
+        isGyogwaOnly
+          ? buildGyogwaConsultantReviewPrompt(consultInput, plan)
+          : buildConsultantReviewPrompt(consultInput, plan)
       );
       break;
+    }
 
     default:
       throw new Error(`알 수 없는 태스크: ${taskId}`);

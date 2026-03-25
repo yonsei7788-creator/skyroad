@@ -9,6 +9,7 @@ export interface CourseAlignmentPromptInput {
   studentGrade: number;
   gradingSystem: "5등급제" | "9등급제";
   isMedical?: boolean;
+  isGyogwaOnly?: boolean;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -96,7 +97,16 @@ export const buildCourseAlignmentPrompt = (
 `
     : "";
 
-  return `${curriculumWarning}
+  const gyogwaOnlyContext = input.isGyogwaOnly
+    ? `## ⛔ 교과전형 전용 (이 규칙이 다른 모든 지시보다 우선)
+이 학생은 모든 희망대학이 학생부교과전형입니다.
+- "학종에서 '교과 이수 노력' 평가", "학종의 핵심 평가 요소" 등의 표현을 사용하지 마세요.
+- 교과 이수 분석은 "교과전형에서 반영되는 과목 구성" 관점으로 작성하세요.
+
+`
+    : "";
+
+  return `${gyogwaOnlyContext}${curriculumWarning}
 ${medicalCourseContext}
 ## 작업
 학생의 목표 계열 대비 권장과목 이수 상태를 분석하고 영향을 평가하세요.

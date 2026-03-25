@@ -8,6 +8,7 @@ export interface SubjectAnalysisPromptInput {
   studentProfile: string;
   isMedical?: boolean;
   gradingSystem?: "5등급제" | "9등급제";
+  isGyogwaOnly?: boolean;
 }
 
 const COMPETENCY_TAG_GUIDE = `## 역량 태깅 가이드
@@ -185,7 +186,17 @@ export const buildSubjectAnalysisPrompt = (
     .replace("%%SUBJECT_PRIORITY%%", subjectPriority)
     .replace("%%EVALUATION_IMPACT%%", evaluationImpact);
 
-  return `${medicalSubjectContext}## 작업
+  const gyogwaOnlyContext = input.isGyogwaOnly
+    ? `## ⛔ 교과전형 전용 (이 규칙이 다른 모든 지시보다 우선)
+이 학생은 모든 희망대학이 학생부교과전형입니다.
+- "학종", "학생부종합전형", "학종 평가에서 핵심" 등의 표현을 사용하지 마세요.
+- evaluationComment에 "입학사정관"이 아닌 "교과전형 평가", "전형 평가" 등으로 작성하세요.
+- 세특 분석은 학생의 교과 역량과 학업 태도 파악 용도로 작성하되, "학종 서류평가에서 ~"가 아닌 "교과 학습 역량 측면에서 ~"로 프레이밍하세요.
+
+`
+    : "";
+
+  return `${gyogwaOnlyContext}${medicalSubjectContext}## 작업
 학생의 세부능력 및 특기사항(세특)을 과목별로 분석하세요.
 
 ## ⛔ 과목 다양성 규칙 (필수 — 위반 시 품질 실패)

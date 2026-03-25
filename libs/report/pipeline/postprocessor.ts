@@ -149,6 +149,49 @@ export const postprocess = (
     }
   }
 
+  // 2-2. 학종 chance > 교과 chance 강제 (같은 대학)
+  // 교과/학종이 별도 AI 호출로 생성되므로 코드에서 일관성 보장
+  const admPredForChance = validatedSections.find(
+    (s) => s.sectionId === "admissionPrediction"
+  ) as any;
+  if (admPredForChance && Array.isArray(admPredForChance.predictions)) {
+    const CHANCE_ORDER = ["very_low", "low", "medium", "high", "very_high"];
+    const chanceIndex = (c: string): number => CHANCE_ORDER.indexOf(c);
+    const downgrade = (c: string): string => {
+      const idx = chanceIndex(c);
+      return idx > 0 ? CHANCE_ORDER[idx - 1] : c;
+    };
+
+    const hakjongPred = admPredForChance.predictions.find(
+      (p: any) => p.admissionType === "학종"
+    );
+    const gyogwaPred = admPredForChance.predictions.find(
+      (p: any) => p.admissionType === "교과"
+    );
+
+    if (
+      hakjongPred?.universityPredictions &&
+      gyogwaPred?.universityPredictions
+    ) {
+      const hakjongMap = new Map<string, any>();
+      for (const up of hakjongPred.universityPredictions) {
+        hakjongMap.set(up.university, up);
+      }
+
+      for (const gUp of gyogwaPred.universityPredictions) {
+        const hUp = hakjongMap.get(gUp.university);
+        if (!hUp) continue;
+        // 교과 chance >= 학종 chance → 교과를 한 단계 하향
+        while (
+          chanceIndex(gUp.chance) >= chanceIndex(hUp.chance) &&
+          chanceIndex(gUp.chance) > 0
+        ) {
+          gUp.chance = downgrade(gUp.chance);
+        }
+      }
+    }
+  }
+
   // 3. 크로스 섹션 동기화: admissionStrategy → admissionPrediction chance 일관성
   const admPred = validatedSections.find(
     (s) => s.sectionId === "admissionPrediction"
@@ -1412,6 +1455,51 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   // "합격선 데이터 참조으로" → 어색한 표현 수정
   [/합격선 데이터 참조으로/g, "합격선 데이터 기준으로"],
   [/합격선 데이터 기준으로\s*매우\s*높습니다/g, "매우 높은 수준입니다"],
+
+  // ── STEP 11: AI스러운 간접 표현 → 직접 표현 ──
+  [/파악하기 어렵게 합니다/g, "파악하기 어렵습니다"],
+  [/파악하기 어렵게 만듭니다/g, "파악이 어렵습니다"],
+  [/판단하기 어렵게 합니다/g, "판단하기 어렵습니다"],
+  [/판단하기 어렵게 만듭니다/g, "판단이 어렵습니다"],
+  [/이해하기 어렵게 합니다/g, "이해하기 어렵습니다"],
+  [/분석하기 어렵게 합니다/g, "분석하기 어렵습니다"],
+  [/평가하기 어렵게 합니다/g, "평가하기 어렵습니다"],
+  [/([가-힣]+)하기 어렵게 ([가-힣]*합니다)/g, "$1하기 어렵습니다"],
+  [/([가-힣]+)하기 어렵게 ([가-힣]*만듭니다)/g, "$1이 어렵습니다"],
+  // "~하게 만듭니다" → "~합니다" (AI식 간접 사역 표현)
+  [/불리하게 만듭니다/g, "불리합니다"],
+  [/유리하게 만듭니다/g, "유리합니다"],
+  [/어렵게 만듭니다/g, "어렵습니다"],
+  [/약화시킵니다/g, "약화됩니다"],
+  [/강화시킵니다/g, "강화됩니다"],
+  // "~라고 할 수 있습니다" → 직접 서술
+  [/라고 할 수 있습니다/g, "입니다"],
+  [/라고 볼 수 있습니다/g, "로 봅니다"],
+  // "~의 가능성이 존재합니다" → 간결하게
+  [/의 가능성이 존재합니다/g, "할 수 있습니다"],
+  [/의 여지가 존재합니다/g, "할 여지가 있습니다"],
+  // "~것으로 예상됩니다" → "~겁니다"
+  [/할 것으로 예상됩니다/g, "할 겁니다"],
+  [/될 것으로 예상됩니다/g, "될 겁니다"],
+  [/할 것으로 예측됩니다/g, "할 겁니다"],
+  [/될 것으로 예측됩니다/g, "될 겁니다"],
+  [/것으로 예상됩니다/g, "겁니다"],
+  [/것으로 예측됩니다/g, "겁니다"],
+
+  // ── STEP 12: 토큰 오류 비정상 단어 교정 ──
+  // Gemini가 간헐적으로 생성하는 비정상 한국어 단어
+  [/파체했습니다/g, "파악했습니다"],
+  [/파체합니다/g, "파악합니다"],
+  [/파체하고/g, "파악하고"],
+  [/파체된/g, "파악된"],
+  [/파체할/g, "파악할"],
+
+  // ── STEP 13: 조사 누락 교정 (Gemini 토큰 스킵 대응) ──
+  // AI가 명사를 생략하고 조사만 남기는 현상 — 조사 제거로 문장 정상화
+  // 예: "다만, 가 경영경제" → "다만, 경영경제"
+  // 예: 필드값 "인 경영학과는" → "경영학과는"
+  [/([,;.!?])\s+(?:가|은|는|을|를|인|과|와)\s+(?=[가-힣])/g, "$1 "],
+  [/^(?:가|은|는|을|를|인|과|와)\s+(?=[가-힣])/gm, ""],
 ];
 
 const sanitizeAiTone = (text: string): string => {
@@ -1775,15 +1863,32 @@ const normalizeSection = (
     const riskText =
       aiDev.riskAssessment || aiDev.analysis || aiDev.recommendation || "";
 
-    // fallback: 사정관 관점 해석 생성 (단순 사실 나열 방지)
+    // fallback: AI가 riskAssessment를 생성하지 않은 경우
+    const isGO =
+      (studentInfo.targetUniversities?.length ?? 0) > 0 &&
+      studentInfo.targetUniversities!.every(
+        (t) => t.admissionType === "학생부교과"
+      );
     let fallbackRisk = "";
     if (gv.spread > 0) {
-      if (gv.spread <= 1) {
-        fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 차이로, 과목 간 편차가 크지 않아 입학사정관이 학업 균형성을 긍정적으로 평가할 수 있는 구조입니다. 다만 전체 등급대에서의 경쟁력은 별도로 판단해야 합니다.`;
-      } else if (gv.spread <= 2) {
-        fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 편차가 있습니다. 입학사정관은 이 정도 편차를 '특정 교과 편중 학습'으로 해석할 수 있으며, 학종에서 학업역량의 균형성 평가에서 약점이 될 수 있습니다. 교과전형에서는 평균 등급에 직접 영향을 주므로 최저 과목 보완이 필요합니다.`;
+      if (isGO) {
+        // 교과전형 전용: 사정관/학종 개념 없이 평균 등급 관점
+        if (gv.spread <= 1) {
+          fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 차이로, 편차가 크지 않아 교과전형에서 과목별 불이익은 적습니다.`;
+        } else if (gv.spread <= 2) {
+          fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 편차가 있습니다. 교과전형은 최종 평균 등급이 핵심이므로, 최저 과목이 평균을 낮추는 정도를 확인하고 이 과목을 반영 비중이 낮은 대학을 탐색하는 것이 유효합니다.`;
+        } else {
+          fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급의 큰 편차가 있습니다. 최저 과목이 전체 평균을 낮추는 주요 원인이므로, 이 과목의 반영 비중이 낮거나 제외되는 대학의 교과전형을 탐색하는 것이 유효합니다.`;
+        }
       } else {
-        fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급의 큰 편차가 있습니다. 입학사정관은 이를 학업 관리 능력의 부족 또는 특정 교과 회피로 판단할 가능성이 높으며, 학종과 교과 모두에서 불리하게 작용합니다. 최저 과목이 전공 핵심 과목인 경우 영향이 더 크므로 즉각적인 보완이 필요합니다.`;
+        // 학종 포함: 사정관 관점 해석
+        if (gv.spread <= 1) {
+          fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 차이로, 과목 간 편차가 크지 않아 입학사정관이 학업 균형성을 긍정적으로 평가할 수 있는 구조입니다. 다만 전체 등급대에서의 경쟁력은 별도로 판단해야 합니다.`;
+        } else if (gv.spread <= 2) {
+          fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 편차가 있습니다. 입학사정관은 이 정도 편차를 '특정 교과 편중 학습'으로 해석할 수 있으며, 학종에서 학업역량의 균형성 평가에서 약점이 될 수 있습니다. 교과전형에서는 평균 등급에 직접 영향을 주므로 최저 과목 보완이 필요합니다.`;
+        } else {
+          fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급의 큰 편차가 있습니다. 입학사정관은 이를 학업 관리 능력의 부족 또는 특정 교과 회피로 판단할 가능성이 높으며, 학종과 교과 모두에서 불리하게 작용합니다. 최저 과목이 전공 핵심 과목인 경우 영향이 더 크므로 즉각적인 보완이 필요합니다.`;
+        }
       }
     } else {
       fallbackRisk = "과목별 성적 데이터가 부족하여 편차 분석이 어렵습니다.";

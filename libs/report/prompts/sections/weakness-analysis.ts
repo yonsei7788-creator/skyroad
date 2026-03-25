@@ -8,6 +8,7 @@ export interface WeaknessAnalysisPromptInput {
   studentProfile: string;
   isMedical?: boolean;
   gradingSystem?: "5등급제" | "9등급제";
+  isGyogwaOnly?: boolean;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -59,7 +60,16 @@ export const buildWeaknessAnalysisPrompt = (
 `
     : "";
 
-  return `${medicalWeaknessContext}## 작업
+  const gyogwaOnlyContext = input.isGyogwaOnly
+    ? `## ⛔ 교과전형 전용 (이 규칙이 다른 모든 지시보다 우선)
+이 학생은 모든 희망대학이 학생부교과전형입니다.
+- "학종에서 약점" 등의 표현 대신 "교과전형 관점에서 보완이 필요한 부분"으로 작성하세요.
+- 부족한 부분 분석은 최종 등급 향상과 교과 성적 개선 관점에서 제시합니다.
+
+`
+    : "";
+
+  return `${gyogwaOnlyContext}${medicalWeaknessContext}## 작업
 학생의 생기부에서 부족한 부분을 구체적으로 식별하고 보완 방향을 제시하세요.
 
 ## 단계별 분석 절차
@@ -162,6 +172,74 @@ export const buildWeaknessAnalysisPrompt = (
   - 기술적 수치: \`1500바이트\`, \`fillRate 45%\`
 - evidence에는 "2학년 물리학 1학기 3등급", "세특에서 '조사함'으로 마무리" 등 **자연어로 풀어 쓴 근거**만 작성하세요.
 - 입력 데이터의 JSON 구조나 필드명을 그대로 복사하면 품질 실패입니다.
+
+## 입력 데이터
+
+### 역량 추출 결과
+${input.competencyExtraction}
+
+### 성적 분석 결과
+${input.academicAnalysis}
+
+### 학생 프로필
+${input.studentProfile}
+
+${PLAN_SPECIFIC[plan]}`;
+};
+
+/**
+ * 교과전형 전용 약점 분석 프롬프트.
+ * 학종/진로역량/세특 품질/발전가능성/사정관 해석 개념이 존재하지 않음.
+ * "교과전형 합격선 도달을 위한 보완 영역" 관점.
+ */
+export const buildGyogwaWeaknessAnalysisPrompt = (
+  input: WeaknessAnalysisPromptInput,
+  plan: ReportPlan
+): string => {
+  return `## 작업
+이 학생은 모든 지원 대학이 **학생부교과전형**입니다.
+교과전형 합격선 도달을 위해 보완이 필요한 영역을 식별하고 구체적인 개선 방향을 제시하세요.
+
+## 교과전형 약점 분석 원칙
+- 교과전형은 **최종 평균 등급**이 핵심입니다. 약점 분석도 "최종 등급을 낮추는 요인"에 집중하세요.
+- 특정 과목의 낮은 등급이 전체 평균에 미치는 영향을 분석하세요.
+- 남은 학기에서 개선 가능한 영역만 제시하세요.
+- 수능 최저학력기준 충족 여부도 약점이 될 수 있습니다.
+
+## 출력 JSON 스키마
+
+{
+  "sectionId": "weaknessAnalysis",
+  "title": "부족한 부분 + 보완 전략",
+  "areas": [
+    {
+      "area": "영어 과목 등급 부진",
+      "description": "영어 I에서 4등급을 받아 전체 평균을 낮추는 주요 원인입니다. 3학년 영어 과목에서 등급을 끌어올리면 최종 평균 개선에 큰 효과가 있습니다.",
+      "suggestedActivities": ["영어 독해 집중 학습으로 3학년 영어 과목 등급 향상"],
+      "evidence": "2학년 1학기 영어 I 4등급",
+      "competencyTag": {"category": "academic", "subcategory": "학업성취도"},
+      "priority": "high",
+      "urgency": "high",
+      "effectiveness": "high",
+      "executionStrategy": "3학년 1학기 영어 과목에서 최소 2등급을 목표로 설정",
+      "subjectLinkStrategy": "영어 과목 성적 향상이 최종 평균 등급 개선에 가장 직접적인 효과"
+    }
+  ]
+}
+
+## 사실 검증 원칙
+- 약점 식별은 **제공된 성적 데이터에서 실제 등급/점수를 확인**한 후에만 언급하세요.
+- evidence에는 실제 과목명과 등급을 구체적으로 인용하세요.
+
+## 비핵심 과목 제외
+기술·가정, 정보, 제2외국어, 한문, 교양, 체육, 음악, 미술 등의 성적 부진은 핵심 약점으로 포함하지 마세요.
+핵심 과목: 국어, 수학, 영어, 사회탐구, 과학탐구.
+
+## 외부 활동 보완 제안 금지
+학원, 과외, 인터넷 강의, 외부 대회 등 외부 활동은 제안하지 마세요.
+
+## 내부 데이터 노출 금지
+JSON 키-값, 변수명, 배열 리터럴 등을 출력하지 마세요.
 
 ## 입력 데이터
 

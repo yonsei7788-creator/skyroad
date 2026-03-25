@@ -11,6 +11,7 @@ export interface CompetencyScorePromptInput {
   majorEvaluationContext?: string;
   gradingSystem?: "5등급제" | "9등급제";
   isMedical?: boolean;
+  isGyogwaOnly?: boolean;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -114,7 +115,18 @@ export const buildCompetencyScorePrompt = (
 `
     : "";
 
-  return `${fiveGradeScoring}${medicalScoringContext}## 작업
+  const gyogwaOnlyContext = input.isGyogwaOnly
+    ? `## ⛔ 교과전형 전용 (이 규칙이 다른 모든 지시보다 우선)
+이 학생은 모든 희망대학이 학생부교과전형입니다.
+- comment에 "학종", "학생부종합전형", "학종 경쟁력", "학종 지원 시" 등의 표현을 사용하지 마세요.
+- "학종 지원자 전체 평균"이 아닌 "지원자 전체 평균"으로 표현하세요.
+- 역량 점수는 학생의 강약점 파악 용도로 해석하되, "학종에서 유리/불리"가 아닌 "교과전형 지원에서 ~" 관점으로 작성하세요.
+- 발전가능성은 학생의 성장 의지 파악 용도로 유지하되, "학종 평가에서 가점"이 아닌 "학습 태도의 강점"으로 해석하세요.
+
+`
+    : "";
+
+  return `${gyogwaOnlyContext}${fiveGradeScoring}${medicalScoringContext}## 작업
 학생의 역량을 300점 만점 체계로 정량 평가하고, 발전가능성은 별도 등급으로 평가하세요.
 
 ## 점수 체계
@@ -353,6 +365,162 @@ growthGrade 채점 시 다음을 명시적으로 확인하세요:
 
 - 예시 (우수): "총점 258점(300점 만점)으로 학업역량(92점)과 진로역량(88점)이 높은 수준이다. 3년간 전공 관련 탐구가 일관되게 이어진 점이 반영되었으나, 공동체역량(78점)은 구체적 리더십 사례가 부족하여 보강이 필요하다."
 - 예시 (보통): "총점 192점(300점 만점)으로 진로역량(72점)이 가장 높으나, 학업역량(58점)은 전공 핵심 과목 성적 부진으로 학종 서류 평가에서 불리하게 작용할 수 있다. 공동체역량(62점)도 구체적 협업 사례를 보강할 필요가 있다."
+
+${PLAN_SPECIFIC[plan]}`;
+};
+
+/**
+ * 교과전형 전용 역량 점수 프롬프트.
+ * 학종/사정관/성적 추세/발전가능성 추세 반영 개념이 존재하지 않음.
+ * 채점 체계는 동일하되 comment/interpretation에서 교과전형 관점 사용.
+ */
+export const buildGyogwaCompetencyScorePrompt = (
+  input: CompetencyScorePromptInput,
+  plan: ReportPlan
+): string => {
+  const fiveGradeScoring =
+    input.gradingSystem === "5등급제"
+      ? `## ⚠️ 5등급제 채점 보정 (이 학생에게 적용)
+이 학생은 5등급제(2022 개정 교육과정) 적용 학생입니다.
+- 정밀 환산: 9등급 2.0=5등급 1.33 / 3.0=1.89 / 4.0=2.43 / 5.0=3.03
+- 5등급제 1.33 이하 → 학업성취도 36~40점
+- 5등급제 1.89 이하 → 학업성취도 28~35점
+- 5등급제 2.43 이하 → 학업성취도 20~27점
+- comment에 "9등급제 환산 시" 표현 금지. 5등급제 등급과 비율(상위 N%)만 사용.
+
+`
+      : "";
+
+  // 기존 프롬프트의 채점 체계/스키마를 재사용하되 학종 프레임 제거
+  return `${fiveGradeScoring}## 작업
+이 학생은 모든 지원 대학이 **학생부교과전형**입니다.
+학생의 역량을 300점 만점 체계로 정량 평가하고, 발전가능성은 별도 등급으로 평가하세요.
+
+## 교과전형 역량 평가 원칙
+- 역량 점수는 학생의 강약점을 객관적으로 파악하기 위한 도구입니다.
+- comment와 interpretation에서 "학종 경쟁력", "학종 서류 평가", "입학사정관", "사정관이 판단" 등의 표현을 사용하지 마세요.
+- 대신 "교과전형 관점에서", "학업 역량 측면에서" 등으로 표현하세요.
+- **발전가능성 채점에서 "성적 추이(상승/하락)"를 반영하지 마세요.** 대신 "자기주도적 학습 태도", "탐구의 꾸준함" 등 학습 태도 기반으로 채점하세요.
+
+## 채점 체계
+- 총점: 학업역량(100) + 진로역량(100) + 공동체역량(100) = 300점 만점
+- 발전가능성: 총점에 미포함, S/A/B/C/D 등급으로 별도 표시
+
+### 학업역량 하위항목:
+| 항목 | 만점 | 설명 |
+|------|------|------|
+| 학업성취도 | 40 | 내신 등급, 실질 위치 |
+| 학업태도 | 20 | 수업 참여, 자기주도 학습 |
+| 탐구력 | 40 | 탐구 깊이, 확장성 |
+
+### 진로역량 하위항목:
+| 항목 | 만점 | 설명 |
+|------|------|------|
+| 교과 이수 노력 | 30 | 권장과목 이수, 과목 선택 |
+| 교과 성취도 | 30 | 관련 과목 성적 |
+| 진로 탐색 활동 | 40 | 진로 일관성, 활동 깊이 |
+
+### 공동체역량 하위항목:
+| 항목 | 만점 | 설명 |
+|------|------|------|
+| 나눔과 배려 | 25 | 타인 도움, 배려 사례 |
+| 소통 및 협업 | 25 | 모둠/토론/팀 활동 |
+| 리더십 | 25 | 임원, 주도적 역할 |
+| 성실성 | 25 | 출결, 역할 이행 |
+
+⚠️ 성실성 채점: 미인정 결석 감점 기준 — 1~2일 -3점, 3~5일 -8점, 6~10일 -13점, 11일+ -18점 이상
+
+## 출력 JSON 스키마
+
+중요: scores 배열은 반드시 3개의 완전한 객체(academic, career, community)를 포함해야 합니다. 문자열 배열 절대 금지.
+subcategories도 반드시 객체 배열이어야 합니다. comparison은 null이 아닌 객체로 출력하세요.
+
+{
+  "sectionId": "competencyScore",
+  "title": "역량 점수",
+  "totalScore": "(academic + career + community 합산)",
+  "growthGrade": "S | A | B | C | D",
+  "growthScore": "(0~100)",
+  "growthComment": "string (1~2줄)",
+  "scores": [
+    {
+      "category": "academic",
+      "label": "학업역량",
+      "score": "(0~100)",
+      "maxScore": 100,
+      "subcategories": [
+        {"name": "학업성취도", "score": "(0~40)", "maxScore": 40, "comment": "string (80~150자)"},
+        {"name": "학업태도", "score": "(0~20)", "maxScore": 20, "comment": "string (80~150자)"},
+        {"name": "탐구력", "score": "(0~40)", "maxScore": 40, "comment": "string (80~150자)"}
+      ],
+      "grade": "S | A | B | C | D",
+      "gradeComment": "string (100자 이내)"
+    },
+    {
+      "category": "career",
+      "label": "진로역량",
+      "score": "(0~100)",
+      "maxScore": 100,
+      "subcategories": [
+        {"name": "교과이수노력", "score": "(0~30)", "maxScore": 30, "comment": "string (80~150자)"},
+        {"name": "교과성취도", "score": "(0~30)", "maxScore": 30, "comment": "string (80~150자)"},
+        {"name": "진로탐색", "score": "(0~40)", "maxScore": 40, "comment": "string (80~150자)"}
+      ],
+      "grade": "S | A | B | C | D",
+      "gradeComment": "string (100자 이내)"
+    },
+    {
+      "category": "community",
+      "label": "공동체역량",
+      "score": "(0~100)",
+      "maxScore": 100,
+      "subcategories": [
+        {"name": "나눔과배려", "score": "(0~25)", "maxScore": 25, "comment": "string (80~150자)"},
+        {"name": "소통및협업", "score": "(0~25)", "maxScore": 25, "comment": "string (80~150자)"},
+        {"name": "리더십", "score": "(0~25)", "maxScore": 25, "comment": "string (80~150자)"},
+        {"name": "성실성", "score": "(0~25)", "maxScore": 25, "comment": "string (80~150자)"}
+      ],
+      "grade": "S | A | B | C | D",
+      "gradeComment": "string (100자 이내)"
+    }
+  ],
+  "interpretation": "string (총점 의미 해석, 강점+보완점 모두 포함)",
+  "percentile": "(0~100)",
+  "percentileLabel": "string (예: 상위 15%)",
+  "comparison": {"myScore": "(totalScore)", "targetRangeAvg": "(number)", "overallAvg": "(number)"}
+}
+
+⚠️ scores 배열의 category는 반드시 "academic", "career", "community" (영문)을 사용합니다.
+
+## comment 작성 규칙
+- 각 하위항목 comment에 감점 사유를 구체적으로 명시하세요.
+- 감점 없으면 만점을 주고 "감점 사유 없음"이라고 명시.
+- "경쟁력이 있다", "돋보인다", "인상적이다" 등 칭찬형 표현 금지.
+
+## interpretation 작성 규칙
+- 총점이 의미하는 바를 2~3줄로 해석. 강점과 보완 영역을 함께 명시.
+- ✅ "총점 256점으로 학업역량(88점)과 진로역량(85점)이 높은 수준입니다. 공동체역량(83점)은 보완이 필요합니다."
+- ❌ "학종 상위권 경쟁력" — 학종 프레임 금지
+- ❌ "성적 추이가 아쉽지만" — 추세 프레임 금지
+
+## 입력 데이터
+
+### 학생 유형 분류 결과
+${input.studentTypeClassification}
+
+### 역량 추출 결과
+${input.competencyExtraction}
+
+### 성적 전처리 결과
+${input.preprocessedAcademicData}
+
+### 출결 데이터
+${input.attendanceSummary}
+
+### 학생 프로필
+${input.studentProfile}
+
+${input.majorEvaluationContext ? `### 학과 맞춤 평가 기준\n${input.majorEvaluationContext}` : ""}
 
 ${PLAN_SPECIFIC[plan]}`;
 };
