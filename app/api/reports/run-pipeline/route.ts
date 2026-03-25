@@ -65,7 +65,7 @@ const TASK_DEPS: Record<string, string[]> = {
     "academicAnalysis",
     "attendanceAnalysis",
   ],
-  admissionStrategy: ["academicAnalysis"],
+  admissionStrategy: ["academicAnalysis", "majorExploration"],
   actionRoadmap: ["weaknessAnalysis", "admissionStrategy", "directionGuide"],
   consultantReview: ["competencyScore", "academicAnalysis", "subjectAnalysis"],
 };
@@ -265,8 +265,12 @@ const executeWaveParallel = async (
         newSections.push(...addedSections);
         mergedSer = { ...mergedSer, ...result.serializedTexts };
       } catch (retryError) {
+        const errMsg = (retryError as Error).message;
         console.error(
-          `[report:${reportId}] 태스크 ${taskId} 재시도 실패 (스킵): ${(retryError as Error).message}`
+          `[report:${reportId}] 태스크 ${taskId} 재시도 실패: ${errMsg}`
+        );
+        throw new Error(
+          `AI 서버가 일시적으로 불안정하여 리포트 생성에 실패했습니다. 잠시 후 다시 시도해 주세요. (${taskId} 섹션 생성 실패)`
         );
       }
     }

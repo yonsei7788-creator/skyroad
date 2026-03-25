@@ -8,8 +8,8 @@ export interface RetryConfig {
 
 export const DEFAULT_RETRY_CONFIG: RetryConfig = {
   maxRetries: 3,
-  baseDelay: 1000,
-  maxDelay: 10000,
+  baseDelay: 2000,
+  maxDelay: 8000,
   backoffMultiplier: 2,
   retryableStatuses: [429, 500, 502, 503],
 };
