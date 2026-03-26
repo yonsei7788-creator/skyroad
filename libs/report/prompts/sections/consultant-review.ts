@@ -465,5 +465,10 @@ ${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.comp
 ### 교과 세특 분석 결과
 ${input.subjectAnalysisResult}
 ${input.admissionPredictionResult ? `\n### 합격 예측 결과\n${input.admissionPredictionResult}` : ""}
-${input.weaknessAnalysisResult ? `\n### 부족한 부분 분석 결과\n${input.weaknessAnalysisResult}` : ""}`;
+${input.weaknessAnalysisResult ? `\n### 부족한 부분 분석 결과\n${input.weaknessAnalysisResult}` : ""}
+
+## 출력 전 자기 검증 (교과전형 필수)
+1. gradeAnalysis에 "하락", "상승", "추세", "추이", "변화" 단어가 포함되지 않았는가? → 있으면 삭제하고 최종 등급 위치만 서술
+2. "반영 과목", "강점 과목", "특정 과목 반영" 표현이 포함되지 않았는가? → 있으면 삭제
+3. "N학년 때 우수했으나", "N학년에 하락하여" 같은 학기별 비교가 포함되지 않았는가? → 삭제`;
 };
