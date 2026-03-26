@@ -6,6 +6,7 @@ import {
   Clock,
   ExternalLink,
   FileText,
+  MessageCircle,
   Shield,
   ShieldCheck,
   UserCheck,
@@ -137,6 +138,26 @@ export const HeroPreview = () => {
         </div>
         <span className={styles.gov24Link}>
           바로가기
+          <ExternalLink size={14} />
+        </span>
+      </a>
+      <a
+        href="https://open.kakao.com/o/sGtx5Hli"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.kakaoBanner}
+      >
+        <div className={styles.gov24Left}>
+          <MessageCircle size={18} className={styles.kakaoIcon} />
+          <div className={styles.gov24Text}>
+            <span className={styles.gov24Label}>궁금한 점이 있으신가요?</span>
+            <span className={styles.gov24Desc}>
+              카카오톡 오픈채팅으로 편하게 문의하세요.
+            </span>
+          </div>
+        </div>
+        <span className={styles.kakaoLink}>
+          문의하기
           <ExternalLink size={14} />
         </span>
       </a>

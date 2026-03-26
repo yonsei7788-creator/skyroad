@@ -321,6 +321,60 @@
   }
 }
 
+.kakaoBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  max-width: 520px;
+  margin: 10px auto 0;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border-left: 3px solid #fee500;
+  background: rgb(254 229 0 / 0.06);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+
+.kakaoBanner:hover {
+  background: rgb(254 229 0 / 0.12);
+  box-shadow: 0 2px 12px rgb(254 229 0 / 0.12);
+}
+
+.kakaoIcon {
+  flex-shrink: 0;
+  color: #3c1e1e;
+}
+
+.kakaoLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #3c1e1e;
+  white-space: nowrap;
+}
+
+@media (max-width: 1023px) {
+  .kakaoBanner {
+    margin-left: 24px;
+    margin-right: 24px;
+    width: auto;
+  }
+}
+
+@media (max-width: 639px) {
+  .kakaoBanner {
+    padding: 12px 14px;
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+}
+
 .previewCard {
   width: 100%;
   max-width: 520px;
