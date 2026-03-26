@@ -18,12 +18,12 @@ import { ReportPage } from "./ReportPage";
  *   .page padding-top  = 20mm  ≈   76px
  *   .page padding-bot  = calc(32px + 24px) = 56px
  *   Content box         = 1122 - 76 - 56 = 990px
- *   .pageHeader         ≈ 52px (text + pb + mb)
- *   .pageFooter area    ≈ 40px (absolute bottom:8mm)
- *   Safety margin       = 48px
- *   Available           = 990 - 52 - 40 - 48 = 850px
+ *   .pageHeader         ≈ 57px (overline text + pb 12 + border 1 + mb 24)
+ *   .pageFooter         = absolute bottom:8mm → content box 하단과 일치
+ *   Safety margin       = 16px
+ *   Available           = 990 - 57 - 16 ≈ 916px
  */
-const AVAILABLE_HEIGHT_PX = 850;
+const AVAILABLE_HEIGHT_PX = 916;
 
 /**
  * 빈 페이지 방지 임계값.
@@ -40,6 +40,14 @@ const MIN_PAGE_CONTENT_PX = 150;
  * (제목만 페이지 끝에 걸리는 것 방지)
  */
 const MIN_REMAINING_PX = 200;
+
+/**
+ * "제목급" 블록 높이 임계값.
+ * MIN_REMAINING_PX 로직은 제목(헤더)만 페이지 하단에 고립되는 것을 방지하기 위한 것이므로,
+ * 이 높이 이하인 블록만 "제목급"으로 간주하여 다음 페이지로 넘긴다.
+ * 콘텐츠 블록(개선 방향/예시 등)은 이 임계를 초과하므로 현재 페이지에 유지된다.
+ */
+const MAX_TITLE_BLOCK_HEIGHT_PX = 80;
 
 interface AutoPaginatedSectionProps {
   children: ReactNode;
@@ -159,7 +167,7 @@ const buildPageSlices = (blockBounds: BlockBound[]): PageSlice[] => {
       const remainingAfter = AVAILABLE_HEIGHT_PX - (blockEnd - pageStart);
       if (
         remainingAfter < MIN_REMAINING_PX &&
-        block.height < MIN_REMAINING_PX
+        block.height <= MAX_TITLE_BLOCK_HEIGHT_PX
       ) {
         // 이 블록이 작은 블록(제목 등)이고 뒤에 공간이 부족하면 → 다음 페이지로 넘김
         if (pageEnd > pageStart) {
