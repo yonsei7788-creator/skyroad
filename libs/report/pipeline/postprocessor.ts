@@ -610,20 +610,18 @@ export const postprocess = (
         university: string,
         department?: string
       ): number | null => {
-        // 1) 학과별 실제 커트라인 — cutoff50Grade만 사용 (70%cut 무시)
+        // 교과 50%cut 우선 — 대학 수준을 가장 정확하게 반영하는 지표
+        // 학종 cutoff는 전형별 편차가 커서(계열적합 3.29 vs 학업우수 1.86) 대표값으로 부적절
         const dept = department || targetDept;
         if (dept) {
           const cutoffs = findCutoffData(university, dept);
           if (cutoffs.length > 0) {
-            if (isGyogwaOnly) {
-              const gyogwa = cutoffs.find((c) => c.admissionType === "교과");
-              if (gyogwa?.cutoff50Grade != null) return gyogwa.cutoff50Grade;
-            } else {
-              const hakjong = cutoffs.find((c) => c.admissionType === "학종");
-              if (hakjong?.cutoff50Grade != null) return hakjong.cutoff50Grade;
-              const gyogwa = cutoffs.find((c) => c.admissionType === "교과");
-              if (gyogwa?.cutoff50Grade != null) return gyogwa.cutoff50Grade;
-            }
+            // 교과 50%cut 우선
+            const gyogwa = cutoffs.find((c) => c.admissionType === "교과");
+            if (gyogwa?.cutoff50Grade != null) return gyogwa.cutoff50Grade;
+            // 교과 없으면 학종 fallback
+            const hakjong = cutoffs.find((c) => c.admissionType === "학종");
+            if (hakjong?.cutoff50Grade != null) return hakjong.cutoff50Grade;
             for (const c of cutoffs) {
               if (c.cutoff50Grade != null) return c.cutoff50Grade;
             }
@@ -745,6 +743,79 @@ export const postprocess = (
           // 2단계: riskLevel 제거 (v5: 더 이상 사용하지 않음)
           for (const card of sim.cards) {
             delete card.riskLevel;
+          }
+
+          // 3단계: cutoff 기반 chance 강제 보정 (AI가 숫자 비교를 안 하므로 코드에서 처리)
+          // 기준: 교과 50%cut vs 학생 등급 (9등급 통일)
+          //   gap = studentGrade9 - cutoff9 (양수=미달, 음수=초과)
+          //   |gap| <= 0.2 → medium (적정)
+          //   gap > 0.2 → low (상향, 미달)  /  gap > 0.5 → very_low
+          //   gap < -0.2 → high (안정, 초과)  /  gap < -0.5 → very_high
+          {
+            const CHANCE_LEVELS = [
+              "very_low",
+              "low",
+              "medium",
+              "high",
+              "very_high",
+            ] as const;
+            const gapToChance = (gap: number): string => {
+              if (gap > 0.5) return "very_low";
+              if (gap > 0.2) return "low";
+              if (gap >= -0.2) return "medium";
+              if (gap >= -0.5) return "high";
+              return "very_high";
+            };
+
+            for (const card of sim.cards) {
+              const dept = card.department ?? "";
+              const cutoffs = findCutoffData(card.university, dept);
+              if (cutoffs.length === 0) continue;
+
+              // 교과 50%cut 기준 chance 보정
+              if (card.subject?.chance) {
+                const gyogwaCutoffs = cutoffs.filter(
+                  (c: any) =>
+                    c.admissionType === "교과" && c.cutoff50Grade != null
+                );
+                if (gyogwaCutoffs.length > 0) {
+                  // 가장 유리한 교과전형의 50%cut 사용
+                  const bestCutoff = Math.min(
+                    ...gyogwaCutoffs.map((c: any) => c.cutoff50Grade)
+                  );
+                  const gap = studentGrade9 - bestCutoff;
+                  const correctChance = gapToChance(gap);
+                  if (card.subject.chance !== correctChance) {
+                    console.log(
+                      `[report:${reportId}] 교과 chance 보정: ${card.university} ${card.subject.chance}→${correctChance} (student=${studentGrade9.toFixed(2)}, cutoff50=${bestCutoff.toFixed(2)}, gap=${gap.toFixed(2)})`
+                    );
+                    card.subject.chance = correctChance;
+                  }
+                }
+              }
+
+              // 학종 50%cut 기준 chance 보정
+              if (card.comprehensive?.chance) {
+                const hakjongCutoffs = cutoffs.filter(
+                  (c: any) =>
+                    c.admissionType === "학종" && c.cutoff50Grade != null
+                );
+                if (hakjongCutoffs.length > 0) {
+                  // 가장 유리한 학종전형의 50%cut 사용
+                  const bestCutoff = Math.min(
+                    ...hakjongCutoffs.map((c: any) => c.cutoff50Grade)
+                  );
+                  const gap = studentGrade9 - bestCutoff;
+                  const correctChance = gapToChance(gap);
+                  if (card.comprehensive.chance !== correctChance) {
+                    console.log(
+                      `[report:${reportId}] 학종 chance 보정: ${card.university} ${card.comprehensive.chance}→${correctChance} (student=${studentGrade9.toFixed(2)}, cutoff50=${bestCutoff.toFixed(2)}, gap=${gap.toFixed(2)})`
+                    );
+                    card.comprehensive.chance = correctChance;
+                  }
+                }
+              }
+            }
           }
 
           // 4단계: 5등급제 교과전형 현실성 보정
@@ -1557,13 +1628,19 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/파체하고/g, "파악하고"],
   [/파체된/g, "파악된"],
   [/파체할/g, "파악할"],
+  [/파명하/g, "파악하"],
 
   // ── STEP 13: 조사 누락 교정 (Gemini 토큰 스킵 대응) ──
   // AI가 명사를 생략하고 조사만 남기는 현상 — 조사 제거로 문장 정상화
   // 예: "다만, 가 경영경제" → "다만, 경영경제"
-  // 예: 필드값 "인 경영학과는" → "경영학과는"
-  [/([,;.!?])\s+(?:가|은|는|을|를|인|과|와)\s+(?=[가-힣])/g, "$1 "],
-  [/^(?:가|은|는|을|를|인|과|와)\s+(?=[가-힣])/gm, ""],
+  // 예: "그러나 가 '체육교육과'" → "그러나 '체육교육과'"
+  // 예: "있지만, 의 괴리가" → "있지만, 괴리가"
+  // 구두점 뒤 고립 조사 (가/은/는/을/를/인/과/와/의)
+  [/([,;.!?])\s+(?:가|은|는|을|를|인|과|와|의)\s+(?=[가-힣''""])/g, "$1 "],
+  // 줄 시작 고립 조사
+  [/^(?:가|은|는|을|를|인|과|와|의)\s+(?=[가-힣''""])/gm, ""],
+  // 한글 뒤 공백+고립조사+공백+한글/따옴표 (예: "그러나 인 체육교육과", "그러나 가 '체육교육과'")
+  [/([가-힣])\s+(?:인|가|의)\s+(?=[가-힣''""])/g, "$1 "],
 ];
 
 const sanitizeAiTone = (text: string): string => {
@@ -2618,7 +2695,7 @@ const normalizeSection = (
         if (!hasEvaluatorView) {
           if (targetDeptForActivity && !hasNegative) {
             // 긍정 일변도 + 평가 관점 없음 → 입학사정관 관점 + 전공 연관성 경고
-            ka.evaluation += ` 입학사정관은 이 기록의 구체적 과정과 깊이를 기준으로 평가하며, ${targetDeptForActivity} 지원 시 직접적인 전공적합성 근거로는 부족할 수 있습니다.`;
+            ka.evaluation += ` 입학사정관은 이 기록의 구체적 과정과 깊이를 기준으로 평가하며, ${targetDeptForActivity} 지원 시 직접적인 진로역량 근거로는 부족할 수 있습니다.`;
           } else if (targetDeptForActivity && hasNegative) {
             // 부정 서술 있으나 입학사정관 관점 없음 → 평가 관점만 추가
             ka.evaluation +=
@@ -2633,7 +2710,7 @@ const normalizeSection = (
     }
   }
 
-  // ── admissionPrediction/admissionStrategy: 단일 과목 전공적합성 패턴 치환 ──
+  // ── admissionPrediction/admissionStrategy: 단일 과목 진로역량 패턴 치환 ──
   if (
     s.sectionId === "admissionPrediction" ||
     s.sectionId === "admissionStrategy"
@@ -2642,7 +2719,7 @@ const normalizeSection = (
       // "정보 과목 프로그래밍 경험이 긍정적입니다" — 간결한 형태
       [
         /정보\s*과목\s*(세특\s*)?(프로그래밍\s*)?(경험|활동)[이가은는]\s*(매우\s*)?(긍정적|적합|유리)[^.]*\./g,
-        "정보 과목에서 프로그래밍 기록이 있으나, 생기부 전반에 걸쳐 전공 관련 서술이 부족하여 이것만으로는 전공적합성을 인정받기 어렵습니다.",
+        "정보 과목에서 프로그래밍 기록이 있으나, 생기부 전반에 걸쳐 전공 관련 서술이 부족하여 이것만으로는 진로역량을 인정받기 어렵습니다.",
       ],
       // "정보 과목에서 파이썬으로 프로그램을 구현한 경험은 긍정적" 류 (어순 변형 대응)
       [
@@ -2659,22 +2736,22 @@ const normalizeSection = (
       // "정보 과목의 [형용사] 성취/경험 ... 긍정적"
       [
         /정보\s*과목의\s*[^.]{0,60}긍정적[^.]*\./g,
-        "정보 과목에서 관련 기록이 일부 확인되나, 생기부 전반에서 전공 관련 서술이 부족하여 이것만으로는 전공적합성을 인정받기 어렵습니다.",
+        "정보 과목에서 관련 기록이 일부 확인되나, 생기부 전반에서 전공 관련 서술이 부족하여 이것만으로는 진로역량을 인정받기 어렵습니다.",
       ],
       // "정보 과목의 ... 전공적합성을 어필"
       [
         /정보\s*과목의\s*[^.]{0,60}전공적합성을?\s*어필[^.]*\./g,
-        "정보 과목에서 관련 기록이 일부 확인되나, 생기부 전반의 전공 관련 서술이 부족하므로 전공적합성 어필에는 한계가 있습니다.",
+        "정보 과목에서 관련 기록이 일부 확인되나, 생기부 전반의 전공 관련 서술이 부족하므로 진로역량 어필에는 한계가 있습니다.",
       ],
       // "정보 과목 성취와/과 ... 긍정적"
       [
         /정보\s*과목\s*성취[와과]\s*[^.]{0,40}긍정적[^.]*\./g,
-        "정보 과목 성취가 있으나, 생기부 전반의 전공적합성이 부족하여 서류 경쟁력은 제한적입니다.",
+        "정보 과목 성취가 있으나, 생기부 전반의 진로역량이 부족하여 서류 경쟁력은 제한적입니다.",
       ],
       // "정보 과목 성취가/도 좋/우수/양호/높"
       [
         /정보\s*과목\s*성취[도]?\s*[가와이은는]\s*[^.]{0,30}(좋|우수|양호|높)[^.]*\./g,
-        "정보 과목 성취가 있으나, 생기부 전반의 전공적합성이 부족하여 서류 경쟁력은 제한적입니다.",
+        "정보 과목 성취가 있으나, 생기부 전반의 진로역량이 부족하여 서류 경쟁력은 제한적입니다.",
       ],
       // "정보 과목의/에서 ... 합격 가능성이 높/안정적인 합격"
       [
@@ -2689,16 +2766,16 @@ const normalizeSection = (
       // ── "전공적합성에서 일부 아쉬움" 약한 표현 강화 ──
       [
         /전공적합성에서\s*일부\s*아쉬움[을를이가]?\s*(남길|있을)\s*수\s*있습니다/g,
-        "전공적합성 평가에서 불리하게 작용하여 학종 서류 경쟁력이 약화됩니다",
+        "진로역량 평가에서 불리하게 작용하여 학종 서류 경쟁력이 약화됩니다",
       ],
       [
         /전공적합성에서\s*다소\s*아쉬움[을를이가]?\s*(남길|있을)\s*수\s*있습니다/g,
-        "전공적합성 평가에서 불리하게 작용하여 학종 서류 경쟁력이 약화됩니다",
+        "진로역량 평가에서 불리하게 작용하여 학종 서류 경쟁력이 약화됩니다",
       ],
       // "전공적합성에서 일부/다소 아쉽습니다" (chanceRationale 축약형)
       [
         /전공적합성에서\s*(일부|다소)\s*아쉽습니다/g,
-        "전공적합성 평가에서 불리하여 학종 서류 경쟁력이 약화됩니다",
+        "진로역량 평가에서 불리하여 학종 서류 경쟁력이 약화됩니다",
       ],
     ];
 
@@ -2764,7 +2841,7 @@ const normalizeSection = (
       s.recommendedPath = fixSingleSubjectRationale(s.recommendedPath);
     }
 
-    // ── 전공 미스매치 시 "등급 경쟁력" 긍정 서술에 전공적합성 경고 강제 추가 ──
+    // ── 전공 미스매치 시 "등급 경쟁력" 긍정 서술에 진로역량 경고 강제 추가 ──
     const courseMatchRate = pre.recommendedCourseMatch?.matchRate ?? 100;
     // recommendedCourseMatch는 Phase 2에서 detectedMajorGroup 기반으로 재생성됨
     const mismatchDept =
@@ -2773,7 +2850,7 @@ const normalizeSection = (
 
     if (hasMajorMismatch) {
       const hasAdequateWarning = (text: string): boolean =>
-        /(전공적합성|전공\s*관련\s*서술)[이가을를에서]*\s*[^.]{0,20}(부족|제한|인정받기\s*어렵|한계|불리|약화|아쉬)|서류\s*경쟁력[이가은는]?\s*[^.]{0,10}(제한|약화|부족)/.test(
+        /(전공적합성|진로역량|전공\s*관련\s*서술)[이가을를에서]*\s*[^.]{0,20}(부족|제한|인정받기\s*어렵|한계|불리|약화|아쉬)|서류\s*경쟁력[이가은는]?\s*[^.]{0,10}(제한|약화|부족)/.test(
           text
         );
       const hasPositiveGrade = (text: string): boolean =>

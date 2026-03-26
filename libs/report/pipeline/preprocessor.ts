@@ -1810,7 +1810,7 @@ export const buildUniversityCandidatesText = (
             ? cutoffs
                 .map(
                   (c) =>
-                    `${c.admissionType}(${c.admissionName}): 50%cut=${c.cutoff50Grade ?? "-"}, 70%cut=${c.cutoff70Grade ?? "-"}, 경쟁률=${c.competitionRate}`
+                    `${c.admissionType}(${c.admissionName}): 50%cut=${c.cutoff50Grade ?? "-"}, 경쟁률=${c.competitionRate}`
                 )
                 .join(" / ")
             : null;
@@ -1854,9 +1854,78 @@ export const buildUniversityCandidatesText = (
       }
     }
 
-    // 학생 등급에 가까운 순으로 정렬 후 최대 6개로 제한 (cutoff50 기준)
+    // 상향/적정/안정 밸런스를 보장하며 최대 6개 선정 (cutoff50 기준)
     const MAX_CANDIDATES = 6;
-    if (studentGrade9 != null) {
+    if (studentGrade9 != null && filtered.length > MAX_CANDIDATES) {
+      // 대학별 대표 cutoff50 (최소값 = 가장 유리한 전형)
+      const getMinCutoff50 = (c: (typeof filtered)[0]): number =>
+        c.allCutoff50s.length > 0 ? Math.min(...c.allCutoff50s) : Infinity;
+
+      // 상향(cutoff < 학생등급): 합격선이 학생보다 높은 대학 (등급 숫자가 낮음)
+      // 안정(cutoff > 학생등급): 합격선이 학생보다 낮은 대학 (등급 숫자가 높음)
+      const REACH_THRESHOLD = 0.15; // ±0.15 이내는 적정
+      const reach = filtered.filter(
+        (c) => getMinCutoff50(c) < studentGrade9 - REACH_THRESHOLD
+      );
+      const fit = filtered.filter((c) => {
+        const cut = getMinCutoff50(c);
+        return (
+          cut >= studentGrade9 - REACH_THRESHOLD &&
+          cut <= studentGrade9 + REACH_THRESHOLD
+        );
+      });
+      const safety = filtered.filter(
+        (c) => getMinCutoff50(c) > studentGrade9 + REACH_THRESHOLD
+      );
+
+      // 각 그룹 내에서 등급 가까운 순 정렬
+      const sortByDist = (arr: typeof filtered) =>
+        arr.sort((a, b) => {
+          const aDiff = Math.abs(getMinCutoff50(a) - studentGrade9);
+          const bDiff = Math.abs(getMinCutoff50(b) - studentGrade9);
+          return aDiff - bDiff;
+        });
+      sortByDist(reach);
+      sortByDist(fit);
+      sortByDist(safety);
+
+      // 밸런스 배분: 상향 1~2, 적정 2~3, 안정 1~2 (가용 수에 따라 조정)
+      const pick = (arr: typeof filtered, max: number) => arr.slice(0, max);
+      const selected: typeof filtered = [];
+
+      // 1단계: 각 그룹에서 최소 보장 (있는 만큼)
+      selected.push(...pick(reach, 2));
+      selected.push(...pick(fit, 3));
+      selected.push(...pick(safety, 2));
+
+      // 2단계: 6개 미만이면 남은 슬롯을 거리 순으로 채움
+      if (selected.length < MAX_CANDIDATES) {
+        const selectedSet = new Set(
+          selected.map((c) => `${c.university}|${c.department}`)
+        );
+        const remaining = filtered
+          .filter((c) => !selectedSet.has(`${c.university}|${c.department}`))
+          .sort((a, b) => {
+            const aDiff = Math.abs(getMinCutoff50(a) - studentGrade9);
+            const bDiff = Math.abs(getMinCutoff50(b) - studentGrade9);
+            return aDiff - bDiff;
+          });
+        selected.push(...remaining.slice(0, MAX_CANDIDATES - selected.length));
+      }
+
+      // 3단계: 6개 초과면 거리 먼 것부터 제거
+      if (selected.length > MAX_CANDIDATES) {
+        selected.sort((a, b) => {
+          const aDiff = Math.abs(getMinCutoff50(a) - studentGrade9);
+          const bDiff = Math.abs(getMinCutoff50(b) - studentGrade9);
+          return aDiff - bDiff;
+        });
+        selected.splice(MAX_CANDIDATES);
+      }
+
+      filtered = selected;
+    } else if (studentGrade9 != null) {
+      // 6개 이하면 거리순 정렬만
       filtered.sort((a, b) => {
         const aDiff =
           a.allCutoff50s.length > 0
@@ -1937,7 +2006,7 @@ export const buildUniversityCandidatesText = (
         ? cutoffs
             .map(
               (c) =>
-                `${c.admissionType}(${c.admissionName}): 50%cut=${c.cutoff50Grade ?? "-"}, 70%cut=${c.cutoff70Grade ?? "-"}, 경쟁률=${c.competitionRate}`
+                `${c.admissionType}(${c.admissionName}): 50%cut=${c.cutoff50Grade ?? "-"}, 경쟁률=${c.competitionRate}`
             )
             .join(" / ")
         : null;
@@ -1989,9 +2058,66 @@ export const buildUniversityCandidatesText = (
     }
   }
 
-  // 학생 등급에 가까운 순으로 정렬 후 최대 6개로 제한
+  // 상향/적정/안정 밸런스를 보장하며 최대 6개 선정
   const MAX_CANDIDATES = 6;
-  if (studentGrade9 != null) {
+  if (studentGrade9 != null && filtered.length > MAX_CANDIDATES) {
+    const getMinCutoff = (c: (typeof filtered)[0]): number =>
+      c.allCutoff70s.length > 0 ? Math.min(...c.allCutoff70s) : Infinity;
+
+    const REACH_THRESHOLD = 0.15;
+    const reach = filtered.filter(
+      (c) => getMinCutoff(c) < studentGrade9 - REACH_THRESHOLD
+    );
+    const fit = filtered.filter((c) => {
+      const cut = getMinCutoff(c);
+      return (
+        cut >= studentGrade9 - REACH_THRESHOLD &&
+        cut <= studentGrade9 + REACH_THRESHOLD
+      );
+    });
+    const safety = filtered.filter(
+      (c) => getMinCutoff(c) > studentGrade9 + REACH_THRESHOLD
+    );
+
+    const sortByDist = (arr: typeof filtered) =>
+      arr.sort(
+        (a, b) =>
+          Math.abs(getMinCutoff(a) - studentGrade9) -
+          Math.abs(getMinCutoff(b) - studentGrade9)
+      );
+    sortByDist(reach);
+    sortByDist(fit);
+    sortByDist(safety);
+
+    const pick = (arr: typeof filtered, max: number) => arr.slice(0, max);
+    const selected: typeof filtered = [];
+    selected.push(...pick(reach, 2));
+    selected.push(...pick(fit, 3));
+    selected.push(...pick(safety, 2));
+
+    if (selected.length < MAX_CANDIDATES) {
+      const selectedSet = new Set(selected.map((c) => `${c.university}`));
+      const remaining = filtered
+        .filter((c) => !selectedSet.has(c.university))
+        .sort(
+          (a, b) =>
+            Math.abs(getMinCutoff(a) - studentGrade9) -
+            Math.abs(getMinCutoff(b) - studentGrade9)
+        );
+      selected.push(...remaining.slice(0, MAX_CANDIDATES - selected.length));
+    }
+
+    if (selected.length > MAX_CANDIDATES) {
+      selected.sort(
+        (a, b) =>
+          Math.abs(getMinCutoff(a) - studentGrade9) -
+          Math.abs(getMinCutoff(b) - studentGrade9)
+      );
+      selected.splice(MAX_CANDIDATES);
+    }
+
+    filtered = selected;
+  } else if (studentGrade9 != null) {
     filtered.sort((a, b) => {
       const aDiff =
         a.allCutoff70s.length > 0

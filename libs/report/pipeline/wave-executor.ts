@@ -46,6 +46,7 @@ import { buildTopicRecommendationPrompt } from "../prompts/sections/topic-recomm
 import { buildInterviewPrepPrompt } from "../prompts/sections/interview-prep.ts";
 import {
   buildAdmissionStrategyPrompt,
+  buildGyogwaAdmissionStrategyPrompt,
   buildDirectionGuidePrompt,
 } from "../prompts/sections/admission-strategy.ts";
 import { buildStoryAnalysisPrompt } from "../prompts/sections/story-analysis.ts";
@@ -755,9 +756,16 @@ export const executeTask = async (
         isArtSportPractical: texts.isArtSportPractical,
         selectedAdmissionTypes,
         majorExplorationDepartments: majorExplDepts,
+        // 학종 분석용 생기부 데이터 — 교과전형 전용일 때는 전달하지 않음
+        ...(!isGyogwaOnly && {
+          competencyExtraction: ser.compExtrText,
+          subjectAnalysisResult: ser.subjAnalysisText,
+        }),
       };
       section = await callGemini<ReportSection>(
-        buildAdmissionStrategyPrompt(stratInput, plan)
+        isGyogwaOnly
+          ? buildGyogwaAdmissionStrategyPrompt(stratInput, plan)
+          : buildAdmissionStrategyPrompt(stratInput, plan)
       );
       break;
     }
