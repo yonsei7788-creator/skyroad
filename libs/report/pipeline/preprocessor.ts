@@ -1675,7 +1675,7 @@ export const buildUniversityCandidatesText = (
   fallbackDepartment?: string,
   /** 고른기회전형(기회균형 등) 포함 여부 (기본: false) */
   includeSpecialAdmission?: boolean,
-  /** Phase 2에서 감지된 학과 검색 키워드 (예: ["전기전자", "전자공학"]) */
+  /** Phase 2에서 감지된 추천 학과명 (예: ["전기전자공학과", "전자공학과"]) */
   departmentKeywords?: string[],
   /** 고교 유형 (특성화고/특목고 등 환산 적용용) */
   schoolType?: string,
@@ -1705,9 +1705,21 @@ export const buildUniversityCandidatesText = (
     return schoolType ? convertGradeBySchoolType(schoolType, asNine) : asNine;
   };
 
-  // ── 키워드 기반 커트라인 직접 검색 (Phase 2 이후 주 경로) ──
+  // ── 학과명 기반 커트라인 직접 검색 (Phase 2 이후 주 경로) ──
+  // 정규화: 괄호/대괄호 제거 → 공백 분리 시 첫 토큰 → 조직 접미사(전공/과/부) 제거
+  // 예: "행정학과"→"행정학", "경찰행정학과"→"경찰행정학", "건축학부 건축공학전공"→"건축학"
+  // 매칭: 정확 일치만 사용 (startsWith 사용 안 함 — "화학"→"화학공학" 오매칭 방지)
+  const normalizeDeptCore = (name: string): string =>
+    name
+      .replace(/\(.*\).*$/, "")
+      .replace(/\[.*\].*$/, "")
+      .split(" ")[0]
+      .replace(/(?:전공|과|부)$/, "")
+      .trim();
+
   if (departmentKeywords && departmentKeywords.length > 0) {
-    // 키워드로 커트라인 데이터에서 대학-학과 매칭
+    // AI가 출력한 학과명을 정규화하여 매칭 기준 생성
+    const targetCores = departmentKeywords.map(normalizeDeptCore);
     const matchedEntries = new Map<
       string,
       {
@@ -1716,11 +1728,16 @@ export const buildUniversityCandidatesText = (
         cutoffs: typeof ADMISSION_CUTOFF_DATA;
       }
     >();
+    // bare name 대응: "음악학" → "음악" 폴백용 (매칭 0건일 때만 사용)
+    const targetCoresWithout학 = targetCores
+      .filter((c) => c.endsWith("학") && c.length >= 3)
+      .map((c) => c.slice(0, -1));
+
     for (const e of ADMISSION_CUTOFF_DATA) {
-      const eDeptNorm = e.department.replace(/[과부학전공]$/g, "").trim();
-      const matched = departmentKeywords.some(
-        (kw) => eDeptNorm.includes(kw) || kw.includes(eDeptNorm)
-      );
+      const eDeptCore = normalizeDeptCore(e.department);
+      // 1차: 정확 일치만 허용 — startsWith 사용 안 함
+      // "행정학" === "행정학" ✓, "화학공학" === "화학" ✗, "경찰행정학" === "행정학" ✗
+      const matched = targetCores.some((core) => eDeptCore === core);
       if (!matched) continue;
 
       const key = `${e.university}|${e.department}`;
@@ -1734,6 +1751,26 @@ export const buildUniversityCandidatesText = (
       (matchedEntries.get(key)!.cutoffs as typeof ADMISSION_CUTOFF_DATA).push(
         e
       );
+    }
+
+    // 2차: 1차 매칭 0건이면 bare name 폴백 ("음악학"→"음악" 등)
+    if (matchedEntries.size === 0 && targetCoresWithout학.length > 0) {
+      for (const e of ADMISSION_CUTOFF_DATA) {
+        const eDeptCore = normalizeDeptCore(e.department);
+        const matched = targetCoresWithout학.some((core) => eDeptCore === core);
+        if (!matched) continue;
+        const key = `${e.university}|${e.department}`;
+        if (!matchedEntries.has(key)) {
+          matchedEntries.set(key, {
+            university: e.university,
+            department: e.department,
+            cutoffs: [],
+          });
+        }
+        (matchedEntries.get(key)!.cutoffs as typeof ADMISSION_CUTOFF_DATA).push(
+          e
+        );
+      }
     }
 
     // 학생 등급 환산 (5등급→9등급→고교유형 환산 순서 적용)
@@ -1750,12 +1787,10 @@ export const buildUniversityCandidatesText = (
     >();
     for (const [, entry] of matchedEntries) {
       const existing = byUniversity.get(entry.university);
-      // 키워드 매칭 점수: 정확 매칭 > 부분 매칭
-      const deptNorm = entry.department.replace(/[과부학전공]$/g, "").trim();
-      const matchScore = departmentKeywords.reduce((sum, kw) => {
-        if (deptNorm === kw) return sum + 3;
-        if (deptNorm.includes(kw)) return sum + 2;
-        if (kw.includes(deptNorm)) return sum + 1;
+      // 매칭 점수: 정확 매칭만 (exact only)
+      const eDeptCore = normalizeDeptCore(entry.department);
+      const matchScore = targetCores.reduce((sum, core) => {
+        if (eDeptCore === core) return sum + 3;
         return sum;
       }, 0);
       if (!existing || matchScore > existing.score) {
@@ -1808,7 +1843,7 @@ export const buildUniversityCandidatesText = (
     // 등급 필터링 (studentGrade9는 이미 5등급→9등급→고교유형 환산 완료된 9등급 일반고 기준)
     let filtered = withCutoff;
     if (studentGrade9 != null) {
-      // ±0.3부터 시작, 5개 미만이면 단계적 확대 (최대 ±0.6)
+      // ±0.3부터 시작, 3개 미만이면 단계적 확대 (최대 ±0.6)
       const margins = [0.3, 0.4, 0.5, 0.6];
       for (const margin of margins) {
         filtered = withCutoff.filter((c) => {
@@ -1823,9 +1858,30 @@ export const buildUniversityCandidatesText = (
           }
           return false;
         });
-        if (filtered.length >= 5) break;
+        if (filtered.length >= 3) break;
       }
     }
+
+    // 학생 등급에 가까운 순으로 정렬 후 최대 6개로 제한
+    const MAX_CANDIDATES = 6;
+    if (studentGrade9 != null) {
+      filtered.sort((a, b) => {
+        const aDiff =
+          a.allCutoff70s.length > 0
+            ? Math.min(
+                ...a.allCutoff70s.map((g) => Math.abs(g - studentGrade9))
+              )
+            : Infinity;
+        const bDiff =
+          b.allCutoff70s.length > 0
+            ? Math.min(
+                ...b.allCutoff70s.map((g) => Math.abs(g - studentGrade9))
+              )
+            : Infinity;
+        return aDiff - bDiff;
+      });
+    }
+    filtered = filtered.slice(0, MAX_CANDIDATES);
 
     const candidates = filtered.map(
       ({ university, department, cutoffSummary }) => ({
@@ -1849,16 +1905,12 @@ export const buildUniversityCandidatesText = (
 
   const universities = majorInfo.universities as string[];
 
-  // 커트라인 데이터에서 추가 대학 보충
-  const deptNorm = majorInfo.majorName.replace(/[과부학]$/, "").trim();
+  // 커트라인 데이터에서 추가 대학 보충 (정규화 후 정확 매칭)
+  const deptCore = normalizeDeptCore(majorInfo.majorName);
   const cutoffUniversities = new Set<string>();
   for (const e of ADMISSION_CUTOFF_DATA) {
-    const eDept = e.department.replace(/[과부학]$/, "").trim();
-    if (
-      eDept === deptNorm ||
-      eDept.includes(deptNorm) ||
-      deptNorm.includes(eDept)
-    ) {
+    const eDeptCore = normalizeDeptCore(e.department);
+    if (eDeptCore === deptCore) {
       cutoffUniversities.add(e.university);
     }
   }
@@ -1907,7 +1959,7 @@ export const buildUniversityCandidatesText = (
   // 학생 등급 기반 필터링: 커트라인이 학생 등급 근처인 대학만 선정
   let filtered = withCutoff;
   if (studentGrade9 != null) {
-    // ±0.3부터 시작, 5개 미만이면 단계적 확대 (최대 ±0.6)
+    // ±0.3부터 시작, 3개 미만이면 단계적 확대 (최대 ±0.6)
     const margins =
       gradingSystem === "5등급제"
         ? [0.2, 0.25, 0.3] // 5등급제: ±0.2 시작, 최대 ±0.3
@@ -1941,9 +1993,26 @@ export const buildUniversityCandidatesText = (
         }
         return false;
       });
-      if (filtered.length >= 5) break;
+      if (filtered.length >= 3) break;
     }
   }
+
+  // 학생 등급에 가까운 순으로 정렬 후 최대 6개로 제한
+  const MAX_CANDIDATES = 6;
+  if (studentGrade9 != null) {
+    filtered.sort((a, b) => {
+      const aDiff =
+        a.allCutoff70s.length > 0
+          ? Math.min(...a.allCutoff70s.map((g) => Math.abs(g - studentGrade9)))
+          : Infinity;
+      const bDiff =
+        b.allCutoff70s.length > 0
+          ? Math.min(...b.allCutoff70s.map((g) => Math.abs(g - studentGrade9)))
+          : Infinity;
+      return aDiff - bDiff;
+    });
+  }
+  filtered = filtered.slice(0, MAX_CANDIDATES);
 
   const candidates = filtered.map(({ university, cutoffSummary }) => ({
     university,

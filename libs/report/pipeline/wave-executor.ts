@@ -274,9 +274,11 @@ export const executeTask = async (
         `${detected} (생기부 분석 기반)`,
         state.preprocessedData?.gradingSystem
       );
-      // Phase 2에서 감지된 학과 키워드로 커트라인 직접 검색
-      const deptKeywords =
-        competencyExtraction.detectedDepartmentKeywords ?? [];
+      // Phase 2에서 감지된 추천 학과명으로 커트라인 직접 검색
+      const detectedDepts =
+        competencyExtraction.detectedDepartments ??
+        competencyExtraction.detectedDepartmentKeywords ??
+        [];
       const correctedCandidates = buildUniversityCandidatesText(
         detected,
         state.preprocessedData?.gradingSystem,
@@ -285,7 +287,7 @@ export const executeTask = async (
         studentInfo.targetUniversities?.some(
           (t) => t.admissionType === "고른기회"
         ) ?? false,
-        deptKeywords.length > 0 ? deptKeywords : undefined,
+        detectedDepts.length > 0 ? detectedDepts : undefined,
         studentInfo.schoolType,
         isGyogwaOnly
       );
