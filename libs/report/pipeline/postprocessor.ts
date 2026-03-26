@@ -599,23 +599,32 @@ export const postprocess = (
       // 대학별 커트라인 조회: 학과별 실제 데이터 → 하드코딩 fallback
       const targetDept = studentInfo.targetDepartment ?? "";
 
+      // 모든 희망대학이 교과전형인지 판별
+      const isGyogwaOnly =
+        (studentInfo.targetUniversities?.length ?? 0) > 0 &&
+        studentInfo.targetUniversities!.every(
+          (t) => t.admissionType === "학생부교과"
+        );
+
       const getRepCutoff9 = (
         university: string,
         department?: string
       ): number | null => {
-        // 1) 학과별 실제 커트라인 (9등급 기준)
+        // 1) 학과별 실제 커트라인 — cutoff50Grade만 사용 (70%cut 무시)
         const dept = department || targetDept;
         if (dept) {
           const cutoffs = findCutoffData(university, dept);
           if (cutoffs.length > 0) {
-            const hakjong = cutoffs.find((c) => c.admissionType === "학종");
-            if (hakjong?.cutoff70Grade != null) return hakjong.cutoff70Grade;
-            if (hakjong?.cutoff50Grade != null) return hakjong.cutoff50Grade;
-            const gyogwa = cutoffs.find((c) => c.admissionType === "교과");
-            if (gyogwa?.cutoff70Grade != null) return gyogwa.cutoff70Grade;
-            if (gyogwa?.cutoff50Grade != null) return gyogwa.cutoff50Grade;
+            if (isGyogwaOnly) {
+              const gyogwa = cutoffs.find((c) => c.admissionType === "교과");
+              if (gyogwa?.cutoff50Grade != null) return gyogwa.cutoff50Grade;
+            } else {
+              const hakjong = cutoffs.find((c) => c.admissionType === "학종");
+              if (hakjong?.cutoff50Grade != null) return hakjong.cutoff50Grade;
+              const gyogwa = cutoffs.find((c) => c.admissionType === "교과");
+              if (gyogwa?.cutoff50Grade != null) return gyogwa.cutoff50Grade;
+            }
             for (const c of cutoffs) {
-              if (c.cutoff70Grade != null) return c.cutoff70Grade;
               if (c.cutoff50Grade != null) return c.cutoff50Grade;
             }
           }
@@ -1421,8 +1430,8 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/을 보여줍니다/g, "이 나타납니다"],
   [/를 보여줍니다/g, "가 나타납니다"],
   [/보여줍니다/g, "나타납니다"],
-  [/보여주며/g, "나타나며"],
-  [/보여주고/g, "나타나고"],
+  [/을 보여주며/g, "을 나타내며"],
+  [/을 보여주고/g, "을 나타내고"],
 
   // ── "드러냅니다" 계열 → 자연스러운 표현 ──
   [/드러냅니다/g, "나타납니다"],

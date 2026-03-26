@@ -702,9 +702,49 @@ export const executeTask = async (
     }
 
     case "admissionStrategy": {
+      // majorExploration 추천 학과로 후보군을 재생성하여 일관성 구조적 보장
+      // → admissionStrategy는 majorExploration이 추천한 학과의 대학만 볼 수 있음
+      let stratCandidatesText = texts.universityCandidatesText;
+      let majorExplDepts: string | undefined;
+      const majorExplSection = sections.find(
+        (s) => s.sectionId === "majorExploration"
+      );
+      if (majorExplSection) {
+        try {
+          const suggestions = (
+            majorExplSection as unknown as Record<string, unknown>
+          ).suggestions as { major: string }[] | undefined;
+          if (suggestions && suggestions.length > 0) {
+            const majorNames = suggestions.map((s) => s.major);
+            majorExplDepts = majorNames.join(", ");
+            // majorExploration 추천 학과명 + 학생 등급으로 후보군 재생성
+            const rebuilt = buildUniversityCandidatesText(
+              majorNames[0],
+              state.preprocessedData?.gradingSystem,
+              state.preprocessedData?.overallAverage,
+              undefined,
+              studentInfo.targetUniversities?.some(
+                (t) => t.admissionType === "고른기회"
+              ) ?? false,
+              majorNames,
+              studentInfo.schoolType,
+              isGyogwaOnly
+            );
+            if (rebuilt !== "[]") {
+              stratCandidatesText = rebuilt;
+              console.log(
+                `[report:${reportId}] admissionStrategy 후보군을 majorExploration 결과로 재생성: [${majorNames.join(", ")}]`
+              );
+            }
+          }
+        } catch {
+          // 파싱 실패 시 기존 후보군 유지
+        }
+      }
+
       const stratInput = {
         academicAnalysis: ser.acadSectionText!,
-        universityCandidates: texts.universityCandidatesText,
+        universityCandidates: stratCandidatesText,
         recommendedCourseMatch: texts.recommendedCourseMatchText,
         studentProfile: texts.studentProfileText,
         gradingSystem: state.preprocessedData!.gradingSystem,
@@ -714,6 +754,7 @@ export const executeTask = async (
         completedSubjectsByYear: texts.completedSubjectsByYearText,
         isArtSportPractical: texts.isArtSportPractical,
         selectedAdmissionTypes,
+        majorExplorationDepartments: majorExplDepts,
       };
       section = await callGemini<ReportSection>(
         buildAdmissionStrategyPrompt(stratInput, plan)

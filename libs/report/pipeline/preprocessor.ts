@@ -1776,35 +1776,23 @@ export const buildUniversityCandidatesText = (
     // 학생 등급 환산 (5등급→9등급→고교유형 환산 순서 적용)
     const studentGrade9 = computeGrade9ForCutoff();
 
-    // 대학별 최적 학과 선택 (같은 대학에 여러 학과 매칭 시 키워드 매칭도가 높은 것 우선)
-    const byUniversity = new Map<
+    // 대학+학과 단위로 중복 제거 (같은 대학의 다른 학과는 모두 유지)
+    // 예: 부산대 행정학과 + 부산대 사회학과 → 둘 다 유지
+    const byUniDept = new Map<
       string,
       {
+        university: string;
         department: string;
         cutoffs: typeof ADMISSION_CUTOFF_DATA;
-        score: number;
       }
     >();
-    for (const [, entry] of matchedEntries) {
-      const existing = byUniversity.get(entry.university);
-      // 매칭 점수: 정확 매칭만 (exact only)
-      const eDeptCore = normalizeDeptCore(entry.department);
-      const matchScore = targetCores.reduce((sum, core) => {
-        if (eDeptCore === core) return sum + 3;
-        return sum;
-      }, 0);
-      if (!existing || matchScore > existing.score) {
-        byUniversity.set(entry.university, {
-          department: entry.department,
-          cutoffs: entry.cutoffs,
-          score: matchScore,
-        });
-      }
+    for (const [key, entry] of matchedEntries) {
+      byUniDept.set(key, entry);
     }
 
     // 커트라인 + 등급 필터링
-    const withCutoff = [...byUniversity.entries()].map(
-      ([university, { department, cutoffs: rawCutoffs }]) => {
+    const withCutoff = [...byUniDept.entries()].map(
+      ([, { university, department, cutoffs: rawCutoffs }]) => {
         let cutoffs = includeSpecialAdmission
           ? rawCutoffs
           : rawCutoffs.filter(
@@ -1826,6 +1814,9 @@ export const buildUniversityCandidatesText = (
                 )
                 .join(" / ")
             : null;
+        const allCutoff50s = cutoffs
+          .map((c) => c.cutoff50Grade)
+          .filter((g): g is number => g != null);
         const allCutoff70s = cutoffs
           .map((c) => c.cutoff70Grade)
           .filter((g): g is number => g != null);
@@ -1835,20 +1826,21 @@ export const buildUniversityCandidatesText = (
           department,
           cutoffSummary,
           repCutoff,
+          allCutoff50s,
           allCutoff70s,
         };
       }
     );
 
-    // 등급 필터링 (studentGrade9는 이미 5등급→9등급→고교유형 환산 완료된 9등급 일반고 기준)
+    // 등급 필터링 — cutoff50Grade 기준 (studentGrade9는 환산 완료된 9등급 일반고 기준)
     let filtered = withCutoff;
     if (studentGrade9 != null) {
       // ±0.3부터 시작, 3개 미만이면 단계적 확대 (최대 ±0.6)
       const margins = [0.3, 0.4, 0.5, 0.6];
       for (const margin of margins) {
         filtered = withCutoff.filter((c) => {
-          if (c.allCutoff70s.length > 0) {
-            return c.allCutoff70s.some(
+          if (c.allCutoff50s.length > 0) {
+            return c.allCutoff50s.some(
               (g) => g >= studentGrade9 - margin && g <= studentGrade9 + margin
             );
           }
@@ -1862,20 +1854,20 @@ export const buildUniversityCandidatesText = (
       }
     }
 
-    // 학생 등급에 가까운 순으로 정렬 후 최대 6개로 제한
+    // 학생 등급에 가까운 순으로 정렬 후 최대 6개로 제한 (cutoff50 기준)
     const MAX_CANDIDATES = 6;
     if (studentGrade9 != null) {
       filtered.sort((a, b) => {
         const aDiff =
-          a.allCutoff70s.length > 0
+          a.allCutoff50s.length > 0
             ? Math.min(
-                ...a.allCutoff70s.map((g) => Math.abs(g - studentGrade9))
+                ...a.allCutoff50s.map((g) => Math.abs(g - studentGrade9))
               )
             : Infinity;
         const bDiff =
-          b.allCutoff70s.length > 0
+          b.allCutoff50s.length > 0
             ? Math.min(
-                ...b.allCutoff70s.map((g) => Math.abs(g - studentGrade9))
+                ...b.allCutoff50s.map((g) => Math.abs(g - studentGrade9))
               )
             : Infinity;
         return aDiff - bDiff;
