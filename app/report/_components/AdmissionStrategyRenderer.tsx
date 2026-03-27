@@ -168,9 +168,6 @@ export const AdmissionStrategyRenderer = ({
                       </>
                     )}
                   </p>
-                  <p className={styles.small}>
-                    {safeText(card.comprehensive?.chanceRationale)}
-                  </p>
                 </div>
               )}
 
@@ -196,9 +193,6 @@ export const AdmissionStrategyRenderer = ({
                         <ReportBadge chance={card.subject.chance} />
                       </>
                     )}
-                  </p>
-                  <p className={styles.small}>
-                    {safeText(card.subject?.chanceRationale)}
                   </p>
                 </div>
               )}
