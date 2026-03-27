@@ -67,7 +67,9 @@ export const postprocess = (
   reportId: string,
   universityCandidatesText?: string,
   /** Phase 2에서 감지된 생기부 기반 강점 계열 (예: "예체능교육") */
-  detectedMajorGroup?: string
+  detectedMajorGroup?: string,
+  /** admissionStrategy에서 majorExploration 기반으로 재생성된 후보군 */
+  strategyUniversityCandidatesText?: string
 ): PostprocessResult => {
   const validationResults: SectionValidationResult[] = [];
 
@@ -384,12 +386,26 @@ export const postprocess = (
       }
 
       // admissionStrategy: 후보군 외 대학 제거
+      // majorExploration 기반 재생성 후보군이 있으면 그것을 사용 (wave-executor에서 재생성됨)
+      const stratAllowed = new Set<string>(allowedUniversities);
+      if (strategyUniversityCandidatesText) {
+        try {
+          const stratCandidates = JSON.parse(
+            strategyUniversityCandidatesText
+          ) as { university: string }[];
+          for (const c of stratCandidates) {
+            stratAllowed.add(c.university);
+          }
+        } catch {
+          // 파싱 실패 시 기존 allowedUniversities 사용
+        }
+      }
       if (admStrat && Array.isArray(admStrat.simulations)) {
         for (const sim of admStrat.simulations) {
           if (!Array.isArray(sim.cards)) continue;
           const before = sim.cards.length;
           sim.cards = sim.cards.filter((card: any) => {
-            if (allowedUniversities.has(card.university)) return true;
+            if (stratAllowed.has(card.university)) return true;
             console.log(
               `[report:${reportId}] 후보군 외 대학 제거 (admissionStrategy): ${card.university} ${card.department}`
             );

@@ -733,6 +733,8 @@ export const executeTask = async (
             );
             if (rebuilt !== "[]") {
               stratCandidatesText = rebuilt;
+              // 재생성된 후보군을 state에 저장 → postprocessor가 이 목록으로 admissionStrategy 필터링
+              texts.strategyUniversityCandidatesText = rebuilt;
               console.log(
                 `[report:${reportId}] admissionStrategy 후보군을 majorExploration 결과로 재생성: [${majorNames.join(", ")}]`
               );

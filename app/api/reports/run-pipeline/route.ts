@@ -600,7 +600,8 @@ export const POST = async (request: NextRequest) => {
           plan,
           reportId,
           state.preprocessedTexts?.universityCandidatesText,
-          detectedMajor
+          detectedMajor,
+          state.preprocessedTexts?.strategyUniversityCandidatesText
         );
 
         console.log(
