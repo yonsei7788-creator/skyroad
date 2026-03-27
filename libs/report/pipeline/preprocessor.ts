@@ -317,6 +317,8 @@ export interface PreprocessedTexts {
   completedSubjectsByYearText: string;
   /** 실기 예체능 학과 여부 (커트라인 데이터 없는 예체능계열) */
   isArtSportPractical: boolean;
+  /** admissionStrategy에서 majorExploration 기반으로 재생성된 후보군 (없으면 universityCandidatesText 사용) */
+  strategyUniversityCandidatesText?: string;
 }
 
 export interface PreprocessResult {
@@ -1637,26 +1639,19 @@ const fiveToNineGrade = (five: number): number => {
 
 /**
  * 대학의 대표 커트라인 등급 산출 (9등급제 기준).
- * 학종 70%cut 우선, 없으면 교과 70%cut, 없으면 50%cut fallback.
+ * 학종 50%cut 우선, 없으면 교과 50%cut fallback.
  */
 const getRepresentativeCutoff = (
   cutoffs: {
     admissionType: string;
     cutoff50Grade: number | null;
-    cutoff70Grade: number | null;
   }[]
 ): number | null => {
-  // 학종 70%cut 우선
   const hakjong = cutoffs.find((c) => c.admissionType === "학종");
-  if (hakjong?.cutoff70Grade != null) return hakjong.cutoff70Grade;
   if (hakjong?.cutoff50Grade != null) return hakjong.cutoff50Grade;
-  // 교과 fallback
   const gyogwa = cutoffs.find((c) => c.admissionType === "교과");
-  if (gyogwa?.cutoff70Grade != null) return gyogwa.cutoff70Grade;
   if (gyogwa?.cutoff50Grade != null) return gyogwa.cutoff50Grade;
-  // 아무거나
   for (const c of cutoffs) {
-    if (c.cutoff70Grade != null) return c.cutoff70Grade;
     if (c.cutoff50Grade != null) return c.cutoff50Grade;
   }
   return null;
@@ -1814,11 +1809,11 @@ export const buildUniversityCandidatesText = (
                 )
                 .join(" / ")
             : null;
+        // 교과 50%cut만 사용 — 후보군 필터링/정렬의 기준
+        // 교과 데이터가 없는 대학은 allCutoff50s가 빈 배열 → 필터에서 탈락
         const allCutoff50s = cutoffs
+          .filter((c) => c.admissionType === "교과")
           .map((c) => c.cutoff50Grade)
-          .filter((g): g is number => g != null);
-        const allCutoff70s = cutoffs
-          .map((c) => c.cutoff70Grade)
           .filter((g): g is number => g != null);
         const repCutoff = getRepresentativeCutoff(cutoffs);
         return {
@@ -1827,120 +1822,150 @@ export const buildUniversityCandidatesText = (
           cutoffSummary,
           repCutoff,
           allCutoff50s,
-          allCutoff70s,
         };
       }
     );
 
-    // 등급 필터링 — cutoff50Grade 기준 (studentGrade9는 환산 완료된 9등급 일반고 기준)
-    let filtered = withCutoff;
-    if (studentGrade9 != null) {
-      // ±0.3부터 시작, 3개 미만이면 단계적 확대 (최대 ±0.6)
-      const margins = [0.3, 0.4, 0.5, 0.6];
-      for (const margin of margins) {
-        filtered = withCutoff.filter((c) => {
-          if (c.allCutoff50s.length > 0) {
-            return c.allCutoff50s.some(
-              (g) => g >= studentGrade9 - margin && g <= studentGrade9 + margin
-            );
-          }
-          const hardcoded = NINE_GRADE_UNIVERSITY_CUTOFF[c.university];
-          if (hardcoded !== undefined) {
-            return Math.abs(hardcoded - studentGrade9) <= margin;
-          }
-          return false;
-        });
-        if (filtered.length >= 3) break;
+    // 교과 50%cut 데이터가 없는 대학 제외 (교과 커트라인이 추천 기준)
+    const withGyogwa = withCutoff.filter((c) => c.allCutoff50s.length > 0);
+
+    const MAX_CANDIDATES = 8;
+    const getMinCutoff50 = (c: (typeof withGyogwa)[0]): number =>
+      c.allCutoff50s.length > 0 ? Math.min(...c.allCutoff50s) : Infinity;
+    const sortByDist = (arr: typeof withGyogwa) =>
+      arr.sort((a, b) => {
+        const aDiff = Math.abs(getMinCutoff50(a) - (studentGrade9 ?? 0));
+        const bDiff = Math.abs(getMinCutoff50(b) - (studentGrade9 ?? 0));
+        return aDiff - bDiff;
+      });
+
+    // 학과 키워드별 우선순위 슬롯 배분 (departmentKeywords 순서 = 우선순위)
+    // 각 학과에 최소 슬롯을 보장하고, 잔여 슬롯은 고순위 학과에 배정
+    let filtered: typeof withGyogwa;
+
+    if (
+      studentGrade9 != null &&
+      departmentKeywords &&
+      departmentKeywords.length > 1
+    ) {
+      // 후보를 학과 키워드별로 분류 (매칭된 키워드 기준)
+      const byMajor = new Map<string, typeof withGyogwa>();
+      for (const kw of targetCores) {
+        byMajor.set(kw, []);
       }
-    }
+      for (const c of withGyogwa) {
+        const deptCore = normalizeDeptCore(c.department);
+        const matchedCore = targetCores.find((core) => deptCore === core);
+        if (matchedCore) {
+          byMajor.get(matchedCore)!.push(c);
+        }
+      }
 
-    // 상향/적정/안정 밸런스를 보장하며 최대 6개 선정 (cutoff50 기준)
-    const MAX_CANDIDATES = 6;
-    if (studentGrade9 != null && filtered.length > MAX_CANDIDATES) {
-      // 대학별 대표 cutoff50 (최소값 = 가장 유리한 전형)
-      const getMinCutoff50 = (c: (typeof filtered)[0]): number =>
-        c.allCutoff50s.length > 0 ? Math.min(...c.allCutoff50s) : Infinity;
+      // 각 학과 그룹 내에서 ±0.3 필터링 후 상향/적정/안정 밸런스 선택
+      const REACH_THRESHOLD = 0.15;
+      const filterByMarginBalanced = (
+        arr: typeof withGyogwa,
+        slots: number
+      ): typeof withGyogwa => {
+        // ±0.3 고정 (마진 확대 없음)
+        const pool = arr.filter((c) =>
+          c.allCutoff50s.some(
+            (g) => g >= studentGrade9 - 0.3 && g <= studentGrade9 + 0.3
+          )
+        );
+        if (pool.length === 0) return [];
+        if (pool.length <= slots) return sortByDist(pool);
 
-      // 상향(cutoff < 학생등급): 합격선이 학생보다 높은 대학 (등급 숫자가 낮음)
-      // 안정(cutoff > 학생등급): 합격선이 학생보다 낮은 대학 (등급 숫자가 높음)
-      const REACH_THRESHOLD = 0.15; // ±0.15 이내는 적정
-      const reach = filtered.filter(
-        (c) => getMinCutoff50(c) < studentGrade9 - REACH_THRESHOLD
-      );
-      const fit = filtered.filter((c) => {
-        const cut = getMinCutoff50(c);
-        return (
-          cut >= studentGrade9 - REACH_THRESHOLD &&
-          cut <= studentGrade9 + REACH_THRESHOLD
+        // 상향/적정/안정 분류 후 밸런스 선택
+        const reach = sortByDist(
+          pool.filter(
+            (c) => getMinCutoff50(c) < studentGrade9 - REACH_THRESHOLD
+          )
+        );
+        const fit = sortByDist(
+          pool.filter((c) => {
+            const cut = getMinCutoff50(c);
+            return (
+              cut >= studentGrade9 - REACH_THRESHOLD &&
+              cut <= studentGrade9 + REACH_THRESHOLD
+            );
+          })
+        );
+        const safety = sortByDist(
+          pool.filter(
+            (c) => getMinCutoff50(c) > studentGrade9 + REACH_THRESHOLD
+          )
+        );
+
+        // 슬롯 수에 따라 배분 (상향 1, 적정 나머지, 안정 1 기본)
+        const selected: typeof withGyogwa = [];
+        if (slots >= 3) {
+          selected.push(...reach.slice(0, 1));
+          selected.push(...safety.slice(0, 1));
+          const used = selected.length;
+          selected.push(...fit.slice(0, slots - used));
+        } else {
+          // 2슬롯 이하: 상향 1개 우선, 나머지 적정
+          selected.push(...reach.slice(0, 1));
+          const used = selected.length;
+          selected.push(...fit.slice(0, slots - used));
+        }
+        // 슬롯이 남으면 거리 순으로 채움
+        if (selected.length < slots) {
+          const usedSet = new Set(
+            selected.map((c) => `${c.university}|${c.department}`)
+          );
+          const rest = sortByDist(
+            pool.filter((c) => !usedSet.has(`${c.university}|${c.department}`))
+          );
+          selected.push(...rest.slice(0, slots - selected.length));
+        }
+        return selected;
+      };
+
+      const majorPools = targetCores.map((core) => {
+        const arr = byMajor.get(core) ?? [];
+        // ±0.3 고정 (마진 확대 없음)
+        return arr.filter((c) =>
+          c.allCutoff50s.some(
+            (g) => g >= studentGrade9 - 0.3 && g <= studentGrade9 + 0.3
+          )
         );
       });
-      const safety = filtered.filter(
-        (c) => getMinCutoff50(c) > studentGrade9 + REACH_THRESHOLD
+
+      // 슬롯 배분: 학과당 최소 2개 보장, 잔여는 고순위 학과에 추가
+      const minPerMajor = 2;
+      const slots = targetCores.map((_, i) =>
+        Math.min(minPerMajor, majorPools[i].length)
       );
-
-      // 각 그룹 내에서 등급 가까운 순 정렬
-      const sortByDist = (arr: typeof filtered) =>
-        arr.sort((a, b) => {
-          const aDiff = Math.abs(getMinCutoff50(a) - studentGrade9);
-          const bDiff = Math.abs(getMinCutoff50(b) - studentGrade9);
-          return aDiff - bDiff;
-        });
-      sortByDist(reach);
-      sortByDist(fit);
-      sortByDist(safety);
-
-      // 밸런스 배분: 상향 1~2, 적정 2~3, 안정 1~2 (가용 수에 따라 조정)
-      const pick = (arr: typeof filtered, max: number) => arr.slice(0, max);
-      const selected: typeof filtered = [];
-
-      // 1단계: 각 그룹에서 최소 보장 (있는 만큼)
-      selected.push(...pick(reach, 2));
-      selected.push(...pick(fit, 3));
-      selected.push(...pick(safety, 2));
-
-      // 2단계: 6개 미만이면 남은 슬롯을 거리 순으로 채움
-      if (selected.length < MAX_CANDIDATES) {
-        const selectedSet = new Set(
-          selected.map((c) => `${c.university}|${c.department}`)
-        );
-        const remaining = filtered
-          .filter((c) => !selectedSet.has(`${c.university}|${c.department}`))
-          .sort((a, b) => {
-            const aDiff = Math.abs(getMinCutoff50(a) - studentGrade9);
-            const bDiff = Math.abs(getMinCutoff50(b) - studentGrade9);
-            return aDiff - bDiff;
-          });
-        selected.push(...remaining.slice(0, MAX_CANDIDATES - selected.length));
+      let remaining = MAX_CANDIDATES - slots.reduce((a, b) => a + b, 0);
+      // 잔여 슬롯을 고순위 학과부터 배정
+      for (let i = 0; i < slots.length && remaining > 0; i++) {
+        const available = majorPools[i].length - slots[i];
+        const add = Math.min(available, remaining);
+        slots[i] += add;
+        remaining -= add;
       }
 
-      // 3단계: 6개 초과면 거리 먼 것부터 제거
-      if (selected.length > MAX_CANDIDATES) {
-        selected.sort((a, b) => {
-          const aDiff = Math.abs(getMinCutoff50(a) - studentGrade9);
-          const bDiff = Math.abs(getMinCutoff50(b) - studentGrade9);
-          return aDiff - bDiff;
-        });
-        selected.splice(MAX_CANDIDATES);
+      // 각 학과 그룹에서 할당된 슬롯만큼 밸런스 선택
+      const selected: typeof withGyogwa = [];
+      for (let i = 0; i < targetCores.length; i++) {
+        selected.push(
+          ...filterByMarginBalanced(byMajor.get(targetCores[i]) ?? [], slots[i])
+        );
       }
 
       filtered = selected;
     } else if (studentGrade9 != null) {
-      // 6개 이하면 거리순 정렬만
-      filtered.sort((a, b) => {
-        const aDiff =
-          a.allCutoff50s.length > 0
-            ? Math.min(
-                ...a.allCutoff50s.map((g) => Math.abs(g - studentGrade9))
-              )
-            : Infinity;
-        const bDiff =
-          b.allCutoff50s.length > 0
-            ? Math.min(
-                ...b.allCutoff50s.map((g) => Math.abs(g - studentGrade9))
-              )
-            : Infinity;
-        return aDiff - bDiff;
-      });
+      // 단일 키워드이거나 등급 정보 기반 — ±0.3 고정 필터링
+      filtered = withGyogwa.filter((c) =>
+        c.allCutoff50s.some(
+          (g) => g >= studentGrade9 - 0.3 && g <= studentGrade9 + 0.3
+        )
+      );
+      sortByDist(filtered);
+    } else {
+      filtered = withGyogwa;
     }
     filtered = filtered.slice(0, MAX_CANDIDATES);
 
@@ -2011,58 +2036,40 @@ export const buildUniversityCandidatesText = (
             .join(" / ")
         : null;
     const repCutoff = getRepresentativeCutoff(cutoffs);
-    const allCutoff70s = cutoffs
-      .map((c) => c.cutoff70Grade)
+    const allCutoff50s = cutoffs
+      .map((c) => c.cutoff50Grade)
       .filter((g): g is number => g != null);
-    return { university, cutoffSummary, repCutoff, allCutoff70s };
+    return { university, cutoffSummary, repCutoff, allCutoff50s };
   });
 
-  // 학생 등급 기반 필터링: 커트라인이 학생 등급 근처인 대학만 선정
+  // 학생 등급 기반 필터링: ±0.3 고정 (마진 확대 없음)
   let filtered = withCutoff;
   if (studentGrade9 != null) {
-    // ±0.3부터 시작, 3개 미만이면 단계적 확대 (최대 ±0.6)
-    const margins =
-      gradingSystem === "5등급제"
-        ? [0.2, 0.25, 0.3] // 5등급제: ±0.2 시작, 최대 ±0.3
-        : [0.3, 0.4, 0.5, 0.6]; // 9등급제: ±0.3 시작, 최대 ±0.6
-
-    for (const margin of margins) {
-      filtered = withCutoff.filter((c) => {
-        if (gradingSystem === "5등급제") {
-          const hardcoded = FIVE_GRADE_UNIVERSITY_CUTOFF[c.university];
-          if (hardcoded !== undefined) {
-            const diff = hardcoded - overallAverage!;
-            return diff >= -margin && diff <= margin;
-          }
-          if (c.repCutoff != null) {
-            return (
-              c.repCutoff >= studentGrade9 - margin &&
-              c.repCutoff <= studentGrade9 + margin
-            );
-          }
-          return false;
-        }
-
-        if (c.allCutoff70s.length > 0) {
-          return c.allCutoff70s.some(
-            (g) => g >= studentGrade9 - margin && g <= studentGrade9 + margin
+    filtered = withCutoff.filter((c) => {
+      if (gradingSystem === "5등급제") {
+        if (c.repCutoff != null) {
+          return (
+            c.repCutoff >= studentGrade9 - 0.3 &&
+            c.repCutoff <= studentGrade9 + 0.3
           );
         }
-        const hardcoded = NINE_GRADE_UNIVERSITY_CUTOFF[c.university];
-        if (hardcoded !== undefined) {
-          return Math.abs(hardcoded - studentGrade9) <= margin;
-        }
         return false;
-      });
-      if (filtered.length >= 3) break;
-    }
+      }
+
+      if (c.allCutoff50s.length > 0) {
+        return c.allCutoff50s.some(
+          (g) => g >= studentGrade9 - 0.3 && g <= studentGrade9 + 0.3
+        );
+      }
+      return false;
+    });
   }
 
-  // 상향/적정/안정 밸런스를 보장하며 최대 6개 선정
-  const MAX_CANDIDATES = 6;
+  // 상향/적정/안정 밸런스를 보장하며 최대 8개 선정
+  const MAX_CANDIDATES = 8;
   if (studentGrade9 != null && filtered.length > MAX_CANDIDATES) {
     const getMinCutoff = (c: (typeof filtered)[0]): number =>
-      c.allCutoff70s.length > 0 ? Math.min(...c.allCutoff70s) : Infinity;
+      c.allCutoff50s.length > 0 ? Math.min(...c.allCutoff50s) : Infinity;
 
     const REACH_THRESHOLD = 0.15;
     const reach = filtered.filter(
@@ -2092,7 +2099,7 @@ export const buildUniversityCandidatesText = (
     const pick = (arr: typeof filtered, max: number) => arr.slice(0, max);
     const selected: typeof filtered = [];
     selected.push(...pick(reach, 2));
-    selected.push(...pick(fit, 3));
+    selected.push(...pick(fit, 4));
     selected.push(...pick(safety, 2));
 
     if (selected.length < MAX_CANDIDATES) {
@@ -2120,12 +2127,12 @@ export const buildUniversityCandidatesText = (
   } else if (studentGrade9 != null) {
     filtered.sort((a, b) => {
       const aDiff =
-        a.allCutoff70s.length > 0
-          ? Math.min(...a.allCutoff70s.map((g) => Math.abs(g - studentGrade9)))
+        a.allCutoff50s.length > 0
+          ? Math.min(...a.allCutoff50s.map((g) => Math.abs(g - studentGrade9)))
           : Infinity;
       const bDiff =
-        b.allCutoff70s.length > 0
-          ? Math.min(...b.allCutoff70s.map((g) => Math.abs(g - studentGrade9)))
+        b.allCutoff50s.length > 0
+          ? Math.min(...b.allCutoff50s.map((g) => Math.abs(g - studentGrade9)))
           : Infinity;
       return aDiff - bDiff;
     });
