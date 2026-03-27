@@ -269,47 +269,67 @@ const ATTENDANCE_VALUE_KEYS = [
   "classMissedOther",
 ] as const;
 
-const ATTENDANCE_EXTRACT_PROMPT = `이 생활기록부에서 "출결상황" 테이블만 읽어주세요.
+const ATTENDANCE_EXTRACT_PROMPT = `이 생활기록부에서 "출결상황" 테이블을 읽어주세요.
 
-각 학년 행을 아래 형식으로 한 줄씩 출력하세요 (파이프 | 로 구분):
-학년|수업일수|결석질병|결석미인정|결석기타|지각질병|지각미인정|지각기타|조퇴질병|조퇴미인정|조퇴기타|결과질병|결과미인정|결과기타|특기사항
+## 테이블 구조
 
-규칙:
-- "." 또는 빈 칸은 0으로 적어주세요
-- 숫자는 그대로 적어주세요
-- 특기사항이 없으면 빈칸으로 두세요
-- 헤더나 설명 없이 데이터 행만 출력하세요
+출결상황 테이블의 헤더는 2행으로 되어 있습니다:
+- 1행: 학년 | 수업일수 | 결석일수(병합) | 지각(병합) | 조퇴(병합) | 결과(병합) | 특기사항
+- 2행:                 | 질병|미인정|기타 | 질병|미인정|기타 | 질병|미인정|기타 | 질병|미인정|기타 |
 
-예시:
-1|191|0|0|0|0|0|0|0|0|0|0|0|0|원격 수업일수 4일, 개근
-2|191|0|2|0|0|0|0|2|0|0|0|0|0|원격수업일수 0일
-3|190|0|7|0|0|0|0|2|0|0|0|0|0|`;
+각 카테고리(결석일수, 지각, 조퇴, 결과) 아래에는 반드시 질병, 미인정, 기타 3개의 하위 컬럼이 있습니다.
+
+## 출력 형식
+
+각 학년마다 아래 형식으로 정확히 출력하세요. "." 또는 빈 칸은 0으로 적으세요.
+카테고리별로 한 줄씩, 해당 카테고리의 병합 헤더 아래 3개 셀만 읽으세요.
+
+=== 학년 [번호] ===
+수업일수: [숫자]
+결석일수: 질병=[숫자] 미인정=[숫자] 기타=[숫자]
+지각: 질병=[숫자] 미인정=[숫자] 기타=[숫자]
+조퇴: 질병=[숫자] 미인정=[숫자] 기타=[숫자]
+결과: 질병=[숫자] 미인정=[숫자] 기타=[숫자]
+특기사항: [텍스트 또는 없음]
+
+## 예시
+
+=== 학년 1 ===
+수업일수: 195
+결석일수: 질병=0 미인정=0 기타=0
+지각: 질병=3 미인정=1 기타=0
+조퇴: 질병=0 미인정=0 기타=0
+결과: 질병=2 미인정=0 기타=0
+특기사항: 없음
+
+=== 학년 2 ===
+수업일수: 190
+결석일수: 질병=0 미인정=0 기타=0
+지각: 질병=0 미인정=0 기타=0
+조퇴: 질병=0 미인정=0 기타=0
+결과: 질병=0 미인정=0 기타=0
+특기사항: 개근, 원격수업일수 50일
+
+모든 학년을 빠짐없이 출력하세요.`;
 
 /**
- * 정부24 PDF의 "결석일수" 병합 헤더로 인한 +1 오프셋 보정.
- * Gemini가 결석 영역(c[0..2])에서 c[0]=0이고 c[1]에 값이 있으면
- * 결석 3칸만 왼쪽으로 1칸 shift한다.
- * 지각/조퇴/결과는 오프셋이 없으므로 그대로 유지.
+ * "질병=[숫자] 미인정=[숫자] 기타=[숫자]" 형식의 문자열에서 3개 값 추출.
  */
-const correctAbsenceOffset = (col: number[]): number[] => {
-  if (col.length !== 12) return col;
-
-  // 결석 영역(c[0..2])만 검사: c[0]==0이고 c[1] 또는 c[2]에 값이 있으면 shift
-  if (col[0] === 0 && (col[1] !== 0 || col[2] !== 0)) {
-    const [, c1, c2, ...rest] = col;
-    const corrected = [c1, c2, 0, ...rest];
-    console.info(
-      `[parse] Absence offset correction: 결석[${col[0]},${col[1]},${col[2]}] → [${corrected[0]},${corrected[1]},${corrected[2]}]`
-    );
-    return corrected;
-  }
-
-  return col;
+const parseTriple = (line: string): [number, number, number] => {
+  const illness = line.match(/질병\s*=\s*(\d+)/)?.[1];
+  const unauth = line.match(/미인정\s*=\s*(\d+)/)?.[1];
+  const other = line.match(/기타\s*=\s*(\d+)/)?.[1];
+  return [
+    illness ? parseInt(illness, 10) : 0,
+    unauth ? parseInt(unauth, 10) : 0,
+    other ? parseInt(other, 10) : 0,
+  ];
 };
 
 /**
- * Gemini 2차 호출로 출결 테이블만 파이프 구분 텍스트로 추출 후 코드에서 파싱.
- * 결석 영역의 +1 오프셋을 보정한다.
+ * Gemini 2차 호출로 출결 테이블을 카테고리별 구조화 텍스트로 추출.
+ * 카테고리(결석일수/지각/조퇴/결과)를 별도 줄로 분리하여
+ * Gemini가 그룹 간 셀 위치를 혼동하는 것을 방지한다.
  */
 const extractAttendanceWithGemini = async (
   model: ReturnType<GoogleGenerativeAI["getGenerativeModel"]>,
@@ -320,42 +340,78 @@ const extractAttendanceWithGemini = async (
       ...fileParts,
       { text: ATTENDANCE_EXTRACT_PROMPT },
     ]);
-    const text = result.response.text().trim();
-    console.info(`[parse] Attendance 2nd pass raw:\n${text}`);
+    const rawText = result.response.text().trim();
+    console.info(`[parse] Attendance 2nd pass raw:\n${rawText}`);
+
+    // "=== 학년 N ===" 블록 단위로 분리
+    const blocks = rawText.split(/===\s*학년\s*(\d+)\s*===/).slice(1);
+    // blocks = [yearStr, content, yearStr, content, ...]
 
     const rows: RawRow[] = [];
-    for (const line of text.split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("학년")) continue;
+    const seenYears = new Set<number>();
 
-      const parts = trimmed.split("|");
-      if (parts.length < 14) continue;
+    for (let i = 0; i < blocks.length - 1; i += 2) {
+      const year = parseInt(blocks[i].trim(), 10);
+      const content = blocks[i + 1];
 
-      // 12개 값 추출 (parts[2..13])
-      const values = parts.slice(2, 14).map((p) => {
-        const n = parseInt(p.trim(), 10);
-        return isNaN(n) ? 0 : n;
-      });
+      if (!year || year < 1 || year > 4) continue;
+      if (seenYears.has(year)) {
+        console.warn(`[parse] Attendance: duplicate year=${year}, skipping`);
+        continue;
+      }
+      seenYears.add(year);
 
-      // 12개로 정규화
-      while (values.length < 12) values.push(0);
-      if (values.length > 12) values.length = 12;
+      // 수업일수 추출
+      const totalDaysMatch = content.match(/수업일수\s*[:：]\s*(\d+)/);
+      const totalDays = totalDaysMatch ? parseInt(totalDaysMatch[1], 10) : 0;
 
-      // 결석 영역만 오프셋 보정
-      const corrected = correctAbsenceOffset(values);
+      // 카테고리별 3개 값 추출 (각 줄에서 질병/미인정/기타)
+      const absenceLine = content.match(/결석일수\s*[:：]\s*(.*)/)?.[1] ?? "";
+      const latenessLine = content.match(/지각\s*[:：]\s*(.*)/)?.[1] ?? "";
+      const earlyLeaveLine = content.match(/조퇴\s*[:：]\s*(.*)/)?.[1] ?? "";
+      const classMissedLine = content.match(/결과\s*[:：]\s*(.*)/)?.[1] ?? "";
+
+      const [aI, aU, aO] = parseTriple(absenceLine);
+      const [lI, lU, lO] = parseTriple(latenessLine);
+      const [eI, eU, eO] = parseTriple(earlyLeaveLine);
+      const [cI, cU, cO] = parseTriple(classMissedLine);
+
+      // 특기사항 추출
+      const noteMatch = content.match(/특기사항\s*[:：]\s*(.*)/);
+      let note = noteMatch ? noteMatch[1].trim() : "";
+      if (note === "없음" || note === "없음.") note = "";
 
       const row: RawRow = {
         id: crypto.randomUUID(),
-        year: parseInt(parts[0].trim(), 10) || 1,
-        totalDays: parseInt(parts[1].trim(), 10) || 0,
-        note: (parts[14] ?? "").trim(),
+        year,
+        totalDays,
+        absenceIllness: aI || null,
+        absenceUnauthorized: aU || null,
+        absenceOther: aO || null,
+        latenessIllness: lI || null,
+        latenessUnauthorized: lU || null,
+        latenessOther: lO || null,
+        earlyLeaveIllness: eI || null,
+        earlyLeaveUnauthorized: eU || null,
+        earlyLeaveOther: eO || null,
+        classMissedIllness: cI || null,
+        classMissedUnauthorized: cU || null,
+        classMissedOther: cO || null,
+        note,
       };
-      for (let i = 0; i < ATTENDANCE_VALUE_KEYS.length; i++) {
-        row[ATTENDANCE_VALUE_KEYS[i]] =
-          corrected[i] === 0 ? null : corrected[i];
-      }
+
+      console.info(
+        `[parse] Attendance row: year=${year}, totalDays=${totalDays}, ` +
+          `결석=[${aI},${aU},${aO}], 지각=[${lI},${lU},${lO}], ` +
+          `조퇴=[${eI},${eU},${eO}], 결과=[${cI},${cU},${cO}], ` +
+          `note="${note}"`
+      );
+
       rows.push(row);
     }
+
+    // 학년 순서 정렬
+    rows.sort((a, b) => (a.year as number) - (b.year as number));
 
     return rows.length > 0 ? rows : null;
   } catch (e) {
@@ -576,14 +632,15 @@ export async function POST(request: NextRequest) {
 
     const enriched = enrichWithIds(rawJson as RawRecord);
 
-    // 출결: Gemini 2차 호출로 파이프 구분 텍스트 추출 → 코드에서 결정적 매핑
-    // 1차 호출의 JSON 매핑보다 단순한 작업(셀 값 나열)이므로 정확도가 높음
+    // 출결: Gemini 2차 호출로 JSON 추출 — 필드명 기반 매핑으로 컬럼/행 밀림 방지
+    // thinking budget 8192: 병합 헤더가 있는 복잡한 테이블 구조를 정확히 파악하기 위해 충분한 추론 시간 부여
+    // responseMimeType 미설정: structured output 제약 없이 자유롭게 추론 후 JSON 출력
     const attendanceModel = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       generationConfig: {
-        maxOutputTokens: 1024,
+        maxOutputTokens: 2048,
         // @ts-expect-error -- thinkingConfig is supported by Gemini 2.5 but not yet in SDK types
-        thinkingConfig: { thinkingBudget: 0 },
+        thinkingConfig: { thinkingBudget: 8192 },
       },
     });
     const attendanceResult = await extractAttendanceWithGemini(
