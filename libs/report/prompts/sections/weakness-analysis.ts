@@ -9,6 +9,10 @@ export interface WeaknessAnalysisPromptInput {
   isMedical?: boolean;
   gradingSystem?: "5등급제" | "9등급제";
   isGyogwaOnly?: boolean;
+  /** 생기부 기반 감지된 강점 계열 (예: "인문", "자연과학", "의생명") */
+  detectedMajorGroup?: string;
+  /** 학과별 평가 기준 텍스트 (핵심과목, riskFactors 등) */
+  majorEvaluationContext?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -112,7 +116,20 @@ export const buildWeaknessAnalysisPrompt = (
 
 이 과목들은 성실성 확인 수준이며, 사정관이 이 과목 성적으로 감점하지 않습니다.
 약점 분석은 핵심 교과(국수영 + 전공 관련 탐구과목)에 집중하세요.
+${
+  input.majorEvaluationContext
+    ? `
+## 학과별 평가 기준 (약점 판단 시 반드시 참고)
 
+${input.majorEvaluationContext}
+
+⚠️ **위 평가 기준의 핵심과목(keySubjects)과 riskFactors를 기준으로 약점을 판단하세요.**
+- 핵심과목에 해당하지 않는 과목의 성적 부진은 "전공적합성" 약점으로 분류하지 마세요.
+- 예: 사회과학계열 학생의 수학 성적이 낮더라도 전공적합성과 무관합니다. 수학은 "학업역량" 관점에서만 언급할 수 있습니다.
+- riskFactors에 명시된 항목을 우선적으로 약점에 포함하세요.
+`
+    : ""
+}
 ## ⛔ 사실 검증 원칙 (최우선 규칙)
 - 약점을 식별할 때 **반드시 제공된 성적 데이터(preprocessedAcademicData, rawAcademicData)에서 실제 등급/점수를 확인**한 후에만 언급하세요.
 - **성적 데이터에 없는 정보를 추측하거나 일반화하면 안 됩니다.** 예: 수학 관련 과목 중 일부만 3등급인데 "수학 과목이 3~4등급"이라고 일반화하면 안 됩니다.
@@ -183,7 +200,14 @@ ${input.academicAnalysis}
 
 ### 학생 프로필
 ${input.studentProfile}
-
+${
+  input.detectedMajorGroup
+    ? `
+### 감지된 강점 계열
+${input.detectedMajorGroup}
+`
+    : ""
+}
 ${PLAN_SPECIFIC[plan]}`;
 };
 

@@ -550,6 +550,15 @@ export const executeTask = async (
       const weaknessAcadText = isGyogwaOnly
         ? stripSemesterData(ser.acadAnalText!)
         : ser.acadAnalText!;
+      // 학과별 평가 기준 전달 (전공적합성 오판 방지)
+      let weaknessMajorGroup = detectedMajorForFlags;
+      if (!weaknessMajorGroup && ser.compExtrText) {
+        try {
+          weaknessMajorGroup = JSON.parse(ser.compExtrText).detectedMajorGroup;
+        } catch {
+          // 파싱 실패 시 무시
+        }
+      }
       const weaknessInput = {
         competencyExtraction: ser.compExtrText!,
         academicAnalysis: weaknessAcadText,
@@ -557,6 +566,8 @@ export const executeTask = async (
         isMedical,
         gradingSystem: state.preprocessedData!.gradingSystem,
         isGyogwaOnly,
+        detectedMajorGroup: weaknessMajorGroup,
+        majorEvaluationContext: texts.majorEvaluationContextText,
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly
@@ -835,18 +846,32 @@ export const executeTask = async (
           // 파싱 실패 시 무시
         }
       }
-      section = await callGemini<ReportSection>(
-        buildMajorExplorationPrompt(
-          {
-            competencyExtraction: ser.compExtrText!,
-            academicAnalysis: ser.acadAnalText!,
-            studentProfile: texts.studentProfileText,
-            targetDepartment: studentInfo.targetDepartment,
-            detectedMajorGroup: detectedMajorForExploration,
-          },
-          plan
-        )
+      // 플랜이 달라도 동일 학생이면 같은 추천 전공이 나오도록 seed 고정
+      // 핵심 입력(competencyExtraction + studentProfile)의 해시를 seed로 사용
+      const seedInput = `${ser.compExtrText}|${texts.studentProfileText}`;
+      let majorSeed = 0;
+      for (let i = 0; i < seedInput.length; i++) {
+        majorSeed =
+          ((majorSeed << 5) - majorSeed + seedInput.charCodeAt(i)) | 0;
+      }
+      const majorPrompt = buildMajorExplorationPrompt(
+        {
+          competencyExtraction: ser.compExtrText!,
+          academicAnalysis: ser.acadAnalText!,
+          studentProfile: texts.studentProfileText,
+          targetDepartment: studentInfo.targetDepartment,
+          detectedMajorGroup: detectedMajorForExploration,
+        },
+        plan
       );
+      const majorResult = await client.call<ReportSection>({
+        systemInstruction: systemPrompt,
+        prompt: majorPrompt,
+        responseSchema: EMPTY_SCHEMA,
+        thinkingBudget: THINKING_BUDGET,
+        seed: Math.abs(majorSeed),
+      });
+      section = majorResult.data;
       break;
     }
 

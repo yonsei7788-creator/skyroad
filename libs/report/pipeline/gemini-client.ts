@@ -15,6 +15,8 @@ export interface GeminiCallOptions {
   retryConfig?: RetryConfig;
   /** 0 = thinking OFF, positive = thinking budget tokens. undefined = model default */
   thinkingBudget?: number;
+  /** 결정론적 출력을 위한 시드 값. 동일 시드 + 동일 입력 → 동일 출력 보장 시도 */
+  seed?: number;
 }
 
 export interface GeminiCallResult<T> {
@@ -51,6 +53,7 @@ export const createGeminiClient = (apiKey: string) => {
       temperature = 0,
       retryConfig = DEFAULT_RETRY_CONFIG,
       thinkingBudget,
+      seed,
     } = options;
 
     const generationConfig: Record<string, unknown> = {
@@ -58,6 +61,10 @@ export const createGeminiClient = (apiKey: string) => {
       maxOutputTokens: MAX_OUTPUT_TOKENS,
       temperature,
     };
+
+    if (seed !== undefined) {
+      generationConfig.seed = seed;
+    }
 
     // responseSchema가 비어있지 않으면 Gemini structured output 활성화
     if (responseSchema && Object.keys(responseSchema).length > 0) {

@@ -137,6 +137,8 @@ interface GeneralSubjectRow {
   achievement: string;
   studentCount: number | null;
   gradeRank: number | null;
+  /** 비고 (예: "공동, 타기관" → 공동교육과정 이수) */
+  note?: string;
 }
 
 interface CareerSubjectRow {
@@ -150,6 +152,8 @@ interface CareerSubjectRow {
   achievement: string;
   studentCount: number | null;
   achievementDistribution: string;
+  /** 비고 (예: "공동, 타기관" → 공동교육과정 이수) */
+  note?: string;
 }
 
 interface SubjectEvaluationRow {
@@ -2354,34 +2358,46 @@ const formatRawAcademicData = (
 
   lines.push("## 일반 교과 성적");
   lines.push(
-    "| 학년 | 학기 | 교과 | 과목 | 원점수 | 평균 | 표준편차 | 등급 | 수강자수 |"
+    "| 학년 | 학기 | 교과 | 과목 | 원점수 | 평균 | 표준편차 | 등급 | 수강자수 | 비고 |"
   );
   lines.push(
-    "|------|------|------|------|--------|------|----------|------|----------|"
+    "|------|------|------|------|--------|------|----------|------|----------|------|"
   );
   for (const s of general.sort(
     (a, b) => a.year - b.year || a.semester - b.semester
   )) {
+    const noteLabel = s.note ? s.note : "";
     lines.push(
-      `| ${s.year} | ${s.semester} | ${s.category} | ${s.subject} | ${s.rawScore ?? "-"} | ${s.average ?? "-"} | ${s.standardDeviation ?? "-"} | ${s.gradeRank ?? "-"} | ${s.studentCount ?? "-"} |`
+      `| ${s.year} | ${s.semester} | ${s.category} | ${s.subject} | ${s.rawScore ?? "-"} | ${s.average ?? "-"} | ${s.standardDeviation ?? "-"} | ${s.gradeRank ?? "-"} | ${s.studentCount ?? "-"} | ${noteLabel} |`
     );
   }
 
   if (career.length > 0) {
     lines.push("\n## 진로선택과목 성적");
     lines.push(
-      "| 학년 | 학기 | 교과 | 과목 | 원점수 | 평균 | 성취도 | 수강자수 | 성취도분포 |"
+      "| 학년 | 학기 | 교과 | 과목 | 원점수 | 평균 | 성취도 | 수강자수 | 성취도분포 | 비고 |"
     );
     lines.push(
-      "|------|------|------|------|--------|------|--------|----------|-----------|"
+      "|------|------|------|------|--------|------|--------|----------|-----------|------|"
     );
     for (const s of career.sort(
       (a, b) => a.year - b.year || a.semester - b.semester
     )) {
+      const noteLabel = s.note ? s.note : "";
       lines.push(
-        `| ${s.year} | ${s.semester} | ${s.category} | ${s.subject} | ${s.rawScore ?? "-"} | ${s.average ?? "-"} | ${s.achievement} | ${s.studentCount ?? "-"} | ${s.achievementDistribution} |`
+        `| ${s.year} | ${s.semester} | ${s.category} | ${s.subject} | ${s.rawScore ?? "-"} | ${s.average ?? "-"} | ${s.achievement} | ${s.studentCount ?? "-"} | ${s.achievementDistribution} | ${noteLabel} |`
       );
     }
+  }
+
+  // 공동교육과정 해석 안내 (비고에 "공동" 포함 과목이 있는 경우)
+  const hasGongdong =
+    general.some((s) => s.note?.includes("공동")) ||
+    career.some((s) => s.note?.includes("공동"));
+  if (hasGongdong) {
+    lines.push(
+      "\n> 참고: 비고란에 '공동' 또는 '타기관'이 표시된 과목은 공동교육과정으로 이수한 과목입니다. 공동교육과정은 평가 난이도가 낮아 성취도 A 비율이 높으므로, 단순 성취도 비율만으로는 변별력이 없으며 세특의 내용이 더 중요합니다."
+    );
   }
 
   return lines.join("\n");
