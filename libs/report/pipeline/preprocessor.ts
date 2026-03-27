@@ -1820,6 +1820,9 @@ export const buildUniversityCandidatesText = (
         const allCutoff70s = cutoffs
           .map((c) => c.cutoff70Grade)
           .filter((g): g is number => g != null);
+        const hasGyogwaCutoff = cutoffs.some(
+          (c) => c.admissionType === "교과" && c.cutoff50Grade != null
+        );
         const repCutoff = getRepresentativeCutoff(cutoffs);
         return {
           university,
@@ -1828,17 +1831,21 @@ export const buildUniversityCandidatesText = (
           repCutoff,
           allCutoff50s,
           allCutoff70s,
+          hasGyogwaCutoff,
         };
       }
     );
 
+    // 교과 50%cut 데이터가 없는 대학 제외 (교과 데이터가 추천의 기준)
+    const withGyogwa = withCutoff.filter((c) => c.hasGyogwaCutoff);
+
     // 등급 필터링 — cutoff50Grade 기준 (studentGrade9는 환산 완료된 9등급 일반고 기준)
-    let filtered = withCutoff;
+    let filtered = withGyogwa;
     if (studentGrade9 != null) {
       // ±0.3부터 시작, 3개 미만이면 단계적 확대 (최대 ±0.6)
       const margins = [0.3, 0.4, 0.5, 0.6];
       for (const margin of margins) {
-        filtered = withCutoff.filter((c) => {
+        filtered = withGyogwa.filter((c) => {
           if (c.allCutoff50s.length > 0) {
             return c.allCutoff50s.some(
               (g) => g >= studentGrade9 - margin && g <= studentGrade9 + margin

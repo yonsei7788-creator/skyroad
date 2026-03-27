@@ -5,6 +5,11 @@ import styles from "./report.module.css";
 import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
+const hasCutoffData = (rationale?: string): boolean =>
+  !!rationale &&
+  !/합격선\s*(데이터\s*)?미확보/.test(rationale) &&
+  /\d+%cut|\d+\.\d+등급/.test(rationale);
+
 interface AdmissionStrategyRendererProps {
   data: AdmissionStrategySection;
   sectionNumber: number;
@@ -109,9 +114,6 @@ export const AdmissionStrategyRenderer = ({
       {/* Block 3: 대학별 합격 가능성 분석 — 1대학 1카드 (학종+교과 통합) */}
       {/* 커트라인 데이터 미확보 전형은 렌더링하지 않음 */}
       {(() => {
-        const hasCutoffData = (rationale?: string): boolean =>
-          !!rationale && !/합격선\s*(데이터\s*)?미확보/.test(rationale);
-
         const rationaleCards =
           data.simulations
             ?.flatMap((sim) => sim.cards ?? [])
@@ -131,14 +133,10 @@ export const AdmissionStrategyRenderer = ({
         if (rationaleCards.length === 0) return null;
         return rationaleCards;
       })()?.map((card, idx) => {
-        const hasCompCutoff =
-          !!card.comprehensive?.chanceRationale &&
-          !/합격선\s*(데이터\s*)?미확보/.test(
-            card.comprehensive.chanceRationale
-          );
-        const hasSubjCutoff =
-          !!card.subject?.chanceRationale &&
-          !/합격선\s*(데이터\s*)?미확보/.test(card.subject.chanceRationale);
+        const hasCompCutoff = hasCutoffData(
+          card.comprehensive?.chanceRationale
+        );
+        const hasSubjCutoff = hasCutoffData(card.subject?.chanceRationale);
 
         return (
           <div key={`rationale-${idx}`}>
@@ -167,9 +165,6 @@ export const AdmissionStrategyRenderer = ({
                       </>
                     )}
                   </p>
-                  <p className={styles.small}>
-                    {safeText(card.comprehensive?.chanceRationale)}
-                  </p>
                 </div>
               )}
 
@@ -195,9 +190,6 @@ export const AdmissionStrategyRenderer = ({
                         <ReportBadge chance={card.subject.chance} />
                       </>
                     )}
-                  </p>
-                  <p className={styles.small}>
-                    {safeText(card.subject?.chanceRationale)}
                   </p>
                 </div>
               )}
