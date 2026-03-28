@@ -70593,7 +70593,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
   {
     university: "아주대학교",
     department: "정치외교학과",
-    admissionType: "종합",
+    admissionType: "학종",
     admissionName: "일반학생",
     quota: 36,
     competitionRate: 5.81,
