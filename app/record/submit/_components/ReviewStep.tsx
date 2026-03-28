@@ -184,6 +184,7 @@ const GeneralSubjectsTable = ({
           <th scope="col">평균</th>
           <th scope="col">표준편차</th>
           <th scope="col">등급</th>
+          <th scope="col">비고</th>
         </tr>
       </thead>
       <tbody>
@@ -201,6 +202,7 @@ const GeneralSubjectsTable = ({
             <td>{g.average ?? "-"}</td>
             <td>{g.standardDeviation ?? "-"}</td>
             <td>{g.gradeRank ?? "-"}</td>
+            <td>{g.note || "-"}</td>
           </tr>
         ))}
       </tbody>
@@ -226,6 +228,7 @@ const CareerSubjectsTable = ({
           <th scope="col">평균</th>
           <th scope="col">성취도</th>
           <th scope="col">분포비율</th>
+          <th scope="col">비고</th>
         </tr>
       </thead>
       <tbody>
@@ -243,6 +246,7 @@ const CareerSubjectsTable = ({
             <td>{g.average ?? "-"}</td>
             <td>{g.achievement || "-"}</td>
             <td>{g.achievementDistribution || "-"}</td>
+            <td>{g.note || "-"}</td>
           </tr>
         ))}
       </tbody>

@@ -87,6 +87,7 @@ export interface GeneralSubjectRow {
   achievement: string;
   studentCount: number | null;
   gradeRank: number | null;
+  note: string;
 }
 
 /** 교과학습발달상황 - 진로선택과목 */
@@ -102,6 +103,7 @@ export interface CareerSubjectRow {
   achievement: string;
   studentCount: number | null;
   achievementDistribution: string;
+  note: string;
 }
 
 /** 교과학습발달상황 - 체육/예술과목 */
@@ -353,6 +355,7 @@ export const createEmptyGeneralSubjectRow = (): GeneralSubjectRow => ({
   achievement: "",
   studentCount: null,
   gradeRank: null,
+  note: "",
 });
 
 export const createEmptyCareerSubjectRow = (): CareerSubjectRow => ({
@@ -367,6 +370,7 @@ export const createEmptyCareerSubjectRow = (): CareerSubjectRow => ({
   achievement: "",
   studentCount: null,
   achievementDistribution: "",
+  note: "",
 });
 
 export const createEmptyArtsPhysicalSubjectRow =

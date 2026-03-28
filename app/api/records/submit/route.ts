@@ -112,6 +112,7 @@ const FIELD_MAPS: Record<keyof SchoolRecord, Record<string, string>> = {
     achievement: "achievement",
     studentCount: "student_count",
     gradeRank: "grade_rank",
+    note: "note",
   },
   careerSubjects: {
     year: "year",
@@ -124,6 +125,7 @@ const FIELD_MAPS: Record<keyof SchoolRecord, Record<string, string>> = {
     achievement: "achievement",
     studentCount: "student_count",
     achievementDistribution: "achievement_distribution",
+    note: "note",
   },
   artsPhysicalSubjects: {
     year: "year",

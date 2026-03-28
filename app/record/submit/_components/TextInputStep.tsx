@@ -628,6 +628,13 @@ const generalSubjectColumns: ColumnDef<Record<string, unknown>>[] = [
     max: 9,
     width: "48px",
   },
+  {
+    key: "note",
+    label: "비고",
+    type: "text",
+    placeholder: "공동, 타기관",
+    width: "80px",
+  },
 ];
 
 const careerSubjectColumns: ColumnDef<Record<string, unknown>>[] = [
@@ -708,6 +715,13 @@ const careerSubjectColumns: ColumnDef<Record<string, unknown>>[] = [
     type: "text",
     placeholder: "40%|35.1|24.9",
     width: "100px",
+  },
+  {
+    key: "note",
+    label: "비고",
+    type: "text",
+    placeholder: "공동, 타기관",
+    width: "80px",
   },
 ];
 

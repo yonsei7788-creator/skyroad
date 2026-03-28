@@ -99,6 +99,7 @@ const SECTION_CONFIGS: {
       achievement: "achievement",
       student_count: "studentCount",
       grade_rank: "gradeRank",
+      note: "note",
     },
   },
   {
@@ -115,6 +116,7 @@ const SECTION_CONFIGS: {
       achievement: "achievement",
       student_count: "studentCount",
       achievement_distribution: "achievementDistribution",
+      note: "note",
     },
   },
   {
