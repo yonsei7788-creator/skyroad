@@ -15,7 +15,9 @@ interface Plan {
   name: string;
   slug: "lite" | "standard" | "premium";
   subtitle: string;
+  originalPrice: string;
   price: string;
+  discount: number;
   pages: string;
   popular: boolean;
   features: PlanFeature[];
@@ -29,12 +31,14 @@ const PLANS: Plan[] = [
     name: "Lite Report",
     slug: "lite",
     subtitle: "기본 진단형",
-    price: "59,000",
+    originalPrice: "59,000",
+    price: "49,000",
+    discount: 17,
     pages: "18~20페이지",
     popular: false,
     point: "내 생기부 현재 위치, 빠르게 파악하기",
     tag: "빠른 진단",
-    cta: "59,000원으로 시작하기",
+    cta: "49,000원으로 시작하기",
     features: [
       { text: "학생 유형 분류 + 역량 점수", included: true },
       { text: "성적 분석 + 권장과목 이수 분석", included: true },
@@ -52,12 +56,14 @@ const PLANS: Plan[] = [
     name: "Standard Report",
     slug: "standard",
     subtitle: "실전 전략형",
-    price: "99,000",
+    originalPrice: "99,000",
+    price: "79,000",
+    discount: 20,
     pages: "40~50페이지",
     popular: true,
     point: "합격 가능성 분석 + 지원 전략까지",
     tag: "가장 많이 선택",
-    cta: "99,000원으로 시작하기",
+    cta: "79,000원으로 시작하기",
     features: [
       { text: "Lite Report 전체 포함", included: true },
       { text: "교과 세특 분석 확장 (7과목)", included: true },
@@ -75,12 +81,14 @@ const PLANS: Plan[] = [
     name: "Premium Report",
     slug: "premium",
     subtitle: "프리미엄 설계형",
-    price: "199,000",
+    originalPrice: "199,000",
+    price: "149,000",
+    discount: 25,
     pages: "50~60페이지",
     popular: false,
     point: "오프라인 컨설팅 수준, 온라인 가격으로",
     tag: "컨설팅급 분석",
-    cta: "199,000원으로 시작하기",
+    cta: "149,000원으로 시작하기",
     features: [
       { text: "Standard Report 전체 포함", included: true },
       { text: "교과 세특 정밀 분석 (10과목+)", included: true },
@@ -120,9 +128,19 @@ export const PlanCards = () => {
                 <div className={styles.cardHeader}>
                   <p className={styles.cardSubtitle}>{plan.subtitle}</p>
                   <h3 className={styles.cardName}>{plan.name}</h3>
-                  <div className={styles.cardPrice}>
-                    <span className={styles.priceValue}>{plan.price}</span>
-                    <span className={styles.priceUnit}>원</span>
+                  <div className={styles.priceBlock}>
+                    <div className={styles.priceOriginalRow}>
+                      <span className={styles.priceOriginal}>
+                        {plan.originalPrice}원
+                      </span>
+                      <span className={styles.discountBadge}>
+                        {plan.discount}% OFF
+                      </span>
+                    </div>
+                    <div className={styles.priceRow}>
+                      <span className={styles.priceValue}>{plan.price}</span>
+                      <span className={styles.priceUnit}>원</span>
+                    </div>
                   </div>
                   <p className={styles.cardPages}>{plan.pages}</p>
                 </div>
