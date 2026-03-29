@@ -207,7 +207,7 @@ const AdmissionPredictionItemSchema = z.object({
 export const AdmissionPredictionSectionSchema = z.object({
   sectionId: z.literal("admissionPrediction"),
   title: z.string().min(1),
-  recommendedType: z.enum(["학종", "교과", "정시"]),
+  recommendedType: z.enum(["학종", "교과", "정시", "논술"]),
   recommendedTypeReason: z.string().min(1),
   predictions: z.array(AdmissionPredictionItemSchema).min(1),
   overallComment: z.string().min(1),

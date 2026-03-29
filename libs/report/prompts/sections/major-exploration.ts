@@ -1,7 +1,5 @@
 /** 섹션 20: AI 전공 추천 (majorExploration) -- Standard+ */
 
-import type { ReportPlan } from "../../types.ts";
-
 export interface MajorExplorationPromptInput {
   competencyExtraction: string;
   academicAnalysis: string;
@@ -11,21 +9,14 @@ export interface MajorExplorationPromptInput {
   detectedMajorGroup?: string;
 }
 
-const PLAN_SPECIFIC: Record<ReportPlan, string> = {
-  lite: "",
-  standard: `## 플랜별 출력: 상세
-- 현재 목표 평가(currentTargetAssessment) + AI 추천 전공 3~5개
-- 각 전공: major + fitScore + rationale + strengthMatch
-- university, gapAnalysis 필드는 출력하지 않습니다.`,
-  premium: `## 플랜별 출력: 정밀
-- 현재 목표 평가 + AI 추천 전공 **3개** (초과 금지)
-- Standard의 모든 항목 + 대학 추천 연계(university) + 보완 분석(gapAnalysis, 1줄)
-- rationale은 2줄 이내로 간결하게 서술`,
-};
+/** 플랜 무관하게 항상 Premium 수준(풀 필드, 3개)으로 생성 → postprocessor에서 플랜별 트리밍 */
+const PLAN_SPECIFIC_UNIFIED = `## 출력 규칙
+- 현재 목표 평가(currentTargetAssessment) + AI 추천 전공 **3개** (초과 금지)
+- 각 전공: major + fitScore + rationale + strengthMatch + university + gapAnalysis(1줄)
+- rationale은 2줄 이내로 간결하게 서술`;
 
 export const buildMajorExplorationPrompt = (
-  input: MajorExplorationPromptInput,
-  plan: ReportPlan
+  input: MajorExplorationPromptInput
 ): string => {
   return `## 작업
 학생의 역량과 활동 이력을 분석하여 적합한 전공/학과를 추천하세요.
@@ -146,5 +137,5 @@ ${input.studentProfile}
 
 ${input.targetDepartment ? `### 학생의 희망 학과 (currentTargetAssessment 생성용 — 추천 전공 목록에는 영향 없음)\n⚠️ 아래 희망 학과는 currentTargetAssessment에서 "이 학과에 대한 적합도 평가"를 작성하는 용도로만 사용하세요. suggestions 배열의 추천 전공은 반드시 생기부 기반으로 독립 판단하세요.\n희망 학과: ${input.targetDepartment}` : ""}
 
-${PLAN_SPECIFIC[plan]}`;
+${PLAN_SPECIFIC_UNIFIED}`;
 };

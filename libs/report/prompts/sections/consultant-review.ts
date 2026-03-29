@@ -20,8 +20,8 @@ export interface ConsultantReviewPromptInput {
   selectedAdmissionTypes?: string[];
   /** Phase 2에서 감지된 생기부 기반 강점 계열 */
   detectedMajorGroup?: string;
-  /** 학생의 희망 학과 */
-  targetDepartment?: string;
+  /** majorExploration AI 추천 1순위 학과 */
+  aiRecommendedMajor?: string;
 }
 
 const buildPlanSpecific = (
@@ -143,9 +143,7 @@ export const buildConsultantReviewPrompt = (
 → evaluationGuide 전체를 이 관점에서 작성하세요.
 
 ### 반드시 포함할 4가지 평가 요소
-1. **진로역량 (Major Fit)**: 입학사정관은 교과 세특, 탐구 활동, 동아리, 보고서/발표를 통해 진로역량을 판단합니다. 단순히 활동이 있는지가 아니라 "특정 분야와 연결된 학업 흐름이 존재하는가"를 평가합니다. ⚠️ **희망학과를 기준으로 평가하지 마세요.** 생기부에서 실제로 드러나는 탐구 분야와 역량을 분석하고, 그 결과가 희망학과와 일치하는지/괴리가 있는지를 판단하세요. → 이 학생의 생기부에서 어떤 분야의 진로역량이 드러나는지(또는 부족한지) 구체적으로 서술하세요.
-   - ⚠️ **생기부 강점 계열과 희망학과가 다른 경우**: "생기부에서 드러나는 강점 계열은 [강점계열]이며, 희망학과 [희망학과]와는 괴리가 있습니다. 학생부종합전형에서는 적합하지 않습니다."로 명시하세요.
-   - ❌ 괴리가 있는데 "적정 수준이다", "가능성이 있다"로 완화 금지
+1. **진로역량 (Major Fit)**: 입학사정관은 교과 세특, 탐구 활동, 동아리, 보고서/발표를 통해 진로역량을 판단합니다. 단순히 활동이 있는지가 아니라 "특정 분야와 연결된 학업 흐름이 존재하는가"를 평가합니다. ⚠️ **AI 추천 학과를 기준으로 평가하세요.** 생기부에서 실제로 드러나는 탐구 분야와 역량을 분석하고, AI 추천 학과와의 적합성을 판단하세요. → 이 학생의 생기부에서 어떤 분야의 진로역량이 드러나는지(또는 부족한지) 구체적으로 서술하세요.
 
 2. **학업 역량 (Academic Ability)**: 단순 내신 등급이 아니라 교과 성적 + 성적 추세 + 과목 선택 + 세특 내용을 종합 평가합니다. 특히 상위권 대학은 세특에서 나타나는 탐구 능력과 사고력을 매우 중요하게 봅니다. 질문을 제기하는 학생, 추가 자료를 찾아 분석하는 학생, 수업 토론에 적극 참여하는 학생이 높은 평가를 받습니다. → 이 학생의 학업 역량 수준을 입학사정관 관점에서 평가하세요.
 
@@ -260,13 +258,17 @@ ${evaluationGuide}
 ## 입력 데이터
 
 ${
-  input.detectedMajorGroup && input.targetDepartment
-    ? `### ⚠️ 생기부 강점 계열 vs 희망학과
-- 생기부 기반 강점 계열: **${input.detectedMajorGroup}**
-- 희망학과: **${input.targetDepartment}**
-- 위 두 정보를 비교하여, 괴리가 있으면 majorFit에서 명시적으로 서술하세요.
+  input.aiRecommendedMajor
+    ? `### ⚠️ AI 추천 학과 (모든 전략/면접/평가의 기준)
+- AI 전공 탐색 결과 가장 적합한 학과: **${input.aiRecommendedMajor}**
+${input.detectedMajorGroup ? `- 생기부 기반 강점 계열: **${input.detectedMajorGroup}**` : ""}
+- ⛔ admissionStrategy, completionDirection, finalAdvice, evaluationGuide 전체를 **${input.aiRecommendedMajor}** 기준으로 작성하세요.
 `
-    : ""
+    : input.detectedMajorGroup
+      ? `### ⚠️ 생기부 기반 강점 계열
+- 생기부 기반 강점 계열: **${input.detectedMajorGroup}**
+`
+      : ""
 }
 ### 역량 추출 결과
 ${input.competencyExtraction}

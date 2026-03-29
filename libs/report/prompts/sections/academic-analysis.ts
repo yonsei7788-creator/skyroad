@@ -48,7 +48,7 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 ⚠️ **분량 제한 (반드시 준수)**:
 - gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis **3개 필드만** 출력합니다. 이 3개 외 추가 분석 필드는 절대 출력하지 마세요.
 - 각 필드의 텍스트(riskAssessment, enrollmentEffort, achievement, prediction 등)는 반드시 **200자 이내**로 작성합니다. 200자 초과 금지.
-- careerSubjectAnalyses는 **최대 3개**만 출력하며, 각 interpretation은 **100자 이내**로 작성합니다.
+- careerSubjectAnalyses는 **최대 5개**만 출력하며, 각 interpretation은 **100자 이내**로 작성합니다.
 - smallClassSubjectAnalyses, schoolTypeAdjustment, gradeInflationContext는 출력하지 않습니다.
 - ⚠️ schoolTypeAdjustment는 절대 출력하지 마세요.`,
   premium: `## 플랜별 출력: 정밀

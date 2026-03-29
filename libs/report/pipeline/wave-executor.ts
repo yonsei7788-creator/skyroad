@@ -674,6 +674,7 @@ export const executeTask = async (
                 gradingSystem: state.preprocessedData!.gradingSystem,
                 isMedical,
                 isArtSportPractical,
+                includeNonsul: selectedAdmissionTypes?.includes("논술"),
               },
               plan
             )
@@ -854,18 +855,18 @@ export const executeTask = async (
         majorSeed =
           ((majorSeed << 5) - majorSeed + seedInput.charCodeAt(i)) | 0;
       }
-      const majorPrompt = buildMajorExplorationPrompt(
-        {
-          competencyExtraction: ser.compExtrText!,
-          academicAnalysis: ser.acadAnalText!,
-          studentProfile: texts.studentProfileText,
-          targetDepartment: studentInfo.targetDepartment,
-          detectedMajorGroup: detectedMajorForExploration,
-        },
-        plan
-      );
+      const majorPrompt = buildMajorExplorationPrompt({
+        competencyExtraction: ser.compExtrText!,
+        academicAnalysis: ser.acadAnalText!,
+        studentProfile: texts.studentProfileText,
+        targetDepartment: studentInfo.targetDepartment,
+        detectedMajorGroup: detectedMajorForExploration,
+      });
+      // 플랜 간 추천 전공 일관성을 위해 systemInstruction도 플랜 무관하게 고정
+      // (systemPrompt는 플랜별 "분석 깊이" 지시를 포함하므로, 여기서는 premium 기준 사용)
+      const majorSystemPrompt = buildSystemPrompt("premium", { isGyogwaOnly });
       const majorResult = await client.call<ReportSection>({
-        systemInstruction: systemPrompt,
+        systemInstruction: majorSystemPrompt,
         prompt: majorPrompt,
         responseSchema: EMPTY_SCHEMA,
         thinkingBudget: THINKING_BUDGET,
@@ -880,6 +881,14 @@ export const executeTask = async (
       const consultAcadText = isGyogwaOnly
         ? stripSemesterData(ser.acadAnalText!)
         : ser.acadAnalText!;
+
+      // majorExploration AI 추천 1순위 학과 추출
+      const consultMajorExpl = sections.find(
+        (s) => s.sectionId === "majorExploration"
+      ) as Record<string, unknown> | undefined;
+      const consultAiMajor = (
+        consultMajorExpl?.suggestions as { major: string }[] | undefined
+      )?.[0]?.major;
 
       const consultInput = {
         competencyExtraction: ser.compExtrText!,
@@ -896,7 +905,7 @@ export const executeTask = async (
         isGyogwaOnly,
         selectedAdmissionTypes,
         detectedMajorGroup: detectedMajorForFlags,
-        targetDepartment: studentInfo.targetDepartment,
+        aiRecommendedMajor: consultAiMajor,
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly

@@ -1366,7 +1366,14 @@ export const postprocess = (
         하위권: [20, 35],
       };
       const [min, max] = ranges[level];
-      return Math.floor(Math.random() * (max - min + 1)) + min;
+      // 동일 학생이면 플랜과 무관하게 같은 점수가 나오도록 결정적 계산
+      const combined =
+        (compScore?.scores?.find((sc: any) => sc.category === "career")
+          ?.score ?? 0) +
+        (compScore?.scores?.find((sc: any) => sc.category === "community")
+          ?.score ?? 0);
+      const offset = combined % (max - min + 1);
+      return min + offset;
     };
 
     const extractConnectivity = (): ActivityConnectivity => {
@@ -1398,9 +1405,17 @@ export const postprocess = (
       return "보통";
     };
 
+    // majorExploration AI 추천 1순위 학과를 전공 방향으로 사용
+    const majorExplSection = validatedSections.find(
+      (s) => s.sectionId === "majorExploration"
+    ) as Record<string, unknown> | undefined;
+    const majorExplSuggestions = majorExplSection?.suggestions as
+      | { major: string }[]
+      | undefined;
     const majorDirection =
-      studentInfo.targetDepartment ??
+      majorExplSuggestions?.[0]?.major ??
       (profile as any)?.catchPhrase?.split(" ")[0] ??
+      studentInfo.targetDepartment ??
       "미정";
 
     const keywords: string[] = [];
@@ -1426,6 +1441,20 @@ export const postprocess = (
     };
 
     validatedSections.push(competitiveProfilingSection as ReportSection);
+  }
+
+  // 3-9. majorExploration: 플랜별 필드 트리밍
+  // AI는 항상 Premium 수준(풀 필드)으로 생성하므로, Standard/Lite에서는 불필요 필드 제거
+  if (plan !== "premium") {
+    const majorSection = validatedSections.find(
+      (s) => s.sectionId === "majorExploration"
+    ) as Record<string, unknown> | undefined;
+    if (majorSection && Array.isArray(majorSection.suggestions)) {
+      for (const sug of majorSection.suggestions as Record<string, unknown>[]) {
+        delete sug.university;
+        delete sug.gapAnalysis;
+      }
+    }
   }
 
   // 4. 섹션 정렬 (플랜별 순서)
