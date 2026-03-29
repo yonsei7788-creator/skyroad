@@ -30,18 +30,26 @@ export const ConsultantReviewRenderer = ({
         />
 
         <div className={styles.mt12}>
-          <div className={styles.h3}>성적 및 교과 이수 노력 평가</div>
+          <div className={styles.h3}>
+            <span className={styles.markerSky}>
+              성적 및 교과 이수 노력 평가
+            </span>
+          </div>
           <p className={styles.small}>{safeText(data.gradeAnalysis)}</p>
         </div>
       </div>
 
       <div>
-        <div className={styles.h3}>전공 관련 교과 성취도</div>
+        <div className={styles.h3}>
+          <span className={styles.markerSky}>전공 관련 교과 성취도</span>
+        </div>
         <p className={styles.small}>{safeText(data.courseEffort)}</p>
       </div>
 
       <div>
-        <div className={styles.h3}>전형 전략 방향</div>
+        <div className={styles.h3}>
+          <span className={styles.markerSky}>전형 전략 방향</span>
+        </div>
         <p className={styles.small}>{safeText(data.admissionStrategy)}</p>
       </div>
 

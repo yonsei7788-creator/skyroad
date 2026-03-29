@@ -25,7 +25,7 @@ const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
     {
       partNumber: "PART 1",
       partTitle: "진단",
-      sectionIds: ["studentProfile", "competencyScore"],
+      sectionIds: ["studentProfile", "competencyScore", "competitiveProfiling"],
     },
     {
       partNumber: "PART 2",
@@ -76,7 +76,11 @@ const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
     {
       partNumber: "PART 3",
       partTitle: "전략 & 실행",
-      sectionIds: ["topicRecommendation", "interviewPrep"],
+      sectionIds: [
+        "topicRecommendation",
+        "interviewPrep",
+        "competitiveProfiling",
+      ],
     },
     {
       partNumber: "부록",
@@ -114,6 +118,7 @@ const PART_DEFINITIONS: Record<string, PartDefinition[]> = {
         "weaknessAnalysis",
         "topicRecommendation",
         "admissionStrategy",
+        "competitiveProfiling",
         "actionRoadmap",
         "interviewPrep",
       ],

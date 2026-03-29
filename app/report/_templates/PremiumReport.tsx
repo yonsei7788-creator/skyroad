@@ -46,12 +46,13 @@ const buildPartConfig = (isGraduate?: boolean) => [
     partNumber: "PART 3",
     title: "전략 & 실행",
     description:
-      "부족한 부분 + 보완 전략, 주제 추천, 입시 전략, 실행 로드맵, 면접 준비",
+      "부족한 부분 + 보완 전략, 주제 추천, 입시 전략, 비교과 경쟁력 분석, 실행 로드맵, 면접 준비",
     color: "#8b4cf5",
     sectionIds: [
       "weaknessAnalysis",
       "topicRecommendation",
       "admissionStrategy",
+      "competitiveProfiling",
       "actionRoadmap",
       "interviewPrep",
     ],

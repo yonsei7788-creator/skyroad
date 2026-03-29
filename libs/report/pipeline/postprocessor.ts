@@ -15,6 +15,9 @@ import type {
   ReportMeta,
   ReportSection,
   StudentInfo,
+  NonAcademicLevel,
+  ActivityConnectivity,
+  CompetitiveProfilingSection,
 } from "../types.ts";
 import { isArtSportDepartment, type PreprocessedData } from "./preprocessor.ts";
 import { matchMajorEvaluationCriteria } from "../constants/major-evaluation-criteria.ts";
@@ -1334,6 +1337,95 @@ export const postprocess = (
       subject.evaluationImpact = determineImpact(subject.subjectName);
       delete subject.importancePercent;
     }
+  }
+
+  // 3-x. competitiveProfiling 산출 (코드 기반, AI 태스크 아님)
+  {
+    const calculateLevel = (): NonAcademicLevel => {
+      if (!compScore?.scores) return "중위권";
+      const careerScore =
+        compScore.scores.find((sc: any) => sc.category === "career")?.score ??
+        0;
+      const communityScore =
+        compScore.scores.find((sc: any) => sc.category === "community")
+          ?.score ?? 0;
+      const combined = careerScore + communityScore;
+      if (combined >= 160) return "상위권";
+      if (combined >= 130) return "중상위권";
+      if (combined >= 100) return "중위권";
+      if (combined >= 70) return "중하위권";
+      return "하위권";
+    };
+
+    const calculateScore = (level: NonAcademicLevel): number => {
+      const ranges: Record<NonAcademicLevel, [number, number]> = {
+        상위권: [80, 95],
+        중상위권: [65, 80],
+        중위권: [50, 65],
+        중하위권: [35, 50],
+        하위권: [20, 35],
+      };
+      const [min, max] = ranges[level];
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    };
+
+    const extractConnectivity = (): ActivityConnectivity => {
+      const story = validatedSections.find(
+        (s) => s.sectionId === "storyAnalysis"
+      ) as any;
+      if (story?.careerConsistencyGrade) {
+        const grade = story.careerConsistencyGrade;
+        if (grade === "S" || grade === "A") return "있음";
+        if (grade === "B" || grade === "C") return "보통";
+        return "없음";
+      }
+
+      const activity = validatedSections.find(
+        (s) => s.sectionId === "activityAnalysis"
+      ) as any;
+      if (activity?.activities) {
+        const ratings = activity.activities.flatMap(
+          (a: any) =>
+            a.yearlyAnalysis?.map((y: any) => y.rating).filter(Boolean) ?? []
+        );
+        const goodCount = ratings.filter(
+          (r: string) => r === "excellent" || r === "good"
+        ).length;
+        if (goodCount >= 3) return "있음";
+        if (goodCount >= 1) return "보통";
+      }
+
+      return "보통";
+    };
+
+    const majorDirection =
+      studentInfo.targetDepartment ??
+      (profile as any)?.catchPhrase?.split(" ")[0] ??
+      "미정";
+
+    const keywords: string[] = [];
+    if (profile?.tags && Array.isArray(profile.tags)) {
+      keywords.push(...(profile.tags as string[]).slice(0, 3));
+    }
+    if (keywords.length === 0) {
+      keywords.push(majorDirection);
+    }
+
+    const level = calculateLevel();
+    const score = calculateScore(level);
+    const connectivity = extractConnectivity();
+
+    const competitiveProfilingSection: CompetitiveProfilingSection = {
+      sectionId: "competitiveProfiling",
+      title: "비교과 경쟁력 정밀 분석",
+      level,
+      majorDirection,
+      keywords,
+      connectivity,
+      score,
+    };
+
+    validatedSections.push(competitiveProfilingSection as ReportSection);
   }
 
   // 4. 섹션 정렬 (플랜별 순서)

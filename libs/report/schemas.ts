@@ -1056,6 +1056,27 @@ export const ConsultantReviewSectionSchema = z.object({
   evaluationGuide: EvaluationGuideSchema.optional(),
 });
 
+// ─── 비교과 경쟁력 정밀 분석 ───
+
+const NonAcademicLevelSchema = z.enum([
+  "상위권",
+  "중상위권",
+  "중위권",
+  "중하위권",
+  "하위권",
+]);
+const ActivityConnectivitySchema = z.enum(["있음", "보통", "없음"]);
+
+export const CompetitiveProfilingSectionSchema = z.object({
+  sectionId: z.literal("competitiveProfiling"),
+  title: z.string().min(1),
+  level: NonAcademicLevelSchema,
+  majorDirection: z.string().min(1),
+  keywords: z.array(z.string().min(1)).min(1).max(5),
+  connectivity: ActivityConnectivitySchema,
+  score: z.number().int().min(0).max(100),
+});
+
 // ============================================================
 // 전체 리포트 콘텐츠 스키마
 // ============================================================
@@ -1107,6 +1128,7 @@ export const ReportSectionSchema = z.discriminatedUnion("sectionId", [
   DirectionGuideSectionSchema,
   StoryAnalysisSectionSchema,
   ActionRoadmapSectionSchema,
+  CompetitiveProfilingSectionSchema,
   MajorExplorationSectionSchema,
   ConsultantReviewSectionSchema,
 ]);

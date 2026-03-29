@@ -9,6 +9,7 @@ import {
   AttendanceAnalysisRenderer,
   BehaviorAnalysisRenderer,
   CompetencyScoreRenderer,
+  CompetitiveProfilingRenderer,
   ConsultantReviewRenderer,
   CourseAlignmentRenderer,
   DirectionGuideRenderer,
@@ -127,6 +128,13 @@ export const SectionRenderer = ({
           data={section}
           sectionNumber={sectionNumber}
           plan={plan}
+        />
+      );
+    case "competitiveProfiling":
+      return (
+        <CompetitiveProfilingRenderer
+          data={section}
+          sectionNumber={sectionNumber}
         />
       );
     case "directionGuide":

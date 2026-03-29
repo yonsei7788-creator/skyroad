@@ -37,6 +37,7 @@ export { AdmissionStrategyRenderer } from "./AdmissionStrategyRenderer";
 export { DirectionGuideRenderer } from "./DirectionGuideRenderer";
 export { StoryAnalysisRenderer } from "./StoryAnalysisRenderer";
 export { ActionRoadmapRenderer } from "./ActionRoadmapRenderer";
+export { CompetitiveProfilingRenderer } from "./CompetitiveProfilingRenderer";
 
 // Section renderers -- 전임 컨설턴트 총평
 export { ConsultantReviewRenderer } from "./ConsultantReviewRenderer";

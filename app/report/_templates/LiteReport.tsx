@@ -24,7 +24,7 @@ const buildPartConfig = (isGraduate?: boolean) => [
     title: "진단",
     description: "학생 유형 분류 및 역량 점수",
     color: "#4f46e5",
-    sectionIds: ["studentProfile", "competencyScore"],
+    sectionIds: ["studentProfile", "competencyScore", "competitiveProfiling"],
   },
   {
     partNumber: "PART 2",
@@ -45,7 +45,7 @@ const buildPartConfig = (isGraduate?: boolean) => [
   {
     partNumber: "PART 3",
     title: "전략 & 실행",
-    description: "면접 준비",
+    description: "면접 준비, 비교과 경쟁력 분석",
     color: "#5b4bd6",
     sectionIds: ["interviewPrep"],
   },

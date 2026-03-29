@@ -45,9 +45,13 @@ const buildPartConfig = (isGraduate?: boolean) => [
   {
     partNumber: "PART 3",
     title: "전략 & 실행",
-    description: "주제 추천, 면접 준비",
+    description: "주제 추천, 면접 준비, 비교과 경쟁력 분석",
     color: "#3b76f0",
-    sectionIds: ["topicRecommendation", "interviewPrep"],
+    sectionIds: [
+      "topicRecommendation",
+      "interviewPrep",
+      "competitiveProfiling",
+    ],
   },
   {
     partNumber: "부록",

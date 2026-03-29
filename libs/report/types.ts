@@ -1222,6 +1222,26 @@ export interface ConsultantReviewSection extends BaseSection {
   evaluationGuide?: EvaluationGuide;
 }
 
+// ─── 비교과 경쟁력 정밀 분석 (competitiveProfiling) ───
+
+export type NonAcademicLevel =
+  | "상위권"
+  | "중상위권"
+  | "중위권"
+  | "중하위권"
+  | "하위권";
+
+export type ActivityConnectivity = "있음" | "보통" | "없음";
+
+export interface CompetitiveProfilingSection extends BaseSection {
+  sectionId: "competitiveProfiling";
+  level: NonAcademicLevel;
+  majorDirection: string;
+  keywords: string[];
+  connectivity: ActivityConnectivity;
+  score: number;
+}
+
 // ============================================================
 // 섹션 유니온 타입
 // ============================================================
@@ -1247,6 +1267,8 @@ export type ReportSection =
   | DirectionGuideSection
   | StoryAnalysisSection
   | ActionRoadmapSection
+  // 비교과 경쟁력 정밀 분석
+  | CompetitiveProfilingSection
   // 전임 컨설턴트 총평
   | ConsultantReviewSection
   // 부록
@@ -1269,6 +1291,7 @@ type LiteSectionId =
   | "behaviorAnalysis"
   // Part 3: 전략
   | "interviewPrep"
+  | "competitiveProfiling"
   // 전임 컨설턴트 총평
   | "consultantReview"
   // 부록
@@ -1361,6 +1384,7 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     // Part 1: 진단
     "studentProfile",
     "competencyScore",
+    "competitiveProfiling",
     // Part 2: 분석
     "academicAnalysis",
     "courseAlignment",
@@ -1390,6 +1414,7 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     // Part 3: 전략
     "topicRecommendation",
     "interviewPrep",
+    "competitiveProfiling",
     // 부록
     "majorExploration",
     // 전임 컨설턴트 총평
@@ -1412,6 +1437,7 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     "topicRecommendation",
     "interviewPrep",
     "admissionStrategy",
+    "competitiveProfiling",
     "actionRoadmap",
     // 부록
     "majorExploration",

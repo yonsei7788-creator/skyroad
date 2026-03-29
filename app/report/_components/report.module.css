@@ -20,6 +20,20 @@
   --report-primary-800: #3730a3;
   --report-primary-900: #312e81;
 
+  /* -- Competitive Profiling Level Colors -- */
+  --cp-high-fg: #059669;
+  --cp-high-bg: #ecfdf5;
+  --cp-high-border: #a7f3d0;
+  --cp-high-accent: #10b981;
+  --cp-mid-fg: #d97706;
+  --cp-mid-bg: #fffbeb;
+  --cp-mid-border: #fde68a;
+  --cp-mid-accent: #f59e0b;
+  --cp-low-fg: #dc2626;
+  --cp-low-bg: #fef2f2;
+  --cp-low-border: #fecaca;
+  --cp-low-accent: #ef4444;
+
   /* -- Plan Accent (default: Lite = Indigo) -- */
   --report-accent: #4f46e5;
   --report-accent-light: #eef2ff;
@@ -163,7 +177,10 @@
     0 6px 24px rgb(0 0 0 / 0.06);
   border-radius: 2px;
   overflow: visible;
+  overflow-x: hidden;
   counter-increment: page-counter;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .page:last-child {
@@ -1390,6 +1407,8 @@
   border-radius: 8px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .calloutIcon {
@@ -1404,6 +1423,8 @@
   font-size: var(--report-fs-body);
   color: var(--report-fg);
   line-height: 1.65;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .calloutStrength {
@@ -4590,4 +4611,114 @@
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   vertical-align: middle;
+}
+
+/* ============================================
+   Competitive Profiling Section
+   ============================================ */
+
+/* -- Level Badges -- */
+.cpBadgeHigh {
+  composes: ratingBadge;
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.cpBadgeMid {
+  composes: ratingBadge;
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.cpBadgeLow {
+  composes: ratingBadge;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+/* -- Level Verdict Banners -- */
+.cpVerdictHigh {
+  composes: verdict;
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.cpVerdictMid {
+  composes: verdict;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.cpVerdictLow {
+  composes: verdict;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+/* -- Step UI -- */
+.cpStep {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.cpStep + .cpStep {
+  border-top: 1px dashed var(--report-border);
+}
+
+.cpStepNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--report-accent);
+  color: #fff;
+  font-size: var(--report-fs-caption);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.cpStepContent {
+  flex: 1;
+}
+
+.cpStepTitle {
+  font-size: var(--report-fs-small);
+  font-weight: 600;
+  color: var(--report-fg);
+  margin-bottom: 4px;
+}
+
+.cpStepBody {
+  font-size: var(--report-fs-caption);
+  color: var(--report-fg-secondary);
+  line-height: 1.5;
+}
+
+/* -- Meta Row (level + connectivity) -- */
+.cpMetaRow {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+.cpMetaItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--report-fs-caption);
+  color: var(--report-fg-secondary);
+}
+
+/* -- Level Card (dynamic border-left) -- */
+.cpLevelCard {
+  composes: card;
+  border-left: 3px solid var(--report-accent);
 }
