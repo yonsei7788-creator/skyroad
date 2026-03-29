@@ -244,9 +244,10 @@ export const RecordSubmitWizard = ({
     try {
       const supabase = createClient();
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("로그인이 필요합니다.");
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error("로그인이 필요합니다.");
+      const { user } = session;
 
       // 파일을 Supabase Storage에 업로드
       const filesToUpload: File[] =
@@ -310,10 +311,13 @@ export const RecordSubmitWizard = ({
         showToast(warning, "error");
       }
     } catch (err) {
-      const message =
+      const raw =
         err instanceof Error
           ? err.message
           : "AI 파싱에 실패했습니다. 다시 시도해주세요.";
+      const message = raw.includes("LockManager")
+        ? "인증 세션이 만료되었습니다. 페이지를 새로고침한 후 다시 시도해주세요."
+        : raw;
       setState((prev) => ({
         ...prev,
         isParsing: false,
@@ -419,7 +423,7 @@ export const RecordSubmitWizard = ({
           <p className={styles.wizardSubtitle}>
             {isEditMode
               ? "생기부 데이터를 수정하고 다시 분석하세요"
-              : "생기부를 등록하고 AI 분석을 시작하세요"}
+              : "지금 생기부, 합격 가능한 수준인지 알고 있나요?"}
           </p>
         </div>
         <div className={styles.wizardContainer}>
@@ -443,7 +447,7 @@ export const RecordSubmitWizard = ({
         <p className={styles.wizardSubtitle}>
           {isEditMode
             ? "생기부 데이터를 수정하고 다시 분석하세요"
-            : "생기부를 등록하고 AI 분석을 시작하세요"}
+            : "지금 생기부, 합격 가능한 수준인지 알고 있나요?"}
         </p>
       </div>
 

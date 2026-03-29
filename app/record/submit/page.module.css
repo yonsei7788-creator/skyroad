@@ -220,6 +220,7 @@
   font-size: 0.8125rem;
   color: var(--color-fg-secondary);
   line-height: 1.5;
+  white-space: pre-line;
 }
 
 @media (max-width: 640px) {

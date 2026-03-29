@@ -282,6 +282,9 @@ export const AutoPaginatedSection = ({
           display: "flex",
           flexDirection: "column",
           gap: "20px",
+          // .page와 동일한 텍스트 레이아웃 — 한글 줄바꿈 일치 필수
+          wordBreak: "keep-all",
+          overflowWrap: "break-word",
         }}
       >
         {children}
@@ -289,36 +292,59 @@ export const AutoPaginatedSection = ({
 
       {/* Paginated output */}
       {measured &&
-        slices.map((slice, i) => (
-          <ReportPage
-            key={`${sectionTitle}-p${i}`}
-            pageNumber={startPageNumber > 0 ? startPageNumber + i : undefined}
-            sectionTitle={sectionTitle}
-            studentName={studentName}
-          >
-            <div
-              style={{
-                height: `${slice.height}px`,
-                overflow: "hidden",
-                position: "relative",
-              }}
+        slices.map((slice, i) => {
+          const isOnlyPage = slices.length === 1;
+          const isLastPage = i === slices.length - 1;
+
+          return (
+            <ReportPage
+              key={`${sectionTitle}-p${i}`}
+              pageNumber={startPageNumber > 0 ? startPageNumber + i : undefined}
+              sectionTitle={sectionTitle}
+              studentName={studentName}
             >
-              <div
-                style={{
-                  position: "absolute",
-                  top: `-${slice.offsetY}px`,
-                  left: 0,
-                  width: "174mm", // 측정 컨테이너와 동일한 너비로 고정
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "20px",
-                }}
-              >
-                {children}
-              </div>
-            </div>
-          </ReportPage>
-        ))}
+              {isOnlyPage ? (
+                // 단일 페이지: 클리핑 불필요 — 자연 흐름 유지
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "20px",
+                    wordBreak: "keep-all",
+                    overflowWrap: "break-word",
+                  }}
+                >
+                  {children}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    // 마지막 페이지: margin 누락 대비 여유 확보
+                    height: `${slice.height + (isLastPage ? 20 : 0)}px`,
+                    overflow: "hidden",
+                    position: "relative",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: `-${slice.offsetY}px`,
+                      left: 0,
+                      width: "174mm",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "20px",
+                      wordBreak: "keep-all",
+                      overflowWrap: "break-word",
+                    }}
+                  >
+                    {children}
+                  </div>
+                </div>
+              )}
+            </ReportPage>
+          );
+        })}
     </>
   );
 };
