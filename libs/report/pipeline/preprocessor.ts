@@ -1843,8 +1843,60 @@ export const buildUniversityCandidatesText = (
         return aDiff - bDiff;
       });
 
-    // 학과 키워드별 우선순위 슬롯 배분 (departmentKeywords 순서 = 우선순위)
-    // 각 학과에 최소 슬롯을 보장하고, 잔여 슬롯은 고순위 학과에 배정
+    // 상향/적정/안정 밸런스 선택 함수
+    // 상향: 합격선이 학생보다 0.1~0.3 높은 (cutoff < studentGrade - 0.1)
+    // 적정: 합격선이 학생과 ±0.1 이내
+    // 안정: 합격선이 학생보다 0.1~0.3 낮은 (cutoff > studentGrade + 0.1)
+    const filterByMarginBalanced = (
+      arr: typeof withGyogwa,
+      slots: number
+    ): typeof withGyogwa => {
+      if (studentGrade9 == null) return sortByDist(arr).slice(0, slots);
+      // ±0.3 고정
+      const pool = arr.filter((c) =>
+        c.allCutoff50s.some(
+          (g) => g >= studentGrade9 - 0.3 && g <= studentGrade9 + 0.3
+        )
+      );
+      if (pool.length === 0) return [];
+      if (pool.length <= slots) return sortByDist(pool);
+
+      // 상향/적정/안정 분류
+      const reach = sortByDist(
+        pool.filter((c) => getMinCutoff50(c) < studentGrade9 - 0.1)
+      );
+      const fit = sortByDist(
+        pool.filter((c) => {
+          const cut = getMinCutoff50(c);
+          return cut >= studentGrade9 - 0.1 && cut <= studentGrade9 + 0.1;
+        })
+      );
+      const safety = sortByDist(
+        pool.filter((c) => getMinCutoff50(c) > studentGrade9 + 0.1)
+      );
+
+      // 상향 2, 적정 2, 안정 2 목표 → 부족한 티어는 적정으로 대체
+      const selected: typeof withGyogwa = [];
+      const reachPick = reach.slice(0, 2);
+      const safetyPick = safety.slice(0, 2);
+      selected.push(...reachPick);
+      selected.push(...safetyPick);
+      // 상향/안정에서 부족한 만큼 적정으로 채움
+      const fitTarget = 2 + (2 - reachPick.length) + (2 - safetyPick.length);
+      selected.push(...fit.slice(0, fitTarget));
+      // 그래도 슬롯이 남으면 거리 순으로 채움
+      if (selected.length < slots) {
+        const usedSet = new Set(
+          selected.map((c) => `${c.university}|${c.department}`)
+        );
+        const rest = sortByDist(
+          pool.filter((c) => !usedSet.has(`${c.university}|${c.department}`))
+        );
+        selected.push(...rest.slice(0, slots - selected.length));
+      }
+      return selected;
+    };
+
     let filtered: typeof withGyogwa;
 
     if (
@@ -1865,71 +1917,8 @@ export const buildUniversityCandidatesText = (
         }
       }
 
-      // 각 학과 그룹 내에서 ±0.3 필터링 후 상향/적정/안정 밸런스 선택
-      const REACH_THRESHOLD = 0.15;
-      const filterByMarginBalanced = (
-        arr: typeof withGyogwa,
-        slots: number
-      ): typeof withGyogwa => {
-        // ±0.3 고정 (마진 확대 없음)
-        const pool = arr.filter((c) =>
-          c.allCutoff50s.some(
-            (g) => g >= studentGrade9 - 0.3 && g <= studentGrade9 + 0.3
-          )
-        );
-        if (pool.length === 0) return [];
-        if (pool.length <= slots) return sortByDist(pool);
-
-        // 상향/적정/안정 분류 후 밸런스 선택
-        const reach = sortByDist(
-          pool.filter(
-            (c) => getMinCutoff50(c) < studentGrade9 - REACH_THRESHOLD
-          )
-        );
-        const fit = sortByDist(
-          pool.filter((c) => {
-            const cut = getMinCutoff50(c);
-            return (
-              cut >= studentGrade9 - REACH_THRESHOLD &&
-              cut <= studentGrade9 + REACH_THRESHOLD
-            );
-          })
-        );
-        const safety = sortByDist(
-          pool.filter(
-            (c) => getMinCutoff50(c) > studentGrade9 + REACH_THRESHOLD
-          )
-        );
-
-        // 슬롯 수에 따라 배분 (상향 1, 적정 나머지, 안정 1 기본)
-        const selected: typeof withGyogwa = [];
-        if (slots >= 3) {
-          selected.push(...reach.slice(0, 1));
-          selected.push(...safety.slice(0, 1));
-          const used = selected.length;
-          selected.push(...fit.slice(0, slots - used));
-        } else {
-          // 2슬롯 이하: 상향 1개 우선, 나머지 적정
-          selected.push(...reach.slice(0, 1));
-          const used = selected.length;
-          selected.push(...fit.slice(0, slots - used));
-        }
-        // 슬롯이 남으면 거리 순으로 채움
-        if (selected.length < slots) {
-          const usedSet = new Set(
-            selected.map((c) => `${c.university}|${c.department}`)
-          );
-          const rest = sortByDist(
-            pool.filter((c) => !usedSet.has(`${c.university}|${c.department}`))
-          );
-          selected.push(...rest.slice(0, slots - selected.length));
-        }
-        return selected;
-      };
-
       const majorPools = targetCores.map((core) => {
         const arr = byMajor.get(core) ?? [];
-        // ±0.3 고정 (마진 확대 없음)
         return arr.filter((c) =>
           c.allCutoff50s.some(
             (g) => g >= studentGrade9 - 0.3 && g <= studentGrade9 + 0.3
@@ -1943,7 +1932,6 @@ export const buildUniversityCandidatesText = (
         Math.min(minPerMajor, majorPools[i].length)
       );
       let remaining = MAX_CANDIDATES - slots.reduce((a, b) => a + b, 0);
-      // 잔여 슬롯을 고순위 학과부터 배정
       for (let i = 0; i < slots.length && remaining > 0; i++) {
         const available = majorPools[i].length - slots[i];
         const add = Math.min(available, remaining);
@@ -1951,7 +1939,6 @@ export const buildUniversityCandidatesText = (
         remaining -= add;
       }
 
-      // 각 학과 그룹에서 할당된 슬롯만큼 밸런스 선택
       const selected: typeof withGyogwa = [];
       for (let i = 0; i < targetCores.length; i++) {
         selected.push(
@@ -1961,13 +1948,8 @@ export const buildUniversityCandidatesText = (
 
       filtered = selected;
     } else if (studentGrade9 != null) {
-      // 단일 키워드이거나 등급 정보 기반 — ±0.3 고정 필터링
-      filtered = withGyogwa.filter((c) =>
-        c.allCutoff50s.some(
-          (g) => g >= studentGrade9 - 0.3 && g <= studentGrade9 + 0.3
-        )
-      );
-      sortByDist(filtered);
+      // 단일 키워드이거나 등급 정보 기반 — 밸런스 선택
+      filtered = filterByMarginBalanced(withGyogwa, MAX_CANDIDATES);
     } else {
       filtered = withGyogwa;
     }

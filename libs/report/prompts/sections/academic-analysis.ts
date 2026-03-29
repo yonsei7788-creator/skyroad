@@ -98,13 +98,8 @@ const GYOGWA_PLAN_SPECIFIC: Record<ReportPlan, string> = {
 
 1. **gradeDeviationAnalysis** (필수): 최고/최저 과목과 최종 평균의 합격선 대비 위치
    형식: {"highestSubject": "통합사회", "lowestSubject": "영어 I", "deviationRange": 3, "riskAssessment": "..."}
-   ⚠️ riskAssessment는 **최종 평균 등급이 합격선 대비 어디인지만** 작성하세요.
-   - ✅ "최종 평균 2.55등급은 인서울 중위권 합격선(2.0~2.5등급)에 근접한 수준입니다. 3학년 1학기 성적으로 평균을 끌어올리는 것이 핵심입니다."
-   - ❌ "영어를 반영 비중이 낮은 대학을 탐색" — 특정 과목 기반 대학 선택 전략 금지
-   - ❌ "국수영사 조합이 유리하므로 이 조합을 반영하는 대학" — 교과 조합별 대학 전략 금지
-   - ❌ "입학사정관은 ~로 판단할 가능성이 높습니다" — 절대 금지
-   - ❌ "학종에서 불리하게 작용합니다" — 절대 금지
-   - ❌ "편차가 크면 학업 관리 능력 부족으로 보일 수 있습니다" — 절대 금지
+   riskAssessment 작성법: "최종 평균 N등급은 합격선 대비 ~한 위치입니다" 형식으로만 작성하세요.
+   - 모범 예시: "최종 평균 2.55등급은 인서울 중위권 합격선(2.0~2.5등급)에 근접한 수준입니다. 전체 평균을 끌어올리는 것이 핵심입니다."
 2. **majorRelevanceAnalysis** (필수): 전공 관련 교과 이수 현황
    형식: {"enrollmentEffort": "...", "achievement": "...", "recommendedSubjects": ["과목1", "과목2"]}
 3. **gradeChangeAnalysis** (필수): **합격선 도달을 위한 남은 학기 목표**
@@ -112,9 +107,7 @@ const GYOGWA_PLAN_SPECIFIC: Record<ReportPlan, string> = {
    - **actionItems는 반드시 1~3개의 구체적 실행 항목을 포함.** 빈 배열 금지.
    - ⛔ **actionItems는 string[] 형식만 허용.** object 배열 절대 금지.
    - prediction: "3학년 1학기 평균 N등급을 달성하면 최종 평균이 X등급이 되어 합격선 도달 가능" 형태로 작성.
-   - ❌ "상승 추세는 발전가능성으로 평가받는다" — 절대 금지
-   - ❌ "하락 추세가 불리하게 작용한다" — 절대 금지. 교과전형은 최종 등급만 반영.
-   - ⛔ **이수 완료 과목 성적 개선 권고 절대 금지.**
+   - 이수 완료 과목은 성적이 확정되어 변경 불가하므로, 향후 이수 가능한 과목/영역 기준으로 actionItems를 작성하세요.
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - 위 3개 필드만 출력. 추가 분석 필드 절대 출력 금지.
@@ -130,7 +123,7 @@ Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysi
 
 ⚠️ **schoolTypeAdjustment 출력 금지.**
 ⚠️ 각 분석 텍스트는 **200자 이내**. universityGradeSimulations의 interpretation은 **80자 이내**.
-⚠️ gradeDeviationAnalysis.riskAssessment, gradeChangeAnalysis.prediction에 "입학사정관", "학종", "발전가능성", "추세가 불리" 표현 절대 금지.`,
+⚠️ gradeDeviationAnalysis.riskAssessment, gradeChangeAnalysis.prediction은 "최종 평균 N등급은 합격선 대비 ~" 형식으로만 작성하세요.`,
 };
 
 /**

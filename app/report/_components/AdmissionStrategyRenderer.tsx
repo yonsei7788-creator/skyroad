@@ -5,12 +5,6 @@ import styles from "./report.module.css";
 import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
-/** chanceRationale에 실제 커트라인 수치(50%cut 또는 N.NN등급)가 포함되어 있는지 판단 */
-const hasCutoffData = (rationale?: string): boolean =>
-  !!rationale &&
-  !/합격선\s*(데이터\s*)?미확보/.test(rationale) &&
-  /\d+%cut|\d+\.\d+등급/.test(rationale);
-
 interface AdmissionStrategyRendererProps {
   data: AdmissionStrategySection;
   sectionNumber: number;
@@ -52,8 +46,7 @@ export const AdmissionStrategyRenderer = ({
                     c.university === card.university &&
                     c.department === card.department
                 ) === idx
-            )
-            .slice(0, 6) ?? [];
+            ) ?? [];
         const desc = data.simulations?.[0]?.description;
         if (allCards.length === 0) {
           return desc ? (
@@ -91,16 +84,14 @@ export const AdmissionStrategyRenderer = ({
                     <td className={styles.tableCellBold}>{card.university}</td>
                     <td className={styles.small}>{card.department}</td>
                     <td className={styles.tableAlignCenter}>
-                      {card.subject?.chance &&
-                      hasCutoffData(card.subject?.chanceRationale) ? (
+                      {card.subject?.chance ? (
                         <ReportBadge chance={card.subject.chance} />
                       ) : (
                         "—"
                       )}
                     </td>
                     <td className={styles.tableAlignCenter}>
-                      {card.comprehensive?.chance &&
-                      hasCutoffData(card.comprehensive?.chanceRationale) ? (
+                      {card.comprehensive?.chance ? (
                         <ReportBadge chance={card.comprehensive.chance} />
                       ) : (
                         "—"
@@ -113,93 +104,6 @@ export const AdmissionStrategyRenderer = ({
           </div>
         );
       })()}
-
-      {/* Block 3: 대학별 합격 가능성 분석 — 1대학 1카드 (학종+교과 통합) */}
-      {/* 커트라인 데이터 미확보 전형은 렌더링하지 않음 */}
-      {(() => {
-        const rationaleCards =
-          data.simulations
-            ?.flatMap((sim) => sim.cards ?? [])
-            .filter(
-              (card, idx, arr) =>
-                arr.findIndex(
-                  (c) =>
-                    c.university === card.university &&
-                    c.department === card.department
-                ) === idx
-            )
-            .filter(
-              (card) =>
-                hasCutoffData(card.comprehensive?.chanceRationale) ||
-                hasCutoffData(card.subject?.chanceRationale)
-            ) ?? [];
-        if (rationaleCards.length === 0) return null;
-        return rationaleCards;
-      })()?.map((card, idx) => {
-        const hasCompCutoff = hasCutoffData(
-          card.comprehensive?.chanceRationale
-        );
-        const hasSubjCutoff = hasCutoffData(card.subject?.chanceRationale);
-
-        return (
-          <div key={`rationale-${idx}`}>
-            {idx === 0 && (
-              <div className={`${styles.h3} ${styles.mb12}`}>
-                대학별 합격 가능성 분석
-              </div>
-            )}
-            <div className={styles.card}>
-              <div className={styles.cardHeader}>
-                <div className={styles.cardTitle}>
-                  {card.university} {card.department}
-                </div>
-              </div>
-
-              {/* 학종 — 커트라인 데이터가 있을 때만 */}
-              {hasCompCutoff && (
-                <div className={styles.mt6}>
-                  <p className={`${styles.caption} ${styles.mb4}`}>
-                    <span className={styles.emphasis}>학종</span>{" "}
-                    {card.comprehensive?.admissionType}
-                    {card.comprehensive?.chance && (
-                      <>
-                        {" "}
-                        <ReportBadge chance={card.comprehensive.chance} />
-                      </>
-                    )}
-                  </p>
-                </div>
-              )}
-
-              {/* 교과 — 커트라인 데이터가 있을 때만 */}
-              {hasSubjCutoff && (
-                <div
-                  className={styles.mt8}
-                  style={
-                    hasCompCutoff
-                      ? {
-                          paddingTop: 8,
-                          borderTop: "1px solid var(--report-border)",
-                        }
-                      : undefined
-                  }
-                >
-                  <p className={`${styles.caption} ${styles.mb4}`}>
-                    <span className={styles.emphasis}>교과</span>{" "}
-                    {card.subject?.admissionType}
-                    {card.subject?.chance && (
-                      <>
-                        {" "}
-                        <ReportBadge chance={card.subject.chance} />
-                      </>
-                    )}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
 
       {/* Next semester strategy */}
       {data.nextSemesterStrategy && (

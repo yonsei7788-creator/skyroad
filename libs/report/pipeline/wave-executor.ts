@@ -730,25 +730,88 @@ export const executeTask = async (
           if (suggestions && suggestions.length > 0) {
             const majorNames = suggestions.map((s) => s.major);
             majorExplDepts = majorNames.join(", ");
-            // majorExploration 추천 학과명 + 학생 등급으로 후보군 재생성
-            const rebuilt = buildUniversityCandidatesText(
-              majorNames[0],
-              state.preprocessedData?.gradingSystem,
-              state.preprocessedData?.overallAverage,
-              undefined,
+            // majorExploration 추천 학과를 우선순위 순으로 시도
+            // 1순위만으로 상향2+적정2+안정2(6개) 구성 가능하면 나머지 제외
+            const includeGorunGihoe =
               studentInfo.targetUniversities?.some(
                 (t) => t.admissionType === "고른기회"
-              ) ?? false,
-              majorNames,
-              studentInfo.schoolType,
-              isGyogwaOnly
-            );
+              ) ?? false;
+            // 등급 -0.1 보정 (상향 대학 포함을 위해)
+            const adjustedAvg = state.preprocessedData?.overallAverage
+              ? state.preprocessedData.overallAverage - 0.1
+              : state.preprocessedData?.overallAverage;
+
+            // 상향/적정/안정 밸런스 체크 함수
+            // cutoffData에서 교과 50%cut 추출 → adjustedAvg 기준 분류
+            const checkBalance = (
+              candidateJson: string
+            ): {
+              total: number;
+              reach: number;
+              fit: number;
+              safety: number;
+            } => {
+              try {
+                const parsed = JSON.parse(candidateJson) as {
+                  cutoffData?: string;
+                }[];
+                let reach = 0;
+                let fit = 0;
+                let safety = 0;
+                for (const c of parsed) {
+                  if (!c.cutoffData) continue;
+                  // 교과 50%cut 값 추출 (첫 번째 교과 항목)
+                  const cutMatch = c.cutoffData.match(
+                    /교과\([^)]*\):\s*50%cut=([\d.]+)/
+                  );
+                  if (!cutMatch) continue;
+                  const cut = parseFloat(cutMatch[1]);
+                  if (!adjustedAvg) continue;
+                  const diff = adjustedAvg - cut;
+                  if (diff > 0.1) reach++;
+                  else if (diff < -0.1) safety++;
+                  else fit++;
+                }
+                return { total: parsed.length, reach, fit, safety };
+              } catch {
+                return { total: 0, reach: 0, fit: 0, safety: 0 };
+              }
+            };
+
+            let rebuilt = "[]";
+            let usedMajors: string[] = [];
+            for (let i = 1; i <= majorNames.length; i++) {
+              const tryMajors = majorNames.slice(0, i);
+              const candidate = buildUniversityCandidatesText(
+                tryMajors[0],
+                state.preprocessedData?.gradingSystem,
+                adjustedAvg,
+                undefined,
+                includeGorunGihoe,
+                tryMajors,
+                studentInfo.schoolType,
+                isGyogwaOnly
+              );
+              if (candidate === "[]") continue;
+              rebuilt = candidate;
+              usedMajors = tryMajors;
+              // 상향2+적정2+안정2 목표, 부족한 티어는 적정으로 대체 가능
+              // 총 6개 이상 + 적정이 부족분을 채울 수 있으면 확정
+              const bal = checkBalance(candidate);
+              const reachShort = Math.max(0, 2 - bal.reach);
+              const safetyShort = Math.max(0, 2 - bal.safety);
+              const fitNeeded = 2 + reachShort + safetyShort;
+              if (bal.total >= 6 && bal.fit >= fitNeeded) {
+                break;
+              }
+            }
+
             if (rebuilt !== "[]") {
               stratCandidatesText = rebuilt;
-              // 재생성된 후보군을 state에 저장 → postprocessor가 이 목록으로 admissionStrategy 필터링
+              majorExplDepts = usedMajors.join(", ");
               texts.strategyUniversityCandidatesText = rebuilt;
               console.log(
-                `[report:${reportId}] admissionStrategy 후보군을 majorExploration 결과로 재생성: [${majorNames.join(", ")}]`
+                `[report:${reportId}] admissionStrategy 후보군을 majorExploration 결과로 재생성: [${usedMajors.join(", ")}] (${usedMajors.length}/${majorNames.length} 키워드 사용)`
               );
             }
           }

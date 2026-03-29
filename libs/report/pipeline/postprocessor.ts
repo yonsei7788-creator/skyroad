@@ -388,37 +388,158 @@ export const postprocess = (
         }
       }
 
-      // admissionStrategy: 후보군 외 대학 제거
-      // majorExploration 기반 재생성 후보군이 있으면 그것을 사용 (wave-executor에서 재생성됨)
-      const stratAllowed = new Set<string>(allowedUniversities);
-      if (strategyUniversityCandidatesText) {
+      // admissionStrategy: 카드를 코드에서 직접 생성 (AI 생성 카드 제거)
+      // 학교명, 학과명, 전형, 합격가능성만 렌더링하므로 AI를 거칠 필요 없음
+      // 카드를 코드에서 직접 생성 (후보군 데이터 + 커트라인 기반)
+      // strategyUniversityCandidatesText가 없으면 원본 후보군으로 fallback
+      const cardCandidatesText =
+        strategyUniversityCandidatesText ?? universityCandidatesText;
+      if (admStrat && cardCandidatesText) {
+        // 학생 등급을 9등급제로 환산 (커트라인이 9등급제 기준)
+        const gs = preprocessed.gradingSystem;
+        const avg = preprocessed.overallAverage;
+        const fiveToNineLocal = (five: number): number => {
+          if (five <= 1.0) return 1.5;
+          if (five <= 1.5) return 1.5 + (five - 1.0) * 4;
+          return 3.5 + (five - 1.5) * 2;
+        };
+        const studentGrade9 =
+          gs === "5등급제" && avg ? fiveToNineLocal(avg) : (avg ?? 0);
+
+        const gapToChance = (gap: number): string => {
+          if (gap > 0.5) return "very_low";
+          if (gap > 0.2) return "low";
+          if (gap >= -0.2) return "medium";
+          if (gap >= -0.5) return "high";
+          return "very_high";
+        };
+
         try {
-          const stratCandidates = JSON.parse(
-            strategyUniversityCandidatesText
-          ) as { university: string }[];
-          for (const c of stratCandidates) {
-            stratAllowed.add(c.university);
+          const candidates = JSON.parse(cardCandidatesText) as {
+            university: string;
+            department: string;
+            cutoffData?: string;
+          }[];
+
+          const cards = candidates.map((cand) => {
+            const cutoffs = findCutoffData(cand.university, cand.department);
+
+            // 교과 chance
+            const gyogwaCutoffs = cutoffs.filter(
+              (c: any) => c.admissionType === "교과" && c.cutoff50Grade != null
+            );
+            const gyogwaBest =
+              gyogwaCutoffs.length > 0
+                ? Math.min(...gyogwaCutoffs.map((c: any) => c.cutoff50Grade))
+                : null;
+            const gyogwaChance = gyogwaBest
+              ? gapToChance(studentGrade9 - gyogwaBest)
+              : "medium";
+            const gyogwaType = gyogwaCutoffs[0]?.admissionName ?? "학생부교과";
+
+            // 학종 chance (같은 등급 비교 로직)
+            const hakjongCutoffs = cutoffs.filter(
+              (c: any) => c.admissionType === "학종" && c.cutoff50Grade != null
+            );
+            const hakjongBest =
+              hakjongCutoffs.length > 0
+                ? Math.min(...hakjongCutoffs.map((c: any) => c.cutoff50Grade))
+                : null;
+            const hakjongChance = hakjongBest
+              ? gapToChance(studentGrade9 - hakjongBest)
+              : "medium";
+            const hakjongType =
+              hakjongCutoffs[0]?.admissionName ?? "학생부종합";
+
+            return {
+              university: cand.university,
+              department: cand.department,
+              comprehensive: {
+                admissionType: hakjongType,
+                chance: hakjongChance,
+              },
+              subject: {
+                admissionType: gyogwaType,
+                chance: gyogwaChance,
+              },
+            };
+          });
+
+          // 교과와 학종 chance가 동일하면 교과를 한 단계 내림 (같은 값 방지)
+          const CHANCE_LEVELS = [
+            "very_low",
+            "low",
+            "medium",
+            "high",
+            "very_high",
+          ];
+          for (const card of cards) {
+            const compIdx = CHANCE_LEVELS.indexOf(card.comprehensive.chance);
+            const subjIdx = CHANCE_LEVELS.indexOf(card.subject.chance);
+            if (compIdx === subjIdx && subjIdx > 0) {
+              card.subject.chance = CHANCE_LEVELS[subjIdx - 1];
+            }
           }
+
+          // simulations 구조에 코드 생성 카드 주입
+          // 교과 커트라인(50%cut) 낮은 순(합격선 높은 순)으로 정렬
+          cards.sort((a, b) => {
+            const aCut = findCutoffData(a.university, a.department)
+              .filter(
+                (c: any) =>
+                  c.admissionType === "교과" && c.cutoff50Grade != null
+              )
+              .map((c: any) => c.cutoff50Grade as number);
+            const bCut = findCutoffData(b.university, b.department)
+              .filter(
+                (c: any) =>
+                  c.admissionType === "교과" && c.cutoff50Grade != null
+              )
+              .map((c: any) => c.cutoff50Grade as number);
+            const aMin = aCut.length > 0 ? Math.min(...aCut) : 9;
+            const bMin = bCut.length > 0 ? Math.min(...bCut) : 9;
+            return aMin - bMin;
+          });
+
+          admStrat.simulations = [{ description: "", cards }];
+
+          console.log(
+            `[report:${reportId}] admissionStrategy 카드 코드 생성: ${cards.length}개 (${cards.map((c: any) => c.university).join(", ")})`
+          );
         } catch {
-          // 파싱 실패 시 기존 allowedUniversities 사용
+          // 파싱 실패 시 AI 생성 카드 유지
         }
       }
-      if (admStrat && Array.isArray(admStrat.simulations)) {
-        for (const sim of admStrat.simulations) {
-          if (!Array.isArray(sim.cards)) continue;
-          const before = sim.cards.length;
-          sim.cards = sim.cards.filter((card: any) => {
-            if (stratAllowed.has(card.university)) return true;
-            console.log(
-              `[report:${reportId}] 후보군 외 대학 제거 (admissionStrategy): ${card.university} ${card.department}`
-            );
-            return false;
-          });
-          if (sim.cards.length < before) {
-            console.log(
-              `[report:${reportId}] admissionStrategy ${sim.type}: 후보군 외 ${before - sim.cards.length}개 대학 제거`
-            );
-          }
+    }
+  }
+
+  // 3-2b. 교과전형 텍스트에서 성적 추이 표현 강제 제거
+  // 프롬프트 규칙만으로는 AI가 반복 위반하므로 코드에서 강제 정화
+  const GYOGWA_BANNED_PATTERN =
+    /[^.!?]*(?:하락|상승|추세|추이|변화|편차가 불리|반영 과목|강점 과목|이수 여부|서류 평가|서류종합평가|입학사정관)[^.!?]*[.!?]/g;
+
+  const sanitizeGyogwaText = (text: string): string =>
+    text
+      .replace(GYOGWA_BANNED_PATTERN, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+
+  // admissionStrategy typeStrategies 교과 type
+  if (admStrat && Array.isArray(admStrat.typeStrategies)) {
+    for (const ts of admStrat.typeStrategies) {
+      if (ts.type !== "교과") continue;
+      if (ts.analysis) ts.analysis = sanitizeGyogwaText(ts.analysis);
+      if (ts.reason) ts.reason = sanitizeGyogwaText(ts.reason);
+    }
+  }
+  // admissionPrediction 교과 predictions
+  if (admPred && Array.isArray(admPred.predictions)) {
+    for (const pred of admPred.predictions) {
+      if (pred.admissionType !== "교과") continue;
+      if (pred.analysis) pred.analysis = sanitizeGyogwaText(pred.analysis);
+      if (Array.isArray(pred.universityPredictions)) {
+        for (const up of pred.universityPredictions) {
+          if (up.rationale) up.rationale = sanitizeGyogwaText(up.rationale);
         }
       }
     }
@@ -734,8 +855,8 @@ export const postprocess = (
         }
       }
 
-      // admissionStrategy: 비현실적/너무 쉬운 대학 제거 + chance 보정
-      if (admStrat && Array.isArray(admStrat.simulations)) {
+      // [삭제됨] admissionStrategy 카드 보정 — 카드를 코드에서 직접 생성하므로 불필요
+      if (false as boolean) {
         for (const sim of admStrat.simulations) {
           if (!Array.isArray(sim.cards)) continue;
 
@@ -885,11 +1006,8 @@ export const postprocess = (
     }
   }
 
-  // 3-8. 학종/교과 chance 강제 분리 (admissionStrategy) — 최종 단계
-  // 모든 chance 보정이 끝난 후 실행해야 재동일화 방지
-  // AI가 같은 카드에서 comprehensive.chance와 subject.chance를 동일하게 출력하는 문제 방지
-  // 학종은 정성평가 포함으로 합격선이 낮아 chance가 교과보다 같거나 높아야 함
-  if (admStrat && Array.isArray(admStrat.simulations)) {
+  // [삭제됨] 3-8. 학종/교과 chance 강제 분리 — 카드를 코드에서 직접 생성하므로 불필요
+  if (false as boolean) {
     const CHANCE_ORDER_FINAL = [
       "very_low",
       "low",
