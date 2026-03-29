@@ -292,10 +292,10 @@ export const ProfileSettingsForm = ({
 
     const supabase = createClient();
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (!user) {
+    if (!session?.user) {
       showToast("로그인이 필요합니다.", "error");
       setIsLoading(false);
       return;
@@ -313,7 +313,7 @@ export const ProfileSettingsForm = ({
         grade: profile.grade || null,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", user.id);
+      .eq("id", session.user.id);
 
     setIsLoading(false);
 
