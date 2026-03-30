@@ -1,8 +1,21 @@
 {
-  "functions": {
-    "api/py/parse-pdf.py": {
-      "runtime": "@vercel/python@6.28.0",
-      "maxDuration": 120
+  "builds": [
+    {
+      "src": "api/py/parse-pdf.py",
+      "use": "@vercel/python@6.28.0",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/api/py/(.*)",
+      "dest": "/api/py/$1"
+    }
+  ]
 }

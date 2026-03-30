@@ -17,15 +17,6 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "50mb",
     },
   },
-  rewrites: async () => [
-    {
-      source: "/api/py/:path*",
-      destination:
-        process.env.NODE_ENV === "development"
-          ? "http://127.0.0.1:5328/api/py/:path*"
-          : "/api/py/:path*",
-    },
-  ],
   headers: async () => [
     {
       source: "/(.*)",
