@@ -1,6 +1,8 @@
 {
-  "buildCommand": "pip install -r requirements.txt -t .python_packages && next build",
-  "env": {
-    "PYTHONPATH": ".python_packages"
+  "functions": {
+    "api/parse-pdf-worker.py": {
+      "runtime": "@vercel/python@4",
+      "maxDuration": 120
+    }
   }
 }

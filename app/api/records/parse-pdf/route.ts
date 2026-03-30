@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { execFile } from "child_process";
-import { writeFile, unlink } from "fs/promises";
-import { tmpdir } from "os";
-import { join } from "path";
+import { headers } from "next/headers";
 import crypto from "crypto";
-import { promisify } from "util";
 
 import { createClient } from "@/libs/supabase/server";
 import { createAdminClient } from "@/libs/supabase/admin";
@@ -12,8 +8,6 @@ import { correctSubjectName } from "@/libs/report/constants/subject-name-correct
 
 export const maxDuration = 120;
 export const dynamic = "force-dynamic";
-
-const execFileAsync = promisify(execFile);
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -155,36 +149,28 @@ export async function POST(request: NextRequest) {
     pdfBuffer = await fileData.arrayBuffer();
   }
 
-  const tmpPath = join(tmpdir(), `parse-${crypto.randomUUID()}.pdf`);
-
   try {
-    await writeFile(tmpPath, Buffer.from(pdfBuffer));
+    // Python Vercel Function에 PDF 바이너리 전송
+    const headerStore = await headers();
+    const host = headerStore.get("host") || "localhost:3000";
+    const protocol = host.startsWith("localhost") ? "http" : "https";
+    const workerUrl = `${protocol}://${host}/api/parse-pdf-worker`;
 
-    const scriptPath = join(process.cwd(), "scripts", "parse-pdf.py");
-    const pythonPath = join(process.cwd(), ".python_packages");
-    const { stdout, stderr } = await execFileAsync(
-      "python3",
-      [scriptPath, tmpPath],
-      {
-        maxBuffer: 50 * 1024 * 1024,
-        env: {
-          ...process.env,
-          PYTHONPATH: pythonPath,
-        },
-      }
-    );
+    const workerRes = await fetch(workerUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/octet-stream" },
+      body: Buffer.from(pdfBuffer),
+    });
 
-    if (stderr) {
-      console.warn("[parse-pdf] Python stderr:", stderr);
+    const parsed = await workerRes.json();
+
+    if (!workerRes.ok) {
+      const errorMsg =
+        (parsed as { error?: string }).error ?? "PDF 파싱에 실패했습니다.";
+      throw new Error(errorMsg);
     }
 
-    if (!stdout.trim()) {
-      throw new Error("Python 파서가 빈 결과를 반환했습니다.");
-    }
-
-    const parsed = JSON.parse(stdout);
-
-    const result = enrichResult(parsed);
+    const result = enrichResult(parsed as Record<string, unknown[]>);
 
     console.info(
       `[parse-pdf] Results: attendance=${result.attendance?.length ?? 0}, ` +
@@ -200,16 +186,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (err) {
     console.error("[parse-pdf] Error:", err);
-    const raw = err instanceof Error ? err.message : String(err);
+    const message =
+      err instanceof Error
+        ? err.message
+        : "생기부 PDF 파싱에 실패했습니다. 다시 시도해주세요.";
 
-    // Python ValueError 메시지 추출 (사용자 친화적 메시지)
-    const valueErrorMatch = raw.match(/ValueError:\s*(.+?)$/m);
-    const userMessage = valueErrorMatch
-      ? valueErrorMatch[1].trim()
-      : "생기부 PDF 파싱에 실패했습니다. 다시 시도해주세요.";
-
-    return NextResponse.json({ error: userMessage }, { status: 500 });
-  } finally {
-    await unlink(tmpPath).catch(() => {});
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
