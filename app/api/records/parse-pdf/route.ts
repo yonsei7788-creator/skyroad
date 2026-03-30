@@ -161,10 +161,17 @@ export async function POST(request: NextRequest) {
     await writeFile(tmpPath, Buffer.from(pdfBuffer));
 
     const scriptPath = join(process.cwd(), "scripts", "parse-pdf.py");
+    const pythonPath = join(process.cwd(), ".python_packages");
     const { stdout, stderr } = await execFileAsync(
       "python3",
       [scriptPath, tmpPath],
-      { maxBuffer: 50 * 1024 * 1024 }
+      {
+        maxBuffer: 50 * 1024 * 1024,
+        env: {
+          ...process.env,
+          PYTHONPATH: pythonPath,
+        },
+      }
     );
 
     if (stderr) {
