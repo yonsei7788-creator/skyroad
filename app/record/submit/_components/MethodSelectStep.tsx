@@ -17,13 +17,6 @@ const METHODS = [
       "파일이 있다면 가장 빠르게 시작할 수 있어요 🙂\n업로드 후, 제대로 반영되었는지만 확인해주세요",
   },
   {
-    id: "image" as const,
-    image: "/images/reocrd/image-upload.png",
-    title: "이미지 업로드",
-    description:
-      "파일 없어도 괜찮아요 🙂\n사진으로 업로드해주시고, 정상적으로 업로드되었는지 확인 부탁드려요",
-  },
-  {
     id: "text" as const,
     image: "/images/reocrd/custom-text.png",
     title: "직접 입력",

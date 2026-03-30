@@ -17,7 +17,6 @@ import { createClient } from "@/libs/supabase/client";
 import { StepIndicator } from "./StepIndicator";
 import { MethodSelectStep } from "./MethodSelectStep";
 import { PdfUploadStep } from "./PdfUploadStep";
-import { ImageUploadStep } from "./ImageUploadStep";
 import { TextInputStep } from "./TextInputStep";
 import { ReviewStep } from "./ReviewStep";
 import { ParsingOverlay } from "./ParsingOverlay";
@@ -27,7 +26,6 @@ import type {
   WizardState,
   WizardStep,
   SchoolRecord,
-  ImageFile,
 } from "./types";
 
 import styles from "../page.module.css";
@@ -145,8 +143,7 @@ export const RecordSubmitWizard = ({
 
   const handleRestoreDraft = () => {
     if (!pendingDraft) return;
-    const isAiMode =
-      pendingDraft.method === "pdf" || pendingDraft.method === "image";
+    const isAiMode = pendingDraft.method === "pdf";
     setState((prev) => ({
       ...prev,
       method: pendingDraft.method,
@@ -172,10 +169,6 @@ export const RecordSubmitWizard = ({
       pdfFile: file,
       pdfFileName: fileName,
     }));
-  };
-
-  const handleImagesChange = (images: ImageFile[]) => {
-    setState((prev) => ({ ...prev, images }));
   };
 
   const handleRecordChange = (record: SchoolRecord) => {
@@ -213,7 +206,7 @@ export const RecordSubmitWizard = ({
     }
   };
 
-  const isAiParseMode = state.method === "pdf" || state.method === "image";
+  const isAiParseMode = state.method === "pdf";
   const totalSteps = isAiParseMode ? 4 : 3;
   const reviewStep = totalSteps;
 
@@ -226,8 +219,6 @@ export const RecordSubmitWizard = ({
     switch (state.method) {
       case "pdf":
         return state.pdfFile !== null;
-      case "image":
-        return state.images.length > 0;
       case "text":
         return isRequiredFieldsMet;
     }
@@ -250,10 +241,7 @@ export const RecordSubmitWizard = ({
       const { user } = session;
 
       // 파일을 Supabase Storage에 업로드
-      const filesToUpload: File[] =
-        state.method === "pdf" && state.pdfFile
-          ? [state.pdfFile]
-          : state.images.map((img) => img.file);
+      const filesToUpload: File[] = state.pdfFile ? [state.pdfFile] : [];
 
       const uploadedPaths: { path: string; mimeType: string }[] = [];
 
@@ -271,7 +259,7 @@ export const RecordSubmitWizard = ({
         uploadedPaths.push({ path: storagePath, mimeType: file.type });
       }
 
-      const response = await fetch("/api/records/parse", {
+      const response = await fetch("/api/records/parse-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ storagePaths: uploadedPaths }),
@@ -503,13 +491,6 @@ export const RecordSubmitWizard = ({
               pdfFile={state.pdfFile}
               pdfFileName={state.pdfFileName}
               onPdfChange={handlePdfChange}
-            />
-          )}
-
-          {state.step === 2 && state.method === "image" && (
-            <ImageUploadStep
-              images={state.images}
-              onImagesChange={handleImagesChange}
             />
           )}
 

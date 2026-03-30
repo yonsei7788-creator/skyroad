@@ -2,7 +2,7 @@
 // 입력 방식 및 위저드 단계
 // ============================================
 
-export type InputMethod = "pdf" | "image" | "text";
+export type InputMethod = "pdf" | "text";
 
 export type WizardStep = 1 | 2 | 3 | 4;
 
@@ -34,6 +34,7 @@ export interface AttendanceRow {
 export interface AwardRow {
   id: string;
   year: number;
+  semester: number;
   name: string;
   rank: string;
   date: string;
@@ -234,18 +235,11 @@ export const SECTION_TABS: SectionTabConfig[] = [
 // 위저드 상태
 // ============================================
 
-export interface ImageFile {
-  id: string;
-  file: File;
-  previewUrl: string;
-}
-
 export interface WizardState {
   step: WizardStep;
   method: InputMethod | null;
   pdfFile: File | null;
   pdfFileName: string;
-  images: ImageFile[];
   record: SchoolRecord;
   isParsing: boolean;
   parseError: string | null;
@@ -277,7 +271,6 @@ export const INITIAL_WIZARD_STATE: WizardState = {
   method: null,
   pdfFile: null,
   pdfFileName: "",
-  images: [],
   record: createEmptySchoolRecord(),
   isParsing: false,
   parseError: null,
@@ -309,6 +302,7 @@ export const createEmptyAttendanceRow = (): AttendanceRow => ({
 export const createEmptyAwardRow = (): AwardRow => ({
   id: crypto.randomUUID(),
   year: 1,
+  semester: 1,
   name: "",
   rank: "",
   date: "",
