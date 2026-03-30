@@ -1,6 +1,0 @@
-{
-  "buildCommand": "pip install -r requirements.txt -t .python_packages && next build",
-  "env": {
-    "PYTHONPATH": ".python_packages"
-  }
-}

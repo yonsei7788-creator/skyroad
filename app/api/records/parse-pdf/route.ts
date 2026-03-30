@@ -14,6 +14,9 @@ export const maxDuration = 120;
 export const dynamic = "force-dynamic";
 
 const execFileAsync = promisify(execFile);
+const IS_VERCEL = !!process.env.VERCEL;
+const PDF_PARSER_URL =
+  process.env.PDF_PARSER_URL || "https://pdf-parser-alpha.vercel.app/api";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -155,34 +158,52 @@ export async function POST(request: NextRequest) {
     pdfBuffer = await fileData.arrayBuffer();
   }
 
-  const tmpPath = join(tmpdir(), `parse-${crypto.randomUUID()}.pdf`);
-
   try {
-    await writeFile(tmpPath, Buffer.from(pdfBuffer));
+    let parsed: Record<string, unknown[]>;
 
-    const scriptPath = join(process.cwd(), "scripts", "parse-pdf.py");
-    const pythonPath = join(process.cwd(), ".python_packages");
-    const { stdout, stderr } = await execFileAsync(
-      "python3",
-      [scriptPath, tmpPath],
-      {
-        maxBuffer: 50 * 1024 * 1024,
-        env: {
-          ...process.env,
-          PYTHONPATH: pythonPath,
-        },
+    if (IS_VERCEL) {
+      // Vercel: 외부 Python API에 PDF 전송
+      const workerRes = await fetch(PDF_PARSER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/octet-stream" },
+        body: Buffer.from(pdfBuffer),
+      });
+
+      if (!workerRes.ok) {
+        const errorData = await workerRes.json().catch(() => null);
+        const errorMsg =
+          (errorData as { error?: string } | null)?.error ??
+          "PDF 파싱에 실패했습니다.";
+        throw new Error(errorMsg);
       }
-    );
 
-    if (stderr) {
-      console.warn("[parse-pdf] Python stderr:", stderr);
+      parsed = (await workerRes.json()) as Record<string, unknown[]>;
+    } else {
+      // 로컬: python3 직접 실행
+      const tmpPath = join(tmpdir(), `parse-${crypto.randomUUID()}.pdf`);
+      try {
+        await writeFile(tmpPath, Buffer.from(pdfBuffer));
+
+        const scriptPath = join(process.cwd(), "scripts", "parse-pdf.py");
+        const { stdout, stderr } = await execFileAsync(
+          "python3",
+          [scriptPath, tmpPath],
+          { maxBuffer: 50 * 1024 * 1024 }
+        );
+
+        if (stderr) {
+          console.warn("[parse-pdf] Python stderr:", stderr);
+        }
+
+        if (!stdout.trim()) {
+          throw new Error("Python 파서가 빈 결과를 반환했습니다.");
+        }
+
+        parsed = JSON.parse(stdout);
+      } finally {
+        await unlink(tmpPath).catch(() => {});
+      }
     }
-
-    if (!stdout.trim()) {
-      throw new Error("Python 파서가 빈 결과를 반환했습니다.");
-    }
-
-    const parsed = JSON.parse(stdout);
 
     const result = enrichResult(parsed);
 
@@ -204,12 +225,10 @@ export async function POST(request: NextRequest) {
 
     // Python ValueError 메시지 추출 (사용자 친화적 메시지)
     const valueErrorMatch = raw.match(/ValueError:\s*(.+?)$/m);
-    const userMessage = valueErrorMatch
+    const message = valueErrorMatch
       ? valueErrorMatch[1].trim()
-      : "생기부 PDF 파싱에 실패했습니다. 다시 시도해주세요.";
+      : raw || "생기부 PDF 파싱에 실패했습니다. 다시 시도해주세요.";
 
-    return NextResponse.json({ error: userMessage }, { status: 500 });
-  } finally {
-    await unlink(tmpPath).catch(() => {});
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
