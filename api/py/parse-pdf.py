@@ -10,7 +10,7 @@ import tempfile
 from http.server import BaseHTTPRequestHandler
 
 # scripts/ 디렉토리를 import path에 추가
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts"))
 
 from parse_pdf import parse_pdf  # noqa: E402
 

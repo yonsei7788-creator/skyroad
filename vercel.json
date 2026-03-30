@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/parse-pdf-worker.py": {
+    "api/py/parse-pdf.py": {
       "runtime": "@vercel/python@6.28.0",
       "maxDuration": 120
     }

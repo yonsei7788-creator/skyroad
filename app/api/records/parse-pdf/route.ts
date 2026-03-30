@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
       const headerStore = await headers();
       const host = headerStore.get("host") || "localhost:3000";
       const protocol = host.startsWith("localhost") ? "http" : "https";
-      const workerUrl = `${protocol}://${host}/api/parse-pdf-worker`;
+      const workerUrl = `${protocol}://${host}/api/py/parse-pdf`;
 
       const workerRes = await fetch(workerUrl, {
         method: "POST",
