@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { execFile } from "child_process";
 import { writeFile, unlink } from "fs/promises";
 import { tmpdir } from "os";
@@ -16,6 +15,8 @@ export const dynamic = "force-dynamic";
 
 const execFileAsync = promisify(execFile);
 const IS_VERCEL = !!process.env.VERCEL;
+const PDF_PARSER_URL =
+  process.env.PDF_PARSER_URL || "https://pdf-parser-alpha.vercel.app/api";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -161,49 +162,22 @@ export async function POST(request: NextRequest) {
     let parsed: Record<string, unknown[]>;
 
     if (IS_VERCEL) {
-      // Vercel: Python Function에 HTTP로 PDF 전송
-      const headerStore = await headers();
-      const host = headerStore.get("host") || "localhost:3000";
-      const protocol = host.startsWith("localhost") ? "http" : "https";
-      const workerUrl = `${protocol}://${host}/api/py/parse-pdf`;
-
-      const fetchHeaders: Record<string, string> = {
-        "Content-Type": "application/octet-stream",
-      };
-
-      // Preview 배포 보호 우회 (프로덕션에서는 무시됨)
-      const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-      if (bypassSecret) {
-        fetchHeaders["x-vercel-protection-bypass"] = bypassSecret;
-      }
-
-      const workerRes = await fetch(workerUrl, {
+      // Vercel: 외부 Python API에 PDF 전송
+      const workerRes = await fetch(PDF_PARSER_URL, {
         method: "POST",
-        headers: fetchHeaders,
+        headers: { "Content-Type": "application/octet-stream" },
         body: Buffer.from(pdfBuffer),
       });
 
-      // 응답이 JSON인지 확인 (auth HTML 페이지 방어)
-      const contentType = workerRes.headers.get("content-type") || "";
-      if (!contentType.includes("application/json")) {
-        console.error(
-          `[parse-pdf] Worker returned non-JSON: ${workerRes.status} ${contentType}`
-        );
-        throw new Error(
-          "PDF 파싱 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요."
-        );
-      }
-
-      const workerData = await workerRes.json();
-
       if (!workerRes.ok) {
+        const errorData = await workerRes.json().catch(() => null);
         const errorMsg =
-          (workerData as { error?: string }).error ??
+          (errorData as { error?: string } | null)?.error ??
           "PDF 파싱에 실패했습니다.";
         throw new Error(errorMsg);
       }
 
-      parsed = workerData as Record<string, unknown[]>;
+      parsed = (await workerRes.json()) as Record<string, unknown[]>;
     } else {
       // 로컬: python3 직접 실행
       const tmpPath = join(tmpdir(), `parse-${crypto.randomUUID()}.pdf`);
