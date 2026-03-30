@@ -74,8 +74,8 @@ export const AdmissionStrategyRenderer = ({
                 <tr>
                   <th>대학</th>
                   <th>학과</th>
-                  <th>교과</th>
                   <th>학종</th>
+                  <th>교과</th>
                 </tr>
               </thead>
               <tbody>
@@ -84,15 +84,15 @@ export const AdmissionStrategyRenderer = ({
                     <td className={styles.tableCellBold}>{card.university}</td>
                     <td className={styles.small}>{card.department}</td>
                     <td className={styles.tableAlignCenter}>
-                      {card.subject?.chance ? (
-                        <ReportBadge chance={card.subject.chance} />
+                      {card.comprehensive?.chance ? (
+                        <ReportBadge chance={card.comprehensive.chance} />
                       ) : (
                         "—"
                       )}
                     </td>
                     <td className={styles.tableAlignCenter}>
-                      {card.comprehensive?.chance ? (
-                        <ReportBadge chance={card.comprehensive.chance} />
+                      {card.subject?.chance ? (
+                        <ReportBadge chance={card.subject.chance} />
                       ) : (
                         "—"
                       )}

@@ -35,10 +35,11 @@ export const PdfUploadStep = ({
         <Info size={16} className={styles.pdfGuideCardIcon} aria-hidden />
         <div className={styles.pdfGuideCardBody}>
           <p className={styles.pdfGuideCardText}>
-            <strong>카카오톡, 네이버, 정부24 앱</strong>에서 발급한 PDF만 등록할
-            수 있어요.
+            <strong>정부24 앱·카카오톡·네이버</strong>에서 발급한 정식
+            생활기록부 PDF만 등록 가능합니다.
             <br />
-            캡처 또는 인쇄를 통해 저장한 파일은 내용을 읽을 수 없어요.
+            개인정보 보호를 위해 캡처 또는 인쇄 방식으로 생성된 파일은 접수되지
+            않습니다.
           </p>
         </div>
       </div>

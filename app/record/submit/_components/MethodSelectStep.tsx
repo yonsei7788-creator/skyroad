@@ -21,7 +21,7 @@ const METHODS = [
     image: "/images/reocrd/custom-text.png",
     title: "직접 입력",
     description:
-      "간단하게 직접 입력해서 시작할 수 있어요 🙂\n작성 후, 내용이 잘 입력되었는지만 확인해주세요",
+      "직접 입력해서 시작할 수 있어요 🙂\n작성 후, 내용이 잘 입력되었는지만 확인해주세요",
   },
 ] as const;
 
