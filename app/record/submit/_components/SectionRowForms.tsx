@@ -558,6 +558,22 @@ export const AwardRowForm = ({
       </select>
     </div>
     <div className={styles.gradeRowField}>
+      <label className={styles.gradeRowLabel}>학기</label>
+      <select
+        className={styles.gradeRowSelect}
+        value={row.semester}
+        onChange={(e) =>
+          onChange(row.id, "semester", parseInt(e.target.value, 10))
+        }
+      >
+        {SEMESTER_OPTIONS.map((s) => (
+          <option key={s} value={s}>
+            {s}학기
+          </option>
+        ))}
+      </select>
+    </div>
+    <div className={styles.gradeRowField}>
       <label className={styles.gradeRowLabel}>수상명</label>
       <input
         type="text"

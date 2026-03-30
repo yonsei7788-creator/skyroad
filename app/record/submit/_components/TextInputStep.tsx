@@ -221,6 +221,13 @@ const awardColumns: ColumnDef<Record<string, unknown>>[] = [
     width: "54px",
   },
   {
+    key: "semester",
+    label: "학기",
+    type: "select",
+    options: SEMESTER_OPTIONS,
+    width: "54px",
+  },
+  {
     key: "name",
     label: "수상명",
     type: "text",

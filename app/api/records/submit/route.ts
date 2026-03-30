@@ -74,6 +74,7 @@ const FIELD_MAPS: Record<keyof SchoolRecord, Record<string, string>> = {
   },
   awards: {
     year: "year",
+    semester: "semester",
     name: "name",
     rank: "rank",
     date: "date",
