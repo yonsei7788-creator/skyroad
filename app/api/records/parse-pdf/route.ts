@@ -167,11 +167,32 @@ export async function POST(request: NextRequest) {
       const protocol = host.startsWith("localhost") ? "http" : "https";
       const workerUrl = `${protocol}://${host}/api/py/parse-pdf`;
 
+      const fetchHeaders: Record<string, string> = {
+        "Content-Type": "application/octet-stream",
+      };
+
+      // Preview 배포 보호 우회 (프로덕션에서는 무시됨)
+      const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+      if (bypassSecret) {
+        fetchHeaders["x-vercel-protection-bypass"] = bypassSecret;
+      }
+
       const workerRes = await fetch(workerUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/octet-stream" },
+        headers: fetchHeaders,
         body: Buffer.from(pdfBuffer),
       });
+
+      // 응답이 JSON인지 확인 (auth HTML 페이지 방어)
+      const contentType = workerRes.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        console.error(
+          `[parse-pdf] Worker returned non-JSON: ${workerRes.status} ${contentType}`
+        );
+        throw new Error(
+          "PDF 파싱 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요."
+        );
+      }
 
       const workerData = await workerRes.json();
 
