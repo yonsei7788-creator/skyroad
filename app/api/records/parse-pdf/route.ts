@@ -221,10 +221,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (err) {
     console.error("[parse-pdf] Error:", err);
-    const message =
-      err instanceof Error
-        ? err.message
-        : "생기부 PDF 파싱에 실패했습니다. 다시 시도해주세요.";
+    const raw = err instanceof Error ? err.message : String(err);
+
+    // Python ValueError 메시지 추출 (사용자 친화적 메시지)
+    const valueErrorMatch = raw.match(/ValueError:\s*(.+?)$/m);
+    const message = valueErrorMatch
+      ? valueErrorMatch[1].trim()
+      : raw || "생기부 PDF 파싱에 실패했습니다. 다시 시도해주세요.";
 
     return NextResponse.json({ error: message }, { status: 500 });
   }
