@@ -181,7 +181,7 @@ export const CompetitiveProfilingRenderer = ({
 
         <div className={styles.quoteBox}>
           <div className={styles.quoteText}>
-            {fillTemplate(TEMPLATES.evaluatorComment, data)}
+            {fillTemplate(TEMPLATES.evaluatorComment[level], data)}
           </div>
         </div>
 

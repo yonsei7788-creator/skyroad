@@ -1,6 +1,7 @@
 /** 섹션 13: 부족한 부분 + 보완 전략 (weaknessAnalysis) */
 
 import type { ReportPlan } from "../../types.ts";
+import { getMajorGroupLabel } from "../../constants/major-evaluation-criteria.ts";
 
 export interface WeaknessAnalysisPromptInput {
   competencyExtraction: string;
@@ -50,16 +51,16 @@ export const buildWeaknessAnalysisPrompt = (
   plan: ReportPlan
 ): string => {
   const medicalWeaknessContext = input.isMedical
-    ? `## ⚠️ 메디컬 계열 약점 분석 기준 (반드시 적용)
+    ? `## ⚠️ 의·치·한·약·수 계열 약점 분석 기준 (반드시 적용)
 
-이 학생은 의·치·한·약·수 계열(메디컬) 지원 학생입니다.
+이 학생은 의·치·한·약·수 계열(의·치·한·약·수) 지원 학생입니다.
 
-### 메디컬 특화 약점 체크리스트 (해당 시 반드시 포함)
-- **영어 2등급 이하**: 메디컬에서 영어 1등급은 사실상 필수. 2등급 이하이면 priority "high"로 반드시 포함.
+### 의·치·한·약·수 특화 약점 체크리스트 (해당 시 반드시 포함)
+- **영어 2등급 이하**: 의·치·한·약·수에서 영어 1등급은 사실상 필수. 2등급 이하이면 priority "high"로 반드시 포함.
 - **수학·과학 핵심 과목 미이수 또는 저성적**: 미적분(2015)/미적분Ⅰ·Ⅱ(2022), 생명과학Ⅱ/화학Ⅱ(2015) 또는 대응 2022 과목 미이수 시 priority "high".
 - **과학 세특의 탐구 깊이 부족**: 실험 기반 탐구(가설→실험→결과→한계인식)가 아닌 단순 조사 수준이면 약점으로 식별.
-- **모의고사 미비**: 메디컬은 정시 비중 40% 이상. 모의고사 데이터가 없거나 수능 준비가 미흡하면 약점으로 식별.
-- **진로 변경 이력 미설명**: 메디컬→비메디컬 또는 비메디컬→메디컬 변경 시 학생부에 변경 계기 설명이 없으면 약점.
+- **모의고사 미비**: 의·치·한·약·수는 정시 비중 40% 이상. 모의고사 데이터가 없거나 수능 준비가 미흡하면 약점으로 식별.
+- **진로 변경 이력 미설명**: 의·치·한·약·수→비의·치·한·약·수 또는 비의·치·한·약·수→의·치·한·약·수 변경 시 학생부에 변경 계기 설명이 없으면 약점.
 
 `
     : "";
@@ -204,7 +205,7 @@ ${
   input.detectedMajorGroup
     ? `
 ### 감지된 강점 계열
-${input.detectedMajorGroup}
+${getMajorGroupLabel(input.detectedMajorGroup ?? "")}
 `
     : ""
 }
@@ -225,9 +226,9 @@ export const buildGyogwaWeaknessAnalysisPrompt = (
 교과전형 합격선 도달을 위해 보완이 필요한 영역을 식별하고 구체적인 개선 방향을 제시하세요.
 
 ## 교과전형 약점 분석 원칙
-- 교과전형은 **최종 평균 등급**이 핵심입니다. 약점 분석도 "최종 등급을 낮추는 요인"에 집중하세요.
-- 특정 과목의 낮은 등급이 전체 평균에 미치는 영향을 분석하세요.
-- 남은 학기에서 개선 가능한 영역만 제시하세요.
+- 교과전형은 **최종 평균 등급**으로만 합격 여부가 결정됩니다.
+- 약점 분석은 "최종 평균 등급이 희망 대학 합격선에 도달하는가"에 집중하세요.
+- 최종 평균이 합격선에 미달하는 경우, 합격선 도달을 위한 전략을 제시하세요.
 - 수능 최저학력기준 충족 여부도 약점이 될 수 있습니다.
 
 ## 출력 JSON 스키마
@@ -237,16 +238,16 @@ export const buildGyogwaWeaknessAnalysisPrompt = (
   "title": "부족한 부분 + 보완 전략",
   "areas": [
     {
-      "area": "영어 과목 등급 부진",
-      "description": "영어 I에서 4등급을 받아 전체 평균을 낮추는 주요 원인입니다. 3학년 영어 과목에서 등급을 끌어올리면 최종 평균 개선에 큰 효과가 있습니다.",
-      "suggestedActivities": ["영어 독해 집중 학습으로 3학년 영어 과목 등급 향상"],
-      "evidence": "2학년 1학기 영어 I 4등급",
+      "area": "최종 평균 등급이 상위권 대학 합격선에 미달",
+      "description": "전교과 평균 2.41등급으로 인서울 상위권 교과전형 합격선(1.5~2.0등급)에 미달합니다. 인서울 중위권 대학(광운대, 명지대급)에서는 경쟁력이 있습니다.",
+      "suggestedActivities": ["합격선에 맞는 지원 대학 재설정", "수능 최저학력기준 충족 준비"],
+      "evidence": "전교과 평균 2.41등급",
       "competencyTag": {"category": "academic", "subcategory": "학업성취도"},
       "priority": "high",
       "urgency": "high",
       "effectiveness": "high",
-      "executionStrategy": "3학년 1학기 영어 과목에서 최소 2등급을 목표로 설정",
-      "subjectLinkStrategy": "영어 과목 성적 향상이 최종 평균 등급 개선에 가장 직접적인 효과"
+      "executionStrategy": "최종 평균 등급에 맞는 현실적인 지원 전략 수립",
+      "subjectLinkStrategy": "교과전형은 최종 평균 등급 기준이므로, 합격선에 맞는 대학 선택이 핵심"
     }
   ]
 }

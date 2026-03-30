@@ -1,6 +1,7 @@
 /** 전임 컨설턴트 2차 검수 (consultantReview) */
 
 import type { ReportPlan } from "../../types.ts";
+import { getMajorGroupLabel } from "../../constants/major-evaluation-criteria.ts";
 
 export interface ConsultantReviewPromptInput {
   competencyExtraction: string;
@@ -29,7 +30,7 @@ const buildPlanSpecific = (
 ): string => `## 출력 기준: 정밀 총평 (컨설팅급)
 - gradeAnalysis: **500자 이내**. ${isGyogwaOnly ? "수강자수/표준편차/원점수 기반 정밀 분석, 과목 간 등급 편차 분석, 최종 평균 등급의 교과전형 합격선 대비 위치 평가." : "수강자수/표준편차/원점수 기반 정밀 분석, 과목 간 등급 편차의 사정관 해석, 성적 추이의 전략적 의미."}
 - courseEffort: **500자 이내**. 핵심/권장 과목별 이수 노력 상세 평가, 진로역량 분석(⚠️ 진로역량은 성적이 아닌 세특/탐구활동/교과선택 기반으로 평가), 소인수 과목 전략, 진로선택과목 성취도 해석.
-- admissionStrategy: **500자 이내**. ${isGyogwaOnly ? "교과전형 중심의 합격 가능성 분석. 교과전형은 최종 등급만 반영하므로 등급의 상승/하락 추세를 언급하지 마세요. 최종 평균 등급과 합격선 대비 위치만 분석하세요. 정시 병행 전략, 상향/안정/하향 배치 방향." : "교과/학종/정시 각각의 가능성 분석, 모의고사 반영 전략, 6장 카드 조합 시뮬레이션, 상향/안정/하향 배치 방향."}
+- admissionStrategy: **500자 이내**. ${isGyogwaOnly ? "교과전형 중심의 합격 가능성 분석. ⚠️ 합격 예측 결과(admissionPrediction)가 제공된 경우, 그 결과의 chance/passRateRange와 일관되게 서술하세요. 최종 평균 등급과 합격선 대비 위치만 분석하세요. 정시 병행 전략, 상향/안정/하향 배치 방향." : "교과/학종/정시 각각의 가능성 분석. ⚠️ 합격 예측 결과(admissionPrediction)가 제공된 경우, 그 결과의 chance/passRateRange와 일관되게 서술하세요. 모의고사 반영 전략, 6장 카드 조합 시뮬레이션, 상향/안정/하향 배치 방향."}
 - completionDirection: **500자 이내**. 생기부 전체 스토리 완성 전략, 세특 보완 우선순위, 창체 마무리 방향, 면접 대비 스토리텔링 구성.
 - finalAdvice: **150자 이내**. 구체적이고 실행 가능한 종합 권고.
 
@@ -63,14 +64,14 @@ export const buildConsultantReviewPrompt = (
       : "";
 
   const medicalContext = input.isMedical
-    ? `## ⚠️ 메디컬 계열 총평 가이드 (반드시 적용)
+    ? `## ⚠️ 의·치·한·약·수 계열 총평 가이드 (반드시 적용)
 
-이 학생은 의·치·한·약·수 계열(메디컬) 지원 학생입니다. 총평에 반드시 반영하세요:
-- **admissionStrategy**: 메디컬은 정시 비중 40% 이상. "수시와 정시를 동시에 준비해야 합니다"를 반드시 포함.
+이 학생은 의·치·한·약·수 계열(의·치·한·약·수) 지원 학생입니다. 총평에 반드시 반영하세요:
+- **admissionStrategy**: 의·치·한·약·수는 정시 비중 40% 이상. "수시와 정시를 동시에 준비해야 합니다"를 반드시 포함.
 - **admissionStrategy**: 영어 1등급이 아닌 경우 "영어 등급 보완이 시급합니다"를 명시.
-- **gradeAnalysis**: 메디컬 합격선은 소수점 단위 변별. 학생의 현재 등급이 메디컬 합격선 대비 어느 위치인지 솔직하게 평가.
-- **completionDirection**: 메디컬 지원을 위해 남은 기간에 보완해야 할 핵심 과목(수학·과학)을 구체적으로 명시.
-- **finalAdvice**: 메디컬 입시의 현실적 경쟁 강도를 솔직하게 전달.
+- **gradeAnalysis**: 의·치·한·약·수 합격선은 소수점 단위 변별. 학생의 현재 등급이 의·치·한·약·수 합격선 대비 어느 위치인지 솔직하게 평가.
+- **completionDirection**: 의·치·한·약·수 지원을 위해 남은 기간에 보완해야 할 핵심 과목(수학·과학)을 구체적으로 명시.
+- **finalAdvice**: 의·치·한·약·수 입시의 현실적 경쟁 강도를 솔직하게 전달.
 
 `
     : "";
@@ -79,12 +80,10 @@ export const buildConsultantReviewPrompt = (
   const analysisProcedure = isGyogwaOnly
     ? `## 분석 절차
 1. **최종 등급 분석**: 최종 평균 등급만으로 교과전형 합격선 대비 위치를 해석합니다.
-   - ✅ "최종 평균 N등급은 ~합격선에 미달/도달합니다"
-   - ❌ "N학년에 등급이 하락하여 불리합니다" — 학기별 등급 변화 과정 서술 금지
-   - ❌ "등급 하락이 전체 평균을 낮추는 요인" — 하락/상승 원인 분석 금지
-   - ❌ "과목 간 편차가 크므로 유리한 과목 반영 비율의 대학을 찾아야" — 과목별 유불리 대학 전략 금지
-   - ❌ "특정 과목 반영 비중이 높은/낮은 대학" — 특정 과목 기반 대학 선택 전략 금지
-   - 교과전형은 전 과목 또는 국영수사과/국영수과를 반영하므로, 최종 평균 등급과 합격선 비교가 전부입니다.
+   - 교과전형은 전 과목 또는 국영수사과/국영수과 평균으로 반영하므로, 최종 평균 등급과 합격선 비교가 전부입니다.
+   - ✅ "최종 평균 2.41등급은 광운대·명지대 교과전형 합격선 대비 여유가 있는 수준입니다."
+   - ✅ "전교과 평균 2.41등급으로, 인서울 중위권 교과전형에서 경쟁력이 있습니다."
+   - ✅ "국영수사과 평균 2.45등급, 전교과 평균 2.41등급이므로 교과전형 지원이 적합합니다."
 2. **교과 이수 노력 평가**: 전공 관련 핵심 과목의 이수 여부와 성취도를 평가합니다.
 3. **전형 전략 수립**: 최종 등급과 합격선을 비교하여 지원 가능 대학 수준을 판단합니다. 정시 병행 전략도 제시합니다.
 4. **마무리 방향 설정**: 남은 학기에서 성적 관리 방향을 제시합니다.
@@ -109,7 +108,7 @@ export const buildConsultantReviewPrompt = (
 ### 반드시 포함할 4가지 평가 요소
 1. **진로역량 (Major Fit)**: 전공 관련 교과의 이수 여부와 성취도를 평가합니다. 교과전형에서도 일부 대학은 서류종합평가를 반영하므로, 전공 관련 과목 이수 노력은 의미가 있습니다. → 이 학생이 전공 관련 교과를 얼마나 이수했고 성취도가 어떤지 서술하세요.
 
-2. **학업 역량 (Academic Ability)**: 교과전형은 **최종 평균 등급**이 핵심입니다. 등급의 상승/하락 추세는 교과전형에서 평가하지 않습니다. 최종 등급이 교과전형 합격선 대비 어느 위치인지, 과목 간 편차가 어느 정도인지 분석하세요. → 이 학생의 최종 등급이 교과전형에서 어떤 경쟁력을 가지는지 평가하세요.
+2. **학업 역량 (Academic Ability)**: 교과전형은 **최종 평균 등급**으로만 합격 여부가 결정됩니다. 최종 평균 등급과 교과 조합 평균(국영수사과 등)이 합격선 대비 어디에 위치하는지 분석하세요. → 이 학생의 최종 등급이 교과전형에서 어떤 경쟁력을 가지는지 평가하세요.
 
 3. **탐구 역량 (Inquiry Ability)**: 교과전형에서도 서류종합평가를 반영하는 대학이 있으므로, 세특에서 드러나는 탐구 역량은 참고 요소가 됩니다. → 이 학생의 세특에서 드러나는 탐구 역량을 간략히 평가하세요.
 
@@ -194,16 +193,13 @@ ${analysisProcedure}
 - 현재 날짜: ${input.currentDate}
 - 학생 학년: ${input.studentGrade}학년
 
-⛔⛔⛔ **이수 완료 과목 성적 개선 권고 절대 금지 (최우선 규칙)**:
-- "이수 완료 과목 정보"에 나열된 과목은 성적이 확정되어 변경 불가능합니다.
-- completionDirection, gradeAnalysis, courseEffort 등 **모든 필드**에서 이수 완료 과목의 성적을 올리라는 조언을 하면 안 됩니다.
-- ⚠️ **이수 완료 과목명(공통국어1, 통합사회1, 통합과학1 등)을 "성적 향상" 맥락에서 언급하는 것 자체가 금지입니다.**
-- ❌ "국어, 통합사회, 통합과학 성적을 2등급으로 끌어올려야 합니다" (이미 이수 완료 → 불가능)
-- ❌ "통합사회와 같은 사회 교과 영역의 선택과목 성적을 올려야 합니다" (이수 완료 과목명을 예시로 사용 → 금지)
-- ❌ "3등급을 받았던 국어, 통합사회, 통합과학 과목의 2학년 성적을 끌어올려" (이수 완료 과목명 직접 언급 → 금지)
+## 조언 작성 원칙
+- 조언은 학생이 **앞으로 실행 가능한 것**만 제시하세요.
+- "이수 완료 과목 정보"에 나열된 과목은 이미 확정된 성적이므로, 조언 대상에서 제외하세요.
+- 졸업생의 경우 수능 준비, 면접 대비, 지원 전략 등 실행 가능한 조언만 작성하세요.
 - ✅ "국어 교과 영역에서 2학년 선택과목(예: 문학, 화법과 언어 등) 성적을 2등급 이내로 확보해야 합니다"
 - ✅ "사회탐구 영역에서 사회와 문화, 윤리와 사상 등 선택과목 성적이 중요합니다"
-- ✅ "1학년에서 약점이었던 **교과 영역**(국어, 사회, 과학)에서 2학년 선택과목으로 만회해야 합니다"
+- ✅ "수능 성적을 통해 정시전형에서 보완하는 전략이 필요합니다"
 ${
   input.studentGrade <= 2
     ? `- 이 학생은 아직 ${input.studentGrade}학년입니다. **"남은 기간동안"으로 시작**하세요.
@@ -261,12 +257,12 @@ ${
   input.aiRecommendedMajor
     ? `### ⚠️ AI 추천 학과 (모든 전략/면접/평가의 기준)
 - AI 전공 탐색 결과 가장 적합한 학과: **${input.aiRecommendedMajor}**
-${input.detectedMajorGroup ? `- 생기부 기반 강점 계열: **${input.detectedMajorGroup}**` : ""}
+${input.detectedMajorGroup ? `- 생기부 기반 강점 계열: **${getMajorGroupLabel(input.detectedMajorGroup ?? "")}**` : ""}
 - ⛔ admissionStrategy, completionDirection, finalAdvice, evaluationGuide 전체를 **${input.aiRecommendedMajor}** 기준으로 작성하세요.
 `
     : input.detectedMajorGroup
       ? `### ⚠️ 생기부 기반 강점 계열
-- 생기부 기반 강점 계열: **${input.detectedMajorGroup}**
+- 생기부 기반 강점 계열: **${getMajorGroupLabel(input.detectedMajorGroup ?? "")}**
 `
       : ""
 }
@@ -283,7 +279,7 @@ ${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.comp
 
 ### 교과 세특 분석 결과
 ${input.subjectAnalysisResult}
-${input.admissionPredictionResult ? `\n### 합격 예측 결과\n${input.admissionPredictionResult}` : ""}
+${input.admissionPredictionResult ? `\n### 합격 예측 결과 (admissionStrategy 작성 시 반드시 참조)\n⚠️ 아래 결과와 admissionStrategy 서술이 모순되면 안 됩니다. 교과전형 경쟁력 판단은 아래 결과의 교과 chance/passRateRange를 기준으로 서술하세요.\n${input.admissionPredictionResult}` : ""}
 ${input.weaknessAnalysisResult ? `\n### 부족한 부분 분석 결과\n${input.weaknessAnalysisResult}` : ""}
 
 ${buildPlanSpecific(isGyogwaOnly)}`;
@@ -318,14 +314,14 @@ export const buildGyogwaConsultantReviewPrompt = (
       : "";
 
   const medicalContext = input.isMedical
-    ? `## ⚠️ 메디컬 계열 총평 가이드 (반드시 적용)
+    ? `## ⚠️ 의·치·한·약·수 계열 총평 가이드 (반드시 적용)
 
-이 학생은 의·치·한·약·수 계열(메디컬) 지원 학생입니다. 총평에 반드시 반영하세요:
-- **admissionStrategy**: 메디컬은 정시 비중 40% 이상. "수시와 정시를 동시에 준비해야 합니다"를 반드시 포함.
+이 학생은 의·치·한·약·수 계열(의·치·한·약·수) 지원 학생입니다. 총평에 반드시 반영하세요:
+- **admissionStrategy**: 의·치·한·약·수는 정시 비중 40% 이상. "수시와 정시를 동시에 준비해야 합니다"를 반드시 포함.
 - **admissionStrategy**: 영어 1등급이 아닌 경우 "영어 등급 보완이 시급합니다"를 명시.
-- **gradeAnalysis**: 메디컬 합격선은 소수점 단위 변별. 학생의 현재 등급이 메디컬 합격선 대비 어느 위치인지 솔직하게 평가.
-- **completionDirection**: 메디컬 지원을 위해 남은 기간에 보완해야 할 핵심 과목(수학·과학)을 구체적으로 명시.
-- **finalAdvice**: 메디컬 입시의 현실적 경쟁 강도를 솔직하게 전달.
+- **gradeAnalysis**: 의·치·한·약·수 합격선은 소수점 단위 변별. 학생의 현재 등급이 의·치·한·약·수 합격선 대비 어느 위치인지 솔직하게 평가.
+- **completionDirection**: 의·치·한·약·수 지원을 위해 남은 기간에 보완해야 할 핵심 과목(수학·과학)을 구체적으로 명시.
+- **finalAdvice**: 의·치·한·약·수 입시의 현실적 경쟁 강도를 솔직하게 전달.
 
 `
     : "";
@@ -371,12 +367,12 @@ gradeAnalysis 작성 시 아래 형식만 사용하세요:
 - 현재 날짜: ${input.currentDate}
 - 학생 학년: ${input.studentGrade}학년
 
-⛔⛔⛔ **이수 완료 과목 성적 개선 권고 절대 금지**:
-- "이수 완료 과목 정보"에 나열된 과목은 성적이 확정되어 변경 불가능합니다.
-- completionDirection, gradeAnalysis, courseEffort 등 **모든 필드**에서 이수 완료 과목의 성적을 올리라는 조언을 하면 안 됩니다.
-- ⚠️ **이수 완료 과목명을 "성적 향상" 맥락에서 언급하는 것 자체가 금지입니다.**
+## 조언 작성 원칙
+- 조언은 학생이 **앞으로 실행 가능한 것**만 제시하세요.
+- "이수 완료 과목 정보"에 나열된 과목은 이미 확정된 성적이므로, 조언 대상에서 제외하세요.
+- 졸업생의 경우 수능 준비, 면접 대비, 지원 전략 등 실행 가능한 조언만 작성하세요.
 - ✅ "국어 교과 영역에서 선택과목 성적을 2등급 이내로 확보해야 합니다"
-- ✅ "사회탐구 영역에서 사회와 문화, 윤리와 사상 등 선택과목 성적이 중요합니다"
+- ✅ "수능 성적을 통해 정시전형에서 보완하는 전략이 필요합니다"
 ${gradeTimingRule}
 - ❌ 현재 날짜 기준 이미 지난 시기를 언급하지 마세요 (예: 3월인데 "방학 사전 준비").
 - ✅ 현재 시점부터 실행 가능한 전략만 제시하세요.
@@ -463,7 +459,7 @@ ${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.comp
 
 ### 교과 세특 분석 결과
 ${input.subjectAnalysisResult}
-${input.admissionPredictionResult ? `\n### 합격 예측 결과\n${input.admissionPredictionResult}` : ""}
+${input.admissionPredictionResult ? `\n### 합격 예측 결과 (admissionStrategy 작성 시 반드시 참조)\n⚠️ 아래 결과와 admissionStrategy 서술이 모순되면 안 됩니다. 교과전형 경쟁력 판단은 아래 결과의 교과 chance/passRateRange를 기준으로 서술하세요.\n${input.admissionPredictionResult}` : ""}
 ${input.weaknessAnalysisResult ? `\n### 부족한 부분 분석 결과\n${input.weaknessAnalysisResult}` : ""}
 
 ## 출력 전 자기 검증 (교과전형 필수)

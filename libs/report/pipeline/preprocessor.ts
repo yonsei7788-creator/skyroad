@@ -314,6 +314,11 @@ export interface PreprocessedTexts {
   universityCandidatesText: string;
   /** 유저 설정 희망대학 텍스트 (없으면 빈 문자열) */
   targetUniversitiesText: string;
+  /** 전형별 필터링된 희망대학 텍스트 — 해당 전형 대학이 없으면 빈 문자열 */
+  targetUniversitiesByType: {
+    gyogwa: string;
+    hakjongJeongsi: string;
+  };
   curriculumVersion: "2015" | "2022";
   /** 계열별 입학사정관 평가 기준 컨텍스트 */
   majorEvaluationContextText: string;
@@ -1514,6 +1519,17 @@ const buildTexts = (
   const targetUniversitiesText = formatTargetUniversities(
     studentInfo.targetUniversities
   );
+  // 전형별 필터링된 희망대학 텍스트
+  const gyogwaUniversities = studentInfo.targetUniversities?.filter(
+    (t) => t.admissionType === "학생부교과"
+  );
+  const hakjongJeongsiUniversities = studentInfo.targetUniversities?.filter(
+    (t) => t.admissionType !== "학생부교과"
+  );
+  const targetUniversitiesByType = {
+    gyogwa: formatTargetUniversities(gyogwaUniversities),
+    hakjongJeongsi: formatTargetUniversities(hakjongJeongsiUniversities),
+  };
 
   return {
     studentProfileText,
@@ -1529,6 +1545,7 @@ const buildTexts = (
     // 전처리 단계에서는 빈 후보군 — Phase 2 이후 키워드 기반으로 재생성됨
     universityCandidatesText: "[]",
     targetUniversitiesText,
+    targetUniversitiesByType,
     curriculumVersion: data.curriculumVersion,
     majorEvaluationContextText,
     completedSubjectsByYearText: formatCompletedSubjectsByYear(
@@ -1775,6 +1792,105 @@ export const buildUniversityCandidatesText = (
     // 학생 등급 환산 (5등급→9등급→고교유형 환산 순서 적용)
     const studentGrade9 = computeGrade9ForCutoff();
 
+    // 3차: 유사 학과 확장 매칭 — 등급 범위(±0.3) 내 후보가 6개 미만이면
+    // 키워드 어근 + 학술 접미사 조합으로 유사 학과만 매칭 (정확 일치)
+    // 예: "생명과학" → 어근 "생명" → 생명공학, 생명학 등 (의생명, 생명자원 등 제외)
+    const MIN_RECOMMEND_COUNT = 6;
+    if (studentGrade9 != null) {
+      const countInGradeRange = (): number => {
+        let count = 0;
+        for (const entry of matchedEntries.values()) {
+          let cuts = includeSpecialAdmission
+            ? entry.cutoffs
+            : entry.cutoffs.filter(
+                (c) =>
+                  !SPECIAL_ADMISSION_KEYWORDS.some((kw) =>
+                    c.admissionName.includes(kw)
+                  )
+              );
+          if (isGyogwaOnly) {
+            cuts = cuts.filter((c) => c.admissionType !== "학종");
+          }
+          const gyogwa50s = cuts
+            .filter((c) => c.admissionType === "교과")
+            .map((c) => c.cutoff50Grade)
+            .filter((g): g is number => g != null);
+          if (
+            gyogwa50s.some(
+              (g) => g >= studentGrade9 - 0.3 && g <= studentGrade9 + 0.3
+            )
+          ) {
+            count++;
+          }
+        }
+        return count;
+      };
+
+      if (countInGradeRange() < MIN_RECOMMEND_COUNT) {
+        // 어근 + 원래 접미사 추출:
+        // "생명과학"→{stem:"생명", suffix:"과학"}, "전자공학"→{stem:"전자", suffix:"공학"}
+        const KNOWN_SUFFIXES = ["과학", "공학"];
+        const extractStemAndSuffix = (
+          core: string
+        ): { stem: string; originalSuffix: string } => {
+          for (const suffix of KNOWN_SUFFIXES) {
+            if (core.endsWith(suffix) && core.length > suffix.length) {
+              return {
+                stem: core.slice(0, -suffix.length),
+                originalSuffix: suffix,
+              };
+            }
+          }
+          if (core.endsWith("학") && core.length >= 3) {
+            return { stem: core.slice(0, -1), originalSuffix: "학" };
+          }
+          return { stem: core, originalSuffix: "" };
+        };
+
+        // 어근 + 학술 접미사 정확 일치만 허용
+        // "생명" + "공학" = "생명공학" ✓ / "생명자원" ✗ "의생명" ✗
+        // 접미사: 과학, 공학, 학, 공학대학, "" — 모든 어근에 공통 적용
+        // (존재하지 않는 조합은 DB에서 자연 탈락)
+        const EXPAND_SUFFIXES = ["과학", "공학", "학", "공학대학", ""];
+        const expandedCores = new Set<string>();
+        for (const core of targetCores) {
+          const { stem } = extractStemAndSuffix(core);
+          if (stem === core) continue; // 어근 추출 실패 (예: "화학" 2글자)
+          for (const suffix of EXPAND_SUFFIXES) {
+            expandedCores.add(stem + suffix);
+          }
+        }
+        // 이미 1차/2차에서 매칭된 코어는 제외
+        for (const core of targetCores) expandedCores.delete(core);
+        for (const core of targetCoresWithout학) expandedCores.delete(core);
+
+        if (expandedCores.size > 0) {
+          // 1차/2차에서 이미 처리된 키는 건너뜀 (cutoffs 완전 수집됨)
+          const preExpandedKeys = new Set(matchedEntries.keys());
+          for (const e of ADMISSION_CUTOFF_DATA) {
+            const key = `${e.university}|${e.department}`;
+            if (preExpandedKeys.has(key)) continue;
+            const eDeptCore = normalizeDeptCore(e.department);
+            const isMatch = [...expandedCores].some(
+              (core) => eDeptCore === core
+            );
+            if (!isMatch) continue;
+            // 3차 내에서 같은 key의 복수 cutoff를 모두 누적
+            if (!matchedEntries.has(key)) {
+              matchedEntries.set(key, {
+                university: e.university,
+                department: e.department,
+                cutoffs: [],
+              });
+            }
+            (
+              matchedEntries.get(key)!.cutoffs as typeof ADMISSION_CUTOFF_DATA
+            ).push(e);
+          }
+        }
+      }
+    }
+
     // 대학+학과 단위로 중복 제거 (같은 대학의 다른 학과는 모두 유지)
     // 예: 부산대 행정학과 + 부산대 사회학과 → 둘 다 유지
     const byUniDept = new Map<
@@ -1904,16 +2020,46 @@ export const buildUniversityCandidatesText = (
       departmentKeywords &&
       departmentKeywords.length > 1
     ) {
-      // 후보를 학과 키워드별로 분류 (매칭된 키워드 기준)
+      // 후보를 학과 키워드별로 분류 (매칭된 키워드 + 3차 확장 포함)
+      // 3차 확장된 학과(생물과학, 생명공학대학 등)는 어근이 같은 targetCore로 귀속
+      const CLASSIFY_SUFFIXES = ["과학", "공학"];
+      const getStemForClassify = (core: string): string => {
+        for (const suffix of CLASSIFY_SUFFIXES) {
+          if (core.endsWith(suffix) && core.length > suffix.length) {
+            return core.slice(0, -suffix.length);
+          }
+        }
+        if (core.endsWith("학") && core.length >= 3) {
+          return core.slice(0, -1);
+        }
+        return core;
+      };
+      // targetCore별 어근 매핑: "생명과학"→"생명", "생물학"→"생물"
+      const coreStemMap = new Map<string, string>();
+      for (const core of targetCores) {
+        coreStemMap.set(core, getStemForClassify(core));
+      }
+
       const byMajor = new Map<string, typeof withGyogwa>();
       for (const kw of targetCores) {
         byMajor.set(kw, []);
       }
       for (const c of withGyogwa) {
         const deptCore = normalizeDeptCore(c.department);
-        const matchedCore = targetCores.find((core) => deptCore === core);
-        if (matchedCore) {
-          byMajor.get(matchedCore)!.push(c);
+        // 1순위: targetCores 정확 일치
+        const exactMatch = targetCores.find((core) => deptCore === core);
+        if (exactMatch) {
+          byMajor.get(exactMatch)!.push(c);
+          continue;
+        }
+        // 2순위: deptCore가 어근으로 시작하는 targetCore에 귀속 (3차 확장 결과)
+        // 예: "생명공학대학" startsWith "생명" → "생명과학" 코어에 귀속
+        const stemMatch = targetCores.find((core) => {
+          const stem = coreStemMap.get(core)!;
+          return deptCore.startsWith(stem) && deptCore !== stem;
+        });
+        if (stemMatch) {
+          byMajor.get(stemMatch)!.push(c);
         }
       }
 
@@ -2186,7 +2332,7 @@ const formatStudentProfile = (
   gradingSystem?: "5등급제" | "9등급제"
 ): string => {
   const statusLabel = info.isGraduate
-    ? "졸업생(N수생)"
+    ? "졸업생 — 성적 확정 완료, 수능/면접/지원전략 중심으로 조언"
     : `${info.grade}학년 재학생`;
   const semesterScope = info.isGraduate
     ? "3학년 2학기까지 (전체)"
@@ -2252,14 +2398,13 @@ const formatCompletedSubjectsByYear = (
   if (isGraduate) {
     lines.push(
       "",
-      "⚠️ 이 학생은 졸업생입니다. 모든 과목이 이수 완료되어 성적 변경이 불가능합니다.",
-      "→ 성적 개선 권고 대신, 면접 준비 전략이나 전형별 지원 방향을 제시하세요."
+      "→ 위 과목은 최종 확정 성적입니다. 조언은 수능 준비, 면접 대비, 전형별 지원 전략 중심으로 작성하세요."
     );
   } else if (currentGrade >= 3) {
     lines.push(
       "",
-      "⚠️ 이 학생은 고3입니다. 위 과목들은 모두 이수 완료되어 성적 변경이 불가능합니다.",
-      "→ 새로운 과목 이수 기회가 극히 제한적입니다. 기존 성적을 활용한 전략을 제시하세요."
+      "⚠️ 이 학생은 고3입니다. 위 과목들은 모두 이수 완료된 상태입니다.",
+      "→ 현재 성적을 기반으로 한 지원 전략과 수능 준비 방향을 제시하세요."
     );
   } else {
     const completedYears = sortedYears.join(", ");

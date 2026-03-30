@@ -9,6 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { ReportPlan, ReportSection, StudentInfo } from "../types.ts";
 import { buildSystemPrompt } from "../prompts/system.ts";
+import { getMajorGroupLabel } from "../constants/major-evaluation-criteria.ts";
 
 // Phase 2 prompts
 import { buildCompetencyExtractionPrompt } from "../prompts/phase2/competency-extraction.ts";
@@ -163,28 +164,48 @@ export const executeTask = async (
       // 파싱 실패 시 무시
     }
   }
-  const isMedical = detectedMajorForFlags === "의생명";
+  // 의·치·한·약·수 판정: 생기부 계열 감지 + 성적 기준
+  // 9등급제 2.0 이상(또는 5등급제 1.3 이상)이면 의·치·한·약·수 합격 가능성이 사실상 없으므로
+  // isMedical을 비활성화하여 비현실적인 의·치·한·약·수 가이드가 적용되지 않도록 함
+  const detectedAsMedical = detectedMajorForFlags === "의생명";
+  const avg = state.preprocessedData?.overallAverage;
+  const gs = state.preprocessedData?.gradingSystem;
+  const medicalGradeThreshold = gs === "5등급제" ? 1.3 : 2.0;
+  const isMedical =
+    detectedAsMedical && avg != null && avg <= medicalGradeThreshold;
 
-  /** 교과전형 전용: 정량분석 결과(acadAnalText)에서 학기별 데이터 제거 */
+  /** 교과전형 전용: 정량분석 결과(acadAnalText)에서 학기별/과목별 데이터 제거
+   *  교과전형은 최종 평균 등급으로만 판단하므로, 학기별 추세와 개별 과목 데이터를 제거 */
   const stripSemesterData = (jsonText: string): string => {
     try {
       const parsed = JSON.parse(jsonText);
       delete parsed.gradesByYear;
       delete parsed.averageByGrade;
       delete parsed.gradeTrend;
+      // 개별 과목 데이터 제거 (교과전형은 최종 평균만 사용)
+      delete parsed.allSubjectGrades;
+      delete parsed.smallClassSubjects;
       return JSON.stringify(parsed, null, 2);
     } catch {
       return jsonText;
     }
   };
 
-  /** 교과전형 전용: 섹션 결과(acadSectionText)에서 추세 분석 제거 */
+  /** 교과전형 전용: 섹션 결과(acadSectionText)에서 추세/과목별 데이터 제거
+   *  교과전형은 최종 평균 등급으로만 판단하므로, 개별 과목 분석과 추세 데이터를 제거하여
+   *  AI가 특정 과목이나 성적 변동을 교과전형 맥락에서 언급하는 것을 방지 */
   const stripSectionTrendData = (jsonText: string): string => {
     try {
       const parsed = JSON.parse(jsonText);
+      // 추세 데이터 제거
       delete parsed.gradeChangeAnalysis;
       delete parsed.gradesByYear;
       delete parsed.gradeTrend;
+      // 개별 과목 데이터 제거 (교과전형은 최종 평균만 사용)
+      delete parsed.subjectGrades;
+      delete parsed.subjectStatAnalyses;
+      delete parsed.fiveGradeSimulation;
+      delete parsed.majorRelevanceAnalysis;
       return JSON.stringify(parsed, null, 2);
     } catch {
       return jsonText;
@@ -201,19 +222,33 @@ export const executeTask = async (
     return result.data;
   };
 
+  // Phase 2(사실적 데이터 추출)는 플랜과 무관하게 동일한 결과를 내야 함
+  // → 플랜별 "분석 깊이" 지시가 포함되지 않도록 premium 시스템 프롬프트 고정
+  const phase2SystemPrompt = buildSystemPrompt("premium", { isGyogwaOnly });
+  const callGeminiPhase2 = async <T>(prompt: string): Promise<T> => {
+    const result = await client.call<T>({
+      systemInstruction: phase2SystemPrompt,
+      prompt,
+      responseSchema: EMPTY_SCHEMA,
+      thinkingBudget: THINKING_BUDGET,
+    });
+    return result.data;
+  };
+
   let updatedSer = { ...ser };
   const taskIndex = state.currentTaskIndex + 1;
 
   // ─── Phase 2: competencyExtraction + academicAnalysis 병렬 → studentTypeClassification ───
   if (taskId === "phase2") {
     // 1) competencyExtraction + academicAnalysis 병렬 시작
-    const compExtrPromise = callGemini<CompetencyExtractionOutput>(
+    //    Phase 2는 사실적 추출이므로 callGeminiPhase2 사용 (플랜 무관 고정 프롬프트)
+    const compExtrPromise = callGeminiPhase2<CompetencyExtractionOutput>(
       buildCompetencyExtractionPrompt({
         studentProfile: texts.studentProfileText,
         recordData: texts.recordDataText,
       })
     );
-    const acadAnalPromise = callGemini<AcademicContextAnalysisOutput>(
+    const acadAnalPromise = callGeminiPhase2<AcademicContextAnalysisOutput>(
       buildAcademicContextAnalysisPrompt({
         preprocessedAcademicData: texts.preprocessedAcademicDataText,
         rawAcademicData: texts.rawAcademicDataText,
@@ -227,7 +262,7 @@ export const executeTask = async (
     // 2) competencyExtraction 완료 즉시 studentTypeClassification 시작
     //    (academicAnalysis 완료를 기다리지 않음)
     const competencyExtraction = await compExtrPromise;
-    const stuTypePromise = callGemini<StudentTypeClassificationOutput>(
+    const stuTypePromise = callGeminiPhase2<StudentTypeClassificationOutput>(
       buildStudentTypeClassificationPrompt({
         competencyExtraction: JSON.stringify(competencyExtraction),
         preprocessedAcademicData: texts.preprocessedAcademicDataText,
@@ -244,7 +279,19 @@ export const executeTask = async (
 
     updatedSer = {
       ...updatedSer,
-      compExtrText: JSON.stringify(competencyExtraction),
+      compExtrText: JSON.stringify({
+        ...competencyExtraction,
+        // 하위 태스크가 리포트 텍스트에 사용할 정식 계열 명칭
+        // (예: "의생명" → "의학/생명과학 계열")
+        // detectedMajorGroup 원본 코드는 로직용으로 유지
+        ...(competencyExtraction.detectedMajorGroup
+          ? {
+              detectedMajorGroupLabel: getMajorGroupLabel(
+                competencyExtraction.detectedMajorGroup
+              ),
+            }
+          : {}),
+      }),
       acadAnalText: JSON.stringify(academicAnalysis),
       stuTypeText: JSON.stringify(studentTypeClassification),
     };
@@ -615,20 +662,23 @@ export const executeTask = async (
         studentInfo.targetDepartment ?? ""
       );
 
-      // isGyogwaOnly → 학기별 데이터 제거 (추세 추론 방지)
-      const predAcadText = isGyogwaOnly
-        ? stripSemesterData(ser.acadAnalText!)
-        : ser.acadAnalText!;
-      const predAcadSectionText = isGyogwaOnly
-        ? stripSectionTrendData(ser.acadSectionText!)
-        : ser.acadSectionText!;
+      // 교과전형 프롬프트에는 항상 과목별/추세 데이터 제거
+      // (교과전형은 최종 평균 등급으로만 판단하므로 개별 과목 정보 불필요)
+      const predGyogwaAcadText = stripSemesterData(ser.acadAnalText!);
+      const predGyogwaAcadSectionText = stripSectionTrendData(
+        ser.acadSectionText!
+      );
+
+      // 전형별 필터링된 희망대학만 각 프롬프트에 전달
+      const gyogwaTargetText = texts.targetUniversitiesByType.gyogwa;
+      const hakjongTargetText = texts.targetUniversitiesByType.hakjongJeongsi;
 
       const gyogwaInput = {
-        academicAnalysis: predAcadText,
+        academicAnalysis: predGyogwaAcadText,
         universityCandidates: texts.universityCandidatesText,
         studentProfile: texts.studentProfileText,
-        academicAnalysisResult: predAcadSectionText,
-        targetUniversities: texts.targetUniversitiesText,
+        academicAnalysisResult: predGyogwaAcadSectionText,
+        targetUniversities: gyogwaTargetText,
         gradingSystem: state.preprocessedData!.gradingSystem,
         isMedical,
         isArtSportPractical,
@@ -670,7 +720,7 @@ export const executeTask = async (
                 academicAnalysisResult: ser.acadSectionText!,
                 attendanceAnalysisResult: ser.attendSectionText!,
                 majorEvaluationContext: texts.majorEvaluationContextText,
-                targetUniversities: texts.targetUniversitiesText,
+                targetUniversities: hakjongTargetText,
                 gradingSystem: state.preprocessedData!.gradingSystem,
                 isMedical,
                 isArtSportPractical,
@@ -820,8 +870,15 @@ export const executeTask = async (
         }
       }
 
+      // 교과 type 분석용: 과목별 데이터 strip된 성적 분석
+      const stratGyogwaAcadText = stripSectionTrendData(ser.acadSectionText!);
       const stratInput = {
-        academicAnalysis: ser.acadSectionText!,
+        // 교과전형 전용이면 strip된 데이터만, 혼합이면 원본 (학종에서 필요)
+        academicAnalysis: isGyogwaOnly
+          ? stratGyogwaAcadText
+          : ser.acadSectionText!,
+        // 혼합 모드에서 교과 type이 참조할 strip된 성적 (과목별 데이터 제거)
+        gyogwaAcademicAnalysis: isGyogwaOnly ? undefined : stratGyogwaAcadText,
         universityCandidates: stratCandidatesText,
         recommendedCourseMatch: texts.recommendedCourseMatchText,
         studentProfile: texts.studentProfileText,
@@ -838,6 +895,7 @@ export const executeTask = async (
           competencyExtraction: ser.compExtrText,
           subjectAnalysisResult: ser.subjAnalysisText,
         }),
+        admissionPredictionResult: ser.admPredText,
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly

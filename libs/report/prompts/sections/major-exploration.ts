@@ -1,5 +1,7 @@
 /** 섹션 20: AI 전공 추천 (majorExploration) -- Standard+ */
 
+import { getMajorGroupLabel } from "../../constants/major-evaluation-criteria.ts";
+
 export interface MajorExplorationPromptInput {
   competencyExtraction: string;
   academicAnalysis: string;
@@ -67,7 +69,7 @@ export const buildMajorExplorationPrompt = (
 
 ## ⚠️ 생기부 기반 강점 계열 (필수 준수)
 
-**이 학생의 생기부 기반 강점 계열: "${input.detectedMajorGroup ?? "미확정"}"**
+**이 학생의 생기부 기반 강점 계열: "${getMajorGroupLabel(input.detectedMajorGroup ?? "미확정")}"**
 
 - 추천 전공의 **1순위는 반드시 위 강점 계열** 내에서 선정하세요. AI가 독자적으로 다른 계열을 1순위로 판단하면 안 됩니다.
 - 2~3순위도 강점 계열과 관련된 전공이어야 합니다.

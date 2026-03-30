@@ -65,9 +65,18 @@ const TASK_DEPS: Record<string, string[]> = {
     "academicAnalysis",
     "attendanceAnalysis",
   ],
-  admissionStrategy: ["academicAnalysis", "majorExploration"],
+  admissionStrategy: [
+    "academicAnalysis",
+    "majorExploration",
+    "admissionPrediction",
+  ],
   actionRoadmap: ["weaknessAnalysis", "admissionStrategy", "directionGuide"],
-  consultantReview: ["competencyScore", "academicAnalysis", "subjectAnalysis"],
+  consultantReview: [
+    "competencyScore",
+    "academicAnalysis",
+    "subjectAnalysis",
+    "admissionPrediction",
+  ],
 };
 
 const PARALLEL_CONCURRENCY = 6;

@@ -513,16 +513,26 @@ export const postprocess = (
     }
   }
 
-  // 3-2b. 교과전형 텍스트에서 성적 추이 표현 강제 제거
+  // 3-2b. 교과전형 텍스트에서 교과전형과 무관한 표현 강제 제거
   // 프롬프트 규칙만으로는 AI가 반복 위반하므로 코드에서 강제 정화
+  // 1) 성적 추이/편차/서류평가 표현
   const GYOGWA_BANNED_PATTERN =
     /[^.!?]*(?:하락|상승|추세|추이|변화|편차가 불리|반영 과목|강점 과목|이수 여부|서류 평가|서류종합평가|입학사정관)[^.!?]*[.!?]/g;
+  // 2) 개별 과목 성적 관련 문장 제거 (교과전형은 최종 평균만 사용)
+  // 과목명 뒤에 성적/등급/약점/반영 관련 키워드가 있는 문장 전체 제거
+  // ※ "전자바이오물리학과" 같은 학과명 오매칭 방지를 위해 과목명 앞에 공백/문장부호 경계 필요
+  const SUBJECT_GRADE_PATTERN =
+    /[^.!?]*(?:(?:^|[\s,])(?:물리학|화학Ⅰ|화학Ⅱ|생명과학|지구과학|수학Ⅰ|수학Ⅱ|미적분|기하|영어Ⅰ|영어Ⅱ))[^.!?]*(?:\d등급|약점|부진|불리|낮[은아]|성적|반영)[^.!?]*[.!?]/g;
 
-  const sanitizeGyogwaText = (text: string): string =>
-    text
+  const sanitizeGyogwaText = (text: string): string => {
+    const cleaned = text
       .replace(GYOGWA_BANNED_PATTERN, "")
+      .replace(SUBJECT_GRADE_PATTERN, "")
       .replace(/\s{2,}/g, " ")
       .trim();
+    // 제거 후 텍스트가 너무 짧아지면 원본 유지 (안전장치)
+    return cleaned.length >= 20 ? cleaned : text;
+  };
 
   // admissionStrategy typeStrategies 교과 type
   if (admStrat && Array.isArray(admStrat.typeStrategies)) {
@@ -1575,6 +1585,34 @@ export const postprocess = (
     }
   }
 
+  // 3-10. majorExploration: 성적 기준 미달 시 의·치·한·약·수 학과 제거
+  // 9등급제 2.0 초과 또는 5등급제 1.3 초과이면 의예과/치의예과/한의예과/약학과/수의예과 합격 불가능
+  {
+    const avg = preprocessed.overallAverage;
+    const gs = preprocessed.gradingSystem;
+    const threshold = gs === "5등급제" ? 1.3 : 2.0;
+    if (avg != null && avg > threshold) {
+      const MEDICAL_DEPT_PATTERN =
+        /의예과|치의예과|한의예과|약학과|수의예과|의학과|치의학과|한의학과|수의학과/;
+      const majorSection = validatedSections.find(
+        (s) => s.sectionId === "majorExploration"
+      ) as Record<string, unknown> | undefined;
+      if (majorSection && Array.isArray(majorSection.suggestions)) {
+        const sugs = majorSection.suggestions as Record<string, unknown>[];
+        const before = sugs.length;
+        majorSection.suggestions = sugs.filter(
+          (sug) => !MEDICAL_DEPT_PATTERN.test(String(sug.major ?? ""))
+        );
+        const after = (majorSection.suggestions as unknown[]).length;
+        if (after < before) {
+          console.log(
+            `[report:${reportId}] majorExploration: 성적 기준(${gs} avg=${avg} > ${threshold}) 미달로 의·치·한·약·수 학과 ${before - after}개 제거`
+          );
+        }
+      }
+    }
+  }
+
   // 4. 섹션 정렬 (플랜별 순서)
   const sectionOrder = SECTION_ORDER[plan];
   validatedSections.sort((a, b) => {
@@ -1896,6 +1934,14 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/^(?:가|은|는|을|를|인|과|와|의)\s+(?=[가-힣''""])/gm, ""],
   // 한글 뒤 공백+고립조사+공백+한글/따옴표 (예: "그러나 인 체육교육과", "그러나 가 '체육교육과'")
   [/([가-힣])\s+(?:인|가|의)\s+(?=[가-힣''""])/g, "$1 "],
+
+  // ── 계열 명칭 통일 (AI가 축약하는 패턴 → 정규 명칭으로 복원) ──
+  // "의학 계열" → "의학/생명과학 계열" (단, "의학/생명과학 계열"은 건너뜀)
+  [/(?<!\/생명과학\s)(?<!\/생명과학)의학 계열/g, "의학/생명과학 계열"],
+  // "의생명 계열" → "의학/생명과학 계열"
+  [/의생명 계열/g, "의학/생명과학 계열"],
+  // "메디컬 계열" → "의학/생명과학 계열" (혹시 남아있을 경우)
+  [/메디컬 계열/g, "의학/생명과학 계열"],
 ];
 
 const sanitizeAiTone = (text: string): string => {
@@ -1961,8 +2007,13 @@ const sanitizeDeep = (obj: unknown, fieldName?: string): unknown => {
       if (obj === "보완필요" || obj === "보완 필요") return "미흡";
       return obj;
     }
-    const toned = sanitizeAiTone(obj);
-    return sanitizeEnglishWords(toned);
+    let result = sanitizeAiTone(obj);
+    result = sanitizeEnglishWords(result);
+    // 미완결 접속사로 끝나는 텍스트 정리 ("다만,", "그러나", "하지만" 등)
+    result = result.replace(/\s*(?:다만,?|그러나,?|하지만,?|반면,?)\s*$/g, "");
+    // 연속 공백 정리
+    result = result.replace(/\s{2,}/g, " ");
+    return result;
   }
   if (Array.isArray(obj)) return obj.map((item) => sanitizeDeep(item));
   if (obj && typeof obj === "object") {
@@ -2612,8 +2663,52 @@ const normalizeSection = (
       }
     }
 
-    // ── 하위항목 합산 → 역량 점수 강제 재계산 ──
-    if (Array.isArray(s.scores)) {
+    // ── 역량별 점수를 전처리 기반 결정적 값으로 강제 고정 ──
+    // AI 비결정성으로 플랜별 점수가 달라지는 문제 방지
+    // studentTypeInput은 preprocessor에서 결정적으로 계산된 값
+    const sti = pre.studentTypeInput;
+    if (Array.isArray(s.scores) && sti) {
+      const targetMap: Record<string, number> = {
+        academic: sti.academicScore,
+        career: sti.careerScore,
+        community: sti.communityScore,
+      };
+      for (const sc of s.scores) {
+        const target = targetMap[sc.category];
+        if (target == null) continue;
+        // 하위항목 점수를 target에 맞게 비례 조정
+        if (Array.isArray(sc.subcategories)) {
+          const currentTotal = sc.subcategories.reduce(
+            (sum: number, sub: any) => sum + (sub.score ?? 0),
+            0
+          );
+          if (currentTotal > 0 && currentTotal !== target) {
+            const ratio = target / currentTotal;
+            for (const sub of sc.subcategories) {
+              sub.score = Math.round((sub.score ?? 0) * ratio);
+            }
+            // 반올림 오차 보정: 첫 번째 하위항목에서 차이 조정
+            const newTotal = sc.subcategories.reduce(
+              (sum: number, sub: any) => sum + (sub.score ?? 0),
+              0
+            );
+            if (newTotal !== target && sc.subcategories.length > 0) {
+              sc.subcategories[0].score += target - newTotal;
+            }
+          }
+        }
+        sc.score = target;
+        // 등급 강제 보정
+        if (target >= 90) sc.grade = "S";
+        else if (target >= 75) sc.grade = "A";
+        else if (target >= 60) sc.grade = "B";
+        else if (target >= 40) sc.grade = "C";
+        else sc.grade = "D";
+      }
+    }
+
+    // ── 하위항목 합산 → 역량 점수 강제 재계산 (sti 없을 때 폴백) ──
+    if (Array.isArray(s.scores) && !sti) {
       for (const sc of s.scores) {
         if (Array.isArray(sc.subcategories)) {
           const subTotal = sc.subcategories.reduce(
@@ -2622,7 +2717,6 @@ const normalizeSection = (
           );
           sc.score = subTotal;
         }
-        // 등급 강제 보정: S(90~100), A(75~89), B(60~74), C(40~59), D(0~39)
         const score = sc.score ?? 0;
         if (score >= 90) sc.grade = "S";
         else if (score >= 75) sc.grade = "A";
@@ -2632,7 +2726,10 @@ const normalizeSection = (
       }
     }
 
-    // ── growthGrade 강제 보정 ──
+    // ── growthScore/growthGrade 강제 보정 ──
+    if (sti) {
+      s.growthScore = sti.growthScore;
+    }
     if (typeof s.growthScore === "number") {
       const gs = s.growthScore;
       if (gs >= 90) s.growthGrade = "S";
@@ -2697,6 +2794,13 @@ const normalizeSection = (
         s.scores[0]
       );
       s.interpretation = `총점 ${total}점(300점 만점)으로 ${strongest?.label ?? ""}이 가장 우수하며, ${weakest?.label ?? ""}은 상대적으로 보완이 필요합니다.`;
+    }
+
+    // ── lite 플랜: percentile/comparison 필드 제거 ──
+    if (plan === "lite") {
+      delete s.percentile;
+      delete s.percentileLabel;
+      delete s.comparison;
     }
   }
 

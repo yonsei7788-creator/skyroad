@@ -542,6 +542,26 @@ const findCriteria = (majorGroup: string): MajorEvaluationCriteria => {
 export const findCriteriaByMajorGroup = findCriteria;
 
 /**
+ * detectedMajorGroup 코드를 리포트 표시용 정식 명칭으로 변환한다.
+ * 예: "의생명" → "의학/생명과학 계열", "컴퓨터AI" → "컴퓨터/AI/소프트웨어 계열"
+ *
+ * MAJOR_EVALUATION_CRITERIA에 없는 코드는 별도 매핑으로 처리.
+ * 리포트 전체에서 동일한 계열 명칭을 사용하기 위해 이 함수만 사용할 것.
+ */
+const EXTRA_MAJOR_GROUP_LABELS: Record<string, string> = {
+  생명바이오: "생명/바이오 계열",
+  약학: "약학 계열",
+  화학재료: "화학/재료 계열",
+};
+
+export const getMajorGroupLabel = (code: string): string => {
+  const criteria = MAJOR_EVALUATION_CRITERIA.find((c) => c.majorGroup === code);
+  if (criteria) return criteria.label;
+  if (EXTRA_MAJOR_GROUP_LABELS[code]) return EXTRA_MAJOR_GROUP_LABELS[code];
+  return code;
+};
+
+/**
  * 매칭된 계열 평가 기준을 프롬프트용 텍스트로 직렬화한다.
  * AI가 이해하기 쉬운 구조화된 텍스트로 변환한다.
  */
