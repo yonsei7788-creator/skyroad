@@ -51,7 +51,7 @@ const buildEmailHtml = (userName: string, planName: string): string => `
                   <li>궁금한 점이 있으시면 언제든 문의해 주세요.</li>
                 </ol>
               </div>
-              <a href="https://skyroadedu.net/profile" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:600;">
+              <a href="https://www.skyroadedu.net/profile" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:600;">
                 리포트 확인하기
               </a>
             </td>

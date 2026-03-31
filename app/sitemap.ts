@@ -5,31 +5,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return [
     {
-      url: "https://skyroadedu.net",
+      url: "https://www.skyroadedu.net/",
       lastModified,
       changeFrequency: "weekly",
       priority: 1.0,
     },
     {
-      url: "https://skyroadedu.net/pricing",
+      url: "https://www.skyroadedu.net/pricing",
       lastModified,
       changeFrequency: "weekly",
       priority: 0.9,
     },
     {
-      url: "https://skyroadedu.net/about",
+      url: "https://www.skyroadedu.net/about",
       lastModified,
       changeFrequency: "monthly",
       priority: 0.8,
     },
     {
-      url: "https://skyroadedu.net/legal/terms",
+      url: "https://www.skyroadedu.net/legal/terms",
       lastModified,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
-      url: "https://skyroadedu.net/legal/privacy",
+      url: "https://www.skyroadedu.net/legal/privacy",
       lastModified,
       changeFrequency: "yearly",
       priority: 0.3,
