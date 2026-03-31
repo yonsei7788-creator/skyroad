@@ -76,6 +76,7 @@ const TASK_DEPS: Record<string, string[]> = {
     "academicAnalysis",
     "subjectAnalysis",
     "admissionPrediction",
+    "admissionStrategy",
   ],
 };
 

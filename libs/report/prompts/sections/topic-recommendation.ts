@@ -7,6 +7,8 @@ export interface TopicRecommendationPromptInput {
   weaknessAnalysisResult: string;
   studentProfile: string;
   isGyogwaOnly?: boolean;
+  /** AI가 생기부 분석을 통해 판단한 추천 학과 (majorExploration 결과, 최대 2개) */
+  aiRecommendedMajors?: string[];
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -59,14 +61,20 @@ export const buildTopicRecommendationPrompt = (
 학생의 향후 세특에 활용할 수 있는 탐구 주제를 맞춤 추천하세요.
 
 ## ⚠️ 분석 방향 원칙 (최우선 — 반드시 준수)
-희망 대학/학과는 합격 예측에만 사용되는 참고 정보입니다. **주제 추천에서 희망 학과를 언급하거나 연결하면 안 됩니다.**
+주제 추천의 기반은 **생기부에서 실제로 축적된 탐구 방향**입니다.
+단, 아래 "AI 분석 기반 추천 학과"가 제공된 경우, 해당 학과 방향성과 연결되는 주제를 우선 추천하세요.
+이는 학생의 희망학과가 아니라 **생기부 분석을 통해 AI가 자체적으로 판단한 적합 학과**입니다.
 
-✅ 올바른 예: "생기부에서 생명과학 탐구가 일관되므로, 이를 심화하는 주제를 추천합니다"
-❌ 금지: "컴퓨터공학과의 전공적합성을 어필할 수 있습니다", "희망 학과에 적합한 주제입니다"
+${
+  input.aiRecommendedMajors && input.aiRecommendedMajors.length > 0
+    ? `### AI 분석 기반 추천 학과
+${input.aiRecommendedMajors.map((m, i) => `${i + 1}순위: ${m}`).join("\n")}
 
-- rationale에 희망 학과명(예: 컴퓨터공학과)을 절대 포함하지 마세요.
+위 학과 방향과 관련된 주제를 우선 배치하되, 생기부에 근거가 없는 주제를 억지로 만들지는 마세요.`
+    : "추천 학과 정보가 없으므로 생기부 탐구 흐름만으로 주제를 추천하세요."
+}
+
 - "전공적합성을 어필" 같은 표현 대신, "기존 탐구를 심화/확장" 관점으로 작성하세요.
-- 생기부에서 실제로 축적된 탐구 방향과 역량을 강화하는 주제만 추천하세요.
 
 ## 출력 JSON 스키마
 

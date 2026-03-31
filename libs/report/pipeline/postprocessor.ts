@@ -3260,6 +3260,7 @@ const normalizeSection = (
     }
     if (typeof s.overallComment === "string") {
       s.overallComment = fixSingleSubjectRationale(s.overallComment);
+      s.overallComment = s.overallComment.replace(/\(별도 분석\)/g, "");
     }
 
     // admissionStrategy: simulations[].cards[].comprehensive/subject.chanceRationale, recommendedPath

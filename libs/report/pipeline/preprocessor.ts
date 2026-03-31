@@ -1454,11 +1454,45 @@ const buildTexts = (
   studentInfo: StudentInfo,
   plan: ReportPlan
 ): PreprocessedTexts => {
-  const studentProfileText = formatStudentProfile(
+  // 성적 데이터에서 현재 학기 판단 (등록된 성적의 최대 학년/학기 기반)
+  const generalSubjects = recordData.generalSubjects ?? [];
+  let maxGradeYear = 0;
+  let maxSemester = 0;
+  for (const s of generalSubjects) {
+    if (
+      s.year > maxGradeYear ||
+      (s.year === maxGradeYear && s.semester > maxSemester)
+    ) {
+      maxGradeYear = s.year;
+      maxSemester = s.semester;
+    }
+  }
+  // 현재 진행 중인 학년/학기 계산
+  let currentSemesterLabel = "";
+  if (!studentInfo.isGraduate && studentInfo.grade > 0) {
+    if (maxGradeYear < studentInfo.grade) {
+      // 현재 학년 성적이 아예 없음 → 현재 학년 1학기 진행 중
+      currentSemesterLabel = `${studentInfo.grade}학년 1학기 진행 중`;
+    } else if (maxGradeYear === studentInfo.grade && maxSemester === 1) {
+      // 현재 학년 1학기까지만 성적 있음 → 2학기 진행 중
+      currentSemesterLabel = `${studentInfo.grade}학년 2학기 진행 중`;
+    }
+  }
+
+  let studentProfileText = formatStudentProfile(
     studentInfo,
     data.convertedGrade,
     data.gradingSystem
   );
+
+  // 현재 학기 정보 추가
+  if (currentSemesterLabel) {
+    studentProfileText += `\n현재 시점: ${currentSemesterLabel}`;
+    studentProfileText +=
+      `\n${studentInfo.grade}학년 이후 과목은 아직 이수 전이므로, 미이수를 약점으로 분석하지 마세요.` +
+      ` 이수 전략은 ${studentInfo.grade}학년에서 이수할 과목부터 추천하세요.`;
+  }
+
   const recordDataText = formatRecordData(recordData);
   const subjectDataText = formatSubjectEvaluations(
     recordData.subjectEvaluations ?? []
@@ -1691,6 +1725,23 @@ const fiveToNineGrade = (five: number): number => {
     }
   }
   return 9.0;
+};
+
+/**
+ * 9등급제 → 5등급제(평균) 역변환. 같은 매핑 테이블 기반 선형 보간.
+ */
+const nineToFiveGrade = (nine: number): number => {
+  if (nine <= 1.0) return 1.0;
+  if (nine >= 9.0) return 5.0;
+  for (let i = 1; i < FIVE_TO_NINE_TABLE.length; i++) {
+    const [nine1, five1] = FIVE_TO_NINE_TABLE[i - 1];
+    const [nine2, five2] = FIVE_TO_NINE_TABLE[i];
+    if (nine <= nine2) {
+      const ratio = (nine - nine1) / (nine2 - nine1);
+      return Math.round((five1 + ratio * (five2 - five1)) * 100) / 100;
+    }
+  }
+  return 5.0;
 };
 
 /**
@@ -1956,10 +2007,14 @@ export const buildUniversityCandidatesText = (
                 ? "fit"
                 : "safety";
         const cutoffSummary = cutoffs
-          .map(
-            (c) =>
-              `${c.admissionType}(${c.admissionName}): 50%cut=${c.cutoff50Grade ?? "-"}, 경쟁률=${c.competitionRate}`
-          )
+          .map((c) => {
+            const cut = c.cutoff50Grade;
+            const cutLabel =
+              cut != null && gradingSystem === "5등급제"
+                ? nineToFiveGrade(cut)
+                : cut;
+            return `${c.admissionType}(${c.admissionName}): 50%cut=${cutLabel ?? "-"}, 경쟁률=${c.competitionRate}`;
+          })
           .join(" / ");
         result.push({
           university,
@@ -2194,10 +2249,14 @@ export const buildUniversityCandidatesText = (
     const cutoffSummary =
       cutoffs.length > 0
         ? cutoffs
-            .map(
-              (c) =>
-                `${c.admissionType}(${c.admissionName}): 50%cut=${c.cutoff50Grade ?? "-"}, 경쟁률=${c.competitionRate}`
-            )
+            .map((c) => {
+              const cut = c.cutoff50Grade;
+              const cutLabel =
+                cut != null && gradingSystem === "5등급제"
+                  ? nineToFiveGrade(cut)
+                  : cut;
+              return `${c.admissionType}(${c.admissionName}): 50%cut=${cutLabel ?? "-"}, 경쟁률=${c.competitionRate}`;
+            })
             .join(" / ")
         : null;
     const repCutoff = getRepresentativeCutoff(cutoffs);
@@ -2381,13 +2440,18 @@ const formatStudentProfile = (
     `계열: ${info.track}`,
     `학교 유형: ${info.schoolType}`,
     ...(info.highSchoolRegion ? [`고교 소재지: ${info.highSchoolRegion}`] : []),
-    ...(gradingSystem ? [`적용 등급제: ${gradingSystem}`] : []),
+    ...(gradingSystem
+      ? [
+          `적용 등급제: ${gradingSystem} (리포트 텍스트에 등급제를 명시하지 마세요)`,
+        ]
+      : []),
   ];
   // 환산등급은 내부 계산용으로만 사용 — AI 텍스트에 노출 금지
   // 희망 대학/학과는 studentProfileText에 포함하지 않음
   // → 합격 판단이 필요한 admissionPrediction에만 targetUniversitiesText로 별도 전달
   // → 나머지 섹션은 희망학과를 모르는 상태에서 생기부만으로 분석
   lines.push(`모의고사 데이터: ${info.hasMockExamData ? "있음" : "없음"}`);
+
   return lines.join("\n");
 };
 
@@ -2418,7 +2482,11 @@ const formatCompletedSubjectsByYear = (
     }
   }
 
-  const lines: string[] = ["## 학년별 이수 완료 과목 (성적 변경 불가)"];
+  const lines: string[] = [
+    "## 학년별 이수 완료 과목 (성적 변경 불가)",
+    "※ 아래는 학생이 실제로 이수한 과목 목록입니다. 학교에서 개설된 전체 과목 목록이 아닙니다.",
+    "   특정 과목이 없는 경우 '개설되지 않았다'가 아니라 '이수하지 않았다'로 판단하세요.",
+  ];
 
   const sortedYears = [...byYear.keys()].sort();
   for (const year of sortedYears) {
@@ -2496,7 +2564,7 @@ const formatCreativeActivities = (
   activities: CreativeActivityRow[]
 ): string => {
   const sorted = [...activities]
-    .filter((a) => a.area !== "봉사활동")
+    .filter((a) => a.area !== "봉사활동" && a.note.trim() !== "")
     .sort((a, b) => a.year - b.year || a.area.localeCompare(b.area));
   return sorted.map((a) => `[${a.year}학년 ${a.area}]\n${a.note}`).join("\n\n");
 };

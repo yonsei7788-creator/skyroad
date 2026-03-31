@@ -23,6 +23,7 @@ export interface SerializedTexts {
   subjAnalysisText?: string;
   weaknessText?: string;
   admPredText?: string;
+  admStratText?: string;
 }
 
 export interface WaveState {

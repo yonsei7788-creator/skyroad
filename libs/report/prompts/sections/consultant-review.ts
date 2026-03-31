@@ -9,6 +9,7 @@ export interface ConsultantReviewPromptInput {
   studentProfile: string;
   subjectAnalysisResult: string;
   admissionPredictionResult?: string;
+  admissionStrategyResult?: string;
   weaknessAnalysisResult?: string;
   gradingSystem?: "5등급제" | "9등급제";
   studentGrade: number;
@@ -47,18 +48,8 @@ export const buildConsultantReviewPrompt = (
       ? `## ⚠️ 5등급제 종합평가 맥락
 이 학생은 5등급제 적용 학생입니다. 총평 작성 시 반드시 반영하세요:
 - 5등급제 N등급을 9등급제 N등급과 동일하게 해석하면 안 됩니다.
-- 정밀 환산 기준: 5등급 1.33=9등급 2.0 / 5등급 1.89=9등급 3.0 / 5등급 2.43=9등급 4.0 / 5등급 3.03=9등급 5.0
-- "2.42등급으로 상위권" 같은 표현은 잘못입니다. 5등급제 2.43등급은 9등급제 4.0등급 수준(중위권)입니다.
-- gradeAnalysis에서 등급을 언급할 때 반드시 "5등급제 기준"임을 명시하세요.
+- 커트라인/합격선 데이터는 이미 5등급제로 변환되어 있으므로 학생의 등급과 직접 비교하세요.
 - 5등급제 환경에서는 등급 변별력이 약하므로, 세특·선택과목이 핵심 변별 요소임을 강조하세요.
-
-### 5등급제 대학 수준 판단 기준 (admissionStrategy에 반드시 적용)
-- 5등급제 1.0~1.2등급 → 상위권 (서울대~중앙대·경희대급)
-- 5등급제 1.3~1.5등급 → 중상위권 (건국대~세종대급)
-- 5등급제 1.6~1.8등급 → 중위권 (한양대ERICA~가천대급)
-- 5등급제 1.9~2.0등급 → 중하위권
-- 5등급제 2.0등급 초과 → 하위권
-- ⚠️ 5등급제 2등급대 학생에게 "중상위권 대학 학생부교과전형을 고려해볼 만한 수준"이라고 판단하면 안 됩니다. 5등급제 2등급은 상위 34%이며, 중상위권은 최소 1점대 초중반이 필요합니다.
 
 `
       : "";
@@ -280,6 +271,7 @@ ${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.comp
 ### 교과 세특 분석 결과
 ${input.subjectAnalysisResult}
 ${input.admissionPredictionResult ? `\n### 합격 예측 결과 (admissionStrategy 작성 시 반드시 참조)\n⚠️ 아래 결과와 admissionStrategy 서술이 모순되면 안 됩니다. 교과전형 경쟁력 판단은 아래 결과의 교과 chance/passRateRange를 기준으로 서술하세요.\n${input.admissionPredictionResult}` : ""}
+${input.admissionStrategyResult ? `\n### 입시 전략 시뮬레이션 결과 (admissionStrategy 작성 시 반드시 참조)\n⚠️ 아래 시뮬레이션 카드의 chance 값(very_low/low/medium/high/very_high)과 admissionStrategy 서술이 반드시 일치해야 합니다. chance가 "low"인 대학을 "합격 가능성이 높다"고 서술하는 등의 모순은 절대 불가합니다.\n${input.admissionStrategyResult}` : ""}
 ${input.weaknessAnalysisResult ? `\n### 부족한 부분 분석 결과\n${input.weaknessAnalysisResult}` : ""}
 
 ${buildPlanSpecific(isGyogwaOnly)}`;
@@ -298,17 +290,9 @@ export const buildGyogwaConsultantReviewPrompt = (
       ? `## ⚠️ 5등급제 종합평가 맥락
 이 학생은 5등급제 적용 학생입니다. 총평 작성 시 반드시 반영하세요:
 - 5등급제 N등급을 9등급제 N등급과 동일하게 해석하면 안 됩니다.
-- 정밀 환산 기준: 5등급 1.33=9등급 2.0 / 5등급 1.89=9등급 3.0 / 5등급 2.43=9등급 4.0 / 5등급 3.03=9등급 5.0
-- "2.42등급으로 상위권" 같은 표현은 잘못입니다. 5등급제 2.43등급은 9등급제 4.0등급 수준(중위권)입니다.
-- gradeAnalysis에서 등급을 언급할 때 반드시 "5등급제 기준"임을 명시하세요.
-
-### 5등급제 대학 수준 판단 기준 (admissionStrategy에 반드시 적용)
-- 5등급제 1.0~1.2등급 → 상위권 (서울대~중앙대·경희대급)
-- 5등급제 1.3~1.5등급 → 중상위권 (건국대~세종대급)
-- 5등급제 1.6~1.8등급 → 중위권 (한양대ERICA~가천대급)
-- 5등급제 1.9~2.0등급 → 중하위권
-- 5등급제 2.0등급 초과 → 하위권
-- ⚠️ 5등급제 2등급대 학생에게 "중상위권 대학 학생부교과전형을 고려해볼 만한 수준"이라고 판단하면 안 됩니다. 5등급제 2등급은 상위 34%이며, 중상위권은 최소 1점대 초중반이 필요합니다.
+- 커트라인/합격선 데이터는 이미 5등급제로 변환되어 있으므로 학생의 등급과 직접 비교하세요.
+- 등급 표기 예시: "평균 2.42등급으로 중위권입니다", "1.2등급으로 상위권입니다"
+- 5등급제 환경에서는 등급 변별력이 약하므로, 세특·선택과목이 핵심 변별 요소임을 강조하세요.
 
 `
       : "";
@@ -460,6 +444,7 @@ ${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.comp
 ### 교과 세특 분석 결과
 ${input.subjectAnalysisResult}
 ${input.admissionPredictionResult ? `\n### 합격 예측 결과 (admissionStrategy 작성 시 반드시 참조)\n⚠️ 아래 결과와 admissionStrategy 서술이 모순되면 안 됩니다. 교과전형 경쟁력 판단은 아래 결과의 교과 chance/passRateRange를 기준으로 서술하세요.\n${input.admissionPredictionResult}` : ""}
+${input.admissionStrategyResult ? `\n### 입시 전략 시뮬레이션 결과 (admissionStrategy 작성 시 반드시 참조)\n⚠️ 아래 시뮬레이션 카드의 chance 값(very_low/low/medium/high/very_high)과 admissionStrategy 서술이 반드시 일치해야 합니다. chance가 "low"인 대학을 "합격 가능성이 높다"고 서술하는 등의 모순은 절대 불가합니다.\n${input.admissionStrategyResult}` : ""}
 ${input.weaknessAnalysisResult ? `\n### 부족한 부분 분석 결과\n${input.weaknessAnalysisResult}` : ""}
 
 ## 출력 전 자기 검증 (교과전형 필수)

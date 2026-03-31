@@ -635,7 +635,17 @@ export const executeTask = async (
       break;
     }
 
-    case "topicRecommendation":
+    case "topicRecommendation": {
+      // majorExploration에서 AI가 판단한 추천 학과 추출
+      const topicMajorExpl = sections.find(
+        (s) => s.sectionId === "majorExploration"
+      ) as Record<string, unknown> | undefined;
+      const topicAiMajors = (
+        topicMajorExpl?.suggestions as { major: string }[] | undefined
+      )
+        ?.map((s) => s.major)
+        ?.slice(0, 2);
+
       section = await callGemini<ReportSection>(
         buildTopicRecommendationPrompt(
           {
@@ -643,11 +653,13 @@ export const executeTask = async (
             weaknessAnalysisResult: ser.weaknessText ?? "[]",
             studentProfile: texts.studentProfileText,
             isGyogwaOnly,
+            aiRecommendedMajors: topicAiMajors,
           },
           plan
         )
       );
       break;
+    }
 
     case "interviewPrep":
       section = await callGemini<ReportSection>(
@@ -906,12 +918,17 @@ export const executeTask = async (
           subjectAnalysisResult: ser.subjAnalysisText,
         }),
         admissionPredictionResult: ser.admPredText,
+        hasMockExamData: studentInfo.hasMockExamData,
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly
           ? buildGyogwaAdmissionStrategyPrompt(stratInput, plan)
           : buildAdmissionStrategyPrompt(stratInput, plan)
       );
+      updatedSer = {
+        ...updatedSer,
+        admStratText: JSON.stringify(section),
+      };
       break;
     }
 
@@ -1027,6 +1044,7 @@ export const executeTask = async (
         studentProfile: texts.studentProfileText,
         subjectAnalysisResult: ser.subjAnalysisText!,
         admissionPredictionResult: ser.admPredText,
+        admissionStrategyResult: ser.admStratText,
         weaknessAnalysisResult: ser.weaknessText,
         gradingSystem: state.preprocessedData?.gradingSystem,
         studentGrade: studentInfo.grade,
