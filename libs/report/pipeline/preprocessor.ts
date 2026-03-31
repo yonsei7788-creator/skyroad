@@ -22,6 +22,10 @@ import {
   findCutoffData,
   ADMISSION_CUTOFF_DATA,
 } from "../constants/admission-cutoff-data.ts";
+import {
+  getCategoryForDepartment,
+  getDepartmentsByCategory,
+} from "../constants/department-category-map.ts";
 import { correctSubjectName } from "../constants/subject-name-corrections.ts";
 
 /**
@@ -1696,8 +1700,22 @@ export const buildUniversityCandidatesText = (
   /** 고교 유형 (특성화고/특목고 등 환산 적용용) */
   schoolType?: string,
   /** 교과전형만 선택한 학생 — 학종 커트라인 제외 */
-  isGyogwaOnly?: boolean
+  isGyogwaOnly?: boolean,
+  /** 학생 성별 — "male"이면 여대 제외 */
+  gender?: "male" | "female" | null
 ): string => {
+  // 남학생일 때 제외할 여대 목록
+  const WOMENS_UNIVERSITIES = [
+    "광주여자대학교",
+    "덕성여자대학교",
+    "동덕여자대학교",
+    "서울여자대학교",
+    "성신여자대학교",
+    "숙명여자대학교",
+    "이화여자대학교",
+  ];
+  const excludeWomensUniv = gender === "male";
+
   const SPECIAL_ADMISSION_KEYWORDS = [
     "기회균형",
     "고른기회",
@@ -1734,380 +1752,281 @@ export const buildUniversityCandidatesText = (
       .trim();
 
   if (departmentKeywords && departmentKeywords.length > 0) {
-    // AI가 출력한 학과명을 정규화하여 매칭 기준 생성
-    const targetCores = departmentKeywords.map(normalizeDeptCore);
-    const matchedEntries = new Map<
-      string,
-      {
-        university: string;
-        department: string;
-        cutoffs: typeof ADMISSION_CUTOFF_DATA;
-      }
-    >();
-    // bare name 대응: "음악학" → "음악" 폴백용 (매칭 0건일 때만 사용)
-    const targetCoresWithout학 = targetCores
-      .filter((c) => c.endsWith("학") && c.length >= 3)
-      .map((c) => c.slice(0, -1));
+    // 학생 등급 환산 (5등급→9등급→고교유형 환산 순서 적용)
+    const studentGrade9 = computeGrade9ForCutoff();
+    const MARGIN = 0.3;
+    // 부동소수점 보정
+    const gradeRangeLo =
+      studentGrade9 != null
+        ? Math.round((studentGrade9 - MARGIN) * 100) / 100
+        : null;
+    const gradeRangeHi =
+      studentGrade9 != null
+        ? Math.round((studentGrade9 + MARGIN) * 100) / 100
+        : null;
 
-    for (const e of ADMISSION_CUTOFF_DATA) {
-      const eDeptCore = normalizeDeptCore(e.department);
-      // 1차: 정확 일치만 허용 — startsWith 사용 안 함
-      // "행정학" === "행정학" ✓, "화학공학" === "화학" ✗, "경찰행정학" === "행정학" ✗
-      const matched = targetCores.some((core) => eDeptCore === core);
-      if (!matched) continue;
-
-      const key = `${e.university}|${e.department}`;
-      if (!matchedEntries.has(key)) {
-        matchedEntries.set(key, {
-          university: e.university,
-          department: e.department,
-          cutoffs: [],
-        });
-      }
-      (matchedEntries.get(key)!.cutoffs as typeof ADMISSION_CUTOFF_DATA).push(
-        e
-      );
-    }
-
-    // 2차: 1차 매칭 0건이면 bare name 폴백 ("음악학"→"음악" 등)
-    if (matchedEntries.size === 0 && targetCoresWithout학.length > 0) {
+    // ── 커트라인 엔트리를 대학+학과 단위로 수집하는 헬퍼 ──
+    type UniDeptEntry = {
+      university: string;
+      department: string;
+      cutoffs: typeof ADMISSION_CUTOFF_DATA;
+    };
+    const collectEntries = (
+      deptNames: Set<string>,
+      exclude?: Set<string>
+    ): Map<string, UniDeptEntry> => {
+      const result = new Map<string, UniDeptEntry>();
       for (const e of ADMISSION_CUTOFF_DATA) {
-        const eDeptCore = normalizeDeptCore(e.department);
-        const matched = targetCoresWithout학.some((core) => eDeptCore === core);
-        if (!matched) continue;
+        if (!deptNames.has(e.department)) continue;
+        if (excludeWomensUniv && WOMENS_UNIVERSITIES.includes(e.university))
+          continue;
+        if (
+          !includeSpecialAdmission &&
+          SPECIAL_ADMISSION_KEYWORDS.some((kw) => e.admissionName.includes(kw))
+        )
+          continue;
         const key = `${e.university}|${e.department}`;
-        if (!matchedEntries.has(key)) {
-          matchedEntries.set(key, {
+        if (exclude?.has(key)) continue;
+        if (!result.has(key)) {
+          result.set(key, {
             university: e.university,
             department: e.department,
             cutoffs: [],
           });
         }
-        (matchedEntries.get(key)!.cutoffs as typeof ADMISSION_CUTOFF_DATA).push(
-          e
-        );
+        (result.get(key)!.cutoffs as typeof ADMISSION_CUTOFF_DATA).push(e);
       }
-    }
+      return result;
+    };
 
-    // 학생 등급 환산 (5등급→9등급→고교유형 환산 순서 적용)
-    const studentGrade9 = computeGrade9ForCutoff();
-
-    // 3차: 유사 학과 확장 매칭 — 등급 범위(±0.3) 내 후보가 6개 미만이면
-    // 키워드 어근 + 학술 접미사 조합으로 유사 학과만 매칭 (정확 일치)
-    // 예: "생명과학" → 어근 "생명" → 생명공학, 생명학 등 (의생명, 생명자원 등 제외)
-    const MIN_RECOMMEND_COUNT = 6;
-    if (studentGrade9 != null) {
-      const countInGradeRange = (): number => {
-        let count = 0;
-        for (const entry of matchedEntries.values()) {
-          let cuts = includeSpecialAdmission
-            ? entry.cutoffs
-            : entry.cutoffs.filter(
-                (c) =>
-                  !SPECIAL_ADMISSION_KEYWORDS.some((kw) =>
-                    c.admissionName.includes(kw)
-                  )
-              );
-          if (isGyogwaOnly) {
-            cuts = cuts.filter((c) => c.admissionType !== "학종");
-          }
-          const gyogwa50s = cuts
-            .filter((c) => c.admissionType === "교과")
-            .map((c) => c.cutoff50Grade)
-            .filter((g): g is number => g != null);
-          if (
-            gyogwa50s.some(
-              (g) => g >= studentGrade9 - 0.3 && g <= studentGrade9 + 0.3
-            )
-          ) {
-            count++;
-          }
-        }
-        return count;
-      };
-
-      if (countInGradeRange() < MIN_RECOMMEND_COUNT) {
-        // 어근 + 원래 접미사 추출:
-        // "생명과학"→{stem:"생명", suffix:"과학"}, "전자공학"→{stem:"전자", suffix:"공학"}
-        const KNOWN_SUFFIXES = ["과학", "공학"];
-        const extractStemAndSuffix = (
-          core: string
-        ): { stem: string; originalSuffix: string } => {
-          for (const suffix of KNOWN_SUFFIXES) {
-            if (core.endsWith(suffix) && core.length > suffix.length) {
-              return {
-                stem: core.slice(0, -suffix.length),
-                originalSuffix: suffix,
-              };
-            }
-          }
-          if (core.endsWith("학") && core.length >= 3) {
-            return { stem: core.slice(0, -1), originalSuffix: "학" };
-          }
-          return { stem: core, originalSuffix: "" };
-        };
-
-        // 어근 + 학술 접미사 정확 일치만 허용
-        // "생명" + "공학" = "생명공학" ✓ / "생명자원" ✗ "의생명" ✗
-        // 접미사: 과학, 공학, 학, 공학대학, "" — 모든 어근에 공통 적용
-        // (존재하지 않는 조합은 DB에서 자연 탈락)
-        const EXPAND_SUFFIXES = ["과학", "공학", "학", "공학대학", ""];
-        const expandedCores = new Set<string>();
-        for (const core of targetCores) {
-          const { stem } = extractStemAndSuffix(core);
-          if (stem === core) continue; // 어근 추출 실패 (예: "화학" 2글자)
-          for (const suffix of EXPAND_SUFFIXES) {
-            expandedCores.add(stem + suffix);
-          }
-        }
-        // 이미 1차/2차에서 매칭된 코어는 제외
-        for (const core of targetCores) expandedCores.delete(core);
-        for (const core of targetCoresWithout학) expandedCores.delete(core);
-
-        if (expandedCores.size > 0) {
-          // 1차/2차에서 이미 처리된 키는 건너뜀 (cutoffs 완전 수집됨)
-          const preExpandedKeys = new Set(matchedEntries.keys());
-          for (const e of ADMISSION_CUTOFF_DATA) {
-            const key = `${e.university}|${e.department}`;
-            if (preExpandedKeys.has(key)) continue;
-            const eDeptCore = normalizeDeptCore(e.department);
-            const isMatch = [...expandedCores].some(
-              (core) => eDeptCore === core
-            );
-            if (!isMatch) continue;
-            // 3차 내에서 같은 key의 복수 cutoff를 모두 누적
-            if (!matchedEntries.has(key)) {
-              matchedEntries.set(key, {
-                university: e.university,
-                department: e.department,
-                cutoffs: [],
-              });
-            }
-            (
-              matchedEntries.get(key)!.cutoffs as typeof ADMISSION_CUTOFF_DATA
-            ).push(e);
-          }
+    // ── 학과명 정확매칭용 department name 집합 구하기 ──
+    const getExactDeptNames = (keyword: string): Set<string> => {
+      const core = normalizeDeptCore(keyword);
+      const names = new Set<string>();
+      for (const e of ADMISSION_CUTOFF_DATA) {
+        if (normalizeDeptCore(e.department) === core) names.add(e.department);
+      }
+      // bare name 폴백: "음악학" → "음악"
+      if (names.size === 0 && core.endsWith("학") && core.length >= 3) {
+        const bare = core.slice(0, -1);
+        for (const e of ADMISSION_CUTOFF_DATA) {
+          if (normalizeDeptCore(e.department) === bare) names.add(e.department);
         }
       }
-    }
+      return names;
+    };
 
-    // 대학+학과 단위로 중복 제거 (같은 대학의 다른 학과는 모두 유지)
-    // 예: 부산대 행정학과 + 부산대 사회학과 → 둘 다 유지
-    const byUniDept = new Map<
-      string,
-      {
-        university: string;
-        department: string;
-        cutoffs: typeof ADMISSION_CUTOFF_DATA;
-      }
-    >();
-    for (const [key, entry] of matchedEntries) {
-      byUniDept.set(key, entry);
-    }
-
-    // 커트라인 + 등급 필터링
-    const withCutoff = [...byUniDept.entries()].map(
-      ([, { university, department, cutoffs: rawCutoffs }]) => {
-        let cutoffs = includeSpecialAdmission
-          ? rawCutoffs
-          : rawCutoffs.filter(
-              (c) =>
-                !SPECIAL_ADMISSION_KEYWORDS.some((kw) =>
-                  c.admissionName.includes(kw)
-                )
-            );
-        // 교과전형만 선택 → 학종 커트라인 제외
-        if (isGyogwaOnly) {
-          cutoffs = cutoffs.filter((c) => c.admissionType !== "학종");
+    // ── 카테고리 기반 유사학과 department name 집합 구하기 ──
+    const getCategoryDeptNames = (keyword: string): Set<string> => {
+      const categories = new Set<string>();
+      // 키워드 자체의 카테고리
+      const cat = getCategoryForDepartment(keyword);
+      if (cat) categories.add(cat);
+      // 정규화 후 DB에서 찾아서 카테고리 조회
+      const core = normalizeDeptCore(keyword);
+      for (const e of ADMISSION_CUTOFF_DATA) {
+        if (normalizeDeptCore(e.department) === core) {
+          const c = getCategoryForDepartment(e.department);
+          if (c) categories.add(c);
         }
-        const cutoffSummary =
-          cutoffs.length > 0
-            ? cutoffs
-                .map(
-                  (c) =>
-                    `${c.admissionType}(${c.admissionName}): 50%cut=${c.cutoff50Grade ?? "-"}, 경쟁률=${c.competitionRate}`
-                )
-                .join(" / ")
-            : null;
-        // 교과 50%cut만 사용 — 후보군 필터링/정렬의 기준
-        // 교과 데이터가 없는 대학은 allCutoff50s가 빈 배열 → 필터에서 탈락
-        const allCutoff50s = cutoffs
+      }
+      const names = new Set<string>();
+      for (const c of categories) {
+        for (const dept of getDepartmentsByCategory(c)) {
+          names.add(dept);
+        }
+      }
+      return names;
+    };
+
+    // ── 엔트리에서 학종/교과 커트라인 기반 후보 추출 ──
+    type CandidateEntry = {
+      university: string;
+      department: string;
+      cutoffSummary: string | null;
+      repCut: number;
+      diff: number;
+      tier: "reach" | "fit" | "safety";
+    };
+    const extractCandidates = (
+      entries: Map<string, UniDeptEntry>,
+      mode: "hakjong" | "gyogwa_only"
+    ): CandidateEntry[] => {
+      if (studentGrade9 == null || gradeRangeLo == null || gradeRangeHi == null)
+        return [];
+      const result: CandidateEntry[] = [];
+      for (const [, { university, department, cutoffs }] of entries) {
+        const hakjong50s = cutoffs
+          .filter((c) => c.admissionType === "학종")
+          .map((c) => c.cutoff50Grade)
+          .filter((g): g is number => g != null);
+        const gyogwa50s = cutoffs
           .filter((c) => c.admissionType === "교과")
           .map((c) => c.cutoff50Grade)
           .filter((g): g is number => g != null);
-        const repCutoff = getRepresentativeCutoff(cutoffs);
-        return {
+
+        let targetCuts: number[];
+        if (mode === "hakjong") {
+          // 학종이 있는 엔트리만
+          if (hakjong50s.length === 0) continue;
+          targetCuts = hakjong50s;
+        } else {
+          // 학종이 없고 교과만 있는 엔트리만
+          if (hakjong50s.length > 0) continue;
+          if (gyogwa50s.length === 0) continue;
+          targetCuts = gyogwa50s;
+        }
+
+        // ±0.3 범위 내 cutoff
+        const inRange = targetCuts.filter(
+          (g) => g >= gradeRangeLo && g <= gradeRangeHi
+        );
+        if (inRange.length === 0) continue;
+
+        // 학생과 가장 가까운 cutoff를 대표값으로 사용
+        const repCut = inRange.reduce((best, g) =>
+          Math.abs(g - studentGrade9) < Math.abs(best - studentGrade9)
+            ? g
+            : best
+        );
+        const diff = studentGrade9 - repCut;
+        const tier: "reach" | "fit" | "safety" =
+          diff > 0.1 ? "reach" : diff < -0.1 ? "safety" : "fit";
+        const cutoffSummary = cutoffs
+          .map(
+            (c) =>
+              `${c.admissionType}(${c.admissionName}): 50%cut=${c.cutoff50Grade ?? "-"}, 경쟁률=${c.competitionRate}`
+          )
+          .join(" / ");
+        result.push({
           university,
           department,
           cutoffSummary,
-          repCutoff,
-          allCutoff50s,
-        };
+          repCut,
+          diff,
+          tier,
+        });
       }
-    );
-
-    // 교과 50%cut 데이터가 없는 대학 제외 (교과 커트라인이 추천 기준)
-    const withGyogwa = withCutoff.filter((c) => c.allCutoff50s.length > 0);
-
-    const MAX_CANDIDATES = 8;
-    const getMinCutoff50 = (c: (typeof withGyogwa)[0]): number =>
-      c.allCutoff50s.length > 0 ? Math.min(...c.allCutoff50s) : Infinity;
-    const sortByDist = (arr: typeof withGyogwa) =>
-      arr.sort((a, b) => {
-        const aDiff = Math.abs(getMinCutoff50(a) - (studentGrade9 ?? 0));
-        const bDiff = Math.abs(getMinCutoff50(b) - (studentGrade9 ?? 0));
-        return aDiff - bDiff;
-      });
-
-    // 상향/적정/안정 밸런스 선택 함수
-    // 상향: 합격선이 학생보다 0.1~0.3 높은 (cutoff < studentGrade - 0.1)
-    // 적정: 합격선이 학생과 ±0.1 이내
-    // 안정: 합격선이 학생보다 0.1~0.3 낮은 (cutoff > studentGrade + 0.1)
-    const filterByMarginBalanced = (
-      arr: typeof withGyogwa,
-      slots: number
-    ): typeof withGyogwa => {
-      if (studentGrade9 == null) return sortByDist(arr).slice(0, slots);
-      // ±0.3 고정
-      const pool = arr.filter((c) =>
-        c.allCutoff50s.some(
-          (g) => g >= studentGrade9 - 0.3 && g <= studentGrade9 + 0.3
-        )
-      );
-      if (pool.length === 0) return [];
-      if (pool.length <= slots) return sortByDist(pool);
-
-      // 상향/적정/안정 분류
-      const reach = sortByDist(
-        pool.filter((c) => getMinCutoff50(c) < studentGrade9 - 0.1)
-      );
-      const fit = sortByDist(
-        pool.filter((c) => {
-          const cut = getMinCutoff50(c);
-          return cut >= studentGrade9 - 0.1 && cut <= studentGrade9 + 0.1;
-        })
-      );
-      const safety = sortByDist(
-        pool.filter((c) => getMinCutoff50(c) > studentGrade9 + 0.1)
-      );
-
-      // 상향 2, 적정 2, 안정 2 목표 → 부족한 티어는 적정으로 대체
-      const selected: typeof withGyogwa = [];
-      const reachPick = reach.slice(0, 2);
-      const safetyPick = safety.slice(0, 2);
-      selected.push(...reachPick);
-      selected.push(...safetyPick);
-      // 상향/안정에서 부족한 만큼 적정으로 채움
-      const fitTarget = 2 + (2 - reachPick.length) + (2 - safetyPick.length);
-      selected.push(...fit.slice(0, fitTarget));
-      // 그래도 슬롯이 남으면 거리 순으로 채움
-      if (selected.length < slots) {
-        const usedSet = new Set(
-          selected.map((c) => `${c.university}|${c.department}`)
-        );
-        const rest = sortByDist(
-          pool.filter((c) => !usedSet.has(`${c.university}|${c.department}`))
-        );
-        selected.push(...rest.slice(0, slots - selected.length));
-      }
-      return selected;
+      return result;
     };
 
-    let filtered: typeof withGyogwa;
+    // ── 상향2+적정2+안정2 충족 여부 ──
+    const isBalanceFilled = (pool: CandidateEntry[]): boolean => {
+      const reach = pool.filter((c) => c.tier === "reach").length;
+      const fit = pool.filter((c) => c.tier === "fit").length;
+      const safety = pool.filter((c) => c.tier === "safety").length;
+      return reach >= 2 && fit >= 2 && safety >= 2;
+    };
 
-    if (
-      studentGrade9 != null &&
-      departmentKeywords &&
-      departmentKeywords.length > 1
-    ) {
-      // 후보를 학과 키워드별로 분류 (매칭된 키워드 + 3차 확장 포함)
-      // 3차 확장된 학과(생물과학, 생명공학대학 등)는 어근이 같은 targetCore로 귀속
-      const CLASSIFY_SUFFIXES = ["과학", "공학"];
-      const getStemForClassify = (core: string): string => {
-        for (const suffix of CLASSIFY_SUFFIXES) {
-          if (core.endsWith(suffix) && core.length > suffix.length) {
-            return core.slice(0, -suffix.length);
-          }
-        }
-        if (core.endsWith("학") && core.length >= 3) {
-          return core.slice(0, -1);
-        }
-        return core;
-      };
-      // targetCore별 어근 매핑: "생명과학"→"생명", "생물학"→"생물"
-      const coreStemMap = new Map<string, string>();
-      for (const core of targetCores) {
-        coreStemMap.set(core, getStemForClassify(core));
-      }
-
-      const byMajor = new Map<string, typeof withGyogwa>();
-      for (const kw of targetCores) {
-        byMajor.set(kw, []);
-      }
-      for (const c of withGyogwa) {
-        const deptCore = normalizeDeptCore(c.department);
-        // 1순위: targetCores 정확 일치
-        const exactMatch = targetCores.find((core) => deptCore === core);
-        if (exactMatch) {
-          byMajor.get(exactMatch)!.push(c);
-          continue;
-        }
-        // 2순위: deptCore가 어근으로 시작하는 targetCore에 귀속 (3차 확장 결과)
-        // 예: "생명공학대학" startsWith "생명" → "생명과학" 코어에 귀속
-        const stemMatch = targetCores.find((core) => {
-          const stem = coreStemMap.get(core)!;
-          return deptCore.startsWith(stem) && deptCore !== stem;
-        });
-        if (stemMatch) {
-          byMajor.get(stemMatch)!.push(c);
-        }
-      }
-
-      const majorPools = targetCores.map((core) => {
-        const arr = byMajor.get(core) ?? [];
-        return arr.filter((c) =>
-          c.allCutoff50s.some(
-            (g) => g >= studentGrade9 - 0.3 && g <= studentGrade9 + 0.3
-          )
-        );
-      });
-
-      // 슬롯 배분: 학과당 최소 2개 보장, 잔여는 고순위 학과에 추가
-      const minPerMajor = 2;
-      const slots = targetCores.map((_, i) =>
-        Math.min(minPerMajor, majorPools[i].length)
+    // ── 후보 풀에 새 후보 추가 (중복 방지) ──
+    const addToPool = (
+      pool: CandidateEntry[],
+      newCandidates: CandidateEntry[]
+    ): void => {
+      const existing = new Set(
+        pool.map((c) => `${c.university}|${c.department}`)
       );
-      let remaining = MAX_CANDIDATES - slots.reduce((a, b) => a + b, 0);
-      for (let i = 0; i < slots.length && remaining > 0; i++) {
-        const available = majorPools[i].length - slots[i];
-        const add = Math.min(available, remaining);
-        slots[i] += add;
-        remaining -= add;
+      for (const c of newCandidates) {
+        const key = `${c.university}|${c.department}`;
+        if (!existing.has(key)) {
+          pool.push(c);
+          existing.add(key);
+        }
       }
+    };
 
-      const selected: typeof withGyogwa = [];
-      for (let i = 0; i < targetCores.length; i++) {
-        selected.push(
-          ...filterByMarginBalanced(byMajor.get(targetCores[i]) ?? [], slots[i])
-        );
-      }
+    // ── 메인 로직: 키워드 순서대로 단계적 확장 ──
+    const pool: CandidateEntry[] = [];
+    const usedKeys = new Set<string>(); // 이미 수집된 대학+학과
 
-      filtered = selected;
-    } else if (studentGrade9 != null) {
-      // 단일 키워드이거나 등급 정보 기반 — 밸런스 선택
-      filtered = filterByMarginBalanced(withGyogwa, MAX_CANDIDATES);
-    } else {
-      filtered = withGyogwa;
+    for (const keyword of departmentKeywords) {
+      // Step A: 학종 정확매칭
+      const exactDepts = getExactDeptNames(keyword);
+      const exactEntries = collectEntries(exactDepts, usedKeys);
+      for (const key of exactEntries.keys()) usedKeys.add(key);
+      addToPool(pool, extractCandidates(exactEntries, "hakjong"));
+      if (isBalanceFilled(pool)) break;
+
+      // Step B: 교과only 정확매칭 (학종 없고 교과만 있는 것)
+      addToPool(pool, extractCandidates(exactEntries, "gyogwa_only"));
+      if (isBalanceFilled(pool)) break;
+
+      // Step C: 카테고리 매핑 (유사학과) — 학종 우선 → 교과only
+      const catDepts = getCategoryDeptNames(keyword);
+      // 정확매칭에서 이미 수집된 학과는 제외
+      for (const d of exactDepts) catDepts.delete(d);
+      const catEntries = collectEntries(catDepts, usedKeys);
+      for (const key of catEntries.keys()) usedKeys.add(key);
+      addToPool(pool, extractCandidates(catEntries, "hakjong"));
+      if (isBalanceFilled(pool)) break;
+      addToPool(pool, extractCandidates(catEntries, "gyogwa_only"));
+      if (isBalanceFilled(pool)) break;
     }
-    filtered = filtered.slice(0, MAX_CANDIDATES);
 
-    const candidates = filtered.map(
-      ({ university, department, cutoffSummary }) => ({
-        university,
-        department,
-        ...(cutoffSummary ? { cutoffData: cutoffSummary } : {}),
-      })
-    );
+    // ── 밸런스 선택: 상향2 + 적정2 + 안정2 목표 ──
+    const balanced = isBalanceFilled(pool);
+    // 밸런스 달성 시 최대 8개, 미달성 시 6개 (먼 대학 제거)
+    const MAX_CANDIDATES = balanced ? 8 : 6;
+    const sortByDist = (arr: CandidateEntry[]) =>
+      [...arr].sort((a, b) => Math.abs(a.diff) - Math.abs(b.diff));
+    const reach = sortByDist(pool.filter((c) => c.tier === "reach"));
+    const fit = sortByDist(pool.filter((c) => c.tier === "fit"));
+    const safety = sortByDist(pool.filter((c) => c.tier === "safety"));
+
+    const selected: CandidateEntry[] = [];
+    const reachPick = reach.slice(0, 2);
+    const safetyPick = safety.slice(0, 2);
+    selected.push(...reachPick);
+    selected.push(...safetyPick);
+    const fitTarget = 2 + (2 - reachPick.length) + (2 - safetyPick.length);
+    selected.push(...fit.slice(0, fitTarget));
+    // 슬롯이 남으면 거리 순으로 채움
+    if (selected.length < MAX_CANDIDATES) {
+      const usedSet = new Set(
+        selected.map((c) => `${c.university}|${c.department}`)
+      );
+      const rest = sortByDist(
+        pool.filter((c) => !usedSet.has(`${c.university}|${c.department}`))
+      );
+      selected.push(...rest.slice(0, MAX_CANDIDATES - selected.length));
+    }
+
+    // 밸런스 미달성 시 초과 티어에서 먼 대학부터 제거하여 6개로 축소
+    if (!balanced && selected.length > MAX_CANDIDATES) {
+      const reachInSelected = selected.filter((c) => c.tier === "reach");
+      const fitInSelected = selected.filter((c) => c.tier === "fit");
+      const safetyInSelected = selected.filter((c) => c.tier === "safety");
+      // 가장 많은 티어에서 먼 순으로 제거
+      while (selected.length > MAX_CANDIDATES) {
+        const rLen = selected.filter((c) => c.tier === "reach").length;
+        const fLen = selected.filter((c) => c.tier === "fit").length;
+        const sLen = selected.filter((c) => c.tier === "safety").length;
+        const maxTier =
+          rLen >= sLen && rLen >= fLen
+            ? "reach"
+            : sLen >= rLen && sLen >= fLen
+              ? "safety"
+              : "fit";
+        // 해당 티어에서 가장 먼 후보 제거
+        const tierCandidates = selected
+          .filter((c) => c.tier === maxTier)
+          .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+        if (tierCandidates.length === 0) break;
+        const [toRemove] = tierCandidates;
+        const idx = selected.findIndex(
+          (c) =>
+            c.university === toRemove.university &&
+            c.department === toRemove.department
+        );
+        if (idx >= 0) selected.splice(idx, 1);
+      }
+    }
+
+    const candidates = selected.slice(0, MAX_CANDIDATES).map((c) => ({
+      university: c.university,
+      department: c.department,
+      ...(c.cutoffSummary ? { cutoffData: c.cutoffSummary } : {}),
+    }));
 
     return JSON.stringify(candidates, null, 2);
   }
@@ -2135,7 +2054,7 @@ export const buildUniversityCandidatesText = (
   const allUniversities = [
     ...universities,
     ...[...cutoffUniversities].filter((u) => !universities.includes(u)),
-  ];
+  ].filter((u) => !excludeWomensUniv || !WOMENS_UNIVERSITIES.includes(u));
 
   const studentGrade9 =
     overallAverage != null

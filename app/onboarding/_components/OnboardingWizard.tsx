@@ -23,6 +23,7 @@ interface OnboardingWizardProps {
   initialProfile: {
     name: string;
     phone: string;
+    gender: "" | "male" | "female";
     highSchoolName: string;
     highSchoolType: string;
     highSchoolRegion: string;

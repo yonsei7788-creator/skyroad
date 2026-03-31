@@ -206,6 +206,12 @@ export const executeTask = async (
       delete parsed.subjectStatAnalyses;
       delete parsed.fiveGradeSimulation;
       delete parsed.majorRelevanceAnalysis;
+      // AI 생성 텍스트에 포함된 과목별 언급도 제거
+      // (interpretation, gradeDeviationAnalysis 등에 "물리학Ⅰ 5등급" 같은 문구가 남아
+      //  교과전형 프롬프트에서 개별 과목 기반 판단을 유발)
+      delete parsed.interpretation;
+      delete parsed.gradeDeviationAnalysis;
+      delete parsed.careerSubjectAnalyses;
       return JSON.stringify(parsed, null, 2);
     } catch {
       return jsonText;
@@ -337,7 +343,8 @@ export const executeTask = async (
         ) ?? false,
         detectedDepts.length > 0 ? detectedDepts : undefined,
         studentInfo.schoolType,
-        isGyogwaOnly
+        isGyogwaOnly,
+        studentInfo.gender
       );
       const correctedCourseMatch = rebuildRecommendedCourseMatchText(
         detected,
@@ -840,7 +847,8 @@ export const executeTask = async (
                 includeGorunGihoe,
                 tryMajors,
                 studentInfo.schoolType,
-                isGyogwaOnly
+                isGyogwaOnly,
+                studentInfo.gender
               );
               if (candidate === "[]") continue;
               rebuilt = candidate;

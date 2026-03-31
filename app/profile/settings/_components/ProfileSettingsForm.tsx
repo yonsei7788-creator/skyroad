@@ -24,13 +24,17 @@ import {
 
 import { createClient } from "@/libs/supabase/client";
 
-import { REGION_OPTIONS } from "@/app/onboarding/_components/types";
+import {
+  REGION_OPTIONS,
+  GENDER_OPTIONS,
+} from "@/app/onboarding/_components/types";
 
 import styles from "../page.module.css";
 
 interface ProfileData {
   name: string;
   phone: string;
+  gender: "" | "male" | "female";
   highSchoolName: string;
   highSchoolType: string;
   highSchoolRegion: string;
@@ -306,6 +310,10 @@ export const ProfileSettingsForm = ({
       .update({
         name: profile.name || null,
         phone: profile.phone || null,
+        gender:
+          profile.gender === "male" || profile.gender === "female"
+            ? profile.gender
+            : null,
         high_school_name: profile.highSchoolName || null,
         high_school_type: profile.highSchoolType || null,
         high_school_region: profile.highSchoolRegion || null,
@@ -426,6 +434,25 @@ export const ProfileSettingsForm = ({
                       value={profile.phone}
                       onChange={(e) => handleChange("phone", e.target.value)}
                     />
+                  </div>
+                </div>
+
+                <div className={styles.field}>
+                  <label className={styles.label}>
+                    <User size={14} className={styles.labelIcon} />
+                    성별
+                  </label>
+                  <div className={styles.fieldRow}>
+                    {GENDER_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={`${styles.selectButton} ${profile.gender === opt.value ? styles.selectButtonActive : ""}`}
+                        onClick={() => handleChange("gender", opt.value)}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>

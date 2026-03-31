@@ -6,6 +6,7 @@ import { createClient } from "@/libs/supabase/server";
 interface ProfileBody {
   name: string;
   phone: string;
+  gender?: "male" | "female";
   highSchoolName: string;
   highSchoolType: string;
   highSchoolRegion?: string;
@@ -38,6 +39,7 @@ export const PUT = async (request: NextRequest) => {
   const {
     name,
     phone,
+    gender,
     highSchoolName,
     highSchoolType,
     highSchoolRegion,
@@ -98,6 +100,7 @@ export const PUT = async (request: NextRequest) => {
     .update({
       name: name.trim(),
       phone,
+      gender: gender === "male" || gender === "female" ? gender : null,
       high_school_name: highSchoolName.trim(),
       high_school_type:
         highSchoolType &&

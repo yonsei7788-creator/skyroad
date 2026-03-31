@@ -15,7 +15,7 @@ import {
   Loader2,
 } from "lucide-react";
 
-import { SCHOOL_TYPES, REGION_OPTIONS } from "./types";
+import { SCHOOL_TYPES, REGION_OPTIONS, GENDER_OPTIONS } from "./types";
 import type { ProfileStepData } from "./types";
 
 import styles from "../page.module.css";
@@ -34,6 +34,7 @@ interface SchoolResult {
 interface FieldErrors {
   name?: string;
   phone?: string;
+  gender?: string;
   highSchoolName?: string;
   highSchoolType?: string;
   grade?: string;
@@ -216,6 +217,10 @@ export const ProfileStep = ({ initialData, onComplete }: ProfileStepProps) => {
       newErrors.phone = "010-XXXX-XXXX 형식으로 입력해주세요.";
     }
 
+    if (!profile.gender) {
+      newErrors.gender = "성별을 선택해주세요.";
+    }
+
     if (!profile.highSchoolName.trim()) {
       newErrors.highSchoolName = "고등학교를 선택해주세요.";
     }
@@ -302,6 +307,28 @@ export const ProfileStep = ({ initialData, onComplete }: ProfileStepProps) => {
                 <span className={styles.fieldError}>{errors.phone}</span>
               )}
             </div>
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label}>
+              <User size={14} className={styles.labelIcon} />
+              성별 <span className={styles.required}>*</span>
+            </label>
+            <div className={styles.fieldRow}>
+              {GENDER_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`${styles.selectButton} ${profile.gender === opt.value ? styles.selectButtonActive : ""}`}
+                  onClick={() => handleChange("gender", opt.value)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {errors.gender && (
+              <span className={styles.fieldError}>{errors.gender}</span>
+            )}
           </div>
 
           <div className={styles.field}>

@@ -8,10 +8,19 @@ export interface OnboardingState {
   universityCompleted: boolean;
 }
 
+/** 성별 */
+export const GENDER_OPTIONS = [
+  { value: "male", label: "남성" },
+  { value: "female", label: "여성" },
+] as const;
+
+export type Gender = "male" | "female";
+
 /** Step 1: 입시 정보 */
 export interface ProfileStepData {
   name: string;
   phone: string;
+  gender: Gender | "";
   highSchoolName: string;
   highSchoolType: string;
   highSchoolRegion: string;
