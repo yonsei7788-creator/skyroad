@@ -400,10 +400,37 @@ export const postprocess = (
         // 학생 등급을 9등급제로 환산 (커트라인이 9등급제 기준)
         const gs = preprocessed.gradingSystem;
         const avg = preprocessed.overallAverage;
+        const FIVE_NINE_TBL: [number, number][] = [
+          [1, 1],
+          [1.5, 1.09],
+          [2, 1.33],
+          [2.5, 1.6],
+          [3, 1.89],
+          [3.5, 2.15],
+          [4, 2.43],
+          [4.5, 2.73],
+          [5, 3.03],
+          [5.5, 3.32],
+          [6, 3.55],
+          [6.5, 3.91],
+          [7, 4.19],
+          [7.5, 4.47],
+          [8, 4.72],
+          [8.5, 4.91],
+          [9, 5],
+        ];
         const fiveToNineLocal = (five: number): number => {
-          if (five <= 1.0) return 1.5;
-          if (five <= 1.5) return 1.5 + (five - 1.0) * 4;
-          return 3.5 + (five - 1.5) * 2;
+          if (five <= 1) return 1;
+          if (five >= 5) return 9;
+          for (let i = 1; i < FIVE_NINE_TBL.length; i++) {
+            const [n1, f1] = FIVE_NINE_TBL[i - 1];
+            const [n2, f2] = FIVE_NINE_TBL[i];
+            if (five <= f2) {
+              const r = (five - f1) / (f2 - f1);
+              return Math.round((n1 + r * (n2 - n1)) * 100) / 100;
+            }
+          }
+          return 9;
         };
         const studentGrade9 =
           gs === "5등급제" && avg ? fiveToNineLocal(avg) : (avg ?? 0);
@@ -771,10 +798,37 @@ export const postprocess = (
     const gs = preprocessed.gradingSystem;
     if (avg != null && gs) {
       // 5→9등급 환산 (커트라인 데이터가 9등급제 기준)
+      const FIVE_NINE_TBL2: [number, number][] = [
+        [1, 1],
+        [1.5, 1.09],
+        [2, 1.33],
+        [2.5, 1.6],
+        [3, 1.89],
+        [3.5, 2.15],
+        [4, 2.43],
+        [4.5, 2.73],
+        [5, 3.03],
+        [5.5, 3.32],
+        [6, 3.55],
+        [6.5, 3.91],
+        [7, 4.19],
+        [7.5, 4.47],
+        [8, 4.72],
+        [8.5, 4.91],
+        [9, 5],
+      ];
       const fiveToNine = (five: number): number => {
-        if (five <= 1.0) return 1.5;
-        if (five <= 1.5) return 1.5 + (five - 1.0) * 4;
-        return 3.5 + (five - 1.5) * 2;
+        if (five <= 1) return 1;
+        if (five >= 5) return 9;
+        for (let i = 1; i < FIVE_NINE_TBL2.length; i++) {
+          const [n1, f1] = FIVE_NINE_TBL2[i - 1];
+          const [n2, f2] = FIVE_NINE_TBL2[i];
+          if (five <= f2) {
+            const r = (five - f1) / (f2 - f1);
+            return Math.round((n1 + r * (n2 - n1)) * 100) / 100;
+          }
+        }
+        return 9;
       };
       const studentGrade9 = gs === "5등급제" ? fiveToNine(avg) : avg;
 

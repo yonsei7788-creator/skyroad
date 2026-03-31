@@ -1654,12 +1654,43 @@ const NINE_GRADE_UNIVERSITY_CUTOFF: Record<string, number> = {
 
 /**
  * 5등급제 → 9등급제 환산 (커트라인 데이터가 9등급제 기준이므로).
+ * 5등급(평균) 컬럼 기반 룩업 + 선형 보간.
  * @see require/university-grade-mapping.md
  */
+// [9등급, 5등급(평균)] 매핑 테이블
+const FIVE_TO_NINE_TABLE: [number, number][] = [
+  [1.0, 1.0],
+  [1.5, 1.09],
+  [2.0, 1.33],
+  [2.5, 1.6],
+  [3.0, 1.89],
+  [3.5, 2.15],
+  [4.0, 2.43],
+  [4.5, 2.73],
+  [5.0, 3.03],
+  [5.5, 3.32],
+  [6.0, 3.55],
+  [6.5, 3.91],
+  [7.0, 4.19],
+  [7.5, 4.47],
+  [8.0, 4.72],
+  [8.5, 4.91],
+  [9.0, 5.0],
+];
 const fiveToNineGrade = (five: number): number => {
-  if (five <= 1.0) return 1.5;
-  if (five <= 1.5) return 1.5 + (five - 1.0) * 4; // 1.0→1.5, 1.5→3.5
-  return 3.5 + (five - 1.5) * 2; // 1.5→3.5, 2.0→4.5, 2.5→5.5, 3.0→6.5
+  if (five <= 1.0) return 1.0;
+  if (five >= 5.0) return 9.0;
+  // 테이블에서 5등급 값 기준으로 구간 찾기 (5등급→9등급 역변환)
+  for (let i = 1; i < FIVE_TO_NINE_TABLE.length; i++) {
+    const [nine1, five1] = FIVE_TO_NINE_TABLE[i - 1];
+    const [nine2, five2] = FIVE_TO_NINE_TABLE[i];
+    if (five <= five2) {
+      // 선형 보간
+      const ratio = (five - five1) / (five2 - five1);
+      return Math.round((nine1 + ratio * (nine2 - nine1)) * 100) / 100;
+    }
+  }
+  return 9.0;
 };
 
 /**
