@@ -1917,9 +1917,9 @@ export const buildUniversityCandidatesText = (
         // 부동소수점 보정 (2.74 - 2.64 = 0.10000000000000009 방지)
         const diff = Math.round((studentGrade9 - repCut) * 1000) / 1000;
         const tier: "reach" | "ambitious" | "fit" | "safety" =
-          diff > 0.1
+          diff >= 0.3
             ? "reach"
-            : diff >= 0.05
+            : diff > 0.1
               ? "ambitious"
               : diff >= -0.1
                 ? "fit"

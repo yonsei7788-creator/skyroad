@@ -825,8 +825,8 @@ export const executeTask = async (
                   const cut = parseFloat(cutMatch[1]);
                   if (!adjustedAvg) continue;
                   const diff = adjustedAvg - cut;
-                  if (diff > 0.1) reach++;
-                  else if (diff >= 0.05)
+                  if (diff >= 0.3) reach++;
+                  else if (diff > 0.1)
                     reach++; // 소신 → reach 그룹
                   else if (diff >= -0.1) fit++;
                   else safety++;

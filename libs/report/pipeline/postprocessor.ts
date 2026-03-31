@@ -409,7 +409,7 @@ export const postprocess = (
           gs === "5등급제" && avg ? fiveToNineLocal(avg) : (avg ?? 0);
 
         const gapToChance = (gap: number): string => {
-          if (gap > 0.3) return "very_low";
+          if (gap >= 0.3) return "very_low";
           if (gap > 0.1) return "low";
           if (gap >= -0.1) return "medium";
           return "high";
@@ -941,7 +941,7 @@ export const postprocess = (
               "high",
             ] as const;
             const gapToChance = (gap: number): string => {
-              if (gap > 0.3) return "very_low";
+              if (gap >= 0.3) return "very_low";
               if (gap > 0.1) return "low";
               if (gap >= -0.1) return "medium";
               return "high";
