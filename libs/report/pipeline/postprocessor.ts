@@ -126,10 +126,11 @@ export const postprocess = (
 
   // 2-1. admissionPrediction: chance 값 정규화 (한글 → 영문)
   const CHANCE_NORMALIZE: Record<string, string> = {
-    "매우 높음": "very_high",
-    매우높음: "very_high",
+    "매우 높음": "high",
+    매우높음: "high",
     높음: "high",
     보통: "medium",
+    "다소 낮음": "low",
     낮음: "low",
     "매우 낮음": "very_low",
     매우낮음: "very_low",
@@ -137,8 +138,9 @@ export const postprocess = (
   const normalizeChance = (v: unknown): string => {
     if (typeof v !== "string") return "medium";
     const lower = v.trim().toLowerCase();
-    if (["very_high", "high", "medium", "low", "very_low"].includes(lower))
-      return lower;
+    // very_high → high로 통합
+    if (lower === "very_high") return "high";
+    if (["high", "medium", "low", "very_low"].includes(lower)) return lower;
     return CHANCE_NORMALIZE[v.trim()] ?? "medium";
   };
 
@@ -407,11 +409,10 @@ export const postprocess = (
           gs === "5등급제" && avg ? fiveToNineLocal(avg) : (avg ?? 0);
 
         const gapToChance = (gap: number): string => {
-          if (gap > 0.5) return "very_low";
-          if (gap > 0.2) return "low";
-          if (gap >= -0.2) return "medium";
-          if (gap >= -0.5) return "high";
-          return "very_high";
+          if (gap > 0.1) return "very_low";
+          if (gap >= 0.05) return "low";
+          if (gap >= -0.1) return "medium";
+          return "high";
         };
 
         try {
@@ -421,35 +422,72 @@ export const postprocess = (
             cutoffData?: string;
           }[];
 
+          // 학생과 가장 가까운 cutoff를 대표값으로 선택하는 헬퍼
+          const closestCutoff = (
+            cuts: number[],
+            studentGrade: number
+          ): number | null => {
+            if (cuts.length === 0) return null;
+            return cuts.reduce((best, g) =>
+              Math.abs(g - studentGrade) < Math.abs(best - studentGrade)
+                ? g
+                : best
+            );
+          };
+
+          // 특수전형 키워드 (preprocessor와 동일)
+          const SPECIAL_KEYWORDS = [
+            "기회균형",
+            "고른기회",
+            "기회균등",
+            "농어촌",
+            "사회배려",
+            "국가보훈",
+            "특성화고",
+            "계열적합",
+          ];
+
           const cards = candidates.map((cand) => {
-            const cutoffs = findCutoffData(cand.university, cand.department);
-
-            // 교과 chance
-            const gyogwaCutoffs = cutoffs.filter(
-              (c: any) => c.admissionType === "교과" && c.cutoff50Grade != null
+            const rawCutoffs = findCutoffData(cand.university, cand.department);
+            // 특수전형 제외 (preprocessor와 동일 기준)
+            const cutoffs = rawCutoffs.filter(
+              (c: any) =>
+                !SPECIAL_KEYWORDS.some((kw) => c.admissionName.includes(kw))
             );
-            const gyogwaBest =
-              gyogwaCutoffs.length > 0
-                ? Math.min(...gyogwaCutoffs.map((c: any) => c.cutoff50Grade))
-                : null;
-            const gyogwaChance = gyogwaBest
-              ? gapToChance(studentGrade9 - gyogwaBest)
+
+            // 교과 chance — 학생과 가장 가까운 cutoff 기준
+            const gyogwaCuts = cutoffs
+              .filter(
+                (c: any) =>
+                  c.admissionType === "교과" && c.cutoff50Grade != null
+              )
+              .map((c: any) => c.cutoff50Grade as number);
+            const gyogwaRep = closestCutoff(gyogwaCuts, studentGrade9);
+            const gyogwaChance = gyogwaRep
+              ? gapToChance(
+                  Math.round((studentGrade9 - gyogwaRep) * 1000) / 1000
+                )
               : "medium";
-            const gyogwaType = gyogwaCutoffs[0]?.admissionName ?? "학생부교과";
+            const gyogwaType =
+              cutoffs.find((c: any) => c.admissionType === "교과")
+                ?.admissionName ?? "학생부교과";
 
-            // 학종 chance (같은 등급 비교 로직)
-            const hakjongCutoffs = cutoffs.filter(
-              (c: any) => c.admissionType === "학종" && c.cutoff50Grade != null
-            );
-            const hakjongBest =
-              hakjongCutoffs.length > 0
-                ? Math.min(...hakjongCutoffs.map((c: any) => c.cutoff50Grade))
-                : null;
-            const hakjongChance = hakjongBest
-              ? gapToChance(studentGrade9 - hakjongBest)
+            // 학종 chance — 학생과 가장 가까운 cutoff 기준
+            const hakjongCuts = cutoffs
+              .filter(
+                (c: any) =>
+                  c.admissionType === "학종" && c.cutoff50Grade != null
+              )
+              .map((c: any) => c.cutoff50Grade as number);
+            const hakjongRep = closestCutoff(hakjongCuts, studentGrade9);
+            const hakjongChance = hakjongRep
+              ? gapToChance(
+                  Math.round((studentGrade9 - hakjongRep) * 1000) / 1000
+                )
               : "medium";
             const hakjongType =
-              hakjongCutoffs[0]?.admissionName ?? "학생부종합";
+              cutoffs.find((c: any) => c.admissionType === "학종")
+                ?.admissionName ?? "학생부종합";
 
             return {
               university: cand.university,
@@ -466,13 +504,7 @@ export const postprocess = (
           });
 
           // 교과와 학종 chance가 동일하면 교과를 한 단계 내림 (같은 값 방지)
-          const CHANCE_LEVELS = [
-            "very_low",
-            "low",
-            "medium",
-            "high",
-            "very_high",
-          ];
+          const CHANCE_LEVELS = ["very_low", "low", "medium", "high"];
           for (const card of cards) {
             const compIdx = CHANCE_LEVELS.indexOf(card.comprehensive.chance);
             const subjIdx = CHANCE_LEVELS.indexOf(card.subject.chance);
@@ -907,14 +939,12 @@ export const postprocess = (
               "low",
               "medium",
               "high",
-              "very_high",
             ] as const;
             const gapToChance = (gap: number): string => {
-              if (gap > 0.5) return "very_low";
-              if (gap > 0.2) return "low";
-              if (gap >= -0.2) return "medium";
-              if (gap >= -0.5) return "high";
-              return "very_high";
+              if (gap > 0.1) return "very_low";
+              if (gap >= 0.05) return "low";
+              if (gap >= -0.1) return "medium";
+              return "high";
             };
 
             for (const card of sim.cards) {

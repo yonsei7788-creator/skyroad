@@ -1724,6 +1724,7 @@ export const buildUniversityCandidatesText = (
     "사회배려",
     "국가보훈",
     "특성화고",
+    "계열적합",
   ];
 
   // ── 커트라인 비교용 9등급 일반고 환산 등급 계산 ──
@@ -1839,6 +1840,20 @@ export const buildUniversityCandidatesText = (
       return names;
     };
 
+    // ── 상위대학 학종 커트라인 보정 ──
+    // 실제 합격선이 공개 커트라인보다 엄격한 상위 대학에 대해
+    // 후보군 선정 시 커트라인을 0.4 차감하여 비교 (데이터 자체는 미변경)
+    const TOP_UNIV_HAKJONG_ADJUSTMENT = 0.4;
+    const TOP_UNIVERSITIES_FOR_ADJUSTMENT = new Set([
+      "서울대학교",
+      "연세대학교",
+      "고려대학교",
+      "서강대학교",
+      "성균관대학교",
+      "한양대학교",
+      "중앙대학교",
+    ]);
+
     // ── 엔트리에서 학종/교과 커트라인 기반 후보 추출 ──
     type CandidateEntry = {
       university: string;
@@ -1846,7 +1861,7 @@ export const buildUniversityCandidatesText = (
       cutoffSummary: string | null;
       repCut: number;
       diff: number;
-      tier: "reach" | "fit" | "safety";
+      tier: "reach" | "ambitious" | "fit" | "safety";
     };
     const extractCandidates = (
       entries: Map<string, UniDeptEntry>,
@@ -1877,21 +1892,38 @@ export const buildUniversityCandidatesText = (
           targetCuts = gyogwa50s;
         }
 
-        // ±0.3 범위 내 cutoff
-        const inRange = targetCuts.filter(
+        // 상위대학 학종 커트라인 보정: 2.0 이상인 커트라인에서 0.4 차감
+        const adjustedCuts =
+          mode === "hakjong" && TOP_UNIVERSITIES_FOR_ADJUSTMENT.has(university)
+            ? targetCuts.map((g) =>
+                g >= 2.0
+                  ? Math.round((g - TOP_UNIV_HAKJONG_ADJUSTMENT) * 100) / 100
+                  : g
+              )
+            : targetCuts;
+
+        // ±0.3 범위 내 cutoff (보정된 값으로 비교)
+        const inRange = adjustedCuts.filter(
           (g) => g >= gradeRangeLo && g <= gradeRangeHi
         );
         if (inRange.length === 0) continue;
 
-        // 학생과 가장 가까운 cutoff를 대표값으로 사용
+        // 학생과 가장 가까운 cutoff를 대표값으로 사용 (보정된 값 기준)
         const repCut = inRange.reduce((best, g) =>
           Math.abs(g - studentGrade9) < Math.abs(best - studentGrade9)
             ? g
             : best
         );
-        const diff = studentGrade9 - repCut;
-        const tier: "reach" | "fit" | "safety" =
-          diff > 0.1 ? "reach" : diff < -0.1 ? "safety" : "fit";
+        // 부동소수점 보정 (2.74 - 2.64 = 0.10000000000000009 방지)
+        const diff = Math.round((studentGrade9 - repCut) * 1000) / 1000;
+        const tier: "reach" | "ambitious" | "fit" | "safety" =
+          diff > 0.1
+            ? "reach"
+            : diff >= 0.05
+              ? "ambitious"
+              : diff >= -0.1
+                ? "fit"
+                : "safety";
         const cutoffSummary = cutoffs
           .map(
             (c) =>
@@ -1910,12 +1942,14 @@ export const buildUniversityCandidatesText = (
       return result;
     };
 
-    // ── 상향2+적정2+안정2 충족 여부 ──
+    // ── (상향+소신)2 + 적정2 + 안정2 충족 여부 ──
     const isBalanceFilled = (pool: CandidateEntry[]): boolean => {
-      const reach = pool.filter((c) => c.tier === "reach").length;
+      const reachAmbitious = pool.filter(
+        (c) => c.tier === "reach" || c.tier === "ambitious"
+      ).length;
       const fit = pool.filter((c) => c.tier === "fit").length;
       const safety = pool.filter((c) => c.tier === "safety").length;
-      return reach >= 2 && fit >= 2 && safety >= 2;
+      return reachAmbitious >= 2 && fit >= 2 && safety >= 2;
     };
 
     // ── 후보 풀에 새 후보 추가 (중복 방지) ──
@@ -1935,92 +1969,141 @@ export const buildUniversityCandidatesText = (
       }
     };
 
-    // ── 메인 로직: 키워드 순서대로 단계적 확장 ──
-    const pool: CandidateEntry[] = [];
+    // ── 메인 로직: 학종 우선 → 교과 보충 → 3순위 전체 ──
+    // Phase 1: 1순위 학종 정확매칭 → 유사학과 학종
+    // Phase 2: 2순위 학종 정확매칭 → 유사학과 학종 (부족 티어 보충)
+    // Phase 3: 1순위 교과only 정확매칭 → 유사학과 교과only (부족 티어 보충)
+    // Phase 4: 2순위 교과only 정확매칭 → 유사학과 교과only (부족 티어 보충)
+    // Phase 5: 3순위 전체 플로우 (부족 티어 보충)
+    const selected: CandidateEntry[] = [];
     const usedKeys = new Set<string>(); // 이미 수집된 대학+학과
+    const sortByDist = (arr: CandidateEntry[]) =>
+      [...arr].sort((a, b) => Math.abs(a.diff) - Math.abs(b.diff));
 
-    for (const keyword of departmentKeywords) {
-      // Step A: 학종 정확매칭
-      const exactDepts = getExactDeptNames(keyword);
+    // 부족한 티어만 필터링하여 추가하는 헬퍼
+    const addMissingTiers = (candidates: CandidateEntry[]): void => {
+      const currentReachAmbitious = selected.filter(
+        (c) => c.tier === "reach" || c.tier === "ambitious"
+      ).length;
+      const needReachAmbitious = Math.max(0, 2 - currentReachAmbitious);
+      const needFit = Math.max(
+        0,
+        2 - selected.filter((c) => c.tier === "fit").length
+      );
+      const needSafety = Math.max(
+        0,
+        2 - selected.filter((c) => c.tier === "safety").length
+      );
+
+      const sorted = sortByDist(candidates);
+      const reachAmbitious = sorted
+        .filter((c) => c.tier === "reach" || c.tier === "ambitious")
+        .slice(0, needReachAmbitious);
+      const fit = sorted.filter((c) => c.tier === "fit").slice(0, needFit);
+      const safety = sorted
+        .filter((c) => c.tier === "safety")
+        .slice(0, needSafety);
+
+      addToPool(selected, [...reachAmbitious, ...fit, ...safety]);
+    };
+
+    const primaryKeywords = departmentKeywords.slice(0, 2);
+    const tertiaryKeywords = departmentKeywords.slice(2);
+
+    // 키워드별 정확매칭/유사학과 엔트리를 미리 수집 (Phase 3~4에서 재사용)
+    type KeywordEntries = {
+      exactEntries: Map<string, UniDeptEntry>;
+      catEntries: Map<string, UniDeptEntry>;
+    };
+    const keywordEntriesCache = new Map<string, KeywordEntries>();
+
+    // Phase 1: 1순위 학종 (정확매칭 → 유사학과)
+    if (primaryKeywords[0] && !isBalanceFilled(selected)) {
+      const [kw] = primaryKeywords;
+      const exactDepts = getExactDeptNames(kw);
       const exactEntries = collectEntries(exactDepts, usedKeys);
       for (const key of exactEntries.keys()) usedKeys.add(key);
-      addToPool(pool, extractCandidates(exactEntries, "hakjong"));
-      if (isBalanceFilled(pool)) break;
+      addToPool(selected, extractCandidates(exactEntries, "hakjong"));
 
-      // Step B: 교과only 정확매칭 (학종 없고 교과만 있는 것)
-      addToPool(pool, extractCandidates(exactEntries, "gyogwa_only"));
-      if (isBalanceFilled(pool)) break;
-
-      // Step C: 카테고리 매핑 (유사학과) — 학종 우선 → 교과only
-      const catDepts = getCategoryDeptNames(keyword);
-      // 정확매칭에서 이미 수집된 학과는 제외
+      const catDepts = getCategoryDeptNames(kw);
       for (const d of exactDepts) catDepts.delete(d);
       const catEntries = collectEntries(catDepts, usedKeys);
       for (const key of catEntries.keys()) usedKeys.add(key);
-      addToPool(pool, extractCandidates(catEntries, "hakjong"));
-      if (isBalanceFilled(pool)) break;
-      addToPool(pool, extractCandidates(catEntries, "gyogwa_only"));
-      if (isBalanceFilled(pool)) break;
+      if (!isBalanceFilled(selected)) {
+        addToPool(selected, extractCandidates(catEntries, "hakjong"));
+      }
+
+      keywordEntriesCache.set(kw, { exactEntries, catEntries });
     }
 
-    // ── 밸런스 선택: 상향2 + 적정2 + 안정2 목표 ──
-    const balanced = isBalanceFilled(pool);
-    // 밸런스 달성 시 최대 8개, 미달성 시 6개 (먼 대학 제거)
-    const MAX_CANDIDATES = balanced ? 8 : 6;
-    const sortByDist = (arr: CandidateEntry[]) =>
-      [...arr].sort((a, b) => Math.abs(a.diff) - Math.abs(b.diff));
-    const reach = sortByDist(pool.filter((c) => c.tier === "reach"));
-    const fit = sortByDist(pool.filter((c) => c.tier === "fit"));
-    const safety = sortByDist(pool.filter((c) => c.tier === "safety"));
+    // Phase 2: 2순위 학종 (정확매칭 → 유사학과, 부족 티어 보충)
+    if (primaryKeywords[1] && !isBalanceFilled(selected)) {
+      const [, kw] = primaryKeywords;
+      const exactDepts = getExactDeptNames(kw);
+      const exactEntries = collectEntries(exactDepts, usedKeys);
+      for (const key of exactEntries.keys()) usedKeys.add(key);
+      addMissingTiers(extractCandidates(exactEntries, "hakjong"));
 
-    const selected: CandidateEntry[] = [];
-    const reachPick = reach.slice(0, 2);
-    const safetyPick = safety.slice(0, 2);
-    selected.push(...reachPick);
-    selected.push(...safetyPick);
-    const fitTarget = 2 + (2 - reachPick.length) + (2 - safetyPick.length);
-    selected.push(...fit.slice(0, fitTarget));
-    // 슬롯이 남으면 거리 순으로 채움
-    if (selected.length < MAX_CANDIDATES) {
-      const usedSet = new Set(
-        selected.map((c) => `${c.university}|${c.department}`)
-      );
-      const rest = sortByDist(
-        pool.filter((c) => !usedSet.has(`${c.university}|${c.department}`))
-      );
-      selected.push(...rest.slice(0, MAX_CANDIDATES - selected.length));
+      const catDepts = getCategoryDeptNames(kw);
+      for (const d of exactDepts) catDepts.delete(d);
+      const catEntries = collectEntries(catDepts, usedKeys);
+      for (const key of catEntries.keys()) usedKeys.add(key);
+      if (!isBalanceFilled(selected)) {
+        addMissingTiers(extractCandidates(catEntries, "hakjong"));
+      }
+
+      keywordEntriesCache.set(kw, { exactEntries, catEntries });
     }
 
-    // 밸런스 미달성 시 초과 티어에서 먼 대학부터 제거하여 6개로 축소
-    if (!balanced && selected.length > MAX_CANDIDATES) {
-      const reachInSelected = selected.filter((c) => c.tier === "reach");
-      const fitInSelected = selected.filter((c) => c.tier === "fit");
-      const safetyInSelected = selected.filter((c) => c.tier === "safety");
-      // 가장 많은 티어에서 먼 순으로 제거
-      while (selected.length > MAX_CANDIDATES) {
-        const rLen = selected.filter((c) => c.tier === "reach").length;
-        const fLen = selected.filter((c) => c.tier === "fit").length;
-        const sLen = selected.filter((c) => c.tier === "safety").length;
-        const maxTier =
-          rLen >= sLen && rLen >= fLen
-            ? "reach"
-            : sLen >= rLen && sLen >= fLen
-              ? "safety"
-              : "fit";
-        // 해당 티어에서 가장 먼 후보 제거
-        const tierCandidates = selected
-          .filter((c) => c.tier === maxTier)
-          .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
-        if (tierCandidates.length === 0) break;
-        const [toRemove] = tierCandidates;
-        const idx = selected.findIndex(
-          (c) =>
-            c.university === toRemove.university &&
-            c.department === toRemove.department
-        );
-        if (idx >= 0) selected.splice(idx, 1);
+    // Phase 3: 1순위 교과only (정확매칭 → 유사학과, 부족 티어 보충)
+    if (primaryKeywords[0] && !isBalanceFilled(selected)) {
+      const cached = keywordEntriesCache.get(primaryKeywords[0]);
+      if (cached) {
+        addMissingTiers(extractCandidates(cached.exactEntries, "gyogwa_only"));
+        if (!isBalanceFilled(selected)) {
+          addMissingTiers(extractCandidates(cached.catEntries, "gyogwa_only"));
+        }
       }
     }
+
+    // Phase 4: 2순위 교과only (정확매칭 → 유사학과, 부족 티어 보충)
+    if (primaryKeywords[1] && !isBalanceFilled(selected)) {
+      const cached = keywordEntriesCache.get(primaryKeywords[1]);
+      if (cached) {
+        addMissingTiers(extractCandidates(cached.exactEntries, "gyogwa_only"));
+        if (!isBalanceFilled(selected)) {
+          addMissingTiers(extractCandidates(cached.catEntries, "gyogwa_only"));
+        }
+      }
+    }
+
+    // Phase 5: 3순위 키워드 전체 플로우 (부족 티어 보충)
+    if (!isBalanceFilled(selected)) {
+      for (const kw of tertiaryKeywords) {
+        if (isBalanceFilled(selected)) break;
+
+        const exactDepts = getExactDeptNames(kw);
+        const exactEntries = collectEntries(exactDepts, usedKeys);
+        for (const key of exactEntries.keys()) usedKeys.add(key);
+        addMissingTiers(extractCandidates(exactEntries, "hakjong"));
+        if (isBalanceFilled(selected)) break;
+
+        const catDepts = getCategoryDeptNames(kw);
+        for (const d of exactDepts) catDepts.delete(d);
+        const catEntries = collectEntries(catDepts, usedKeys);
+        for (const key of catEntries.keys()) usedKeys.add(key);
+        addMissingTiers(extractCandidates(catEntries, "hakjong"));
+        if (isBalanceFilled(selected)) break;
+
+        addMissingTiers(extractCandidates(exactEntries, "gyogwa_only"));
+        if (isBalanceFilled(selected)) break;
+        addMissingTiers(extractCandidates(catEntries, "gyogwa_only"));
+        if (isBalanceFilled(selected)) break;
+      }
+    }
+
+    // 최대 8개로 제한
+    const MAX_CANDIDATES = 8;
 
     const candidates = selected.slice(0, MAX_CANDIDATES).map((c) => ({
       university: c.university,

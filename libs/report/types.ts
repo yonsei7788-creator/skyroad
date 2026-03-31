@@ -32,9 +32,8 @@ export type SubjectRating = "excellent" | "good" | "average" | "weak";
 /** 평가 영향도 */
 export type EvaluationImpact = "high" | "medium" | "low";
 
-/** 합격 가능성 (5단계) */
+/** 합격 가능성 (4단계) */
 export type AdmissionChance =
-  | "very_high"
   | "high"
   | "medium"
   | "low"

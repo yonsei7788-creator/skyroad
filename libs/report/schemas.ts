@@ -27,7 +27,6 @@ export const EvaluationImpactSchema = z.enum([
   "very_low",
 ]);
 export const AdmissionChanceSchema = z.enum([
-  "very_high",
   "high",
   "medium",
   "low",

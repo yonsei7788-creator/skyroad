@@ -826,8 +826,10 @@ export const executeTask = async (
                   if (!adjustedAvg) continue;
                   const diff = adjustedAvg - cut;
                   if (diff > 0.1) reach++;
-                  else if (diff < -0.1) safety++;
-                  else fit++;
+                  else if (diff >= 0.05)
+                    reach++; // 소신 → reach 그룹
+                  else if (diff >= -0.1) fit++;
+                  else safety++;
                 }
                 return { total: parsed.length, reach, fit, safety };
               } catch {
