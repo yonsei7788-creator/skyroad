@@ -1845,7 +1845,7 @@
 }
 
 .tocUpgrade {
-  background: linear-gradient(180deg, transparent 50%, #fde68a 50%);
+  box-shadow: inset 0 -0.55em 0 #fde68a;
   padding: 0 2px;
 }
 
