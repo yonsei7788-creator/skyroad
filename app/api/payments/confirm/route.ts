@@ -173,15 +173,14 @@ export const POST = async (request: NextRequest) => {
     console.error("주문 상태 업데이트 오류:", orderUpdateError);
   }
 
-  // 5-1. 쿠폰 사용 마킹 + referral_usages 업데이트
+  // 5-1. 쿠폰 사용 마킹
   const { data: orderDetail } = await dbClient
     .from("orders")
-    .select("coupon_id, plan_id, amount, plans!inner(name)")
+    .select("coupon_id")
     .eq("id", orders.id)
     .single();
 
   if (orderDetail?.coupon_id) {
-    // 쿠폰 사용 완료 처리
     const { error: couponError } = await dbClient
       .from("user_coupons")
       .update({
@@ -192,24 +191,6 @@ export const POST = async (request: NextRequest) => {
 
     if (couponError) {
       console.error("쿠폰 사용 마킹 실패 — 재사용 위험:", couponError);
-    }
-
-    // referral_usages에 결제 정보 기록
-    const planInfo = orderDetail.plans as unknown as { name: string };
-    const { error: usageUpdateError } = await dbClient
-      .from("referral_usages")
-      .update({
-        order_id: orders.id,
-        plan_name: planInfo?.name ?? null,
-        paid_amount: orderDetail.amount ?? amount,
-      })
-      .eq("coupon_id", orderDetail.coupon_id);
-
-    if (usageUpdateError) {
-      console.error(
-        "referral_usages 업데이트 실패 — 수수료 누락 위험:",
-        usageUpdateError
-      );
     }
   }
 

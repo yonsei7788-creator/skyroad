@@ -43,7 +43,7 @@ interface ReferralCode {
   partner_type: string;
   max_usages: number;
   current_usages: number;
-  commission_rate: number;
+  commission_per_use: number;
   discount_amount: number;
   valid_from: string;
   valid_until: string | null;
@@ -386,12 +386,12 @@ const ReferralCodesPage = () => {
       align: "right",
       render: (item) => {
         const paid = Number(item.total_paid_amount) || 0;
-        const rate = Number(item.commission_rate) || 0;
+        const commission = Math.round(paid * 0.17);
         return (
           <span className={styles.commissionText}>
             {formatCurrency(paid)}원
             <span className={styles.commissionSub}>
-              / {formatCurrency(Math.round(paid * rate))}원
+              / {formatCurrency(commission)}원
             </span>
           </span>
         );
@@ -436,7 +436,7 @@ const ReferralCodesPage = () => {
   const drawerCode = selectedCode;
   const drawerStatus = drawerCode ? getCodeStatus(drawerCode) : null;
   const drawerTotalPaid = Number(drawerCode?.total_paid_amount) || 0;
-  const drawerCommissionRate = Number(drawerCode?.commission_rate) || 0;
+  const drawerCommission = Math.round(drawerTotalPaid * 0.17);
 
   return (
     <motion.div
@@ -820,14 +820,9 @@ const ReferralCodesPage = () => {
                       {formatCurrency(drawerTotalPaid)}원
                     </span>
 
-                    <span className={styles.drawerLabel}>
-                      수수료 ({Math.round(drawerCommissionRate * 100)}%)
-                    </span>
+                    <span className={styles.drawerLabel}>수수료 (17%)</span>
                     <span className={styles.drawerValue}>
-                      {formatCurrency(
-                        Math.round(drawerTotalPaid * drawerCommissionRate)
-                      )}
-                      원
+                      {formatCurrency(drawerCommission)}원
                     </span>
 
                     <span className={styles.drawerLabel}>생성일</span>

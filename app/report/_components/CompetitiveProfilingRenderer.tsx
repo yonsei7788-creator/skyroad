@@ -44,9 +44,7 @@ export const CompetitiveProfilingRenderer = ({
           <tbody>
             <tr>
               <td className={styles.tableCellBold}>비교과 수준</td>
-              <td>
-                {level} ({TEMPLATES.zone[level]})
-              </td>
+              <td>{level}</td>
             </tr>
             <tr>
               <td className={styles.tableCellBold}>전공 방향</td>

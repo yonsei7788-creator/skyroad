@@ -61,33 +61,65 @@ export const GET = async (request: NextRequest) => {
     .from("referral_codes")
     .select("is_active, current_usages");
 
-  const { data: usageStats } = await supabase
+  // 전체 결제액: referral_usages.coupon_id → orders.coupon_id 로 조인
+  const { data: allUsages } = await supabase
     .from("referral_usages")
-    .select("paid_amount");
+    .select("coupon_id");
+
+  const allCouponIds = (allUsages ?? [])
+    .map((u) => u.coupon_id)
+    .filter(Boolean) as string[];
+
+  let totalPaidAmount = 0;
+  if (allCouponIds.length > 0) {
+    const { data: paidOrders } = await supabase
+      .from("orders")
+      .select("amount")
+      .in("coupon_id", allCouponIds)
+      .neq("status", "pending_payment");
+
+    totalPaidAmount = paidOrders?.reduce((s, o) => s + (o.amount ?? 0), 0) ?? 0;
+  }
 
   const stats = {
     total: statsData?.length ?? 0,
     active: statsData?.filter((c) => c.is_active).length ?? 0,
     totalUsages:
       statsData?.reduce((s, c) => s + (c.current_usages ?? 0), 0) ?? 0,
-    totalPaidAmount:
-      usageStats?.reduce((s, u) => s + (u.paid_amount ?? 0), 0) ?? 0,
+    totalPaidAmount,
   };
 
-  // 코드별 총 결제액 집계
+  // 코드별 총 결제액 집계: referral_usages → orders (coupon_id 기준)
   const codeIds = (data ?? []).map((c) => c.id);
   const codeUsageMap: Record<string, number> = {};
 
   if (codeIds.length > 0) {
     const { data: codeUsages } = await supabase
       .from("referral_usages")
-      .select("referral_code_id, paid_amount")
+      .select("referral_code_id, coupon_id")
       .in("referral_code_id", codeIds);
 
-    if (codeUsages) {
-      for (const u of codeUsages) {
-        codeUsageMap[u.referral_code_id] =
-          (codeUsageMap[u.referral_code_id] ?? 0) + (u.paid_amount ?? 0);
+    const couponIds = (codeUsages ?? [])
+      .map((u) => u.coupon_id)
+      .filter(Boolean) as string[];
+
+    if (couponIds.length > 0) {
+      const { data: paidOrders } = await supabase
+        .from("orders")
+        .select("coupon_id, amount")
+        .in("coupon_id", couponIds)
+        .neq("status", "pending_payment");
+
+      const couponToCode: Record<string, string> = {};
+      for (const u of codeUsages ?? []) {
+        if (u.coupon_id) couponToCode[u.coupon_id] = u.referral_code_id;
+      }
+
+      for (const o of paidOrders ?? []) {
+        const codeId = couponToCode[o.coupon_id];
+        if (codeId) {
+          codeUsageMap[codeId] = (codeUsageMap[codeId] ?? 0) + (o.amount ?? 0);
+        }
       }
     }
   }
