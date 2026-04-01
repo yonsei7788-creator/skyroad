@@ -829,9 +829,9 @@ export const executeTask = async (
                 let safety = 0;
                 for (const c of parsed) {
                   if (!c.cutoffData) continue;
-                  // 교과 50%cut 값 추출 (첫 번째 교과 항목)
+                  // 교과 합격선 값 추출 (첫 번째 교과 항목)
                   const cutMatch = c.cutoffData.match(
-                    /교과\([^)]*\):\s*50%cut=([\d.]+)/
+                    /교과\([^)]*\):\s*합격선=([\d.]+)/
                   );
                   if (!cutMatch) continue;
                   const cut = parseFloat(cutMatch[1]);

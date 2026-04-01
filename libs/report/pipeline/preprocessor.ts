@@ -1746,7 +1746,7 @@ const nineToFiveGrade = (nine: number): number => {
 
 /**
  * 대학의 대표 커트라인 등급 산출 (9등급제 기준).
- * 학종 50%cut 우선, 없으면 교과 50%cut fallback.
+ * 학종 합격선 우선, 없으면 교과 합격선 fallback.
  */
 const getRepresentativeCutoff = (
   cutoffs: {
@@ -2013,7 +2013,7 @@ export const buildUniversityCandidatesText = (
               cut != null && gradingSystem === "5등급제"
                 ? nineToFiveGrade(cut)
                 : cut;
-            return `${c.admissionType}(${c.admissionName}): 50%cut=${cutLabel ?? "-"}, 경쟁률=${c.competitionRate}`;
+            return `${c.admissionType}(${c.admissionName}): 합격선=${cutLabel ?? "-"}, 경쟁률=${c.competitionRate}`;
           })
           .join(" / ");
         result.push({
@@ -2194,7 +2194,6 @@ export const buildUniversityCandidatesText = (
     const candidates = selected.slice(0, MAX_CANDIDATES).map((c) => ({
       university: c.university,
       department: c.department,
-      ...(c.cutoffSummary ? { cutoffData: c.cutoffSummary } : {}),
     }));
 
     return JSON.stringify(candidates, null, 2);
@@ -2255,7 +2254,7 @@ export const buildUniversityCandidatesText = (
                 cut != null && gradingSystem === "5등급제"
                   ? nineToFiveGrade(cut)
                   : cut;
-              return `${c.admissionType}(${c.admissionName}): 50%cut=${cutLabel ?? "-"}, 경쟁률=${c.competitionRate}`;
+              return `${c.admissionType}(${c.admissionName}): 합격선=${cutLabel ?? "-"}, 경쟁률=${c.competitionRate}`;
             })
             .join(" / ")
         : null;
@@ -2363,10 +2362,9 @@ export const buildUniversityCandidatesText = (
   }
   filtered = filtered.slice(0, MAX_CANDIDATES);
 
-  const candidates = filtered.map(({ university, cutoffSummary }) => ({
+  const candidates = filtered.map(({ university }) => ({
     university,
     department: resolveActualDepartment(university, majorInfo),
-    ...(cutoffSummary ? { cutoffData: cutoffSummary } : {}),
   }));
 
   return JSON.stringify(candidates, null, 2);
