@@ -381,12 +381,12 @@ const ReferralCodesPage = () => {
     },
     {
       key: "paidAmount",
-      header: "결제액 / 수수료",
+      header: "결제액 / RS쉐어",
       width: "160px",
       align: "right",
       render: (item) => {
         const paid = Number(item.total_paid_amount) || 0;
-        const commission = Math.round(paid * 0.17);
+        const commission = Math.round(paid * 0.2);
         return (
           <span className={styles.commissionText}>
             {formatCurrency(paid)}원
@@ -436,7 +436,7 @@ const ReferralCodesPage = () => {
   const drawerCode = selectedCode;
   const drawerStatus = drawerCode ? getCodeStatus(drawerCode) : null;
   const drawerTotalPaid = Number(drawerCode?.total_paid_amount) || 0;
-  const drawerCommission = Math.round(drawerTotalPaid * 0.17);
+  const drawerCommission = Math.round(drawerTotalPaid * 0.2);
 
   return (
     <motion.div
@@ -820,7 +820,7 @@ const ReferralCodesPage = () => {
                       {formatCurrency(drawerTotalPaid)}원
                     </span>
 
-                    <span className={styles.drawerLabel}>수수료 (17%)</span>
+                    <span className={styles.drawerLabel}>RS쉐어 (20%)</span>
                     <span className={styles.drawerValue}>
                       {formatCurrency(drawerCommission)}원
                     </span>
