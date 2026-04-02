@@ -6,6 +6,7 @@ export interface InterviewPrepPromptInput {
   subjectAnalysisResult: string;
   studentProfile: string;
   academicData: string;
+  studentGrade: number;
   isMedical?: boolean;
 }
 
@@ -67,6 +68,8 @@ export const buildInterviewPrepPrompt = (
     : "";
 
   return `${medicalInterviewContext}## 작업
+이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.
+
 학생의 생기부를 바탕으로 예상 면접 질문을 생성하세요.
 
 ## 출력 JSON 스키마

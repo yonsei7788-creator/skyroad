@@ -8,6 +8,7 @@ export interface CompetencyScorePromptInput {
   preprocessedAcademicData: string;
   attendanceSummary: string;
   studentProfile: string;
+  studentGrade: number;
   majorEvaluationContext?: string;
   gradingSystem?: "5등급제" | "9등급제";
   isMedical?: boolean;
@@ -144,6 +145,13 @@ export const buildCompetencyScorePrompt = (
 
   return `${gyogwaOnlyContext}${fiveGradeScoring}${medicalScoringContext}## 작업
 학생의 역량을 300점 만점 체계로 정량 평가하고, 발전가능성은 별도 등급으로 평가하세요.
+
+## 이 섹션의 역할
+이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.
+
+4대 역량(학업·진로·공동체·발전가능성)을 **점수로 정량화**하고 점수 근거를 해석합니다.
+개별 활동이나 세특 내용의 상세 서술은 하지 않고, 점수 산출에 필요한 핵심 근거만 간결하게 언급합니다.
+이 리포트의 다른 섹션에서 이미 사용한 표현이나 문장 구조가 있을 수 있으므로, 같은 내용을 언급하더라도 매번 새로운 문장으로 서술하세요.
 
 ## 점수 체계
 - 총점: 학업역량(100) + 진로역량(100) + 공동체역량(100) = 300점 만점
@@ -409,6 +417,8 @@ export const buildGyogwaCompetencyScorePrompt = (
 
   // 기존 프롬프트의 채점 체계/스키마를 재사용하되 학종 프레임 제거
   return `${fiveGradeScoring}## 작업
+이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.
+
 이 학생은 모든 지원 대학이 **학생부교과전형**입니다.
 학생의 역량을 300점 만점 체계로 정량 평가하고, 발전가능성은 별도 등급으로 평가하세요.
 

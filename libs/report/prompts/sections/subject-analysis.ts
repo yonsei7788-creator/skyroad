@@ -6,6 +6,7 @@ import { SESPEC_EXPRESSION_GUIDE } from "../../constants/major-evaluation-criter
 export interface SubjectAnalysisPromptInput {
   subjectData: string;
   studentProfile: string;
+  studentGrade: number;
   isMedical?: boolean;
   gradingSystem?: "5등급제" | "9등급제";
   isGyogwaOnly?: boolean;
@@ -198,6 +199,13 @@ export const buildSubjectAnalysisPrompt = (
 
   return `${gyogwaOnlyContext}${medicalSubjectContext}## 작업
 학생의 세부능력 및 특기사항(세특)을 과목별로 분석하세요.
+
+## 이 섹션의 역할
+이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.
+
+세특 텍스트에 기록된 **탐구 주제의 깊이, 교과 연계성, 학문적 발전 가능성**을 분석합니다.
+창체 활동 자체의 분석은 activityAnalysis, 성적 추이는 academicAnalysis, 과목 이수 구조는 courseAlignment에서 각각 다룹니다.
+이 리포트의 다른 섹션에서 이미 사용한 표현이나 문장 구조가 있을 수 있으므로, 같은 내용을 언급하더라도 매번 새로운 문장으로 서술하세요.
 
 ## ⛔ 과목 다양성 규칙 (필수 — 위반 시 품질 실패)
 - **같은 교과군(수학, 과학, 국어, 영어, 사회)에서 최대 2개 과목만** 분석 대상에 포함하세요.

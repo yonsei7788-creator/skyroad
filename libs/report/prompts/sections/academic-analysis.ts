@@ -8,6 +8,7 @@ export interface AcademicAnalysisPromptInput {
   preprocessedAcademicData: string;
   studentProfile: string;
   gradingSystem: "5등급제" | "9등급제";
+  studentGrade: number;
   /** Phase 2에서 감지된 생기부 기반 강점 계열 (예: "예체능교육", "의생명") */
   detectedMajorGroup?: string;
   /** 학년별 이수 완료 과목 요약 (이수 완료 과목 성적 개선 권고 방지용) */
@@ -152,6 +153,8 @@ export const buildGyogwaAcademicAnalysisPrompt = (
 - schoolTypeAdjustment 필드를 출력하지 마세요.
 
 ## 작업
+이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.
+
 이 학생은 모든 희망대학이 **학생부교과전형**입니다.
 정량 분석 결과를 바탕으로, **최종 등급과 합격선 비교** 중심의 성적 분석을 작성하세요.
 
@@ -281,6 +284,13 @@ export const buildAcademicAnalysisPrompt = (
 
 ## 작업
 정량 분석 결과를 바탕으로 학생의 교과 성적에 대한 해석과 전략적 분석을 작성하세요.
+
+## 이 섹션의 역할
+이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.
+
+**성적 수치 기반의 추이·편차·변화 패턴**을 분석합니다.
+세특 내용 분석은 subjectAnalysis, 과목 이수 구조는 courseAlignment, 활동 분석은 activityAnalysis에서 각각 다루므로, 여기서는 등급·점수 데이터에 기반한 정량 분석에 집중합니다.
+이 리포트의 다른 섹션에서 이미 사용한 표현이나 문장 구조가 있을 수 있으므로, 같은 내용을 언급하더라도 매번 새로운 문장으로 서술하세요.
 
 ## 입력 데이터
 

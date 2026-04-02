@@ -22,8 +22,6 @@ export interface AdmissionStrategyPromptInput {
   competencyExtraction?: string;
   /** 과목별 세특 분석 결과 — 학종 chanceRationale 작성 시 참조 */
   subjectAnalysisResult?: string;
-  /** admissionPrediction 결과 — 전형 전략과 합격 예측의 일관성 보장 */
-  admissionPredictionResult?: string;
   /** 교과전형 전용 성적 분석 (과목별 데이터 제거됨) — 교과 type에서만 사용 */
   gyogwaAcademicAnalysis?: string;
   /** 모의고사 데이터 존재 여부 */
@@ -381,15 +379,6 @@ ${input.subjectAnalysisResult}
 ### 학생 프로필
 ${input.studentProfile}
 
-${
-  input.admissionPredictionResult
-    ? `### 합격 예측 결과 (admissionPrediction — 반드시 참조)
-⚠️ 아래는 이전 단계에서 생성된 전형별 합격 예측 결과입니다. 전형 전략은 이 결과와 **반드시 일관**되어야 합니다.
-- 합격 예측에서 "경쟁력이 낮다"고 판단된 전형을 전략에서 "목표 가능"이라고 서술하면 모순이 됩니다.
-- 합격 예측의 chance 값과 전형 전략의 suitability/chance 값이 일관되어야 합니다.
-${input.admissionPredictionResult}`
-    : ""
-}
 
 ## ⛔ 출력 전 자기 검증 (반드시 수행)
 JSON을 출력하기 전에 아래 항목을 점검하세요. 하나라도 위반하면 수정 후 출력합니다:

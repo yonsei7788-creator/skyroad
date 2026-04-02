@@ -5,6 +5,7 @@ import type { ReportPlan } from "../../types.ts";
 export interface AttendanceAnalysisPromptInput {
   attendanceSummary: string;
   studentProfile: string;
+  studentGrade: number;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -33,6 +34,8 @@ export const buildAttendanceAnalysisPrompt = (
   plan: ReportPlan
 ): string => {
   return `## 작업
+이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.
+
 학생의 출결 데이터를 분석하고 입시에 미치는 영향을 평가하세요.
 
 ## 중요: 수치 계산 금지

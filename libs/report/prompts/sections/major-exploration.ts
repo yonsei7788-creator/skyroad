@@ -6,6 +6,7 @@ export interface MajorExplorationPromptInput {
   competencyExtraction: string;
   academicAnalysis: string;
   studentProfile: string;
+  studentGrade: number;
   targetDepartment?: string;
   /** Phase 2에서 감지된 생기부 기반 강점 계열 */
   detectedMajorGroup?: string;
@@ -22,6 +23,13 @@ export const buildMajorExplorationPrompt = (
 ): string => {
   return `## 작업
 학생의 역량과 활동 이력을 분석하여 적합한 전공/학과를 추천하세요.
+
+## 이 섹션의 역할
+이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.
+
+생기부 강점을 기반으로 **적합 학과를 추천하고 적합도를 판단**합니다.
+활동·세특의 상세 분석은 activityAnalysis·subjectAnalysis, 합격 가능성은 admissionPrediction, 이수 과목 매칭은 courseAlignment에서 각각 다루므로, 여기서는 학과 적합도 판단 근거만 간결하게 서술합니다.
+이 리포트의 다른 섹션에서 이미 사용한 표현이나 문장 구조가 있을 수 있으므로, 같은 내용을 언급하더라도 매번 새로운 문장으로 서술하세요.
 
 ## ⚠️ 분석 방향 원칙
 ⚠️ 희망 대학/학과는 참고 정보일 뿐입니다. 전공 추천은 반드시 생기부 데이터 자체에서 도출된 강점과 특성을 기반으로 해야 하며, 희망 학과에 끼워맞추려 해서는 안 됩니다.

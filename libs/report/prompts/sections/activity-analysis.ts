@@ -8,6 +8,7 @@ export interface ActivityAnalysisPromptInput {
   competencyExtraction: string;
   studentProfile: string;
   curriculumVersion: "2015" | "2022";
+  studentGrade: number;
   /** 계열별 입학사정관 평가 기준 */
   majorEvaluationContext?: string;
   isMedical?: boolean;
@@ -161,6 +162,13 @@ export const buildActivityAnalysisPrompt = (
 
   return `${gyogwaOnlyContext}${medicalActivityContext}## 작업
 학생의 창의적 체험활동(창체)을 영역별로 분석하세요.
+
+## 이 섹션의 역할
+이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.
+
+창체 활동(자율·동아리·진로)의 **참여도, 깊이, 성장 궤적, 입시 영향력**을 분석합니다.
+교과 성적은 academicAnalysis, 세특 탐구 내용은 subjectAnalysis, 인성·태도는 behaviorAnalysis, 부족한 점은 weaknessAnalysis에서 각각 다룹니다.
+이 리포트의 다른 섹션에서 이미 사용한 표현이나 문장 구조가 있을 수 있으므로, 같은 내용을 언급하더라도 매번 새로운 문장으로 서술하세요.
 
 ## 교육과정 버전 확인
 - 2015 개정 교육과정: 자율활동, 동아리활동, 진로활동
