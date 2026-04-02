@@ -101,7 +101,7 @@ const FIELD_LABELS: Record<string, string> = {
   // 학업
   subjectPerformances: "교과별 성적",
   gradeHistory: "학년별 성적",
-  gradeAnalysis: "성적 분석",
+  gradeAnalysis: "성적 구조 분석",
   classAverage: "반 평균",
   standardDeviation: "표준편차",
   studentCount: "수강 인원",
@@ -213,7 +213,6 @@ const FIELD_LABELS: Record<string, string> = {
 
   // 전임 컨설턴트 2차 검수
   consultantReview: "전임 컨설턴트 2차 검수",
-  gradeAnalysis: "성적 구조 분석",
   courseEffort: "전공 교과 이수 노력 + 성취도",
   completionDirection: "생기부 마무리 방향",
   finalAdvice: "종합 한줄 조언",

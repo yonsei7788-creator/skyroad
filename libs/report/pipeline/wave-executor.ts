@@ -174,6 +174,26 @@ export const executeTask = async (
   const isMedical =
     detectedAsMedical && avg != null && avg <= medicalGradeThreshold;
 
+  /** consultantReview 전달용: JSON 내 "university" 필드를 제거하여 대학명 노출 방지 */
+  const stripUniversityNames = (jsonText: string): string => {
+    try {
+      const parsed = JSON.parse(jsonText);
+      const walk = (obj: unknown): void => {
+        if (Array.isArray(obj)) {
+          obj.forEach(walk);
+        } else if (obj && typeof obj === "object") {
+          const rec = obj as Record<string, unknown>;
+          delete rec.university;
+          Object.values(rec).forEach(walk);
+        }
+      };
+      walk(parsed);
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      return jsonText;
+    }
+  };
+
   /** 교과전형 전용: 정량분석 결과(acadAnalText)에서 학기별/과목별 데이터 제거
    *  교과전형은 최종 평균 등급으로만 판단하므로, 학기별 추세와 개별 과목 데이터를 제거 */
   const stripSemesterData = (jsonText: string): string => {
@@ -1043,8 +1063,12 @@ export const executeTask = async (
         academicAnalysis: consultAcadText,
         studentProfile: texts.studentProfileText,
         subjectAnalysisResult: ser.subjAnalysisText!,
-        admissionPredictionResult: ser.admPredText,
-        admissionStrategyResult: ser.admStratText,
+        admissionPredictionResult: ser.admPredText
+          ? stripUniversityNames(ser.admPredText)
+          : undefined,
+        admissionStrategyResult: ser.admStratText
+          ? stripUniversityNames(ser.admStratText)
+          : undefined,
         weaknessAnalysisResult: ser.weaknessText,
         gradingSystem: state.preprocessedData?.gradingSystem,
         studentGrade: studentInfo.grade,
