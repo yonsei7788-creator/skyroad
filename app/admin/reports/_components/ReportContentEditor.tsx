@@ -211,6 +211,26 @@ const FIELD_LABELS: Record<string, string> = {
   nextSemesterStrategy: "다음 학기 전략",
   sampleEvaluation: "세특 서술 예시",
 
+  // 전임 컨설턴트 2차 검수
+  consultantReview: "전임 컨설턴트 2차 검수",
+  gradeAnalysis: "성적 구조 분석",
+  courseEffort: "전공 교과 이수 노력 + 성취도",
+  completionDirection: "생기부 마무리 방향",
+  finalAdvice: "종합 한줄 조언",
+  evaluationGuide: "입학사정관 평가 가이드",
+  majorFit: "전공 적합성",
+  academicAbility: "학업 역량",
+  inquiryAbility: "탐구 역량",
+  growthPotential: "발전 가능성",
+  keyInsights: "핵심 인사이트",
+  analysisMethodology: "분석 방법론",
+
+  // 비교과 경쟁력 분석
+  competitiveProfiling: "비교과 경쟁력 분석",
+  level: "비교과 수준",
+  majorDirection: "전공 방향",
+  connectivity: "활동 연계성",
+
   // 기타
   maxCapacityChars: "최대 글자수",
   actualChars: "실제 글자수",

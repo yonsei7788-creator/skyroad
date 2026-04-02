@@ -36,7 +36,12 @@ const PART_CONFIG = [
   {
     label: "부록",
     title: "부록",
-    sectionIds: ["majorExploration"],
+    sectionIds: ["majorExploration", "competitiveProfiling"],
+  },
+  {
+    label: "총평",
+    title: "전임 컨설턴트",
+    sectionIds: ["consultantReview"],
   },
 ];
 
