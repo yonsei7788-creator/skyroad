@@ -206,7 +206,16 @@ export const postprocess = (
   const admStrat = validatedSections.find(
     (s) => s.sectionId === "admissionStrategy"
   ) as any;
-  if (admPred && admStrat) {
+  // 새 구조(recommendedAdmissionType 기반) 여부 판별 — 새 구조면 chance 관련 처리 전체 건너뛰기
+  const isNewAdmissionFormat =
+    admStrat &&
+    Array.isArray(admStrat.simulations) &&
+    admStrat.simulations.some(
+      (sim: any) =>
+        Array.isArray(sim.cards) &&
+        sim.cards.some((c: any) => c.recommendedAdmissionType)
+    );
+  if (admPred && admStrat && !isNewAdmissionFormat) {
     // admissionStrategy의 simulations에서 대학별 chance 수집
     const strategyChanceMap = new Map<string, string>();
     if (Array.isArray(admStrat.simulations)) {
@@ -308,7 +317,12 @@ export const postprocess = (
   }
 
   // admissionStrategy: simulations 내 존재하지 않는 대학-학과 조합 제거
-  if (admStrat && Array.isArray(admStrat.simulations)) {
+  // 새 구조(recommendedAdmissionType 기반)일 때는 코드에서 확정한 대학이므로 건너뛰기
+  if (
+    admStrat &&
+    Array.isArray(admStrat.simulations) &&
+    !isNewAdmissionFormat
+  ) {
     for (const sim of admStrat.simulations) {
       if (!Array.isArray(sim.cards)) continue;
       sim.cards = sim.cards.filter((card: any) => {
@@ -447,124 +461,134 @@ export const postprocess = (
             university: string;
             department: string;
             cutoffData?: string;
+            recommendedAdmissionType?: "학종" | "교과";
           }[];
 
-          // 학생과 가장 가까운 cutoff를 대표값으로 선택하는 헬퍼
-          const closestCutoff = (
-            cuts: number[],
-            studentGrade: number
-          ): number | null => {
-            if (cuts.length === 0) return null;
-            return cuts.reduce((best, g) =>
-              Math.abs(g - studentGrade) < Math.abs(best - studentGrade)
-                ? g
-                : best
-            );
-          };
-
-          // 특수전형 키워드 (preprocessor와 동일)
-          const SPECIAL_KEYWORDS = [
-            "기회균형",
-            "고른기회",
-            "기회균등",
-            "농어촌",
-            "사회배려",
-            "국가보훈",
-            "특성화고",
-            "계열적합",
-          ];
-
-          const cards = candidates.map((cand) => {
-            const rawCutoffs = findCutoffData(cand.university, cand.department);
-            // 특수전형 제외 (preprocessor와 동일 기준)
-            const cutoffs = rawCutoffs.filter(
-              (c: any) =>
-                !SPECIAL_KEYWORDS.some((kw) => c.admissionName.includes(kw))
-            );
-
-            // 교과 chance — 학생과 가장 가까운 cutoff 기준
-            const gyogwaCuts = cutoffs
-              .filter(
-                (c: any) =>
-                  c.admissionType === "교과" && c.cutoff50Grade != null
-              )
-              .map((c: any) => c.cutoff50Grade as number);
-            const gyogwaRep = closestCutoff(gyogwaCuts, studentGrade9);
-            const gyogwaChance = gyogwaRep
-              ? gapToChance(
-                  Math.round((studentGrade9 - gyogwaRep) * 1000) / 1000
-                )
-              : "medium";
-            const gyogwaType =
-              cutoffs.find((c: any) => c.admissionType === "교과")
-                ?.admissionName ?? "학생부교과";
-
-            // 학종 chance — 학생과 가장 가까운 cutoff 기준
-            const hakjongCuts = cutoffs
-              .filter(
-                (c: any) =>
-                  c.admissionType === "학종" && c.cutoff50Grade != null
-              )
-              .map((c: any) => c.cutoff50Grade as number);
-            const hakjongRep = closestCutoff(hakjongCuts, studentGrade9);
-            const hakjongChance = hakjongRep
-              ? gapToChance(
-                  Math.round((studentGrade9 - hakjongRep) * 1000) / 1000
-                )
-              : "medium";
-            const hakjongType =
-              cutoffs.find((c: any) => c.admissionType === "학종")
-                ?.admissionName ?? "학생부종합";
-
-            return {
-              university: cand.university,
-              department: cand.department,
-              comprehensive: {
-                admissionType: hakjongType,
-                chance: hakjongChance,
-              },
-              subject: {
-                admissionType: gyogwaType,
-                chance: gyogwaChance,
-              },
+          // 새 구조(recommendedAdmissionType 포함)면 chance 기반 카드 생성 건너뛰기
+          // wave-executor에서 이미 코드 확정 추천대학으로 대체됨
+          if (candidates.some((c) => c.recommendedAdmissionType)) {
+            // skip — 새 구조에서는 postprocessor가 cards를 덮어쓰지 않음
+          } else {
+            // 학생과 가장 가까운 cutoff를 대표값으로 선택하는 헬퍼
+            const closestCutoff = (
+              cuts: number[],
+              studentGrade: number
+            ): number | null => {
+              if (cuts.length === 0) return null;
+              return cuts.reduce((best, g) =>
+                Math.abs(g - studentGrade) < Math.abs(best - studentGrade)
+                  ? g
+                  : best
+              );
             };
-          });
 
-          // 교과와 학종 chance가 동일하면 교과를 한 단계 내림 (같은 값 방지)
-          const CHANCE_LEVELS = ["very_low", "low", "medium", "high"];
-          for (const card of cards) {
-            const compIdx = CHANCE_LEVELS.indexOf(card.comprehensive.chance);
-            const subjIdx = CHANCE_LEVELS.indexOf(card.subject.chance);
-            if (compIdx === subjIdx && subjIdx > 0) {
-              card.subject.chance = CHANCE_LEVELS[subjIdx - 1];
+            // 특수전형 키워드 (preprocessor와 동일)
+            const SPECIAL_KEYWORDS = [
+              "기회균형",
+              "고른기회",
+              "기회균등",
+              "농어촌",
+              "사회배려",
+              "국가보훈",
+              "특성화고",
+              "계열적합",
+            ];
+
+            const cards = candidates.map((cand) => {
+              const rawCutoffs = findCutoffData(
+                cand.university,
+                cand.department
+              );
+              // 특수전형 제외 (preprocessor와 동일 기준)
+              const cutoffs = rawCutoffs.filter(
+                (c: any) =>
+                  !SPECIAL_KEYWORDS.some((kw) => c.admissionName.includes(kw))
+              );
+
+              // 교과 chance — 학생과 가장 가까운 cutoff 기준
+              const gyogwaCuts = cutoffs
+                .filter(
+                  (c: any) =>
+                    c.admissionType === "교과" && c.cutoff50Grade != null
+                )
+                .map((c: any) => c.cutoff50Grade as number);
+              const gyogwaRep = closestCutoff(gyogwaCuts, studentGrade9);
+              const gyogwaChance = gyogwaRep
+                ? gapToChance(
+                    Math.round((studentGrade9 - gyogwaRep) * 1000) / 1000
+                  )
+                : "medium";
+              const gyogwaType =
+                cutoffs.find((c: any) => c.admissionType === "교과")
+                  ?.admissionName ?? "학생부교과";
+
+              // 학종 chance — 학생과 가장 가까운 cutoff 기준
+              const hakjongCuts = cutoffs
+                .filter(
+                  (c: any) =>
+                    c.admissionType === "학종" && c.cutoff50Grade != null
+                )
+                .map((c: any) => c.cutoff50Grade as number);
+              const hakjongRep = closestCutoff(hakjongCuts, studentGrade9);
+              const hakjongChance = hakjongRep
+                ? gapToChance(
+                    Math.round((studentGrade9 - hakjongRep) * 1000) / 1000
+                  )
+                : "medium";
+              const hakjongType =
+                cutoffs.find((c: any) => c.admissionType === "학종")
+                  ?.admissionName ?? "학생부종합";
+
+              return {
+                university: cand.university,
+                department: cand.department,
+                comprehensive: {
+                  admissionType: hakjongType,
+                  chance: hakjongChance,
+                },
+                subject: {
+                  admissionType: gyogwaType,
+                  chance: gyogwaChance,
+                },
+              };
+            });
+
+            // 교과와 학종 chance가 동일하면 교과를 한 단계 내림 (같은 값 방지)
+            const CHANCE_LEVELS = ["very_low", "low", "medium", "high"];
+            for (const card of cards) {
+              const compIdx = CHANCE_LEVELS.indexOf(card.comprehensive.chance);
+              const subjIdx = CHANCE_LEVELS.indexOf(card.subject.chance);
+              if (compIdx === subjIdx && subjIdx > 0) {
+                card.subject.chance = CHANCE_LEVELS[subjIdx - 1];
+              }
             }
-          }
 
-          // simulations 구조에 코드 생성 카드 주입
-          // 교과 커트라인(50%cut) 낮은 순(합격선 높은 순)으로 정렬
-          cards.sort((a, b) => {
-            const aCut = findCutoffData(a.university, a.department)
-              .filter(
-                (c: any) =>
-                  c.admissionType === "교과" && c.cutoff50Grade != null
-              )
-              .map((c: any) => c.cutoff50Grade as number);
-            const bCut = findCutoffData(b.university, b.department)
-              .filter(
-                (c: any) =>
-                  c.admissionType === "교과" && c.cutoff50Grade != null
-              )
-              .map((c: any) => c.cutoff50Grade as number);
-            const aMin = aCut.length > 0 ? Math.min(...aCut) : 9;
-            const bMin = bCut.length > 0 ? Math.min(...bCut) : 9;
-            return aMin - bMin;
-          });
+            // simulations 구조에 코드 생성 카드 주입
+            // 교과 커트라인(50%cut) 낮은 순(합격선 높은 순)으로 정렬
+            cards.sort((a, b) => {
+              const aCut = findCutoffData(a.university, a.department)
+                .filter(
+                  (c: any) =>
+                    c.admissionType === "교과" && c.cutoff50Grade != null
+                )
+                .map((c: any) => c.cutoff50Grade as number);
+              const bCut = findCutoffData(b.university, b.department)
+                .filter(
+                  (c: any) =>
+                    c.admissionType === "교과" && c.cutoff50Grade != null
+                )
+                .map((c: any) => c.cutoff50Grade as number);
+              const aMin = aCut.length > 0 ? Math.min(...aCut) : 9;
+              const bMin = bCut.length > 0 ? Math.min(...bCut) : 9;
+              return aMin - bMin;
+            });
 
-          admStrat.simulations = [{ description: "", cards }];
+            admStrat.simulations = [{ description: "", cards }];
 
-          console.log(
-            `[report:${reportId}] admissionStrategy 카드 코드 생성: ${cards.length}개 (${cards.map((c: any) => c.university).join(", ")})`
-          );
+            console.log(
+              `[report:${reportId}] admissionStrategy 카드 코드 생성: ${cards.length}개 (${cards.map((c: any) => c.university).join(", ")})`
+            );
+          } // else 닫기 (새 구조가 아닌 경우만 실행)
         } catch {
           // 파싱 실패 시 AI 생성 카드 유지
         }
@@ -2020,12 +2044,10 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/([가-힣])\s+(?:인|가|의)\s+(?=[가-힣''""])/g, "$1 "],
 
   // ── 계열 명칭 통일 (AI가 축약하는 패턴 → 정규 명칭으로 복원) ──
-  // "의학 계열" → "의학/생명과학 계열" (단, "의학/생명과학 계열"은 건너뜀)
-  [/(?<!\/생명과학\s)(?<!\/생명과학)의학 계열/g, "의학/생명과학 계열"],
-  // "의생명 계열" → "의학/생명과학 계열"
-  [/의생명 계열/g, "의학/생명과학 계열"],
-  // "메디컬 계열" → "의학/생명과학 계열" (혹시 남아있을 경우)
-  [/메디컬 계열/g, "의학/생명과학 계열"],
+  // "의생명 계열" → "의학 계열"
+  [/의생명 계열/g, "의학 계열"],
+  // "메디컬 계열" → "의학 계열"
+  [/메디컬 계열/g, "의학 계열"],
 ];
 
 const sanitizeAiTone = (text: string): string => {

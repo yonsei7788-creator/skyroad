@@ -61,10 +61,24 @@ export const AdmissionStrategyRenderer = ({
             </div>
           ) : null;
         }
+        // 새 구조: recommendedAdmissionType이 있으면 추천 전형 표시
+        const isNewFormat = allCards.some(
+          (card) => card.recommendedAdmissionType
+        );
+        console.log(allCards);
+
         return (
           <div>
             <div className={`${styles.h3} ${styles.mb8}`}>대학 추천</div>
-            {desc && (
+            {isNewFormat && (
+              <p className={`${styles.small} ${styles.mb12}`}>
+                <span className={styles.markerYellow}>
+                  추천된 학교, 학과, 전형은 합격 가능성이 있거나 인재상에
+                  부합하는 최적의 선택지만 선별했습니다.
+                </span>
+              </p>
+            )}
+            {!isNewFormat && desc && (
               <p className={`${styles.small} ${styles.mb12}`}>
                 {safeText(desc)}
               </p>
@@ -74,29 +88,52 @@ export const AdmissionStrategyRenderer = ({
                 <tr>
                   <th>대학</th>
                   <th>학과</th>
-                  <th>학종</th>
-                  <th>교과</th>
+                  {isNewFormat ? (
+                    <th>추천 전형</th>
+                  ) : (
+                    <>
+                      <th>학종</th>
+                      <th>교과</th>
+                    </>
+                  )}
                 </tr>
               </thead>
+
               <tbody>
                 {allCards.map((card, idx) => (
                   <tr key={idx}>
                     <td className={styles.tableCellBold}>{card.university}</td>
                     <td className={styles.small}>{card.department}</td>
-                    <td className={styles.tableAlignCenter}>
-                      {card.comprehensive?.chance ? (
-                        <ReportBadge chance={card.comprehensive.chance} />
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className={styles.tableAlignCenter}>
-                      {card.subject?.chance ? (
-                        <ReportBadge chance={card.subject.chance} />
-                      ) : (
-                        "—"
-                      )}
-                    </td>
+                    {isNewFormat ? (
+                      <td className={styles.small}>
+                        {["학생부종합전형", "학종"].includes(
+                          card.recommendedAdmissionType ?? ""
+                        )
+                          ? "학생부종합"
+                          : ["학생부교과전형", "교과"].includes(
+                                card.recommendedAdmissionType ?? ""
+                              )
+                            ? "학생부교과"
+                            : "—"}
+                      </td>
+                    ) : (
+                      <>
+                        <td className={styles.tableAlignCenter}>
+                          {card.comprehensive?.chance ? (
+                            <ReportBadge chance={card.comprehensive.chance} />
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className={styles.tableAlignCenter}>
+                          {card.subject?.chance ? (
+                            <ReportBadge chance={card.subject.chance} />
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>

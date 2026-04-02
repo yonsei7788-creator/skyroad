@@ -3353,6 +3353,14 @@
   white-space: nowrap;
 }
 
+.admissionUniType {
+  font-size: var(--report-fs-caption);
+  color: var(--report-fg-primary);
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* ============================================
    Section Renderers Part B
    Academic, UniversityStrategy, StoryAnalysis,

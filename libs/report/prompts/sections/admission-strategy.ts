@@ -522,16 +522,6 @@ ${input.academicAnalysis}
 ### 학생 프로필
 ${input.studentProfile}
 
-${
-  input.admissionPredictionResult
-    ? `### 합격 예측 결과 (admissionPrediction — 반드시 참조)
-⚠️ 아래는 이전 단계에서 생성된 전형별 합격 예측 결과입니다. 전형 전략은 이 결과와 **반드시 일관**되어야 합니다.
-- 합격 예측에서 "경쟁력이 낮다"고 판단된 전형을 전략에서 "목표 가능"이라고 서술하면 안 됩니다.
-- 합격 예측에서 "합격 가능성이 있다"고 판단된 전형을 전략에서 "불가능"이라고 서술하면 안 됩니다.
-${input.admissionPredictionResult}`
-    : ""
-}
-
 ${PLAN_SPECIFIC[plan]}`;
 };
 

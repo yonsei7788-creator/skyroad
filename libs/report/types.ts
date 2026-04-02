@@ -242,8 +242,13 @@ export interface CompetencyScoreSection extends BaseSection {
 interface UniversityPrediction {
   university: string;
   department: string;
-  chance: AdmissionChance;
-  rationale: string;
+  /** @deprecated 기존 리포트 호환용. 새 리포트에서는 recommendedAdmissionType 사용 */
+  chance?: AdmissionChance;
+  rationale?: string;
+  /** 추천 전형 (새 리포트) */
+  recommendedAdmissionType?: "학종" | "교과";
+  /** 추천 티어 (새 리포트) */
+  tier?: "reach" | "ambitious" | "fit" | "safety";
 }
 
 interface AdmissionPredictionItem {
@@ -945,6 +950,10 @@ interface UniversityCard {
   department: string;
   /** @deprecated v5에서 제거됨 — 기존 데이터 호환용 */
   riskLevel?: CardRiskLevel;
+  /** 추천 전형 (새 리포트) */
+  recommendedAdmissionType?: "학종" | "교과";
+  /** 추천 티어 (새 리포트) */
+  tier?: "reach" | "ambitious" | "fit" | "safety";
 
   /** 학생부종합전형 추천 */
   comprehensive: {

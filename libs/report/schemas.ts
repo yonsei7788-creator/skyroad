@@ -189,8 +189,10 @@ export const CompetencyScoreSectionSchema = z.object({
 const UniversityPredictionSchema = z.object({
   university: z.string().min(1),
   department: z.string().min(1),
-  chance: AdmissionChanceSchema,
-  rationale: z.string().min(1),
+  chance: AdmissionChanceSchema.optional(),
+  rationale: z.string().optional(),
+  recommendedAdmissionType: z.enum(["학종", "교과"]).optional(),
+  tier: z.enum(["reach", "ambitious", "fit", "safety"]).optional(),
 });
 
 const AdmissionPredictionItemSchema = z.object({

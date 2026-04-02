@@ -445,6 +445,7 @@ export const executeTask = async (
         preprocessedAcademicData: texts.preprocessedAcademicDataText,
         attendanceSummary: texts.attendanceSummaryText,
         studentProfile: texts.studentProfileText,
+        studentGrade: studentInfo.grade,
         gradingSystem: state.preprocessedData!.gradingSystem,
         isMedical,
         isGyogwaOnly,
@@ -489,6 +490,7 @@ export const executeTask = async (
         preprocessedAcademicData: acadPreprocessedText,
         studentProfile: texts.studentProfileText,
         gradingSystem: preData.gradingSystem,
+        studentGrade: studentInfo.grade,
         detectedMajorGroup: detectedMajorForAcad,
         completedSubjectsByYear: texts.completedSubjectsByYearText,
         isGyogwaOnly,
@@ -512,6 +514,7 @@ export const executeTask = async (
           {
             attendanceSummary: texts.attendanceSummaryText,
             studentProfile: texts.studentProfileText,
+            studentGrade: studentInfo.grade,
           },
           plan
         )
@@ -530,6 +533,7 @@ export const executeTask = async (
             competencyExtraction: ser.compExtrText!,
             studentProfile: texts.studentProfileText,
             curriculumVersion: texts.curriculumVersion,
+            studentGrade: studentInfo.grade,
             isMedical,
             isGyogwaOnly,
           },
@@ -592,6 +596,7 @@ export const executeTask = async (
           {
             subjectData: texts.subjectDataText,
             studentProfile: texts.studentProfileText,
+            studentGrade: studentInfo.grade,
             isMedical,
             gradingSystem: state.preprocessedData!.gradingSystem,
             isGyogwaOnly,
@@ -688,6 +693,7 @@ export const executeTask = async (
             subjectAnalysisResult: ser.subjAnalysisText!,
             studentProfile: texts.studentProfileText,
             academicData: texts.rawAcademicDataText,
+            studentGrade: studentInfo.grade,
             isMedical,
           },
           plan
@@ -796,6 +802,7 @@ export const executeTask = async (
 
         section = merged as ReportSection;
       }
+
       updatedSer = {
         ...updatedSer,
         admPredText: JSON.stringify(section),
@@ -937,7 +944,6 @@ export const executeTask = async (
           competencyExtraction: ser.compExtrText,
           subjectAnalysisResult: ser.subjAnalysisText,
         }),
-        admissionPredictionResult: ser.admPredText,
         hasMockExamData: studentInfo.hasMockExamData,
       };
       section = await callGemini<ReportSection>(
@@ -945,6 +951,38 @@ export const executeTask = async (
           ? buildGyogwaAdmissionStrategyPrompt(stratInput, plan)
           : buildAdmissionStrategyPrompt(stratInput, plan)
       );
+
+      // 코드 확정 추천대학을 simulations.cards에 삽입
+      // AI가 생성한 cards를 코드에서 확정된 추천대학으로 대체
+      try {
+        const candidates = JSON.parse(stratCandidatesText) as {
+          university: string;
+          department: string;
+          tier?: string;
+          recommendedAdmissionType?: "학종" | "교과";
+        }[];
+        const codeRecommended = candidates.filter(
+          (c) => c.recommendedAdmissionType
+        );
+        if (codeRecommended.length > 0) {
+          const strat = section as unknown as Record<string, unknown>;
+          // simulations.cards를 코드 확정 추천대학으로 대체
+          strat.simulations = [
+            {
+              description: "AI 추천 전공 기반 대학 추천",
+              cards: codeRecommended.map((c) => ({
+                university: c.university,
+                department: c.department,
+                recommendedAdmissionType: c.recommendedAdmissionType,
+                tier: c.tier,
+              })),
+            },
+          ];
+        }
+      } catch {
+        // 후보군 파싱 실패 시 AI 생성 결과 유지
+      }
+
       updatedSer = {
         ...updatedSer,
         admStratText: JSON.stringify(section),
@@ -1027,6 +1065,7 @@ export const executeTask = async (
         competencyExtraction: ser.compExtrText!,
         academicAnalysis: ser.acadAnalText!,
         studentProfile: texts.studentProfileText,
+        studentGrade: studentInfo.grade,
         targetDepartment: studentInfo.targetDepartment,
         detectedMajorGroup: detectedMajorForExploration,
       });
@@ -1063,12 +1102,6 @@ export const executeTask = async (
         academicAnalysis: consultAcadText,
         studentProfile: texts.studentProfileText,
         subjectAnalysisResult: ser.subjAnalysisText!,
-        admissionPredictionResult: ser.admPredText
-          ? stripUniversityNames(ser.admPredText)
-          : undefined,
-        admissionStrategyResult: ser.admStratText
-          ? stripUniversityNames(ser.admStratText)
-          : undefined,
         weaknessAnalysisResult: ser.weaknessText,
         gradingSystem: state.preprocessedData?.gradingSystem,
         studentGrade: studentInfo.grade,

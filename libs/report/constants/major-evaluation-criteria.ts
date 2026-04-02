@@ -44,21 +44,21 @@ export interface MajorEvaluationCriteria {
 export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
   {
     majorGroup: "의생명",
-    label: "의학/생명과학 계열",
+    label: "의학 계열",
     keySubjects: ["생명과학", "화학", "수학", "물리"],
     keySubjectFocus:
       "생명과학과 화학의 성취도를 가장 중시하며, 수학(미적분II, 확률과 통계)의 기초 역량도 확인한다.",
     valuedActivities: [
-      "실험 설계 및 수행 경험",
-      "생명 현상에 대한 탐구 보고서",
       "의료/보건 관련 봉사 또는 체험 활동",
+      "임상·환자·의료 맥락의 탐구 보고서",
       "과학 교과 심화 탐구 (논문 읽기, 실험 재현 등)",
+      "의료인 지향 진로 활동",
     ],
     competencyWeights: { academic: 35, career: 35, community: 15, growth: 15 },
     careerFocusPoints: [
       "생명과학II/화학II 이수 여부 및 성취도",
       "실험 기반 탐구의 과학적 방법론 적용",
-      "의료/생명 분야에 대한 지속적 관심과 활동 심화",
+      "의료 분야에 대한 지속적 관심과 활동 심화",
     ],
     riskFactors: [
       "과학 핵심 과목(생명과학/화학) 미이수 또는 낮은 성취도",
@@ -74,6 +74,58 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
       "생명과학Ⅱ",
     ],
     recommendedSubjects: ["확률과 통계", "물리학Ⅰ", "화학Ⅱ"],
+  },
+  {
+    majorGroup: "생명과학",
+    label: "생명과학 계열",
+    keySubjects: ["생명과학", "화학", "수학"],
+    keySubjectFocus:
+      "생명과학의 성취도를 가장 중시하며, 화학과 수학의 기초 역량도 확인한다.",
+    valuedActivities: [
+      "실험 설계 및 수행 경험 (해부, 미생물 배양, 세포 관찰 등)",
+      "생명 현상에 대한 탐구 보고서",
+      "생태/환경/유전학 관련 연구 활동",
+      "과학 교과 심화 탐구 (논문 읽기, 실험 재현 등)",
+    ],
+    competencyWeights: { academic: 35, career: 35, community: 15, growth: 15 },
+    careerFocusPoints: [
+      "생명과학II 이수 여부 및 성취도",
+      "실험 기반 탐구의 과학적 방법론 적용",
+      "생명과학 연구자 지향의 지속적 활동 심화",
+    ],
+    riskFactors: [
+      "과학 핵심 과목(생명과학) 미이수 또는 낮은 성취도",
+      "탐구 활동이 단순 조사 수준에 그침",
+      "진로 방향의 잦은 변경",
+    ],
+    coreSubjects: ["수학Ⅰ", "수학Ⅱ", "화학Ⅰ", "생명과학Ⅰ", "생명과학Ⅱ"],
+    recommendedSubjects: ["확률과 통계", "화학Ⅱ", "지구과학Ⅰ"],
+  },
+  {
+    majorGroup: "바이오",
+    label: "바이오공학 계열",
+    keySubjects: ["생명과학", "화학", "수학", "정보"],
+    keySubjectFocus:
+      "생명과학과 화학을 기반으로, 공학적 응용과 기술 활용 역량을 확인한다.",
+    valuedActivities: [
+      "바이오/유전공학 관련 실험 및 탐구",
+      "생명공학 기술 응용 프로젝트",
+      "AI/데이터 기반 생명정보 분석 활동",
+      "신소재/신약 관련 탐구",
+    ],
+    competencyWeights: { academic: 30, career: 35, community: 15, growth: 20 },
+    careerFocusPoints: [
+      "생명과학/화학 이수 및 성취도",
+      "공학적 응용 사고 (기술·산업 연결)",
+      "바이오 산업·기술에 대한 관심과 활동",
+    ],
+    riskFactors: [
+      "과학 핵심 과목 미이수 또는 낮은 성취도",
+      "순수 연구만 있고 공학·기술 응용 활동이 부족",
+      "진로 방향의 잦은 변경",
+    ],
+    coreSubjects: ["수학Ⅰ", "수학Ⅱ", "화학Ⅰ", "생명과학Ⅰ"],
+    recommendedSubjects: ["미적분", "화학Ⅱ", "생명과학Ⅱ", "정보"],
   },
   {
     majorGroup: "공학",
@@ -549,7 +601,7 @@ export const findCriteriaByMajorGroup = findCriteria;
  * 리포트 전체에서 동일한 계열 명칭을 사용하기 위해 이 함수만 사용할 것.
  */
 const EXTRA_MAJOR_GROUP_LABELS: Record<string, string> = {
-  생명바이오: "생명/바이오 계열",
+  생명바이오: "생명과학 계열", // 레거시 호환
   약학: "약학 계열",
   화학재료: "화학/재료 계열",
 };

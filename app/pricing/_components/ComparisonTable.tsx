@@ -39,7 +39,7 @@ const FEATURES: ComparisonFeature[] = [
     standard: "5개 + 출제 의도",
     premium: "8개 + 모범 답변",
   },
-  { name: "AI 학과 추천", lite: true, standard: true, premium: true },
+  { name: "학과 추천", lite: true, standard: true, premium: true },
   {
     name: "희망 학교·학과 판단",
     lite: false,
