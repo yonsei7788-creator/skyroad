@@ -422,6 +422,21 @@
   color: #ffffff;
 }
 
+.deleteWarning {
+  font-size: 0.8125rem;
+  color: var(--color-fg-tertiary);
+  line-height: 1.5;
+}
+
+.deleteButton {
+  background: var(--color-error-600);
+  color: #ffffff;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background: var(--color-error-500);
+}
+
 /* Confirmation dialog */
 .confirmOverlay {
   position: fixed;

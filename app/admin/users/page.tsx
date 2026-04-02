@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Search, X, Shield, ShieldOff } from "lucide-react";
+import { Loader2, Search, Trash2, X, Shield, ShieldOff } from "lucide-react";
 
 import { Badge } from "@/app/admin/_components/Badge";
 import { DataTable } from "@/app/admin/_components/DataTable";
@@ -144,6 +144,10 @@ const AdminUsersPage = () => {
   const [pendingRole, setPendingRole] = useState<"user" | "admin" | null>(null);
   const [isRoleChanging, setIsRoleChanging] = useState(false);
 
+  // Delete
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounce search
@@ -276,6 +280,41 @@ const AdminUsersPage = () => {
     setIsConfirmOpen(false);
     setPendingRole(null);
   }, []);
+
+  // Delete user
+  const handleDeleteClick = useCallback(() => {
+    setIsDeleteConfirmOpen(true);
+  }, []);
+
+  const handleCancelDelete = useCallback(() => {
+    setIsDeleteConfirmOpen(false);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!selectedUserId) return;
+
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch(`/api/admin/users/${selectedUserId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.error ?? "계정 삭제에 실패했습니다.");
+        return;
+      }
+
+      setIsDeleteConfirmOpen(false);
+      handleCloseDetail();
+      await fetchUsers();
+    } catch {
+      alert("계정 삭제에 실패했습니다.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [selectedUserId, handleCloseDetail, fetchUsers]);
 
   // Filter handlers
   const handleSearchChange = useCallback(
@@ -790,6 +829,23 @@ const AdminUsersPage = () => {
                         </button>
                       )}
                     </div>
+
+                    {/* Delete account */}
+                    <div className={styles.roleChangeSection}>
+                      <h3 className={styles.detailSectionTitle}>계정 삭제</h3>
+                      <p className={styles.deleteWarning}>
+                        계정을 삭제하면 생기부, 주문, 리포트 등 모든 데이터가
+                        영구적으로 삭제됩니다.
+                      </p>
+                      <button
+                        className={`${styles.roleChangeButton} ${styles.deleteButton}`}
+                        onClick={handleDeleteClick}
+                        disabled={isDeleting}
+                      >
+                        <Trash2 size={16} />
+                        계정 삭제
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <div className={styles.modalLoading}>
@@ -798,6 +854,56 @@ const AdminUsersPage = () => {
                     </p>
                   </div>
                 )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Dialog */}
+      <AnimatePresence>
+        {isDeleteConfirmOpen && (
+          <motion.div
+            className={styles.confirmOverlay}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={handleCancelDelete}
+          >
+            <motion.div
+              className={styles.confirmDialog}
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className={styles.confirmTitle}>계정 삭제 확인</h3>
+              <p className={styles.confirmMessage}>
+                {userDetail?.name ?? "이 사용자"}의 계정을 삭제하시겠습니까?
+                생기부, 주문, 리포트 등 모든 데이터가 영구적으로 삭제되며 복구할
+                수 없습니다.
+              </p>
+              <div className={styles.confirmActions}>
+                <button
+                  className={styles.confirmCancel}
+                  onClick={handleCancelDelete}
+                  disabled={isDeleting}
+                >
+                  취소
+                </button>
+                <button
+                  className={`${styles.confirmSubmit} ${styles.confirmSubmitDanger}`}
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <Loader2 size={14} className={styles.spinner} />
+                  ) : (
+                    "삭제"
+                  )}
+                </button>
               </div>
             </motion.div>
           </motion.div>
