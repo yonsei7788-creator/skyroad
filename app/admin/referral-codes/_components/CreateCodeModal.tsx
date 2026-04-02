@@ -24,6 +24,7 @@ interface InitialValues {
   partnerName: string;
   partnerType: string;
   maxUsages: number;
+  discountAmount: number;
   validFrom: string;
   validUntil: string;
   memo: string;
@@ -33,6 +34,7 @@ interface FormErrors {
   code?: string;
   partnerName?: string;
   maxUsages?: string;
+  discountAmount?: string;
   validFrom?: string;
   validUntil?: string;
 }
@@ -74,6 +76,7 @@ export const CreateCodeModal = ({
   const [partnerName, setPartnerName] = useState("");
   const [partnerType, setPartnerType] = useState("influencer");
   const [maxUsages, setMaxUsages] = useState("0");
+  const [discountAmount, setDiscountAmount] = useState("5000");
   const [validFrom, setValidFrom] = useState(todayStr());
   const [validUntil, setValidUntil] = useState("");
   const [memo, setMemo] = useState("");
@@ -90,6 +93,7 @@ export const CreateCodeModal = ({
         setPartnerName(initialValues.partnerName);
         setPartnerType(initialValues.partnerType);
         setMaxUsages(String(initialValues.maxUsages));
+        setDiscountAmount(String(initialValues.discountAmount));
         setValidFrom(toDateInput(initialValues.validFrom));
         setValidUntil(toDateInput(initialValues.validUntil));
         setMemo(initialValues.memo);
@@ -98,6 +102,7 @@ export const CreateCodeModal = ({
         setPartnerName("");
         setPartnerType("influencer");
         setMaxUsages("0");
+        setDiscountAmount("5000");
         setValidFrom(todayStr());
         setValidUntil("");
         setMemo("");
@@ -138,6 +143,15 @@ export const CreateCodeModal = ({
       errs.maxUsages = "0 이상의 정수를 입력해주세요.";
     }
 
+    const parsedDiscount = Number(discountAmount);
+    if (
+      isNaN(parsedDiscount) ||
+      parsedDiscount < 0 ||
+      !Number.isInteger(parsedDiscount)
+    ) {
+      errs.discountAmount = "0 이상의 정수를 입력해주세요.";
+    }
+
     if (!validFrom) {
       errs.validFrom = "시작일을 선택해주세요.";
     }
@@ -147,7 +161,7 @@ export const CreateCodeModal = ({
     }
 
     return errs;
-  }, [code, partnerName, maxUsages, validFrom, validUntil]);
+  }, [code, partnerName, maxUsages, discountAmount, validFrom, validUntil]);
 
   // Submit
   const handleSubmit = useCallback(async () => {
@@ -163,6 +177,7 @@ export const CreateCodeModal = ({
       partnerName: partnerName.trim(),
       partnerType,
       maxUsages: Number(maxUsages),
+      discountAmount: Number(discountAmount),
       validFrom: new Date(validFrom).toISOString(),
       validUntil: validUntil
         ? new Date(`${validUntil}T23:59:59`).toISOString()
@@ -199,6 +214,7 @@ export const CreateCodeModal = ({
     partnerName,
     partnerType,
     maxUsages,
+    discountAmount,
     validFrom,
     validUntil,
     memo,
@@ -338,7 +354,7 @@ export const CreateCodeModal = ({
                 </select>
               </div>
 
-              {/* 사용 횟수 + 유효기간 */}
+              {/* 사용 횟수 + 할인 금액 */}
               <div className={styles.formRow}>
                 <div className={styles.fieldGroup}>
                   <label className={styles.fieldLabel}>사용 횟수 제한</label>
@@ -364,47 +380,72 @@ export const CreateCodeModal = ({
                 </div>
 
                 <div className={styles.fieldGroup}>
-                  <label className={styles.fieldLabel}>
-                    유효기간<span className={styles.fieldRequired}>*</span>
-                  </label>
-                  <div className={styles.dateRange}>
-                    <input
-                      type="date"
-                      className={`${styles.input} ${errors.validFrom ? styles.inputError : ""}`}
-                      value={validFrom}
-                      onChange={(e) => {
-                        setValidFrom(e.target.value);
-                        if (errors.validFrom)
-                          setErrors((prev) => ({
-                            ...prev,
-                            validFrom: undefined,
-                          }));
-                      }}
-                    />
-                    <span className={styles.dateSep}>~</span>
-                    <input
-                      type="date"
-                      className={`${styles.input} ${errors.validUntil ? styles.inputError : ""}`}
-                      value={validUntil}
-                      onChange={(e) => {
-                        setValidUntil(e.target.value);
-                        if (errors.validUntil)
-                          setErrors((prev) => ({
-                            ...prev,
-                            validUntil: undefined,
-                          }));
-                      }}
-                      placeholder="무기한"
-                    />
-                  </div>
-                  {errors.validFrom && (
-                    <p className={styles.fieldError}>{errors.validFrom}</p>
+                  <label className={styles.fieldLabel}>할인 금액 (원)</label>
+                  <input
+                    type="number"
+                    className={`${styles.input} ${errors.discountAmount ? styles.inputError : ""}`}
+                    value={discountAmount}
+                    onChange={(e) => {
+                      setDiscountAmount(e.target.value);
+                      if (errors.discountAmount)
+                        setErrors((prev) => ({
+                          ...prev,
+                          discountAmount: undefined,
+                        }));
+                    }}
+                    min={0}
+                    step={1000}
+                  />
+                  {errors.discountAmount ? (
+                    <p className={styles.fieldError}>{errors.discountAmount}</p>
+                  ) : (
+                    <p className={styles.fieldHint}>기본값 5,000원</p>
                   )}
-                  {errors.validUntil && (
-                    <p className={styles.fieldError}>{errors.validUntil}</p>
-                  )}
-                  <p className={styles.fieldHint}>종료일 미지정 시 무기한</p>
                 </div>
+              </div>
+
+              {/* 유효기간 */}
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabel}>
+                  유효기간<span className={styles.fieldRequired}>*</span>
+                </label>
+                <div className={styles.dateRange}>
+                  <input
+                    type="date"
+                    className={`${styles.input} ${errors.validFrom ? styles.inputError : ""}`}
+                    value={validFrom}
+                    onChange={(e) => {
+                      setValidFrom(e.target.value);
+                      if (errors.validFrom)
+                        setErrors((prev) => ({
+                          ...prev,
+                          validFrom: undefined,
+                        }));
+                    }}
+                  />
+                  <span className={styles.dateSep}>~</span>
+                  <input
+                    type="date"
+                    className={`${styles.input} ${errors.validUntil ? styles.inputError : ""}`}
+                    value={validUntil}
+                    onChange={(e) => {
+                      setValidUntil(e.target.value);
+                      if (errors.validUntil)
+                        setErrors((prev) => ({
+                          ...prev,
+                          validUntil: undefined,
+                        }));
+                    }}
+                    placeholder="무기한"
+                  />
+                </div>
+                {errors.validFrom && (
+                  <p className={styles.fieldError}>{errors.validFrom}</p>
+                )}
+                {errors.validUntil && (
+                  <p className={styles.fieldError}>{errors.validUntil}</p>
+                )}
+                <p className={styles.fieldHint}>종료일 미지정 시 무기한</p>
               </div>
 
               {/* 메모 */}

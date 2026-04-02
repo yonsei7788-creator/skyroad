@@ -50,6 +50,8 @@ export const PATCH = async (request: NextRequest, { params }: RouteParams) => {
     updates.partner_name = body.partnerName.trim();
   if (body.partnerType !== undefined) updates.partner_type = body.partnerType;
   if (body.maxUsages !== undefined) updates.max_usages = body.maxUsages;
+  if (body.discountAmount !== undefined)
+    updates.discount_amount = body.discountAmount;
   if (body.validFrom !== undefined) updates.valid_from = body.validFrom;
   if (body.validUntil !== undefined)
     updates.valid_until = body.validUntil || null;

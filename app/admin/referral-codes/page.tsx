@@ -699,6 +699,7 @@ const ReferralCodesPage = () => {
             partnerName: editTarget.partner_name,
             partnerType: editTarget.partner_type,
             maxUsages: editTarget.max_usages,
+            discountAmount: editTarget.discount_amount,
             validFrom: editTarget.valid_from,
             validUntil: editTarget.valid_until ?? "",
             memo: editTarget.memo ?? "",
