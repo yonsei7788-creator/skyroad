@@ -59,8 +59,7 @@ summary에 "입학사정관" 또는 "평가" 또는 "전형" 키워드가 반드
 - 계획만 기재되고 후속 기록이 없으면: "계획만 서술되어 있고 실제 이행 기록이 확인되지 않아, 성실성 평가에서 감점될 수 있습니다"와 같은 주의 문구를 포함하세요.
 - 계획 후 실제 수행 기록이 있으면 긍정적으로 평가해도 됩니다.
 
-## 분량 가이드
-- 핵심 활동 3개 이내로 분석. A4 1페이지 이내.`,
+`,
   standard: `## 플랜별 출력: 상세
 - Lite의 모든 항목
 - 기록 분량 평가(volumeAssessment) + 핵심 활동 상세(keyActivities) + 개선 방향(improvementDirection)
@@ -89,8 +88,8 @@ summary에 "입학사정관" 또는 "학종" 또는 "평가" 또는 "전형" 또
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - activities 배열은 **최대 4개**입니다. 5개 이상 절대 출력하지 마세요.
-- 각 activity의 overallComment은 **150자 이내**, improvementDirection은 **100자 이내**로 작성합니다.
-- keyActivities의 각 evaluation은 **100자 이내**로 작성합니다.
+- 각 activity의 overallComment은 **250자 이내**, improvementDirection은 **150자 이내**로 작성합니다.
+- keyActivities의 각 evaluation은 **150자 이내**로 작성합니다.
 - keyActivities 배열은 영역당 **최대 3개**입니다.
 - ⚠️ **최상위 overallComment(창체 종합 평가)은 activity별 overallComment과 다릅니다. 400자 이내로 장점과 부족한 점을 모두 포함하여 완결된 문장으로 작성하세요.**`,
   premium: `## 플랜별 출력: 정밀

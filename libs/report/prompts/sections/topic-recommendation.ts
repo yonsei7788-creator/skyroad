@@ -16,19 +16,16 @@ export interface TopicRecommendationPromptInput {
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 간략
 - **3개** 주제를 출력합니다.
-- 각 주제: topic + relatedSubjects + description(**2줄 이내**) + importance(high/medium/low)
+- 각 주제: topic + relatedSubjects + description(**150자 이내**) + importance(high/medium/low)
 - description에 입시 효과를 1문장 포함합니다.
-- rationale, existingConnection, activityDesign, sampleEvaluation 필드는 출력하지 않습니다.
-
-## 분량 가이드
-- 추천 주제 3개. A4 1페이지 이내.`,
+- rationale, existingConnection, activityDesign, sampleEvaluation 필드는 출력하지 않습니다.`,
   standard: `## 플랜별 출력: 상세
 - 각 주제: topic + relatedSubjects + description + rationale(주제 선정 이유) + existingConnection(기존 탐구 연결) + importance(high/medium/low)
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - topics 배열은 **최대 3개**입니다. 4개 이상 절대 출력하지 마세요.
-- 각 description은 반드시 **150자 이내**로 작성합니다 (입시 효과 포함 2~3줄).
-- 각 rationale은 **100자 이내**로 작성합니다.
+- 각 description은 반드시 **150자 이내**로 작성합니다 (입시 효과 포함).
+- 각 rationale은 **200자 이내**로 작성합니다.
 
 ⚠️ **existingConnection 작성 규칙**:
 - "~와 연결됩니다", "~를 심화하여" 등 AI스러운 지시문 톤 금지

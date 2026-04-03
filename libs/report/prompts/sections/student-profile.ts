@@ -8,10 +8,8 @@ export interface StudentProfilePromptInput {
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
-  lite: `## 플랜별 출력: 간략
-- 모든 텍스트 필드를 **1~2줄 이내**로 간결하게 작성합니다.
-- typeDescription은 1줄로 핵심만 서술합니다.
-- catchPhrase는 간결한 한 문장으로 작성합니다.`,
+  lite: `## 플랜별 출력
+- 모든 텍스트 필드를 충분히 서술합니다.`,
   standard: "",
   premium: "",
 };

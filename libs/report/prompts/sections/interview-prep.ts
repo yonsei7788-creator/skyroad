@@ -24,7 +24,7 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - questions 배열은 **최대 5개**입니다. 6개 이상 절대 출력하지 마세요.
-- 각 intent는 **100자 이내**로 작성합니다. 100자 초과 금지.`,
+- 각 intent는 **150자 이내**로 작성합니다. 150자 초과 금지.`,
   premium: `## 플랜별 출력: 정밀
 - 각 질문: question + questionType + intent(1~2줄) + importance(high/medium/low) + answerStrategy(답변 전략, 2줄 이내)
 - ⚠️ **모든 질문에 sampleAnswer(모범 답변)를 반드시 포함하세요.** sampleAnswer가 없는 질문은 품질 실패입니다.

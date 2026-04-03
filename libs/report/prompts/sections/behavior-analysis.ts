@@ -13,9 +13,9 @@ export interface BehaviorAnalysisPromptInput {
 const PLAN_VOLUME_GUIDE: Record<ReportPlan, string> = {
   lite: "",
   standard: `⚠️ **분량 제한 (반드시 준수)**:
-- overallComment + admissionRelevance를 합쳐 **300자 이내**로 작성합니다. 300자 초과 금지.
+- overallComment + admissionRelevance를 합쳐 **500자 이내**로 작성합니다. 500자 초과 금지.
 - consistentTraits 배열은 **최대 3개**입니다. 4개 이상 절대 출력하지 마세요.
-- 각 yearlyAnalysis의 summary는 **100자 이내**로 작성합니다.`,
+- 각 yearlyAnalysis의 summary는 **150자 이내**로 작성합니다.`,
   premium: `⚠️ **분량 제한 (반드시 준수)**:
 - overallComment + admissionRelevance를 합쳐 **500자 이내**로 작성합니다. 500자 초과 금지.
 - consistentTraits 배열은 **최대 5개**입니다. 6개 이상 절대 출력하지 마세요.

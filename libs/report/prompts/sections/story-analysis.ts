@@ -18,9 +18,9 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - crossSubjectLinks, storyEnhancementSuggestions, interviewStoryGuide 필드는 출력하지 않습니다.
 
 ⚠️ **분량 제한 (반드시 준수)**:
-- mainStoryline은 반드시 **200자 이내**로 작성합니다. 200자 초과 금지.
-- yearProgressions는 **최대 3개** (학년 수만큼)이며, 각 description은 **80자 이내**로 작성합니다.
-- careerConsistencyComment는 **100자 이내**로 작성합니다.`,
+- mainStoryline은 반드시 **300자 이내**로 작성합니다. 300자 초과 금지.
+- yearProgressions는 **최대 3개** (학년 수만큼)이며, 각 description은 **120자 이내**로 작성합니다.
+- careerConsistencyComment는 **150자 이내**로 작성합니다.`,
   premium: `## 출력 수준: 확장
 Standard의 모든 항목 + 다음을 추가로 출력하세요:
 
