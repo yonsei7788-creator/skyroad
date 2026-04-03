@@ -6,6 +6,7 @@ interface DraftBody {
   method: "pdf" | "image" | "text";
   record: Record<string, unknown>;
   isReviewed?: boolean;
+  plannedSubjects?: string;
 }
 
 export async function GET() {
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  const { method, record, isReviewed } = body;
+  const { method, record, isReviewed, plannedSubjects } = body;
   if (!method || !record) {
     return NextResponse.json(
       { error: "method와 record가 필요합니다." },
@@ -82,6 +83,7 @@ export async function POST(request: NextRequest) {
         submission_type: method,
         record_data: record,
         is_reviewed: isReviewed ?? false,
+        planned_subjects: plannedSubjects ?? null,
       },
       { onConflict: "user_id" }
     )

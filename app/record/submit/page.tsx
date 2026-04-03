@@ -207,7 +207,7 @@ const RecordSubmitPage = async ({ searchParams }: PageProps) => {
     // 최신 레코드 조회
     const { data: recordRow } = await supabase
       .from("records")
-      .select("id")
+      .select("id, planned_subjects")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -235,6 +235,9 @@ const RecordSubmitPage = async ({ searchParams }: PageProps) => {
             <RecordSubmitWizard
               mode="edit"
               initialRecord={record as unknown as SchoolRecord}
+              initialPlannedSubjects={
+                (recordRow.planned_subjects as string) ?? ""
+              }
               recordId={recordId}
             />
           </main>

@@ -96,10 +96,15 @@ export const executePreprocess = async (
   recordId: string,
   universityCandidatesText?: string,
   runId?: string,
-  options?: { skipSave?: boolean }
+  options?: { skipSave?: boolean; plannedSubjects?: string }
 ): Promise<WaveState> => {
   const recordData = await loadRecordData(supabase, recordId);
-  const { data, texts } = preprocess(recordData, studentInfo, plan);
+  const { data, texts } = preprocess(
+    recordData,
+    studentInfo,
+    plan,
+    options?.plannedSubjects
+  );
 
   // universityCandidatesText는 preprocessor에서 환산등급 기반으로 자동 생성됨
   // 외부 주입값은 무시 (희망대학만 반복 추천하는 문제 방지)
@@ -493,6 +498,7 @@ export const executeTask = async (
         studentGrade: studentInfo.grade,
         detectedMajorGroup: detectedMajorForAcad,
         completedSubjectsByYear: texts.completedSubjectsByYearText,
+        plannedSubjects: texts.plannedSubjectsText,
         isGyogwaOnly,
       };
       section = await callGemini<ReportSection>(
@@ -647,6 +653,7 @@ export const executeTask = async (
         isGyogwaOnly,
         detectedMajorGroup: weaknessMajorGroup,
         majorEvaluationContext: texts.majorEvaluationContextText,
+        plannedSubjects: texts.plannedSubjectsText,
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly
@@ -679,6 +686,7 @@ export const executeTask = async (
             studentProfile: texts.studentProfileText,
             isGyogwaOnly,
             aiRecommendedMajors: topicAiMajors,
+            plannedSubjects: texts.plannedSubjectsText,
           },
           plan
         )
@@ -936,6 +944,7 @@ export const executeTask = async (
         currentDate: new Date().toISOString().slice(0, 10),
         isMedical,
         completedSubjectsByYear: texts.completedSubjectsByYearText,
+        plannedSubjects: texts.plannedSubjectsText,
         isArtSportPractical: texts.isArtSportPractical,
         selectedAdmissionTypes,
         majorExplorationDepartments: majorExplDepts,
@@ -1034,6 +1043,7 @@ export const executeTask = async (
             studentGrade: studentInfo.grade,
             isMedical,
             completedSubjectsByYear: texts.completedSubjectsByYearText,
+            plannedSubjects: texts.plannedSubjectsText,
           },
           plan
         )
@@ -1108,6 +1118,7 @@ export const executeTask = async (
         currentDate: new Date().toISOString().slice(0, 10),
         isMedical,
         completedSubjectsByYear: texts.completedSubjectsByYearText,
+        plannedSubjects: texts.plannedSubjectsText,
         isGyogwaOnly,
         selectedAdmissionTypes,
         detectedMajorGroup: detectedMajorForFlags,

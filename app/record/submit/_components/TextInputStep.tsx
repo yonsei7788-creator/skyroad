@@ -1039,12 +1039,16 @@ interface TextInputStepProps {
   record: SchoolRecord;
   onRecordChange: (record: SchoolRecord) => void;
   requiredFieldErrors?: ValidationError[];
+  plannedSubjects?: string;
+  onPlannedSubjectsChange?: (value: string) => void;
 }
 
 export const TextInputStep = ({
   record,
   onRecordChange,
   requiredFieldErrors = [],
+  plannedSubjects = "",
+  onPlannedSubjectsChange,
 }: TextInputStepProps) => {
   const errorKeys = new Set(requiredFieldErrors.map((e) => e.key));
   const allMet = requiredFieldErrors.length === 0;
@@ -1074,6 +1078,29 @@ export const TextInputStep = ({
           errorKeys={errorKeys}
         />
       ))}
+
+      {/* 수강 예정 과목 — 모의고사/생기부 아코디언 아래 */}
+      {onPlannedSubjectsChange && (
+        <div className={styles.plannedSubjectsSection}>
+          <div className={styles.plannedSubjectsHeader}>
+            <span className={styles.plannedSubjectsTitle}>수강 예정 과목</span>
+            <span className={styles.plannedSubjectsOptionalBadge}>선택</span>
+          </div>
+          <p className={styles.plannedSubjectsDesc}>
+            현재 학기 또는 다음 학기에 수강할 예정인 과목을 입력하면, 리포트에서
+            해당 과목에 맞는 맞춤 조언을 받을 수 있습니다.
+          </p>
+          <textarea
+            className={styles.plannedSubjectsTextarea}
+            value={plannedSubjects}
+            onChange={(e) => onPlannedSubjectsChange(e.target.value)}
+            placeholder="예: 물리학II, 미적분, 사회·문화, 생명과학II"
+          />
+          <p className={styles.plannedSubjectsHint}>
+            쉼표로 구분하여 입력해주세요.
+          </p>
+        </div>
+      )}
 
       {/* 필수 항목 체크리스트 */}
       <div className={styles.requiredChecklist}>

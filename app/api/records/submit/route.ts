@@ -21,6 +21,7 @@ interface SubmitBody {
   method: "pdf" | "image" | "text";
   record: SchoolRecord;
   recordId?: string;
+  plannedSubjects?: string;
 }
 
 const deriveGradeLevel = (
@@ -191,7 +192,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  const { method, record, recordId: existingRecordId } = body;
+  const { method, record, recordId: existingRecordId, plannedSubjects } = body;
   if (!method || !record) {
     return NextResponse.json(
       { error: "method와 record가 필요합니다." },
@@ -246,6 +247,7 @@ export async function POST(request: NextRequest) {
       FIELD_MAPS.behavioralAssessments
     ),
     p_mock_exams: mapSection(record.mockExams ?? [], FIELD_MAPS.mockExams),
+    p_planned_subjects: plannedSubjects ?? null,
   });
 
   if (error) {

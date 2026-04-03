@@ -14,6 +14,8 @@ export interface WeaknessAnalysisPromptInput {
   detectedMajorGroup?: string;
   /** 학과별 평가 기준 텍스트 (핵심과목, riskFactors 등) */
   majorEvaluationContext?: string;
+  /** 학생이 입력한 수강 예정 과목 텍스트 */
+  plannedSubjects?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -177,6 +179,9 @@ ${input.majorEvaluationContext}
 - 예시 (BAD): "탐구 깊이가 부족합니다."
 - 예시 (GOOD): "세특이 '조사함, 발표함'으로 끝나는 경우, 사정관은 '수업 시간에 주어진 과제만 수행한 학생'으로 해석할 수 있어 탐구력 평가에서 감점 요인이 됩니다."
 
+## 수강 예정 과목 범위 제한
+- 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.
+
 ## 외부 활동 보완 제안 금지 (절대 준수)
 - suggestedActivities에 다음을 절대 포함하지 마세요:
   - 학원, 과외, 인터넷 강의, 온라인 강의, 온라인 강좌
@@ -210,6 +215,8 @@ ${input.academicAnalysis}
 
 ### 학생 프로필
 ${input.studentProfile}
+
+${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}` : ""}
 ${
   input.detectedMajorGroup
     ? `
@@ -290,6 +297,8 @@ ${input.academicAnalysis}
 
 ### 학생 프로필
 ${input.studentProfile}
+
+${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}\n→ 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.` : ""}
 
 ${PLAN_SPECIFIC[plan]}`;
 };

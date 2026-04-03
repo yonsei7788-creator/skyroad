@@ -9,6 +9,8 @@ export interface TopicRecommendationPromptInput {
   isGyogwaOnly?: boolean;
   /** AI가 생기부 분석을 통해 판단한 추천 학과 (majorExploration 결과, 최대 2개) */
   aiRecommendedMajors?: string[];
+  /** 학생이 입력한 수강 예정 과목 텍스트 */
+  plannedSubjects?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -121,6 +123,7 @@ ${input.aiRecommendedMajors.map((m, i) => `${i + 1}순위: ${m}`).join("\n")}
 - 가장 직접적으로 관련된 핵심 과목 영역 1개만 선택합니다.
 
 ## 규칙
+- 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.
 - 추천 주제는 고등학생이 실제로 수행 가능한 수준이어야 합니다.
 - 기존 세특에서 이미 다룬 주제와 직접 겹치면 안 됩니다 (확장/심화는 가능).
 - 각 주제는 서로 다른 과목과 연계되어야 합니다.
@@ -150,6 +153,8 @@ ${input.weaknessAnalysisResult}
 
 ### 학생 프로필
 ${input.studentProfile}
+
+${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}` : ""}
 
 ${PLAN_SPECIFIC[plan]}`;
 };

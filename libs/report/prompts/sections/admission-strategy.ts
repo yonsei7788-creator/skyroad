@@ -26,6 +26,8 @@ export interface AdmissionStrategyPromptInput {
   gyogwaAcademicAnalysis?: string;
   /** 모의고사 데이터 존재 여부 */
   hasMockExamData?: boolean;
+  /** 학생이 입력한 수강 예정 과목 텍스트 */
+  plannedSubjects?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -351,6 +353,8 @@ ${input.recommendedCourseMatch}
 
 ${input.completedSubjectsByYear ? `## 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n→ 이수 완료 과목의 성적 향상을 조언하지 마세요. 해당 교과 영역의 향후 선택과목으로 보완하라고 안내하세요.` : ""}
 
+${input.plannedSubjects ? `## 수강 예정 과목 정보\n${input.plannedSubjects}\n→ 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.` : ""}
+
 ## 입력 데이터
 
 ### 성적 분석 결과 (학종/정시/논술 type에서 사용)
@@ -524,6 +528,8 @@ ${input.universityCandidates}
 
 ${input.completedSubjectsByYear ? `## 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n→ 이수 완료 과목 성적 향상을 조언하지 마세요.` : ""}
 
+${input.plannedSubjects ? `## 수강 예정 과목 정보\n${input.plannedSubjects}\n→ 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.` : ""}
+
 ## 입력 데이터
 
 ### 성적 분석 결과
@@ -544,6 +550,8 @@ export interface DirectionGuidePromptInput {
   studentGrade: number;
   currentDate: string;
   completedSubjectsByYear?: string;
+  /** 학생이 입력한 수강 예정 과목 텍스트 */
+  plannedSubjects?: string;
 }
 
 export const buildDirectionGuidePrompt = (
@@ -598,5 +606,7 @@ ${input.recommendedCourseMatch}
 ### 학생 프로필
 ${input.studentProfile}
 
-${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}` : ""}`;
+${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}` : ""}
+
+${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}` : ""}`;
 };

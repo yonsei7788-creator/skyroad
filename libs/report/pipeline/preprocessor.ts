@@ -328,6 +328,8 @@ export interface PreprocessedTexts {
   majorEvaluationContextText: string;
   /** 학년별 이수 완료 과목 요약 (AI가 이수 완료 과목 성적 개선 권고를 방지하기 위함) */
   completedSubjectsByYearText: string;
+  /** 수강 예정 과목 텍스트 (학생 직접 입력, 없으면 빈 문자열) */
+  plannedSubjectsText: string;
   /** 실기 예체능 학과 여부 (커트라인 데이터 없는 예체능계열) */
   isArtSportPractical: boolean;
   /** admissionStrategy에서 majorExploration 기반으로 재생성된 후보군 (없으면 universityCandidatesText 사용) */
@@ -689,7 +691,8 @@ const correctRecordSubjectNames = (data: RecordData): void => {
 export const preprocess = (
   recordData: RecordData,
   studentInfo: StudentInfo,
-  plan: ReportPlan
+  plan: ReportPlan,
+  plannedSubjects?: string
 ): PreprocessResult => {
   // 과목명 오타 보정 (기존 DB 데이터 대응)
   correctRecordSubjectNames(recordData);
@@ -890,7 +893,13 @@ export const preprocess = (
     existingBehaviorYears,
   };
 
-  const texts = buildTexts(data, recordData, studentInfo, plan);
+  const texts = buildTexts(
+    data,
+    recordData,
+    studentInfo,
+    plan,
+    plannedSubjects
+  );
 
   return { data, texts };
 };
@@ -1454,7 +1463,8 @@ const buildTexts = (
   data: PreprocessedData,
   recordData: RecordData,
   studentInfo: StudentInfo,
-  plan: ReportPlan
+  plan: ReportPlan,
+  plannedSubjects?: string
 ): PreprocessedTexts => {
   // 성적 데이터에서 현재 학기 판단 (등록된 성적의 최대 학년/학기 기반)
   const generalSubjects = recordData.generalSubjects ?? [];
@@ -1593,6 +1603,7 @@ const buildTexts = (
       studentInfo.grade,
       studentInfo.isGraduate
     ),
+    plannedSubjectsText: formatPlannedSubjects(plannedSubjects),
     isArtSportPractical: artSportPractical,
   };
 };
@@ -2525,6 +2536,27 @@ const formatCompletedSubjectsByYear = (
       `→ 예시: "통합사회 3등급 → 사회 교과 영역에서 2학년 선택과목(사회와 문화 등) 성적을 높이세요" (✅ 올바름)`
     );
   }
+
+  return lines.join("\n");
+};
+
+/**
+ * 수강 예정 과목 텍스트 생성.
+ * 학생이 직접 입력한 수강 예정 과목 정보를 AI 프롬프트에 전달할 형태로 포맷.
+ * 입력이 없으면 빈 문자열을 반환.
+ */
+const formatPlannedSubjects = (plannedSubjects?: string): string => {
+  if (!plannedSubjects?.trim()) return "";
+
+  const lines: string[] = [
+    "## 수강 예정 과목 (학생 직접 입력)",
+    `과목: ${plannedSubjects.trim()}`,
+    "",
+    "※ 위 과목은 학생이 현재 학기 또는 다음 학기에 수강할 예정이라고 직접 입력한 과목입니다.",
+    "→ 성적 향상, 과목 추천, 탐구 주제 등의 조언은 위 수강 예정 과목 범위 내에서만 제시하세요.",
+    "→ 위 목록에 없는 과목의 수강이나 성적 향상을 권고하지 마세요.",
+    "→ 단, 이수 완료 과목의 기존 성과를 언급하거나 분석하는 것은 허용됩니다.",
+  ];
 
   return lines.join("\n");
 };

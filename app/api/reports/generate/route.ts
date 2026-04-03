@@ -267,6 +267,15 @@ export const POST = async (request: NextRequest) => {
   const plan = plans.name as ReportPlan;
   const recordId = order.record_id as string;
 
+  // 수강 예정 과목 (학생 직접 입력)
+  const { data: recordRow } = await dbClient
+    .from("records")
+    .select("planned_subjects")
+    .eq("id", recordId)
+    .single();
+  const plannedSubjects =
+    (recordRow?.planned_subjects as string | null) ?? undefined;
+
   // 목표 대학 정보 조회 (1~3지망 전체)
   const { data: targetUnis } = await dbClient
     .from("target_universities")
@@ -312,7 +321,10 @@ export const POST = async (request: NextRequest) => {
       studentInfo,
       reportId,
       dbClient,
-      recordId
+      recordId,
+      undefined,
+      undefined,
+      { plannedSubjects }
     );
 
     return NextResponse.json({

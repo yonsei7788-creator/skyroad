@@ -10,6 +10,8 @@ export interface ActionRoadmapPromptInput {
   studentGrade?: number;
   isMedical?: boolean;
   completedSubjectsByYear?: string;
+  /** 학생이 입력한 수강 예정 과목 텍스트 */
+  plannedSubjects?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -216,6 +218,7 @@ ${
 ## 조언 작성 원칙
 - goals와 tasks는 학생이 **앞으로 실행 가능한 것**만 제시하세요.
 - "이수 완료 과목 정보"에 나열된 과목은 이미 확정된 성적이므로, 조언 대상에서 제외하세요.
+- 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.
 - ✅ "2학년 진로선택과목에서 A/B 성취도 확보" (아직 이수하지 않은 과목)
 - ✅ "정보 교과에서 부족했던 역량을 동아리 활동이나 다른 교과 세특으로 보완" (우회 보완)
 
@@ -251,6 +254,8 @@ ${input.admissionStrategyResult}
 ${input.studentProfile}
 
 ${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n⛔ 위 과목은 재이수 불가. goals/tasks에서 이수 완료 과목의 성적/성취도 향상을 절대 제시하지 마세요.` : ""}
+
+${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}\n→ 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.` : ""}
 
 ${PLAN_SPECIFIC[plan]}`;
 };

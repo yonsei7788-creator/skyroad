@@ -245,6 +245,7 @@ export interface WizardState {
   parseError: string | null;
   draftId: string | null;
   draftLoading: boolean;
+  plannedSubjects: string;
 }
 
 // ============================================
@@ -276,6 +277,7 @@ export const INITIAL_WIZARD_STATE: WizardState = {
   parseError: null,
   draftId: null,
   draftLoading: true,
+  plannedSubjects: "",
 };
 
 // ---- Row 팩토리 함수 ----

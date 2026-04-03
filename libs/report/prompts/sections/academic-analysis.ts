@@ -13,6 +13,8 @@ export interface AcademicAnalysisPromptInput {
   detectedMajorGroup?: string;
   /** 학년별 이수 완료 과목 요약 (이수 완료 과목 성적 개선 권고 방지용) */
   completedSubjectsByYear?: string;
+  /** 학생이 입력한 수강 예정 과목 텍스트 */
+  plannedSubjects?: string;
   isGyogwaOnly?: boolean;
 }
 
@@ -45,6 +47,7 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
      - ✅ "국어 교과 영역에서 2학년 선택과목 성적을 높이세요" (향후 이수 가능한 과목)
      - ✅ "사회탐구 영역에서 사회와 문화, 윤리와 사상 등 선택과목 성적 확보가 중요합니다" (향후 이수 가능)
      - ✅ "수능 성적을 통해 정시전형에서 보완하는 전략이 필요합니다" (졸업생의 경우)
+   - 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis **3개 필드만** 출력합니다. 이 3개 외 추가 분석 필드는 절대 출력하지 마세요.
@@ -74,6 +77,7 @@ Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysi
   - 데이터 부족으로 정밀 시뮬이 불가능하면 이 필드를 아예 생략하세요 (빈 배열 출력).
 - 성적 개선 우선순위 (improvementPriority): **3개 이내** 문자열 배열 형태, 각 항목 **50자 이내**
   ⛔ 이수 완료 과목의 성적 향상을 우선순위로 제시하면 안 됩니다. 반드시 향후 이수 가능한 과목/영역 기준으로 작성하세요.
+  - 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.
   예시: "improvementPriority": ["사회탐구 영역 선택과목 2등급 확보", "과학탐구 선택과목 성적 안정화"]
 
 ⚠️ **schoolTypeAdjustment 출력 금지.**
@@ -121,6 +125,7 @@ Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysi
   - ⚠️ interpretation은 **80자 이내**
 - 성적 개선 우선순위 (improvementPriority): 3개 이내 문자열 배열, 각 50자 이내
   ⛔ 이수 완료 과목 성적 향상을 우선순위로 제시하면 안 됩니다.
+  - 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.
 
 ⚠️ **schoolTypeAdjustment 출력 금지.**
 ⚠️ 각 분석 텍스트는 **200자 이내**. universityGradeSimulations의 interpretation은 **80자 이내**.
@@ -181,6 +186,8 @@ ${input.preprocessedAcademicData}
 ${input.studentProfile}
 
 ${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}` : ""}
+
+${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}` : ""}
 
 ## 출력 JSON 스키마
 
@@ -311,6 +318,8 @@ ${input.preprocessedAcademicData}
 ${input.studentProfile}
 
 ${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}` : ""}
+
+${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}` : ""}
 
 ## 출력 JSON 스키마
 

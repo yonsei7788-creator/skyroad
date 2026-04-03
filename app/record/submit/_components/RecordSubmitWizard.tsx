@@ -40,13 +40,14 @@ type DraftSaveStatus = "idle" | "saving" | "saved" | "error";
 const saveDraft = async (
   method: InputMethod,
   record: SchoolRecord,
-  isReviewed?: boolean
+  isReviewed?: boolean,
+  plannedSubjects?: string
 ): Promise<string | null> => {
   try {
     const response = await fetch("/api/records/drafts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ method, record, isReviewed }),
+      body: JSON.stringify({ method, record, isReviewed, plannedSubjects }),
     });
     if (!response.ok) return null;
     const data = await response.json();
@@ -67,6 +68,7 @@ const deleteDraft = async (): Promise<void> => {
 interface RecordSubmitWizardProps {
   mode?: "create" | "edit";
   initialRecord?: SchoolRecord;
+  initialPlannedSubjects?: string;
   recordId?: string;
   onSubmitSuccess?: () => void;
 }
@@ -74,6 +76,7 @@ interface RecordSubmitWizardProps {
 export const RecordSubmitWizard = ({
   mode = "create",
   initialRecord,
+  initialPlannedSubjects,
   recordId,
   onSubmitSuccess,
 }: RecordSubmitWizardProps) => {
@@ -87,6 +90,7 @@ export const RecordSubmitWizard = ({
           step: 2 as WizardStep,
           method: "text" as InputMethod,
           record: initialRecord,
+          plannedSubjects: initialPlannedSubjects ?? "",
           draftLoading: false,
         }
       : { ...INITIAL_WIZARD_STATE }
@@ -96,6 +100,7 @@ export const RecordSubmitWizard = ({
     method: InputMethod;
     record: SchoolRecord;
     draftId: string;
+    plannedSubjects?: string;
   } | null>(null);
 
   const [draftSaveStatus, setDraftSaveStatus] =
@@ -129,6 +134,7 @@ export const RecordSubmitWizard = ({
               method: draft.submission_type as InputMethod,
               record: draft.record_data as SchoolRecord,
               draftId: draft.id as string,
+              plannedSubjects: (draft.planned_subjects as string) ?? "",
             });
           }
         }
@@ -149,6 +155,7 @@ export const RecordSubmitWizard = ({
       method: pendingDraft.method,
       record: pendingDraft.record,
       draftId: pendingDraft.draftId,
+      plannedSubjects: pendingDraft.plannedSubjects ?? "",
       step: isAiMode ? 3 : 2,
     }));
     setPendingDraft(null);
@@ -178,9 +185,15 @@ export const RecordSubmitWizard = ({
     if (state.method && !isEditMode) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       const { method } = state;
+      const currentPlannedSubjects = state.plannedSubjects;
       debounceRef.current = setTimeout(async () => {
         setDraftSaveStatus("saving");
-        const draftId = await saveDraft(method, record);
+        const draftId = await saveDraft(
+          method,
+          record,
+          undefined,
+          currentPlannedSubjects
+        );
         if (draftId) {
           setState((prev) => ({ ...prev, draftId }));
           setDraftSaveStatus("saved");
@@ -192,11 +205,20 @@ export const RecordSubmitWizard = ({
     }
   };
 
+  const handlePlannedSubjectsChange = (value: string) => {
+    setState((prev) => ({ ...prev, plannedSubjects: value }));
+  };
+
   const handleManualSave = async () => {
     if (!state.method || isEditMode) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     setDraftSaveStatus("saving");
-    const draftId = await saveDraft(state.method, state.record);
+    const draftId = await saveDraft(
+      state.method,
+      state.record,
+      undefined,
+      state.plannedSubjects
+    );
     if (draftId) {
       setState((prev) => ({ ...prev, draftId }));
       setDraftSaveStatus("saved");
@@ -285,7 +307,12 @@ export const RecordSubmitWizard = ({
       delete parsed._warning;
 
       // AI 파싱 완료 후 draft 자동 저장
-      const draftId = await saveDraft(state.method!, parsed as SchoolRecord);
+      const draftId = await saveDraft(
+        state.method!,
+        parsed as SchoolRecord,
+        undefined,
+        state.plannedSubjects
+      );
 
       setState((prev) => ({
         ...prev,
@@ -359,6 +386,7 @@ export const RecordSubmitWizard = ({
         body: JSON.stringify({
           method: state.method,
           record: state.record,
+          plannedSubjects: state.plannedSubjects,
           ...(isEditMode && recordId ? { recordId } : {}),
         }),
       });
@@ -499,6 +527,8 @@ export const RecordSubmitWizard = ({
               record={state.record}
               onRecordChange={handleRecordChange}
               requiredFieldErrors={requiredFieldErrors}
+              plannedSubjects={state.plannedSubjects}
+              onPlannedSubjectsChange={handlePlannedSubjectsChange}
             />
           )}
 
@@ -507,6 +537,8 @@ export const RecordSubmitWizard = ({
               record={state.record}
               onRecordChange={handleRecordChange}
               requiredFieldErrors={requiredFieldErrors}
+              plannedSubjects={state.plannedSubjects}
+              onPlannedSubjectsChange={handlePlannedSubjectsChange}
             />
           )}
 

@@ -22,6 +22,8 @@ export interface ConsultantReviewPromptInput {
   detectedMajorGroup?: string;
   /** majorExploration AI 추천 1순위 학과 */
   aiRecommendedMajor?: string;
+  /** 학생이 입력한 수강 예정 과목 텍스트 */
+  plannedSubjects?: string;
 }
 
 const buildPlanSpecific = (
@@ -234,6 +236,9 @@ ${evaluationGuide}
 - keyInsights: **300자 이내**로 3가지 인사이트를 이 학생에 맞게 서술
 - analysisMethodology: **200자 이내**로 분석 방법론을 학생에게 설명
 
+## 수강 예정 과목 범위 제한
+- 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.
+
 ## 작성 금지 사항
 - 외부 활동(학원, 과외, 캠프, 대회) 언급 금지
 - "AI", "인공지능", "AI 분석", "AI는 이렇게 판단합니다" 등 AI를 주어로 사용하는 표현 전면 금지. 주어는 항상 "본 리포트", "분석 결과" 등으로 대체
@@ -268,6 +273,8 @@ ${input.academicAnalysis}
 ${input.studentProfile}
 
 ${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}` : ""}
+
+${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}` : ""}
 
 ### 교과 세특 분석 결과
 ${input.subjectAnalysisResult}
@@ -420,6 +427,9 @@ ${gradeTimingRule}
 - keyInsights: **300자 이내**로 3가지 인사이트를 이 학생에 맞게 서술
 - analysisMethodology: **200자 이내**로 분석 방법론을 학생에게 설명
 
+## 수강 예정 과목 범위 제한
+- 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.
+
 ## 작성 금지 사항
 - 외부 활동(학원, 과외, 캠프, 대회) 언급 금지
 - "AI", "인공지능", "AI 분석", "AI는 이렇게 판단합니다" 등 AI를 주어로 사용하는 표현 전면 금지. 주어는 항상 "본 리포트", "분석 결과" 등으로 대체
@@ -441,6 +451,8 @@ ${input.academicAnalysis}
 ${input.studentProfile}
 
 ${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}` : ""}
+
+${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}` : ""}
 
 ### 교과 세특 분석 결과
 ${input.subjectAnalysisResult}

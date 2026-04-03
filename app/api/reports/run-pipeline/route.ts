@@ -449,6 +449,15 @@ export const POST = async (request: NextRequest) => {
   const plan = plans.name as ReportPlan;
   const recordId = order.record_id as string;
 
+  // 수강 예정 과목 (학생 직접 입력)
+  const { data: recordRow } = await dbClient
+    .from("records")
+    .select("planned_subjects")
+    .eq("id", recordId)
+    .single();
+  const plannedSubjects =
+    (recordRow?.planned_subjects as string | null) ?? undefined;
+
   const { data: userProfile } = await dbClient
     .from("profiles")
     .select("name, grade, gender, high_school_type, high_school_region")
@@ -533,7 +542,7 @@ export const POST = async (request: NextRequest) => {
           recordId,
           undefined,
           undefined,
-          { skipSave: true }
+          { skipSave: true, plannedSubjects }
         );
 
         const { taskQueue } = state;
