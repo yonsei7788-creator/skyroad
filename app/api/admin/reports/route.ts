@@ -28,6 +28,7 @@ export const GET = async (request: NextRequest) => {
   const search = searchParams.get("search")?.trim() || "";
   const statusFilter = searchParams.get("status") || "";
   const planFilter = searchParams.get("plan") || "";
+  const paidOnly = searchParams.get("paidOnly") !== "false";
 
   const offset = (page - 1) * limit;
 
@@ -67,6 +68,36 @@ export const GET = async (request: NextRequest) => {
         totalPages: 0,
       } satisfies PaginatedResponse<AdminReport>);
     }
+  }
+
+  // Paid-only filter: find user IDs who have at least one "done" payment
+  let paidUserIds: string[] | null = null;
+  if (paidOnly) {
+    const { data: paidOrders } = await supabase
+      .from("payments")
+      .select("orders!inner(user_id)")
+      .eq("status", "done");
+
+    const ids = [
+      ...new Set(
+        (paidOrders ?? []).map(
+          (p: Record<string, unknown>) =>
+            (p.orders as Record<string, unknown>)?.user_id as string
+        )
+      ),
+    ].filter(Boolean);
+
+    if (ids.length === 0) {
+      return NextResponse.json({
+        data: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      } satisfies PaginatedResponse<AdminReport>);
+    }
+
+    paidUserIds = ids;
   }
 
   // Query reports with joins (no profiles join on orders — no FK)
@@ -112,6 +143,9 @@ export const GET = async (request: NextRequest) => {
   }
   if (planIds) {
     query = query.in("orders.plan_id", planIds);
+  }
+  if (paidUserIds) {
+    query = query.in("orders.user_id", paidUserIds);
   }
 
   // Status filter - we need to filter at the application level

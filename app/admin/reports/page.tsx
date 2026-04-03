@@ -115,6 +115,7 @@ const ReportsPage = () => {
   const [statusFilter, setStatusFilter] = useState<ReportStatus | "">("");
   const [search, setSearch] = useState("");
   const [planFilter, setPlanFilter] = useState("");
+  const [paidOnly, setPaidOnly] = useState(true);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -129,6 +130,7 @@ const ReportsPage = () => {
       if (debouncedSearch) params.set("search", debouncedSearch);
       if (statusFilter) params.set("status", statusFilter);
       if (planFilter) params.set("plan", planFilter);
+      if (!paidOnly) params.set("paidOnly", "false");
 
       const res = await fetch(`/api/admin/reports?${params.toString()}`);
       if (!res.ok) {
@@ -147,7 +149,7 @@ const ReportsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, statusFilter, planFilter]);
+  }, [page, debouncedSearch, statusFilter, planFilter, paidOnly]);
 
   useEffect(() => {
     fetchReports();
@@ -378,6 +380,19 @@ const ReportsPage = () => {
           <option value="standard">스탠다드</option>
           <option value="premium">프리미엄</option>
         </select>
+
+        <label className={styles.checkboxLabel}>
+          <input
+            type="checkbox"
+            checked={paidOnly}
+            onChange={(e) => {
+              setPaidOnly(e.target.checked);
+              setPage(1);
+            }}
+            className={styles.checkbox}
+          />
+          결제 유저만
+        </label>
       </div>
 
       {/* Table (desktop) */}
