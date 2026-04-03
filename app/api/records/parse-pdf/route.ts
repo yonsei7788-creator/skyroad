@@ -138,17 +138,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const uploadedPath = storagePaths[0].path;
+
     const { data: fileData, error: dlError } = await admin.storage
       .from("record-uploads")
-      .download(storagePaths[0].path);
+      .download(uploadedPath);
 
     if (dlError || !fileData) {
+      await admin.storage.from("record-uploads").remove([uploadedPath]);
       return NextResponse.json(
         { error: `파일 다운로드 실패: ${dlError?.message ?? "unknown"}` },
         { status: 500 }
       );
     }
     pdfBuffer = await fileData.arrayBuffer();
+
+    // 다운로드 완료 후 즉시 스토리지에서 삭제
+    await admin.storage.from("record-uploads").remove([uploadedPath]);
   }
 
   try {

@@ -435,6 +435,12 @@
   text-decoration: underline;
 }
 
+.pdfSizeError {
+  margin-top: 8px;
+  font-size: 0.875rem;
+  color: var(--color-fg-negative);
+}
+
 .pdfTextarea {
   width: 100%;
   padding: 16px;

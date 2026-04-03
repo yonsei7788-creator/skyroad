@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { FileText, Info } from "lucide-react";
 
 import { DropZone } from "./DropZone";
@@ -15,11 +16,20 @@ export const PdfUploadStep = ({
   pdfFileName,
   onPdfChange,
 }: PdfUploadStepProps) => {
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const [sizeError, setSizeError] = useState<string | null>(null);
+
   const handleFiles = (files: File[]) => {
     const [file] = files;
-    if (file && file.type === "application/pdf") {
-      onPdfChange(file, file.name);
+    if (!file || file.type !== "application/pdf") return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      setSizeError("파일 크기는 5MB를 초과할 수 없습니다.");
+      return;
     }
+
+    setSizeError(null);
+    onPdfChange(file, file.name);
   };
 
   return (
@@ -45,12 +55,15 @@ export const PdfUploadStep = ({
       </div>
 
       {!pdfFile && (
-        <DropZone
-          accept=".pdf,application/pdf"
-          label="PDF 파일을 드래그하거나 클릭하여 업로드"
-          hint="PDF 파일만 지원됩니다"
-          onFiles={handleFiles}
-        />
+        <>
+          <DropZone
+            accept=".pdf,application/pdf"
+            label="PDF 파일을 드래그하거나 클릭하여 업로드"
+            hint="PDF 파일만 지원됩니다 (최대 5MB)"
+            onFiles={handleFiles}
+          />
+          {sizeError && <p className={styles.pdfSizeError}>{sizeError}</p>}
+        </>
       )}
 
       {pdfFile && (
