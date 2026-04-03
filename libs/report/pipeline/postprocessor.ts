@@ -2832,6 +2832,33 @@ const normalizeSection = (
       }
     }
 
+    // ── 학업성취도 ↔ 교과성취도 동기화 (만점 동일 35, 동일 점수 강제) ──
+    if (Array.isArray(s.scores)) {
+      const academicScore = s.scores.find(
+        (sc: any) => sc.category === "academic"
+      );
+      const careerScore = s.scores.find((sc: any) => sc.category === "career");
+      if (academicScore?.subcategories && careerScore?.subcategories) {
+        const academicAchievement = academicScore.subcategories.find(
+          (sub: any) => sub.name === "학업성취도"
+        );
+        const courseAchievement = careerScore.subcategories.find(
+          (sub: any) => sub.name === "교과성취도"
+        );
+        if (academicAchievement && courseAchievement) {
+          // 교과성취도를 학업성취도 점수로 강제 동기화
+          courseAchievement.score = academicAchievement.score;
+          courseAchievement.maxScore = 35;
+          academicAchievement.maxScore = 35;
+          // 진로역량 소계 재계산
+          careerScore.score = careerScore.subcategories.reduce(
+            (sum: number, sub: any) => sum + (sub.score ?? 0),
+            0
+          );
+        }
+      }
+    }
+
     // ── growthScore/growthGrade 강제 보정 ──
     if (sti) {
       s.growthScore = sti.growthScore;
