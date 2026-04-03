@@ -241,7 +241,6 @@ const STRING_FIELDS: Record<string, string[]> = {
   subjectEvaluations: ["subject", "evaluation"],
   readingActivities: ["subjectOrArea", "content"],
   behavioralAssessments: ["assessment"],
-  mockExams: ["subject"],
 };
 
 /**
@@ -252,7 +251,6 @@ const REQUIRED_NUMBER_FIELDS: Record<string, Record<string, number>> = {
   generalSubjects: { year: 1, semester: 1 },
   careerSubjects: { year: 1, semester: 1 },
   artsPhysicalSubjects: { year: 1, semester: 1 },
-  mockExams: { year: 1, month: 6 },
   attendance: { year: 1 },
   awards: { year: 1, semester: 1 },
   creativeActivities: { year: 1 },

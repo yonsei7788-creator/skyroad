@@ -157,7 +157,6 @@ const ReviewSectionBlock = ({
           render={(r) => `${r.year}학년 | ${r.assessment.slice(0, 80)}...`}
         />
       )}
-      {sectionKey === "mockExams" && <MockExamsTable rows={record.mockExams} />}
     </div>
   );
 };
@@ -353,40 +352,6 @@ const AttendanceTable = ({ rows }: { rows: SchoolRecord["attendance"] }) => (
             <td>{r.classMissedUnauthorized ?? "-"}</td>
             <td>{r.classMissedOther ?? "-"}</td>
             <td>{r.note || "-"}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-);
-
-const MockExamsTable = ({ rows }: { rows: SchoolRecord["mockExams"] }) => (
-  <div className={styles.reviewTableWrap}>
-    <table className={styles.reviewTable}>
-      <caption className="sr-only">모의고사 성적 검토</caption>
-      <thead>
-        <tr>
-          <th scope="col">학년</th>
-          <th scope="col">시기(월)</th>
-          <th scope="col">과목</th>
-          <th scope="col">원점수</th>
-          <th scope="col">등급</th>
-          <th scope="col">백분위</th>
-          <th scope="col">표준점수</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={r.id}>
-            <td>
-              <span className={styles.reviewBadge}>{r.year}학년</span>
-            </td>
-            <td>{r.month}월</td>
-            <td>{r.subject || "-"}</td>
-            <td>{r.score ?? "-"}</td>
-            <td>{r.gradeRank ?? "-"}</td>
-            <td>{r.percentile ?? "-"}</td>
-            <td>{r.standardScore ?? "-"}</td>
           </tr>
         ))}
       </tbody>

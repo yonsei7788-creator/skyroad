@@ -26,7 +26,6 @@ import {
   createEmptySubjectEvaluationRow,
   createEmptyReadingActivityRow,
   createEmptyBehavioralAssessmentRow,
-  createEmptyMockExamRow,
 } from "./types";
 
 import styles from "../page.module.css";
@@ -840,77 +839,6 @@ const behavioralColumns: ColumnDef<Record<string, unknown>>[] = [
   },
 ];
 
-const MOCK_EXAM_MONTH_OPTIONS = [
-  { value: 3, label: "3월" },
-  { value: 4, label: "4월" },
-  { value: 6, label: "6월" },
-  { value: 7, label: "7월" },
-  { value: 9, label: "9월" },
-  { value: 10, label: "10월" },
-  { value: 11, label: "11월" },
-];
-
-const mockExamColumns: ColumnDef<Record<string, unknown>>[] = [
-  {
-    key: "year",
-    label: "학년",
-    type: "select",
-    options: YEAR_OPTIONS,
-    width: "54px",
-  },
-  {
-    key: "month",
-    label: "시기",
-    type: "select",
-    options: MOCK_EXAM_MONTH_OPTIONS,
-    width: "62px",
-  },
-  {
-    key: "subject",
-    label: "과목",
-    type: "text",
-    placeholder: "과목명",
-    width: "80px",
-  },
-  {
-    key: "score",
-    label: "원점수",
-    type: "number",
-    placeholder: "0",
-    min: 0,
-    max: 200,
-    width: "52px",
-  },
-  {
-    key: "gradeRank",
-    label: "등급",
-    type: "number",
-    placeholder: "1~9",
-    min: 1,
-    max: 9,
-    width: "48px",
-  },
-  {
-    key: "percentile",
-    label: "백분위",
-    type: "number",
-    placeholder: "0",
-    min: 0,
-    max: 100,
-    step: "0.1",
-    isFloat: true,
-    width: "56px",
-  },
-  {
-    key: "standardScore",
-    label: "표준점수",
-    type: "number",
-    placeholder: "0",
-    min: 0,
-    width: "56px",
-  },
-];
-
 // ============================================
 // Accordion Steps
 // ============================================
@@ -918,19 +846,6 @@ const mockExamColumns: ColumnDef<Record<string, unknown>>[] = [
 const ACCORDION_STEPS: AccordionStepDef[] = [
   {
     stepNumber: 1,
-    title: "모의고사 성적",
-    sections: [
-      {
-        key: "mockExams",
-        title: "모의고사 성적",
-        columns: mockExamColumns,
-        addLabel: "모의고사 추가",
-        createEmpty: createEmptyMockExamRow,
-      },
-    ],
-  },
-  {
-    stepNumber: 2,
     title: "출결상황 · 수상경력 · 자격증",
     sections: [
       {
@@ -957,7 +872,7 @@ const ACCORDION_STEPS: AccordionStepDef[] = [
     ],
   },
   {
-    stepNumber: 3,
+    stepNumber: 2,
     title: "창의적 체험활동 · 봉사활동",
     sections: [
       {
@@ -976,7 +891,7 @@ const ACCORDION_STEPS: AccordionStepDef[] = [
     ],
   },
   {
-    stepNumber: 4,
+    stepNumber: 3,
     title: "교과학습발달상황 · 세부능력 및 특기사항",
     sections: [
       {
@@ -1010,7 +925,7 @@ const ACCORDION_STEPS: AccordionStepDef[] = [
     ],
   },
   {
-    stepNumber: 5,
+    stepNumber: 4,
     title: "독서활동 · 행동특성 및 종합의견",
     sections: [
       {
@@ -1056,9 +971,7 @@ export const TextInputStep = ({
   return (
     <div className={styles.textInputStep}>
       <div className={styles.textInputHeader}>
-        <h3 className={styles.stepSectionTitle}>
-          생활기록부 및 모의고사 점수 등록
-        </h3>
+        <h3 className={styles.stepSectionTitle}>생활기록부 등록</h3>
         <p className={styles.stepSectionDesc}>
           각 STEP을 열어 생기부 데이터를 입력해주세요.{" "}
           <span className={styles.requiredHint}>

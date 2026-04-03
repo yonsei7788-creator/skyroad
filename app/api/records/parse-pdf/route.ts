@@ -39,7 +39,6 @@ const ALL_SECTIONS = [
   "subjectEvaluations",
   "readingActivities",
   "behavioralAssessments",
-  "mockExams",
 ];
 
 const enrichResult = (

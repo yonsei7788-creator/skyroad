@@ -157,19 +157,6 @@ const SECTION_CONFIGS: {
       assessment: "assessment",
     },
   },
-  {
-    key: "mockExams",
-    table: "record_mock_exams",
-    fields: {
-      year: "year",
-      month: "month",
-      subject: "subject",
-      score: "score",
-      grade_rank: "gradeRank",
-      percentile: "percentile",
-      standard_score: "standardScore",
-    },
-  },
 ];
 
 // snake_case DB row → camelCase client row (+ client-side id)

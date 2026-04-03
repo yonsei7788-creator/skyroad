@@ -14,7 +14,6 @@ interface SchoolRecord {
   subjectEvaluations: Record<string, unknown>[];
   readingActivities: Record<string, unknown>[];
   behavioralAssessments: Record<string, unknown>[];
-  mockExams: Record<string, unknown>[];
 }
 
 interface SubmitBody {
@@ -151,15 +150,6 @@ const FIELD_MAPS: Record<keyof SchoolRecord, Record<string, string>> = {
     year: "year",
     assessment: "assessment",
   },
-  mockExams: {
-    year: "year",
-    month: "month",
-    subject: "subject",
-    score: "score",
-    gradeRank: "grade_rank",
-    percentile: "percentile",
-    standardScore: "standard_score",
-  },
 };
 
 const mapSection = (
@@ -246,7 +236,7 @@ export async function POST(request: NextRequest) {
       record.behavioralAssessments,
       FIELD_MAPS.behavioralAssessments
     ),
-    p_mock_exams: mapSection(record.mockExams ?? [], FIELD_MAPS.mockExams),
+    p_mock_exams: [],
     p_planned_subjects: plannedSubjects ?? null,
   });
 
