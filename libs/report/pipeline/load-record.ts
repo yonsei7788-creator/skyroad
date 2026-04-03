@@ -21,6 +21,7 @@ const SUB_TABLES = [
   { name: "record_subject_evaluations", key: "subjectEvaluations" },
   { name: "record_reading_activities", key: "readingActivities" },
   { name: "record_behavioral_assessments", key: "behavioralAssessments" },
+  { name: "record_mock_exams", key: "mockExams" },
 ] as const;
 
 // snake_case DB → camelCase RecordData 매핑
@@ -118,6 +119,15 @@ const FIELD_MAPS: Record<string, Record<string, string>> = {
     subject: "subject",
     credits: "credits",
     achievement: "achievement",
+  },
+  mockExams: {
+    year: "year",
+    month: "month",
+    subject: "subject",
+    score: "score",
+    grade_rank: "gradeRank",
+    percentile: "percentile",
+    standard_score: "standardScore",
   },
 };
 

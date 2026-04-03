@@ -28,7 +28,7 @@ import {
 import {
   buildAdmissionPredictionPrompt,
   buildGyogwaPredictionPrompt,
-  buildHakjongJeongsiPredictionPrompt,
+  buildHakjongPredictionPrompt,
 } from "../prompts/sections/admission-prediction.ts";
 import {
   buildAcademicAnalysisPrompt,
@@ -710,7 +710,7 @@ export const executeTask = async (
       break;
 
     case "admissionPrediction": {
-      // 교과 / 학종+정시 분리 호출 — 교과 프롬프트에는 추세/발전가능성 개념 없음
+      // 교과 / 학종 분리 호출 — 교과 프롬프트에는 추세/발전가능성 개념 없음
       const isArtSportPractical = isArtSportPracticalFn(
         studentInfo.targetDepartment ?? ""
       );
@@ -724,7 +724,7 @@ export const executeTask = async (
 
       // 전형별 필터링된 희망대학만 각 프롬프트에 전달
       const gyogwaTargetText = texts.targetUniversitiesByType.gyogwa;
-      const hakjongTargetText = texts.targetUniversitiesByType.hakjongJeongsi;
+      const hakjongTargetText = texts.targetUniversitiesByType.hakjong;
 
       const gyogwaInput = {
         academicAnalysis: predGyogwaAcadText,
@@ -756,13 +756,13 @@ export const executeTask = async (
             "모든 희망대학이 학생부교과전형입니다. 최종 등급과 합격선을 기준으로 지원 전략을 수립하세요.",
         } as unknown as ReportSection;
       } else {
-        // 혼합 — 교과 / 학종+정시 병렬 호출
+        // 혼합 — 교과 / 학종 병렬 호출
         const [gyogwaResult, hakjongResult] = await Promise.all([
           callGemini<Record<string, unknown>>(
             buildGyogwaPredictionPrompt(gyogwaInput, plan)
           ),
           callGemini<Record<string, unknown>>(
-            buildHakjongJeongsiPredictionPrompt(
+            buildHakjongPredictionPrompt(
               {
                 competencyExtraction: ser.compExtrText!,
                 academicAnalysis: ser.acadAnalText!,
@@ -784,7 +784,7 @@ export const executeTask = async (
           ),
         ]);
 
-        // 병합: 학종+정시를 base로, 교과 prediction 삽입
+        // 병합: 학종을 base로, 교과 prediction 삽입
         const hakjongPredictions = Array.isArray(
           (hakjongResult as any).predictions
         )
@@ -953,7 +953,6 @@ export const executeTask = async (
           competencyExtraction: ser.compExtrText,
           subjectAnalysisResult: ser.subjAnalysisText,
         }),
-        hasMockExamData: studentInfo.hasMockExamData,
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly

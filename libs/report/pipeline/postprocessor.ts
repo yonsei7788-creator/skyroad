@@ -638,20 +638,11 @@ export const postprocess = (
     }
   }
 
-  // 3-3. admissionPrediction: 정시 모의고사 미입력 시 "판단 불가"
-  if (
-    admPred &&
-    !studentInfo.hasMockExamData &&
-    Array.isArray(admPred.predictions)
-  ) {
-    for (const pred of admPred.predictions) {
-      if (pred.admissionType !== "정시") continue;
-      pred.passRateLabel = "판단 불가";
-      pred.passRateRange = [0, 0];
-      pred.analysis =
-        "모의고사 데이터가 입력되지 않아 정시 전형의 합격 가능성을 판단할 수 없습니다.";
-      pred.universityPredictions = [];
-    }
+  // 3-3. admissionPrediction: 정시 predictions 제거 (정시 전형 미지원)
+  if (admPred && Array.isArray(admPred.predictions)) {
+    admPred.predictions = admPred.predictions.filter(
+      (pred: any) => pred.admissionType !== "정시"
+    );
   }
 
   // 3-4. admissionPrediction: 교과전형에서 서울대 제거 (교과전형 미운영)
@@ -720,22 +711,6 @@ export const postprocess = (
     }
   }
 
-  // 3-6. admissionPrediction: 정시 전형 모의고사 미입력 시 chance 강제 null 처리
-  if (
-    admPred &&
-    !studentInfo.hasMockExamData &&
-    Array.isArray(admPred.predictions)
-  ) {
-    for (const pred of admPred.predictions) {
-      if (pred.admissionType !== "정시") continue;
-      pred.passRateLabel = "판단 불가";
-      pred.passRateRange = [0, 0];
-      pred.analysis =
-        "모의고사 데이터가 입력되지 않아 정시 전형의 합격 가능성을 판단할 수 없습니다.";
-      pred.universityPredictions = [];
-    }
-  }
-
   // 3-5. admissionPrediction: 유저 희망대학이 있으면, 해당 대학을 유저가 선택한 전형에만 남기기
   if (
     admPred &&
@@ -747,7 +722,6 @@ export const postprocess = (
       학생부종합: "학종",
       학생부교과: "교과",
       고른기회: "고른기회",
-      정시: "정시",
       논술: "논술",
     };
 

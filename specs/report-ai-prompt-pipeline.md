@@ -1635,7 +1635,7 @@ AI 프롬프트 생성 시 아래 양적 기준을 준수하여 경쟁사 수준
 
 - **Lite**: 추천 전형 방향(recommendedPath, 3~5줄) + 대학 추천(recommendations: **상향 2개 + 안정 2개 + 하향 2개 = 총 6개**, 대학명+학과+전형명+티어). **6개를 초과하지 않습니다.**
 - **Standard**: Lite + 전형별 상세 전략(typeStrategies: 학생부종합전형/학생부교과전형/정시(수능전형)) + 대학별 합격 가능성(chance+chanceRationale, **최소 3~4줄**) + 입시 데이터(admissionData) + 주의/유리 학교 유형(schoolTypeAnalysis)
-- **Premium**: Standard + 수능 최저 전략(csatMinimumStrategy) + 6장 카드 배분 시뮬레이션(applicationSimulation: **수시 6개 대학을 꽉 채워 추천 + 정시 1개 대학 추천**) + 대학별 학생부종합전형 가이드북 키워드 매칭(universityGuideMatching) + **대학 추천 총 18개** (상향 위주 조합 6개 + 안정 위주 조합 6개 + 하향 위주 조합 6개, **조합별 그룹핑하여 표시**)
+- **Premium**: Standard + 수능 최저 전략(csatMinimumStrategy) + 6장 카드 배분 시뮬레이션(applicationSimulation: **수시 6개 대학을 꽉 채워 추천 + 정시 1개 대학 추천**) + 대학별 학생부종합전형 가이드북 키워드 매칭(universityGuideMatching) + **대학 추천 총 18개** (상향 위주 조합 6개 + 안정 위주 조합 6개 + 하향 위주 조합 6개, **조합별 그룹핑하여 표시**, 후보군 최대 6개)
 
 > **서울대 학생부교과전형 금지**: 서울대는 학생부교과전형을 운영하지 않습니다. 대학 추천 시 "서울대 학생부교과전형"을 절대 생성하지 마세요.
 > **전형 명칭**: 모든 전형은 정식 명칭으로 표시합니다. (학생부종합전형, 학생부교과전형, 정시(수능전형))

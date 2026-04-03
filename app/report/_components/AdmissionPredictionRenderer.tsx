@@ -16,7 +16,6 @@ interface AdmissionPredictionRendererProps {
 const TYPE_LABEL: Record<string, string> = {
   학종: "학생부종합전형",
   교과: "학생부교과전형",
-  정시: "수능(정시)전형",
   논술: "논술전형",
   고른기회: "고른기회전형",
 };
@@ -24,7 +23,6 @@ const TYPE_LABEL: Record<string, string> = {
 const FULL_TYPE_NAME: Record<string, string> = {
   학종: "학생부종합전형",
   교과: "학생부교과전형",
-  정시: "수능(정시)전형",
   논술: "논술전형",
   고른기회: "고른기회전형",
 };
@@ -49,7 +47,9 @@ export const AdmissionPredictionRenderer = ({
       ? styles.admissionCardStandard
       : styles.admissionCard;
 
-  const allPredictions = data.predictions ?? [];
+  const allPredictions = (data.predictions ?? []).filter(
+    (p) => (p.admissionType as string) !== "정시"
+  );
   const hasAnyUniversityPredictions = allPredictions.some(
     (p) => p.universityPredictions && p.universityPredictions.length > 0
   );

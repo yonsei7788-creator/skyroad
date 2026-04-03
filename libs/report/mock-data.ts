@@ -268,13 +268,6 @@ const admissionPredictionLite: AdmissionPredictionSection = {
       analysis:
         "내신 2.1등급은 서울대 교과전형 합격선(1.5등급 이내)에 미달하여 교과전형으로의 지원은 권장하지 않습니다.",
     },
-    {
-      admissionType: "정시",
-      passRateLabel: "40~50%",
-      passRateRange: [40, 50],
-      analysis:
-        "모의고사 성적이 보통 수준이나, 수능 변동성을 고려하면 정시는 보조 전략으로 활용하는 것이 적절합니다.",
-    },
   ],
   overallComment:
     "학생부종합전형을 주력으로 준비하되, 3학년 1학기 세특 보강과 공동체 활동 강화에 집중하면 합격 가능성을 높일 수 있습니다.",
@@ -322,11 +315,6 @@ const admissionPredictionStandard: AdmissionPredictionSection = {
       admissionType: "교과",
       band: "도전",
       rationale: "내신 2.1등급은 서울대 교과전형 합격선(1.5등급)에 미달",
-    },
-    {
-      admissionType: "정시",
-      band: "적정",
-      rationale: "모의고사 성적 기준 적정 범위 내이나 수능 변동성 존재",
     },
   ],
   detailedUniversityPredictions: [
@@ -5330,12 +5318,12 @@ const admissionStrategyStandard: AdmissionStrategySection = {
         "서울대 교과전형 합격선 1.5등급 이내에 미달, 중상위권 대학에서는 가능성 있음",
     },
     {
-      type: "정시",
+      type: "논술",
       analysis:
-        "모의고사 성적이 보통 수준이어서 보조 전략으로 활용 가능하나, 수능 변동성을 고려해야 합니다.",
+        "논술전형은 논술 성적 비중이 높아 내신이 다소 부족해도 역전 가능성이 있으나, 논술 실력은 검증 불가하므로 보수적으로 판단합니다.",
       suitability: "보통",
       reason:
-        "현재 모의고사 기준 상위권이나, 수능 당일 변수가 크므로 보조 전략으로 활용",
+        "내신 등급이 상위권이므로 논술전형에서도 기본 경쟁력을 갖추고 있으나, 논술 실력에 따라 결과가 달라짐",
     },
   ],
   schoolTypeAnalysis: {

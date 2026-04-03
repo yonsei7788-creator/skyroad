@@ -21,19 +21,16 @@ export interface WeaknessAnalysisPromptInput {
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 간략
 - **3개** 부족 영역을 출력합니다.
-- 각 영역: area + description(**2줄 이내**) + suggestedActivities(**1개만**)
-- evidence, competencyTag, priority 필드는 출력하지 않습니다.
-
-## 분량 가이드
-- 핵심 약점 3개. A4 1페이지 이내.`,
+- 각 영역: area + description(**150자 이내**) + suggestedActivities(**250자 이내**, **1개만**)
+- evidence, competencyTag, priority 필드는 출력하지 않습니다.`,
   standard: `## 플랜별 출력: 상세
 - 각 영역: area + description + suggestedActivities + evidence(상세 근거) + competencyTag(역량 매핑) + priority(**반드시 "high" | "medium" | "low" 중 하나. 빈 문자열/한글 금지**)
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - areas 배열은 **최대 3개**입니다. 4개 이상 절대 출력하지 마세요.
-- 각 description은 반드시 **100자 이내**로 작성합니다. 100자 초과 금지.
-- 각 suggestedActivities의 항목은 **150자 이내**로 작성합니다.
-- evidence는 **100자 이내**로 작성합니다.`,
+- 각 description은 반드시 **150자 이내**로 작성합니다. 150자 초과 금지.
+- 각 suggestedActivities의 항목은 **250자 이내**로 작성합니다.
+- evidence는 **150자 이내**로 작성합니다.`,
   premium: `## 플랜별 출력: 정밀
 - Standard의 모든 항목에 추가로 다음 필드를 **반드시** 출력합니다:
   - urgency: 시급도 — **반드시 "high" | "medium" | "low" 중 하나**. 빈 문자열이나 한글 값 금지.
@@ -61,7 +58,7 @@ export const buildWeaknessAnalysisPrompt = (
 - **영어 2등급 이하**: 의·치·한·약·수에서 영어 1등급은 사실상 필수. 2등급 이하이면 priority "high"로 반드시 포함.
 - **수학·과학 핵심 과목 미이수 또는 저성적**: 미적분(2015)/미적분Ⅰ·Ⅱ(2022), 생명과학Ⅱ/화학Ⅱ(2015) 또는 대응 2022 과목 미이수 시 priority "high".
 - **과학 세특의 탐구 깊이 부족**: 실험 기반 탐구(가설→실험→결과→한계인식)가 아닌 단순 조사 수준이면 약점으로 식별.
-- **모의고사 미비**: 의·치·한·약·수는 정시 비중 40% 이상. 모의고사 데이터가 없거나 수능 준비가 미흡하면 약점으로 식별.
+- **영어 등급 미충족**: 의·치·한·약·수는 영어 1등급이 사실상 필수. 영어 등급이 부족하면 약점으로 식별.
 - **진로 변경 이력 미설명**: 의·치·한·약·수→비의·치·한·약·수 또는 비의·치·한·약·수→의·치·한·약·수 변경 시 학생부에 변경 계기 설명이 없으면 약점.
 
 `

@@ -21,11 +21,9 @@ export interface AcademicAnalysisPromptInput {
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 간략
 - 공통 항목(전과목 평균, 학년별 평균, 교과 조합별 평균, 등급 추이, 과목별 등급, 해석)을 출력합니다.
-- 간단 해석 (2~3줄)만 포함합니다.
+- 해석은 **200자 이내**로 작성합니다.
 - subjectGrades는 **주요 5과목만** 출력합니다. 나머지 과목은 생략합니다.
-- subjectStatAnalyses, careerSubjectAnalyses, gradeInflationContext, gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis, schoolTypeAdjustment 등 Standard+ 전용 필드는 출력하지 않습니다.
-
-⚠️ **분량 제한**: 이 섹션은 A4 1페이지 이내로 작성합니다.`,
+- subjectStatAnalyses, careerSubjectAnalyses, gradeInflationContext, gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis, schoolTypeAdjustment 등 Standard+ 전용 필드는 출력하지 않습니다.`,
   standard: `## 플랜별 출력: 상세
 공통 항목에 추가로 **아래 핵심 3개 필드만 반드시 출력**합니다:
 
@@ -46,13 +44,13 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
    - actionItems는 학생이 앞으로 실행 가능한 것만 제시하세요. "이수 완료 과목 정보"에 나열된 과목은 확정된 성적이므로 조언 대상에서 제외하세요.
      - ✅ "국어 교과 영역에서 2학년 선택과목 성적을 높이세요" (향후 이수 가능한 과목)
      - ✅ "사회탐구 영역에서 사회와 문화, 윤리와 사상 등 선택과목 성적 확보가 중요합니다" (향후 이수 가능)
-     - ✅ "수능 성적을 통해 정시전형에서 보완하는 전략이 필요합니다" (졸업생의 경우)
+     - ✅ "면접 대비와 지원 전략 수립이 필요합니다" (졸업생의 경우)
    - 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis **3개 필드만** 출력합니다. 이 3개 외 추가 분석 필드는 절대 출력하지 마세요.
 - 각 필드의 텍스트(riskAssessment, enrollmentEffort, achievement, prediction 등)는 반드시 **200자 이내**로 작성합니다. 200자 초과 금지.
-- careerSubjectAnalyses는 **최대 5개**만 출력하며, 각 interpretation은 **100자 이내**로 작성합니다.
+- careerSubjectAnalyses는 **최대 5개**만 출력하며, 각 interpretation은 **150자 이내**로 작성합니다.
 - smallClassSubjectAnalyses, schoolTypeAdjustment, gradeInflationContext는 출력하지 않습니다.
 - ⚠️ schoolTypeAdjustment는 절대 출력하지 마세요.`,
   premium: `## 플랜별 출력: 정밀
@@ -94,17 +92,15 @@ Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysi
 const GYOGWA_PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 간략
 - 공통 항목(전과목 평균, 학년별 평균, 등급 추이, 과목별 등급, 해석)을 출력합니다.
-- 간단 해석 (2~3줄)만 포함합니다.
-- subjectGrades는 **주요 5과목만** 출력합니다.
-
-⚠️ **분량 제한**: 이 섹션은 A4 1페이지 이내로 작성합니다.`,
+- 해석은 **200자 이내**로 작성합니다.
+- subjectGrades는 **주요 5과목만** 출력합니다.`,
   standard: `## 플랜별 출력: 상세
 공통 항목에 추가로 **아래 핵심 3개 필드만 반드시 출력**합니다:
 
 1. **gradeDeviationAnalysis** (필수): 최고/최저 과목과 최종 평균의 합격선 대비 위치
    형식: {"highestSubject": "통합사회", "lowestSubject": "영어 I", "deviationRange": 3, "riskAssessment": "..."}
    riskAssessment 작성법: "최종 평균 N등급은 합격선 대비 ~한 위치입니다" 형식으로만 작성하세요.
-   - 모범 예시: "최종 평균 2.55등급은 인서울 중위권 합격선(2.0~2.5등급)에 근접한 수준입니다. 전체 평균을 끌어올리는 것이 핵심입니다."
+   - 모범 예시: "최종 평균 2.55등급으로, 2학년 1학기 하락 이후 반등에 성공한 점은 긍정적입니다. 전체 평균을 끌어올리는 것이 핵심입니다."
 2. **majorRelevanceAnalysis** (필수): 전공 관련 교과 이수 현황
    형식: {"enrollmentEffort": "...", "achievement": "...", "recommendedSubjects": ["과목1", "과목2"]}
 3. **gradeChangeAnalysis** (필수): **합격선 도달을 위한 남은 학기 목표**
@@ -171,7 +167,7 @@ export const buildGyogwaAcademicAnalysisPrompt = (
 - 교과전형은 **최종 평균 등급**으로만 합격 여부가 결정됩니다.
 - 성적 분석은 "최종 평균 등급이 합격선 대비 어디에 위치하는가"에 집중하세요.
 - interpretation 작성 시 최종 평균 등급과 대학 합격선 비교만 서술하세요.
-- ✅ 좋은 예시: "최종 평균 2.41등급으로, 인서울 중위권 교과전형에서 경쟁력이 있는 수준입니다."
+- ✅ 좋은 예시: "최종 평균 2.41등급으로, 전공 핵심 과목 평균이 전체 평균보다 0.5등급 높아 전공 적합성이 강점입니다."
 - ✅ 좋은 예시: "전교과 평균 2.41등급은 광운대·명지대 합격선에 여유가 있습니다."
 
 ## 입력 데이터
@@ -206,7 +202,7 @@ ${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubje
   "subjectGrades": [
     {"subject": "국어", "year": 1, "semester": 1, "grade": 3, "rawScore": 78, "classAverage": 65.2, "standardDeviation": 12.5, "studentCount": 250}
   ],
-  "interpretation": "최종 평균 2.85등급으로, 인서울 중위권 교과전형 합격선(2.0~2.5등급)에 다소 미달합니다. 지방 거점국립대 교과전형에서는 경쟁력이 있는 등급입니다."
+  "interpretation": "최종 평균 2.85등급으로, 1학년 대비 2학년에서 등급이 하락한 점이 아쉽습니다. 전공 관련 과목에서는 상대적으로 우수한 성적을 유지하고 있어 전공 적합성 측면에서 강점이 있습니다."
 }
 Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다 (아래 플랜별 출력 참조).
 ⚠️ subjectCombinations 필드는 출력하지 마세요. 후처리에서 자동 주입됩니다.
@@ -246,9 +242,9 @@ Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다
 - 학년별 등급 추이 (gradeTrend: 상승/유지/하락)
 - 과목별 등급 요약 테이블 (subjectGrades)
 - 해석 (interpretation): **최종 평균 등급이 교과전형 합격선 대비 어디에 위치하는지만** 서술.
-  - ✅ "최종 평균 2.55등급으로, 인서울 중위권 교과전형 합격선(2.0~2.5등급)에 근접한 수준입니다."
+  - ✅ "최종 평균 2.55등급으로, 전공 핵심 과목 평균이 전체 평균보다 우수하여 전공 적합성이 강점입니다."
   - ✅ "전교과 평균 2.41등급으로, 광운대·명지대 교과전형에서 합격 가능성이 있습니다."
-  - ✅ "국영수사과 평균 2.45등급, 전교과 평균 2.41등급으로, 인서울 중위권 교과전형 합격선 내에 있습니다."
+  - ✅ "국영수사과 평균 2.45등급, 전교과 평균 2.41등급으로, 교과 조합별 평균이 전체 평균보다 높아 주요 과목 학습이 탄탄합니다."
 3. improvementPriority에 "반영 과목에서 높은 등급" 같은 조언이 있지 않은가? → "전체 평균 등급을 끌어올리는 것이 최우선"으로 대체
 
 ${GYOGWA_PLAN_SPECIFIC[plan]}`;
@@ -342,7 +338,7 @@ ${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubje
   "subjectGrades": [
     {"subject": "국어", "year": 1, "semester": 1, "grade": 3, "rawScore": 78, "classAverage": 65.2, "standardDeviation": 12.5, "studentCount": 250}
   ],
-  "interpretation": "전체 평균 2.85등급으로 상위권에 위치하며, 학기별 등급이 점진적으로 상승하는 추세..."
+  "interpretation": "전체 평균 2.85등급으로, 학기별 등급이 점진적으로 상승하는 추세..."
 }
 Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다 (아래 플랜별 출력 참조).
 
@@ -404,7 +400,7 @@ Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다
 - 과목별 등급 요약 테이블 (subjectGrades)
 - 간단 해석 (interpretation): **단순 사실 나열이 아니라 입학사정관이 이 성적 구조를 어떻게 해석할지** 서술
   - ❌ "전체 평균 2.42등급이며 상승 추세입니다" (사실 나열)
-  - ✅ "평균 2.42등급은 중위권으로, 인서울 중하위권 교과전형은 어렵지만 학종에서는 세특 품질에 따라 가능성이 열려 있습니다. 상승 추세(2.57→2.0)는 사정관이 긍정적으로 평가하는 요소입니다."
+  - ✅ "평균 2.42등급으로, 학종에서는 세특 품질에 따라 가능성이 열려 있습니다. 상승 추세(2.57→2.0)는 사정관이 긍정적으로 평가하는 요소입니다."
 
 ${PLAN_SPECIFIC[plan]}`;
 };

@@ -196,7 +196,7 @@ const UniversityPredictionSchema = z.object({
 });
 
 const AdmissionPredictionItemSchema = z.object({
-  admissionType: z.enum(["학종", "교과", "정시", "논술", "실기/실적"]),
+  admissionType: z.enum(["학종", "교과", "논술", "실기/실적"]),
   passRateLabel: z.string().optional(),
   passRateRange: z
     .tuple([z.number().min(0).max(100), z.number().min(0).max(100)])
@@ -208,7 +208,7 @@ const AdmissionPredictionItemSchema = z.object({
 export const AdmissionPredictionSectionSchema = z.object({
   sectionId: z.literal("admissionPrediction"),
   title: z.string().min(1),
-  recommendedType: z.enum(["학종", "교과", "정시", "논술"]),
+  recommendedType: z.enum(["학종", "교과", "논술"]),
   recommendedTypeReason: z.string().min(1),
   predictions: z.array(AdmissionPredictionItemSchema).min(1),
   overallComment: z.string().min(1),
@@ -216,7 +216,7 @@ export const AdmissionPredictionSectionSchema = z.object({
   riskBands: z
     .array(
       z.object({
-        admissionType: z.enum(["학종", "교과", "정시", "논술", "실기/실적"]),
+        admissionType: z.enum(["학종", "교과", "논술", "실기/실적"]),
         band: AdmissionRiskBandSchema,
         rationale: z.string().min(1),
       })
@@ -845,7 +845,7 @@ const SimulationGroupSchema = z.object({
 });
 
 const AdmissionTypeStrategySchema = z.object({
-  type: z.enum(["학종", "교과", "정시", "논술", "실기/실적"]),
+  type: z.enum(["학종", "교과", "논술", "실기/실적"]),
   analysis: z.string().min(1),
   suitability: z.enum(["적합", "보통", "부적합"]),
   reason: z.string().min(1),

@@ -252,7 +252,7 @@ interface UniversityPrediction {
 }
 
 interface AdmissionPredictionItem {
-  admissionType: "학종" | "교과" | "정시" | "논술";
+  admissionType: "학종" | "교과" | "논술";
   /** 합격률 표시 (예: "60~70%") — 커트라인 데이터 미제공 시 "데이터 없음" */
   passRateLabel?: string;
   /** 합격률 수치 범위 [하한, 상한] — 커트라인 데이터 미제공 시 [0, 0] */
@@ -267,7 +267,7 @@ export interface AdmissionPredictionSection extends BaseSection {
   sectionId: "admissionPrediction";
 
   /** 추천 전형 */
-  recommendedType: "학종" | "교과" | "정시" | "논술";
+  recommendedType: "학종" | "교과" | "논술";
   recommendedTypeReason: string;
 
   /** 전형별 합격 예측 */
@@ -280,7 +280,7 @@ export interface AdmissionPredictionSection extends BaseSection {
 
   /** 전형별 리스크 밴드 */
   riskBands?: {
-    admissionType: "학종" | "교과" | "정시" | "논술";
+    admissionType: "학종" | "교과" | "논술";
     band: AdmissionRiskBand;
     rationale: string;
   }[];
@@ -984,7 +984,7 @@ interface SimulationGroup {
 
 /** Standard+: 전형별 전략 */
 interface AdmissionTypeStrategy {
-  type: "학종" | "교과" | "정시" | "논술";
+  type: "학종" | "교과" | "논술";
   analysis: string;
   suitability: "적합" | "보통" | "부적합";
   reason: string;
@@ -1220,7 +1220,7 @@ export interface ConsultantReviewSection extends BaseSection {
   gradeAnalysis: string;
   /** 전공 관련 교과 이수 노력 + 성취도 평가 */
   courseEffort: string;
-  /** 교과/학종/정시 전형 전략 방향 */
+  /** 교과/학종 전형 전략 방향 */
   admissionStrategy: string;
   /** 생기부 마무리/보완 방향 (Lite에서는 생략 가능) */
   completionDirection?: string;

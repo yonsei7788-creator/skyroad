@@ -200,6 +200,17 @@ export interface RecordData {
   awards?: unknown[];
   certifications?: unknown[];
   artsPhysicalSubjects?: unknown[];
+  mockExams?: MockExamRow[];
+}
+
+export interface MockExamRow {
+  year: number;
+  month: number;
+  subject: string;
+  score: number | null;
+  gradeRank: number | null;
+  percentile: number | null;
+  standardScore: number | null;
 }
 
 // ─── 전처리 결과 타입 ───
@@ -321,7 +332,7 @@ export interface PreprocessedTexts {
   /** 전형별 필터링된 희망대학 텍스트 — 해당 전형 대학이 없으면 빈 문자열 */
   targetUniversitiesByType: {
     gyogwa: string;
-    hakjongJeongsi: string;
+    hakjong: string;
   };
   curriculumVersion: "2015" | "2022";
   /** 계열별 입학사정관 평가 기준 컨텍스트 */
@@ -334,6 +345,8 @@ export interface PreprocessedTexts {
   isArtSportPractical: boolean;
   /** admissionStrategy에서 majorExploration 기반으로 재생성된 후보군 (없으면 universityCandidatesText 사용) */
   strategyUniversityCandidatesText?: string;
+  /** 모의고사 데이터 텍스트 (없으면 빈 문자열) */
+  mockExamText: string;
 }
 
 export interface PreprocessResult {
@@ -1573,12 +1586,12 @@ const buildTexts = (
   const gyogwaUniversities = studentInfo.targetUniversities?.filter(
     (t) => t.admissionType === "학생부교과"
   );
-  const hakjongJeongsiUniversities = studentInfo.targetUniversities?.filter(
+  const hakjongUniversities = studentInfo.targetUniversities?.filter(
     (t) => t.admissionType !== "학생부교과"
   );
   const targetUniversitiesByType = {
     gyogwa: formatTargetUniversities(gyogwaUniversities),
-    hakjongJeongsi: formatTargetUniversities(hakjongJeongsiUniversities),
+    hakjong: formatTargetUniversities(hakjongUniversities),
   };
 
   return {
@@ -1605,6 +1618,7 @@ const buildTexts = (
     ),
     plannedSubjectsText: formatPlannedSubjects(plannedSubjects),
     isArtSportPractical: artSportPractical,
+    mockExamText: formatMockExamText(recordData.mockExams ?? []),
   };
 };
 
@@ -2058,7 +2072,7 @@ export const buildUniversityCandidatesText = (
               cut != null && gradingSystem === "5등급제"
                 ? nineToFiveGrade(cut)
                 : cut;
-            return `${c.admissionType}(${c.admissionName}): 합격선=${cutLabel ?? "-"}, 경쟁률=${c.competitionRate}`;
+            return `${c.admissionType}: 합격선=${cutLabel ?? "-"}, 경쟁률=${c.competitionRate}`;
           })
           .join(" / ");
         result.push({
@@ -2196,8 +2210,8 @@ export const buildUniversityCandidatesText = (
       }
     }
 
-    // 최대 8개로 제한
-    const MAX_CANDIDATES = 8;
+    // 최대 6개로 제한
+    const MAX_CANDIDATES = 6;
 
     const candidates = selected.slice(0, MAX_CANDIDATES).map((c) => ({
       university: c.university,
@@ -2264,7 +2278,7 @@ export const buildUniversityCandidatesText = (
                 cut != null && gradingSystem === "5등급제"
                   ? nineToFiveGrade(cut)
                   : cut;
-              return `${c.admissionType}(${c.admissionName}): 합격선=${cutLabel ?? "-"}, 경쟁률=${c.competitionRate}`;
+              return `${c.admissionType}: 합격선=${cutLabel ?? "-"}, 경쟁률=${c.competitionRate}`;
             })
             .join(" / ")
         : null;
@@ -2298,8 +2312,8 @@ export const buildUniversityCandidatesText = (
     });
   }
 
-  // 상향/적정/안정 밸런스를 보장하며 최대 8개 선정
-  const MAX_CANDIDATES = 8;
+  // 상향/적정/안정 밸런스를 보장하며 최대 6개 선정
+  const MAX_CANDIDATES = 6;
   if (studentGrade9 != null && filtered.length > MAX_CANDIDATES) {
     const getMinCutoff = (c: (typeof filtered)[0]): number =>
       c.allCutoff50s.length > 0 ? Math.min(...c.allCutoff50s) : Infinity;
@@ -2332,7 +2346,7 @@ export const buildUniversityCandidatesText = (
     const pick = (arr: typeof filtered, max: number) => arr.slice(0, max);
     const selected: typeof filtered = [];
     selected.push(...pick(reach, 2));
-    selected.push(...pick(fit, 4));
+    selected.push(...pick(fit, 2));
     selected.push(...pick(safety, 2));
 
     if (selected.length < MAX_CANDIDATES) {
@@ -2459,6 +2473,37 @@ const formatStudentProfile = (
   // → 합격 판단이 필요한 admissionPrediction에만 targetUniversitiesText로 별도 전달
   // → 나머지 섹션은 희망학과를 모르는 상태에서 생기부만으로 분석
   lines.push(`모의고사 데이터: ${info.hasMockExamData ? "있음" : "없음"}`);
+
+  return lines.join("\n");
+};
+
+/**
+ * 모의고사 데이터를 텍스트로 변환.
+ * 시험 시기별로 그룹핑하여 과목별 등급/백분위/표준점수를 정리.
+ */
+const formatMockExamText = (mockExams: MockExamRow[]): string => {
+  if (mockExams.length === 0) return "";
+
+  // 시기별 그룹핑 (년도+월)
+  const grouped = new Map<string, MockExamRow[]>();
+  for (const row of mockExams) {
+    const key = `${row.year}년 ${row.month}월`;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)!.push(row);
+  }
+
+  const lines: string[] = ["## 모의고사 성적"];
+  for (const [period, rows] of grouped) {
+    lines.push(`\n### ${period} 모의고사`);
+    for (const r of rows) {
+      const parts = [`- ${r.subject}:`];
+      if (r.gradeRank != null) parts.push(`${r.gradeRank}등급`);
+      if (r.percentile != null) parts.push(`백분위 ${r.percentile}`);
+      if (r.standardScore != null) parts.push(`표준점수 ${r.standardScore}`);
+      if (r.score != null) parts.push(`원점수 ${r.score}`);
+      lines.push(parts.join(" "));
+    }
+  }
 
   return lines.join("\n");
 };
