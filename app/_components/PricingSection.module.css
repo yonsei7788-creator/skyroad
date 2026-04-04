@@ -83,6 +83,18 @@
   transform: translateY(-4px);
 }
 
+.card_lite {
+  border: 1.5px solid var(--color-neutral-400);
+}
+
+.card_standard {
+  border: 1.5px solid var(--color-primary-500);
+}
+
+.card_premium {
+  border: 2px solid var(--color-neutral-900);
+}
+
 .cardPopular {
   border-color: var(--color-primary-300);
   background: var(--color-bg-elevated);

@@ -56,7 +56,7 @@ const PLANS: Plan[] = [
     price: "79,000",
     discount: 20,
     pages: "40~50페이지",
-    popular: true,
+    popular: false,
     point: "합격 가능성 분석 + 지원 전략까지",
     cta: "Standard 선택하기",
     features: [
@@ -112,7 +112,7 @@ export const PricingSection = () => {
           {PLANS.map((plan, index) => (
             <FadeIn key={plan.name} delay={index * 0.12}>
               <div
-                className={`${styles.card} ${plan.popular ? styles.cardPopular : ""}`}
+                className={`${styles.card} ${plan.popular ? styles.cardPopular : ""} ${styles[`card_${plan.slug}`] ?? ""}`}
               >
                 {plan.popular && (
                   <div className={styles.popularBadge}>
