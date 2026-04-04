@@ -241,7 +241,7 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
   },
   {
     majorGroup: "사회과학",
-    label: "사회과학 계열 (법학/정치외교/행정/사회학 등)",
+    label: "사회과학 계열 (법학/정치외교/행정/사회학/지리학 등)",
     keySubjects: ["사회", "국어", "수학", "영어"],
     keySubjectFocus:
       "국어와 사회 과목에서 나타나는 논리적 사고력, 비판적 분석력, 사회 현상에 대한 이해도를 중심으로 평가한다.",
@@ -269,6 +269,8 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
       "정치와 법",
       "사회·문화",
       "사회문제 탐구",
+      "한국지리",
+      "세계지리",
     ],
   },
   {
@@ -576,19 +578,38 @@ export const matchMajorEvaluationCriteria = (
     return findCriteria("예체능교육");
   }
 
+  // 교과 교육 계열 — 교과 전공이 핵심이므로 해당 교과의 계열로 분류
+  // (예체능교육보다 뒤, 일반 교육 계열보다 앞에서 체크)
+  if (/지리교육|역사교육|사회교육|윤리교육/.test(lower)) {
+    return findCriteria("사회과학");
+  }
+  if (/수학교육|과학교육|물리교육|화학교육|생물교육|지구과학교육/.test(lower)) {
+    return findCriteria("자연과학");
+  }
+  if (
+    /국어교육|영어교육|불어교육|독어교육|일어교육|중국어교육|한문교육/.test(
+      lower
+    )
+  ) {
+    return findCriteria("인문");
+  }
+  if (/컴퓨터교육|정보교육|기술교육/.test(lower)) {
+    return findCriteria("컴퓨터AI");
+  }
+
   // 예체능 계열 (순수 예체능)
   if (/예술|미술|음악|체육|무용|디자인|영화|연극|실용음악/.test(lower)) {
     return findCriteria("예체능");
   }
 
-  // 교육 계열
+  // 교육 계열 (교육학 자체 — 위에서 교과교육이 먼저 매칭되므로 여기는 순수 교육학만)
   if (/교육|사범|교직/.test(lower)) {
     return findCriteria("교육");
   }
 
   // 사회과학 계열
   if (
-    /법[학과]|정치|외교|행정|사회[학과]|심리|미디어|언론|신문|광고|복지/.test(
+    /법[학과]|정치|외교|행정|사회[학과]|심리|미디어|언론|신문|광고|복지|지리/.test(
       lower
     )
   ) {
