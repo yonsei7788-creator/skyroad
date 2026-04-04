@@ -9,6 +9,7 @@ export interface AcademicAnalysisPromptInput {
   studentProfile: string;
   gradingSystem: "5등급제" | "9등급제";
   studentGrade: number;
+  isGraduate?: boolean;
   /** Phase 2에서 감지된 생기부 기반 강점 계열 (예: "예체능교육", "의생명") */
   detectedMajorGroup?: string;
   /** 학년별 이수 완료 과목 요약 (이수 완료 과목 성적 개선 권고 방지용) */
@@ -44,7 +45,6 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
    - actionItems는 학생이 앞으로 실행 가능한 것만 제시하세요. "이수 완료 과목 정보"에 나열된 과목은 확정된 성적이므로 조언 대상에서 제외하세요.
      - ✅ "국어 교과 영역에서 2학년 선택과목 성적을 높이세요" (향후 이수 가능한 과목)
      - ✅ "사회탐구 영역에서 사회와 문화, 윤리와 사상 등 선택과목 성적 확보가 중요합니다" (향후 이수 가능)
-     - ✅ "면접 대비와 지원 전략 수립이 필요합니다" (졸업생의 경우)
    - 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.
 
 ⚠️ **분량 제한 (반드시 준수)**:
@@ -108,7 +108,7 @@ const GYOGWA_PLAN_SPECIFIC: Record<ReportPlan, string> = {
    - **actionItems는 반드시 1~3개의 구체적 실행 항목을 포함.** 빈 배열 금지.
    - ⛔ **actionItems는 string[] 형식만 허용.** object 배열 절대 금지.
    - prediction: "3학년 1학기 평균 N등급을 달성하면 최종 평균이 X등급이 되어 합격선 도달 가능" 형태로 작성.
-   - actionItems는 학생이 앞으로 실행 가능한 것만 제시하세요. 졸업생은 수능/면접/지원 전략 위주로 작성하세요.
+   - actionItems는 학생이 앞으로 실행 가능한 것만 제시하세요. 졸업생은 면접 대비, 수능 전략, 지원 전략 관점에서 작성하세요. "~를 보완하세요" 표현도 금지합니다.
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - 위 3개 필드만 출력. 추가 분석 필드 절대 출력 금지.
@@ -147,7 +147,13 @@ export const buildGyogwaAcademicAnalysisPrompt = (
 - 이 학생의 등급은 1~9 범위입니다.
 - fiveGradeSimulation 출력 시: 9등급→5등급 전환 시뮬레이션을 수행하세요.`;
 
-  return `${gradingSystemWarning}
+  const graduateActionContext = input.isGraduate
+    ? `\n## ⚠️ 졸업생 actionItems 규칙 (필수)
+이 학생은 **졸업생**입니다. 성적 향상·과목 이수·활동 보완 관련 조언을 **절대 하지 마세요**. "~를 보완하세요" 표현도 금지합니다.
+actionItems는 **면접 대비, 수능 전략, 지원 전략** 관점에서 작성하세요.\n`
+    : "";
+
+  return `${gradingSystemWarning}${graduateActionContext}
 
 ## ⚠️ 환산 등급 노출 금지 (필수)
 - "환산 등급", "보정 등급", "환산 내신", "보정 내신" 등의 표현을 절대 사용하지 마세요.
@@ -161,7 +167,15 @@ export const buildGyogwaAcademicAnalysisPrompt = (
 
 ## 서술 관점: 데이터 분석가
 이 섹션은 **수치와 추이 중심**으로 서술합니다. 등급 변화량, 편차, 패턴을 강조하세요.
-- 다른 섹션에서 이미 사용한 표현이나 문장 구조를 반복하지 마세요.
+
+## ⛔ 다른 섹션과의 역할 경계 (필수)
+이 섹션은 **성적 데이터의 정량 해석을 담당하는 유일한 섹션**입니다. 다른 섹션에서 등급 수치를 상세히 다루지 않으므로, 여기서 충분히 서술하세요.
+단, 아래 내용은 다른 섹션의 영역이므로 **절대 언급하지 마세요**:
+- ❌ 약점 진단/보완 방향 (예: "~가 부족하므로 ~를 보완해야 한다") → weaknessAnalysis에서 다룸
+- ❌ 합격 가능성 판단 (예: "~대학 합격이 어렵다/가능하다") → admissionPrediction에서 다룸
+- ❌ 입시 전략 제안 (예: "~전형이 유리하다") → admissionStrategy에서 다룸
+- ❌ 세특 내용 평가 (예: "탐구 깊이가 부족하다") → subjectAnalysis에서 다룸
+- ✅ 이 섹션에서 할 것: 등급 수치, 추세, 편차, 과목별 성적 패턴의 **사실적 해석**
 
 ## 교과전형 성적 분석 핵심 원칙
 - 교과전형은 **최종 평균 등급**으로만 합격 여부가 결정됩니다.
@@ -282,7 +296,16 @@ export const buildAcademicAnalysisPrompt = (
 `
     : "";
 
-  return `${gyogwaOnlyContext}${gradingSystemWarning}
+  const graduateActionContext = input.isGraduate
+    ? `\n## ⚠️ 졸업생 actionItems 규칙 (필수)
+이 학생은 **졸업생**입니다. 성적 향상·과목 이수·활동 보완 관련 조언을 **절대 하지 마세요**. "~를 보완하세요" 표현도 금지합니다.
+actionItems는 **면접 대비, 수능 전략, 지원 전략** 관점에서 작성하세요.
+- ✅ "성적 추이의 상승 흐름은 면접에서 발전가능성의 근거로 설명하면 효과적입니다"
+- ✅ "강점 교과를 활용한 전형이 유리한 구조입니다"
+- ❌ "국어 교과 성적을 높이세요" (졸업생은 성적 변경 불가)\n`
+    : "";
+
+  return `${gyogwaOnlyContext}${gradingSystemWarning}${graduateActionContext}
 
 ## ⚠️ 환산 등급 노출 금지 (필수)
 - ⚠️ **"환산 등급", "보정 등급", "환산 내신", "보정 내신" 등의 표현을 리포트 텍스트에 절대 사용하지 마세요.**
@@ -300,7 +323,15 @@ export const buildAcademicAnalysisPrompt = (
 ## 서술 관점: 데이터 분석가
 이 섹션은 **수치와 추이 중심**으로 서술합니다. 등급 변화량, 편차, 패턴을 강조하세요.
 - 같은 성적 사실도 "N등급에서 N등급으로 X점 변동", "평균 대비 ±N등급 편차" 등 정량적 표현을 사용하세요.
-- 다른 섹션에서 이미 사용한 표현이나 문장 구조를 반복하지 마세요. 이 섹션만의 데이터 중심 어투를 유지하세요.
+
+## ⛔ 다른 섹션과의 역할 경계 (필수)
+이 섹션은 **성적 데이터의 정량 해석을 담당하는 유일한 섹션**입니다. 다른 섹션에서 등급 수치를 상세히 다루지 않으므로, 여기서 충분히 서술하세요.
+단, 아래 내용은 다른 섹션의 영역이므로 **절대 언급하지 마세요**:
+- ❌ 약점 진단/보완 방향 (예: "~가 부족하므로 ~를 보완해야 한다") → weaknessAnalysis에서 다룸
+- ❌ 합격 가능성 판단 (예: "~대학 합격이 어렵다/가능하다") → admissionPrediction에서 다룸
+- ❌ 입시 전략 제안 (예: "~전형이 유리하다") → admissionStrategy에서 다룸
+- ❌ 세특 내용 평가 (예: "탐구 깊이가 부족하다") → subjectAnalysis에서 다룸
+- ✅ 이 섹션에서 할 것: 등급 수치, 추세, 편차, 과목별 성적 패턴의 **사실적 해석**
 
 ## 입력 데이터
 

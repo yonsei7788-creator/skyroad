@@ -496,6 +496,7 @@ export const executeTask = async (
         studentProfile: texts.studentProfileText,
         gradingSystem: preData.gradingSystem,
         studentGrade: studentInfo.grade,
+        isGraduate: studentInfo.isGraduate,
         detectedMajorGroup: detectedMajorForAcad,
         completedSubjectsByYear: texts.completedSubjectsByYearText,
         plannedSubjects: texts.plannedSubjectsText,
@@ -540,6 +541,7 @@ export const executeTask = async (
             studentProfile: texts.studentProfileText,
             curriculumVersion: texts.curriculumVersion,
             studentGrade: studentInfo.grade,
+            isGraduate: studentInfo.isGraduate,
             isMedical,
             isGyogwaOnly,
           },
@@ -603,6 +605,7 @@ export const executeTask = async (
             subjectData: texts.subjectDataText,
             studentProfile: texts.studentProfileText,
             studentGrade: studentInfo.grade,
+            isGraduate: studentInfo.isGraduate,
             isMedical,
             gradingSystem: state.preprocessedData!.gradingSystem,
             isGyogwaOnly,
@@ -657,6 +660,8 @@ export const executeTask = async (
         detectedMajorGroup: weaknessMajorGroup,
         majorEvaluationContext: texts.majorEvaluationContextText,
         plannedSubjects: texts.plannedSubjectsText,
+        studentGrade: studentInfo.grade,
+        isGraduate: studentInfo.isGraduate,
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly
@@ -690,6 +695,8 @@ export const executeTask = async (
             isGyogwaOnly,
             aiRecommendedMajors: topicAiMajors,
             plannedSubjects: texts.plannedSubjectsText,
+            studentGrade: studentInfo.grade,
+            isGraduate: studentInfo.isGraduate,
           },
           plan
         )
@@ -944,6 +951,7 @@ export const executeTask = async (
         studentProfile: texts.studentProfileText,
         gradingSystem: state.preprocessedData!.gradingSystem,
         studentGrade: studentInfo.grade,
+        isGraduate: studentInfo.isGraduate,
         currentDate: new Date().toISOString().slice(0, 10),
         isMedical,
         completedSubjectsByYear: texts.completedSubjectsByYearText,
@@ -1043,6 +1051,7 @@ export const executeTask = async (
             studentProfile: texts.studentProfileText,
             currentDate: new Date().toISOString().slice(0, 10),
             studentGrade: studentInfo.grade,
+            isGraduate: studentInfo.isGraduate,
             isMedical,
             completedSubjectsByYear: texts.completedSubjectsByYearText,
             plannedSubjects: texts.plannedSubjectsText,
@@ -1117,6 +1126,7 @@ export const executeTask = async (
         weaknessAnalysisResult: ser.weaknessText,
         gradingSystem: state.preprocessedData?.gradingSystem,
         studentGrade: studentInfo.grade,
+        isGraduate: studentInfo.isGraduate,
         currentDate: new Date().toISOString().slice(0, 10),
         isMedical,
         completedSubjectsByYear: texts.completedSubjectsByYearText,
@@ -1125,6 +1135,7 @@ export const executeTask = async (
         selectedAdmissionTypes,
         detectedMajorGroup: detectedMajorForFlags,
         aiRecommendedMajor: consultAiMajor,
+        preprocessedAcademicData: texts.preprocessedAcademicDataText,
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly

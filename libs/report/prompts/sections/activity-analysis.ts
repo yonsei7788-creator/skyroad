@@ -9,6 +9,7 @@ export interface ActivityAnalysisPromptInput {
   studentProfile: string;
   curriculumVersion: "2015" | "2022";
   studentGrade: number;
+  isGraduate?: boolean;
   /** 계열별 입학사정관 평가 기준 */
   majorEvaluationContext?: string;
   isMedical?: boolean;
@@ -172,7 +173,13 @@ export const buildActivityAnalysisPrompt = (
 ## 서술 관점: 활동 평가자
 이 섹션은 **창체 활동의 실질적 기여도와 성장 궤적**을 평가합니다. 활동의 참여 깊이와 입시 영향력을 중심으로 서술하세요.
 - "활동을 통해 ~역량을 보여준다", "~활동이 ~로 심화되었다" 등 활동 단위의 평가 어투를 사용하세요.
-- 다른 섹션에서 이미 사용한 표현이나 문장 구조를 반복하지 마세요.
+
+## ⛔ 다른 섹션과의 역할 경계 (필수)
+- ❌ 성적·등급 수치 언급 (예: "N등급", "성적이 낮다") → academicAnalysis에서 다룸
+- ❌ 약점 진단/보완 방향 → weaknessAnalysis에서 다룸
+- ❌ 세특 탐구 내용 평가 → subjectAnalysis에서 다룸
+- ❌ "교과 성적 향상" 관련 조언 → academicAnalysis에서 다룸
+- ✅ 이 섹션에서 할 것: **창체 활동의 참여도, 깊이, 성장 궤적**만 평가
 
 ## 교육과정 버전 확인
 - 2015 개정 교육과정: 자율활동, 동아리활동, 진로활동
@@ -180,7 +187,18 @@ export const buildActivityAnalysisPrompt = (
 - 학생의 교육과정 버전: ${input.curriculumVersion}
 - 해당 교육과정의 영역 구분에 맞춰 분석합니다.
 
-## 규칙
+${
+  input.isGraduate
+    ? `## ⚠️ 졸업생 규칙 (최우선)
+이 학생은 **졸업생**입니다. 생기부를 더 이상 수정할 수 없습니다.
+- improvementDirection에서 "3학년에서는...", "향후 활동으로...", "~를 보완하세요" 같은 제안을 **절대 하지 마세요**.
+- improvementDirection은 **면접에서 이 활동을 어떤 관점으로 설명하면 효과적인지** 방향으로 작성하세요.
+- 예: "이 영역은 2학년 탐구 주제가 진로와 연결되는 흐름으로 설명하면, 활동의 일관성이 부각되어 효과적입니다."
+- 예: "이 영역은 기록이 약하지만, 수업 내 비교과 경험과 연결하여 설명하면 진로 탐색 과정으로 어필할 수 있습니다."
+
+`
+    : ""
+}## 규칙
 1. 창체만 분석합니다
 2. 각 영역의 특성에 맞는 평가 관점을 적용합니다:
    - 자율·자치: 학교 행사 참여, 자치 활동, 주도적 기획

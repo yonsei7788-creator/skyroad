@@ -16,6 +16,8 @@ export interface WeaknessAnalysisPromptInput {
   majorEvaluationContext?: string;
   /** 학생이 입력한 수강 예정 과목 텍스트 */
   plannedSubjects?: string;
+  studentGrade?: number;
+  isGraduate?: boolean;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -83,7 +85,30 @@ export const buildWeaknessAnalysisPrompt = (
 ## 서술 관점: 보완 전략가
 이 섹션은 **부족점 진단과 구체적 개선 방안**에 집중합니다. 약점을 정확히 짚고 실행 가능한 보완 방향을 제시하세요.
 - "~가 부족하며, ~를 통해 보완할 수 있다", "~영역의 증거가 빈약하므로 ~가 필요하다" 등 진단-처방 어투를 사용하세요.
-- 다른 섹션에서 이미 사용한 표현이나 문장 구조를 반복하지 마세요.
+
+${
+  input.isGraduate
+    ? `## ⚠️ 졸업생 규칙 (최우선)
+이 학생은 **졸업생**입니다. 생기부를 더 이상 수정할 수 없습니다.
+- suggestedActivities에서 "탐구 보고서 작성", "동아리 활동 확대", "세특 보완", "~를 보완하세요" 같은 **활동/학업 관련 제안을 절대 하지 마세요**.
+- suggestedActivities는 **면접에서 이 부족한 부분을 어떤 관점으로 설명하면 효과적인지** 방향으로 작성하세요.
+- executionStrategy도 면접에서의 설명 전략 관점에서 작성하세요.
+- 예: "이 부분은 2학년 동아리에서의 심화 탐구 경험과 연결하여 설명하면, 탐구 깊이의 부족함보다 성장 과정이 부각되어 효과적입니다."
+- 예: "이 약점은 '당시에는 ~했지만 이 경험을 통해 ~를 배웠다'는 성장 관점으로 설명하면 오히려 발전가능성을 어필할 수 있습니다."
+
+`
+    : ""
+}## ⛔ 다른 섹션과의 역할 경계 (필수)
+이 섹션은 **역량 기반 부족 지점 진단**만 담당합니다. 아래 내용은 다른 섹션에서 다루므로 **절대 언급하지 마세요**:
+- ❌ 등급 수치의 입시적 의미 해석 (예: "N등급이라 합격이 어렵다", "N점대라 약점으로 작용할 것이다", "N등급은 경쟁력이 낮다") → academicAnalysis·admissionPrediction에서 다룸
+- ❌ 합격 가능성 판단 (예: "~대학 지원이 어렵다") → admissionPrediction에서 다룸
+- ❌ 전형 유불리 분석 (예: "학종에서 불리하다") → admissionStrategy에서 다룸
+- ❌ 구체적 탐구 주제 제안 → topicRecommendation에서 다룸
+- ✅ 이 섹션에서 할 것: **역량 관점의 부족 진단** (탐구 깊이, 활동 연결성, 스토리 일관성, 세특 표현 수준 등)
+- ❌ "교과 성적을 N등급으로 올려야 한다", "내신 등급을 개선해야 한다", "N등급 이내로 끌어올려야 한다" 등 성적 향상 목표 제시 → academicAnalysis·consultantReview에서 다룸
+- ⚠️ 이 금지는 **description, executionStrategy, suggestedActivities, subjectLinkStrategy 등 모든 출력 필드**에 적용됩니다.
+- ✅ 이 섹션에서는 역량 기반 부족 지점만 진단하고, 성적 향상 목표가 아닌 역량 보완 활동(세특 심화, 탐구 확장, 교과 연계 등)을 제시하세요.
+- ✅ evidence에 등급을 인용하는 것은 허용하되, description에서 그 등급이 입시에서 어떤 의미인지 해석하지 마세요.
 
 ## 단계별 분석 절차
 1. **역량 추출 결과에서 "미흡"/"부족" 평가 항목 식별**: 4대 역량(학업/진로/공동체/발전가능성) 각각에서 점수가 낮거나 부족 판정을 받은 하위항목을 나열합니다.
@@ -109,7 +134,7 @@ export const buildWeaknessAnalysisPrompt = (
       "priority": "high (enum: 'high' | 'medium' | 'low' 중 반드시 하나)",
       "urgency": "high (enum: 'high' | 'medium' | 'low' 중 반드시 하나)",
       "effectiveness": "high (enum: 'high' | 'medium' | 'low' 중 반드시 하나)",
-      "executionStrategy": "3학년 1학기 세특에서 탐구 과정을 구체적으로...",
+      "executionStrategy": "3학년 1학기 세특에서 탐구 과정을 구체적으로... (⚠️ '성적을 N등급으로 올리세요' 같은 성적 향상 목표 금지 — 역량 보완 활동만 제시)",
       "subjectLinkStrategy": "사회·문화와 정치와법 연계 탐구..."
     }
   ]
@@ -241,7 +266,11 @@ export const buildGyogwaWeaknessAnalysisPrompt = (
 ## 서술 관점: 보완 전략가
 이 섹션은 **부족점 진단과 구체적 개선 방안**에 집중합니다.
 - "~가 부족하며, ~를 통해 보완할 수 있다" 등 진단-처방 어투를 사용하세요.
-- 다른 섹션에서 이미 사용한 표현이나 문장 구조를 반복하지 마세요.
+
+## ⛔ 다른 섹션과의 역할 경계 (필수)
+- ❌ 등급 수치의 입시적 의미 해석 (예: "N등급이라 합격이 어렵다", "N점대라 약점으로 작용할 것이다") → academicAnalysis·admissionPrediction에서 다룸
+- ❌ 합격 가능성 판단, 전형 유불리 분석 → admissionPrediction·admissionStrategy에서 다룸
+- ✅ 이 섹션에서 할 것: 교과전형 관점에서 **성적 개선이 필요한 영역 진단과 구체적 보완 방안**
 
 ## 교과전형 약점 분석 원칙
 - 교과전형은 **최종 평균 등급**으로만 합격 여부가 결정됩니다.
