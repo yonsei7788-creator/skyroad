@@ -28,7 +28,7 @@ const buildEmailHtml = (userName: string, planName: string): string => `
                 SKYROAD
               </h1>
               <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">
-                AI 기반 생활기록부 분석 서비스
+                맞춤형 생활기록부 분석 서비스
               </p>
             </td>
           </tr>

@@ -26,10 +26,22 @@ export const POST = async (
   const { error: authError } = await verifyAdmin(supabase);
   if (authError) return authError;
 
-  // 리포트 존재 여부 확인
+  // 리포트 + 주문/플랜/유저 정보 조회
   const { data: report, error: fetchError } = await supabase
     .from("reports")
-    .select("id, content")
+    .select(
+      `
+      id,
+      content,
+      orders!inner (
+        user_id,
+        plans!inner (
+          name,
+          display_name
+        )
+      )
+    `
+    )
     .eq("id", reportId)
     .single();
 
@@ -46,6 +58,21 @@ export const POST = async (
       { status: 400 }
     );
   }
+
+  // 유저명, 플랜명 조회
+  const orders = report.orders as unknown as Record<string, unknown>;
+  const plan = orders.plans as unknown as Record<string, unknown>;
+  const targetUserId = orders.user_id as string;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("name")
+    .eq("id", targetUserId)
+    .single();
+
+  const userName = (profile?.name as string) || "고객";
+  const planName =
+    (plan.display_name as string) || (plan.name as string) || "리포트";
 
   // 앱의 base URL 결정
   const { origin } = request.nextUrl;
@@ -171,7 +198,7 @@ export const POST = async (
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="report-${reportId.slice(0, 8)}.pdf"`,
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(`${userName}_리포트(${planName}).pdf`)}`,
       },
     });
   } catch (err) {

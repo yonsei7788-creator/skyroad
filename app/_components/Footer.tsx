@@ -12,7 +12,7 @@ export const Footer = () => {
               SKY<span className={styles.brandAccent}>ROAD</span>
             </p>
             <p className={styles.brandDesc}>
-              AI 기반 생활기록부 분석으로
+              맞춤형 생활기록부 분석으로
               <br />
               합리적인 가격의 입시 컨설팅을 제공합니다.
             </p>
