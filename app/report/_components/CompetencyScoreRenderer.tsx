@@ -45,7 +45,7 @@ export const CompetencyScoreRenderer = ({
   const isPremium = plan === "premium";
   const isStandard = plan === "standard";
   const showBar = isStandard || isPremium;
-  const scorePct = Math.round((data.totalScore / 300) * 100);
+  const scorePct = Math.round((data.totalScore / 400) * 100);
 
   const heroClass = isPremium
     ? styles.competencyHeroPremium
@@ -132,7 +132,7 @@ export const CompetencyScoreRenderer = ({
             <span className={styles.competencyHeroScore}>
               {data.totalScore}
             </span>
-            <span className={styles.competencyHeroDenom}>/ 300</span>
+            <span className={styles.competencyHeroDenom}>/ 400</span>
           </div>
 
           {showBar && (

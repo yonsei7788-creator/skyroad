@@ -2920,6 +2920,38 @@ const normalizeSection = (
       }
     }
 
+    // ── 교과이수노력 ↔ matchRate 연동: 권장과목 이수율 기반 상한 캡 ──
+    if (Array.isArray(s.scores)) {
+      const careerCat = s.scores.find((sc: any) => sc.category === "career");
+      if (careerCat?.subcategories) {
+        const courseEffort = careerCat.subcategories.find(
+          (sub: any) => sub.name === "교과이수노력"
+        );
+        if (courseEffort) {
+          const matchRate = pre.recommendedCourseMatch?.matchRate ?? undefined;
+          let cap: number | null = null;
+          if (matchRate == null || matchRate === 0) {
+            cap = 5;
+          } else if (matchRate < 30) {
+            cap = 10;
+          } else if (matchRate < 50) {
+            cap = 12;
+          } else if (matchRate < 70) {
+            cap = 18;
+          }
+          // matchRate >= 70 → no cap
+          if (cap !== null && typeof courseEffort.score === "number") {
+            courseEffort.score = Math.min(courseEffort.score, cap);
+          }
+          // 진로역량 소계 재계산
+          careerCat.score = careerCat.subcategories.reduce(
+            (sum: number, sub: any) => sum + (sub.score ?? 0),
+            0
+          );
+        }
+      }
+    }
+
     // ── growthScore/growthGrade 강제 보정 ──
     if (sti) {
       s.growthScore = sti.growthScore;
@@ -2952,12 +2984,11 @@ const normalizeSection = (
       }
     }
 
-    // ── totalScore: 하위 영역 합산으로 강제 재계산 ──
+    // ── totalScore: 하위 영역 합산 + growthScore 로 강제 재계산 (0~400) ──
     if (Array.isArray(s.scores)) {
-      const recalculated = s.scores.reduce(
-        (sum: number, sc: any) => sum + (sc.score ?? 0),
-        0
-      );
+      const recalculated =
+        s.scores.reduce((sum: number, sc: any) => sum + (sc.score ?? 0), 0) +
+        (s.growthScore ?? 0);
       s.totalScore = recalculated;
       if (s.comparison) {
         s.comparison.myScore = recalculated;

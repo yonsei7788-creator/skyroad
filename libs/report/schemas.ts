@@ -143,7 +143,7 @@ const ComparisonDataSchema = z.object({
 export const CompetencyScoreSectionSchema = z.object({
   sectionId: z.literal("competencyScore"),
   title: z.string().min(1),
-  totalScore: z.number().min(0).max(300),
+  totalScore: z.number().min(0).max(400),
   growthGrade: CompetencyGradeSchema,
   growthScore: z.number().min(0).max(100).optional(),
   growthComment: z.string().min(1),
