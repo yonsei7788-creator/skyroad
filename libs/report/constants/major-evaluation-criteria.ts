@@ -76,6 +76,32 @@ export const MAJOR_EVALUATION_CRITERIA: MajorEvaluationCriteria[] = [
     recommendedSubjects: ["확률과 통계", "물리학Ⅰ", "화학Ⅱ"],
   },
   {
+    majorGroup: "약학",
+    label: "약학 계열",
+    keySubjects: ["화학", "생명과학", "수학"],
+    keySubjectFocus:
+      "화학의 성취도를 가장 중시하며, 생명과학과 수학(미적분, 확률과 통계)의 기초 역량도 확인한다.",
+    valuedActivities: [
+      "약물 대사(ADME)·약리학 관련 탐구",
+      "신약개발·제약바이오 관련 연구 활동",
+      "약물 표적·리간드 등 분자 수준 탐구",
+      "화학 실험 설계 및 수행 (합성, 분석, 정량 등)",
+    ],
+    competencyWeights: { academic: 35, career: 35, community: 15, growth: 15 },
+    careerFocusPoints: [
+      "화학II/생명과학II 이수 여부 및 성취도",
+      "약물·제약 분야에 대한 지속적 관심과 활동 심화",
+      "실험 기반 탐구의 과학적 방법론 적용",
+    ],
+    riskFactors: [
+      "화학 핵심 과목 미이수 또는 낮은 성취도",
+      "탐구 활동이 단순 조사 수준에 그침",
+      "약학·제약 관련 활동 일관성 부족",
+    ],
+    coreSubjects: ["수학Ⅰ", "수학Ⅱ", "미적분", "화학Ⅰ", "화학Ⅱ", "생명과학Ⅰ"],
+    recommendedSubjects: ["생명과학Ⅱ", "확률과 통계", "물리학Ⅰ"],
+  },
+  {
     majorGroup: "생명과학",
     label: "생명과학 계열",
     keySubjects: ["생명과학", "화학", "수학"],
@@ -510,11 +536,13 @@ export const matchMajorEvaluationCriteria = (
 ): MajorEvaluationCriteria => {
   const lower = targetDept.toLowerCase();
 
-  // 의생명 계열 (의예, 약학, 치의예, 한의예, 수의예)
-  if (
-    /의[예학]|약[학대]|치[의학]|한의|수의/.test(lower) ||
-    lower.includes("의과")
-  ) {
+  // 약학 계열 (의생명보다 먼저 체크)
+  if (/약[학대]/.test(lower) && !lower.includes("의")) {
+    return findCriteria("약학");
+  }
+
+  // 의생명 계열 (의예, 치의예, 한의예, 수의예)
+  if (/의[예학]|치[의학]|한의|수의/.test(lower) || lower.includes("의과")) {
     return findCriteria("의생명");
   }
 
@@ -595,14 +623,13 @@ export const findCriteriaByMajorGroup = findCriteria;
 
 /**
  * detectedMajorGroup 코드를 리포트 표시용 정식 명칭으로 변환한다.
- * 예: "의생명" → "의학/생명과학 계열", "컴퓨터AI" → "컴퓨터/AI/소프트웨어 계열"
+ * 예: "의생명" → "의학 계열", "약학" → "약학 계열", "컴퓨터AI" → "컴퓨터/AI/소프트웨어 계열"
  *
  * MAJOR_EVALUATION_CRITERIA에 없는 코드는 별도 매핑으로 처리.
  * 리포트 전체에서 동일한 계열 명칭을 사용하기 위해 이 함수만 사용할 것.
  */
 const EXTRA_MAJOR_GROUP_LABELS: Record<string, string> = {
   생명바이오: "생명과학 계열", // 레거시 호환
-  약학: "약학 계열",
   화학재료: "화학/재료 계열",
 };
 

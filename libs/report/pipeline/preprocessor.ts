@@ -1972,6 +1972,9 @@ export const buildUniversityCandidatesText = (
       diff: number;
       tier: "reach" | "ambitious" | "fit" | "safety";
       recommendedAdmissionType: "학종" | "교과";
+      /** 전형 재배분용 — 학종/교과 각 커트라인 diff */
+      hakjongDiff?: number;
+      gyogwaDiff?: number;
     };
 
     // 커트라인 배열에서 ±0.3 범위 내 가장 가까운 값과 diff를 반환
@@ -2018,15 +2021,13 @@ export const buildUniversityCandidatesText = (
             )
           : hakjong50s;
 
-        // 각 전형별로 범위 내 가장 가까운 cutoff 찾기
-        const hakjongMatch = isGyogwaOnly
-          ? null
-          : findClosestInRange(
-              adjustedHakjong,
-              studentGrade9,
-              gradeRangeLo,
-              gradeRangeHi
-            );
+        // 각 전형별로 범위 내 가장 가까운 cutoff 찾기 (isGyogwaOnly 무관하게 항상 양쪽 탐색)
+        const hakjongMatch = findClosestInRange(
+          adjustedHakjong,
+          studentGrade9,
+          gradeRangeLo,
+          gradeRangeHi
+        );
         const gyogwaMatch = findClosestInRange(
           gyogwa50s,
           studentGrade9,
@@ -2083,6 +2084,8 @@ export const buildUniversityCandidatesText = (
           diff,
           tier,
           recommendedAdmissionType,
+          hakjongDiff: hakjongMatch?.diff,
+          gyogwaDiff: gyogwaMatch?.diff,
         });
       }
       return result;
@@ -2212,8 +2215,56 @@ export const buildUniversityCandidatesText = (
 
     // 최대 6개로 제한
     const MAX_CANDIDATES = 6;
+    const final = selected.slice(0, MAX_CANDIDATES);
 
-    const candidates = selected.slice(0, MAX_CANDIDATES).map((c) => ({
+    // ── 전형 배분 보정: 종합 3~4장 + 교과 2~3장 ──
+    const MIN_JONG = 3;
+    const MIN_GYO = 2;
+    const jongCount = final.filter(
+      (c) => c.recommendedAdmissionType === "학종"
+    ).length;
+    const gyoCount = final.filter(
+      (c) => c.recommendedAdmissionType === "교과"
+    ).length;
+
+    if (jongCount < MIN_JONG) {
+      // 교과 → 학종 전환 (hakjongDiff가 존재하고 diff 절대값이 작은 순)
+      const switchable = final
+        .filter(
+          (c) => c.recommendedAdmissionType === "교과" && c.hakjongDiff != null
+        )
+        .sort((a, b) => Math.abs(a.hakjongDiff!) - Math.abs(b.hakjongDiff!));
+      let needed = MIN_JONG - jongCount;
+      for (const c of switchable) {
+        if (needed <= 0) break;
+        // 교과 최소 2장 유지
+        const remainingGyo = final.filter(
+          (x) => x.recommendedAdmissionType === "교과"
+        ).length;
+        if (remainingGyo <= MIN_GYO) break;
+        c.recommendedAdmissionType = "학종";
+        needed--;
+      }
+    } else if (gyoCount < MIN_GYO) {
+      // 학종 → 교과 전환 (gyogwaDiff가 존재하고 diff 절대값이 작은 순)
+      const switchable = final
+        .filter(
+          (c) => c.recommendedAdmissionType === "학종" && c.gyogwaDiff != null
+        )
+        .sort((a, b) => Math.abs(a.gyogwaDiff!) - Math.abs(b.gyogwaDiff!));
+      let needed = MIN_GYO - gyoCount;
+      for (const c of switchable) {
+        if (needed <= 0) break;
+        const remainingJong = final.filter(
+          (x) => x.recommendedAdmissionType === "학종"
+        ).length;
+        if (remainingJong <= MIN_JONG) break;
+        c.recommendedAdmissionType = "교과";
+        needed--;
+      }
+    }
+
+    const candidates = final.map((c) => ({
       university: c.university,
       department: c.department,
       tier: c.tier,
@@ -2606,6 +2657,10 @@ const formatPlannedSubjects = (plannedSubjects?: string): string => {
   return lines.join("\n");
 };
 
+/** 생기부 원문의 "희망분야 OOO" 라벨을 제거하여 Phase 2 분류 bias 방지 */
+const stripHopeField = (note: string): string =>
+  note.replace(/희망분야\s+\S+/g, "").trim();
+
 const formatRecordData = (recordData: RecordData): string => {
   const sections: string[] = [];
 
@@ -2614,9 +2669,9 @@ const formatRecordData = (recordData: RecordData): string => {
     sections.push(`[${e.year}학년 ${e.subject}]\n${e.evaluation}`);
   }
 
-  // 창체
+  // 창체 (희망분야 라벨 제거)
   for (const a of recordData.creativeActivities ?? []) {
-    sections.push(`[${a.year}학년 ${a.area}]\n${a.note}`);
+    sections.push(`[${a.year}학년 ${a.area}]\n${stripHopeField(a.note)}`);
   }
 
   // 행동특성
@@ -2649,7 +2704,9 @@ const formatCreativeActivities = (
   const sorted = [...activities]
     .filter((a) => a.area !== "봉사활동" && a.note.trim() !== "")
     .sort((a, b) => a.year - b.year || a.area.localeCompare(b.area));
-  return sorted.map((a) => `[${a.year}학년 ${a.area}]\n${a.note}`).join("\n\n");
+  return sorted
+    .map((a) => `[${a.year}학년 ${a.area}]\n${stripHopeField(a.note)}`)
+    .join("\n\n");
 };
 
 const formatBehavioralAssessments = (

@@ -122,7 +122,7 @@ ${medicalCourseContext}
 ## ⚠️ 분석 방향 원칙
 - 아래 "권장과목 매칭 데이터"는 **생기부 기반으로 감지된 강점 계열의 권장과목**입니다.
 - **courses 배열은 반드시 아래 매칭 데이터의 requiredCourses 목록을 그대로 사용하세요.** AI가 임의로 과목을 추가하거나 변경하면 안 됩니다.
-- **targetMajor는 아래 역량 추출 결과의 detectedMajorGroup의 정식 계열 명칭을 사용하세요. (예: "의생명" → "의학/생명과학 계열", "컴퓨터AI" → "컴퓨터/AI/소프트웨어 계열")**
+- **targetMajor는 아래 역량 추출 결과의 detectedMajorGroupLabel 값을 그대로 사용하세요. (예: "의학 계열", "약학 계열", "컴퓨터/AI/소프트웨어 계열")**
 - matchRate도 아래 매칭 데이터의 값을 그대로 사용하세요.
 
 ## 입력 데이터
@@ -177,7 +177,7 @@ ${
 ## 출력 지시
 
 ### 목표 계열 (targetMajor)
-- 역량 추출 결과의 detectedMajorGroup의 정식 계열 명칭을 사용합니다. (예: "의생명" → "의학/생명과학 계열")
+- 역량 추출 결과의 detectedMajorGroupLabel 값을 그대로 사용합니다. (예: "의학 계열", "약학 계열")
 
 ### 권장과목 이수율 (matchRate)
 - 권장과목 매칭 데이터의 matchRate 값을 그대로 사용합니다.

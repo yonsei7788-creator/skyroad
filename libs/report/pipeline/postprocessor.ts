@@ -404,6 +404,38 @@ export const postprocess = (
         }
       }
 
+      // admissionPrediction: overallComment에서 후보군 외 대학명 포함 문장 제거
+      if (admPred && typeof admPred.overallComment === "string") {
+        // universityPredictions에 남은 대학도 허용
+        const commentAllowed = new Set(allowedUniversities);
+        for (const pred of admPred.predictions ?? []) {
+          for (const up of pred.universityPredictions ?? []) {
+            if (up.university) commentAllowed.add(up.university);
+          }
+        }
+        // 한국어 문장 단위 분할 (마침표 + 공백/끝)
+        const sentences = admPred.overallComment.split(/(?<=다\.)\s*/);
+        const filtered = sentences.filter((sentence: string) => {
+          const univMentions = sentence.match(/[가-힣]{2,10}대학교/g) ?? [];
+          if (univMentions.length === 0) return true;
+          return univMentions.every((name: string) => {
+            if (commentAllowed.has(name)) return true;
+            // "연세대학교" 축약형 "연세대" 등 역매칭
+            for (const allowed of commentAllowed) {
+              if (allowed.startsWith(name.replace(/대학교$/, ""))) return true;
+            }
+            return false;
+          });
+        });
+        if (filtered.length > 0 && filtered.length < sentences.length) {
+          const newComment = filtered.join(" ").trim();
+          console.log(
+            `[report:${reportId}] admissionPrediction overallComment: 후보군 외 대학 포함 문장 ${sentences.length - filtered.length}개 제거`
+          );
+          admPred.overallComment = newComment;
+        }
+      }
+
       // admissionStrategy: 카드를 코드에서 직접 생성 (AI 생성 카드 제거)
       // 학교명, 학과명, 전형, 합격가능성만 렌더링하므로 AI를 거칠 필요 없음
       // 카드를 코드에서 직접 생성 (후보군 데이터 + 커트라인 기반)

@@ -313,7 +313,7 @@ export const executeTask = async (
       compExtrText: JSON.stringify({
         ...competencyExtraction,
         // 하위 태스크가 리포트 텍스트에 사용할 정식 계열 명칭
-        // (예: "의생명" → "의학/생명과학 계열")
+        // (예: "의생명" → "의학 계열", "약학" → "약학 계열")
         // detectedMajorGroup 원본 코드는 로직용으로 유지
         ...(competencyExtraction.detectedMajorGroup
           ? {
