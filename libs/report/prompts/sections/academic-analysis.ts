@@ -22,7 +22,7 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 간략
 - 공통 항목(전과목 평균, 학년별 평균, 교과 조합별 평균, 등급 추이, 과목별 등급, 해석)을 출력합니다.
 - 해석은 **200자 이내**로 작성합니다.
-- subjectGrades는 **주요 5과목만** 출력합니다. 나머지 과목은 생략합니다.
+- subjectGrades는 **입력 데이터에 있는 모든 과목**을 출력합니다. totalSubjects도 실제 전체 과목 수와 일치해야 합니다.
 - subjectStatAnalyses, careerSubjectAnalyses, gradeInflationContext, gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis, schoolTypeAdjustment 등 Standard+ 전용 필드는 출력하지 않습니다.`,
   standard: `## 플랜별 출력: 상세
 공통 항목에 추가로 **아래 핵심 3개 필드만 반드시 출력**합니다:
@@ -93,7 +93,7 @@ const GYOGWA_PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 간략
 - 공통 항목(전과목 평균, 학년별 평균, 등급 추이, 과목별 등급, 해석)을 출력합니다.
 - 해석은 **200자 이내**로 작성합니다.
-- subjectGrades는 **주요 5과목만** 출력합니다.`,
+- subjectGrades는 **입력 데이터에 있는 모든 과목**을 출력합니다. totalSubjects도 실제 전체 과목 수와 일치해야 합니다.`,
   standard: `## 플랜별 출력: 상세
 공통 항목에 추가로 **아래 핵심 3개 필드만 반드시 출력**합니다:
 

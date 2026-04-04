@@ -631,13 +631,14 @@ export const postprocess = (
   // 3-2b. 교과전형 텍스트에서 교과전형과 무관한 표현 강제 제거
   // 프롬프트 규칙만으로는 AI가 반복 위반하므로 코드에서 강제 정화
   // 1) 성적 추이/편차/서류평가 표현
+  // ※ \.(?=\d) — 소수점(예: 3.5등급)을 마침표로 오인하여 문장이 잘리는 문제 방지
   const GYOGWA_BANNED_PATTERN =
-    /[^.!?]*(?:하락|상승|추세|추이|변화|편차가 불리|반영 과목|강점 과목|이수 여부|서류 평가|서류종합평가|입학사정관)[^.!?]*[.!?]/g;
+    /(?:[^.!?]|\.(?=\d))*(?:하락|상승|추세|추이|변화|편차가 불리|반영 과목|강점 과목|이수 여부|서류 평가|서류종합평가|입학사정관)(?:[^.!?]|\.(?=\d))*[.!?]/g;
   // 2) 개별 과목 성적 관련 문장 제거 (교과전형은 최종 평균만 사용)
   // 과목명 뒤에 성적/등급/약점/반영 관련 키워드가 있는 문장 전체 제거
   // ※ "전자바이오물리학과" 같은 학과명 오매칭 방지를 위해 과목명 앞에 공백/문장부호 경계 필요
   const SUBJECT_GRADE_PATTERN =
-    /[^.!?]*(?:(?:^|[\s,])(?:물리학|화학Ⅰ|화학Ⅱ|생명과학|지구과학|수학Ⅰ|수학Ⅱ|미적분|기하|영어Ⅰ|영어Ⅱ))[^.!?]*(?:\d등급|약점|부진|불리|낮[은아]|성적|반영)[^.!?]*[.!?]/g;
+    /(?:[^.!?]|\.(?=\d))*(?:(?:^|[\s,])(?:물리학|화학Ⅰ|화학Ⅱ|생명과학|지구과학|수학Ⅰ|수학Ⅱ|미적분|기하|영어Ⅰ|영어Ⅱ))(?:[^.!?]|\.(?=\d))*(?:\d등급|약점|부진|불리|낮[은아]|성적|반영)(?:[^.!?]|\.(?=\d))*[.!?]/g;
 
   const sanitizeGyogwaText = (text: string): string => {
     const cleaned = text
@@ -1840,9 +1841,15 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/3학년\s*생기부\s*기록이\s*부재[했하][^\\.]*\./g, ""],
   [/3학년\s*(생기부\s*)?기록이\s*없[어다는][^\\.]*\./g, ""],
   [/3학년\s*데이터가\s*없[어다는][^\\.]*\./g, ""],
-  [/3학년[^.]*기록이\s*부재[^.]*\./g, ""],
-  [/3학년[^.]*부재[^.]*아쉽[^.]*\./g, ""],
-  [/3학년[^.]*없어[^.]*아쉽[^.]*\./g, ""],
+  [/3학년(?:[^.]|\.(?=\d))*기록이\s*부재(?:[^.]|\.(?=\d))*\./g, ""],
+  [
+    /3학년(?:[^.]|\.(?=\d))*부재(?:[^.]|\.(?=\d))*아쉽(?:[^.]|\.(?=\d))*\./g,
+    "",
+  ],
+  [
+    /3학년(?:[^.]|\.(?=\d))*없어(?:[^.]|\.(?=\d))*아쉽(?:[^.]|\.(?=\d))*\./g,
+    "",
+  ],
   [/3학년[^,]*부재[^,]*,\s*/g, ""],
 
   // ── 명령형 어미 → 권유형 전환 ──
@@ -1853,12 +1860,27 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/준비하세요/g, "준비하는 것이 좋습니다"],
   [/활용하세요/g, "활용하는 것이 효과적입니다"],
 
-  // ── "희망하는" 패턴 제거 ──
-  [/희망하는\s*[가-힣]+\s*계열\s*학과에?\s*/g, ""],
-  [/희망하는\s*[가-힣]+\s*학과에?\s*/g, ""],
-  [/희망하는\s*학과[에와의]?\s*/g, ""],
-  [/희망\s*학과[에와의]?\s*/g, ""],
-  [/희망학과[에와의]?\s*/g, ""],
+  // ── "희망하는" 패턴 → 대체어로 치환 (구절 삭제 시 조사 고립 방지) ──
+  [/희망하는\s*[가-힣]+\s*계열\s*학과에/g, "해당 학과에"],
+  [/희망하는\s*[가-힣]+\s*계열\s*학과의/g, "해당 학과의"],
+  [/희망하는\s*[가-힣]+\s*계열\s*학과를/g, "해당 학과를"],
+  [/희망하는\s*[가-힣]+\s*계열\s*학과/g, "해당 학과"],
+  [/희망하는\s*[가-힣]+\s*학과에/g, "해당 학과에"],
+  [/희망하는\s*[가-힣]+\s*학과의/g, "해당 학과의"],
+  [/희망하는\s*[가-힣]+\s*학과를/g, "해당 학과를"],
+  [/희망하는\s*[가-힣]+\s*학과/g, "해당 학과"],
+  [/희망하는\s*학과에/g, "해당 학과에"],
+  [/희망하는\s*학과의/g, "해당 학과의"],
+  [/희망하는\s*학과를/g, "해당 학과를"],
+  [/희망하는\s*학과/g, "해당 학과"],
+  [/희망\s*학과에/g, "해당 학과에"],
+  [/희망\s*학과의/g, "해당 학과의"],
+  [/희망\s*학과를/g, "해당 학과를"],
+  [/희망\s*학과/g, "해당 학과"],
+  [/희망학과에/g, "해당 학과에"],
+  [/희망학과의/g, "해당 학과의"],
+  [/희망학과를/g, "해당 학과를"],
+  [/희망학과/g, "해당 학과"],
 
   // ── 교외 활동 표현 → 교내 활동으로 치환 ──
   [/온라인 강의[를을\s]*활용/g, "교내 수업 활동을 활용"],
@@ -2046,8 +2068,12 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/([,;.!?])\s+(?:가|은|는|을|를|인|과|와|의)\s+(?=[가-힣''""])/g, "$1 "],
   // 줄 시작 고립 조사
   [/^(?:가|은|는|을|를|인|과|와|의)\s+(?=[가-힣''""])/gm, ""],
-  // 한글 뒤 공백+고립조사+공백+한글/따옴표 (예: "그러나 인 체육교육과", "그러나 가 '체육교육과'")
-  [/([가-힣])\s+(?:인|가|의)\s+(?=[가-힣''""])/g, "$1 "],
+  // 접속사/접속부사 뒤 고립 조사만 제거 (일반 한글 뒤는 오탐 위험으로 제외)
+  // 예: "그러나 가 '체육교육과'" → "그러나 '체육교육과'"
+  [
+    /(다만|그러나|또한|하지만|그리고|즉|반면|따라서|그래서|아울러|특히|단)[,]?\s+(?:인|가|의)\s+(?=[가-힣''""])/g,
+    "$1 ",
+  ],
 
   // ── 계열 명칭 통일 (AI가 축약하는 패턴 → 정규 명칭으로 복원) ──
   // "의생명 계열" → "의학 계열"
@@ -2293,6 +2319,15 @@ const normalizeSection = (
         return "사회";
       return "기타";
     };
+
+    // 같은 과목명 중복 제거 (학년이 다르더라도 최초 1개만 유지)
+    const seenSubjectNames = new Set<string>();
+    s.subjects = s.subjects.filter((subj: any) => {
+      const name = (subj.subjectName ?? "").trim();
+      if (seenSubjectNames.has(name)) return false;
+      seenSubjectNames.add(name);
+      return true;
+    });
 
     // 중요도 높은 순 정렬 후, 같은 카테고리에서 최대 2개만 유지
     s.subjects.sort(
@@ -2701,7 +2736,7 @@ const normalizeSection = (
             (sub: any) => sub.name === "성실성"
           );
           if (integrity && integrity.score < minIntegrity) {
-            integrity.score = minIntegrity;
+            integrity.score = Math.min(minIntegrity, integrity.maxScore ?? 25);
             // 공동체역량 소계 재계산
             communityScore.score = communityScore.subcategories.reduce(
               (sum: number, sub: any) => sum + (sub.score ?? 0),
@@ -2740,7 +2775,10 @@ const normalizeSection = (
           if (Array.isArray(careerScore.subcategories)) {
             const ratio = 60 / originalScore;
             for (const sub of careerScore.subcategories) {
-              sub.score = Math.round(sub.score * ratio);
+              sub.score = Math.min(
+                Math.round(sub.score * ratio),
+                sub.maxScore ?? 40
+              );
             }
           }
         }
@@ -2797,15 +2835,32 @@ const normalizeSection = (
           if (currentTotal > 0 && currentTotal !== target) {
             const ratio = target / currentTotal;
             for (const sub of sc.subcategories) {
-              sub.score = Math.round((sub.score ?? 0) * ratio);
+              sub.score = Math.min(
+                Math.round((sub.score ?? 0) * ratio),
+                sub.maxScore ?? 40
+              );
             }
-            // 반올림 오차 보정: 첫 번째 하위항목에서 차이 조정
+            // 반올림 오차 보정: maxScore를 초과하지 않는 항목에서 차이 조정
             const newTotal = sc.subcategories.reduce(
               (sum: number, sub: any) => sum + (sub.score ?? 0),
               0
             );
             if (newTotal !== target && sc.subcategories.length > 0) {
-              sc.subcategories[0].score += target - newTotal;
+              const diff = target - newTotal;
+              // 여유가 있는 항목을 찾아서 차이를 배분
+              for (const sub of sc.subcategories) {
+                const max = sub.maxScore ?? 40;
+                const room = max - sub.score;
+                if (diff > 0 && room > 0) {
+                  const add = Math.min(diff, room);
+                  sub.score += add;
+                  break;
+                } else if (diff < 0 && sub.score > 0) {
+                  const remove = Math.min(-diff, sub.score);
+                  sub.score -= remove;
+                  break;
+                }
+              }
             }
           }
         }
@@ -2876,6 +2931,25 @@ const normalizeSection = (
       else if (gs >= 60) s.growthGrade = "B";
       else if (gs >= 40) s.growthGrade = "C";
       else s.growthGrade = "D";
+    }
+
+    // ── 최종 안전장치: 모든 하위항목 점수가 maxScore를 초과하지 않도록 클램핑 ──
+    if (Array.isArray(s.scores)) {
+      for (const sc of s.scores) {
+        if (Array.isArray(sc.subcategories)) {
+          for (const sub of sc.subcategories) {
+            const max = sub.maxScore ?? 40;
+            if (typeof sub.score === "number" && sub.score > max) {
+              sub.score = max;
+            }
+          }
+          // 하위항목 합산으로 카테고리 점수 재계산
+          sc.score = sc.subcategories.reduce(
+            (sum: number, sub: any) => sum + (sub.score ?? 0),
+            0
+          );
+        }
+      }
     }
 
     // ── totalScore: 하위 영역 합산으로 강제 재계산 ──
@@ -3008,6 +3082,8 @@ const normalizeSection = (
       );
 
       // ── STEP 11: 내부 데이터(raw 값) 노출 제거 ──
+      const CAMEL_CASE_VARS =
+        /\b(?:overallAverage|fillRate|gradeRank|rawScore|competencyScore|studentCount|achievementLevel|subjectCombinations|gradeTrend|gradeVariance|majorRelated|convertedGrade|fiveGradeConversion|smallClassSubjects|careerSubjects|attendanceSummary|recordVolume|detectedMajorGroup|evaluationImpact|passRateLabel|passRateRange|basePassRate|admissionType|yearlyAnalysis|volumeAssessment|improvementDirection|keyActivities|competencyTags|overallComment)\b/i;
       const stripRawData = (text: string): string => {
         if (typeof text !== "string") return text;
         return (
@@ -3016,10 +3092,9 @@ const normalizeSection = (
             .replace(/\{[^}]*"?\w+"?\s*:\s*[^}]*\}/g, "")
             // 배열 리터럴 제거
             .replace(/\[[^\]]*,\s*[^\]]*\]/g, "")
-            // camelCase 변수명 제거 (2단어 이상)
-            .replace(
-              /\b(?:overallAverage|fillRate|gradeRank|rawScore|competencyScore|studentCount|achievementLevel|subjectCombinations|gradeTrend|gradeVariance|majorRelated|convertedGrade|fiveGradeConversion|smallClassSubjects|careerSubjects|attendanceSummary|recordVolume|detectedMajorGroup|evaluationImpact|passRateLabel|passRateRange|basePassRate|admissionType|yearlyAnalysis|volumeAssessment|improvementDirection|keyActivities|competencyTags|overallComment)\b/gi,
-              ""
+            // camelCase 변수명이 포함된 문장 전체 제거 (변수명만 삭제 시 조사 고립 방지)
+            .replace(/[^.!?]+[.!?]/g, (sentence) =>
+              CAMEL_CASE_VARS.test(sentence) ? "" : sentence
             )
             // "바이트" 단위 수치 제거 (기술적 표현)
             .replace(/\d+바이트/g, "")
@@ -3585,6 +3660,7 @@ const CRITICAL_SECTIONS: Record<ReportPlan, Set<string>> = {
   lite: new Set([
     "studentProfile",
     "competencyScore",
+    "admissionPrediction",
     "academicAnalysis",
     "subjectAnalysis",
     "admissionStrategy",

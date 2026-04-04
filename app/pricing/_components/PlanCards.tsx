@@ -43,7 +43,7 @@ const PLANS: Plan[] = [
       { text: "학생 유형 분류 + 역량 점수", included: true },
       { text: "성적 분석 + 권장과목 이수 분석", included: true },
       { text: "출결 · 창체 · 행동특성 분석", included: true },
-      { text: "교과 세특 분석 (5과목)", included: true },
+      { text: "교과 세특 분석", included: true },
       { text: "예상 면접 질문 3개", included: true },
       { text: "학과 추천", included: true },
       { text: "전임 컨설턴트 2차 검수", included: true },
@@ -66,7 +66,6 @@ const PLANS: Plan[] = [
     cta: "79,000원으로 시작하기",
     features: [
       { text: "Lite Report 전체 포함", included: true },
-      { text: "교과 세특 분석 확장 (7과목)", included: true },
       { text: "희망 학교·학과 판단 (학종/교과/정시)", included: true },
       { text: "세특 주제 추천 3개", included: true },
       { text: "예상 면접 질문 5개 + 출제 의도", included: true },
@@ -91,7 +90,6 @@ const PLANS: Plan[] = [
     cta: "129,000원으로 시작하기",
     features: [
       { text: "Standard Report 전체 포함", included: true },
-      { text: "교과 세특 정밀 분석 (10과목+)", included: true },
       { text: "부족한 부분 + 보완 전략", included: true },
       { text: "입시 전략 + 지원 조합 추천", included: true },
       { text: "실행 로드맵 (학기별 계획)", included: true },

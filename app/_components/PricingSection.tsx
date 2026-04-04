@@ -39,7 +39,7 @@ const PLANS: Plan[] = [
       { text: "학생 유형 분류 + 역량 점수", included: true },
       { text: "성적 분석 + 권장과목 이수 분석", included: true },
       { text: "출결 · 창체 · 행동특성 분석", included: true },
-      { text: "교과 세특 분석 (5과목)", included: true },
+      { text: "교과 세특 분석", included: true },
       { text: "예상 면접 질문 3개", included: true },
       { text: "학과 추천", included: true },
       { text: "전임 컨설턴트 2차 검수", included: true },

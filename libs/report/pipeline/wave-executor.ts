@@ -606,6 +606,9 @@ export const executeTask = async (
             isMedical,
             gradingSystem: state.preprocessedData!.gradingSystem,
             isGyogwaOnly,
+            detectedMajorGroupLabel: detectedMajorForFlags
+              ? getMajorGroupLabel(detectedMajorForFlags)
+              : undefined,
           },
           plan
         )

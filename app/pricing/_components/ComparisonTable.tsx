@@ -29,9 +29,9 @@ const FEATURES: ComparisonFeature[] = [
   { name: "출결 · 창체 · 행동특성", lite: true, standard: true, premium: true },
   {
     name: "교과 세특 분석",
-    lite: "5과목",
-    standard: "7과목",
-    premium: "10과목+",
+    lite: true,
+    standard: false,
+    premium: false,
   },
   {
     name: "예상 면접 질문",

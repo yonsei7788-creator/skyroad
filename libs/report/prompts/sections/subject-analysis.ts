@@ -10,6 +10,7 @@ export interface SubjectAnalysisPromptInput {
   isMedical?: boolean;
   gradingSystem?: "5등급제" | "9등급제";
   isGyogwaOnly?: boolean;
+  detectedMajorGroupLabel?: string;
 }
 
 const COMPETENCY_TAG_GUIDE = `## 역량 태깅 가이드
@@ -211,6 +212,7 @@ export const buildSubjectAnalysisPrompt = (
 - 다른 섹션에서 이미 사용한 표현이나 문장 구조를 반복하지 마세요.
 
 ## ⛔ 과목 다양성 규칙 (필수 — 위반 시 품질 실패)
+- **같은 과목명은 학년이 달라도 반드시 하나의 항목으로 통합 분석하세요.** 예: 2학년 사회문화 + 3학년 사회문화 → subjects 배열에 "사회문화" 항목 1개만 출력하고, year는 가장 최근 학년으로 설정합니다. 여러 학년의 세특 내용을 종합하여 하나의 evaluationComment/detailedEvaluation에 담으세요.
 - **같은 교과군(수학, 과학, 국어, 영어, 사회)에서 최대 2개 과목만** 분석 대상에 포함하세요.
 - 예: 수학, 수학Ⅰ, 수학Ⅱ, 기하가 모두 있어도 **수학 관련 과목은 최대 2개만** 선택합니다.
 - 같은 교과군 내에서는 학년이 높은(최근) 과목, 전공 관련도가 높은 과목을 우선합니다.
@@ -341,6 +343,7 @@ export const buildSubjectAnalysisPrompt = (
      b) **이전 학년 탐구와의 심화 연결**: "1학년에서 다룬 XX 주제를 확장하면 학년별 심화 흐름이 만들어집니다"
      c) **창체/동아리 활동과의 연결**: "이 탐구를 동아리 활동으로 확장하면 진로 일관성을 강화할 수 있습니다"
    - 입학사정관은 과목별로 분리해서 보지 않고 생기부 전체의 스토리라인을 봅니다. 개선 방향도 이 관점에서 제시하세요.
+   - ⛔ **improvementDirection과 improvementExample에서 추천하는 활동·탐구 주제는 반드시 아래 강점 계열과 관련되어야 합니다.** 강점 계열과 무관한 분야(예: 정치외교 강점인데 마케팅/광고 추천)의 활동을 제안하면 품질 실패입니다.
 
 ## Few-shot 예시 (반드시 이 톤과 수준으로 작성)
 
@@ -388,6 +391,7 @@ export const buildSubjectAnalysisPrompt = (
 
 ${COMPETENCY_TAG_GUIDE}
 
+${input.detectedMajorGroupLabel ? `## 생기부 기반 강점 계열 (개선 방향 작성 시 필수 참고)\n이 학생의 강점 계열: **${input.detectedMajorGroupLabel}**\n- improvementDirection/improvementExample는 반드시 이 계열과 관련된 활동·탐구를 추천하세요.\n- 이 계열과 무관한 분야의 활동을 추천하면 안 됩니다.\n` : ""}
 ## 학생 프로필
 ${input.studentProfile}
 
