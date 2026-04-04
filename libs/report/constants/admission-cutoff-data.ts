@@ -78714,16 +78714,6 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
   },
   {
     university: "아주대학교",
-    department: "경제정치사회융합학부",
-    admissionType: "교과",
-    admissionName: "일반학생",
-    quota: 11,
-    competitionRate: 6.27,
-    cutoff50Grade: 2.5,
-    cutoff70Grade: 2.62,
-  },
-  {
-    university: "아주대학교",
     department: "국어국문학과",
     admissionType: "교과",
     admissionName: "일반학생",
@@ -78764,16 +78754,6 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
   },
   {
     university: "아주대학교",
-    department: "사회학과",
-    admissionType: "교과",
-    admissionName: "일반학생",
-    quota: 5,
-    competitionRate: 7.2,
-    cutoff50Grade: 2.5,
-    cutoff70Grade: 2.53,
-  },
-  {
-    university: "아주대학교",
     department: "심리학과",
     admissionType: "교과",
     admissionName: "일반학생",
@@ -78794,7 +78774,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
   },
   {
     university: "아주대학교",
-    department: "정치외교학과",
+    department: "경제정치사회융합학부",
     admissionType: "교과",
     admissionName: "일반학생",
     quota: 24,
@@ -78804,7 +78784,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
   },
   {
     university: "아주대학교",
-    department: "정치외교학과",
+    department: "경제정치사회융합학부",
     admissionType: "학종",
     admissionName: "일반학생",
     quota: 36,
