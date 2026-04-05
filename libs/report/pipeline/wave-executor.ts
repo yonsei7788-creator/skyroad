@@ -907,7 +907,8 @@ export const executeTask = async (
                 tryMajors,
                 studentInfo.schoolType,
                 isGyogwaOnly,
-                studentInfo.gender
+                studentInfo.gender,
+                plan
               );
               if (candidate === "[]") continue;
               rebuilt = candidate;

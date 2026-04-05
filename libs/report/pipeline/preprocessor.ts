@@ -1796,6 +1796,33 @@ const getRepresentativeCutoff = (
  * Phase 2에서 감지된 학과 키워드로 커트라인을 직접 검색한다.
  * 학생 등급과 비슷한 점수대의 대학만 후보로 제공한다.
  */
+// ── 프리미엄 리포트 서울권 대학 우선 포함 목록 ──
+// admissionStrategy 후보군 최종 선정 시, 이 목록에 해당하는 대학이
+// 후보 풀에 있으면 2~3개를 최종 결과에 포함한다.
+const SEOUL_AREA_PRIORITY_UNIVERSITIES = new Set([
+  "건국대학교",
+  "동국대학교",
+  "홍익대학교",
+  "국민대학교",
+  "숭실대학교",
+  "세종대학교",
+  "단국대학교",
+  "명지대학교",
+  "광운대학교",
+  "상명대학교",
+  "가톨릭대학교",
+  "가천대학교",
+  "경기대학교",
+  "한성대학교",
+  "인천대학교",
+  "인하대학교",
+  "아주대학교",
+  "성결대학교",
+  "서경대학교",
+  "삼육대학교",
+  "강남대학교",
+]);
+
 export const buildUniversityCandidatesText = (
   targetDept: string,
   gradingSystem?: "5등급제" | "9등급제",
@@ -1811,7 +1838,9 @@ export const buildUniversityCandidatesText = (
   /** 교과전형만 선택한 학생 — 학종 커트라인 제외 */
   isGyogwaOnly?: boolean,
   /** 학생 성별 — "male"이면 여대 제외 */
-  gender?: "male" | "female" | null
+  gender?: "male" | "female" | null,
+  /** 플랜 — premium일 때 서울권 대학 우선 포함 (admissionStrategy 전용) */
+  plan?: ReportPlan
 ): string => {
   // 남학생일 때 제외할 여대 목록
   const WOMENS_UNIVERSITIES = [
@@ -2215,7 +2244,124 @@ export const buildUniversityCandidatesText = (
 
     // 최대 6개로 제한
     const MAX_CANDIDATES = 6;
-    const final = selected.slice(0, MAX_CANDIDATES);
+    let final = selected.slice(0, MAX_CANDIDATES);
+
+    // ── 프리미엄: 서울권 대학 우선 포함 (2~3개 목표) ──
+    // selected 풀에 서울권이 있으면 끌어올리고,
+    // 없으면 전체 키워드의 카테고리까지 별도 탐색하여 주입한다.
+    if (plan === "premium") {
+      const MIN_SEOUL = 2;
+      const MAX_SEOUL = 3;
+      const seoulInFinal = final.filter((c) =>
+        SEOUL_AREA_PRIORITY_UNIVERSITIES.has(c.university)
+      );
+
+      if (seoulInFinal.length < MIN_SEOUL) {
+        // Step 1: selected 풀에 있는 서울권 후보 수집
+        const finalKeys = new Set(
+          final.map((c) => `${c.university}|${c.department}`)
+        );
+        const seoulCandidates = selected.filter(
+          (c) =>
+            SEOUL_AREA_PRIORITY_UNIVERSITIES.has(c.university) &&
+            !finalKeys.has(`${c.university}|${c.department}`)
+        );
+
+        // Step 2: 풀에 부족하면 전체 키워드의 정확매칭+카테고리로 서울권 별도 탐색
+        if (seoulInFinal.length + seoulCandidates.length < MIN_SEOUL) {
+          const finalUnivs = new Set(final.map((c) => c.university));
+          const seoulUnivs = new Set(seoulCandidates.map((c) => c.university));
+          // 서울권만 필터링하는 collectEntries 변형
+          const collectSeoulEntries = (
+            deptNames: Set<string>
+          ): Map<string, UniDeptEntry> => {
+            const result = new Map<string, UniDeptEntry>();
+            for (const e of ADMISSION_CUTOFF_DATA) {
+              if (!deptNames.has(e.department)) continue;
+              if (!SEOUL_AREA_PRIORITY_UNIVERSITIES.has(e.university)) continue;
+              if (finalUnivs.has(e.university) || seoulUnivs.has(e.university))
+                continue;
+              if (
+                excludeWomensUniv &&
+                WOMENS_UNIVERSITIES.includes(e.university)
+              )
+                continue;
+              if (
+                !includeSpecialAdmission &&
+                SPECIAL_ADMISSION_KEYWORDS.some((kw) =>
+                  e.admissionName.includes(kw)
+                )
+              )
+                continue;
+              const key = `${e.university}|${e.department}`;
+              if (!result.has(key)) {
+                result.set(key, {
+                  university: e.university,
+                  department: e.department,
+                  cutoffs: [],
+                });
+              }
+              (result.get(key)!.cutoffs as typeof ADMISSION_CUTOFF_DATA).push(
+                e
+              );
+            }
+            return result;
+          };
+
+          for (const kw of departmentKeywords) {
+            // 정확매칭
+            const exactDepts = getExactDeptNames(kw);
+            const exactSeoul = collectSeoulEntries(exactDepts);
+            const exactCands = extractCandidates(exactSeoul);
+            for (const c of sortByDist(exactCands)) {
+              if (!seoulUnivs.has(c.university)) {
+                seoulCandidates.push(c);
+                seoulUnivs.add(c.university);
+              }
+            }
+            // 카테고리매칭
+            const catDepts = getCategoryDeptNames(kw);
+            for (const d of exactDepts) catDepts.delete(d);
+            const catSeoul = collectSeoulEntries(catDepts);
+            const catCands = extractCandidates(catSeoul);
+            for (const c of sortByDist(catCands)) {
+              if (!seoulUnivs.has(c.university)) {
+                seoulCandidates.push(c);
+                seoulUnivs.add(c.university);
+              }
+            }
+            if (seoulInFinal.length + seoulCandidates.length >= MAX_SEOUL)
+              break;
+          }
+        }
+
+        // Step 3: 서울권 후보를 diff 가까운 순으로 정렬하여 교체
+        const seoulToAdd = sortByDist(seoulCandidates).slice(
+          0,
+          MAX_SEOUL - seoulInFinal.length
+        );
+        if (seoulToAdd.length > 0) {
+          const nonSeoulIndices = final
+            .map((c, i) => ({
+              i,
+              isSeoul: SEOUL_AREA_PRIORITY_UNIVERSITIES.has(c.university),
+            }))
+            .filter(({ isSeoul }) => !isSeoul)
+            .map(({ i }) => i)
+            .reverse();
+
+          const replaced = [...final];
+          for (
+            let j = 0;
+            j < seoulToAdd.length && j < nonSeoulIndices.length;
+            j++
+          ) {
+            replaced[nonSeoulIndices[j]] = seoulToAdd[j];
+          }
+          final = replaced;
+        }
+      }
+    }
 
     // ── 전형 배분 보정: 종합 3~4장 + 교과 2~3장 ──
     const MIN_JONG = 3;
