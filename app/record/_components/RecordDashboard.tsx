@@ -68,6 +68,7 @@ interface RecordDashboardProps {
   profile: ProfileData;
   record: RecordData | null;
   generalSubjects: GeneralSubjectData[];
+  hasPaidOrder: boolean;
 }
 
 // ============================================
@@ -375,6 +376,7 @@ export const RecordDashboard = ({
   profile,
   record,
   generalSubjects,
+  hasPaidOrder,
 }: RecordDashboardProps) => {
   const router = useRouter();
   const isRegistered = !!record;
@@ -425,8 +427,10 @@ export const RecordDashboard = ({
 
   // ---- Computed Data ----
 
+  const showRealData = isRegistered && hasPaidOrder;
+
   const categoryGrades = useMemo(() => {
-    if (!isRegistered) return DUMMY_CATEGORY_GRADES;
+    if (!showRealData) return DUMMY_CATEGORY_GRADES;
     return {
       all: computeWeightedAverage(generalSubjects, "all"),
       korEngMathSocSci: computeWeightedAverage(
@@ -436,15 +440,15 @@ export const RecordDashboard = ({
       korEngMathSoc: computeWeightedAverage(generalSubjects, "korEngMathSoc"),
       korEngMathSci: computeWeightedAverage(generalSubjects, "korEngMathSci"),
     } as Record<CategoryKey, number | null>;
-  }, [isRegistered, generalSubjects]);
+  }, [showRealData, generalSubjects]);
 
   const barData = useMemo(() => {
-    if (!isRegistered) return DUMMY_BAR_DATA;
+    if (!showRealData) return DUMMY_BAR_DATA;
     return computeSubjectAreaAverages(generalSubjects);
-  }, [isRegistered, generalSubjects]);
+  }, [showRealData, generalSubjects]);
 
   const trendData = useMemo(() => {
-    if (!isRegistered) return DUMMY_TREND;
+    if (!showRealData) return DUMMY_TREND;
     const allSemesters = computeSemesterAverages(generalSubjects, "all");
     const korEngMathSocSciSemesters = computeSemesterAverages(
       generalSubjects,
@@ -469,22 +473,22 @@ export const RecordDashboard = ({
       korEngMathSci:
         korEngMathSciSemesters.find((s) => s.key === key)?.value ?? null,
     }));
-  }, [isRegistered, generalSubjects]);
+  }, [showRealData, generalSubjects]);
 
   const scoreVsAvgData = useMemo(() => {
-    if (!isRegistered) return [];
+    if (!showRealData) return [];
     return computeScoreVsAverage(generalSubjects);
-  }, [isRegistered, generalSubjects]);
+  }, [showRealData, generalSubjects]);
 
   const gradeDistribution = useMemo(() => {
-    if (!isRegistered) return [];
+    if (!showRealData) return [];
     return computeGradeDistribution(generalSubjects);
-  }, [isRegistered, generalSubjects]);
+  }, [showRealData, generalSubjects]);
 
   const semesterGroups = useMemo(() => {
-    if (!isRegistered) return [];
+    if (!showRealData) return [];
     return groupBySemester(generalSubjects);
-  }, [isRegistered, generalSubjects]);
+  }, [showRealData, generalSubjects]);
 
   const headlineGrade = categoryGrades.korEngMathSocSci;
   const headlineRounded = headlineGrade
@@ -654,7 +658,7 @@ export const RecordDashboard = ({
             </div>
             <div
               className={styles.cardBody}
-              {...(!isRegistered ? { inert: true } : {})}
+              {...(!isRegistered || !hasPaidOrder ? { inert: true } : {})}
             >
               <div className={styles.heroGaugePanel}>
                 <span className={styles.gaugeLabel}>국영수사과</span>
@@ -672,7 +676,7 @@ export const RecordDashboard = ({
                         outerRadius="100%"
                         dataKey="value"
                         stroke="none"
-                        isAnimationActive={isRegistered}
+                        isAnimationActive={showRealData}
                       >
                         <Cell
                           fill={
@@ -699,7 +703,7 @@ export const RecordDashboard = ({
                     : "-"}
                 </span>
                 <span className={styles.gaugeUnit}>등급</span>
-                {isRegistered &&
+                {showRealData &&
                   semesterChange !== null &&
                   semesterChange !== 0 && (
                     <span
@@ -738,6 +742,7 @@ export const RecordDashboard = ({
               </div>
             </div>
             {!isRegistered && <DemoOverlay />}
+            {isRegistered && !hasPaidOrder && <PaidOverlay />}
           </div>
 
           {/* 교과별 내신 성적 (Right) */}
@@ -747,7 +752,7 @@ export const RecordDashboard = ({
             </div>
             <div
               className={styles.cardBody}
-              {...(!isRegistered ? { inert: true } : {})}
+              {...(!isRegistered || !hasPaidOrder ? { inert: true } : {})}
             >
               <div className={styles.barChartArea}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -807,6 +812,7 @@ export const RecordDashboard = ({
               </div>
             </div>
             {!isRegistered && <DemoOverlay />}
+            {isRegistered && !hasPaidOrder && <PaidOverlay />}
           </div>
         </div>
 
@@ -914,10 +920,11 @@ export const RecordDashboard = ({
             </div>
           </div>
           {!isRegistered && <DemoOverlay />}
+          {isRegistered && !hasPaidOrder && <PaidOverlay />}
         </div>
 
         {/* Analysis Grid: Score vs Avg + Waffle */}
-        {isRegistered && scoreVsAvgData.length > 0 && (
+        {isRegistered && hasPaidOrder && scoreVsAvgData.length > 0 && (
           <div className={styles.analysisGrid}>
             {/* Score vs Average */}
             <div className={styles.card}>
@@ -995,7 +1002,7 @@ export const RecordDashboard = ({
         )}
 
         {/* Subject Analysis (replaces raw transcript) */}
-        {isRegistered && semesterGroups.length > 0 && (
+        {isRegistered && hasPaidOrder && semesterGroups.length > 0 && (
           <div className={styles.analysisSection}>
             <div className={styles.semesterTabs}>
               {semesterGroups.map((g, idx) => (
@@ -1103,10 +1110,23 @@ const DemoOverlay = () => (
   <div className={styles.demoOverlay}>
     <span className={styles.demoBadge}>샘플 데이터</span>
     <span className={styles.demoText}>
-      내 생기부를 등록하면 나만의 분석을 받을 수 있어요
+      리포트를 구매하면 나만의 성적 분석을 확인할 수 있어요
     </span>
-    <Link href="/record/submit" className={styles.demoButton}>
-      30초 만에 내 성적 확인하기
+    <Link href="/pricing" className={styles.demoButton}>
+      리포트 구매하기
+      <ArrowRight size={14} />
+    </Link>
+  </div>
+);
+
+const PaidOverlay = () => (
+  <div className={styles.demoOverlay}>
+    <span className={styles.demoBadge}>유료 기능</span>
+    <span className={styles.demoText}>
+      리포트를 구매하면 상세 성적 분석을 확인할 수 있어요
+    </span>
+    <Link href="/pricing" className={styles.demoButton}>
+      리포트 구매하기
       <ArrowRight size={14} />
     </Link>
   </div>
