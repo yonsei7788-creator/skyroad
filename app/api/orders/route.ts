@@ -147,10 +147,31 @@ export const POST = async (request: NextRequest) => {
     const payments = existingOrder.payments as unknown as {
       toss_order_id: string;
     }[];
+
+    // 쿠폰 변경으로 금액이 달라진 경우 주문·결제 금액 업데이트
+    if (existingOrder.amount !== finalAmount) {
+      const adminForUpdate = createAdminClient() ?? supabase;
+      await Promise.all([
+        adminForUpdate
+          .from("orders")
+          .update({
+            amount: finalAmount,
+            coupon_id: validCouponId,
+            discount_amount: discountAmount,
+          })
+          .eq("id", existingOrder.id),
+        adminForUpdate
+          .from("payments")
+          .update({ amount: finalAmount })
+          .eq("order_id", existingOrder.id)
+          .eq("status", "ready"),
+      ]);
+    }
+
     return NextResponse.json({
       orderId: existingOrder.id,
       tossOrderId: payments[0].toss_order_id,
-      amount: existingOrder.amount,
+      amount: finalAmount,
       orderName: `SKYROAD ${plan.display_name}`,
     });
   }
