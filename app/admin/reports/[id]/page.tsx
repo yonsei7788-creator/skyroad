@@ -373,10 +373,19 @@ const ReportDetailPage = () => {
     try {
       const result = await generatePdf("download");
       if (result instanceof Blob) {
-        const ok = downloadPdfBlob(
-          result,
-          `report-${reportId.slice(0, 8)}.pdf`
-        );
+        const planMap: Record<string, string> = {
+          lite: "라이트",
+          standard: "스탠다드",
+          premium: "프리미엄",
+        };
+        const planLabel =
+          planMap[report?.planName?.toLowerCase() ?? ""] ??
+          report?.planName ??
+          "리포트";
+        const fileName = report?.userName
+          ? `${report.userName}_리포트(${planLabel}).pdf`
+          : `report-${reportId.slice(0, 8)}.pdf`;
+        const ok = downloadPdfBlob(result, fileName);
         if (ok) {
           addToast("PDF가 다운로드되었습니다.", "success");
         } else {
