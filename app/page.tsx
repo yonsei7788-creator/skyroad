@@ -16,7 +16,7 @@ import { CtaSection } from "./_components/CtaSection";
 import { Footer } from "./_components/Footer";
 
 export const metadata: Metadata = {
-  title: "SKYROAD - AI 생기부 분석 | 수시컨설팅 · 생기부컨설팅",
+  title: "SKYROAD.스카이로드 생기부분석 · 수시컨설팅 · 생기부컨설팅",
   description:
     "AI 정밀 분석 + 입시 컨설턴트 2차 검수로 생기부를 진단합니다. 수시컨설팅·생기부컨설팅을 72시간 안에 합리적인 가격으로 받아보세요.",
   alternates: {
