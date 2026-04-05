@@ -1105,11 +1105,6 @@ export const executeTask = async (
     }
 
     case "consultantReview": {
-      // isGyogwaOnly → acadAnalText에서 학기별 데이터 제거 (추세 추론 방지)
-      const consultAcadText = isGyogwaOnly
-        ? stripSemesterData(ser.acadAnalText!)
-        : ser.acadAnalText!;
-
       // majorExploration AI 추천 1순위 학과 추출
       const consultMajorExpl = sections.find(
         (s) => s.sectionId === "majorExploration"
@@ -1117,6 +1112,53 @@ export const executeTask = async (
       const consultAiMajor = (
         consultMajorExpl?.suggestions as { major: string }[] | undefined
       )?.[0]?.major;
+
+      // ── 중복 방지: academicAnalysis의 수치 데이터 + 판단 키워드만 전달 ──
+      // 해석 문장을 그대로 전달하면 AI가 복붙하므로,
+      // 구조화된 데이터는 유지하고 해석 텍스트는 키워드로 축약
+      const consultAcadText = (() => {
+        try {
+          const acad = JSON.parse(ser.acadSectionText!);
+          // 해석 텍스트 → 판단 키워드로 축약
+          const summary: Record<string, unknown> = {
+            overallAverageGrade: acad.overallAverageGrade,
+            gradeTrend: acad.gradeTrend,
+            gradesByYear: acad.gradesByYear,
+            subjectGrades: acad.subjectGrades,
+            subjectCombinations: acad.subjectCombinations,
+            gradeDeviationAnalysis: acad.gradeDeviationAnalysis
+              ? {
+                  highestSubject: acad.gradeDeviationAnalysis.highestSubject,
+                  lowestSubject: acad.gradeDeviationAnalysis.lowestSubject,
+                  deviationRange: acad.gradeDeviationAnalysis.deviationRange,
+                }
+              : undefined,
+            majorRelevanceAnalysis: acad.majorRelevanceAnalysis
+              ? {
+                  averageGrade: acad.majorRelevanceAnalysis.averageGrade,
+                  relatedSubjects: acad.majorRelevanceAnalysis.relatedSubjects,
+                }
+              : undefined,
+            // 해석 텍스트 → 판단 키워드만 축약
+            _judgments: {
+              overall: `평균 ${acad.overallAverageGrade}등급 → ${acad.gradeTrend === "상승" ? "상승세" : acad.gradeTrend === "하락" ? "하락세" : "유지"}`,
+              competitiveness:
+                (acad.overallAverageGrade ?? 5) <= 2
+                  ? "상위권"
+                  : (acad.overallAverageGrade ?? 5) <= 3
+                    ? "중위권"
+                    : "중하위권",
+              actionItems: (acad.gradeChangeAnalysis?.actionItems ?? []).map(
+                (item: string) =>
+                  item.length > 30 ? `${item.substring(0, 30)}...` : item
+              ),
+            },
+          };
+          return JSON.stringify(summary);
+        } catch {
+          return ser.acadSectionText!;
+        }
+      })();
 
       const consultInput = {
         competencyExtraction: ser.compExtrText!,
@@ -1135,7 +1177,8 @@ export const executeTask = async (
         selectedAdmissionTypes,
         detectedMajorGroup: detectedMajorForFlags,
         aiRecommendedMajor: consultAiMajor,
-        preprocessedAcademicData: texts.preprocessedAcademicDataText,
+        // preprocessedAcademicData 제거: 등급 원본이 있으면 AI가 재나열함
+        // 생성된 academicAnalysis 섹션에 이미 정확한 등급 정보가 포함됨
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly
