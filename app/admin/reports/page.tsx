@@ -61,7 +61,8 @@ const getRemainingHours = (createdAt: string): number => {
 type Priority = "urgent" | "high" | "medium" | "low" | "done";
 
 const getPriority = (report: AdminReport): Priority => {
-  if (report.status === "delivered") return "done";
+  if (report.status === "delivered" || report.status === "review_complete")
+    return "done";
   const remaining = getRemainingHours(report.createdAt);
   if (remaining <= 0) return "urgent"; // 마감 초과
   if (remaining <= 12) return "urgent"; // 12시간 이내
@@ -95,6 +96,7 @@ const PRIORITY_CONFIG: Record<
 
 const formatRemaining = (report: AdminReport): string => {
   if (report.status === "delivered") return "발송 완료";
+  if (report.status === "review_complete") return "검수 완료";
   const remaining = getRemainingHours(report.createdAt);
   if (remaining <= 0) {
     const overdue = Math.abs(remaining);
