@@ -150,22 +150,69 @@
   margin-top: 8px;
 }
 
-.subSectionToggle {
+.subSectionHeader {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #6366f1;
-  cursor: pointer;
+  color: #4f46e5;
+  padding: 4px 0;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 0;
-  background: none;
-  border: none;
-  transition: color 0.15s;
 }
 
-.subSectionToggle:hover {
-  color: #4f46e5;
+.subSectionCount {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.arrayItemsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.arrayItem {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.arrayItemToggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.arrayItemToggle:hover {
+  background: #f1f5f9;
+}
+
+.arrayItemHeaderText {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arrayItemBody {
+  padding: 12px 14px 14px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #ffffff;
 }
 
 .arrayItemLabel {

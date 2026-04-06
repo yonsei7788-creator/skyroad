@@ -23,7 +23,7 @@ import type { PdfProgress } from "@/libs/pdf/generate";
 import { generatePdfServerSide } from "@/libs/pdf/server";
 import { createClient as createSupabaseClient } from "@/libs/supabase/client";
 import type { ReportDetail, ReportStatus } from "@/app/admin/types";
-import type { ReportContent } from "@/libs/report/types";
+import type { ReportContent, ReportPlan } from "@/libs/report/types";
 
 import styles from "../reports.module.css";
 
@@ -662,6 +662,7 @@ const ReportDetailPage = () => {
               <SingleSectionEditor
                 content={editableContent}
                 sectionIndex={activeSectionIndex}
+                plan={(report.planName?.toLowerCase() as ReportPlan) ?? "lite"}
                 onChange={handleContentChange}
               />
             </div>
