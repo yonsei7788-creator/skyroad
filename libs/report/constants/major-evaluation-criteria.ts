@@ -707,19 +707,37 @@ const convertTextTo2022 = (text: string): string => {
 export const formatMajorEvaluationContext = (
   criteria: MajorEvaluationCriteria,
   targetDept: string,
-  gradingSystem?: "5등급제" | "9등급제"
+  gradingSystem?: "5등급제" | "9등급제",
+  mode: "detected" | "hope" = "detected"
 ): string => {
   const lines: string[] = [];
 
-  lines.push(`## 생기부 기반 계열 평가 기준: ${criteria.label} 계열`);
-  lines.push("");
-  lines.push(
-    "아래는 입학사정관이 이 계열 지원자를 평가할 때 실제로 중점적으로 보는 기준입니다."
-  );
-  lines.push(
-    "⚠️ 이 기준은 생기부에서 도출된 강점 계열 기반입니다. 희망 학과명이 아닌 계열 기준으로 분석하세요."
-  );
-  lines.push("");
+  if (mode === "hope") {
+    lines.push(
+      `## 학생 희망 학과 평가 기준: ${targetDept} (${criteria.label} 계열)`
+    );
+    lines.push("");
+    lines.push(
+      "아래는 입학사정관이 이 계열 지원자를 평가할 때 실제로 중점적으로 보는 기준입니다."
+    );
+    lines.push(
+      "⚠️ 이 기준은 학생이 희망하는 학과의 평가 기준입니다. 학생의 실제 활동·탐구·교과 이수가 이 기준에 부합하는지 정확히 판단하세요."
+    );
+    lines.push(
+      "⚠️ 학생의 생기부가 이 기준과 부합하지 않으면, 솔직하게 낮은 평가를 내리세요. 부합하지 않는데 부합한다고 말하면 안 됩니다."
+    );
+    lines.push("");
+  } else {
+    lines.push(`## 생기부 기반 계열 평가 기준: ${criteria.label} 계열`);
+    lines.push("");
+    lines.push(
+      "아래는 입학사정관이 이 계열 지원자를 평가할 때 실제로 중점적으로 보는 기준입니다."
+    );
+    lines.push(
+      "⚠️ 이 기준은 생기부에서 도출된 강점 계열 기반입니다. 희망 학과명이 아닌 계열 기준으로 분석하세요."
+    );
+    lines.push("");
+  }
 
   const t = gradingSystem === "5등급제" ? convertTextTo2022 : (s: string) => s;
 

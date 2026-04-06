@@ -736,6 +736,39 @@ export const executeTask = async (
       const gyogwaTargetText = texts.targetUniversitiesByType.gyogwa;
       const hakjongTargetText = texts.targetUniversitiesByType.hakjong;
 
+      // AI 감지 강점 계열/추천 학과명은 합격 예측 입력에서 모두 제외.
+      // 학생 희망 학과와 섞이면 AI가 추천을 학생 희망으로 오인하여
+      // "학생이 [감지된 계열]을 지향한다"는 잘못된 서술을 생성함.
+      let predCompExtrText = ser.compExtrText!;
+      try {
+        const parsed = JSON.parse(predCompExtrText);
+        delete parsed.detectedDepartments;
+        delete parsed.detectedDepartmentKeywords;
+        delete parsed.detectedMajorGroup;
+        delete parsed.detectedMajorGroupLabel;
+        delete parsed.detectedMajorReason;
+        predCompExtrText = JSON.stringify(parsed);
+      } catch {
+        // 파싱 실패 시 원본 사용
+      }
+
+      // 합격 예측용 평가 기준은 학생 희망 학과 기준으로 재생성.
+      // (texts.majorEvaluationContextText는 AI 감지 계열 기반이므로 부적합)
+      const predHopeDept =
+        studentInfo.targetDepartment ??
+        studentInfo.targetUniversities?.[0]?.department ??
+        "";
+      let predMajorEvalContext = texts.majorEvaluationContextText;
+      if (predHopeDept) {
+        const hopeCriteria = matchMajorEvaluationCriteria(predHopeDept);
+        predMajorEvalContext = formatMajorEvaluationContext(
+          hopeCriteria,
+          predHopeDept,
+          state.preprocessedData?.gradingSystem,
+          "hope"
+        );
+      }
+
       const gyogwaInput = {
         academicAnalysis: predGyogwaAcadText,
         universityCandidates: texts.universityCandidatesText,
@@ -774,7 +807,7 @@ export const executeTask = async (
           callGemini<Record<string, unknown>>(
             buildHakjongPredictionPrompt(
               {
-                competencyExtraction: ser.compExtrText!,
+                competencyExtraction: predCompExtrText,
                 academicAnalysis: ser.acadAnalText!,
                 studentTypeClassification: ser.stuTypeText!,
                 universityCandidates: texts.universityCandidatesText,
@@ -782,7 +815,7 @@ export const executeTask = async (
                 subjectAnalysisResult: ser.subjAnalysisText!,
                 academicAnalysisResult: ser.acadSectionText!,
                 attendanceAnalysisResult: ser.attendSectionText!,
-                majorEvaluationContext: texts.majorEvaluationContextText,
+                majorEvaluationContext: predMajorEvalContext,
                 targetUniversities: hakjongTargetText,
                 gradingSystem: state.preprocessedData!.gradingSystem,
                 isMedical,
