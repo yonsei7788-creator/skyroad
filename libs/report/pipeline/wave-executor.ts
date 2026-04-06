@@ -785,15 +785,24 @@ export const executeTask = async (
         );
       }
 
+      // 교과전형 희망대학 0건 여부 — 후보군 텍스트 환각 차단을 위한 분기
+      const noGyogwaTargets =
+        !gyogwaTargetText || gyogwaTargetText.trim().length === 0;
+
       const gyogwaInput = {
         academicAnalysis: predGyogwaAcadText,
-        universityCandidates: texts.universityCandidatesText,
+        // 교과 희망대학이 0건이면 후보군 텍스트도 비움 (임의 대학명/학과 환각 차단)
+        universityCandidates: noGyogwaTargets
+          ? ""
+          : texts.universityCandidatesText,
         studentProfile: texts.studentProfileText,
         academicAnalysisResult: predGyogwaAcadSectionText,
         targetUniversities: gyogwaTargetText,
         gradingSystem: state.preprocessedData!.gradingSystem,
         isMedical,
         isArtSportPractical,
+        noGyogwaTargets,
+        hopeDepartment: predHopeDept,
       };
 
       if (isGyogwaOnly) {
