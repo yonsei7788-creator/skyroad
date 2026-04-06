@@ -61,7 +61,7 @@ const PLANS: Plan[] = [
     discount: 20,
     pages: "40~50페이지",
     popular: false,
-    point: "합격 가능성 분석 + 지원 전략까지",
+    point: "맞춤형 생기부 분석 + 지원 전략까지",
     tag: "가장 많이 선택",
     cta: "79,000원으로 시작하기",
     features: [

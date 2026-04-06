@@ -175,7 +175,7 @@ export const HeroSection = () => {
           <FadeIn delay={0} direction="up">
             <div className={styles.badge}>
               <ShieldCheck size={14} className={styles.badgeIcon} />
-              <span>AI + 입시 전문 컨설턴트 이중 검증 시스템</span>
+              <span>입시 전문 컨설턴트 이중 검증 시스템</span>
             </div>
           </FadeIn>
 

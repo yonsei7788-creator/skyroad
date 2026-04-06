@@ -57,7 +57,7 @@ const PLANS: Plan[] = [
     discount: 20,
     pages: "40~50페이지",
     popular: false,
-    point: "합격 가능성 분석 + 지원 전략까지",
+    point: "맞춤형 생기부 분석 + 지원 전략까지",
     cta: "Standard 선택하기",
     features: [
       { text: "Lite Report 전체 포함", included: true },
