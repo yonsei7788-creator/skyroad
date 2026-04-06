@@ -345,6 +345,22 @@ export const executeTask = async (
       console.log(
         `[report:${reportId}] ⚠️ detectedMajorGroup null — 생기부 성적 기반 폴백: ${detected} (국수영과=${sciAvg}, 국수영사=${socAvg})`
       );
+      // 단수 폴백 시 detectedMajorGroups도 동기화
+      competencyExtraction.detectedMajorGroup = detected;
+      if (
+        !competencyExtraction.detectedMajorGroups ||
+        competencyExtraction.detectedMajorGroups.length === 0
+      ) {
+        competencyExtraction.detectedMajorGroups = [detected];
+      }
+    }
+    // detectedMajorGroups가 비어 있고 detectedMajorGroup만 있으면 단수→복수 동기화
+    if (
+      detected &&
+      (!competencyExtraction.detectedMajorGroups ||
+        competencyExtraction.detectedMajorGroups.length === 0)
+    ) {
+      competencyExtraction.detectedMajorGroups = [detected];
     }
     if (detected) {
       const detectedCriteria = findCriteriaByMajorGroup(detected);
@@ -1099,14 +1115,32 @@ export const executeTask = async (
     case "majorExploration": {
       let detectedMajorForExploration =
         state.phase2Results?.competencyExtraction?.detectedMajorGroup;
+      let detectedMajorGroupsForExploration: string[] | undefined =
+        state.phase2Results?.competencyExtraction?.detectedMajorGroups;
+      let detectedDepartmentsForExploration: string[] | undefined =
+        state.phase2Results?.competencyExtraction?.detectedDepartments ??
+        state.phase2Results?.competencyExtraction?.detectedDepartmentKeywords;
       if (!detectedMajorForExploration && ser.compExtrText) {
         try {
-          detectedMajorForExploration = JSON.parse(
-            ser.compExtrText
-          ).detectedMajorGroup;
+          const parsed = JSON.parse(ser.compExtrText);
+          detectedMajorForExploration = parsed.detectedMajorGroup;
+          detectedMajorGroupsForExploration =
+            parsed.detectedMajorGroups ?? detectedMajorGroupsForExploration;
+          detectedDepartmentsForExploration =
+            parsed.detectedDepartments ??
+            parsed.detectedDepartmentKeywords ??
+            detectedDepartmentsForExploration;
         } catch {
           // 파싱 실패 시 무시
         }
+      }
+      // detectedMajorGroups가 비어 있으면 단수 detectedMajorGroup으로 폴백
+      if (
+        (!detectedMajorGroupsForExploration ||
+          detectedMajorGroupsForExploration.length === 0) &&
+        detectedMajorForExploration
+      ) {
+        detectedMajorGroupsForExploration = [detectedMajorForExploration];
       }
       // 플랜이 달라도 동일 학생이면 같은 추천 전공이 나오도록 seed 고정
       // 핵심 입력(competencyExtraction + studentProfile)의 해시를 seed로 사용
@@ -1123,6 +1157,8 @@ export const executeTask = async (
         studentGrade: studentInfo.grade,
         targetDepartment: studentInfo.targetDepartment,
         detectedMajorGroup: detectedMajorForExploration,
+        detectedMajorGroups: detectedMajorGroupsForExploration,
+        detectedDepartments: detectedDepartmentsForExploration,
       });
       // 플랜 간 추천 전공 일관성을 위해 systemInstruction도 플랜 무관하게 고정
       // (systemPrompt는 플랜별 "분석 깊이" 지시를 포함하므로, 여기서는 premium 기준 사용)
