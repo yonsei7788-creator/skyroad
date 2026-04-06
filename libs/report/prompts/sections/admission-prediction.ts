@@ -725,6 +725,14 @@ export interface HakjongPredictionPromptInput {
   isArtSportPractical?: boolean;
   /** 논술전형 분석 포함 여부 */
   includeNonsul?: boolean;
+  /**
+   * 학생이 학생부종합전형 희망대학을 1개도 등록하지 않은 경우 true.
+   * 이 경우 universityCandidates를 사용하지 말고, 희망 학과 기준으로 일반적 포지션만 서술해야 함.
+   * (구체 대학명/학과명 환각 차단)
+   */
+  noHakjongTargets?: boolean;
+  /** 학생의 희망 학과명 (noHakjongTargets일 때 일반 서술의 기준이 됨) */
+  hopeDepartment?: string;
 }
 
 const HAKJONG_PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -862,13 +870,17 @@ overallComment에 "실기 전형이 포함된 학과로, 실기 성적에 따라
 `
     : "";
 
-  const targetUniversityRule = hasTargetUniversities
-    ? `### ⚠️ 유저 설정 희망대학 우선 규칙 (필수)
+  const targetUniversityRule = input.noHakjongTargets
+    ? `### universityPredictions 비활성화
+universityPredictions는 빈 배열([])로 출력하세요.
+analysis와 overallComment는 학생의 최종 평균 등급과 등급별 대학 라인 테이블을 비교하여 일반적 포지션만 서술하세요. (예: "최종 평균 X등급은 5등급제 기준 중위권으로, 학종에서는 수도권 중위권 대학 합격선 부근에 해당합니다.")`
+    : hasTargetUniversities
+      ? `### ⚠️ 유저 설정 희망대학 우선 규칙 (필수)
 - 유저 희망대학 중 **(학생부종합)** 전형으로 설정된 대학은 학종 predictions에 포함하세요.
 - **(학생부교과)** 전형으로 설정된 대학은 이 호출에서 다루지 않습니다 (별도 교과 분석에서 처리).
 - 학종 희망대학은 빠짐없이 포함해야 합니다.
 - 희망대학 외 대학은 추가하지 마세요.`
-    : `- "유저 설정 희망대학"이 없으므로, 코드 산정 대학 후보군에서 선택하세요.`;
+      : `- "유저 설정 희망대학"이 없으므로, 코드 산정 대학 후보군에서 선택하세요.`;
 
   const nonsulContext = input.includeNonsul
     ? `## 논술전형 분석 (필수)
@@ -920,7 +932,13 @@ ${input.academicAnalysis}
 ### 학생 유형 분류 결과
 ${input.studentTypeClassification}
 
-${hasTargetUniversities ? "" : `### 코드 산정 대학 후보군\n${input.universityCandidates}\n`}
+${
+  input.noHakjongTargets
+    ? `### 학생 희망 학과\n${input.hopeDepartment ?? "미등록"}\n`
+    : hasTargetUniversities
+      ? ""
+      : `### 코드 산정 대학 후보군\n${input.universityCandidates}\n`
+}
 ### 학생 프로필
 ${input.studentProfile}
 
@@ -976,7 +994,7 @@ ${input.majorEvaluationContext ? `### 학생 희망 학과 평가 기준 (입학
 - 학종에서 진로역량은 **생기부 전반에 걸친 일관된 관련 서술**로 판단합니다.
 
 ${
-  hasTargetUniversities
+  input.noHakjongTargets || hasTargetUniversities
     ? ""
     : `## 대학 추천 개인화 규칙
 

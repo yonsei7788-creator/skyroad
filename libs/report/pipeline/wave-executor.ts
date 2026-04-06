@@ -785,9 +785,11 @@ export const executeTask = async (
         );
       }
 
-      // 교과전형 희망대학 0건 여부 — 후보군 텍스트 환각 차단을 위한 분기
+      // 교과/학종 희망대학 0건 여부 — 후보군 텍스트 환각 차단을 위한 분기
       const noGyogwaTargets =
         !gyogwaTargetText || gyogwaTargetText.trim().length === 0;
+      const noHakjongTargets =
+        !hakjongTargetText || hakjongTargetText.trim().length === 0;
 
       const gyogwaInput = {
         academicAnalysis: predGyogwaAcadText,
@@ -835,7 +837,10 @@ export const executeTask = async (
                 competencyExtraction: predCompExtrText,
                 academicAnalysis: ser.acadAnalText!,
                 studentTypeClassification: ser.stuTypeText!,
-                universityCandidates: texts.universityCandidatesText,
+                // 학종 희망대학이 0건이면 후보군 텍스트도 비움 (임의 대학명/학과 환각 차단)
+                universityCandidates: noHakjongTargets
+                  ? ""
+                  : texts.universityCandidatesText,
                 studentProfile: texts.studentProfileText,
                 subjectAnalysisResult: ser.subjAnalysisText!,
                 academicAnalysisResult: ser.acadSectionText!,
@@ -846,6 +851,8 @@ export const executeTask = async (
                 isMedical,
                 isArtSportPractical,
                 includeNonsul: selectedAdmissionTypes?.includes("논술"),
+                noHakjongTargets,
+                hopeDepartment: predHopeDept,
               },
               plan
             )
