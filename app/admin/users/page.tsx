@@ -103,12 +103,19 @@ const ORDER_STATUS_DISPLAY: Record<string, string> = {
    Helpers
    ============================================ */
 
+// SSR 서버는 UTC라 getFullYear/getMonth 등 로컬 메서드는 UTC로 찍힌다.
+// Asia/Seoul 을 명시해서 서버·클라이언트 모두 KST로 포맷하도록 강제한다.
+const KST_DATE_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
 const formatDate = (dateStr: string): string => {
-  const d = new Date(dateStr);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}.${month}.${day}`;
+  const parts = KST_DATE_FORMATTER.formatToParts(new Date(dateStr));
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("year")}.${get("month")}.${get("day")}`;
 };
 
 const formatCurrency = (amount: number): string => {
