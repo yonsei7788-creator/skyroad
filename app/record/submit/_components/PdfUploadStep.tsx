@@ -16,7 +16,7 @@ export const PdfUploadStep = ({
   pdfFileName,
   onPdfChange,
 }: PdfUploadStepProps) => {
-  const MAX_FILE_SIZE = 4.5 * 1024 * 1024; // 4.5MB
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
   const [sizeError, setSizeError] = useState<string | null>(null);
 
   const handleFiles = (files: File[]) => {
@@ -24,7 +24,7 @@ export const PdfUploadStep = ({
     if (!file || file.type !== "application/pdf") return;
 
     if (file.size > MAX_FILE_SIZE) {
-      setSizeError("파일 크기는 4.5MB를 초과할 수 없습니다.");
+      setSizeError("파일 크기는 10MB를 초과할 수 없습니다.");
       return;
     }
 
@@ -59,7 +59,7 @@ export const PdfUploadStep = ({
           <DropZone
             accept=".pdf,application/pdf"
             label="PDF 파일을 드래그하거나 클릭하여 업로드"
-            hint="PDF 파일만 지원됩니다 (최대 4.5MB)"
+            hint="PDF 파일만 지원됩니다 (최대 10MB)"
             onFiles={handleFiles}
           />
           {sizeError && <p className={styles.pdfSizeError}>{sizeError}</p>}
