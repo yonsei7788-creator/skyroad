@@ -90,17 +90,6 @@ export const GET = async (
   const statusFilter = searchParams.get("status") ?? "";
   const methodFilter = searchParams.get("method") ?? "";
 
-  // Stats: total revenue + count for completed payments
-  const { data: allDone } = await supabase
-    .from("payments")
-    .select("amount, created_at")
-    .eq("status", "done");
-
-  const { count: canceledCount } = await supabase
-    .from("payments")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "canceled");
-
   // 한국 시간(UTC+9) 기준으로 오늘 자정 계산 — 대시보드 API와 동일한 방식
   const nowKST = new Date(Date.now() + 9 * 60 * 60 * 1000);
   const yyyy = nowKST.getUTCFullYear();
@@ -108,23 +97,37 @@ export const GET = async (
   const dd = String(nowKST.getUTCDate()).padStart(2, "0");
   const todayStart = `${yyyy}-${mm}-${dd}T00:00:00+09:00`;
 
-  const totalRevenue =
-    allDone?.reduce((sum, p) => sum + (p.amount ?? 0), 0) ?? 0;
-  const totalCount = allDone?.length ?? 0;
-  const todayPayments =
-    allDone?.filter((p) => p.created_at >= todayStart) ?? [];
-  const todayRevenue = todayPayments.reduce(
-    (sum, p) => sum + (p.amount ?? 0),
-    0
-  );
-  const todayCount = todayPayments.length;
+  // Stats: 대시보드 stats API와 동일하게 서버 사이드 .gte 로 비교한다.
+  // (클라이언트 사이드 문자열 비교는 ISO 오프셋이 다를 때 잘못된 결과를 낸다)
+  const [allDoneResult, todayDoneResult, canceledCountResult] =
+    await Promise.all([
+      supabase.from("payments").select("amount").eq("status", "done"),
+      supabase
+        .from("payments")
+        .select("amount")
+        .eq("status", "done")
+        .gte("created_at", todayStart),
+      supabase
+        .from("payments")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "canceled"),
+    ]);
+
+  const allDone = allDoneResult.data ?? [];
+  const todayDone = todayDoneResult.data ?? [];
+
+  const totalRevenue = allDone.reduce((sum, p) => sum + (p.amount ?? 0), 0);
+  const totalCount = allDone.length;
+  const todayRevenue = todayDone.reduce((sum, p) => sum + (p.amount ?? 0), 0);
+  const todayCount = todayDone.length;
+  const canceledCount = canceledCountResult.count ?? 0;
 
   const stats: PaymentStats = {
     totalRevenue,
     totalCount,
     todayRevenue,
     todayCount,
-    canceledCount: canceledCount ?? 0,
+    canceledCount,
   };
 
   // Build payments query with joined orders and plans
