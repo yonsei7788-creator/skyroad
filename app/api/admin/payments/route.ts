@@ -101,12 +101,12 @@ export const GET = async (
     .select("*", { count: "exact", head: true })
     .eq("status", "canceled");
 
-  const now = new Date();
-  const todayStart = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate()
-  ).toISOString();
+  // 한국 시간(UTC+9) 기준으로 오늘 자정 계산 — 대시보드 API와 동일한 방식
+  const nowKST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const yyyy = nowKST.getUTCFullYear();
+  const mm = String(nowKST.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(nowKST.getUTCDate()).padStart(2, "0");
+  const todayStart = `${yyyy}-${mm}-${dd}T00:00:00+09:00`;
 
   const totalRevenue =
     allDone?.reduce((sum, p) => sum + (p.amount ?? 0), 0) ?? 0;
