@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 import { createClient } from "@/libs/supabase/server";
 import { createAdminClient } from "@/libs/supabase/admin";
-import type { ReportDetail } from "@/app/admin/types";
+import type { AiStatus, ReportDetail } from "@/app/admin/types";
 
 import { verifyAdmin, deriveReportStatus } from "../helpers";
 
@@ -25,6 +25,11 @@ export const GET = async (
       created_at,
       content,
       ai_generated_at,
+      ai_status,
+      ai_progress,
+      ai_current_section,
+      ai_error,
+      ai_retry_count,
       reviewed_at,
       delivered_at,
       review_notes,
@@ -108,6 +113,11 @@ export const GET = async (
     content: row.content,
     reviewNotes: row.review_notes,
     aiGeneratedAt: row.ai_generated_at,
+    aiStatus: (row.ai_status as AiStatus) ?? "pending",
+    aiProgress: (row.ai_progress as number) ?? 0,
+    aiCurrentSection: (row.ai_current_section as string | null) ?? null,
+    aiError: (row.ai_error as string | null) ?? null,
+    aiRetryCount: (row.ai_retry_count as number) ?? 0,
     reviewedBy: (reviewer?.name as string) || null,
     reviewedAt: row.reviewed_at,
     deliveredAt: row.delivered_at,

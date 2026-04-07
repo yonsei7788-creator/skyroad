@@ -18,10 +18,17 @@ export interface AdminReport {
   deliveredAt: string | null;
 }
 
+export type AiStatus = "pending" | "processing" | "completed" | "failed";
+
 export interface ReportDetail extends AdminReport {
   orderId: string;
   content: unknown;
   reviewNotes: string | null;
+  aiStatus: AiStatus;
+  aiProgress: number;
+  aiCurrentSection: string | null;
+  aiError: string | null;
+  aiRetryCount: number;
 }
 
 export interface PaginatedResponse<T> {

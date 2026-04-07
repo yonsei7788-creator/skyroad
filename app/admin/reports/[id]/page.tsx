@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
+  AlertTriangle,
   ArrowLeft,
   CheckCircle,
   Download,
@@ -686,6 +687,43 @@ const ReportDetailPage = () => {
               </button>
             </div>
           </>
+        ) : report.aiStatus === "failed" ? (
+          <div className={styles.aiFailedPanel}>
+            <div className={styles.aiFailedIcon}>
+              <AlertTriangle size={28} />
+            </div>
+            <h3 className={styles.aiFailedTitle}>AI 생성이 중단되었습니다</h3>
+            {report.aiError && (
+              <p className={styles.aiFailedError}>{report.aiError}</p>
+            )}
+            <dl className={styles.aiFailedMeta}>
+              {report.aiCurrentSection && (
+                <>
+                  <dt>중단 섹션</dt>
+                  <dd>{report.aiCurrentSection}</dd>
+                </>
+              )}
+              <dt>진행률</dt>
+              <dd>{report.aiProgress}%</dd>
+              {report.aiRetryCount > 0 && (
+                <>
+                  <dt>재시도 횟수</dt>
+                  <dd>{report.aiRetryCount}회</dd>
+                </>
+              )}
+            </dl>
+            <button
+              type="button"
+              className={styles.aiRegenerateButton}
+              onClick={() =>
+                router.push(
+                  `/report/generating?orderId=${report.orderId}&from=admin`
+                )
+              }
+            >
+              <RefreshCw size={16} /> 리포트 재생성
+            </button>
+          </div>
         ) : (
           <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>
             AI가 아직 리포트를 생성하지 않았습니다.
