@@ -832,6 +832,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Gemini 503: 모델 과부하(UNAVAILABLE) — 사용량 급증으로 안내
+    if (
+      message.includes("503") ||
+      message.includes("UNAVAILABLE") ||
+      message.includes("overloaded")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "현재 AI 사용량이 급증하여 일시적으로 처리할 수 없습니다. 몇 분 뒤에 다시 시도해주세요.",
+        },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
       { error: "AI 파싱에 실패했습니다. 다시 시도해주세요." },
       { status: 500 }
