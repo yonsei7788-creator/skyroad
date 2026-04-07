@@ -109,14 +109,21 @@ const KST_DATETIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   hourCycle: "h23",
 });
 
+// 타임존 정보(Z 또는 ±HH:MM)가 없는 ISO 문자열은 JS가 LOCAL 시간으로 해석하기 때문에
+// 서버(UTC)와 브라우저(KST)에서 결과가 달라진다. 이를 방지하기 위해 항상 UTC로 강제 해석.
+const parseAsUtc = (dateStr: string): Date => {
+  if (/[zZ]|[+-]\d{2}:?\d{2}$/.test(dateStr)) return new Date(dateStr);
+  return new Date(`${dateStr}Z`);
+};
+
 const formatDate = (dateStr: string): string => {
-  const parts = KST_DATE_FORMATTER.formatToParts(new Date(dateStr));
+  const parts = KST_DATE_FORMATTER.formatToParts(parseAsUtc(dateStr));
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
   return `${get("year")}.${get("month")}.${get("day")}`;
 };
 
 const formatDateTime = (dateStr: string): string => {
-  const parts = KST_DATETIME_FORMATTER.formatToParts(new Date(dateStr));
+  const parts = KST_DATETIME_FORMATTER.formatToParts(parseAsUtc(dateStr));
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
   return `${get("year")}.${get("month")}.${get("day")} ${get("hour")}:${get("minute")}`;
 };
