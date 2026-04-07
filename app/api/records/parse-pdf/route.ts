@@ -94,6 +94,8 @@ export async function POST(request: NextRequest) {
   }
 
   let pdfBuffer: ArrayBuffer;
+  let uploadedPath: string | null = null;
+  let admin: ReturnType<typeof createAdminClient> = null;
 
   const contentType = request.headers.get("content-type") || "";
   if (contentType.includes("multipart/form-data")) {
@@ -129,7 +131,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const admin = createAdminClient();
+    admin = createAdminClient();
     if (!admin) {
       return NextResponse.json(
         { error: "서버 설정 오류입니다." },
@@ -137,23 +139,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const uploadedPath = storagePaths[0].path;
+    uploadedPath = storagePaths[0].path;
 
     const { data: fileData, error: dlError } = await admin.storage
       .from("record-uploads")
       .download(uploadedPath);
 
     if (dlError || !fileData) {
-      await admin.storage.from("record-uploads").remove([uploadedPath]);
+      // 실패 시 storage 파일은 유지 — parse API가 재활용할 수 있도록 둔다
       return NextResponse.json(
         { error: `파일 다운로드 실패: ${dlError?.message ?? "unknown"}` },
         { status: 500 }
       );
     }
     pdfBuffer = await fileData.arrayBuffer();
-
-    // 다운로드 완료 후 즉시 스토리지에서 삭제
-    await admin.storage.from("record-uploads").remove([uploadedPath]);
   }
 
   try {
@@ -185,6 +184,11 @@ export async function POST(request: NextRequest) {
         `reading=${result.readingActivities?.length ?? 0}, ` +
         `behavioral=${result.behavioralAssessments?.length ?? 0}`
     );
+
+    // 성공한 경우에만 storage에서 삭제 (실패 시 parse API가 재활용)
+    if (admin && uploadedPath) {
+      await admin.storage.from("record-uploads").remove([uploadedPath]);
+    }
 
     return NextResponse.json(result);
   } catch (err) {

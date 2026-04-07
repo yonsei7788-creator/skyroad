@@ -1199,6 +1199,100 @@
   color: var(--color-fg);
 }
 
+/* ============================================
+   Notice Modal (확인 버튼으로만 닫힘)
+   ============================================ */
+.noticeOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(2px);
+  animation: noticeFadeIn 0.18s ease-out;
+}
+
+.noticeDialog {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 28px 24px 24px;
+  background: var(--color-bg);
+  border-radius: 16px;
+  box-shadow:
+    0 24px 60px rgb(0 0 0 / 0.25),
+    0 4px 12px rgb(0 0 0 / 0.08);
+  animation: noticePop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.noticeIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-bg-primary-subtle);
+  color: var(--color-fg-primary);
+}
+
+.noticeTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-fg);
+  line-height: 1.4;
+}
+
+.noticeText {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-fg-secondary);
+  line-height: 1.6;
+}
+
+.noticeConfirmBtn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 12px 20px;
+  border-radius: 10px;
+  background: var(--color-bg-primary);
+  color: var(--color-fg-inverse);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+
+.noticeConfirmBtn:hover {
+  background: var(--color-bg-primary-hover);
+}
+
+@keyframes noticeFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes noticePop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* ---- Draft Restore Card (Step 1 inline) ---- */
 .draftRestoreCard {
   display: flex;
