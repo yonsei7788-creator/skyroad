@@ -27,6 +27,7 @@ export const maxDuration = 300;
 
 interface RunPipelineBody {
   orderId: string;
+  force?: boolean;
 }
 
 const GRADE_MAP: Record<string, number> = {
@@ -319,7 +320,7 @@ export const POST = async (request: NextRequest) => {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  const { orderId } = body;
+  const { orderId, force } = body;
   if (!orderId) {
     return NextResponse.json(
       { error: "orderId가 필요합니다." },
@@ -351,17 +352,23 @@ export const POST = async (request: NextRequest) => {
     );
   }
 
-  if (order.user_id !== user.id) {
+  let isAdmin = false;
+  if (order.user_id !== user.id || force) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
 
-    if (!profile || profile.role !== "admin") {
+    isAdmin = profile?.role === "admin";
+
+    if (order.user_id !== user.id && !isAdmin) {
       return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
     }
   }
+
+  // force 옵션은 관리자만 사용 가능
+  const forceRegenerate = Boolean(force) && isAdmin;
 
   if (order.status === "pending_payment") {
     return NextResponse.json(
@@ -377,11 +384,11 @@ export const POST = async (request: NextRequest) => {
     .eq("order_id", orderId)
     .single();
 
-  if (existingReport?.ai_status === "processing") {
+  if (existingReport?.ai_status === "processing" && !forceRegenerate) {
     return NextResponse.json({ error: "이미 생성 중입니다." }, { status: 409 });
   }
 
-  const isRetry = existingReport?.ai_status === "failed";
+  const isRetry = existingReport?.ai_status === "failed" || forceRegenerate;
 
   if (
     !isRetry &&

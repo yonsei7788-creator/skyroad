@@ -12,6 +12,7 @@ export const maxDuration = 60;
 
 interface GenerateBody {
   orderId: string;
+  force?: boolean;
 }
 
 const GRADE_MAP: Record<string, number> = {
@@ -45,7 +46,7 @@ export const POST = async (request: NextRequest) => {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  const { orderId } = body;
+  const { orderId, force } = body;
   if (!orderId) {
     return NextResponse.json(
       { error: "orderId가 필요합니다." },
@@ -78,17 +79,23 @@ export const POST = async (request: NextRequest) => {
   }
 
   // 주문 소유자 또는 관리자만 생성 가능
-  if (order.user_id !== user.id) {
+  let isAdmin = false;
+  if (order.user_id !== user.id || force) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
 
-    if (!profile || profile.role !== "admin") {
+    isAdmin = profile?.role === "admin";
+
+    if (order.user_id !== user.id && !isAdmin) {
       return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
     }
   }
+
+  // force 옵션은 관리자만 사용 가능
+  const forceRegenerate = Boolean(force) && isAdmin;
 
   // 결제 완료 상태 확인
   if (order.status === "pending_payment") {
@@ -105,7 +112,7 @@ export const POST = async (request: NextRequest) => {
     .eq("order_id", orderId)
     .single();
 
-  if (existingReport?.ai_status === "processing") {
+  if (existingReport?.ai_status === "processing" && !forceRegenerate) {
     // 이미 processing 상태 — wave state가 있으면 태스크 큐 반환하여 이어서 실행
     const waveState = existingReport.ai_wave_state as {
       taskQueue?: string[];
@@ -180,7 +187,7 @@ export const POST = async (request: NextRequest) => {
   }
 
   // 실패한 리포트 재시도 판별
-  const isRetry = existingReport?.ai_status === "failed";
+  const isRetry = existingReport?.ai_status === "failed" || forceRegenerate;
 
   if (
     !isRetry &&
@@ -196,6 +203,19 @@ export const POST = async (request: NextRequest) => {
   // admin client를 먼저 생성 (RLS 우회 필요)
   const adminClient = createAdminClient();
   const dbClient = adminClient ?? supabase;
+
+  // 강제 재생성: 기존 wave state 초기화
+  if (forceRegenerate && existingReport) {
+    await dbClient
+      .from("reports")
+      .update({
+        ai_wave_state: null,
+        ai_progress: 0,
+        ai_current_section: null,
+        ai_error: null,
+      })
+      .eq("id", existingReport.id);
+  }
 
   // 리포트 레코드 확보 (없으면 생성)
   let reportId: string;

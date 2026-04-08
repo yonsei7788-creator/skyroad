@@ -85,7 +85,7 @@ const GeneratingContent = () => {
         const initRes = await fetch("/api/reports/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId }),
+          body: JSON.stringify({ orderId, force: isFromAdmin }),
           signal: controller.signal,
         });
 

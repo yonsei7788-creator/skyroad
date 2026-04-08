@@ -65,7 +65,7 @@ const GeneratingContent = () => {
         const res = await fetch("/api/reports/run-pipeline", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId }),
+          body: JSON.stringify({ orderId, force: isAdmin }),
           signal: controller.signal,
         });
 
@@ -179,7 +179,7 @@ const GeneratingContent = () => {
         const res = await fetch("/api/reports/run-pipeline", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId }),
+          body: JSON.stringify({ orderId, force: isAdmin }),
           signal: controller.signal,
         });
 
