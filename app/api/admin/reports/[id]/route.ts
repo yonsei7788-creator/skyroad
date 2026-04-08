@@ -125,3 +125,43 @@ export const GET = async (
 
   return NextResponse.json(detail);
 };
+
+export const DELETE = async (
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  const { id } = await params;
+  const supabase = await createClient();
+
+  const { error: authError } = await verifyAdmin(supabase);
+  if (authError) return authError;
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return NextResponse.json(
+      { error: "관리자 권한이 필요합니다." },
+      { status: 500 }
+    );
+  }
+
+  const { error: deleteError, count } = await adminClient
+    .from("reports")
+    .delete({ count: "exact" })
+    .eq("id", id);
+
+  if (deleteError) {
+    return NextResponse.json(
+      { error: deleteError.message || "리포트 삭제에 실패했습니다." },
+      { status: 500 }
+    );
+  }
+
+  if (!count) {
+    return NextResponse.json(
+      { error: "삭제할 리포트를 찾을 수 없습니다." },
+      { status: 404 }
+    );
+  }
+
+  return NextResponse.json({ success: true });
+};

@@ -509,6 +509,30 @@
   color: #ffffff;
 }
 
+.deleteButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--color-danger-50, #fef2f2);
+  color: var(--color-danger-600, #dc2626);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1px solid var(--color-danger-500, #ef4444);
+  transition: all 0.15s ease;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background: var(--color-danger-500, #ef4444);
+  color: #ffffff;
+}
+
+.deleteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ============================================
    Spinner & Loading
    ============================================ */

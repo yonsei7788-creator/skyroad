@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Save,
   RotateCcw,
+  Trash2,
 } from "lucide-react";
 
 import { Badge } from "@/app/admin/_components";
@@ -60,8 +61,9 @@ const ReportDetailPage = () => {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState<
-    "deliver" | "resend" | null
+    "deliver" | "resend" | "delete" | null
   >(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Editable content state
   const [editableContent, setEditableContent] = useState<Record<
@@ -313,9 +315,34 @@ const ReportDetailPage = () => {
     }
   };
 
-  const openConfirmModal = (action: "deliver" | "resend") => {
+  const openConfirmModal = (action: "deliver" | "resend" | "delete") => {
     setConfirmAction(action);
     setShowConfirmModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!report) return;
+    setShowConfirmModal(false);
+    setConfirmAction(null);
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/reports/${reportId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(
+          (data.error as string) || "리포트 삭제에 실패했습니다."
+        );
+      }
+      addToast("리포트가 삭제되었습니다.", "success");
+      router.push("/admin/reports");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "리포트 삭제에 실패했습니다.";
+      addToast(message, "error");
+      setDeleting(false);
+    }
   };
 
   const handleConfirm = () => {
@@ -323,6 +350,8 @@ const ReportDetailPage = () => {
       handleDeliver();
     } else if (confirmAction === "resend") {
       handleResend();
+    } else if (confirmAction === "delete") {
+      handleDelete();
     }
   };
 
@@ -455,6 +484,12 @@ const ReportDetailPage = () => {
     );
   }
 
+  const STUCK_THRESHOLD_MS = 30 * 60 * 1000;
+  const isStuckGenerating =
+    (report.aiStatus === "pending" || report.aiStatus === "processing") &&
+    Date.now() - new Date(report.createdAt).getTime() > STUCK_THRESHOLD_MS;
+  const canRegenerate = report.aiStatus === "failed" || isStuckGenerating;
+
   const shortId = report.id.slice(0, 8);
   const { label: statusLabel, variant: statusVariant } =
     STATUS_BADGE_MAP[report.status];
@@ -502,12 +537,16 @@ const ReportDetailPage = () => {
             <h3 className={styles.modalTitle}>
               {confirmAction === "resend"
                 ? "리포트 재발송"
-                : "이메일 발송 확인"}
+                : confirmAction === "delete"
+                  ? "리포트 삭제"
+                  : "이메일 발송 확인"}
             </h3>
             <p className={styles.modalDescription}>
               {confirmAction === "resend"
                 ? "리포트를 다시 발송하시겠습니까? 사용자에게 이메일이 다시 전송됩니다."
-                : "검수를 완료하고 사용자에게 이메일을 발송하시겠습니까?"}
+                : confirmAction === "delete"
+                  ? "이 리포트를 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+                  : "검수를 완료하고 사용자에게 이메일을 발송하시겠습니까?"}
             </p>
             <div className={styles.modalActions}>
               <button
@@ -517,7 +556,11 @@ const ReportDetailPage = () => {
                 취소
               </button>
               <button className={styles.modalConfirm} onClick={handleConfirm}>
-                {confirmAction === "resend" ? "재발송" : "발송하기"}
+                {confirmAction === "resend"
+                  ? "재발송"
+                  : confirmAction === "delete"
+                    ? "삭제"
+                    : "발송하기"}
               </button>
             </div>
           </div>
@@ -551,6 +594,18 @@ const ReportDetailPage = () => {
               <RotateCcw size={14} /> 초기화
             </button>
           )}
+          <button
+            className={styles.deleteButton}
+            onClick={() => openConfirmModal("delete")}
+            disabled={deleting || submitting || exporting}
+          >
+            {deleting ? (
+              <Loader2 size={14} className={styles.spinner} />
+            ) : (
+              <Trash2 size={14} />
+            )}
+            삭제
+          </button>
           <button
             className={styles.saveButton}
             onClick={handleSaveContent}
@@ -687,12 +742,16 @@ const ReportDetailPage = () => {
               </button>
             </div>
           </>
-        ) : report.aiStatus === "failed" ? (
+        ) : canRegenerate ? (
           <div className={styles.aiFailedPanel}>
             <div className={styles.aiFailedIcon}>
               <AlertTriangle size={28} />
             </div>
-            <h3 className={styles.aiFailedTitle}>AI 생성이 중단되었습니다</h3>
+            <h3 className={styles.aiFailedTitle}>
+              {report.aiStatus === "failed"
+                ? "AI 생성이 중단되었습니다"
+                : "AI 생성이 30분 이상 지연되고 있습니다"}
+            </h3>
             {report.aiError && (
               <p className={styles.aiFailedError}>{report.aiError}</p>
             )}
