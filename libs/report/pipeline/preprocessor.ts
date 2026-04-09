@@ -29,8 +29,8 @@ import {
 import { correctSubjectName } from "../constants/subject-name-corrections.ts";
 
 /**
- * 예체능 관련 키워드 (lClass 보완용).
- * lClass가 "예체능계열"이 아니더라도 학과명에 이 키워드가 포함되면 예체능으로 판단.
+ * 예체능 관련 키워드.
+ * 학과명에 이 키워드가 포함되면 예체능으로 판단.
  * 주의: 오탐 방지를 위해 단독으로 사용되는 예체능 실기 키워드만 포함.
  */
 const ART_SPORT_KEYWORDS = [
@@ -75,13 +75,10 @@ const ART_SPORT_EXCLUDE_PATTERNS = [
 
 /**
  * 예체능 학과 여부 판별.
- * lClass가 "예체능계열"이거나 학과명에 예체능 키워드가 포함되면 예체능으로 판단.
+ * 학과명에 예체능 키워드가 포함되면 예체능으로 판단.
  * 단, 제외 패턴에 해당하면 예체능이 아닌 것으로 판단.
  */
 export const isArtSportDepartment = (targetDept: string): boolean => {
-  const majorInfo = findMajorInfo(targetDept);
-  if (majorInfo?.lClass === "예체능계열") return true;
-
   const hasKeyword = ART_SPORT_KEYWORDS.some((kw) => targetDept.includes(kw));
   if (!hasKeyword) return false;
 
@@ -1571,7 +1568,6 @@ const buildTexts = (
   const majorInfoFromApi = targetDept ? findMajorInfo(targetDept) : undefined;
   const careerNetContext = majorInfoFromApi
     ? `\n\n### 커리어넷 학과 관련 교과 (${majorInfoFromApi.majorName})\n` +
-      `- 계열: ${majorInfoFromApi.lClass}\n` +
       `- 일반선택 관련 교과: ${majorInfoFromApi.electiveSubjects.join(", ") || "없음"}\n` +
       `- 진로선택 관련 교과: ${majorInfoFromApi.careerSubjects.join(", ") || "없음"}\n` +
       `- 개설 대학: ${majorInfoFromApi.universities.slice(0, 10).join(", ")}`
