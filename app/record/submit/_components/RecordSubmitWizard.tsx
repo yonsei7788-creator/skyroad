@@ -20,7 +20,11 @@ import { PdfUploadStep } from "./PdfUploadStep";
 import { TextInputStep } from "./TextInputStep";
 import { ReviewStep } from "./ReviewStep";
 import { ParsingOverlay } from "./ParsingOverlay";
-import { INITIAL_WIZARD_STATE, validateRequiredFields } from "./types";
+import {
+  ATTENDANCE_MAX_ROWS,
+  INITIAL_WIZARD_STATE,
+  validateRequiredFields,
+} from "./types";
 import type {
   InputMethod,
   WizardState,
@@ -323,17 +327,29 @@ export const RecordSubmitWizard = ({
       const warning = parsed._warning as string | undefined;
       delete parsed._warning;
 
+      // 출결은 최대 ATTENDANCE_MAX_ROWS 개까지만 허용 — 초과분은 뒤에서 잘라낸다.
+      const parsedRecord = parsed as SchoolRecord;
+      if (
+        Array.isArray(parsedRecord.attendance) &&
+        parsedRecord.attendance.length > ATTENDANCE_MAX_ROWS
+      ) {
+        parsedRecord.attendance = parsedRecord.attendance.slice(
+          0,
+          ATTENDANCE_MAX_ROWS
+        );
+      }
+
       // AI 파싱 완료 후 draft 자동 저장
       const draftId = await saveDraft(
         state.method!,
-        parsed as SchoolRecord,
+        parsedRecord,
         undefined,
         state.plannedSubjects
       );
 
       setState((prev) => ({
         ...prev,
-        record: parsed as SchoolRecord,
+        record: parsedRecord,
         isParsing: false,
         step: 3,
         draftId: draftId ?? prev.draftId,

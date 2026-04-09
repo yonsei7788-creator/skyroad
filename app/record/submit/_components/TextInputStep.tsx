@@ -14,7 +14,11 @@ import type {
   CreativeActivityArea,
   ValidationError,
 } from "./types";
-import { REQUIRED_FIELD_RULES, REQUIRED_SECTION_KEYS } from "./types";
+import {
+  ATTENDANCE_MAX_ROWS,
+  REQUIRED_FIELD_RULES,
+  REQUIRED_SECTION_KEYS,
+} from "./types";
 import {
   createEmptyAttendanceRow,
   createEmptyAwardRow,
@@ -854,6 +858,7 @@ const ACCORDION_STEPS: AccordionStepDef[] = [
         columns: attendanceColumns,
         addLabel: "학년 추가",
         createEmpty: createEmptyAttendanceRow,
+        maxRows: ATTENDANCE_MAX_ROWS,
       },
       {
         key: "awards",

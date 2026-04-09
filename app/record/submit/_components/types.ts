@@ -10,6 +10,9 @@ export type WizardStep = 1 | 2 | 3 | 4;
 // 생기부 섹션별 Row 타입
 // ============================================
 
+/** 출결상황 최대 행 개수 (학년 1·2·3) */
+export const ATTENDANCE_MAX_ROWS = 3;
+
 /** 출결상황 */
 export interface AttendanceRow {
   id: string;

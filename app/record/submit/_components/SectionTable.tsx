@@ -47,6 +47,8 @@ export interface SectionDef {
 
   createEmpty?: () => any;
   customRender?: ComponentType<CustomSectionProps>;
+  /** 행 개수 상한 — 도달 시 추가 버튼 숨김 */
+  maxRows?: number;
 }
 
 export interface AccordionStepDef {
@@ -255,6 +257,7 @@ interface SectionTableProps {
   onChange: (id: string, field: string, value: unknown) => void;
   onRemove: (id: string) => void;
   isRequired?: boolean;
+  maxRows?: number;
 }
 
 export const SectionTable = ({
@@ -266,6 +269,7 @@ export const SectionTable = ({
   onChange,
   onRemove,
   isRequired,
+  maxRows,
 }: SectionTableProps) => {
   const inlineColumns = columns.filter((c) => c.type !== "textarea");
   const textareaColumns = columns.filter((c) => c.type === "textarea");
@@ -342,10 +346,12 @@ export const SectionTable = ({
         </div>
       )}
 
-      <button type="button" className={styles.addRowButton} onClick={onAdd}>
-        <Plus size={16} />
-        {addLabel}
-      </button>
+      {(maxRows === undefined || rows.length < maxRows) && (
+        <button type="button" className={styles.addRowButton} onClick={onAdd}>
+          <Plus size={16} />
+          {addLabel}
+        </button>
+      )}
     </div>
   );
 };
@@ -400,9 +406,11 @@ export const AccordionStep = ({
   const handleAdd = (
     sectionKey: keyof SchoolRecord,
 
-    createEmpty: () => any
+    createEmpty: () => any,
+    maxRows?: number
   ) => {
     const current = record[sectionKey] as unknown as Record<string, unknown>[];
+    if (maxRows !== undefined && current.length >= maxRows) return;
     onRecordChange({
       ...record,
       [sectionKey]: [...current, createEmpty()],
@@ -476,13 +484,18 @@ export const AccordionStep = ({
                   }
                   addLabel={section.addLabel}
                   onAdd={() =>
-                    handleAdd(section.key, section.createEmpty ?? (() => ({})))
+                    handleAdd(
+                      section.key,
+                      section.createEmpty ?? (() => ({})),
+                      section.maxRows
+                    )
                   }
                   onChange={(id, field, value) =>
                     handleChange(section.key, id, field, value)
                   }
                   onRemove={(id) => handleRemove(section.key, id)}
                   isRequired={isRequired}
+                  maxRows={section.maxRows}
                 />
               </div>
             );
