@@ -53,8 +53,8 @@ export const AttendanceAnalysisRenderer = ({
             </tr>
           </thead>
           <tbody>
-            {(data.summaryByYear ?? []).map((row) => (
-              <tr key={row.year}>
+            {(data.summaryByYear ?? []).map((row, idx) => (
+              <tr key={`year-${row.year}-${idx}`}>
                 <td className={styles.tableCellBold}>{row.year}학년</td>
                 <td className={styles.tableAlignCenter}>
                   {row.totalDays ?? "-"}

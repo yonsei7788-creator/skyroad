@@ -42,8 +42,11 @@ export const StoryAnalysisRenderer = ({
         <div className={`${styles.h3} ${styles.mt24} ${styles.mb12}`}>
           학년별 심화 흐름
         </div>
-        {(data.yearProgressions ?? []).map((yp) => (
-          <div key={yp.year} className={styles.activityYearCard}>
+        {(data.yearProgressions ?? []).map((yp, idx) => (
+          <div
+            key={`year-${yp.year}-${idx}`}
+            className={styles.activityYearCard}
+          >
             <div className={styles.activityYearHeader}>
               <span className={styles.tableCellBold}>{yp.year}학년</span>
               <span className={styles.tag}>{yp.theme}</span>

@@ -36,8 +36,8 @@ export const InterviewPrepRenderer = ({
 
         {data.questionDistribution && data.questionDistribution.length > 0 && (
           <div className={`${styles.tagGroup} ${styles.mt12}`}>
-            {data.questionDistribution.map((d) => (
-              <span key={d.type} className={styles.tag}>
+            {data.questionDistribution.map((d, qdIdx) => (
+              <span key={`qd-${qdIdx}`} className={styles.tag}>
                 {d.type} {d.count}개
               </span>
             ))}
@@ -81,9 +81,9 @@ export const InterviewPrepRenderer = ({
 
           {q.answerKeywords && q.answerKeywords.length > 0 && (
             <div className={`${styles.tagGroup} ${styles.mt8}`}>
-              {q.answerKeywords.map((kw) => (
-                <span key={kw} className={styles.tag}>
-                  {kw}
+              {q.answerKeywords.map((kw, kIdx) => (
+                <span key={`q-${idx}-kw-${kIdx}`} className={styles.tag}>
+                  {String(kw)}
                 </span>
               ))}
             </div>

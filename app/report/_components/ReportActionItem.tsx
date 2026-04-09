@@ -21,9 +21,9 @@ export const ReportActionItem = ({
     <div className={VARIANT_CLASS[variant]}>
       <div className={`${styles.cardTitle} ${styles.mb8}`}>{title}</div>
       <ul className={styles.list}>
-        {items.map((item) => (
-          <li key={item} className={styles.listItem}>
-            {item}
+        {items.map((item, idx) => (
+          <li key={`item-${idx}`} className={styles.listItem}>
+            {String(item)}
           </li>
         ))}
       </ul>

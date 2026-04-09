@@ -333,7 +333,7 @@ export const AcademicAnalysisRenderer = ({
                   <ol className={styles.numberedList}>
                     {gca.actionItems!.map((item, idx) => (
                       <li
-                        key={toText(item)}
+                        key={`action-${idx}`}
                         className={styles.numberedListItem}
                       >
                         <span className={styles.numberedListNumber}>
@@ -526,7 +526,10 @@ export const AcademicAnalysisRenderer = ({
                 </div>
                 <ol className={`${styles.numberedList} ${styles.mt12}`}>
                   {data.improvementPriority.map((item, idx) => (
-                    <li key={toText(item)} className={styles.numberedListItem}>
+                    <li
+                      key={`priority-${idx}`}
+                      className={styles.numberedListItem}
+                    >
                       <span className={styles.numberedListNumber}>
                         {idx + 1}
                       </span>

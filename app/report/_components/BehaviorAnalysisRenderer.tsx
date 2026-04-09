@@ -44,14 +44,14 @@ export const BehaviorAnalysisRenderer = ({
         )}
 
         <div className={`${styles.tagGroup} ${styles.mt12}`}>
-          {(data.consistentTraits ?? []).map((trait) => (
-            <span key={trait} className={styles.tag}>
-              {trait}
+          {(data.consistentTraits ?? []).map((trait, idx) => (
+            <span key={`trait-${idx}`} className={styles.tag}>
+              {String(trait)}
             </span>
           ))}
-          {data.personalityKeywords?.map((kw) => (
-            <span key={kw} className={styles.tag}>
-              {kw}
+          {data.personalityKeywords?.map((kw, idx) => (
+            <span key={`personality-${idx}`} className={styles.tag}>
+              {String(kw)}
             </span>
           ))}
         </div>
@@ -93,8 +93,8 @@ export const BehaviorAnalysisRenderer = ({
       </div>
 
       {/* Remaining years — each as its own block */}
-      {years.slice(1).map((year) => (
-        <div key={year.year}>
+      {years.slice(1).map((year, idx) => (
+        <div key={`year-${year.year}-${idx}`}>
           <div className={styles.activityYearCard}>
             <div className={styles.activityYearHeader}>
               <span className={styles.tableCellBold}>{year.year}학년</span>

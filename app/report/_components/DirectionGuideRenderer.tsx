@@ -26,9 +26,9 @@ export const DirectionGuideRenderer = ({
         <div className={styles.card}>
           <div className={styles.cardTitle}>추천 계열</div>
           <div className={`${styles.tagGroup} ${styles.mt12}`}>
-            {(data.recommendedTracks ?? []).map((track) => (
-              <span key={track} className={styles.tagAccent}>
-                {track}
+            {(data.recommendedTracks ?? []).map((track, idx) => (
+              <span key={`track-${idx}`} className={styles.tagAccent}>
+                {String(track)}
               </span>
             ))}
           </div>

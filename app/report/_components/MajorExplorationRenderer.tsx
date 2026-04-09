@@ -59,9 +59,9 @@ export const MajorExplorationRenderer = ({
                   </td>
                   <td>
                     <div className={styles.tagGroup}>
-                      {(s.strengthMatch ?? []).slice(0, 4).map((sm) => (
-                        <span key={sm} className={styles.tag}>
-                          {sm}
+                      {(s.strengthMatch ?? []).slice(0, 4).map((sm, smIdx) => (
+                        <span key={`sm-${idx}-${smIdx}`} className={styles.tag}>
+                          {String(sm)}
                         </span>
                       ))}
                     </div>

@@ -43,9 +43,12 @@ export const TopicRecommendationRenderer = ({
                       : typeof topic.relatedSubjects === "string"
                         ? [topic.relatedSubjects]
                         : []
-                    ).map((s) => (
-                      <span key={s} className={styles.tag}>
-                        {s}
+                    ).map((s, sIdx) => (
+                      <span
+                        key={`topic-${idx}-sub-${sIdx}`}
+                        className={styles.tag}
+                      >
+                        {String(s)}
                       </span>
                     ))}
                   </div>
@@ -98,14 +101,14 @@ export const TopicRecommendationRenderer = ({
               : typeof topic.relatedSubjects === "string"
                 ? [topic.relatedSubjects]
                 : []
-            ).map((s) => (
-              <span key={s} className={styles.tag}>
-                {s}
+            ).map((s, sIdx) => (
+              <span key={`detail-${idx}-sub-${sIdx}`} className={styles.tag}>
+                {String(s)}
               </span>
             ))}
-            {topic.keywordSuggestions?.map((kw) => (
-              <span key={kw} className={styles.tag}>
-                {kw}
+            {topic.keywordSuggestions?.map((kw, kIdx) => (
+              <span key={`detail-${idx}-kw-${kIdx}`} className={styles.tag}>
+                {String(kw)}
               </span>
             ))}
           </div>

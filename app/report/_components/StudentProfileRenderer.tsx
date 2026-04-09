@@ -98,9 +98,9 @@ export const StudentProfileRenderer = ({
 
       {/* Tags */}
       <div className={styles.profileTags}>
-        {(data.tags ?? []).map((tag) => (
-          <span key={tag} className={styles.profileTag}>
-            {tag}
+        {(data.tags ?? []).map((tag, idx) => (
+          <span key={`tag-${idx}`} className={styles.profileTag}>
+            {String(tag)}
           </span>
         ))}
       </div>

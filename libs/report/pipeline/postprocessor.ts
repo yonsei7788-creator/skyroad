@@ -3571,6 +3571,64 @@ const normalizeSection = (
 
   // ── admissionStrategy: 빈 대학명 카드 제거 + schoolTypeAnalysis 빈 객체 제거 + 괴리 보강 ──
   if (s.sectionId === "admissionStrategy") {
+    // STEP 12.5: AI가 string[] 필드에 객체를 넣은 경우 평탄화
+    // (emphasisKeywords/matchingKeywords/keywords, studentStrengthMatch,
+    // studentWeaknessMatch, schoolTypeAnalysis.advantage/cautionTypes)
+    const flattenString = (v: unknown): string => {
+      if (typeof v === "string") return v;
+      if (typeof v === "number" || typeof v === "boolean") return String(v);
+      if (v && typeof v === "object") {
+        const obj = v as Record<string, unknown>;
+        const candidates = [
+          obj.keyword,
+          obj.text,
+          obj.name,
+          obj.label,
+          obj.value,
+          obj.title,
+          obj.item,
+          obj.content,
+        ];
+        for (const c of candidates) {
+          if (typeof c === "string" && c.trim()) return c;
+        }
+      }
+      return "";
+    };
+    const flattenStringArray = (v: unknown): string[] => {
+      if (!Array.isArray(v)) return [];
+      return v.map(flattenString).filter((x) => x.length > 0);
+    };
+    if (Array.isArray(s.universityGuideMatching)) {
+      for (const m of s.universityGuideMatching) {
+        const mm = m as any;
+        if (mm.emphasisKeywords !== undefined) {
+          mm.emphasisKeywords = flattenStringArray(mm.emphasisKeywords);
+        }
+        if (mm.matchingKeywords !== undefined) {
+          mm.matchingKeywords = flattenStringArray(mm.matchingKeywords);
+        }
+        if (mm.keywords !== undefined) {
+          mm.keywords = flattenStringArray(mm.keywords);
+        }
+        if (mm.studentStrengthMatch !== undefined) {
+          mm.studentStrengthMatch = flattenStringArray(mm.studentStrengthMatch);
+        }
+        if (mm.studentWeaknessMatch !== undefined) {
+          mm.studentWeaknessMatch = flattenStringArray(mm.studentWeaknessMatch);
+        }
+      }
+    }
+    if (s.schoolTypeAnalysis) {
+      const sta2 = s.schoolTypeAnalysis as any;
+      if (sta2.advantageTypes !== undefined) {
+        sta2.advantageTypes = flattenStringArray(sta2.advantageTypes);
+      }
+      if (sta2.cautionTypes !== undefined) {
+        sta2.cautionTypes = flattenStringArray(sta2.cautionTypes);
+      }
+    }
+
     // STEP 13: 대학명이 비어있는 카드 제거
     if (Array.isArray(s.simulations)) {
       for (const sim of s.simulations) {

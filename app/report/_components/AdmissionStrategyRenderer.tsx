@@ -5,6 +5,37 @@ import styles from "./report.module.css";
 import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
+/**
+ * AI가 string[] 필드에 객체를 반환하는 경우를 대비한 방어 로직.
+ * 문자열이 아니면 알려진 텍스트 필드를 추출하고, 최종 fallback으로 빈 문자열 반환.
+ */
+const toStringItem = (v: unknown): string => {
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  if (v && typeof v === "object") {
+    const obj = v as Record<string, unknown>;
+    const candidates = [
+      obj.keyword,
+      obj.text,
+      obj.name,
+      obj.label,
+      obj.value,
+      obj.title,
+      obj.item,
+      obj.content,
+    ];
+    for (const c of candidates) {
+      if (typeof c === "string" && c.trim()) return c;
+    }
+  }
+  return "";
+};
+
+const normalizeStringArray = (v: unknown): string[] => {
+  if (!Array.isArray(v)) return [];
+  return v.map(toStringItem).filter((s) => s.length > 0);
+};
+
 interface AdmissionStrategyRendererProps {
   data: AdmissionStrategySection;
   sectionNumber: number;
@@ -158,7 +189,7 @@ export const AdmissionStrategyRenderer = ({
 
       {/* Block 4: Type strategies — 제목은 첫 카드에 포함 */}
       {(data.typeStrategies ?? []).map((ts, tsIdx) => (
-        <div key={ts.type}>
+        <div key={`type-${tsIdx}`}>
           {tsIdx === 0 && (
             <div className={`${styles.h3} ${styles.mb12}`}>
               <span className={styles.markerSky}>전형별 전략</span>
@@ -186,16 +217,20 @@ export const AdmissionStrategyRenderer = ({
           <div className={`${styles.h3} ${styles.mb8}`}>학교 유형 분석</div>
           <p className={styles.small}>{data.schoolTypeAnalysis.rationale}</p>
           <div className={`${styles.tagGroup} ${styles.mt8}`}>
-            {(data.schoolTypeAnalysis.advantageTypes ?? []).map((t) => (
-              <span key={t} className={styles.tag}>
-                유리: {t}
-              </span>
-            ))}
-            {(data.schoolTypeAnalysis.cautionTypes ?? []).map((t) => (
-              <span key={t} className={styles.tag}>
-                주의: {t}
-              </span>
-            ))}
+            {normalizeStringArray(data.schoolTypeAnalysis.advantageTypes).map(
+              (t, aIdx) => (
+                <span key={`advantage-${aIdx}`} className={styles.tag}>
+                  유리: {t}
+                </span>
+              )
+            )}
+            {normalizeStringArray(data.schoolTypeAnalysis.cautionTypes).map(
+              (t, cIdx) => (
+                <span key={`caution-${cIdx}`} className={styles.tag}>
+                  주의: {t}
+                </span>
+              )
+            )}
           </div>
         </div>
       )}
@@ -205,19 +240,15 @@ export const AdmissionStrategyRenderer = ({
         data.universityGuideMatching.length > 0 &&
         data.universityGuideMatching.map((match, idx) => {
           const m = match as any;
-          const keywords: string[] = Array.isArray(m.emphasisKeywords)
-            ? m.emphasisKeywords
-            : Array.isArray(m.matchingKeywords)
-              ? m.matchingKeywords
-              : Array.isArray(m.keywords)
-                ? m.keywords
-                : [];
-          const strengths: string[] = Array.isArray(m.studentStrengthMatch)
-            ? m.studentStrengthMatch
-            : [];
-          const weaknesses: string[] = Array.isArray(m.studentWeaknessMatch)
-            ? m.studentWeaknessMatch
-            : [];
+          const keywords: string[] = normalizeStringArray(
+            m.emphasisKeywords ?? m.matchingKeywords ?? m.keywords
+          );
+          const strengths: string[] = normalizeStringArray(
+            m.studentStrengthMatch
+          );
+          const weaknesses: string[] = normalizeStringArray(
+            m.studentWeaknessMatch
+          );
           const analysis: string | undefined =
             typeof m.analysis === "string"
               ? m.analysis
@@ -246,8 +277,11 @@ export const AdmissionStrategyRenderer = ({
                     핵심 키워드
                   </div>
                   <div className={styles.tagGroup}>
-                    {keywords.map((kw) => (
-                      <span key={kw} className={styles.tagAccent}>
+                    {keywords.map((kw, kIdx) => (
+                      <span
+                        key={`guide-${idx}-kw-${kIdx}`}
+                        className={styles.tagAccent}
+                      >
                         {kw}
                       </span>
                     ))}
@@ -260,8 +294,11 @@ export const AdmissionStrategyRenderer = ({
                     강점 매칭
                   </div>
                   <div className={styles.tagGroup}>
-                    {strengths.map((s) => (
-                      <span key={s} className={styles.tagStrength}>
+                    {strengths.map((s, sIdx) => (
+                      <span
+                        key={`guide-${idx}-strength-${sIdx}`}
+                        className={styles.tagStrength}
+                      >
                         {s}
                       </span>
                     ))}
@@ -274,8 +311,11 @@ export const AdmissionStrategyRenderer = ({
                     보완 필요
                   </div>
                   <div className={styles.tagGroup}>
-                    {weaknesses.map((w) => (
-                      <span key={w} className={styles.tagWeakness}>
+                    {weaknesses.map((w, wIdx) => (
+                      <span
+                        key={`guide-${idx}-weakness-${wIdx}`}
+                        className={styles.tagWeakness}
+                      >
                         {w}
                       </span>
                     ))}

@@ -45,8 +45,11 @@ export const ActivityAnalysisRenderer = ({
 
             <h3 className={`${styles.h3} ${styles.mb12}`}>{activity.type}</h3>
 
-            {(activity.yearlyAnalysis ?? []).map((year) => (
-              <div key={year.year} className={styles.activityYearCard}>
+            {(activity.yearlyAnalysis ?? []).map((year, yIdx) => (
+              <div
+                key={`${activity.type}-year-${year.year}-${yIdx}`}
+                className={styles.activityYearCard}
+              >
                 <div className={styles.activityYearHeader}>
                   <span className={styles.tableCellBold}>{year.year}학년</span>
                   <ReportBadge rating={year.rating} />
