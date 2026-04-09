@@ -164,6 +164,12 @@ const executeWaveParallel = async (
   reportId: string,
   dbClient: SupabaseClient
 ): Promise<WaveState> => {
+  // 재시도는 Gemini 클라이언트의 withRetry(3회)만 사용한다.
+  // 이전 구현은 wave-executor 레벨에서 한 번 더 재시도를 붙여(단일 3→6, 다중 3→6)
+  // withRetry가 이미 실패한 뒤에도 파이프라인이 계속 진행되는 느낌을 줬음.
+  // → withRetry가 소진되면 즉시 파이프라인 실패.
+
+  // 단일 태스크 웨이브
   if (wave.length === 1) {
     try {
       return await executeTask(
@@ -176,29 +182,21 @@ const executeWaveParallel = async (
         dbClient,
         { skipSave: true }
       );
-    } catch (firstError) {
-      console.warn(
-        `[report:${reportId}] 단일 태스크 ${wave[0]} 실패, 재시도: ${(firstError as Error).message}`
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(
+        `[report:${reportId}] 단일 태스크 ${wave[0]} 실패 (withRetry 소진): ${msg}`
       );
-      await sleep(BATCH_DELAY_MS);
-      return executeTask(
-        wave[0],
-        geminiClient,
-        plan,
-        studentInfo,
-        state,
-        reportId,
-        dbClient,
-        { skipSave: true }
+      throw new Error(
+        `AI 서버가 일시적으로 불안정하여 리포트 생성에 실패했습니다. 잠시 후 다시 시도해 주세요. (${wave[0]} 섹션 생성 실패)`
       );
     }
   }
 
+  // 다중 태스크 웨이브 — 병렬 실행, 하나라도 실패하면 즉시 throw
   const newSections: ReportSection[] = [];
   let mergedSer: SerializedTexts = { ...state.serializedTexts! };
-  const failedTasks: string[] = [];
 
-  // 배치 단위 병렬 실행
   for (let i = 0; i < wave.length; i += PARALLEL_CONCURRENCY) {
     if (i > 0) await sleep(BATCH_DELAY_MS);
 
@@ -217,15 +215,18 @@ const executeWaveParallel = async (
       )
     );
 
-    for (const result of results) {
-      if (result.error) {
-        console.warn(
-          `[report:${reportId}] 태스크 ${result.taskId} 실패 (재시도 예정): ${result.error.message}`
-        );
-        failedTasks.push(result.taskId);
-        continue;
-      }
+    // 배치에 하나라도 실패가 있으면 즉시 중단
+    const failed = results.find((r) => r.error);
+    if (failed) {
+      console.error(
+        `[report:${reportId}] 태스크 ${failed.taskId} 실패 (withRetry 소진): ${failed.error?.message}`
+      );
+      throw new Error(
+        `AI 서버가 일시적으로 불안정하여 리포트 생성에 실패했습니다. 잠시 후 다시 시도해 주세요. (${failed.taskId} 섹션 생성 실패)`
+      );
+    }
 
+    for (const result of results) {
       const addedSections = (result.state!.completedSections ?? []).filter(
         (s) =>
           !state.completedSections?.some(
@@ -235,55 +236,6 @@ const executeWaveParallel = async (
       );
       newSections.push(...addedSections);
       mergedSer = { ...mergedSer, ...result.state!.serializedTexts };
-    }
-  }
-
-  // 실패한 태스크 순차 재시도 (rate limit 회피)
-  if (failedTasks.length > 0) {
-    console.log(
-      `[report:${reportId}] ${failedTasks.length}개 태스크 순차 재시도: [${failedTasks.join(", ")}]`
-    );
-
-    // 재시도용 state: 지금까지 성공한 결과 병합
-    const retryState: WaveState = {
-      ...state,
-      completedSections: [...(state.completedSections ?? []), ...newSections],
-      serializedTexts: mergedSer,
-    };
-
-    for (const taskId of failedTasks) {
-      await sleep(BATCH_DELAY_MS);
-
-      try {
-        const result = await executeTask(
-          taskId,
-          geminiClient,
-          plan,
-          studentInfo,
-          retryState,
-          reportId,
-          dbClient,
-          { skipSave: true }
-        );
-
-        const addedSections = (result.completedSections ?? []).filter(
-          (s) =>
-            !retryState.completedSections?.some(
-              (existing) => existing.sectionId === s.sectionId
-            ) &&
-            !newSections.some((existing) => existing.sectionId === s.sectionId)
-        );
-        newSections.push(...addedSections);
-        mergedSer = { ...mergedSer, ...result.serializedTexts };
-      } catch (retryError) {
-        const errMsg = (retryError as Error).message;
-        console.error(
-          `[report:${reportId}] 태스크 ${taskId} 재시도 실패: ${errMsg}`
-        );
-        throw new Error(
-          `AI 서버가 일시적으로 불안정하여 리포트 생성에 실패했습니다. 잠시 후 다시 시도해 주세요. (${taskId} 섹션 생성 실패)`
-        );
-      }
     }
   }
 
@@ -531,9 +483,21 @@ export const POST = async (request: NextRequest) => {
   // 7. SSE 스트리밍 — 전체 파이프라인을 하나의 스트림에서 실행
   const encoder = new TextEncoder();
 
+  // Vercel maxDuration=300s. 250s를 상한으로 두고 웨이브 진입 전 초과 시 실패 처리.
+  // (Vercel이 함수를 강제 종료하기 전에 DB를 failed로 업데이트할 시간 확보)
+  const PIPELINE_TIME_BUDGET_MS = 250_000;
+  const pipelineStartMs = Date.now();
+
   const stream = new ReadableStream({
     async start(controller) {
       try {
+        // 클라이언트가 reportId를 알도록 init 이벤트 전송
+        // (스트림 비정상 종료 시 DB 상태 확인용)
+        sendEvent(controller, encoder, {
+          type: "init",
+          reportId,
+        });
+
         // 전처리
         sendEvent(controller, encoder, {
           type: "progress",
@@ -567,6 +531,14 @@ export const POST = async (request: NextRequest) => {
 
         for (let wi = 0; wi < waves.length; wi++) {
           const wave = waves[wi];
+
+          // 시간 예산 확인 — Vercel 타임아웃 전에 명시적으로 실패 처리
+          const elapsedMs = Date.now() - pipelineStartMs;
+          if (elapsedMs > PIPELINE_TIME_BUDGET_MS) {
+            throw new Error(
+              `리포트 생성 시간 초과 (${Math.round(elapsedMs / 1000)}s). AI 응답 지연으로 중단되었습니다. 잠시 후 다시 시도해 주세요.`
+            );
+          }
 
           // 웨이브 시작 시 첫 번째 태스크 이름으로 진행률 보고
           const progress = Math.min(
@@ -671,22 +643,42 @@ export const POST = async (request: NextRequest) => {
         const message = err instanceof Error ? err.message : "파이프라인 오류";
         console.error(`[report:${reportId}] 파이프라인 오류:`, message);
 
-        await dbClient
-          .from("reports")
-          .update({ ai_status: "failed", ai_error: message })
-          .eq("id", reportId);
+        // DB 업데이트를 먼저, 그리고 반드시 실행 (SSE 송신 실패해도 상태는 남음)
+        try {
+          await dbClient
+            .from("reports")
+            .update({ ai_status: "failed", ai_error: message })
+            .eq("id", reportId);
+        } catch (dbErr) {
+          console.error(
+            `[report:${reportId}] failed 상태 DB 업데이트 실패:`,
+            dbErr
+          );
+        }
 
-        await dbClient
-          .from("orders")
-          .update({ status: "paid" })
-          .eq("id", orderId);
+        try {
+          await dbClient
+            .from("orders")
+            .update({ status: "paid" })
+            .eq("id", orderId);
+        } catch (dbErr) {
+          console.error(`[report:${reportId}] order 상태 롤백 실패:`, dbErr);
+        }
 
-        sendEvent(controller, encoder, {
-          type: "error",
-          error: message,
-        });
+        try {
+          sendEvent(controller, encoder, {
+            type: "error",
+            error: message,
+          });
+        } catch {
+          // 스트림이 이미 닫혔을 수 있음
+        }
       } finally {
-        controller.close();
+        try {
+          controller.close();
+        } catch {
+          // 이미 닫힘
+        }
       }
     },
   });

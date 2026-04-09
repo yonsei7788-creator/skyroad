@@ -1280,6 +1280,12 @@ export const executeTask = async (
 
   if (section) {
     sections.push(section);
+  } else {
+    // 섹션 생성 태스크인데 결과가 없으면 조용히 넘어가지 않고 명시적으로 실패 처리.
+    // (이전 구현은 section=null이어도 통과시켜, 누락된 섹션이 있어도 "성공"으로 취급됨)
+    throw new Error(
+      `섹션 생성 결과가 없습니다 (taskId=${taskId}) — AI 응답 누락 또는 처리 경로 오류`
+    );
   }
 
   const nextState: WaveState = {

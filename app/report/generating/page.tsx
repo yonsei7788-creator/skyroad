@@ -45,6 +45,50 @@ const GeneratingContent = () => {
   const [exhausted, setExhausted] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
+  const reportIdRef = useRef<string | null>(null);
+  const terminalReceivedRef = useRef(false);
+
+  /**
+   * SSE 스트림이 completed/error 이벤트 없이 끊긴 경우,
+   * DB의 실제 ai_status를 확인해 안전하게 성공/실패 판정.
+   * (Vercel 타임아웃, Gemini 503, 네트워크 끊김 등으로 서버 catch가 실행되지 못한 케이스 방어)
+   */
+  const verifyFinalStatus = async (): Promise<void> => {
+    const reportId = reportIdRef.current;
+    if (!reportId) {
+      setPhase("error");
+      setError("서버 응답이 중단되었습니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/reports/${reportId}/status`, {
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        setPhase("error");
+        setError("상태 확인에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+        return;
+      }
+      const body = (await res.json()) as {
+        status: string;
+        error?: string | null;
+      };
+      if (body.status === "completed") {
+        setPhase("completed");
+        setProgress(100);
+        setCurrentSection(null);
+      } else {
+        setPhase("error");
+        setError(
+          body.error ??
+            "리포트 생성이 중단되었습니다. 잠시 후 다시 시도해 주세요."
+        );
+      }
+    } catch {
+      setPhase("error");
+      setError("상태 확인 중 오류가 발생했습니다.");
+    }
+  };
 
   useEffect(() => {
     if (!orderId) {
@@ -60,6 +104,7 @@ const GeneratingContent = () => {
       setPhase("running");
       setError(null);
       setProgress(0);
+      terminalReceivedRef.current = false;
 
       try {
         const res = await fetch("/api/reports/run-pipeline", {
@@ -108,15 +153,19 @@ const GeneratingContent = () => {
             try {
               const data = JSON.parse(dataLine.slice(6));
 
-              if (data.type === "progress") {
+              if (data.type === "init") {
+                reportIdRef.current = data.reportId;
+              } else if (data.type === "progress") {
                 setProgress(data.progress);
                 const label = TASK_LABELS[data.section] ?? data.section;
                 setCurrentSection(label);
               } else if (data.type === "completed") {
+                terminalReceivedRef.current = true;
                 setPhase("completed");
                 setProgress(100);
                 setCurrentSection(null);
               } else if (data.type === "error") {
+                terminalReceivedRef.current = true;
                 setPhase("error");
                 setError(data.error);
               }
@@ -126,8 +175,10 @@ const GeneratingContent = () => {
           }
         }
 
-        // 스트림 종료 후 phase가 아직 running이면 완료 처리
-        setPhase((prev) => (prev === "running" ? "completed" : prev));
+        // 스트림이 completed/error 없이 끝났으면 DB 상태로 확정
+        if (!terminalReceivedRef.current) {
+          await verifyFinalStatus();
+        }
       } catch (err) {
         if (controller.signal.aborted) return;
         setPhase("error");
@@ -173,6 +224,7 @@ const GeneratingContent = () => {
     setPhase("running");
     setError(null);
     setProgress(0);
+    terminalReceivedRef.current = false;
 
     const run = async () => {
       try {
@@ -213,14 +265,18 @@ const GeneratingContent = () => {
             if (!dataLine.startsWith("data: ")) continue;
             try {
               const data = JSON.parse(dataLine.slice(6));
-              if (data.type === "progress") {
+              if (data.type === "init") {
+                reportIdRef.current = data.reportId;
+              } else if (data.type === "progress") {
                 setProgress(data.progress);
                 setCurrentSection(TASK_LABELS[data.section] ?? data.section);
               } else if (data.type === "completed") {
+                terminalReceivedRef.current = true;
                 setPhase("completed");
                 setProgress(100);
                 setCurrentSection(null);
               } else if (data.type === "error") {
+                terminalReceivedRef.current = true;
                 setPhase("error");
                 setError(data.error);
               }
@@ -230,7 +286,9 @@ const GeneratingContent = () => {
           }
         }
 
-        setPhase((prev) => (prev === "running" ? "completed" : prev));
+        if (!terminalReceivedRef.current) {
+          await verifyFinalStatus();
+        }
       } catch (err) {
         if (controller.signal.aborted) return;
         setPhase("error");
