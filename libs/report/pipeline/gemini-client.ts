@@ -17,6 +17,8 @@ export interface GeminiCallOptions {
   thinkingBudget?: number;
   /** 결정론적 출력을 위한 시드 값. 동일 시드 + 동일 입력 → 동일 출력 보장 시도 */
   seed?: number;
+  /** 호출별 maxOutputTokens 오버라이드. 미지정 시 전역 MAX_OUTPUT_TOKENS 사용 */
+  maxOutputTokens?: number;
 }
 
 export interface GeminiCallResult<T> {
@@ -54,11 +56,12 @@ export const createGeminiClient = (apiKey: string) => {
       retryConfig = DEFAULT_RETRY_CONFIG,
       thinkingBudget,
       seed,
+      maxOutputTokens: maxOutputTokensOverride,
     } = options;
 
     const generationConfig: Record<string, unknown> = {
       responseMimeType: "application/json",
-      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      maxOutputTokens: maxOutputTokensOverride ?? MAX_OUTPUT_TOKENS,
       temperature,
     };
 

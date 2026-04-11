@@ -485,7 +485,7 @@ export const POST = async (request: NextRequest) => {
 
   // Vercel maxDuration=300s. 250s를 상한으로 두고 웨이브 진입 전 초과 시 실패 처리.
   // (Vercel이 함수를 강제 종료하기 전에 DB를 failed로 업데이트할 시간 확보)
-  const PIPELINE_TIME_BUDGET_MS = 250_000;
+  const PIPELINE_TIME_BUDGET_MS = 280_000;
   const pipelineStartMs = Date.now();
 
   const stream = new ReadableStream({

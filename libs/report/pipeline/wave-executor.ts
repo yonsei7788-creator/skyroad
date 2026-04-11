@@ -26,7 +26,6 @@ import {
   buildGyogwaCompetencyScorePrompt,
 } from "../prompts/sections/competency-score.ts";
 import {
-  buildAdmissionPredictionPrompt,
   buildGyogwaPredictionPrompt,
   buildHakjongPredictionPrompt,
 } from "../prompts/sections/admission-prediction.ts";
@@ -243,12 +242,18 @@ export const executeTask = async (
     }
   };
 
-  const callGemini = async <T>(prompt: string): Promise<T> => {
+  const callGemini = async <T>(
+    prompt: string,
+    opts?: { maxOutputTokens?: number }
+  ): Promise<T> => {
     const result = await client.call<T>({
       systemInstruction: systemPrompt,
       prompt,
       responseSchema: EMPTY_SCHEMA,
       thinkingBudget: THINKING_BUDGET,
+      ...(opts?.maxOutputTokens && {
+        maxOutputTokens: opts.maxOutputTokens,
+      }),
     });
     return result.data;
   };
@@ -630,7 +635,8 @@ export const executeTask = async (
               : undefined,
           },
           plan
-        )
+        ),
+        { maxOutputTokens: 20480 }
       );
       updatedSer = {
         ...updatedSer,
