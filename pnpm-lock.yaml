@@ -40,6 +40,9 @@ importers:
       next:
         specifier: 16.1.6
         version: 16.1.6(@babel/core@7.28.5)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      openai:
+        specifier: ^6.34.0
+        version: 6.34.0(ws@8.19.0)(zod@4.1.13)
       pdfjs-dist:
         specifier: 4.9.155
         version: 4.9.155
@@ -4521,6 +4524,21 @@ packages:
       }
     engines: { node: ">=18" }
 
+  openai@6.34.0:
+    resolution:
+      {
+        integrity: sha512-yEr2jdGf4tVFYG6ohmr3pF6VJuveP0EA/sS8TBx+4Eq5NT10alu5zg2dmxMXMgqpihRDQlFGpRt2XwsGj+Fyxw==,
+      }
+    hasBin: true
+    peerDependencies:
+      ws: ^8.18.0
+      zod: ^3.25 || ^4.0
+    peerDependenciesMeta:
+      ws:
+        optional: true
+      zod:
+        optional: true
+
   optionator@0.9.4:
     resolution:
       {
@@ -8911,6 +8929,11 @@ snapshots:
   onetime@7.0.0:
     dependencies:
       mimic-function: 5.0.1
+
+  openai@6.34.0(ws@8.19.0)(zod@4.1.13):
+    optionalDependencies:
+      ws: 8.19.0
+      zod: 4.1.13
 
   optionator@0.9.4:
     dependencies:
