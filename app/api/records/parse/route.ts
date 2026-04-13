@@ -50,41 +50,16 @@ const YEAR_SEMESTER_RULES = `
 - semester: 1학기=1, 2학기=2 (숫자만)
 `;
 
-// ── Pass 1: 구조화 데이터 (성적·출결·수상·창체 등) ──
+// ── Pass 1: 구조화 데이터 (성적·수상·창체 등, 출결 제외) ──
 const PARSE_PROMPT_STRUCTURED = `당신은 한국 고등학교 생활기록부(학생부) 전문 파서입니다.
-첨부된 파일은 생활기록부입니다. 이 문서에서 **성적, 출결, 수상, 자격증, 창의적 체험활동, 봉사활동, 체육·음악·미술 교과** 데이터만 추출하여 아래 JSON 스키마에 맞게 구조화해주세요.
+첨부된 파일은 생활기록부입니다. 이 문서에서 **성적, 수상, 자격증, 창의적 체험활동, 봉사활동, 체육·음악·미술 교과** 데이터만 추출하여 아래 JSON 스키마에 맞게 구조화해주세요.
 
-⚠️ subjectEvaluations, readingActivities, behavioralAssessments는 이 호출에서 **추출하지 마세요**. 빈 배열로 반환하세요.
-
-## 출결상황 테이블 — 위치 기반 배열로 출력 (필드명 매핑 금지)
-
-생기부 출결 테이블은 2행 병합 헤더 구조입니다. 데이터 행에서 학년·수업일수를 제외한 12개 숫자 셀을 왼쪽→오른쪽 순서대로 읽으세요:
-
-| 인덱스 | 0~2: 결석일수      | 3~5: 지각          | 6~8: 조퇴          | 9~11: 결과         |
-|--------|-------------------|-------------------|-------------------|-------------------|
-| 하위   | 질병,미인정,기타    | 질병,미인정,기타    | 질병,미인정,기타    | 질병,미인정,기타    |
-
-**반드시 values 배열에 12개 원소를 왼쪽 컬럼부터 순서대로 넣으세요.**
-- "." 또는 빈 칸 → null
-- 숫자 → 해당 숫자(number)
-- values 배열은 정확히 12개여야 합니다.
-
-읽기 방법: 학년·수업일수 뒤의 12개 셀을 순서대로 3개씩 끊어서 결석→지각→조퇴→결과에 매핑하세요.
-
-예시: 테이블 행 "2 | 191 | 2 | . | . | . | . | . | 2 | . | . | . | . | . | 원격수업일수 0일"
-→ { "year": 2, "totalDays": 191, "values": [2, null, null, null, null, null, 2, null, null, null, null, null], "note": "원격수업일수 0일" }
+⚠️ attendance, subjectEvaluations, readingActivities, behavioralAssessments는 이 호출에서 **추출하지 마세요**. 빈 배열로 반환하세요.
 
 ## JSON 스키마
 
 {
-  "attendance": [
-    {
-      "year": number,
-      "totalDays": number|null,
-      "values": [number|null x 12],
-      "note": string
-    }
-  ],
+  "attendance": [],
   "awards": [
     { "year": number, "name": string, "rank": string, "date": string, "organization": string, "participants": string }
   ],
@@ -710,7 +685,7 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    const [structuredResult, textResult] = await Promise.all([
+    const [structuredResult, textResult, attendanceResult] = await Promise.all([
       openai.responses.create({
         model: "gpt-4.1-mini",
         max_output_tokens: MAX_OUTPUT_TOKENS,
@@ -741,6 +716,7 @@ export async function POST(request: NextRequest) {
           },
         ],
       }),
+      extractAttendanceFromImage(openai, fileIds),
     ]);
 
     const { text: structuredText, truncated: structuredTruncated } =
@@ -797,61 +773,15 @@ export async function POST(request: NextRequest) {
 
     const enriched = enrichWithIds(rawJson as RawRecord);
 
-    // 출결: 전용 OCR 프롬프트 호출
-    const attendanceResult = await extractAttendanceFromImage(
-      openai,
-      uploadedFileIds
-    );
-
-    // AI 1차 결과에서 특기사항(note) 보완용
-    const llmAttendance = (rawJson as RawRecord).attendance;
-    const llmNoteByYear = new Map<number, string>();
-    if (Array.isArray(llmAttendance)) {
-      for (const row of llmAttendance) {
-        const y = typeof row.year === "number" ? row.year : 0;
-        const n = typeof row.note === "string" ? row.note : "";
-        if (y > 0) llmNoteByYear.set(y, n);
-      }
-    }
-
+    // 출결: 병렬 호출 결과 적용
     if (attendanceResult && attendanceResult.length > 0) {
-      // OCR 합의 성공: 특기사항은 1차 결과에서 보완
-      for (const row of attendanceResult) {
-        const year = row.year as number;
-        if (!row.note && llmNoteByYear.has(year)) {
-          row.note = llmNoteByYear.get(year)!;
-        }
-      }
       enriched.attendance = attendanceResult;
       console.info(
-        `[parse] Attendance: OCR consensus succeeded (${attendanceResult.length} rows)`
+        `[parse] Attendance: OCR succeeded (${attendanceResult.length} rows)`
       );
     } else {
-      // fallback: 1차 AI 호출의 attendance 사용
-      enriched.attendance = Array.isArray(llmAttendance)
-        ? llmAttendance.map((row) => {
-            const { values, ...rest } = row;
-            const mapped: RawRow = { ...rest, id: crypto.randomUUID() };
-            if (Array.isArray(values)) {
-              for (let i = 0; i < ATTENDANCE_VALUE_KEYS.length; i++) {
-                mapped[ATTENDANCE_VALUE_KEYS[i]] =
-                  typeof values[i] === "number" ? values[i] : null;
-              }
-            } else {
-              for (const key of ATTENDANCE_VALUE_KEYS) {
-                if (!(key in mapped)) mapped[key] = null;
-              }
-            }
-            if (mapped.note === null || mapped.note === undefined)
-              mapped.note = "";
-            if (mapped.year === null || mapped.year === undefined)
-              mapped.year = 1;
-            return mapped;
-          })
-        : [];
-      console.warn(
-        "[parse] Attendance: OCR consensus failed, using raw LLM fallback"
-      );
+      enriched.attendance = [];
+      console.warn("[parse] Attendance: OCR failed, no data");
     }
 
     // 핵심 섹션에 데이터가 하나도 없으면 파싱 실패로 처리
