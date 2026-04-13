@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-import type { Response as OAIResponse } from "openai/resources/responses/responses";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import crypto from "crypto";
 
 import { createClient } from "@/libs/supabase/server";
 import { createAdminClient } from "@/libs/supabase/admin";
 import { correctSubjectName } from "@/libs/report/constants/subject-name-corrections";
+import { withRetry } from "@/libs/report/pipeline/retry";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
@@ -50,16 +50,38 @@ const YEAR_SEMESTER_RULES = `
 - semester: 1학기=1, 2학기=2 (숫자만)
 `;
 
-// ── Pass 1: 구조화 데이터 (성적·수상·창체 등, 출결 제외) ──
+// ── Pass 1: 구조화 데이터 (성적·출결·수상·창체 등) ──
 const PARSE_PROMPT_STRUCTURED = `당신은 한국 고등학교 생활기록부(학생부) 전문 파서입니다.
-첨부된 파일은 생활기록부입니다. 이 문서에서 **성적, 수상, 자격증, 창의적 체험활동, 봉사활동, 체육·음악·미술 교과** 데이터만 추출하여 아래 JSON 스키마에 맞게 구조화해주세요.
+첨부된 파일은 생활기록부입니다. 이 문서에서 **성적, 출결, 수상, 자격증, 창의적 체험활동, 봉사활동, 체육·음악·미술 교과** 데이터만 추출하여 아래 JSON 스키마에 맞게 구조화해주세요.
 
-⚠️ attendance, subjectEvaluations, readingActivities, behavioralAssessments는 이 호출에서 **추출하지 마세요**. 빈 배열로 반환하세요.
+⚠️ subjectEvaluations, readingActivities, behavioralAssessments는 이 호출에서 **추출하지 마세요**. 빈 배열로 반환하세요.
+
+## 출결상황 테이블 파싱 규칙
+
+생기부 출결 테이블은 2행 병합 헤더 구조입니다. 데이터 행에서 학년·수업일수를 제외한 12개 숫자 셀을 왼쪽→오른쪽 순서대로 읽으세요:
+
+| 인덱스 | 0~2: 결석일수      | 3~5: 지각          | 6~8: 조퇴          | 9~11: 결과         |
+|--------|-------------------|-------------------|-------------------|-------------------|
+| 하위   | 질병,미인정,기타    | 질병,미인정,기타    | 질병,미인정,기타    | 질병,미인정,기타    |
+
+- "." 또는 빈 칸 → 0
+- 숫자 → 해당 숫자(number)
+- note(특기사항): 출결 테이블의 특기사항 컬럼 값을 그대로 옮기세요 (예: "원격수업일수 0일"). 없으면 빈 문자열 ""
 
 ## JSON 스키마
 
 {
-  "attendance": [],
+  "attendance": [
+    {
+      "year": number,
+      "totalDays": number|null,
+      "absenceIllness": number, "absenceUnauthorized": number, "absenceOther": number,
+      "latenessIllness": number, "latenessUnauthorized": number, "latenessOther": number,
+      "earlyLeaveIllness": number, "earlyLeaveUnauthorized": number, "earlyLeaveOther": number,
+      "classMissedIllness": number, "classMissedUnauthorized": number, "classMissedOther": number,
+      "note": string
+    }
+  ],
   "awards": [
     { "year": number, "name": string, "rank": string, "date": string, "organization": string, "participants": string }
   ],
@@ -294,7 +316,21 @@ const REQUIRED_NUMBER_FIELDS: Record<string, Record<string, number>> = {
   generalSubjects: { year: 1, semester: 1 },
   careerSubjects: { year: 1, semester: 1 },
   artsPhysicalSubjects: { year: 1, semester: 1 },
-  attendance: { year: 1 },
+  attendance: {
+    year: 1,
+    absenceIllness: 0,
+    absenceUnauthorized: 0,
+    absenceOther: 0,
+    latenessIllness: 0,
+    latenessUnauthorized: 0,
+    latenessOther: 0,
+    earlyLeaveIllness: 0,
+    earlyLeaveUnauthorized: 0,
+    earlyLeaveOther: 0,
+    classMissedIllness: 0,
+    classMissedUnauthorized: 0,
+    classMissedOther: 0,
+  },
   awards: { year: 1, semester: 1 },
   creativeActivities: { year: 1 },
   volunteerActivities: { year: 1 },
@@ -311,230 +347,12 @@ const SUBJECT_FIELD_SECTIONS = new Set([
   "subjectEvaluations",
 ]);
 
-/** 출결 12개 컬럼 → 필드명 매핑 (왼→오 고정 순서) */
-const ATTENDANCE_VALUE_KEYS = [
-  "absenceIllness",
-  "absenceUnauthorized",
-  "absenceOther",
-  "latenessIllness",
-  "latenessUnauthorized",
-  "latenessOther",
-  "earlyLeaveIllness",
-  "earlyLeaveUnauthorized",
-  "earlyLeaveOther",
-  "classMissedIllness",
-  "classMissedUnauthorized",
-  "classMissedOther",
-] as const;
-
-/**
- * 이미지 PDF용 출결 전용 프롬프트.
- *
- * 핵심 전략: "행 전체를 읽어라" 대신 "숫자가 있는 셀만 위치와 함께 보고해라".
- * 대부분 셀이 "."이므로, 비-null 값 몇 개에만 집중하게 하면:
- * 1. 출력량이 줄어 오류 확률 감소
- * 2. 각 값에 대해 행/열 위치를 명시적으로 확인하므로 밀림 방지
- * 3. 빈 행은 "없음"으로 간단히 처리 → 없는 값을 만들어낼 여지 제거
- */
-const ATTENDANCE_OCR_PROMPT = `이 문서에서 "출결상황" 테이블을 찾아서 마크다운 테이블로 변환하세요.
-
-아래 헤더를 정확히 사용하세요. 병합 헤더를 풀어서 14개 컬럼 + 특기사항으로 만드세요.
-"." 또는 빈 셀은 그대로 . 으로 적으세요.
-
-| 학년 | 수업일수 | 결석-질병 | 결석-미인정 | 결석-기타 | 지각-질병 | 지각-미인정 | 지각-기타 | 조퇴-질병 | 조퇴-미인정 | 조퇴-기타 | 결과-질병 | 결과-미인정 | 결과-기타 | 특기사항 |
-|------|---------|----------|-----------|----------|----------|-----------|----------|----------|-----------|----------|----------|-----------|----------|---------|
-| 1 | 190 | 11 | . | . | 1 | . | . | 1 | . | . | . | . | . | 원격수업일수 0일 |
-
-위 예시처럼 모든 학년의 데이터 행을 출력하세요. 마크다운 테이블만 출력하고 다른 설명은 하지 마세요.`;
-
-/**
- * AI 마크다운 테이블 출력을 파싱.
- * 헤더 행에서 컬럼 순서를 읽고, 데이터 행의 값을 위치 기반으로 매핑.
- * AI가 헤더를 약간 다르게 쓸 수 있으므로 fuzzy 매칭 사용.
- */
-const parseAttendanceOcrOutput = (ocrText: string): RawRow[] | null => {
-  const toNullable = (v: number): number | null => (v === 0 ? null : v);
-
-  const lines = ocrText
-    .split("\n")
-    .map((l) => l.trim())
-    .filter((l) => l.startsWith("|"));
-
-  if (lines.length < 3) return null; // 헤더 + 구분선 + 최소 1행
-
-  // 헤더 행에서 컬럼 이름 추출
-  const headerCells = lines[0]
-    .split("|")
-    .map((c) => c.trim())
-    .filter((c) => c.length > 0);
-
-  // 컬럼 이름 → ATTENDANCE_VALUE_KEYS 인덱스 매핑
-  const FIELD_PATTERNS: [RegExp, string][] = [
-    [/결석.*질병/, "absenceIllness"],
-    [/결석.*미인정/, "absenceUnauthorized"],
-    [/결석.*기타/, "absenceOther"],
-    [/지각.*질병/, "latenessIllness"],
-    [/지각.*미인정/, "latenessUnauthorized"],
-    [/지각.*기타/, "latenessOther"],
-    [/조퇴.*질병/, "earlyLeaveIllness"],
-    [/조퇴.*미인정/, "earlyLeaveUnauthorized"],
-    [/조퇴.*기타/, "earlyLeaveOther"],
-    [/결과.*질병/, "classMissedIllness"],
-    [/결과.*미인정/, "classMissedUnauthorized"],
-    [/결과.*기타/, "classMissedOther"],
-  ];
-
-  // 각 컬럼 인덱스에 대해 필드명 매핑
-  const colFieldMap = new Map<number, string>();
-  let yearColIdx = -1;
-  let totalDaysColIdx = -1;
-  let noteColIdx = -1;
-
-  for (let ci = 0; ci < headerCells.length; ci++) {
-    const h = headerCells[ci];
-    if (/학년/.test(h)) {
-      yearColIdx = ci;
-    } else if (/수업일수/.test(h)) {
-      totalDaysColIdx = ci;
-    } else if (/특기/.test(h)) {
-      noteColIdx = ci;
-    } else {
-      for (const [pattern, fieldName] of FIELD_PATTERNS) {
-        if (pattern.test(h)) {
-          colFieldMap.set(ci, fieldName);
-          break;
-        }
-      }
-    }
-  }
-
-  console.info(
-    `[parse] Attendance markdown: ${headerCells.length} cols, ` +
-      `year=${yearColIdx}, totalDays=${totalDaysColIdx}, note=${noteColIdx}, ` +
-      `fields=${colFieldMap.size}`
-  );
-
-  // 데이터 행 파싱 (구분선 "---" 건너뛰기)
-  const rows: RawRow[] = [];
-  for (let li = 1; li < lines.length; li++) {
-    const line = lines[li];
-    if (/^[|\s-]+$/.test(line)) continue; // 구분선
-
-    const cells = line
-      .split("|")
-      .map((c) => c.trim())
-      .filter((c) => c.length > 0);
-
-    const yearStr = yearColIdx >= 0 ? cells[yearColIdx] : "";
-    const year = parseInt(yearStr, 10);
-    if (!year || year < 1 || year > 4) continue;
-
-    const totalDaysStr = totalDaysColIdx >= 0 ? cells[totalDaysColIdx] : "0";
-    const totalDays = parseInt(totalDaysStr, 10) || 0;
-
-    const row: RawRow = {
-      id: crypto.randomUUID(),
-      year,
-      totalDays,
-      absenceIllness: null,
-      absenceUnauthorized: null,
-      absenceOther: null,
-      latenessIllness: null,
-      latenessUnauthorized: null,
-      latenessOther: null,
-      earlyLeaveIllness: null,
-      earlyLeaveUnauthorized: null,
-      earlyLeaveOther: null,
-      classMissedIllness: null,
-      classMissedUnauthorized: null,
-      classMissedOther: null,
-      note: "",
-    };
-
-    // 매핑된 컬럼에서 값 추출
-    for (const [ci, fieldName] of colFieldMap) {
-      if (ci < cells.length) {
-        const cellVal = cells[ci];
-        if (cellVal !== "." && cellVal !== "") {
-          const num = parseInt(cellVal, 10);
-          if (!isNaN(num)) {
-            row[fieldName] = toNullable(num);
-          }
-        }
-      }
-    }
-
-    // 특기사항
-    if (noteColIdx >= 0 && noteColIdx < cells.length) {
-      let note = cells[noteColIdx].trim();
-      if (note === "." || note === "없음" || note === "없음.") note = "";
-      row.note = note;
-    }
-
-    console.info(
-      `[parse] Attendance OCR parsed: year=${year}, totalDays=${totalDays}, ` +
-        `결석=[${row.absenceIllness},${row.absenceUnauthorized},${row.absenceOther}], ` +
-        `지각=[${row.latenessIllness},${row.latenessUnauthorized},${row.latenessOther}], ` +
-        `조퇴=[${row.earlyLeaveIllness},${row.earlyLeaveUnauthorized},${row.earlyLeaveOther}], ` +
-        `결과=[${row.classMissedIllness},${row.classMissedUnauthorized},${row.classMissedOther}], ` +
-        `note="${row.note}"`
-    );
-
-    rows.push(row);
-  }
-
-  rows.sort((a, b) => (a.year as number) - (b.year as number));
-  return rows.length > 0 ? rows : null;
-};
-
-/**
- * 출결 데이터를 AI OCR로 추출한다.
- * 전략: 비-null 셀만 위치와 함께 보고하게 하여 셀 밀림 방지.
- */
-const extractAttendanceFromImage = async (
-  openai: OpenAI,
-  fileIds: string[]
-): Promise<RawRow[] | null> => {
-  const fileContent = fileIds.map((id) => ({
-    type: "input_file" as const,
-    file_id: id,
-  }));
-
-  try {
-    const result = await openai.responses.create({
-      model: "gpt-4.1-mini",
-      max_output_tokens: 1024,
-      temperature: 0,
-      input: [
-        {
-          role: "user",
-          content: [
-            ...fileContent,
-            { type: "input_text", text: ATTENDANCE_OCR_PROMPT },
-          ],
-        },
-      ],
-    });
-    const text = result.output_text?.trim() ?? "";
-    console.info(`[parse] Attendance OCR raw:\n${text}`);
-    return parseAttendanceOcrOutput(text);
-  } catch (e) {
-    console.warn("[parse] Attendance OCR call failed:", e);
-    return null;
-  }
-};
-
 const enrichWithIds = (raw: RawRecord): RawRecord => {
   const sections = Object.keys(STRING_FIELDS) as (keyof typeof STRING_FIELDS)[];
 
   const result: RawRecord = {};
   for (const key of sections) {
     const rows = raw[key];
-
-    // 출결은 별도 처리 — deterministic parser 결과가 있으면 그것을 사용
-    if (key === "attendance") {
-      continue;
-    }
 
     const strFields = STRING_FIELDS[key];
     const reqNumFields = REQUIRED_NUMBER_FIELDS[key] ?? {};
@@ -579,7 +397,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
       {
@@ -626,12 +444,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const openai = new OpenAI({ apiKey });
-  const uploadedFileIds: string[] = [];
+  const genAI = new GoogleGenerativeAI(apiKey);
 
   try {
-    // Download files from Supabase Storage → upload to OpenAI Files API
-    const uploadPromises = storagePaths.map(async ({ path, mimeType }) => {
+    // Download files from Supabase Storage → base64 변환
+    const downloadPromises = storagePaths.map(async ({ path, mimeType }) => {
       const { data: fileData, error: dlError } = await admin.storage
         .from("record-uploads")
         .download(path);
@@ -640,32 +457,36 @@ export async function POST(request: NextRequest) {
         throw new Error(`파일 다운로드 실패: ${dlError?.message ?? "unknown"}`);
       }
 
-      const fileName = path.split("/").pop() ?? "file";
-      const file = new File([fileData], fileName, { type: mimeType });
-      const uploaded = await openai.files.create({
-        file,
-        purpose: "user_data",
-      });
-      return uploaded.id;
+      const buffer = Buffer.from(await fileData.arrayBuffer());
+      const base64 = buffer.toString("base64");
+      return { mimeType, base64 };
     });
 
-    const fileIds = await Promise.all(uploadPromises);
-    uploadedFileIds.push(...fileIds);
+    const files = await Promise.all(downloadPromises);
 
-    console.info(`[parse] Files uploaded: ${fileIds.length}`);
+    console.info(`[parse] Files prepared: ${files.length}`);
 
-    // Generate content — 병렬 호출 (Pass 1: 구조화, Pass 2: 서술형)
-    const fileContent = fileIds.map((id) => ({
-      type: "input_file" as const,
-      file_id: id,
+    // Gemini inline file parts
+    const fileParts = files.map((f) => ({
+      inlineData: { mimeType: f.mimeType, data: f.base64 },
     }));
 
-    const extractResponseText = (
-      result: OAIResponse
-    ): { text: string; truncated: boolean } => {
-      const text = result.output_text?.trim() ?? "";
-      const truncated = result.status === "incomplete";
-      return { text, truncated };
+    const callGemini = async (prompt: string): Promise<string> => {
+      return withRetry(async () => {
+        const model = genAI.getGenerativeModel({
+          model: "gemini-2.5-flash",
+          generationConfig: {
+            responseMimeType: "application/json",
+            maxOutputTokens: MAX_OUTPUT_TOKENS,
+            temperature: 0,
+          },
+        });
+        const result = await model.generateContent([
+          ...fileParts,
+          { text: prompt },
+        ]);
+        return result.response.text();
+      });
     };
 
     const parseResponse = (label: string, text: string): unknown => {
@@ -685,58 +506,16 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    const [structuredResult, textResult, attendanceResult] = await Promise.all([
-      openai.responses.create({
-        model: "gpt-4.1-mini",
-        max_output_tokens: MAX_OUTPUT_TOKENS,
-        temperature: 0,
-        text: { format: { type: "json_object" } },
-        input: [
-          {
-            role: "user",
-            content: [
-              ...fileContent,
-              { type: "input_text", text: PARSE_PROMPT_STRUCTURED },
-            ],
-          },
-        ],
-      }),
-      openai.responses.create({
-        model: "gpt-4.1-mini",
-        max_output_tokens: MAX_OUTPUT_TOKENS,
-        temperature: 0,
-        text: { format: { type: "json_object" } },
-        input: [
-          {
-            role: "user",
-            content: [
-              ...fileContent,
-              { type: "input_text", text: PARSE_PROMPT_TEXT },
-            ],
-          },
-        ],
-      }),
-      extractAttendanceFromImage(openai, fileIds),
+    // 병렬 호출 (Pass 1: 구조화, Pass 2: 서술형)
+    const [structuredText, textText] = await Promise.all([
+      callGemini(PARSE_PROMPT_STRUCTURED),
+      callGemini(PARSE_PROMPT_TEXT),
     ]);
 
-    const { text: structuredText, truncated: structuredTruncated } =
-      extractResponseText(structuredResult);
-    const { text: textText, truncated: textTruncated } =
-      extractResponseText(textResult);
-
     console.info(
-      `[parse] Pass 1 (structured): status=${structuredResult.status}, length=${structuredText.length}`
+      `[parse] Pass 1 (structured): length=${structuredText.length}`
     );
-    console.info(
-      `[parse] Pass 2 (text): status=${textResult.status}, length=${textText.length}`
-    );
-
-    if (structuredTruncated) {
-      console.warn("Pass 1 response truncated");
-    }
-    if (textTruncated) {
-      console.warn("Pass 2 response truncated");
-    }
+    console.info(`[parse] Pass 2 (text): length=${textText.length}`);
 
     let structuredJson: RawRecord;
     let textJson: RawRecord;
@@ -769,20 +548,7 @@ export async function POST(request: NextRequest) {
       behavioralAssessments: textJson.behavioralAssessments ?? [],
     };
 
-    const truncated = structuredTruncated;
-
     const enriched = enrichWithIds(rawJson as RawRecord);
-
-    // 출결: 병렬 호출 결과 적용
-    if (attendanceResult && attendanceResult.length > 0) {
-      enriched.attendance = attendanceResult;
-      console.info(
-        `[parse] Attendance: OCR succeeded (${attendanceResult.length} rows)`
-      );
-    } else {
-      enriched.attendance = [];
-      console.warn("[parse] Attendance: OCR failed, no data");
-    }
 
     // 핵심 섹션에 데이터가 하나도 없으면 파싱 실패로 처리
     const coreKeys = [
@@ -797,13 +563,12 @@ export async function POST(request: NextRequest) {
     if (!hasAnyData) {
       console.error(
         "Parsed result has no data in core sections",
-        `(truncated=${truncated}, responseLength=${structuredText.length}+${textText.length})`
+        `(responseLength=${structuredText.length}+${textText.length})`
       );
       return NextResponse.json(
         {
-          error: truncated
-            ? "생기부 파일이 너무 커서 분석이 중단되었습니다. 페이지 수를 줄여서 다시 시도해주세요."
-            : "생기부 데이터를 추출하지 못했습니다. 파일이 정상적인 생기부 PDF인지 확인 후 다시 시도해주세요.",
+          error:
+            "생기부 데이터를 추출하지 못했습니다. 파일이 정상적인 생기부 PDF인지 확인 후 다시 시도해주세요.",
         },
         { status: 422 }
       );
@@ -838,17 +603,6 @@ export async function POST(request: NextRequest) {
           }
         }
       }
-    }
-
-    if (truncated) {
-      return NextResponse.json(
-        {
-          ...enriched,
-          _warning:
-            "토큰 한도 초과로 일부 데이터가 누락되었을 수 있습니다. 데이터를 확인해주세요.",
-        },
-        { status: 200 }
-      );
     }
 
     return NextResponse.json(enriched);
@@ -889,10 +643,6 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   } finally {
-    // OpenAI에 업로드한 파일 정리
-    for (const fileId of uploadedFileIds) {
-      openai.files.delete(fileId).catch(() => {});
-    }
     if (admin && storagePaths.length > 0) {
       await admin.storage
         .from("record-uploads")
