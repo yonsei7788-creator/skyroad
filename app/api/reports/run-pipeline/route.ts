@@ -21,6 +21,7 @@ import type {
   WaveState,
   SerializedTexts,
 } from "@/libs/report/pipeline/wave-state";
+import { saveWaveState } from "@/libs/report/pipeline/wave-state";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -340,7 +341,10 @@ export const POST = async (request: NextRequest) => {
     return NextResponse.json({ error: "이미 생성 중입니다." }, { status: 409 });
   }
 
-  const isRetry = existingReport?.ai_status === "failed" || forceRegenerate;
+  const isRetry =
+    existingReport?.ai_status === "failed" ||
+    existingReport?.ai_status === "deferred" ||
+    forceRegenerate;
 
   if (
     !isRetry &&
@@ -490,6 +494,9 @@ export const POST = async (request: NextRequest) => {
 
   const stream = new ReadableStream({
     async start(controller) {
+      let state: WaveState | null = null;
+      let completedCount = 0;
+
       try {
         // 클라이언트가 reportId를 알도록 init 이벤트 전송
         // (스트림 비정상 종료 시 DB 상태 확인용)
@@ -505,7 +512,7 @@ export const POST = async (request: NextRequest) => {
           progress: 2,
         });
 
-        let state: WaveState = await executePreprocess(
+        state = await executePreprocess(
           plan,
           studentInfo,
           reportId,
@@ -518,7 +525,6 @@ export const POST = async (request: NextRequest) => {
 
         const { taskQueue } = state;
         const waves = buildWaves(taskQueue);
-        let completedCount = 0;
 
         console.log(
           `[report:${reportId}] 병렬 웨이브 구성: ${waves.length}개 웨이브, 총 ${taskQueue.length}개 태스크`
@@ -643,35 +649,84 @@ export const POST = async (request: NextRequest) => {
         const message = err instanceof Error ? err.message : "파이프라인 오류";
         console.error(`[report:${reportId}] 파이프라인 오류:`, message);
 
-        // DB 업데이트를 먼저, 그리고 반드시 실행 (SSE 송신 실패해도 상태는 남음)
-        try {
-          await dbClient
-            .from("reports")
-            .update({ ai_status: "failed", ai_error: message })
-            .eq("id", reportId);
-        } catch (dbErr) {
-          console.error(
-            `[report:${reportId}] failed 상태 DB 업데이트 실패:`,
-            dbErr
-          );
-        }
+        // 과부하/일시적 에러 → deferred (자동 재시도 대상)
+        const isOverload =
+          message.includes("일시적으로 불안정") ||
+          message.includes("시간 초과");
 
-        try {
-          await dbClient
-            .from("orders")
-            .update({ status: "paid" })
-            .eq("id", orderId);
-        } catch (dbErr) {
-          console.error(`[report:${reportId}] order 상태 롤백 실패:`, dbErr);
-        }
+        if (isOverload) {
+          try {
+            // 중단 지점의 wave state 저장 (재개용)
+            if (state) {
+              const progress = Math.min(
+                98,
+                Math.round(
+                  ((completedCount + 1) / (state.totalTasks || 1)) * 98
+                )
+              );
+              await saveWaveState(
+                dbClient,
+                reportId,
+                state,
+                progress,
+                "deferred"
+              );
+            }
 
-        try {
-          sendEvent(controller, encoder, {
-            type: "error",
-            error: message,
-          });
-        } catch {
-          // 스트림이 이미 닫혔을 수 있음
+            await dbClient
+              .from("reports")
+              .update({
+                ai_status: "deferred",
+                ai_deferred_at: new Date().toISOString(),
+                ai_error: message,
+              })
+              .eq("id", reportId);
+            // order는 analyzing 유지 — 사용자에게 "분석 중"으로 보임
+          } catch (dbErr) {
+            console.error(
+              `[report:${reportId}] deferred 상태 DB 업데이트 실패:`,
+              dbErr
+            );
+          }
+
+          try {
+            sendEvent(controller, encoder, {
+              type: "deferred",
+            });
+          } catch {
+            // 스트림이 이미 닫혔을 수 있음
+          }
+        } else {
+          // 기존 로직: 복구 불가능한 에러 → failed
+          try {
+            await dbClient
+              .from("reports")
+              .update({ ai_status: "failed", ai_error: message })
+              .eq("id", reportId);
+          } catch (dbErr) {
+            console.error(
+              `[report:${reportId}] failed 상태 DB 업데이트 실패:`,
+              dbErr
+            );
+          }
+
+          try {
+            await dbClient
+              .from("orders")
+              .update({ status: "paid" })
+              .eq("id", orderId);
+          } catch (dbErr) {
+            console.error(`[report:${reportId}] order 상태 롤백 실패:`, dbErr);
+          }
+
+          try {
+            sendEvent(controller, encoder, {
+              type: "error",
+              error: message,
+            });
+          } catch {
+            // 스트림이 이미 닫혔을 수 있음
+          }
         }
       } finally {
         try {

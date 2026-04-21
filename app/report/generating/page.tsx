@@ -73,7 +73,7 @@ const GeneratingContent = () => {
         status: string;
         error?: string | null;
       };
-      if (body.status === "completed") {
+      if (body.status === "completed" || body.status === "deferred") {
         setPhase("completed");
         setProgress(100);
         setCurrentSection(null);
@@ -160,6 +160,12 @@ const GeneratingContent = () => {
                 const label = TASK_LABELS[data.section] ?? data.section;
                 setCurrentSection(label);
               } else if (data.type === "completed") {
+                terminalReceivedRef.current = true;
+                setPhase("completed");
+                setProgress(100);
+                setCurrentSection(null);
+              } else if (data.type === "deferred") {
+                // 과부하로 지연 — 사용자에게는 성공으로 표시
                 terminalReceivedRef.current = true;
                 setPhase("completed");
                 setProgress(100);
@@ -271,6 +277,12 @@ const GeneratingContent = () => {
                 setProgress(data.progress);
                 setCurrentSection(TASK_LABELS[data.section] ?? data.section);
               } else if (data.type === "completed") {
+                terminalReceivedRef.current = true;
+                setPhase("completed");
+                setProgress(100);
+                setCurrentSection(null);
+              } else if (data.type === "deferred") {
+                // 과부하로 지연 — 사용자에게는 성공으로 표시
                 terminalReceivedRef.current = true;
                 setPhase("completed");
                 setProgress(100);

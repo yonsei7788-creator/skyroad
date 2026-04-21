@@ -488,7 +488,10 @@ const ReportDetailPage = () => {
   const isStuckGenerating =
     (report.aiStatus === "pending" || report.aiStatus === "processing") &&
     Date.now() - new Date(report.createdAt).getTime() > STUCK_THRESHOLD_MS;
-  const canRegenerate = report.aiStatus === "failed" || isStuckGenerating;
+  const canRegenerate =
+    report.aiStatus === "failed" ||
+    report.aiStatus === "deferred" ||
+    isStuckGenerating;
 
   const shortId = report.id.slice(0, 8);
   const { label: statusLabel, variant: statusVariant } =

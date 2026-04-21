@@ -18,7 +18,12 @@ export interface AdminReport {
   deliveredAt: string | null;
 }
 
-export type AiStatus = "pending" | "processing" | "completed" | "failed";
+export type AiStatus =
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "deferred";
 
 export interface ReportDetail extends AdminReport {
   orderId: string;

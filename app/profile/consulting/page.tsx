@@ -252,8 +252,9 @@ const OrderCard = ({
                 <div className={styles.reportMeta}>
                   {report.ai_status === "completed" && report.delivered_at
                     ? `전달 완료 · ${formatDate(report.delivered_at)}`
-                    : report.ai_status === "completed"
-                      ? "분석 완료"
+                    : report.ai_status === "completed" ||
+                        report.ai_status === "deferred"
+                      ? "전문가 검토중"
                       : report.ai_status === "processing"
                         ? `분석중 · ${report.ai_progress}%`
                         : report.ai_status === "failed"
@@ -274,7 +275,8 @@ const OrderCard = ({
                 <span className={styles.reportActionDisabled}>
                   {report.ai_status === "processing"
                     ? "분석중..."
-                    : report.ai_status === "completed"
+                    : report.ai_status === "completed" ||
+                        report.ai_status === "deferred"
                       ? "검수중"
                       : "준비중"}
                 </span>
