@@ -291,57 +291,28 @@ const getCompletedTaskIds = (state: WaveState): Set<string> => {
   return ids;
 };
 
-// ─── 메인 ───
+// ─── 단일 리포트 재시도 ───
 
-const main = async () => {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const geminiApiKey = process.env.GEMINI_API_KEY;
-
-  if (!supabaseUrl || !supabaseKey || !geminiApiKey) {
-    console.error(
-      "필수 환경변수 누락: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY"
-    );
-    process.exit(1);
-  }
-
-  const dbClient = createClient(supabaseUrl, supabaseKey);
-  const geminiClient = createGeminiClient(geminiApiKey);
-
-  // 가장 오래된 deferred 리포트 1건 조회
-  const { data: report, error: fetchError } = await dbClient
-    .from("reports")
-    .select(
-      `
-      id,
-      order_id,
-      ai_wave_state,
-      ai_retry_count,
-      orders!inner (
-        id,
-        user_id,
-        record_id,
-        plans!inner ( name )
-      )
-    `
-    )
-    .eq("ai_status", "deferred")
-    .order("ai_deferred_at", { ascending: true })
-    .limit(1)
-    .single();
-
-  if (fetchError || !report) {
-    console.log("deferred 리포트 없음. 종료.");
-    return;
-  }
-
-  const reportId = report.id;
-  const order = report.orders as unknown as {
+interface DeferredReport {
+  id: string;
+  order_id: string;
+  ai_wave_state: unknown;
+  ai_retry_count: number | null;
+  orders: {
     id: string;
     user_id: string;
     record_id: string;
     plans: { name: string };
   };
+}
+
+const retryOneReport = async (
+  report: DeferredReport,
+  dbClient: ReturnType<typeof createClient>,
+  geminiClient: GeminiClient
+): Promise<boolean> => {
+  const reportId = report.id;
+  const order = report.orders;
   const orderId = order.id;
   const plan = order.plans.name as ReportPlan;
   const recordId = order.record_id;
@@ -489,6 +460,7 @@ const main = async () => {
       .eq("id", orderId);
 
     console.log(`[retry:${reportId}] 재생성 완료!`);
+    return true;
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "재시도 파이프라인 오류";
@@ -503,6 +475,72 @@ const main = async () => {
       })
       .eq("id", reportId);
 
+    return false;
+  }
+};
+
+// ─── 메인 ───
+
+const main = async () => {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+
+  if (!supabaseUrl || !supabaseKey || !geminiApiKey) {
+    console.error(
+      "필수 환경변수 누락: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY"
+    );
+    process.exit(1);
+  }
+
+  const dbClient = createClient(supabaseUrl, supabaseKey);
+  const geminiClient = createGeminiClient(geminiApiKey);
+
+  // 전체 deferred 리포트 조회 (오래된 순)
+  const { data: reports, error: fetchError } = await dbClient
+    .from("reports")
+    .select(
+      `
+      id,
+      order_id,
+      ai_wave_state,
+      ai_retry_count,
+      orders!inner (
+        id,
+        user_id,
+        record_id,
+        plans!inner ( name )
+      )
+    `
+    )
+    .eq("ai_status", "deferred")
+    .order("ai_deferred_at", { ascending: true });
+
+  if (fetchError || !reports || reports.length === 0) {
+    console.log("deferred 리포트 없음. 종료.");
+    return;
+  }
+
+  console.log(`deferred 리포트 ${reports.length}건 발견. 순차 처리 시작.`);
+
+  let success = 0;
+  let failed = 0;
+
+  for (const report of reports) {
+    const ok = await retryOneReport(
+      report as unknown as DeferredReport,
+      dbClient,
+      geminiClient
+    );
+    if (ok) success++;
+    else failed++;
+  }
+
+  console.log(
+    `처리 완료: 성공 ${success}건, 실패 ${failed}건 (총 ${reports.length}건)`
+  );
+
+  if (failed > 0) {
     process.exit(1);
   }
 };

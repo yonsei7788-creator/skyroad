@@ -2,8 +2,8 @@ name: Retry Deferred Reports
 
 on:
   schedule:
-    # 매 정시 실행 (UTC)
-    - cron: "0 * * * *"
+    # 한국시간 기준 매 30분 (UTC+9)
+    - cron: "0,30 * * * *"
   workflow_dispatch: # 수동 실행 가능
 
 jobs:
