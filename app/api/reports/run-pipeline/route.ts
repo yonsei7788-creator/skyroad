@@ -573,11 +573,19 @@ export const POST = async (request: NextRequest) => {
 
           completedCount += wave.length;
 
-          // 웨이브 완료 후 최종 진행률
+          // 웨이브 완료 후 상태 저장 (Vercel 강제 종료 시에도 진행분 보존)
           const waveEndProgress = Math.min(
             98,
             Math.round((completedCount / taskQueue.length) * 98)
           );
+          await saveWaveState(
+            dbClient,
+            reportId,
+            state,
+            waveEndProgress,
+            wave[wave.length - 1]
+          );
+
           sendEvent(controller, encoder, {
             type: "progress",
             section: wave[wave.length - 1],
@@ -649,84 +657,45 @@ export const POST = async (request: NextRequest) => {
         const message = err instanceof Error ? err.message : "파이프라인 오류";
         console.error(`[report:${reportId}] 파이프라인 오류:`, message);
 
-        // 과부하/일시적 에러 → deferred (자동 재시도 대상)
-        const isOverload =
-          message.includes("일시적으로 불안정") ||
-          message.includes("시간 초과");
-
-        if (isOverload) {
-          try {
-            // 중단 지점의 wave state 저장 (재개용)
-            if (state) {
-              const progress = Math.min(
-                98,
-                Math.round(
-                  ((completedCount + 1) / (state.totalTasks || 1)) * 98
-                )
-              );
-              await saveWaveState(
-                dbClient,
-                reportId,
-                state,
-                progress,
-                "deferred"
-              );
-            }
-
-            await dbClient
-              .from("reports")
-              .update({
-                ai_status: "deferred",
-                ai_deferred_at: new Date().toISOString(),
-                ai_error: message,
-              })
-              .eq("id", reportId);
-            // order는 analyzing 유지 — 사용자에게 "분석 중"으로 보임
-          } catch (dbErr) {
-            console.error(
-              `[report:${reportId}] deferred 상태 DB 업데이트 실패:`,
-              dbErr
+        // 모든 실패 → deferred (자동 재시도 대상)
+        try {
+          // 중단 지점의 wave state 저장 (재개용)
+          if (state) {
+            const progress = Math.min(
+              98,
+              Math.round(((completedCount + 1) / (state.totalTasks || 1)) * 98)
+            );
+            await saveWaveState(
+              dbClient,
+              reportId,
+              state,
+              progress,
+              "deferred"
             );
           }
 
-          try {
-            sendEvent(controller, encoder, {
-              type: "deferred",
-            });
-          } catch {
-            // 스트림이 이미 닫혔을 수 있음
-          }
-        } else {
-          // 기존 로직: 복구 불가능한 에러 → failed
-          try {
-            await dbClient
-              .from("reports")
-              .update({ ai_status: "failed", ai_error: message })
-              .eq("id", reportId);
-          } catch (dbErr) {
-            console.error(
-              `[report:${reportId}] failed 상태 DB 업데이트 실패:`,
-              dbErr
-            );
-          }
+          await dbClient
+            .from("reports")
+            .update({
+              ai_status: "deferred",
+              ai_deferred_at: new Date().toISOString(),
+              ai_error: message,
+            })
+            .eq("id", reportId);
+          // order는 analyzing 유지 — 사용자에게 "전문가 검토중"으로 보임
+        } catch (dbErr) {
+          console.error(
+            `[report:${reportId}] deferred 상태 DB 업데이트 실패:`,
+            dbErr
+          );
+        }
 
-          try {
-            await dbClient
-              .from("orders")
-              .update({ status: "paid" })
-              .eq("id", orderId);
-          } catch (dbErr) {
-            console.error(`[report:${reportId}] order 상태 롤백 실패:`, dbErr);
-          }
-
-          try {
-            sendEvent(controller, encoder, {
-              type: "error",
-              error: message,
-            });
-          } catch {
-            // 스트림이 이미 닫혔을 수 있음
-          }
+        try {
+          sendEvent(controller, encoder, {
+            type: "deferred",
+          });
+        } catch {
+          // 스트림이 이미 닫혔을 수 있음
         }
       } finally {
         try {

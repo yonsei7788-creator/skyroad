@@ -163,37 +163,20 @@ export const POST = async (
         : "태스크 실행 중 오류가 발생했습니다.";
     console.error(`[report:${reportId}] 태스크 ${taskId} 오류:`, message);
 
-    // 과부하/일시적 에러 → deferred (자동 재시도 대상)
-    const isOverload =
-      message.includes("일시적으로 불안정") || message.includes("시간 초과");
-
-    if (isOverload) {
-      await dbClient
-        .from("reports")
-        .update({
-          ai_status: "deferred",
-          ai_deferred_at: new Date().toISOString(),
-          ai_error: message,
-        })
-        .eq("id", reportId);
-      // order는 analyzing 유지
-
-      return NextResponse.json(
-        { error: message, deferred: true },
-        { status: 503 }
-      );
-    }
-
+    // 모든 실패 → deferred (자동 재시도 대상)
     await dbClient
       .from("reports")
       .update({
-        ai_status: "failed",
+        ai_status: "deferred",
+        ai_deferred_at: new Date().toISOString(),
         ai_error: message,
       })
       .eq("id", reportId);
+    // order는 analyzing 유지
 
-    await dbClient.from("orders").update({ status: "paid" }).eq("id", orderId);
-
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: message, deferred: true },
+      { status: 503 }
+    );
   }
 };
