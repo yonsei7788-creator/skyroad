@@ -2,8 +2,8 @@ name: Retry Deferred Reports
 
 on:
   schedule:
-    # 한국시간 기준 매 30분 (UTC+9)
-    - cron: "0,30 * * * *"
+    # 매 30분 (정시를 피해 13분, 43분에 실행 — GitHub Actions 지연 최소화)
+    - cron: "13,43 * * * *"
   workflow_dispatch: # 수동 실행 가능
 
 jobs:
