@@ -3,7 +3,8 @@
 import type { ReportPlan } from "../../types.ts";
 
 export interface TopicRecommendationPromptInput {
-  subjectAnalysisResult: string;
+  /** 생기부 세특 원문 텍스트 (subjectAnalysis AI 분석 결과 대신 raw subjectData 사용) */
+  subjectData: string;
   weaknessAnalysisResult: string;
   studentProfile: string;
   isGyogwaOnly?: boolean;
@@ -159,8 +160,8 @@ ${input.aiRecommendedMajors.map((m, i) => `${i + 1}순위: ${m}`).join("\n")}
 
 ## 입력 데이터
 
-### 세특 분석 결과
-${input.subjectAnalysisResult}
+### 세특 원문 데이터
+${input.subjectData}
 
 ### 약점 분석 결과
 ${input.weaknessAnalysisResult}

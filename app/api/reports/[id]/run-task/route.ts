@@ -9,6 +9,7 @@ import { createGeminiClient } from "@/libs/report/pipeline/gemini-client";
 import { executeTask } from "@/libs/report/pipeline/wave-executor";
 import { loadWaveState } from "@/libs/report/pipeline/wave-state";
 import { postprocess } from "@/libs/report/pipeline/postprocessor";
+import { COMMON_SYSTEM_PROMPT } from "@/libs/report/prompts/system";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -68,7 +69,6 @@ export const POST = async (
     );
   }
 
-  // Gemini 클라이언트 생성
   const geminiApiKey = env.GEMINI_API_KEY;
   if (!geminiApiKey) {
     return NextResponse.json(
@@ -77,7 +77,11 @@ export const POST = async (
     );
   }
 
-  const geminiClient = createGeminiClient(geminiApiKey);
+  // run-task는 단일 태스크만 실행하므로 캐시를 생성하지 않음
+  const geminiClient = createGeminiClient({
+    apiKeys: [geminiApiKey],
+    commonSystemPrompt: COMMON_SYSTEM_PROMPT,
+  });
 
   try {
     console.log(
@@ -130,7 +134,7 @@ export const POST = async (
           ai_wave_state: null,
           ai_current_wave: null,
           ai_generated_at: new Date().toISOString(),
-          ai_model_version: "gemini-2.5-flash",
+          ai_model_version: "gemini-2.5-flash-lite",
         })
         .eq("id", reportId);
 

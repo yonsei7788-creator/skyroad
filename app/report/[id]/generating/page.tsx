@@ -26,6 +26,8 @@ interface RunTaskResponse {
 
 const TASK_LABELS: Record<string, string> = {
   phase2: "기초 분석",
+  phase2Extract: "기초 분석",
+  phase2Classify: "학생 유형 분류",
   studentProfile: "학생 프로필",
   competencyScore: "역량 점수",
   academicAnalysis: "학업 분석",

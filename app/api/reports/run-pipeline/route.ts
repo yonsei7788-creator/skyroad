@@ -17,6 +17,11 @@ import {
   executeTask,
 } from "@/libs/report/pipeline/wave-executor";
 import { postprocess } from "@/libs/report/pipeline/postprocessor";
+import {
+  createPipelineCache,
+  deletePipelineCache,
+} from "@/libs/report/pipeline/cache-manager";
+import { COMMON_SYSTEM_PROMPT } from "@/libs/report/prompts/system";
 import type {
   WaveState,
   SerializedTexts,
@@ -47,10 +52,12 @@ const sendEvent = (
 };
 
 // ─── 태스크 의존성 그래프 ───
-// 각 태스크가 의존하는 선행 태스크 목록 (phase2 제외 — 항상 첫 번째)
+// phase2Extract는 항상 첫 번째 웨이브 (모든 태스크가 암묵적으로 의존)
+// phase2Classify는 섹션 웨이브와 병렬 실행 (studentProfile/competencyScore만 명시적 의존)
 const TASK_DEPS: Record<string, string[]> = {
-  studentProfile: [],
-  competencyScore: [],
+  phase2Classify: [],
+  studentProfile: ["phase2Classify"],
+  competencyScore: ["phase2Classify"],
   academicAnalysis: [],
   attendanceAnalysis: [],
   activityAnalysis: [],
@@ -60,12 +67,15 @@ const TASK_DEPS: Record<string, string[]> = {
   weaknessAnalysis: [],
   majorExploration: [],
   directionGuide: [],
-  topicRecommendation: ["subjectAnalysis"],
-  interviewPrep: ["subjectAnalysis"],
+  // topicRecommendation/interviewPrep은 subjectAnalysis 의존을 제거하여 Wave 2로 이동.
+  // topicRecommendation은 majorExploration 결과를 aiRecommendedMajors로 참조하므로 의존 유지.
+  topicRecommendation: ["majorExploration"],
+  interviewPrep: [],
   admissionPrediction: [
     "subjectAnalysis",
     "academicAnalysis",
     "attendanceAnalysis",
+    "phase2Classify",
   ],
   admissionStrategy: [
     "academicAnalysis",
@@ -86,10 +96,11 @@ const PARALLEL_CONCURRENCY = 6;
 const BATCH_DELAY_MS = 100;
 
 // 태스크 큐를 의존성 기반 병렬 웨이브로 분할
+// phase2Extract는 항상 Wave 0으로 고정 (모든 태스크가 암묵적으로 의존)
 const buildWaves = (taskQueue: string[]): string[][] => {
-  const remaining = taskQueue.filter((t) => t !== "phase2");
-  const hasPhase2 = taskQueue.includes("phase2");
-  const waves: string[][] = hasPhase2 ? [["phase2"]] : [];
+  const remaining = taskQueue.filter((t) => t !== "phase2Extract");
+  const hasPhase2Extract = taskQueue.includes("phase2Extract");
+  const waves: string[][] = hasPhase2Extract ? [["phase2Extract"]] : [];
 
   const completed = new Set<string>();
 
@@ -472,7 +483,6 @@ export const POST = async (request: NextRequest) => {
     hasMockExamData: (mockExamsPipeline?.length ?? 0) > 0,
   };
 
-  // Gemini 클라이언트
   const geminiApiKey = env.GEMINI_API_KEY;
   if (!geminiApiKey) {
     await markFailed(dbClient, reportId, orderId, "GEMINI_API_KEY 미설정");
@@ -482,7 +492,18 @@ export const POST = async (request: NextRequest) => {
     );
   }
 
-  const geminiClient = createGeminiClient(geminiApiKey);
+  // 컨텍스트 캐시 생성 (실패 시 캐시 없이 진행)
+  const primaryCacheHandle = await createPipelineCache(
+    geminiApiKey,
+    COMMON_SYSTEM_PROMPT,
+    reportId
+  );
+
+  const geminiClient = createGeminiClient({
+    apiKeys: [geminiApiKey],
+    cacheHandles: [primaryCacheHandle],
+    commonSystemPrompt: COMMON_SYSTEM_PROMPT,
+  });
 
   // 7. SSE 스트리밍 — 전체 파이프라인을 하나의 스트림에서 실행
   const encoder = new TextEncoder();
@@ -633,7 +654,7 @@ export const POST = async (request: NextRequest) => {
             ai_wave_state: null,
             ai_current_wave: null,
             ai_generated_at: new Date().toISOString(),
-            ai_model_version: "gemini-2.5-flash",
+            ai_model_version: "gemini-2.5-flash-lite",
           })
           .eq("id", reportId);
 
@@ -698,6 +719,8 @@ export const POST = async (request: NextRequest) => {
           // 스트림이 이미 닫혔을 수 있음
         }
       } finally {
+        // 컨텍스트 캐시 정리 (실패해도 TTL로 자동 만료됨)
+        await deletePipelineCache(primaryCacheHandle, reportId);
         try {
           controller.close();
         } catch {

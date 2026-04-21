@@ -51,7 +51,10 @@ export const buildTaskQueue = (
   isGrade1Only: boolean,
   isGraduate: boolean = false
 ): string[] => {
-  const tasks: string[] = ["phase2"];
+  // Phase 2 분할:
+  //   phase2Extract: competencyExtraction + academicAnalysis 병렬 (필수 선행)
+  //   phase2Classify: studentTypeClassification (phase2Extract 결과 필요, 그 외 섹션과 병렬 실행)
+  const tasks: string[] = ["phase2Extract", "phase2Classify"];
   const secs = SECTION_ORDER[plan];
   const has = (id: string) => secs.includes(id);
 

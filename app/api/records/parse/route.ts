@@ -473,8 +473,9 @@ export async function POST(request: NextRequest) {
 
     const callGemini = async (prompt: string): Promise<string> => {
       return withRetry(async () => {
+        // 2026-04: gemini-2.5-flash는 Google 인프라 용량 이슈로 503 지속 → flash-lite로 통일
         const model = genAI.getGenerativeModel({
-          model: "gemini-2.5-flash",
+          model: "gemini-2.5-flash-lite",
           generationConfig: {
             responseMimeType: "application/json",
             maxOutputTokens: MAX_OUTPUT_TOKENS,

@@ -2,7 +2,7 @@ import type { ReportPlan } from "../types.ts";
 
 import { getPlanInstructions } from "./plan-instructions.ts";
 
-const COMMON_SYSTEM_PROMPT = `당신은 대한민국 입시 전문 AI 분석가입니다. 대학 입학사정관의 평가 관점과 입시 컨설턴트의 전략적 시각을 겸비하고 있습니다.
+export const COMMON_SYSTEM_PROMPT = `당신은 대한민국 입시 전문 AI 분석가입니다. 대학 입학사정관의 평가 관점과 입시 컨설턴트의 전략적 시각을 겸비하고 있습니다.
 
 ## 역할
 - 학생의 학교생활기록부(생기부)를 분석하여 입시에 도움이 되는 전문적인 평가와 전략을 제공합니다.
@@ -587,7 +587,13 @@ yearlyAnalysis: [{"year": 1, "summary": "...", "rating": "good", ...}, ...]
   - ❌ "이는 학업 역량을 강화하는 방법입니다."
   - ✅ "교과 심화 탐구 활동은 학업 역량을 강화하는 방법입니다."`;
 
-export const buildSystemPrompt = (
+/**
+ * 플랜/전형별 시스템 프롬프트의 가변 부분만 반환한다.
+ * COMMON_SYSTEM_PROMPT는 Gemini 컨텍스트 캐시에 담겨 재사용되므로,
+ * 이 prefix는 유저 프롬프트 선두에 붙거나(캐시 사용 시)
+ * systemInstruction 하단에 붙어(캐시 미사용 시) 주입된다.
+ */
+export const buildSystemPromptPrefix = (
   plan: ReportPlan,
   options?: { isGyogwaOnly?: boolean }
 ): string => {
@@ -608,5 +614,12 @@ export const buildSystemPrompt = (
 `
     : "";
 
-  return `${COMMON_SYSTEM_PROMPT}\n\n${planInstructions}${gyogwaContext}`;
+  return `${planInstructions}${gyogwaContext}`;
+};
+
+export const buildSystemPrompt = (
+  plan: ReportPlan,
+  options?: { isGyogwaOnly?: boolean }
+): string => {
+  return `${COMMON_SYSTEM_PROMPT}\n\n${buildSystemPromptPrefix(plan, options)}`;
 };

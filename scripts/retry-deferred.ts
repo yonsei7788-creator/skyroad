@@ -31,12 +31,18 @@ import type {
   SerializedTexts,
 } from "../libs/report/pipeline/wave-state.ts";
 import { saveWaveState } from "../libs/report/pipeline/wave-state.ts";
+import {
+  createPipelineCache,
+  deletePipelineCache,
+} from "../libs/report/pipeline/cache-manager.ts";
+import { COMMON_SYSTEM_PROMPT } from "../libs/report/prompts/system.ts";
 
 // ─── 태스크 의존성 그래프 (run-pipeline/route.ts와 동일) ───
 
 const TASK_DEPS: Record<string, string[]> = {
-  studentProfile: [],
-  competencyScore: [],
+  phase2Classify: [],
+  studentProfile: ["phase2Classify"],
+  competencyScore: ["phase2Classify"],
   academicAnalysis: [],
   attendanceAnalysis: [],
   activityAnalysis: [],
@@ -46,12 +52,13 @@ const TASK_DEPS: Record<string, string[]> = {
   weaknessAnalysis: [],
   majorExploration: [],
   directionGuide: [],
-  topicRecommendation: ["subjectAnalysis"],
-  interviewPrep: ["subjectAnalysis"],
+  topicRecommendation: ["majorExploration"],
+  interviewPrep: [],
   admissionPrediction: [
     "subjectAnalysis",
     "academicAnalysis",
     "attendanceAnalysis",
+    "phase2Classify",
   ],
   admissionStrategy: [
     "academicAnalysis",
@@ -81,9 +88,9 @@ const GRADE_MAP: Record<string, number> = {
 // ─── 웨이브 빌드 ───
 
 const buildWaves = (taskQueue: string[]): string[][] => {
-  const remaining = taskQueue.filter((t) => t !== "phase2");
-  const hasPhase2 = taskQueue.includes("phase2");
-  const waves: string[][] = hasPhase2 ? [["phase2"]] : [];
+  const remaining = taskQueue.filter((t) => t !== "phase2Extract");
+  const hasPhase2Extract = taskQueue.includes("phase2Extract");
+  const waves: string[][] = hasPhase2Extract ? [["phase2Extract"]] : [];
 
   const completed = new Set<string>();
 
@@ -284,7 +291,18 @@ const buildStudentInfo = async (
 
 const getCompletedTaskIds = (state: WaveState): Set<string> => {
   const ids = new Set<string>();
-  if (state.phase2Results) ids.add("phase2");
+  // phase2Extract 완료 = compExtr + acadAnal 직렬화 텍스트가 저장됨
+  // (Wave 2 병렬 실행 시 phase2Results는 pre-wave 값이 유지되므로
+  //  serializedTexts가 보다 신뢰할 수 있는 완료 지표)
+  const ser = state.serializedTexts ?? {};
+  if (ser.compExtrText && ser.acadAnalText) {
+    ids.add("phase2Extract");
+    // 레거시 호환: 이전 버전은 "phase2" 단일 태스크였음
+    ids.add("phase2");
+  }
+  if (ser.stuTypeText) {
+    ids.add("phase2Classify");
+  }
   for (const section of state.completedSections ?? []) {
     ids.add(section.sectionId);
   }
@@ -309,13 +327,25 @@ interface DeferredReport {
 const retryOneReport = async (
   report: DeferredReport,
   dbClient: ReturnType<typeof createClient>,
-  geminiClient: GeminiClient
+  geminiApiKey: string
 ): Promise<boolean> => {
   const reportId = report.id;
   const order = report.orders;
   const orderId = order.id;
   const plan = order.plans.name as ReportPlan;
   const recordId = order.record_id;
+
+  // 리포트별 컨텍스트 캐시 생성 (실패 시 캐시 없이 진행)
+  const primaryCacheHandle = await createPipelineCache(
+    geminiApiKey,
+    COMMON_SYSTEM_PROMPT,
+    reportId
+  );
+  const geminiClient = createGeminiClient({
+    apiKeys: [geminiApiKey],
+    cacheHandles: [primaryCacheHandle],
+    commonSystemPrompt: COMMON_SYSTEM_PROMPT,
+  });
 
   console.log(
     `[retry:${reportId}] 재시도 시작 (retry_count: ${report.ai_retry_count ?? 0})`
@@ -450,7 +480,7 @@ const retryOneReport = async (
         ai_wave_state: null,
         ai_current_wave: null,
         ai_generated_at: new Date().toISOString(),
-        ai_model_version: "gemini-2.5-flash",
+        ai_model_version: "gemini-2.5-flash-lite",
       })
       .eq("id", reportId);
 
@@ -460,6 +490,7 @@ const retryOneReport = async (
       .eq("id", orderId);
 
     console.log(`[retry:${reportId}] 재생성 완료!`);
+    await deletePipelineCache(primaryCacheHandle, reportId);
     return true;
   } catch (err) {
     const message =
@@ -475,6 +506,7 @@ const retryOneReport = async (
       })
       .eq("id", reportId);
 
+    await deletePipelineCache(primaryCacheHandle, reportId);
     return false;
   }
 };
@@ -494,7 +526,6 @@ const main = async () => {
   }
 
   const dbClient = createClient(supabaseUrl, supabaseKey);
-  const geminiClient = createGeminiClient(geminiApiKey);
 
   // 전체 deferred 리포트 조회 (오래된 순)
   const { data: reports, error: fetchError } = await dbClient
@@ -530,7 +561,7 @@ const main = async () => {
     const ok = await retryOneReport(
       report as unknown as DeferredReport,
       dbClient,
-      geminiClient
+      geminiApiKey
     );
     if (ok) success++;
     else failed++;

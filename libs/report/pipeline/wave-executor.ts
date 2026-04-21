@@ -8,7 +8,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { ReportPlan, ReportSection, StudentInfo } from "../types.ts";
-import { buildSystemPrompt } from "../prompts/system.ts";
+import { buildSystemPromptPrefix } from "../prompts/system.ts";
 import { getMajorGroupLabel } from "../constants/major-evaluation-criteria.ts";
 
 // Phase 2 prompts
@@ -57,7 +57,7 @@ import {
   buildGyogwaConsultantReviewPrompt,
 } from "../prompts/sections/consultant-review.ts";
 
-import type { GeminiClient } from "./gemini-client.ts";
+import type { GeminiClient, GeminiModelName } from "./gemini-client.ts";
 import {
   preprocess,
   buildUniversityCandidatesText,
@@ -156,7 +156,7 @@ export const executeTask = async (
     ? [...new Set(studentInfo.targetUniversities.map((t) => t.admissionType))]
     : undefined;
 
-  const systemPrompt = buildSystemPrompt(plan, { isGyogwaOnly });
+  const systemPrefix = buildSystemPromptPrefix(plan, { isGyogwaOnly });
   const sections = [...(state.completedSections ?? [])];
   // 생기부 기반 메디컬 판별 (Phase 2 결과 기반, 희망학과 아님)
   let detectedMajorForFlags =
@@ -244,26 +244,35 @@ export const executeTask = async (
 
   const callGemini = async <T>(
     prompt: string,
-    opts?: { maxOutputTokens?: number }
+    opts?: {
+      maxOutputTokens?: number;
+      model?: GeminiModelName;
+      /** true이면 flash-lite/2.0-flash 폴백 금지 (품질 민감 섹션용) */
+      strictModel?: boolean;
+    }
   ): Promise<T> => {
     const result = await client.call<T>({
-      systemInstruction: systemPrompt,
+      systemPrefix,
       prompt,
       responseSchema: EMPTY_SCHEMA,
       thinkingBudget: THINKING_BUDGET,
       ...(opts?.maxOutputTokens && {
         maxOutputTokens: opts.maxOutputTokens,
       }),
+      ...(opts?.model && { model: opts.model }),
+      ...(opts?.strictModel && { strictModel: true }),
     });
     return result.data;
   };
 
   // Phase 2(사실적 데이터 추출)는 플랜과 무관하게 동일한 결과를 내야 함
-  // → 플랜별 "분석 깊이" 지시가 포함되지 않도록 premium 시스템 프롬프트 고정
-  const phase2SystemPrompt = buildSystemPrompt("premium", { isGyogwaOnly });
+  // → 플랜별 "분석 깊이" 지시가 포함되지 않도록 premium 시스템 prefix 고정
+  const phase2SystemPrefix = buildSystemPromptPrefix("premium", {
+    isGyogwaOnly,
+  });
   const callGeminiPhase2 = async <T>(prompt: string): Promise<T> => {
     const result = await client.call<T>({
-      systemInstruction: phase2SystemPrompt,
+      systemPrefix: phase2SystemPrefix,
       prompt,
       responseSchema: EMPTY_SCHEMA,
       thinkingBudget: THINKING_BUDGET,
@@ -274,10 +283,10 @@ export const executeTask = async (
   let updatedSer = { ...ser };
   const taskIndex = state.currentTaskIndex + 1;
 
-  // ─── Phase 2: competencyExtraction + academicAnalysis 병렬 → studentTypeClassification ───
-  if (taskId === "phase2") {
-    // 1) competencyExtraction + academicAnalysis 병렬 시작
-    //    Phase 2는 사실적 추출이므로 callGeminiPhase2 사용 (플랜 무관 고정 프롬프트)
+  // ─── Phase 2 Extract: competencyExtraction + academicAnalysis 병렬 ───
+  // studentTypeClassification은 phase2Classify 태스크로 분리되어
+  // 후속 섹션 웨이브와 병렬로 실행됨.
+  if (taskId === "phase2Extract") {
     const compExtrPromise = callGeminiPhase2<CompetencyExtractionOutput>(
       buildCompetencyExtractionPrompt({
         studentProfile: texts.studentProfileText,
@@ -292,25 +301,13 @@ export const executeTask = async (
         gradingSystem: state.preprocessedData?.gradingSystem,
       })
     );
-    // compExtrPromise 실패 시 acadAnalPromise가 미처리 rejection이 되지 않도록 방어
+    // 한쪽 실패 시 나머지가 미처리 rejection이 되지 않도록 방어
+    compExtrPromise.catch(() => {});
     acadAnalPromise.catch(() => {});
 
-    // 2) competencyExtraction 완료 즉시 studentTypeClassification 시작
-    //    (academicAnalysis 완료를 기다리지 않음)
-    const competencyExtraction = await compExtrPromise;
-    const stuTypePromise = callGeminiPhase2<StudentTypeClassificationOutput>(
-      buildStudentTypeClassificationPrompt({
-        competencyExtraction: JSON.stringify(competencyExtraction),
-        preprocessedAcademicData: texts.preprocessedAcademicDataText,
-        studentProfile: texts.studentProfileText,
-        gradingSystem: state.preprocessedData?.gradingSystem,
-      })
-    );
-
-    // 3) academicAnalysis + studentTypeClassification 동시 대기
-    const [academicAnalysis, studentTypeClassification] = await Promise.all([
+    const [competencyExtraction, academicAnalysis] = await Promise.all([
+      compExtrPromise,
       acadAnalPromise,
-      stuTypePromise,
     ]);
 
     updatedSer = {
@@ -318,8 +315,6 @@ export const executeTask = async (
       compExtrText: JSON.stringify({
         ...competencyExtraction,
         // 하위 태스크가 리포트 텍스트에 사용할 정식 계열 명칭
-        // (예: "의생명" → "의학 계열", "약학" → "약학 계열")
-        // detectedMajorGroup 원본 코드는 로직용으로 유지
         ...(competencyExtraction.detectedMajorGroup
           ? {
               detectedMajorGroupLabel: getMajorGroupLabel(
@@ -329,10 +324,9 @@ export const executeTask = async (
           : {}),
       }),
       acadAnalText: JSON.stringify(academicAnalysis),
-      stuTypeText: JSON.stringify(studentTypeClassification),
     };
 
-    // 3) 생기부 기반 계열로 평가 기준 + 대학 후보군 항상 재생성
+    // 생기부 기반 계열로 평가 기준 + 대학 후보군 항상 재생성
     //    희망학과가 아닌, Phase 2에서 감지한 실제 강점 계열을 기준으로 함
     let correctedTexts = texts;
     // detectedMajorGroup이 null이면 생기부 성적 데이터 기반 폴백 (희망학과 사용 금지)
@@ -432,6 +426,58 @@ export const executeTask = async (
       phase2Results: {
         competencyExtraction,
         academicAnalysis,
+        // studentTypeClassification은 phase2Classify 태스크에서 채움
+        studentTypeClassification:
+          state.phase2Results?.studentTypeClassification ??
+          (undefined as unknown as StudentTypeClassificationOutput),
+      },
+      serializedTexts: updatedSer,
+      completedSections: sections,
+      currentTaskIndex: taskIndex,
+      lastCompletedWave: state.lastCompletedWave + 1,
+    };
+
+    if (!options?.skipSave) {
+      const progress = computeProgress(taskIndex, state.totalTasks);
+      await saveWaveState(
+        supabase,
+        reportId,
+        nextState,
+        progress,
+        "phase2Extract"
+      );
+    }
+    return nextState;
+  }
+
+  // ─── Phase 2 Classify: studentTypeClassification (phase2Extract 결과 필요) ───
+  // 이 태스크는 다른 Wave 2 섹션 태스크들과 병렬로 실행됨.
+  if (taskId === "phase2Classify") {
+    const studentTypeClassification =
+      await callGeminiPhase2<StudentTypeClassificationOutput>(
+        buildStudentTypeClassificationPrompt({
+          competencyExtraction: ser.compExtrText!,
+          preprocessedAcademicData: texts.preprocessedAcademicDataText,
+          studentProfile: texts.studentProfileText,
+          gradingSystem: state.preprocessedData?.gradingSystem,
+        })
+      );
+
+    updatedSer = {
+      ...updatedSer,
+      stuTypeText: JSON.stringify(studentTypeClassification),
+    };
+
+    const nextState: WaveState = {
+      ...state,
+      phase2Results: {
+        ...(state.phase2Results ?? {
+          competencyExtraction:
+            undefined as unknown as CompetencyExtractionOutput,
+          academicAnalysis:
+            undefined as unknown as AcademicContextAnalysisOutput,
+          studentTypeClassification,
+        }),
         studentTypeClassification,
       },
       serializedTexts: updatedSer,
@@ -442,7 +488,13 @@ export const executeTask = async (
 
     if (!options?.skipSave) {
       const progress = computeProgress(taskIndex, state.totalTasks);
-      await saveWaveState(supabase, reportId, nextState, progress, "phase2");
+      await saveWaveState(
+        supabase,
+        reportId,
+        nextState,
+        progress,
+        "phase2Classify"
+      );
     }
     return nextState;
   }
@@ -620,6 +672,7 @@ export const executeTask = async (
     }
 
     case "subjectAnalysis":
+      // flash 전면 503 — 품질 민감 섹션도 flash-lite 사용 (DEFAULT_MODEL)
       section = await callGemini<ReportSection>(
         buildSubjectAnalysisPrompt(
           {
@@ -711,7 +764,8 @@ export const executeTask = async (
       section = await callGemini<ReportSection>(
         buildTopicRecommendationPrompt(
           {
-            subjectAnalysisResult: ser.subjAnalysisText!,
+            // subjectAnalysis AI 결과 대신 raw subjectData 사용 → subjectAnalysis 의존성 제거
+            subjectData: texts.subjectDataText,
             weaknessAnalysisResult: ser.weaknessText ?? "[]",
             studentProfile: texts.studentProfileText,
             isGyogwaOnly,
@@ -730,7 +784,8 @@ export const executeTask = async (
       section = await callGemini<ReportSection>(
         buildInterviewPrepPrompt(
           {
-            subjectAnalysisResult: ser.subjAnalysisText!,
+            // subjectAnalysis AI 결과 대신 raw subjectData 사용 → subjectAnalysis 의존성 제거
+            subjectData: texts.subjectDataText,
             studentProfile: texts.studentProfileText,
             academicData: texts.rawAcademicDataText,
             studentGrade: studentInfo.grade,
@@ -1037,6 +1092,7 @@ export const executeTask = async (
           subjectAnalysisResult: ser.subjAnalysisText,
         }),
       };
+      // flash 전면 503 — 품질 민감 섹션도 flash-lite 사용 (DEFAULT_MODEL)
       section = await callGemini<ReportSection>(
         isGyogwaOnly
           ? buildGyogwaAdmissionStrategyPrompt(stratInput, plan)
@@ -1182,11 +1238,13 @@ export const executeTask = async (
         detectedMajorGroups: detectedMajorGroupsForExploration,
         detectedDepartments: detectedDepartmentsForExploration,
       });
-      // 플랜 간 추천 전공 일관성을 위해 systemInstruction도 플랜 무관하게 고정
-      // (systemPrompt는 플랜별 "분석 깊이" 지시를 포함하므로, 여기서는 premium 기준 사용)
-      const majorSystemPrompt = buildSystemPrompt("premium", { isGyogwaOnly });
+      // 플랜 간 추천 전공 일관성을 위해 시스템 prefix도 플랜 무관하게 고정
+      // (systemPrefix는 플랜별 "분석 깊이" 지시를 포함하므로, 여기서는 premium 기준 사용)
+      const majorSystemPrefix = buildSystemPromptPrefix("premium", {
+        isGyogwaOnly,
+      });
       const majorResult = await client.call<ReportSection>({
-        systemInstruction: majorSystemPrompt,
+        systemPrefix: majorSystemPrefix,
         prompt: majorPrompt,
         responseSchema: EMPTY_SCHEMA,
         thinkingBudget: THINKING_BUDGET,
@@ -1272,6 +1330,7 @@ export const executeTask = async (
         // preprocessedAcademicData 제거: 등급 원본이 있으면 AI가 재나열함
         // 생성된 academicAnalysis 섹션에 이미 정확한 등급 정보가 포함됨
       };
+      // flash 전면 503 — 품질 민감 섹션도 flash-lite 사용 (DEFAULT_MODEL)
       section = await callGemini<ReportSection>(
         isGyogwaOnly
           ? buildGyogwaConsultantReviewPrompt(consultInput, plan)
