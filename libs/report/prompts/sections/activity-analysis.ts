@@ -165,13 +165,24 @@ export const buildActivityAnalysisPrompt = (
   return `${gyogwaOnlyContext}${medicalActivityContext}## 작업
 학생의 창의적 체험활동(창체)을 영역별로 분석하세요.
 
+## ⭐⭐⭐ 사정관 평가 마커 (최우선 — 위반 시 품질 실패) ⭐⭐⭐
+yearlyAnalysis[].summary, ratingRationale, activities[].overallComment, activities[].keyActivities[].evaluation, activities[].improvementDirection, 최상위 overallComment 등 **모든 자유서술 평가 필드**에서:
+- **사정관 입장의 판단/평가 문장은 반드시 \`[[insight]]\`와 \`[[/insight]]\` 마커로 감싸세요.**
+- 마커 안 내용은 학생/학부모에게 형광펜으로 강조 표시됩니다. 마커가 없으면 형광펜이 적용되지 않아 사용자 의도가 무너집니다.
+- 마커 안에는 "입학사정관 관점", "학종/교과 전형 영향", "변별력", "면접 가능성", "감점 요인" 중 1가지 이상 명시.
+- 한 필드 안에 1~3개 마커. 모든 문장이 아닌 **핵심 평가 문장**만.
+- ⛔ **마커가 0개인 자유서술 필드는 품질 실패로 간주됩니다. 모든 평가 필드에 최소 1개 마커가 있어야 합니다.**
+
+❌ 마커 없음: "환경 분야 탐구 중심의 동아리 활동입니다. 학종에서 탐구 주도성을 보여주는 근거가 되지만, 같은 등급대 지원자 대비 실험 설계의 독창성이 부족하여 상위권 대학에서는 변별력이 약합니다."
+✅ 마커 사용: "환경 분야 탐구 중심의 동아리 활동입니다. [[insight]]학종에서 탐구 주도성을 보여주는 근거가 되지만, 같은 등급대 지원자 대비 실험 설계의 독창성이 부족하여 상위권 대학에서는 변별력이 약합니다.[[/insight]]"
+
 ## 이 섹션의 역할
 이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.
 
 창체 활동(자율·동아리·진로)의 **참여도, 깊이, 성장 궤적, 입시 영향력**을 분석합니다.
 교과 성적은 academicAnalysis, 세특 탐구 내용은 subjectAnalysis, 인성·태도는 behaviorAnalysis, 부족한 점은 weaknessAnalysis에서 각각 다룹니다.
 ## 서술 관점: 활동 평가자
-이 섹션은 **창체 활동의 실질적 기여도와 성장 궤적**을 평가합니다. 활동의 참여 깊이와 입시 영향력을 중심으로 서술하세요.
+이 섹션은 **창체 활동의 실질적 영향과 성장 궤적**을 평가합니다. 활동의 참여 깊이와 입시 영향력을 중심으로 서술하세요.
 - "활동을 통해 ~역량을 보여준다", "~활동이 ~로 심화되었다" 등 활동 단위의 평가 어투를 사용하세요.
 
 ## ⛔ 다른 섹션과의 역할 경계 (필수)
@@ -271,6 +282,13 @@ ${
 - yearlyAnalysis의 summary에서도 전체의 **최소 30%**는 아쉬운 점·약점·보완 필요를 지적해야 합니다.
 
 ${COMPETENCY_TAG_GUIDE}
+
+## ⭐ 사정관 평가 마커 (필수)
+yearlyAnalysis[].summary, ratingRationale, activities[].overallComment, activities[].keyActivities[].evaluation, activities[].improvementDirection, 최상위 overallComment 등 **모든 자유서술 평가 필드**에서 사정관 평가 문장은 반드시 \`[[insight]]...[[/insight]]\`로 감싸세요.
+- 마커 안 내용은 학생/학부모에게 형광펜으로 강조 표시됩니다.
+- 마커 안에는 "입학사정관 관점", "학종/교과 전형 영향", "변별력", "면접 가능성", "감점 요인" 중 1가지 이상 명시.
+- 한 필드 안에 0~3개 마커. 모든 문장이 아닌 **핵심 평가 문장**만.
+- 예시: "환경 분야 탐구 중심의 동아리 활동입니다. [[insight]]학종에서 탐구 주도성을 보여주는 근거가 되지만, 같은 등급대 지원자 대비 실험 설계의 독창성이 부족하여 상위권 대학에서는 변별력이 약합니다.[[/insight]]"
 
 ## 출력 JSON 스키마
 

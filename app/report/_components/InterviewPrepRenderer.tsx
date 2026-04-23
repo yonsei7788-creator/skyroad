@@ -74,7 +74,9 @@ export const InterviewPrepRenderer = ({
 
           {q.intent && (
             <p className={`${styles.body} ${styles.mt6}`}>
-              <span className={styles.emphasis}>출제 의도:</span>{" "}
+              <span className={`${styles.emphasis} ${styles.markerSky}`}>
+                출제 의도:
+              </span>{" "}
               {safeText(q.intent)}
             </p>
           )}

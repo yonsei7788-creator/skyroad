@@ -27,6 +27,8 @@ export interface AdmissionStrategyPromptInput {
   gyogwaAcademicAnalysis?: string;
   /** 학생이 입력한 수강 예정 과목 텍스트 */
   plannedSubjects?: string;
+  /** admissionPrediction 섹션 결과 JSON — recommendedPath의 추천 전형이 admissionPrediction.recommendedType과 일치해야 일관성 보장 */
+  admissionPredictionResult?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -340,7 +342,21 @@ ${input.plannedSubjects ? `## 수강 예정 과목 정보\n${input.plannedSubjec
 
 ## 입력 데이터
 
-### 성적 분석 결과 (학종/논술 type에서 사용)
+${
+  input.admissionPredictionResult
+    ? `### ⭐⭐⭐ 합격 예측 결과 (recommendedPath와 일관성 필수 — 최우선)
+${input.admissionPredictionResult}
+
+⛔ **recommendedPath 작성 가드 (위반 시 품질 실패)**:
+- 위 합격 예측 결과의 \`recommendedType\` 값(예: "학종", "교과", "논술")이 학생에게 가장 적합한 전형으로 이미 결정되어 있습니다.
+- recommendedPath의 핵심 추천 전형은 반드시 위 \`recommendedType\`과 **동일**해야 합니다.
+- ❌ 합격 예측은 "교과"인데 recommendedPath에서 "학생부종합 중심 지원" 추천 → 학생/학부모에게 모순된 정보 전달, 품질 실패.
+- ✅ 합격 예측이 "교과"면 recommendedPath도 "학생부교과전형 중심"으로 작성. 다른 전형은 보조 옵션으로만 언급.
+- 두 섹션의 추천 전형이 다르면 학생은 어느 쪽을 따라야 할지 혼란합니다.
+
+`
+    : ""
+}### 성적 분석 결과 (학종/논술 type에서 사용)
 ${input.academicAnalysis}
 
 ${
@@ -518,7 +534,16 @@ ${input.plannedSubjects ? `## 수강 예정 과목 정보\n${input.plannedSubjec
 
 ## 입력 데이터
 
-### 성적 분석 결과
+${
+  input.admissionPredictionResult
+    ? `### ⭐⭐⭐ 합격 예측 결과 (recommendedPath와 일관성 필수)
+${input.admissionPredictionResult}
+
+⛔ recommendedPath의 핵심 추천 전형은 위 \`recommendedType\`과 **반드시 동일**해야 합니다. 다르면 학생/학부모에게 모순된 정보 전달 → 품질 실패.
+
+`
+    : ""
+}### 성적 분석 결과
 ${input.academicAnalysis}
 
 ### 학생 프로필

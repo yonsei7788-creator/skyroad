@@ -4,6 +4,7 @@ import type {
   SubjectRating,
 } from "@/libs/report/types";
 
+import { renderInsightMarkers } from "./insight-marker";
 import styles from "./report.module.css";
 import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
@@ -69,7 +70,7 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
 
       {!subject.detailedEvaluation && subject.evaluationComment && (
         <p className={`${styles.small} ${styles.mt6}`}>
-          {safeText(subject.evaluationComment)}
+          {renderInsightMarkers(subject.evaluationComment)}
         </p>
       )}
 
@@ -108,7 +109,7 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
         <div className={styles.aiCommentaryIcon}>✦</div>
         <div className={styles.aiCommentaryContent}>
           <div className={styles.aiCommentaryText}>
-            {safeOrEmpty(subject.detailedEvaluation)}
+            {renderInsightMarkers(subject.detailedEvaluation)}
           </div>
         </div>
       </div>
@@ -123,14 +124,14 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
           {subject.improvementDirection && (
             <>
               <span className={styles.emphasis}>개선 방향:</span>{" "}
-              {safeOrEmpty(subject.improvementDirection)}
+              {renderInsightMarkers(subject.improvementDirection)}
             </>
           )}
           {subject.improvementDirection && subject.improvementExample && <br />}
           {subject.improvementExample && (
             <>
               <span className={styles.emphasis}>개선 예시:</span>{" "}
-              {safeOrEmpty(subject.improvementExample)}
+              {renderInsightMarkers(subject.improvementExample)}
             </>
           )}
         </div>
@@ -165,12 +166,12 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
                   {sa.improvementSuggestion && (
                     <p className={`${styles.caption} ${styles.mt4}`}>
                       <span className={styles.emphasis}>개선:</span>{" "}
-                      {safeText(sa.improvementSuggestion)}
+                      {renderInsightMarkers(sa.improvementSuggestion)}
                     </p>
                   )}
                 </td>
                 <td className={`${styles.tableAlignCenter} ${styles.caption}`}>
-                  {safeText(sa.evaluation)}
+                  {renderInsightMarkers(sa.evaluation)}
                 </td>
               </tr>
             ))}

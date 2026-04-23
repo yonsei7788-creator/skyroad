@@ -504,17 +504,30 @@ export const executeTask = async (
   let section: ReportSection | null = null;
 
   switch (taskId) {
-    case "studentProfile":
+    case "studentProfile": {
+      // Premium 전용: admissionStrategy 결과를 입력으로 받아 strategy bullet 생성에 활용.
+      // 다른 플랜은 명시적으로 undefined 전달 (프롬프트에서 해당 입력 블록 자체가 비활성화됨).
+      let admissionStrategyResult: string | undefined;
+      if (plan === "premium") {
+        const existingAdmStrategy = sections.find(
+          (s) => s.sectionId === "admissionStrategy"
+        );
+        if (existingAdmStrategy) {
+          admissionStrategyResult = JSON.stringify(existingAdmStrategy);
+        }
+      }
       section = await callGemini<ReportSection>(
         buildStudentProfilePrompt(
           {
             studentTypeClassification: ser.stuTypeText!,
             studentProfile: texts.studentProfileText,
+            admissionStrategyResult,
           },
           plan
         )
       );
       break;
+    }
 
     case "competencyScore": {
       const compScoreInput = {
@@ -931,18 +944,43 @@ export const executeTask = async (
           predictions: [...hakjongPredictions, gyogwaResult],
         };
 
-        // recommendedType override: 교과가 가장 유리하면 교과로 변경
+        // recommendedType 결정: AI(학종 프롬프트)가 활동/세특 종합 분석한 결과를 신뢰.
+        // 학종은 본질적으로 단일 합격률로 측정 불가하므로 passRateRange가 [0,0]으로 고정됨.
+        // → 단순 합격률 비교로 교과를 강제하면 항상 교과 승 → 학종 강점 학생도 잘못된 추천을 받음.
+        // 따라서 다음 두 케이스에만 교과로 override:
+        //   (a) AI가 recommendedType을 결정하지 못한 경우(빈 값/undefined)
+        //   (b) 모든 학종 universityPredictions의 chance가 "very_low" + 교과 합격률이 압도적으로 높음(60%+)
         const gyogwaMax = (gyogwaResult as any).passRateRange?.[1] ?? 0;
-        const hakjongMax = hakjongPredictions.reduce(
-          (max: number, p: any) => Math.max(max, p.passRateRange?.[1] ?? 0),
-          0
-        );
-        if (gyogwaMax > hakjongMax && gyogwaMax > 0) {
+        const collectChances = (preds: any[]): string[] => {
+          const chances: string[] = [];
+          for (const p of preds) {
+            if (Array.isArray(p?.universityPredictions)) {
+              for (const up of p.universityPredictions) {
+                if (typeof up?.chance === "string") chances.push(up.chance);
+              }
+            }
+          }
+          return chances;
+        };
+        const hakjongChances = collectChances(hakjongPredictions);
+        const allHakjongVeryLow =
+          hakjongChances.length > 0 &&
+          hakjongChances.every((c) => c === "very_low");
+        const aiRecType = (merged as any).recommendedType;
+        if (!aiRecType || aiRecType === "") {
+          // (a) AI가 결정 못함 → 교과로 fallback
           (merged as any).recommendedType = "교과";
           (merged as any).recommendedTypeReason =
             (gyogwaResult as any).analysis ??
             "교과전형의 합격 가능성이 가장 높습니다.";
+        } else if (allHakjongVeryLow && gyogwaMax >= 60) {
+          // (b) 학종 모두 매우 낮음 + 교과 압도적 → 교과로 override
+          (merged as any).recommendedType = "교과";
+          (merged as any).recommendedTypeReason =
+            (gyogwaResult as any).analysis ??
+            "학종은 합격 가능성이 매우 낮고 교과전형의 합격 가능성이 압도적으로 높습니다.";
         }
+        // 그 외에는 AI가 결정한 학종/고른기회 추천 그대로 유지
 
         section = merged as ReportSection;
       }
@@ -1086,6 +1124,9 @@ export const executeTask = async (
         isArtSportPractical: texts.isArtSportPractical,
         selectedAdmissionTypes,
         majorExplorationDepartments: majorExplDepts,
+        // admissionPrediction 결과 — recommendedPath의 추천 전형이 admissionPrediction과
+        // 일치해야 학생/학부모에게 일관된 정보가 전달됨
+        admissionPredictionResult: ser.admPredText,
         // 학종 분석용 생기부 데이터 — 교과전형 전용일 때는 전달하지 않음
         ...(!isGyogwaOnly && {
           competencyExtraction: ser.compExtrText,

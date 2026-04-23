@@ -2732,6 +2732,111 @@
   background: var(--report-bg);
 }
 
+/* --- Recommendation summary (admission type + strategy) --- */
+.profileRecommendation {
+  margin-top: 16px;
+  padding: 18px 22px;
+  border-radius: var(--report-radius-md);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 추천 전형 행: 라벨(좌) + 칩(우)
+   첫 번째 영역으로 들어가면 아래에 dashed divider 노출 */
+.profileRecommendationRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* 전략 영역: 라벨 위, 리스트 아래 */
+.profileRecommendationRowStack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 두 영역이 모두 있을 때만 사이에 dashed divider + 간격 */
+.profileRecommendationRow + .profileRecommendationRowStack {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--report-border);
+}
+
+/* 라벨: 작고 차분한 overline 스타일 */
+.profileRecommendationLabel {
+  flex-shrink: 0;
+  font-size: var(--report-fs-overline);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--report-fg-tertiary);
+}
+
+/* 추천 전형 값: accent 배경 pill chip — 모노그램 톤과 호응 */
+.profileRecommendationValue {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--report-accent);
+  color: #ffffff;
+  font-size: var(--report-fs-small);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  /* 인쇄 시 배경색 유지 */
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+/* 전략 리스트: counter 기반 자동 번호 매김 */
+.profileStrategyList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  counter-reset: strategy-counter;
+}
+
+.profileStrategyItem {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  align-items: start;
+  gap: 10px;
+  font-size: var(--report-fs-body);
+  font-weight: 500;
+  color: var(--report-fg);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  counter-increment: strategy-counter;
+}
+
+.profileStrategyItem::before {
+  content: counter(strategy-counter);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: var(--report-accent);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid #e2e8f0;
+  margin-top: 2px;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
 /* ============================================
    Competency Score (redesigned)
    ============================================ */

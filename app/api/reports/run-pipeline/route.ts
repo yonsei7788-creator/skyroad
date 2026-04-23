@@ -56,7 +56,14 @@ const sendEvent = (
 // phase2Classify는 섹션 웨이브와 병렬 실행 (studentProfile/competencyScore만 명시적 의존)
 const TASK_DEPS: Record<string, string[]> = {
   phase2Classify: [],
-  studentProfile: ["phase2Classify"],
+  // studentProfile은 추천 전형(recommendedAdmissionType)을 admissionPrediction에서 주입받고,
+  // Premium은 strategy bullet을 admissionStrategy 결과 기반으로 생성하므로 둘 다 의존.
+  // Lite/Standard 큐에는 admissionStrategy가 없고 Lite 큐에는 admissionPrediction도 없어 buildWaves에서 자동 무시됨.
+  studentProfile: [
+    "phase2Classify",
+    "admissionPrediction",
+    "admissionStrategy",
+  ],
   competencyScore: ["phase2Classify"],
   academicAnalysis: [],
   attendanceAnalysis: [],

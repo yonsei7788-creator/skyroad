@@ -58,6 +58,11 @@ export const AdmissionStrategyRenderer = ({
             <div className={styles.cardTitle}>
               <span className={styles.markerSky}>추천 입시 경로</span>
             </div>
+            {data.recommendedAdmissionType && (
+              <span className={styles.profileRecommendationValue}>
+                {safeText(data.recommendedAdmissionType)}
+              </span>
+            )}
           </div>
           <p className={`${styles.small} ${styles.mt6}`}>
             {safeText(data.recommendedPath)}

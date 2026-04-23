@@ -113,6 +113,8 @@ export const StudentProfileSectionSchema = z.object({
   percentileLabel: z.string().optional(),
   typeStrengths: z.array(z.string().min(1)).optional(),
   typeWeaknesses: z.array(z.string().min(1)).optional(),
+  recommendedAdmissionType: z.string().min(1).optional(),
+  strategy: z.array(z.string().min(1)).min(2).max(4).optional(),
 });
 
 // ─── 섹션 2: 역량 정량 스코어 ───
@@ -867,6 +869,7 @@ const UniversityGuideMatchingSchema = z.object({
 export const AdmissionStrategySectionSchema = z.object({
   sectionId: z.literal("admissionStrategy"),
   title: z.string().min(1),
+  recommendedAdmissionType: z.string().min(1).optional(),
   recommendedPath: z.string().min(1),
   simulations: z.union([
     z.tuple([SimulationGroupSchema]),

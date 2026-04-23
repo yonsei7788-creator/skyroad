@@ -29,6 +29,7 @@ import {
 } from "../constants/major-info-data.ts";
 import { findCutoffData } from "../constants/admission-cutoff-data.ts";
 import { correctSubjectNamesInText } from "../constants/subject-name-corrections.ts";
+import { collectNonMainSubjects } from "../constants/non-main-subjects.ts";
 
 // ─── 검증 결과 타입 ───
 
@@ -122,6 +123,37 @@ export const postprocess = (
       // 발전가능성 숫자 점수를 competencyScore 섹션에 주입
       compScore.growthScore = growthNumeric;
     }
+  }
+
+  // 2-0. 크로스 섹션 동기화: admissionPrediction.recommendedType → studentProfile.recommendedAdmissionType
+  // Standard/Premium에서는 admissionPrediction의 추천 전형을 studentProfile에도 노출(중복 출력 일관성).
+  // Lite는 admissionPrediction이 없으므로 AI가 직접 생성한 값을 그대로 사용.
+  const RECOMMEND_TYPE_LABEL: Record<string, string> = {
+    학종: "학생부종합",
+    교과: "학생부교과",
+    논술: "논술",
+    정시: "정시",
+    실기: "실기",
+  };
+  const admPredForProfile = validatedSections.find(
+    (s) => s.sectionId === "admissionPrediction"
+  ) as any;
+  if (admPredForProfile?.recommendedType && profile) {
+    const raw = String(admPredForProfile.recommendedType).trim();
+    profile.recommendedAdmissionType = RECOMMEND_TYPE_LABEL[raw] ?? raw;
+  }
+
+  // 2-0-b. admissionStrategy.recommendedAdmissionType 강제 주입
+  // admissionPrediction.recommendedType을 매핑하여 admissionStrategy의 신규 필드에도 동일 주입.
+  // → AI 본문(recommendedPath)이 다른 전형을 언급해도, 렌더러는 이 필드를 우선 노출하므로
+  //   학생/학부모가 가장 먼저 보는 추천 전형은 항상 admissionPrediction과 100% 일치.
+  const admStratForAlign = validatedSections.find(
+    (s) => s.sectionId === "admissionStrategy"
+  ) as any;
+  if (admPredForProfile?.recommendedType && admStratForAlign) {
+    const expectedRaw = String(admPredForProfile.recommendedType).trim();
+    admStratForAlign.recommendedAdmissionType =
+      RECOMMEND_TYPE_LABEL[expectedRaw] ?? expectedRaw;
   }
 
   // 2-1. admissionPrediction: chance 값 정규화 (한글 → 영문)
@@ -2080,6 +2112,40 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/의생명 계열/g, "의학 계열"],
   // "메디컬 계열" → "의학 계열"
   [/메디컬 계열/g, "의학 계열"],
+
+  // ── AI 클리셰 동사 자동 치환 (사용자 피드백 4번) ──
+  // "기여하다", "강화하다" 동사 활용형은 학생/학부모가 인공지능 클리셰로 인지함.
+  // 명사형 ("기여도", "기여 의지", "강화 전략" 등)은 보존하기 위해 동사 어미만 매칭.
+  [/기여한다/g, "도움이 됩니다"],
+  [/기여합니다/g, "도움이 됩니다"],
+  [/기여하는지/g, "도움이 되는지"],
+  [/기여하는/g, "도움이 되는"],
+  [/기여하여/g, "도움이 되어"],
+  [/기여하고/g, "도움이 되고"],
+  [/기여하며/g, "도움이 되며"],
+  [/기여하지/g, "도움이 되지"],
+  [/기여할/g, "도움이 될"],
+  [/기여해서/g, "도움이 돼서"],
+  [/기여했습니다/g, "도움이 됐습니다"],
+  [/기여했고/g, "도움이 됐고"],
+  [/기여함을/g, "도움이 됨을"],
+  [/기여함이/g, "도움이 됨이"],
+
+  [/강화한다/g, "보완합니다"],
+  [/강화합니다/g, "보완합니다"],
+  [/강화하는/g, "보완하는"],
+  [/강화하여/g, "보완하여"],
+  [/강화하고/g, "보완하고"],
+  [/강화하며/g, "보완하며"],
+  [/강화할/g, "보완할"],
+  [/강화해서/g, "보완해서"],
+  [/강화했습니다/g, "보완했습니다"],
+  [/강화했고/g, "보완했고"],
+  [/강화됩니다/g, "탄탄해집니다"],
+  [/강화되어/g, "탄탄해져"],
+  [/강화되었/g, "탄탄해졌"],
+  [/강화되는/g, "탄탄해지는"],
+  [/강화시키/g, "보완하"],
 ];
 
 const sanitizeAiTone = (text: string): string => {
@@ -2136,7 +2202,30 @@ const sanitizeEnglishWords = (text: string): string => {
   return result;
 };
 
-/** 객체의 모든 문자열 필드를 재귀적으로 AI 톤 치환 + 영단어 치환 */
+/**
+ * AI가 자유서술 평가 필드에 삽입하는 사정관 평가 마커 정리.
+ * - 매칭된 `[[insight]]...[[/insight]]` 쌍은 보존 (렌더러가 형광펜으로 변환).
+ * - 닫힘 누락 등 단일 태그는 제거 (텍스트에 마커 문법이 노출되지 않게).
+ */
+const INSIGHT_MARKER_PAIR = /\[\[insight\]\]([\s\S]*?)\[\[\/insight\]\]/g;
+const cleanInsightMarkers = (text: string): string => {
+  if (!text.includes("[[insight]]") && !text.includes("[[/insight]]"))
+    return text;
+  // 매칭 쌍을 placeholder로 보호 → 남은 단일 태그 제거 → 복원
+  const placeholders: string[] = [];
+  let result = text.replace(INSIGHT_MARKER_PAIR, (match) => {
+    placeholders.push(match);
+    return `__INSIGHT_PH_${placeholders.length - 1}__`;
+  });
+  result = result.replace(/\[\[insight\]\]|\[\[\/insight\]\]/g, "");
+  result = result.replace(
+    /__INSIGHT_PH_(\d+)__/g,
+    (_, idx) => placeholders[Number(idx)] ?? ""
+  );
+  return result;
+};
+
+/** 객체의 모든 문자열 필드를 재귀적으로 AI 톤 치환 + 영단어 치환 + 마커 정리 */
 const sanitizeDeep = (obj: unknown, fieldName?: string): unknown => {
   if (typeof obj === "string") {
     // enum 필드: 구값→신값 변환만 수행 (톤/영단어 치환은 건너뜀)
@@ -2151,6 +2240,8 @@ const sanitizeDeep = (obj: unknown, fieldName?: string): unknown => {
     result = result.replace(/\s*(?:다만,?|그러나,?|하지만,?|반면,?)\s*$/g, "");
     // 연속 공백 정리
     result = result.replace(/\s{2,}/g, " ");
+    // 사정관 평가 마커 정리 (단일 태그 제거, 매칭 쌍 보존)
+    result = cleanInsightMarkers(result);
     return result;
   }
   if (Array.isArray(obj)) return obj.map((item) => sanitizeDeep(item));
@@ -2663,6 +2754,34 @@ const normalizeSection = (
           (sim: any) =>
             sim.department && sim.reflectionMethod && sim.calculatedScore
         );
+    }
+
+    // ── 비주요(비핵심) 과목 안내: interpretation 끝에 정적 텍스트 append ──
+    // 학생의 실제 비주요과목명을 나열하여 "이 과목 등급은 합불에 결정적 영향이 아님"을 안내.
+    // 예체능 학과 지원자는 체육/음악/미술이 핵심 과목이므로 제외.
+    // ⚠️ 데이터 소스는 학업 분석에 표시된 과목(s.subjectGrades)만 사용.
+    //   학업 분석 화면에 안 보이는 과목까지 안내하면 사용자에게 혼란스러움.
+    const isArtSportApplicant = isArtSportDepartment(
+      studentInfo.targetDepartment ?? ""
+    );
+    const allSubjectNames: string[] = Array.isArray(s.subjectGrades)
+      ? s.subjectGrades
+          .map((sg: any) => (typeof sg?.subject === "string" ? sg.subject : ""))
+          .filter((n: string) => n.length > 0)
+      : [];
+    const nonMainSubjects = collectNonMainSubjects(
+      allSubjectNames,
+      isArtSportApplicant
+    );
+    if (nonMainSubjects.length > 0) {
+      const subjectListText = nonMainSubjects.join(", ");
+      const note = `참고로 ${subjectListText} 같은 과목은 성실도 측면에서 입학사정관이 의문을 제기할 수 있을 뿐, 해당 등급으로 학생의 합불 여부가 크게 결정되지는 않습니다.`;
+      const existing =
+        typeof s.interpretation === "string" ? s.interpretation : "";
+      // 중복 추가 방지 (재후처리 시)
+      if (!existing.includes("성실도 측면에서 입학사정관이 의문")) {
+        s.interpretation = existing ? `${existing}\n\n${note}` : note;
+      }
     }
   }
 
@@ -3552,7 +3671,7 @@ const normalizeSection = (
     }
   }
 
-  // ── academicAnalysis: 졸업생은 성적 개선 우선순위 미노출 ──
+  // ── academicAnalysis: 졸업생은 성적 개선 우선순위 + 등급 변화 분석 미노출 ──
   if (s.sectionId === "academicAnalysis" && studentInfo.isGraduate) {
     delete s.improvementPriority;
     delete s.gradeChangeAnalysis;
@@ -3563,10 +3682,45 @@ const normalizeSection = (
     delete s.completionDirection;
   }
 
-  // ── academicAnalysis: 졸업생은 성적 개선 우선순위 + 등급 변화 분석 미노출 ──
-  if (s.sectionId === "academicAnalysis" && studentInfo.isGraduate) {
-    delete s.improvementPriority;
-    delete s.gradeChangeAnalysis;
+  // ── academicAnalysis: 재학생 improvementPriority에서 이미 이수 완료한 과목명 언급 항목 제거 ──
+  // 사용자 피드백: 성적 개선 우선순위는 다음 학기에 들을 '수강 과목'을 고려해야 함.
+  // 따라서 이미 성적이 확정된 과목(=이수 완료 과목)을 우선순위에 올리는 것은 무의미.
+  if (
+    s.sectionId === "academicAnalysis" &&
+    !studentInfo.isGraduate &&
+    Array.isArray(s.improvementPriority) &&
+    s.improvementPriority.length > 0
+  ) {
+    // 정규화: 공백 제거 + 로마숫자 → 아라비아숫자 + 소문자
+    const normalize = (raw: string): string =>
+      raw
+        .replace(/\s+/g, "")
+        .replace(/[Ⅰ①]/g, "1")
+        .replace(/[Ⅱ②]/g, "2")
+        .replace(/[Ⅲ③]/g, "3")
+        .replace(/[Ⅳ④]/g, "4")
+        .toLowerCase();
+
+    // 이수 완료 과목명 셋 (정규화 후, 3자 이상만 — 짧은 단어는 false-positive 위험)
+    const completedNormalized = new Set<string>();
+    for (const sg of pre.allSubjectGrades ?? []) {
+      if (typeof sg.subject !== "string") continue;
+      const n = normalize(sg.subject);
+      if (n.length >= 3) completedNormalized.add(n);
+    }
+
+    if (completedNormalized.size > 0) {
+      s.improvementPriority = (s.improvementPriority as string[]).filter(
+        (item) => {
+          if (typeof item !== "string") return false;
+          const normalizedItem = normalize(item);
+          for (const subj of completedNormalized) {
+            if (normalizedItem.includes(subj)) return false;
+          }
+          return true;
+        }
+      );
+    }
   }
 
   // ── admissionStrategy: 빈 대학명 카드 제거 + schoolTypeAnalysis 빈 객체 제거 + 괴리 보강 ──

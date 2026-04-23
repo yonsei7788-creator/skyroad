@@ -117,6 +117,38 @@ export const StudentProfileRenderer = ({
           {safeText(data.catchPhrase)}
         </span>
       </div>
+
+      {/* Recommendation summary: 추천 전형 + 전략 */}
+      {(data.recommendedAdmissionType ||
+        (data.strategy && data.strategy.length > 0)) && (
+        <div className={styles.profileRecommendation}>
+          {data.recommendedAdmissionType && (
+            <div className={styles.profileRecommendationRow}>
+              <span className={styles.profileRecommendationLabel}>
+                추천 전형
+              </span>
+              <span className={styles.profileRecommendationValue}>
+                {safeText(data.recommendedAdmissionType)}
+              </span>
+            </div>
+          )}
+          {data.strategy && data.strategy.length > 0 && (
+            <div className={styles.profileRecommendationRowStack}>
+              <span className={styles.profileRecommendationLabel}>전략</span>
+              <ul className={styles.profileStrategyList}>
+                {data.strategy.map((item, idx) => (
+                  <li
+                    key={`strategy-${idx}`}
+                    className={styles.profileStrategyItem}
+                  >
+                    {safeText(String(item))}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

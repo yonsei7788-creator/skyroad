@@ -157,6 +157,11 @@ export interface StudentProfileSection extends BaseSection {
   typeStrengths?: string[];
   /** 유형 약점 (2~3개) */
   typeWeaknesses?: string[];
+
+  /** 추천 전형 (예: "학생부종합"). Standard/Premium은 admissionPrediction에서 주입, Lite는 AI 생성 */
+  recommendedAdmissionType?: string;
+  /** 전략 bullet (2~4개, 구체적 실행 항목) */
+  strategy?: string[];
 }
 
 // ─── 섹션 2: 역량 정량 스코어 (competencyScore) ───
@@ -999,6 +1004,12 @@ interface SchoolTypeAnalysis {
 export interface AdmissionStrategySection extends BaseSection {
   sectionId: "admissionStrategy";
 
+  /**
+   * 추천 전형명 (예: "학생부종합", "학생부교과", "논술", "정시", "실기")
+   * postprocessor가 admissionPrediction.recommendedType을 매핑하여 강제 주입.
+   * AI 본문(recommendedPath)이 다른 전형을 언급해도 이 필드는 항상 admissionPrediction과 일치.
+   */
+  recommendedAdmissionType?: string;
   /** 추천 전형 방향 (2~3줄) */
   recommendedPath: string;
 

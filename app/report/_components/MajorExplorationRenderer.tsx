@@ -51,7 +51,9 @@ export const MajorExplorationRenderer = ({
             <tbody>
               {suggestions.map((s, idx) => (
                 <tr key={idx}>
-                  <td className={styles.tableCellBold}>{s.major}</td>
+                  <td className={styles.tableCellBold}>
+                    <span className={styles.markerSky}>{s.major}</span>
+                  </td>
                   <td
                     className={`${styles.tableAlignCenter} ${styles.tableCellBold}`}
                   >
@@ -80,7 +82,8 @@ export const MajorExplorationRenderer = ({
           {suggestions.map((s, idx) => (
             <div key={idx} className={idx > 0 ? styles.mt16 : undefined}>
               <div className={`${styles.h3} ${styles.mb6}`}>
-                {String(idx + 1).padStart(2, "0")}. {s.major}
+                {String(idx + 1).padStart(2, "0")}.{" "}
+                <span className={styles.markerSky}>{s.major}</span>
                 <span className={`${styles.caption} ${styles.ml8}`}>
                   적합도 {s.fitScore}%
                 </span>

@@ -1,6 +1,7 @@
 import type { BehaviorAnalysisSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
+import { renderInsightMarkers } from "./insight-marker";
 import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
 
@@ -76,7 +77,9 @@ export const BehaviorAnalysisRenderer = ({
                     </div>
                   )}
                 </div>
-                <p className={styles.small}>{safeText(year.summary)}</p>
+                <p className={styles.small}>
+                  {renderInsightMarkers(year.summary)}
+                </p>
                 {year.summary !== NO_DATA_MSG &&
                   year.keyQuotes?.map((q, i) => (
                     <p
@@ -108,7 +111,7 @@ export const BehaviorAnalysisRenderer = ({
                 </div>
               )}
             </div>
-            <p className={styles.small}>{safeText(year.summary)}</p>
+            <p className={styles.small}>{renderInsightMarkers(year.summary)}</p>
             {year.summary !== NO_DATA_MSG &&
               year.keyQuotes?.map((q, i) => (
                 <p
@@ -132,13 +135,13 @@ export const BehaviorAnalysisRenderer = ({
               <span className={styles.markerSky}>종합 평가</span>
             </div>
             <div className={styles.aiCommentaryText}>
-              {safeText(data.overallComment)}
+              {renderInsightMarkers(data.overallComment)}
             </div>
             <div className={`${styles.aiCommentaryLabel} ${styles.mt12}`}>
               <span className={styles.markerSky}>입시 활용 포인트</span>
             </div>
             <div className={styles.aiCommentaryText}>
-              {safeText(data.admissionRelevance)}
+              {renderInsightMarkers(data.admissionRelevance)}
             </div>
           </div>
         </div>
