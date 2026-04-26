@@ -370,38 +370,69 @@ const normalCdf = (z: number): number => {
 
 // ─── 고교 유형별 등급 환산 (docx 환산표 기반) ───
 // 특목·자사고: 학생 등급 → 일반고 환산 등급 (breakpoints for linear interpolation)
+// docx 각 row의 양 끝을 모두 brackpoint로 등록해 보간 출력이 docx 범위 안에 머무름.
+// docx row 예: 특목 1.4~1.7 → 일반고 1.0~1.1 → [[1.4, 1.0], [1.7, 1.1]]
 const SPECIAL_TO_GENERAL: [number, number][] = [
   [1.4, 1.0],
+  [1.7, 1.1],
   [1.8, 1.2],
+  [2.1, 1.3],
   [2.2, 1.4],
+  [2.5, 1.5],
   [2.6, 1.6],
+  [2.9, 1.7],
   [3.0, 1.8],
+  [3.2, 1.9],
   [3.3, 2.0],
+  [3.5, 2.1],
   [3.6, 2.2],
+  [3.8, 2.3],
   [3.9, 2.4],
+  [4.2, 2.5],
   [4.3, 2.6],
+  [4.5, 2.7],
   [4.6, 2.8],
+  [4.8, 2.9],
   [4.9, 3.0],
+  [5.0, 3.1],
   [5.1, 3.2],
+  [5.2, 3.3],
   [5.3, 3.4],
+  [5.4, 3.5],
   [5.5, 3.6],
+  [5.6, 3.7],
   [5.7, 3.8],
+  [5.8, 3.9],
   [5.9, 4.0],
+  [6.0, 4.1],
   [6.1, 4.2],
+  [6.2, 4.3],
   [6.3, 4.4],
+  [6.4, 4.5],
   [6.5, 4.6],
+  [6.6, 4.7],
   [6.7, 4.8],
+  [6.8, 4.9],
   [6.9, 5.0],
+  [7.0, 5.1],
   [7.1, 5.2],
+  [7.2, 5.3],
   [7.3, 5.4],
+  [7.4, 5.5],
   [7.5, 5.6],
+  [7.6, 5.7],
   [7.7, 5.8],
+  [7.8, 5.9],
   [7.9, 6.0],
+  [8.0, 6.1],
   [8.1, 6.2],
+  [8.2, 6.3],
   [8.3, 6.4],
+  [8.4, 6.5],
   [8.5, 6.6],
+  [8.6, 6.7],
   [8.7, 6.8],
-  [8.9, 7.0],
+  [8.8, 6.9],
 ];
 
 // 특성화고: 학생 등급 → 일반고 환산 등급
@@ -460,7 +491,7 @@ const SCHOOL_TYPE_TABLE: Record<string, [number, number][] | null> = {
 };
 
 /** breakpoint 테이블 기반 선형 보간으로 등급 환산 */
-const convertGradeBySchoolType = (
+export const convertGradeBySchoolType = (
   schoolType: string,
   grade: number
 ): number => {
@@ -1734,7 +1765,7 @@ const FIVE_TO_NINE_TABLE: [number, number][] = [
   [8.5, 4.91],
   [9.0, 5.0],
 ];
-const fiveToNineGrade = (five: number): number => {
+export const fiveToNineGrade = (five: number): number => {
   if (five <= 1.0) return 1.0;
   if (five >= 5.0) return 9.0;
   // 테이블에서 5등급 값 기준으로 구간 찾기 (5등급→9등급 역변환)
@@ -2441,12 +2472,9 @@ export const buildUniversityCandidatesText = (
     ...[...cutoffUniversities].filter((u) => !universities.includes(u)),
   ].filter((u) => !excludeWomensUniv || !WOMENS_UNIVERSITIES.includes(u));
 
-  const studentGrade9 =
-    overallAverage != null
-      ? gradingSystem === "5등급제"
-        ? fiveToNineGrade(overallAverage)
-        : overallAverage
-      : null;
+  // 학생 등급을 일반고 9등급제로 환산 (커트라인 비교용)
+  // 흐름: 5등급제면 9등급으로 → 특목/특성화면 일반고 환산
+  const studentGrade9 = computeGrade9ForCutoff();
 
   const withCutoff = allUniversities.map((university) => {
     const rawCutoffs = findCutoffData(university, majorInfo.majorName);

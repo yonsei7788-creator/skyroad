@@ -19,7 +19,12 @@ import type {
   ActivityConnectivity,
   CompetitiveProfilingSection,
 } from "../types.ts";
-import { isArtSportDepartment, type PreprocessedData } from "./preprocessor.ts";
+import {
+  convertGradeBySchoolType,
+  fiveToNineGrade,
+  isArtSportDepartment,
+  type PreprocessedData,
+} from "./preprocessor.ts";
 import { matchMajorEvaluationCriteria } from "../constants/major-evaluation-criteria.ts";
 import { getMajorCourseRecommendations } from "../constants/recommended-courses.ts";
 import {
@@ -475,43 +480,15 @@ export const postprocess = (
       const cardCandidatesText =
         strategyUniversityCandidatesText ?? universityCandidatesText;
       if (admStrat && cardCandidatesText) {
-        // 학생 등급을 9등급제로 환산 (커트라인이 9등급제 기준)
+        // 학생 등급을 일반고 9등급제로 환산
+        // 흐름: 5등급제면 9등급으로 → 특목/특성화면 일반고 환산 (preprocessor와 동일)
         const gs = preprocessed.gradingSystem;
         const avg = preprocessed.overallAverage;
-        const FIVE_NINE_TBL: [number, number][] = [
-          [1, 1],
-          [1.5, 1.09],
-          [2, 1.33],
-          [2.5, 1.6],
-          [3, 1.89],
-          [3.5, 2.15],
-          [4, 2.43],
-          [4.5, 2.73],
-          [5, 3.03],
-          [5.5, 3.32],
-          [6, 3.55],
-          [6.5, 3.91],
-          [7, 4.19],
-          [7.5, 4.47],
-          [8, 4.72],
-          [8.5, 4.91],
-          [9, 5],
-        ];
-        const fiveToNineLocal = (five: number): number => {
-          if (five <= 1) return 1;
-          if (five >= 5) return 9;
-          for (let i = 1; i < FIVE_NINE_TBL.length; i++) {
-            const [n1, f1] = FIVE_NINE_TBL[i - 1];
-            const [n2, f2] = FIVE_NINE_TBL[i];
-            if (five <= f2) {
-              const r = (five - f1) / (f2 - f1);
-              return Math.round((n1 + r * (n2 - n1)) * 100) / 100;
-            }
-          }
-          return 9;
-        };
-        const studentGrade9 =
-          gs === "5등급제" && avg ? fiveToNineLocal(avg) : (avg ?? 0);
+        const asNine =
+          gs === "5등급제" && avg != null ? fiveToNineGrade(avg) : (avg ?? 0);
+        const studentGrade9 = studentInfo.schoolType
+          ? convertGradeBySchoolType(studentInfo.schoolType, asNine)
+          : asNine;
 
         const gapToChance = (gap: number): string => {
           if (gap >= 0.3) return "very_low";
@@ -860,40 +837,11 @@ export const postprocess = (
     const avg = preprocessed.overallAverage;
     const gs = preprocessed.gradingSystem;
     if (avg != null && gs) {
-      // 5→9등급 환산 (커트라인 데이터가 9등급제 기준)
-      const FIVE_NINE_TBL2: [number, number][] = [
-        [1, 1],
-        [1.5, 1.09],
-        [2, 1.33],
-        [2.5, 1.6],
-        [3, 1.89],
-        [3.5, 2.15],
-        [4, 2.43],
-        [4.5, 2.73],
-        [5, 3.03],
-        [5.5, 3.32],
-        [6, 3.55],
-        [6.5, 3.91],
-        [7, 4.19],
-        [7.5, 4.47],
-        [8, 4.72],
-        [8.5, 4.91],
-        [9, 5],
-      ];
-      const fiveToNine = (five: number): number => {
-        if (five <= 1) return 1;
-        if (five >= 5) return 9;
-        for (let i = 1; i < FIVE_NINE_TBL2.length; i++) {
-          const [n1, f1] = FIVE_NINE_TBL2[i - 1];
-          const [n2, f2] = FIVE_NINE_TBL2[i];
-          if (five <= f2) {
-            const r = (five - f1) / (f2 - f1);
-            return Math.round((n1 + r * (n2 - n1)) * 100) / 100;
-          }
-        }
-        return 9;
-      };
-      const studentGrade9 = gs === "5등급제" ? fiveToNine(avg) : avg;
+      // 학생 등급을 일반고 9등급제로 환산 (preprocessor와 동일 흐름)
+      const asNine = gs === "5등급제" ? fiveToNineGrade(avg) : avg;
+      const studentGrade9 = studentInfo.schoolType
+        ? convertGradeBySchoolType(studentInfo.schoolType, asNine)
+        : asNine;
 
       // 대학별 커트라인 조회: 학과별 실제 데이터 → 하드코딩 fallback
       const targetDept = studentInfo.targetDepartment ?? "";
