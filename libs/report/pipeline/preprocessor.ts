@@ -1920,7 +1920,7 @@ export const buildUniversityCandidatesText = (
   if (departmentKeywords && departmentKeywords.length > 0) {
     // 학생 등급 환산 (5등급→9등급→고교유형 환산 순서 적용)
     const studentGrade9 = computeGrade9ForCutoff();
-    const MARGIN = 0.3;
+    const MARGIN = 0.4;
     // 부동소수점 보정
     const gradeRangeLo =
       studentGrade9 != null
@@ -2034,7 +2034,7 @@ export const buildUniversityCandidatesText = (
       gyogwaDiff?: number;
     };
 
-    // 커트라인 배열에서 ±0.3 범위 내 가장 가까운 값과 diff를 반환
+    // 커트라인 배열에서 ±0.4 범위 내 가장 가까운 값과 diff를 반환
     const findClosestInRange = (
       cuts: number[],
       grade: number,
@@ -2116,14 +2116,10 @@ export const buildUniversityCandidatesText = (
         }
 
         const { repCut, diff } = bestMatch;
+        // safety(학생 등급보다 합격선이 나쁜 대학)는 추천에서 제외 — 작업 4
+        if (diff < -0.15) continue;
         const tier: "reach" | "ambitious" | "fit" | "safety" =
-          diff >= 0.3
-            ? "reach"
-            : diff > 0.1
-              ? "ambitious"
-              : diff >= -0.1
-                ? "fit"
-                : "safety";
+          diff >= 0.3 ? "reach" : diff > 0.1 ? "ambitious" : "fit";
         const cutoffSummary = cutoffs
           .map((c) => {
             const cut = c.cutoff50Grade;
@@ -2149,14 +2145,13 @@ export const buildUniversityCandidatesText = (
       return result;
     };
 
-    // ── (상향+소신)2 + 적정2 + 안정2 충족 여부 ──
+    // 적정·상향(reach/ambitious + fit)만 균형 — safety 제외
     const isBalanceFilled = (pool: CandidateEntry[]): boolean => {
       const reachAmbitious = pool.filter(
         (c) => c.tier === "reach" || c.tier === "ambitious"
       ).length;
       const fit = pool.filter((c) => c.tier === "fit").length;
-      const safety = pool.filter((c) => c.tier === "safety").length;
-      return reachAmbitious >= 2 && fit >= 2 && safety >= 2;
+      return reachAmbitious >= 3 && fit >= 3;
     };
 
     // ── 후보 풀에 새 후보 추가 (중복 방지) ──
@@ -2188,19 +2183,15 @@ export const buildUniversityCandidatesText = (
     const sortByDist = (arr: CandidateEntry[]) =>
       [...arr].sort((a, b) => Math.abs(a.diff) - Math.abs(b.diff));
 
-    // 부족한 티어만 필터링하여 추가하는 헬퍼
+    // 부족한 티어만 필터링하여 추가하는 헬퍼 (safety 제외 — 작업 4)
     const addMissingTiers = (candidates: CandidateEntry[]): void => {
       const currentReachAmbitious = selected.filter(
         (c) => c.tier === "reach" || c.tier === "ambitious"
       ).length;
-      const needReachAmbitious = Math.max(0, 2 - currentReachAmbitious);
+      const needReachAmbitious = Math.max(0, 3 - currentReachAmbitious);
       const needFit = Math.max(
         0,
-        2 - selected.filter((c) => c.tier === "fit").length
-      );
-      const needSafety = Math.max(
-        0,
-        2 - selected.filter((c) => c.tier === "safety").length
+        3 - selected.filter((c) => c.tier === "fit").length
       );
 
       const sorted = sortByDist(candidates);
@@ -2208,11 +2199,8 @@ export const buildUniversityCandidatesText = (
         .filter((c) => c.tier === "reach" || c.tier === "ambitious")
         .slice(0, needReachAmbitious);
       const fit = sorted.filter((c) => c.tier === "fit").slice(0, needFit);
-      const safety = sorted
-        .filter((c) => c.tier === "safety")
-        .slice(0, needSafety);
 
-      addToPool(selected, [...reachAmbitious, ...fit, ...safety]);
+      addToPool(selected, [...reachAmbitious, ...fit]);
     };
 
     const primaryKeywords = departmentKeywords.slice(0, 2);
@@ -2512,15 +2500,15 @@ export const buildUniversityCandidatesText = (
     return { university, cutoffSummary, repCutoff, allCutoff50s };
   });
 
-  // 학생 등급 기반 필터링: ±0.3 고정 (마진 확대 없음)
+  // 학생 등급 기반 필터링: ±0.4 (적정·상향 후보 풀 확대)
   let filtered = withCutoff;
   if (studentGrade9 != null) {
     filtered = withCutoff.filter((c) => {
       if (gradingSystem === "5등급제") {
         if (c.repCutoff != null) {
           return (
-            c.repCutoff >= studentGrade9 - 0.3 &&
-            c.repCutoff <= studentGrade9 + 0.3
+            c.repCutoff >= studentGrade9 - 0.4 &&
+            c.repCutoff <= studentGrade9 + 0.4
           );
         }
         return false;
@@ -2528,84 +2516,75 @@ export const buildUniversityCandidatesText = (
 
       if (c.allCutoff50s.length > 0) {
         return c.allCutoff50s.some(
-          (g) => g >= studentGrade9 - 0.3 && g <= studentGrade9 + 0.3
+          (g) => g >= studentGrade9 - 0.4 && g <= studentGrade9 + 0.4
         );
       }
       return false;
     });
   }
 
-  // 상향/적정/안정 밸런스를 보장하며 최대 6개 선정
+  // 적정·상향(reach + fit)만 선정. 안전권(학생 등급보다 합격선이 나쁜 대학)은 추천에서 제외
   const MAX_CANDIDATES = 6;
-  if (studentGrade9 != null && filtered.length > MAX_CANDIDATES) {
+  const REACH_THRESHOLD = 0.15;
+
+  if (studentGrade9 != null) {
+    const studentGrade = studentGrade9;
     const getMinCutoff = (c: (typeof filtered)[0]): number =>
       c.allCutoff50s.length > 0 ? Math.min(...c.allCutoff50s) : Infinity;
 
-    const REACH_THRESHOLD = 0.15;
-    const reach = filtered.filter(
-      (c) => getMinCutoff(c) < studentGrade9 - REACH_THRESHOLD
-    );
-    const fit = filtered.filter((c) => {
-      const cut = getMinCutoff(c);
-      return (
-        cut >= studentGrade9 - REACH_THRESHOLD &&
-        cut <= studentGrade9 + REACH_THRESHOLD
-      );
-    });
-    const safety = filtered.filter(
-      (c) => getMinCutoff(c) > studentGrade9 + REACH_THRESHOLD
+    // 안전권(safety) 제거: 학생 등급 + REACH_THRESHOLD 초과 합격선 대학은 후보에서 제외
+    filtered = filtered.filter(
+      (c) => getMinCutoff(c) <= studentGrade + REACH_THRESHOLD
     );
 
-    const sortByDist = (arr: typeof filtered) =>
-      arr.sort(
-        (a, b) =>
-          Math.abs(getMinCutoff(a) - studentGrade9) -
-          Math.abs(getMinCutoff(b) - studentGrade9)
+    if (filtered.length > MAX_CANDIDATES) {
+      const reach = filtered.filter(
+        (c) => getMinCutoff(c) < studentGrade - REACH_THRESHOLD
       );
-    sortByDist(reach);
-    sortByDist(fit);
-    sortByDist(safety);
-
-    const pick = (arr: typeof filtered, max: number) => arr.slice(0, max);
-    const selected: typeof filtered = [];
-    selected.push(...pick(reach, 2));
-    selected.push(...pick(fit, 2));
-    selected.push(...pick(safety, 2));
-
-    if (selected.length < MAX_CANDIDATES) {
-      const selectedSet = new Set(selected.map((c) => `${c.university}`));
-      const remaining = filtered
-        .filter((c) => !selectedSet.has(c.university))
-        .sort(
-          (a, b) =>
-            Math.abs(getMinCutoff(a) - studentGrade9) -
-            Math.abs(getMinCutoff(b) - studentGrade9)
+      const fit = filtered.filter((c) => {
+        const cut = getMinCutoff(c);
+        return (
+          cut >= studentGrade - REACH_THRESHOLD &&
+          cut <= studentGrade + REACH_THRESHOLD
         );
-      selected.push(...remaining.slice(0, MAX_CANDIDATES - selected.length));
-    }
+      });
 
-    if (selected.length > MAX_CANDIDATES) {
-      selected.sort(
+      const sortByDist = (arr: typeof filtered) =>
+        arr.sort(
+          (a, b) =>
+            Math.abs(getMinCutoff(a) - studentGrade) -
+            Math.abs(getMinCutoff(b) - studentGrade)
+        );
+      sortByDist(reach);
+      sortByDist(fit);
+
+      // reach 3 + fit 3 균등 분배. 한쪽이 부족하면 다른 쪽으로 보충.
+      const pick = (arr: typeof filtered, max: number) => arr.slice(0, max);
+      const selected: typeof filtered = [];
+      selected.push(...pick(reach, 3));
+      selected.push(...pick(fit, 3));
+
+      if (selected.length < MAX_CANDIDATES) {
+        const selectedSet = new Set(selected.map((c) => `${c.university}`));
+        const remaining = filtered
+          .filter((c) => !selectedSet.has(c.university))
+          .sort(
+            (a, b) =>
+              Math.abs(getMinCutoff(a) - studentGrade) -
+              Math.abs(getMinCutoff(b) - studentGrade)
+          );
+        selected.push(...remaining.slice(0, MAX_CANDIDATES - selected.length));
+      }
+
+      filtered = selected;
+    } else {
+      // 후보가 6개 이하면 학생 등급에 가까운 순으로만 정렬
+      filtered.sort(
         (a, b) =>
-          Math.abs(getMinCutoff(a) - studentGrade9) -
-          Math.abs(getMinCutoff(b) - studentGrade9)
+          Math.abs(getMinCutoff(a) - studentGrade) -
+          Math.abs(getMinCutoff(b) - studentGrade)
       );
-      selected.splice(MAX_CANDIDATES);
     }
-
-    filtered = selected;
-  } else if (studentGrade9 != null) {
-    filtered.sort((a, b) => {
-      const aDiff =
-        a.allCutoff50s.length > 0
-          ? Math.min(...a.allCutoff50s.map((g) => Math.abs(g - studentGrade9)))
-          : Infinity;
-      const bDiff =
-        b.allCutoff50s.length > 0
-          ? Math.min(...b.allCutoff50s.map((g) => Math.abs(g - studentGrade9)))
-          : Infinity;
-      return aDiff - bDiff;
-    });
   }
   filtered = filtered.slice(0, MAX_CANDIDATES);
 

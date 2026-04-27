@@ -8,10 +8,8 @@ export interface MajorExplorationPromptInput {
   studentProfile: string;
   studentGrade: number;
   targetDepartment?: string;
-  /** Phase 2에서 감지된 생기부 기반 강점 계열 (1순위) */
+  /** Phase 2에서 감지된 생기부 기반 강점 계열 (단수). 모든 섹션에서 동일하게 사용. */
   detectedMajorGroup?: string;
-  /** Phase 2에서 감지된 생기부 기반 강점 계열 1~3순위 (융합형 학생 지원) */
-  detectedMajorGroups?: string[];
   /** Phase 2에서 감지된 구체적 학과명 후보 (3~5개) */
   detectedDepartments?: string[];
 }
@@ -92,24 +90,15 @@ export const buildMajorExplorationPrompt = (
 
 ## ⚠️ 생기부 기반 강점 계열 (필수 준수)
 
-${(() => {
-  const groups =
-    input.detectedMajorGroups && input.detectedMajorGroups.length > 0
-      ? input.detectedMajorGroups
-      : input.detectedMajorGroup
-        ? [input.detectedMajorGroup]
-        : [];
-  if (groups.length === 0) {
-    return `**이 학생의 생기부 기반 강점 계열: "미확정"**\n- competencyExtraction에서 가장 두드러진 탐구 분야 1~3개를 직접 식별하여 추천 전공의 근거로 삼으세요.`;
-  }
-  const labeled = groups.map((g) => getMajorGroupLabel(g));
-  if (groups.length === 1) {
-    return `**이 학생의 생기부 기반 강점 계열: "${labeled[0]}"** (단일 계열형)\n\n- 추천 전공의 1순위는 반드시 위 강점 계열 내에서 선정하세요.\n- 2~3순위도 위 강점 계열 내에서 선정하되, 같은 계열의 **다양한 세부 학문 분야**를 제시하세요. 똑같은 학과 3개를 나열하지 마세요.`;
-  }
-  // 융합형 (2개 이상)
-  const ranked = labeled.map((l, i) => `${i + 1}순위 "${l}"`).join(" / ");
-  return `**이 학생은 융합형 생기부입니다.** 강점 계열 ${ranked}\n\n- 추천 전공의 1순위는 반드시 **1순위 강점 계열("${labeled[0]}")** 내에서 선정하세요.\n- 2순위는 1순위 또는 2순위 강점 계열에서 선정하세요.\n- 3순위는 1·2·3순위 강점 계열 중 어디서든 선정 가능합니다. **이 학생의 다면성을 보여주는 인접/연관 분야**를 적극적으로 제안하세요.\n- ⛔ 추천 3개를 모두 1순위 강점 계열로 채우면 안 됩니다. 융합형 학생의 다양성을 반드시 반영하세요.`;
-})()}
+${
+  input.detectedMajorGroup
+    ? `**이 학생의 생기부 기반 강점 계열: "${getMajorGroupLabel(input.detectedMajorGroup)}"**
+
+- 추천 전공 **3개 모두** 위 강점 계열 안에서 선정하세요. 다른 계열 학과를 추천하면 안 됩니다.
+- 같은 계열 안에서 **세부 학문 분야가 서로 다른 학과 3개**를 제시하세요. 예: 약학 계열 → 약학과 / 제약학과 / 바이오제약학과. 똑같은 학과 3개를 나열하지 마세요.
+- 학생이 도구·방법론으로 다른 분야(수학·통계·코딩·AI 등)를 활용했더라도, 그것은 위 강점 계열의 *융합 탐구 능력*으로만 평가합니다. 도구로 활용된 분야의 학과(데이터사이언스학과·인공지능학과·통계학과 등)는 추천하지 마세요.`
+    : `**이 학생의 생기부 기반 강점 계열: "미확정"**\n- competencyExtraction에서 가장 두드러진 탐구 분야 1개를 직접 식별하여 그 안에서 추천 전공 3개를 선정하세요.`
+}
 
 ## ⛔ 마스터 데이터 외 학과 추천 허용 (필수)
 ${

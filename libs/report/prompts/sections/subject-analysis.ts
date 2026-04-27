@@ -12,6 +12,10 @@ export interface SubjectAnalysisPromptInput {
   gradingSystem?: "5등급제" | "9등급제";
   isGyogwaOnly?: boolean;
   detectedMajorGroupLabel?: string;
+  /** 학년별 분할 호출 시 대상 학년(1/2/3). 미지정 시 전체 분석 */
+  targetYear?: number;
+  /** 분할 호출 모드일 때 plan별 과목 수 상한을 학년 1회분에 맞춰 축소 */
+  perYearMaxSubjects?: number;
 }
 
 const COMPETENCY_TAG_GUIDE = `## 역량 태깅 가이드
@@ -200,7 +204,18 @@ export const buildSubjectAnalysisPrompt = (
 `
     : "";
 
-  return `${gyogwaOnlyContext}${medicalSubjectContext}## 작업
+  const yearScopeBlock = input.targetYear
+    ? `## ⛔ 분석 대상 학년 (필수)
+이 호출은 **${input.targetYear}학년 세특만** 분석합니다.
+- 입력으로 제공된 세특도 ${input.targetYear}학년 데이터만 들어 있습니다.
+- subjects 배열의 모든 항목 \`year\` 필드는 반드시 ${input.targetYear}로 출력하세요.
+- 다른 학년 세특을 추측하거나 비교하지 마세요. 학년 간 심화 흐름 판단도 이 호출에서는 수행하지 않습니다 (다른 호출에서 종합).
+- improvementDirection 작성 시 "다른 학년 세특과의 연결" 같은 학년 간 비교 표현은 일반 가이드 톤으로만 작성하고, 구체적 학년 비교 서술은 피하세요.
+
+`
+    : "";
+
+  return `${gyogwaOnlyContext}${medicalSubjectContext}${yearScopeBlock}## 작업
 학생의 세부능력 및 특기사항(세특)을 과목별로 분석하세요.
 
 ## 이 섹션의 역할
@@ -220,7 +235,11 @@ export const buildSubjectAnalysisPrompt = (
 - ✅ 이 섹션에서 할 것: **세특 텍스트의 질적 평가** (탐구 깊이, 교과 연계성, 학문적 수준)
 
 ## ⛔ 과목 다양성 규칙 (필수 — 위반 시 품질 실패)
-- **같은 과목명은 학년이 달라도 반드시 하나의 항목으로 통합 분석하세요.** 예: 2학년 사회문화 + 3학년 사회문화 → subjects 배열에 "사회문화" 항목 1개만 출력하고, year는 가장 최근 학년으로 설정합니다. 여러 학년의 세특 내용을 종합하여 하나의 evaluationComment/detailedEvaluation에 담으세요.
+${
+  input.targetYear
+    ? `- 이 호출은 **${input.targetYear}학년 세특만** 입력으로 받습니다. 학년 간 통합은 다른 호출에서 종합하므로, 여기서는 **이 학년의 과목별로 1개씩** 출력하세요. 같은 과목명을 두 번 이상 출력하지 마세요.`
+    : `- **같은 과목명은 학년이 달라도 반드시 하나의 항목으로 통합 분석하세요.** 예: 2학년 사회문화 + 3학년 사회문화 → subjects 배열에 "사회문화" 항목 1개만 출력하고, year는 가장 최근 학년으로 설정합니다. 여러 학년의 세특 내용을 종합하여 하나의 evaluationComment/detailedEvaluation에 담으세요.`
+}
 - **같은 교과군(수학, 과학, 국어, 영어, 사회)에서 최대 2개 과목만** 분석 대상에 포함하세요.
 - 예: 수학, 수학Ⅰ, 수학Ⅱ, 기하가 모두 있어도 **수학 관련 과목은 최대 2개만** 선택합니다.
 - 같은 교과군 내에서는 학년이 높은(최근) 과목, 전공 관련도가 높은 과목을 우선합니다.

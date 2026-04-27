@@ -753,48 +753,6 @@ export const postprocess = (
     }
   }
 
-  // 3-5. admissionPrediction: 유저 희망대학이 있으면, 해당 대학을 유저가 선택한 전형에만 남기기
-  if (
-    admPred &&
-    studentInfo.targetUniversities &&
-    studentInfo.targetUniversities.length > 0
-  ) {
-    // 유저 입력 admissionType → predictions admissionType 매핑
-    const typeMapping: Record<string, string> = {
-      학생부종합: "학종",
-      학생부교과: "교과",
-      고른기회: "고른기회",
-      논술: "논술",
-    };
-
-    // 전형별 허용 대학 맵: { "학종": Set["서울대학교", ...], "교과": Set[...] }
-    const allowedByType = new Map<string, Set<string>>();
-    for (const tu of studentInfo.targetUniversities) {
-      const predType = typeMapping[tu.admissionType] ?? tu.admissionType;
-      if (!allowedByType.has(predType)) {
-        allowedByType.set(predType, new Set());
-      }
-      allowedByType.get(predType)!.add(tu.universityName);
-    }
-
-    if (Array.isArray(admPred.predictions)) {
-      for (const pred of admPred.predictions) {
-        if (!Array.isArray(pred.universityPredictions)) continue;
-        const allowed = allowedByType.get(pred.admissionType);
-        const before = pred.universityPredictions.length;
-        // 해당 전형에 허용된 대학만 남기기 (허용 목록이 없으면 전부 제거)
-        pred.universityPredictions = pred.universityPredictions.filter(
-          (up: any) => allowed?.has(up.university) ?? false
-        );
-        if (pred.universityPredictions.length < before) {
-          console.log(
-            `[report:${reportId}] admissionPrediction: 전형 불일치 대학 ${before - pred.universityPredictions.length}개 제거 (${pred.admissionType})`
-          );
-        }
-      }
-    }
-  }
-
   // 3-6. admissionPrediction: 유저 희망대학 학과가 데이터에 없으면 "(판단 불가)" 처리
   if (
     admPred &&
@@ -1680,33 +1638,10 @@ export const postprocess = (
     }
   }
 
-  // 3-10. majorExploration: 성적 기준 미달 시 의·치·한·약·수 학과 제거
-  // 9등급제 2.0 초과 또는 5등급제 1.3 초과이면 의예과/치의예과/한의예과/약학과/수의예과 합격 불가능
-  {
-    const avg = preprocessed.overallAverage;
-    const gs = preprocessed.gradingSystem;
-    const threshold = gs === "5등급제" ? 1.3 : 2.0;
-    if (avg != null && avg > threshold) {
-      const MEDICAL_DEPT_PATTERN =
-        /의예과|치의예과|한의예과|약학과|수의예과|의학과|치의학과|한의학과|수의학과/;
-      const majorSection = validatedSections.find(
-        (s) => s.sectionId === "majorExploration"
-      ) as Record<string, unknown> | undefined;
-      if (majorSection && Array.isArray(majorSection.suggestions)) {
-        const sugs = majorSection.suggestions as Record<string, unknown>[];
-        const before = sugs.length;
-        majorSection.suggestions = sugs.filter(
-          (sug) => !MEDICAL_DEPT_PATTERN.test(String(sug.major ?? ""))
-        );
-        const after = (majorSection.suggestions as unknown[]).length;
-        if (after < before) {
-          console.log(
-            `[report:${reportId}] majorExploration: 성적 기준(${gs} avg=${avg} > ${threshold}) 미달로 의·치·한·약·수 학과 ${before - after}개 제거`
-          );
-        }
-      }
-    }
-  }
+  // 3-10. [삭제됨] majorExploration: 성적 기준 미달 시 의·치·한·약·수 학과 제거
+  // → wave-executor의 majorExploration 보정 단계로 통합 (중복 제거).
+  //   보정 단계에서 미리 제외해야, 같은 계열의 비제한 학과(제약학과 등)로 폴백 보충이 가능.
+  //   여기서 후행 제거하면 3개 보충 보장이 무력화됨.
 
   // 4. 섹션 정렬 (플랜별 순서)
   const sectionOrder = SECTION_ORDER[plan];
@@ -2215,6 +2150,27 @@ const normalizeSection = (
 
   // ── AI 금지 표현 치환 (모든 섹션 공통) ──
   s = sanitizeDeep(s) as any;
+
+  // ── admissionPrediction: recommendedType enum 정규화 ──
+  // 스키마 enum: "학종" | "교과" | "논술".
+  // AI가 풀어쓴 표현(학생부종합전형, 학생부교과전형 등)을 출력하면 Zod 검증이 실패하므로
+  // 검증 직전에 약식 라벨로 정규화한다.
+  if (s.sectionId === "admissionPrediction" && s.recommendedType) {
+    const raw = String(s.recommendedType).trim();
+    const RECOMMEND_TYPE_NORMALIZE: Record<string, string> = {
+      학생부종합전형: "학종",
+      학생부종합: "학종",
+      종합전형: "학종",
+      학생부교과전형: "교과",
+      학생부교과: "교과",
+      교과전형: "교과",
+      논술전형: "논술",
+    };
+    const normalized = RECOMMEND_TYPE_NORMALIZE[raw];
+    if (normalized) {
+      s.recommendedType = normalized;
+    }
+  }
 
   // ── subjectAnalysis: evaluationImpact 정규화 + 플랜별 과목 수 제한 ──
   if (s.sectionId === "subjectAnalysis" && Array.isArray(s.subjects)) {
@@ -3060,6 +3016,20 @@ const normalizeSection = (
       if (s.comparison) {
         s.comparison.myScore = recalculated;
       }
+    }
+
+    // ── comparison.targetRangeAvg / overallAvg: myScore 기반 결정적 보정 ──
+    // AI가 추정값을 사용자 점수와 무관하게 ~240점대로 일률 산정하여
+    // 상위권 학생의 경우 적정·전체 평균이 비현실적으로 낮게 표시되는 문제 보정.
+    // 산정 기준:
+    //   - targetRangeAvg(지원적정 평균): 사용자와 비슷한 수준의 합격생 평균 → myScore - 10
+    //   - overallAvg(학종 지원자 전체 평균): myScore - 30, 단 [180, 250] 범위 안
+    if (s.comparison && typeof s.comparison.myScore === "number") {
+      const { myScore } = s.comparison;
+      const targetRangeAvg = Math.max(myScore - 10, 200);
+      const overallAvg = Math.max(180, Math.min(myScore - 30, 250));
+      s.comparison.targetRangeAvg = targetRangeAvg;
+      s.comparison.overallAvg = overallAvg;
     }
 
     // ── interpretation: 점수 텍스트를 실제 계산값으로 동기화 ──

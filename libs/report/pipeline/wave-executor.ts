@@ -344,22 +344,7 @@ export const executeTask = async (
       console.log(
         `[report:${reportId}] ⚠️ detectedMajorGroup null — 생기부 성적 기반 폴백: ${detected} (국수영과=${sciAvg}, 국수영사=${socAvg})`
       );
-      // 단수 폴백 시 detectedMajorGroups도 동기화
       competencyExtraction.detectedMajorGroup = detected;
-      if (
-        !competencyExtraction.detectedMajorGroups ||
-        competencyExtraction.detectedMajorGroups.length === 0
-      ) {
-        competencyExtraction.detectedMajorGroups = [detected];
-      }
-    }
-    // detectedMajorGroups가 비어 있고 detectedMajorGroup만 있으면 단수→복수 동기화
-    if (
-      detected &&
-      (!competencyExtraction.detectedMajorGroups ||
-        competencyExtraction.detectedMajorGroups.length === 0)
-    ) {
-      competencyExtraction.detectedMajorGroups = [detected];
     }
     if (detected) {
       const detectedCriteria = findCriteriaByMajorGroup(detected);
@@ -684,31 +669,117 @@ export const executeTask = async (
       break;
     }
 
-    case "subjectAnalysis":
-      // flash 전면 503 — 품질 민감 섹션도 flash-lite 사용 (DEFAULT_MODEL)
-      section = await callGemini<ReportSection>(
-        buildSubjectAnalysisPrompt(
-          {
-            subjectData: texts.subjectDataText,
-            studentProfile: texts.studentProfileText,
-            studentGrade: studentInfo.grade,
-            isGraduate: studentInfo.isGraduate,
-            isMedical,
-            gradingSystem: state.preprocessedData!.gradingSystem,
-            isGyogwaOnly,
-            detectedMajorGroupLabel: detectedMajorForFlags
-              ? getMajorGroupLabel(detectedMajorForFlags)
-              : undefined,
-          },
-          plan
-        ),
-        { maxOutputTokens: 20480 }
-      );
+    case "subjectAnalysis": {
+      // 학년별 분할 호출 — 한 호출에 모든 학년을 넣으면 출력이 MAX_TOKENS에 걸려
+      // JSON이 잘리고 파이프라인이 실패. 학년별로 분할하면 각 호출 출력이
+      // 1/3 이하로 보장되어 결정적으로 잘리지 않음.
+      const subjectDataAll = texts.subjectDataText;
+
+      // "[N학년 과목명]\n내용\n\n..." 형식을 학년별로 분리
+      const blocks = subjectDataAll
+        .split(/\n\n(?=\[\d학년)/)
+        .filter((b) => b.trim().length > 0);
+      const blocksByYear = new Map<number, string[]>();
+      for (const block of blocks) {
+        const match = block.match(/^\[(\d)학년/);
+        if (!match) continue;
+        const year = parseInt(match[1], 10);
+        const existing = blocksByYear.get(year) ?? [];
+        existing.push(block);
+        blocksByYear.set(year, existing);
+      }
+
+      const yearsToCall = [1, 2, 3].filter((y) => blocksByYear.has(y));
+
+      // 학년별 데이터가 전혀 없는 경우 — 기존처럼 전체 한 번 호출 (분할 의미 없음)
+      if (yearsToCall.length === 0) {
+        section = await callGemini<ReportSection>(
+          buildSubjectAnalysisPrompt(
+            {
+              subjectData: subjectDataAll,
+              studentProfile: texts.studentProfileText,
+              studentGrade: studentInfo.grade,
+              isGraduate: studentInfo.isGraduate,
+              isMedical,
+              gradingSystem: state.preprocessedData!.gradingSystem,
+              isGyogwaOnly,
+              detectedMajorGroupLabel: detectedMajorForFlags
+                ? getMajorGroupLabel(detectedMajorForFlags)
+                : undefined,
+            },
+            plan
+          ),
+          { maxOutputTokens: 16384 }
+        );
+      } else {
+        // 학년별 병렬 호출
+        const yearResults = await Promise.all(
+          yearsToCall.map((year) =>
+            callGemini<ReportSection>(
+              buildSubjectAnalysisPrompt(
+                {
+                  subjectData: blocksByYear.get(year)!.join("\n\n"),
+                  studentProfile: texts.studentProfileText,
+                  studentGrade: studentInfo.grade,
+                  isGraduate: studentInfo.isGraduate,
+                  isMedical,
+                  gradingSystem: state.preprocessedData!.gradingSystem,
+                  isGyogwaOnly,
+                  detectedMajorGroupLabel: detectedMajorForFlags
+                    ? getMajorGroupLabel(detectedMajorForFlags)
+                    : undefined,
+                  targetYear: year,
+                },
+                plan
+              ),
+              { maxOutputTokens: 16384 }
+            )
+          )
+        );
+
+        // 결과 합치기 — 같은 subjectName은 가장 최근 학년만 유지
+        const merged = new Map<string, Record<string, unknown>>();
+        for (const yr of yearResults) {
+          const subjects = (yr as unknown as Record<string, unknown>)
+            .subjects as Record<string, unknown>[] | undefined;
+          if (!Array.isArray(subjects)) continue;
+          for (const subj of subjects) {
+            const name = subj.subjectName as string | undefined;
+            if (!name) continue;
+            const existing = merged.get(name);
+            const subjYear = (subj.year as number | undefined) ?? 0;
+            const existingYear = (existing?.year as number | undefined) ?? -1;
+            if (!existing || subjYear > existingYear) {
+              merged.set(name, subj);
+            }
+          }
+        }
+        const mergedSubjects = Array.from(merged.values()).sort((a, b) => {
+          const ay = (a.year as number | undefined) ?? 0;
+          const by = (b.year as number | undefined) ?? 0;
+          if (ay !== by) return ay - by;
+          return ((a.subjectName as string) ?? "").localeCompare(
+            (b.subjectName as string) ?? ""
+          );
+        });
+
+        section = {
+          sectionId: "subjectAnalysis",
+          title: "과목별 분석",
+          subjects: mergedSubjects,
+        } as unknown as ReportSection;
+
+        console.log(
+          `[report:${reportId}] subjectAnalysis 학년별 분할 호출 ${yearsToCall.length}회 완료, 합쳐진 과목 ${mergedSubjects.length}개`
+        );
+      }
+
       updatedSer = {
         ...updatedSer,
         subjAnalysisText: JSON.stringify(section),
       };
       break;
+    }
 
     case "behaviorAnalysis":
       section = await callGemini<ReportSection>(
@@ -859,25 +930,17 @@ export const executeTask = async (
         );
       }
 
-      // 교과/학종 희망대학 0건 여부 — 후보군 텍스트 환각 차단을 위한 분기
-      const noGyogwaTargets =
-        !gyogwaTargetText || gyogwaTargetText.trim().length === 0;
-      const noHakjongTargets =
-        !hakjongTargetText || hakjongTargetText.trim().length === 0;
-
+      // 희망대학이 없어도 코드 산정 후보군 + 생기부 기반으로 일반 판단을 수행한다.
+      // (사용자에게 "희망대학이 없어 분석을 못 했다"고 표시하는 fallback은 사용하지 않음)
       const gyogwaInput = {
         academicAnalysis: predGyogwaAcadText,
-        // 교과 희망대학이 0건이면 후보군 텍스트도 비움 (임의 대학명/학과 환각 차단)
-        universityCandidates: noGyogwaTargets
-          ? ""
-          : texts.universityCandidatesText,
+        universityCandidates: texts.universityCandidatesText,
         studentProfile: texts.studentProfileText,
         academicAnalysisResult: predGyogwaAcadSectionText,
         targetUniversities: gyogwaTargetText,
         gradingSystem: state.preprocessedData!.gradingSystem,
         isMedical,
         isArtSportPractical,
-        noGyogwaTargets,
         hopeDepartment: predHopeDept,
       };
 
@@ -911,10 +974,7 @@ export const executeTask = async (
                 competencyExtraction: predCompExtrText,
                 academicAnalysis: ser.acadAnalText!,
                 studentTypeClassification: ser.stuTypeText!,
-                // 학종 희망대학이 0건이면 후보군 텍스트도 비움 (임의 대학명/학과 환각 차단)
-                universityCandidates: noHakjongTargets
-                  ? ""
-                  : texts.universityCandidatesText,
+                universityCandidates: texts.universityCandidatesText,
                 studentProfile: texts.studentProfileText,
                 subjectAnalysisResult: ser.subjAnalysisText!,
                 academicAnalysisResult: ser.acadSectionText!,
@@ -925,7 +985,6 @@ export const executeTask = async (
                 isMedical,
                 isArtSportPractical,
                 includeNonsul: selectedAdmissionTypes?.includes("논술"),
-                noHakjongTargets,
                 hopeDepartment: predHopeDept,
               },
               plan
@@ -1232,10 +1291,10 @@ export const executeTask = async (
     }
 
     case "majorExploration": {
+      // 학과 추천은 단수 detectedMajorGroup 하나만 신뢰 (다른 모든 섹션과 동일).
+      // 융합형 분기·detectedMajorGroups(복수)·toolGroupsUsed 등 별도 트랙은 제거.
       let detectedMajorForExploration =
         state.phase2Results?.competencyExtraction?.detectedMajorGroup;
-      let detectedMajorGroupsForExploration: string[] | undefined =
-        state.phase2Results?.competencyExtraction?.detectedMajorGroups;
       let detectedDepartmentsForExploration: string[] | undefined =
         state.phase2Results?.competencyExtraction?.detectedDepartments ??
         state.phase2Results?.competencyExtraction?.detectedDepartmentKeywords;
@@ -1243,8 +1302,6 @@ export const executeTask = async (
         try {
           const parsed = JSON.parse(ser.compExtrText);
           detectedMajorForExploration = parsed.detectedMajorGroup;
-          detectedMajorGroupsForExploration =
-            parsed.detectedMajorGroups ?? detectedMajorGroupsForExploration;
           detectedDepartmentsForExploration =
             parsed.detectedDepartments ??
             parsed.detectedDepartmentKeywords ??
@@ -1252,14 +1309,6 @@ export const executeTask = async (
         } catch {
           // 파싱 실패 시 무시
         }
-      }
-      // detectedMajorGroups가 비어 있으면 단수 detectedMajorGroup으로 폴백
-      if (
-        (!detectedMajorGroupsForExploration ||
-          detectedMajorGroupsForExploration.length === 0) &&
-        detectedMajorForExploration
-      ) {
-        detectedMajorGroupsForExploration = [detectedMajorForExploration];
       }
       // 플랜이 달라도 동일 학생이면 같은 추천 전공이 나오도록 seed 고정
       // 핵심 입력(competencyExtraction + studentProfile)의 해시를 seed로 사용
@@ -1276,7 +1325,6 @@ export const executeTask = async (
         studentGrade: studentInfo.grade,
         targetDepartment: studentInfo.targetDepartment,
         detectedMajorGroup: detectedMajorForExploration,
-        detectedMajorGroups: detectedMajorGroupsForExploration,
         detectedDepartments: detectedDepartmentsForExploration,
       });
       // 플랜 간 추천 전공 일관성을 위해 시스템 prefix도 플랜 무관하게 고정
@@ -1292,6 +1340,253 @@ export const executeTask = async (
         seed: Math.abs(majorSeed),
       });
       section = majorResult.data;
+
+      // ── 학과 추천 보정 ──
+      // 다른 모든 섹션과 동일하게 단수 detectedMajorGroup 하나에만 정렬한다.
+      // AI가 도구·인접 분야(데이터사이언스/AI/통계 등)를 다양성 명목으로 끼워넣는
+      // 사례가 만성적이라, 학과명을 GROUP_KEYWORDS로 역분류해서 strength 계열 1개에
+      // 매칭되는 학과만 통과시킨다. 모자라면 같은 그룹 → 인접 그룹 default로 보충.
+      const explorationSection = section as unknown as Record<string, unknown>;
+      const explorationSuggestions = explorationSection?.suggestions as
+        | {
+            major?: string;
+            university?: string;
+            fitScore?: number;
+            rationale?: string;
+            strengthMatch?: string[];
+            gapAnalysis?: string;
+            [k: string]: unknown;
+          }[]
+        | undefined;
+      if (Array.isArray(explorationSuggestions)) {
+        const detectedDepts = (detectedDepartmentsForExploration ?? []).filter(
+          (d): d is string => typeof d === "string" && d.length > 0
+        );
+        const primaryGroup = detectedMajorForExploration;
+
+        // majorGroup → 학과명 키워드 매핑 (학과 분류용)
+        const GROUP_KEYWORDS: Record<string, string[]> = {
+          의생명: ["의생명", "의예", "치의", "한의", "수의", "의학", "임상"],
+          약학: ["약학", "제약"],
+          생명과학: ["생명과학", "생물", "분자생물", "생화학", "생리학"],
+          바이오: ["바이오", "유전공학", "생명공학"],
+          간호보건: ["간호", "보건", "물리치료", "작업치료", "방사선"],
+          컴퓨터AI: [
+            "컴퓨터",
+            "소프트웨어",
+            "정보통신",
+            "정보보안",
+            "사이버",
+            "인공지능",
+            "AI",
+            "데이터사이언스",
+            "빅데이터",
+          ],
+          공학: [
+            "기계",
+            "전기",
+            "전자",
+            "재료",
+            "신소재",
+            "건축",
+            "토목",
+            "산업공학",
+            "조선",
+            "항공",
+            "환경공학",
+            "원자력",
+          ],
+          자연과학: ["수학과", "물리", "화학과", "통계", "지구과학", "천문"],
+          화학재료: ["화학공학", "재료", "신소재", "응용화학"],
+          사회과학: [
+            "사회학",
+            "정치",
+            "외교",
+            "행정",
+            "법학",
+            "심리",
+            "지리",
+            "사회복지",
+          ],
+          경영경제: ["경영", "경제", "회계", "금융", "통상", "무역"],
+          인문: ["국어국문", "영어영문", "철학", "사학", "역사", "어문"],
+          교육: ["교육학"],
+          예체능교육: ["체육교육", "음악교육", "미술교육"],
+          예체능: [
+            "연극",
+            "영화",
+            "영상",
+            "회화",
+            "조소",
+            "디자인",
+            "음악",
+            "미술",
+            "체육",
+            "무용",
+            "공예",
+            "사진",
+            "공연",
+          ],
+          미디어: ["미디어", "방송", "언론", "광고", "홍보", "콘텐츠", "신문"],
+        };
+
+        // 학과명 → 어느 계열(들)에 속하는지 역분류
+        const classifyDeptToGroups = (dept: string): string[] => {
+          const groups: string[] = [];
+          for (const [g, kws] of Object.entries(GROUP_KEYWORDS)) {
+            if (kws.some((kw) => dept.includes(kw))) groups.push(g);
+          }
+          return groups;
+        };
+
+        // primaryGroup에 속하는 학과만 통과. 다른 그룹은 모두 차단.
+        // (학생의 detectedMajorGroup이 "약학"이면 약학 키워드 매칭 학과만 통과)
+        const matchesPrimaryGroup = (m: string | undefined): boolean => {
+          if (!m) return false;
+          const deptGroups = classifyDeptToGroups(m);
+          if (deptGroups.length > 0) {
+            return primaryGroup ? deptGroups.includes(primaryGroup) : false;
+          }
+          // 어느 GROUP_KEYWORDS와도 매칭 안 되는 니치 학과는 detectedDepts에 있을 때만 허용
+          return detectedDepts.some((d) => m.includes(d) || d.includes(m));
+        };
+
+        // 그룹별 기본 추천 학과 (폴백 보충용)
+        const GROUP_DEFAULT_DEPARTMENTS: Record<string, string[]> = {
+          의생명: ["의생명과학과", "의예과", "의학과"],
+          약학: ["약학과", "제약학과", "제약공학과", "바이오제약학과"],
+          생명과학: [
+            "생명과학과",
+            "생물학과",
+            "분자생물학과",
+            "생화학과",
+            "유전공학과",
+          ],
+          바이오: ["생명공학과", "바이오공학과", "유전공학과", "생물공학과"],
+          간호보건: ["간호학과", "보건학과", "임상병리학과"],
+          컴퓨터AI: [
+            "컴퓨터공학과",
+            "소프트웨어학과",
+            "인공지능학과",
+            "데이터사이언스학과",
+          ],
+          공학: ["기계공학과", "전기공학과", "전자공학과", "재료공학과"],
+          자연과학: ["수학과", "물리학과", "화학과", "통계학과"],
+          화학재료: ["화학공학과", "재료공학과", "응용화학과"],
+          사회과학: ["사회학과", "심리학과", "정치외교학과", "행정학과"],
+          경영경제: ["경영학과", "경제학과", "회계학과"],
+          인문: ["국어국문학과", "영어영문학과", "철학과", "사학과"],
+          교육: ["교육학과"],
+          예체능교육: ["체육교육과", "음악교육과", "미술교육과"],
+          예체능: ["연극영화학과", "디자인학과", "체육학과", "음악학과"],
+          미디어: ["미디어커뮤니케이션학과", "신문방송학과", "광고홍보학과"],
+        };
+
+        // 인접 그룹 (1순위 그룹의 default가 부족할 때만 보충용으로 사용)
+        // primaryGroup이 의생명인 학생이 medical 차단 시 의생명과학과 1개만 남는 케이스에
+        // 같은 의약생명 클러스터의 인접 그룹 default(제약학과 등)로 3개 보장.
+        const ADJACENT_GROUPS: Record<string, string[]> = {
+          의생명: ["생명과학", "약학", "바이오", "간호보건"],
+          약학: ["의생명", "생명과학", "바이오", "화학재료"],
+          생명과학: ["바이오", "의생명", "약학"],
+          바이오: ["생명과학", "의생명", "약학", "화학재료"],
+          간호보건: ["의생명", "생명과학"],
+          컴퓨터AI: ["자연과학", "공학"],
+          공학: ["컴퓨터AI", "자연과학", "화학재료"],
+          자연과학: ["공학", "컴퓨터AI", "화학재료"],
+          화학재료: ["공학", "자연과학", "바이오"],
+          사회과학: ["경영경제", "인문", "미디어"],
+          경영경제: ["사회과학"],
+          인문: ["사회과학", "미디어", "교육"],
+          교육: ["인문", "사회과학"],
+          예체능교육: ["예체능", "교육"],
+          예체능: ["예체능교육", "미디어"],
+          미디어: ["사회과학", "인문", "예체능"],
+        };
+
+        const TARGET_COUNT = 3;
+
+        // ── 의·치·한·약·수 학과 차단 (성적 미달 시) ──
+        // 9등급제 2.0 / 5등급제 1.3 초과면 합격 불가능. 보정 단계에서 미리 제외해야
+        // 같은 계열의 비제한 학과(제약학과 등)로 폴백 보충 가능.
+        const overallAvg = state.preprocessedData?.overallAverage;
+        const gradingSys = state.preprocessedData?.gradingSystem;
+        const medicalThreshold = gradingSys === "5등급제" ? 1.3 : 2.0;
+        const medicalRestricted =
+          overallAvg != null && overallAvg > medicalThreshold;
+        const MEDICAL_DEPT_PATTERN =
+          /의예과|치의예과|한의예과|약학과|수의예과|의학과|치의학과|한의학과|수의학과/;
+        const isMedicalBlocked = (dept: string | undefined): boolean =>
+          medicalRestricted && !!dept && MEDICAL_DEPT_PATTERN.test(dept);
+
+        if (primaryGroup) {
+          // 1단계: AI suggestions 필터링 — primaryGroup 매칭 + medical 차단 통과만
+          const kept = explorationSuggestions.filter(
+            (s) => matchesPrimaryGroup(s.major) && !isMedicalBlocked(s.major)
+          );
+          const removed = explorationSuggestions.length - kept.length;
+
+          const keptNames = new Set(
+            kept.map((s) => s.major).filter((m): m is string => !!m)
+          );
+
+          const addDepartment = (dept: string) => {
+            if (kept.length >= TARGET_COUNT) return;
+            if (!dept || keptNames.has(dept)) return;
+            if (isMedicalBlocked(dept)) return;
+            kept.push({
+              major: dept,
+              university: kept[0]?.university ?? "",
+              fitScore: kept.length === 0 ? 78 : 72 - kept.length * 3,
+              rationale: `생기부 분석 결과 ${getMajorGroupLabel(primaryGroup)} 분야 탐구가 강하게 드러나, 해당 분야 핵심 학과로 적합합니다.`,
+              strengthMatch: ["생기부 강점 계열 부합"],
+              gapAnalysis: "구체 보완 활동은 약점 분석/실행 로드맵 섹션 참고",
+            });
+            keptNames.add(dept);
+          };
+
+          // 2단계: detectedDepts에서 보충 — primaryGroup에 속하는 것만
+          for (const dept of detectedDepts) {
+            if (kept.length >= TARGET_COUNT) break;
+            if (!matchesPrimaryGroup(dept)) continue;
+            addDepartment(dept);
+          }
+
+          // 3단계: primaryGroup의 GROUP_DEFAULT_DEPARTMENTS로 보충
+          for (const dept of GROUP_DEFAULT_DEPARTMENTS[primaryGroup] ?? []) {
+            if (kept.length >= TARGET_COUNT) break;
+            addDepartment(dept);
+          }
+
+          // 4단계: 그래도 부족하면 인접 그룹의 default로 보충
+          if (kept.length < TARGET_COUNT) {
+            for (const adj of ADJACENT_GROUPS[primaryGroup] ?? []) {
+              if (kept.length >= TARGET_COUNT) break;
+              for (const dept of GROUP_DEFAULT_DEPARTMENTS[adj] ?? []) {
+                if (kept.length >= TARGET_COUNT) break;
+                addDepartment(dept);
+              }
+            }
+          }
+
+          // suggestions 전체 교체
+          explorationSuggestions.length = 0;
+          for (const s of kept.slice(0, TARGET_COUNT)) {
+            explorationSuggestions.push(s);
+          }
+
+          if (removed > 0) {
+            console.log(
+              `[report:${reportId}] majorExploration 강점 계열 불일치/의약학 차단 ${removed}개 항목 제거 → 보충 후 ${explorationSuggestions.length}개 (primary=${primaryGroup}, medicalRestricted=${medicalRestricted})`
+            );
+          }
+          if (explorationSuggestions.length < TARGET_COUNT) {
+            console.log(
+              `[report:${reportId}] majorExploration 보충 후에도 ${explorationSuggestions.length}/${TARGET_COUNT}개 — primaryGroup 및 인접 그룹 default 부족`
+            );
+          }
+        }
+      }
       break;
     }
 
