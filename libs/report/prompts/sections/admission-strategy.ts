@@ -250,6 +250,10 @@ typeStrategies에 **학종, 교과** 전형을 반드시 모두 포함하세요.
 - ❌ 성적 해석 (예: "N등급이라 약점이다", "성적 추세가 하락한다") → academicAnalysis에서 다룸
 - ❌ 약점 진단 (예: "탐구 깊이가 부족하다", "세특이 빈약하다") → weaknessAnalysis에서 다룸
 - ❌ 합격 가능성 수치/판단 (예: "합격률 60%") → admissionPrediction에서 다룸
+- ❌ **개별 대학을 "상향/적정/안정/도전/소신/하향 지원" 등으로 라벨링 금지** (recommendedPath, typeStrategies.analysis, simulations.description 등 모든 자유 서술 필드 공통)
+  - ❌ "건국대 X학과는 적정 지원, 중앙대 Y학과는 상향 지원으로 고려"
+  - ❌ chance 영문 값(low/very_low/medium/high)을 한글 라벨(상향/적정/안정 등)로 변환하여 본문에 노출 금지
+  - → 대학별 합격 가능성 라벨은 **admissionPrediction.universityPredictions(카드)에서만** 표시됩니다. 본문은 전형 방향·원서 배치·준비 과제만 서술하세요.
 - ✅ 이 섹션에서 할 것: 원서 배치 전략, 전형 조합, 대학 추천 및 그 **전략적 근거**
 - ⚠️ 성적 향상 목표는 전략적 맥락에서 1회만 간결하게 언급하세요. "N등급까지 올려야 한다"를 반복하지 마세요. 상세한 성적 분석은 academicAnalysis·consultantReview에서 다룹니다.
 - ✅ 약점을 언급해야 할 경우 "~를 고려한 전략"으로 표현하세요. 약점 자체를 진단하지 마세요.

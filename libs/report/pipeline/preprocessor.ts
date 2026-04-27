@@ -2008,6 +2008,7 @@ export const buildUniversityCandidatesText = (
     // ── 상위대학 학종 커트라인 보정 ──
     // 실제 합격선이 공개 커트라인보다 엄격한 상위 대학에 대해
     // 후보군 선정 시 커트라인을 0.4 차감하여 비교 (데이터 자체는 미변경)
+    // 단, 안성캠퍼스 등 분캠퍼스 학과는 본캠 대비 합격선이 낮으므로 보정 제외
     const TOP_UNIV_HAKJONG_ADJUSTMENT = 0.4;
     const TOP_UNIVERSITIES_FOR_ADJUSTMENT = new Set([
       "서울대학교",
@@ -2056,26 +2057,27 @@ export const buildUniversityCandidatesText = (
         return [];
       const result: CandidateEntry[] = [];
       for (const [, { university, department, cutoffs }] of entries) {
-        const hakjong50s = cutoffs
-          .filter((c) => c.admissionType === "학종")
-          .map((c) => c.cutoff50Grade)
-          .filter((g): g is number => g != null);
+        const hakjongEntries = cutoffs.filter(
+          (c): c is (typeof cutoffs)[number] & { cutoff50Grade: number } =>
+            c.admissionType === "학종" && c.cutoff50Grade != null
+        );
         const gyogwa50s = cutoffs
           .filter((c) => c.admissionType === "교과")
           .map((c) => c.cutoff50Grade)
           .filter((g): g is number => g != null);
 
         // 둘 다 없으면 스킵
-        if (hakjong50s.length === 0 && gyogwa50s.length === 0) continue;
+        if (hakjongEntries.length === 0 && gyogwa50s.length === 0) continue;
 
-        // 학종 커트라인: 상위대학 보정 적용
-        const adjustedHakjong = TOP_UNIVERSITIES_FOR_ADJUSTMENT.has(university)
-          ? hakjong50s.map((g) =>
-              g >= 2.0
-                ? Math.round((g - TOP_UNIV_HAKJONG_ADJUSTMENT) * 100) / 100
-                : g
-            )
-          : hakjong50s;
+        // 학종 커트라인: 상위대학 보정 적용 (안성캠 등 분캠퍼스는 제외)
+        const isTopUniv = TOP_UNIVERSITIES_FOR_ADJUSTMENT.has(university);
+        const adjustedHakjong = hakjongEntries.map((c) => {
+          const g = c.cutoff50Grade;
+          if (!isTopUniv || c.campus === "안성") return g;
+          return g >= 2.0
+            ? Math.round((g - TOP_UNIV_HAKJONG_ADJUSTMENT) * 100) / 100
+            : g;
+        });
 
         // 각 전형별로 범위 내 가장 가까운 cutoff 찾기 (isGyogwaOnly 무관하게 항상 양쪽 탐색)
         const hakjongMatch = findClosestInRange(

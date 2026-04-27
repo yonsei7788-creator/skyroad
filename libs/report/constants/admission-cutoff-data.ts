@@ -15,6 +15,8 @@ export interface AdmissionCutoffEntry {
   cutoff50Grade: number | null;
   /** 합격자 상위 70% 환산등급 */
   cutoff70Grade: number | null;
+  /** 캠퍼스 (서울/안성 등 분캠퍼스가 있는 대학에 한해 명시) */
+  campus?: "안성";
 }
 
 // @ts-expect-error — 8676개 엔트리로 TS2590 발생 (배열 리터럴이 너무 커서 유니온 타입 한계 초과)
@@ -91025,6 +91027,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 3.3,
     cutoff50Grade: 2.66,
     cutoff70Grade: 2.77,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91035,6 +91038,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 4.3,
     cutoff50Grade: 2.63,
     cutoff70Grade: 2.65,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91045,6 +91049,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 4.4,
     cutoff50Grade: 2.9,
     cutoff70Grade: 3.02,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91405,6 +91410,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 23.7,
     cutoff50Grade: 3.36,
     cutoff70Grade: 3.41,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91415,6 +91421,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 18.7,
     cutoff50Grade: 2.73,
     cutoff70Grade: 3.12,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91425,6 +91432,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 21.9,
     cutoff50Grade: 3.11,
     cutoff70Grade: 3.42,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91435,6 +91443,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 10.6,
     cutoff50Grade: 3.31,
     cutoff70Grade: 3.49,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91445,16 +91454,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 11,
     cutoff50Grade: 3.4,
     cutoff70Grade: 4.0,
-  },
-  {
-    university: "중앙대학교",
-    department: "시스템생명공학과",
-    admissionType: "학종",
-    admissionName: "CAU융합형인재",
-    quota: 6,
-    competitionRate: 18.3,
-    cutoff50Grade: 2.19,
-    cutoff70Grade: 2.38,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91465,6 +91465,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 13.6,
     cutoff50Grade: 3.86,
     cutoff70Grade: 4.54,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91475,6 +91476,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 6.5,
     cutoff50Grade: 3.56,
     cutoff70Grade: 3.95,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91485,6 +91487,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 9.9,
     cutoff50Grade: 3.26,
     cutoff70Grade: 3.42,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91495,6 +91498,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 25.9,
     cutoff50Grade: 3.42,
     cutoff70Grade: 3.85,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91505,6 +91509,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 26.4,
     cutoff50Grade: 3.88,
     cutoff70Grade: 4.29,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91865,6 +91870,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 15.6,
     cutoff50Grade: 3.76,
     cutoff70Grade: 3.93,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91875,6 +91881,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 16.7,
     cutoff50Grade: 3.6,
     cutoff70Grade: 3.9,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91885,6 +91892,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 17.4,
     cutoff50Grade: 3.72,
     cutoff70Grade: 4.25,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91895,6 +91903,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 18.9,
     cutoff50Grade: 2.81,
     cutoff70Grade: 2.95,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91905,6 +91914,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 18.4,
     cutoff50Grade: 3.69,
     cutoff70Grade: 3.8,
+    campus: "안성",
   },
   {
     university: "중앙대학교",
@@ -91915,6 +91925,7 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     competitionRate: 8.1,
     cutoff50Grade: 4.48,
     cutoff70Grade: 5.62,
+    campus: "안성",
   },
   // 중부대학교 (2025학년도)
   {
