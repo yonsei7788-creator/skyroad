@@ -10,6 +10,17 @@ export interface CourseAlignmentPromptInput {
   gradingSystem: "5등급제" | "9등급제";
   isMedical?: boolean;
   isGyogwaOnly?: boolean;
+  /** 졸업생 여부. true면 과목 이수 권고 금지. */
+  isGraduate?: boolean;
+  /**
+   * 추가 과목 이수가 사실상 불가능한 시점 여부.
+   * - true: 졸업생, 또는 3학년 2학기 후반(시간상 새 과목 이수 불가)
+   * - false: 1·2학년, 3학년 1학기, 3학년 2학기 초반 등 잔여 학기에 이수 가능
+   * wave-executor에서 currentDate + studentGrade + isGraduate로 판정해 전달.
+   */
+  enrollmentLocked?: boolean;
+  /** 학생이 직접 입력한 수강 예정 과목 (있는 경우) */
+  plannedSubjects?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -148,18 +159,30 @@ ${input.competencyExtraction}
 ### 학생 프로필
 ${input.studentProfile}
 
-### 학년별 분석 방향
-- 학생 학년: ${input.studentGrade}학년
+### 학년·시점별 분석 방향
+- 학생 학년: ${input.studentGrade}학년${input.isGraduate ? " (졸업생)" : ""}
 ${
-  input.studentGrade >= 3
-    ? `- 이 학생은 3학년으로 **과목 선택이 완료된 상태**입니다.
+  input.enrollmentLocked
+    ? `- 이 학생은 **추가 과목 이수가 사실상 불가능한 시점**입니다 (졸업생 또는 3학년 2학기 후반).
 - "남은 기간에 이수하라"는 조언은 부적절합니다.
 - 현재 이수한 과목 기준으로 입시 영향만 분석하세요.
 - 미이수 과목이 있다면: "이미 선택 기회가 지났으므로, 면접에서 해당 과목 미이수 사유를 설명할 준비가 필요합니다"와 같은 방향으로 분석하세요.
 - recommendation 필드는 이수 전략 대신 "미이수 상태에서의 대응 전략"을 작성하세요.`
-    : `- 이 학생은 ${input.studentGrade}학년으로 남은 학기에 추가 이수가 가능합니다.
-- 미이수 과목에 대해 구체적인 이수 전략을 제안하세요.`
-}
+    : `- 이 학생은 **남은 학기에 추가 과목 이수가 가능한 시점**입니다.
+- 미이수 과목에 대해 잔여 학기 이수 전략을 구체적으로 제안하세요.
+- ⛔ "이미 이수 기회가 지났다", "과목 선택이 완료된 상태", "이미 선택이 끝났다" 등 단정적 표현 금지. 학생은 아직 잔여 학기가 있어 추가 이수가 가능합니다.${
+        input.plannedSubjects
+          ? `\n- 학생이 입력한 수강 예정 과목이 있을 경우(아래 입력 데이터 참고), 이수 전략은 그 범위 또는 잔여 학기 일반 가능 과목 안에서 제안하세요. 학교 교육과정에 없는 과목을 강요하지 마세요.`
+          : ""
+      }`
+}${
+    input.plannedSubjects
+      ? `
+
+### 학생 수강 예정 과목 (잔여 학기 이수 예정)
+${input.plannedSubjects}`
+      : ""
+  }
 
 ## 출력 JSON 스키마
 

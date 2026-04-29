@@ -13,6 +13,8 @@ export interface CompetencyScorePromptInput {
   gradingSystem?: "5등급제" | "9등급제";
   isMedical?: boolean;
   isGyogwaOnly?: boolean;
+  /** 학년별 데이터 존재 여부 — growthComment에서 미존재 학년 평가 방지용 */
+  dataYearsPresent?: { year1: boolean; year2: boolean; year3: boolean };
 }
 
 // 플랜별 차이 없음 — 점수는 postprocessor에서 전처리 데이터 기반으로 결정적 고정됨
@@ -143,8 +145,25 @@ export const buildCompetencyScorePrompt = (
 `
     : "";
 
+  const yearsPresent = input.dataYearsPresent;
+  const yearGuard = yearsPresent
+    ? `## ⛔ 학년별 데이터 가용성 (growthComment 작성 시 필수 준수)
+- 1학년 데이터 존재: ${yearsPresent.year1 ? "있음" : "**없음**"}
+- 2학년 데이터 존재: ${yearsPresent.year2 ? "있음" : "**없음**"}
+- 3학년 데이터 존재: ${yearsPresent.year3 ? "있음" : "**없음**"}
+
+⛔ 데이터가 "**없음**"인 학년에 대해 평가·서술 금지:
+- ❌ "1학년부터 3학년까지 꾸준히 성장" (3학년 데이터 없으면 단정 불가)
+- ❌ "2학년에서 3학년으로 넘어가는 시점의 학업 성취도 상승 폭이 아쉬워..." (3학년 성적 데이터 없으면 비교 불가)
+- ❌ "3학년 들어 탐구가 심화되었다" (3학년 데이터 없으면 단정 금지)
+- ✅ 데이터 존재하는 학년 범위까지만 서술. 예: "1·2학년에 걸쳐 ~가 확인됨"
+- ✅ 미존재 학년은 평가 보류: "3학년 데이터는 아직 누적되지 않아 평가 보류"
+
+`
+    : "";
+
   return `${gyogwaOnlyContext}${fiveGradeScoring}${medicalScoringContext}## 작업
-학생의 역량을 300점 만점 체계로 정량 평가하고, 발전가능성은 별도 등급으로 평가하세요.
+학생의 역량을 400점 만점 체계로 정량 평가하세요. (학업+진로+공동체+발전가능성 각 100점)
 
 ## 이 섹션의 역할
 이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.
@@ -156,15 +175,16 @@ export const buildCompetencyScorePrompt = (
 이 섹션은 **증거 → 점수 → 감점 사유** 순서로 서술합니다. 점수의 근거를 명확히 밝히는 데 집중하세요.
 - "~(근거). ~로 -N점", "감점 사유 없음, N/N점" 등 채점 보고서 어투를 사용하세요.
 
-## ⛔ 다른 섹���과의 역할 경계 (필수)
+## ⛔ 다른 섹션과의 역할 경계 (필수)
 - ❌ 등급 수치의 의미 해석 (예: "N등급이라 약점이다", "성적이 하락했다") → academicAnalysis에서 다룸
 - ❌ 약점 진단/보완 방향 → weaknessAnalysis에서 다룸
 - ❌ 합격 가능성 판단, 전략 제안 → admissionPrediction·admissionStrategy에서 다룸
 - ✅ 이 섹션에서 할 것: **증거 → 점수 → 감점 사유**의 간결한 채점만. 서술형 해석을 최소화하세요.
 
-## 점수 체계
-- 총점: 학업역량(100) + 진로역량(100) + 공동체역량(100) = 300점 만점
-- 발전가능성: 총점에 미포함, S/A/B/C/D 등급으로 별도 표시
+${yearGuard}## 점수 체계
+- 총점: 학업역량(100) + 진로역량(100) + 공동체역량(100) + 발전가능성(100) = **400점 만점**
+- 발전가능성은 totalScore에 포함되며, 별도로 S/A/B/C/D 등급도 함께 출력합니다 (등급은 표시용).
+- ⛔ "300점 만점", "총점에 미포함" 등의 표현 금지. interpretation에 만점 표기 시 반드시 "(400점 만점)"으로 작성.
 
 ## 입력 데이터
 
@@ -420,6 +440,19 @@ export const buildGyogwaCompetencyScorePrompt = (
 `
       : "";
 
+  const yearsPresentG = input.dataYearsPresent;
+  const yearGuardG = yearsPresentG
+    ? `## ⛔ 학년별 데이터 가용성 (growthComment 작성 시 필수 준수)
+- 1학년: ${yearsPresentG.year1 ? "있음" : "**없음**"} / 2학년: ${yearsPresentG.year2 ? "있음" : "**없음**"} / 3학년: ${yearsPresentG.year3 ? "있음" : "**없음**"}
+
+⛔ "**없음**"인 학년의 활동·성적·세특을 단정해서 평가하지 마세요.
+- ❌ "1학년부터 3학년까지 꾸준히 성장" (3학년 데이터 없으면 단정 불가)
+- ❌ "2학년에서 3학년으로 넘어가는 시점의 ~ 상승" (3학년 데이터 없으면 비교 불가)
+- ✅ "1·2학년에 걸쳐 ~가 확인됨", 또는 "3학년 데이터는 아직 누적되지 않아 평가 보류"
+
+`
+    : "";
+
   // 기존 프롬프트의 채점 체계/스키마를 재사용하되 학종 프레임 제거
   return `${fiveGradeScoring}## 작업
 이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.
@@ -433,7 +466,7 @@ export const buildGyogwaCompetencyScorePrompt = (
 - ❌ 등급 수치의 의미 해석, 약점 진단, 합격 가능성 판단, 전략 제안 → 각각 다른 섹션에서 다룸
 - ✅ 이 섹션에서 할 것: **증거 → 점수 → 감점 사유**의 간결한 채점만
 
-학생의 역량을 300점 만점 체계로 정량 평가하고, 발전가능성은 별도 등급으로 평가하세요.
+학생의 역량을 400점 만점 체계로 정량 평가하세요. (학업+진로+공동체+발전가능성 각 100점)
 
 ## 교과전형 역량 평가 원칙
 - 역량 점수는 학생의 강약점을 객관적으로 파악하기 위한 도구입니다.
@@ -441,9 +474,10 @@ export const buildGyogwaCompetencyScorePrompt = (
 - 대신 "교과전형 관점에서", "학업 역량 측면에서" 등으로 표현하세요.
 - **발전가능성 채점에서 "성적 추이(상승/하락)"를 반영하지 마세요.** 대신 "자기주도적 학습 태도", "탐구의 꾸준함" 등 학습 태도 기반으로 채점하세요.
 
-## 채점 체계
-- 총점: 학업역량(100) + 진로역량(100) + 공동체역량(100) = 300점 만점
-- 발전가능성: 총점에 미포함, S/A/B/C/D 등급으로 별도 표시
+${yearGuardG}## 채점 체계
+- 총점: 학업역량(100) + 진로역량(100) + 공동체역량(100) + 발전가능성(100) = **400점 만점**
+- 발전가능성은 totalScore에 포함되며 S/A/B/C/D 등급도 함께 출력합니다.
+- ⛔ "300점 만점", "총점에 미포함" 등 표현 금지. interpretation에 만점 표기 시 "(400점 만점)"으로 작성.
 
 ### 학업역량 하위항목:
 | 항목 | 만점 | 설명 |

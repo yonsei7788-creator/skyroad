@@ -27,6 +27,8 @@ export interface ConsultantReviewPromptInput {
   plannedSubjects?: string;
   /** 코드 전처리된 성적 원본 데이터 (등급·원점수·수강자수 등) */
   preprocessedAcademicData?: string;
+  /** 학년별 데이터 존재 여부 — growthPotential 등에서 미존재 학년 평가 방지 */
+  dataYearsPresent?: { year1: boolean; year2: boolean; year3: boolean };
 }
 
 const buildPlanSpecific = (
@@ -143,6 +145,11 @@ export const buildConsultantReviewPrompt = (
 3. **탐구 역량 (Inquiry Ability)**: 입학사정관은 문제 제기 능력, 자료 분석 능력, 탐구 과정, 결과 해석을 통해 탐구 역량을 판단합니다. 특히 다음 구조가 나타나면 높은 평가를 받습니다: 수업 탐구 → 동아리 연구 → 보고서 작성 → 발표 및 확장. 이런 구조는 학생이 실제로 탐구를 수행했다는 증거로 평가됩니다. → 이 학생의 탐구 활동이 이 구조를 갖추고 있는지 판단하세요.
 
 4. **발전 가능성 (Growth Potential)**: 대학은 완성된 학생보다 성장 가능성이 있는 학생을 선호합니다. 입학사정관은 성적 상승 흐름, 학업 태도, 탐구 활동 확장, 학업 관심 변화를 통해 발전 가능성을 판단합니다. 1학년→관심 발견, 2학년→탐구 활동, 3학년→심화 연구의 흐름이 보이면 긍정적 평가를 받습니다. → 이 학생의 성장 궤적을 평가하세요.
+   ⛔ **데이터 가용 학년만으로 서술**: 아래 "학년별 데이터 가용성"에서 미존재(없음)로 표시된 학년의 활동·성적·세특을 단정해서 평가하면 안 됩니다.
+   - ❌ "1학년부터 3학년까지 꾸준히 ~가 심화" (3학년 데이터 없으면 단정 불가)
+   - ❌ "2학년에서 3학년으로 넘어가는 시점의 ~ 상승" (3학년 데이터 없으면 비교 불가)
+   - ❌ "3학년 들어 탐구가 깊어졌다" (3학년 데이터 없으면 단정 금지)
+   - ✅ "1·2학년에 걸쳐 ~의 흐름이 확인되며, 3학년 데이터는 아직 누적되지 않아 평가 보류"
 
 ### 학생에게 알려줄 핵심 인사이트 3가지 (반드시 포함)
 1. **활동 개수는 중요하지 않습니다**: 입학사정관은 활동 개수보다 활동의 깊이, 전공 관련성, 탐구 과정을 평가합니다. 단순 나열형(봉사+캠프+대회+동아리)보다 탐구 확장형(수업 탐구→동아리 연구→보고서 작성→발표)이 훨씬 높은 평가를 받습니다.
@@ -283,6 +290,17 @@ ${input.academicAnalysis}
 ### 학생 프로필
 ${input.studentProfile}
 
+${
+  input.dataYearsPresent
+    ? `### 학년별 데이터 가용성 (growthPotential 등 평가 시 필수 준수)
+- 1학년 데이터: ${input.dataYearsPresent.year1 ? "있음" : "**없음**"}
+- 2학년 데이터: ${input.dataYearsPresent.year2 ? "있음" : "**없음**"}
+- 3학년 데이터: ${input.dataYearsPresent.year3 ? "있음" : "**없음**"}
+
+⛔ "**없음**"인 학년에 대한 활동·성적·세특·성장 흐름을 단정해서 평가하지 마세요. 가용 학년 범위 안에서만 서술하고, 미존재 학년은 "아직 누적되지 않아 평가 보류"로 처리하세요.
+`
+    : ""
+}
 ${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}` : ""}
 
 ${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}` : ""}
@@ -466,6 +484,17 @@ ${input.academicAnalysis}
 ### 학생 프로필
 ${input.studentProfile}
 
+${
+  input.dataYearsPresent
+    ? `### 학년별 데이터 가용성 (평가 시 필수 준수)
+- 1학년 데이터: ${input.dataYearsPresent.year1 ? "있음" : "**없음**"}
+- 2학년 데이터: ${input.dataYearsPresent.year2 ? "있음" : "**없음**"}
+- 3학년 데이터: ${input.dataYearsPresent.year3 ? "있음" : "**없음**"}
+
+⛔ "**없음**"인 학년에 대한 활동·성적·세특·성장 흐름을 단정해서 평가하지 마세요. 가용 학년 범위 안에서만 서술하세요.
+`
+    : ""
+}
 ${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}` : ""}
 
 ${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}` : ""}

@@ -121,7 +121,8 @@ export const POST = async (
         reportId,
         nextState.preprocessedTexts?.universityCandidatesText,
         detectedMajor,
-        nextState.preprocessedTexts?.strategyUniversityCandidatesText
+        nextState.preprocessedTexts?.strategyUniversityCandidatesText,
+        nextState.preprocessedTexts?.creativeActivitiesText
       );
 
       await dbClient

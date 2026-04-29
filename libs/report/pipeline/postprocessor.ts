@@ -78,7 +78,9 @@ export const postprocess = (
   /** Phase 2에서 감지된 생기부 기반 강점 계열 (예: "예체능교육") */
   detectedMajorGroup?: string,
   /** admissionStrategy에서 majorExploration 기반으로 재생성된 후보군 */
-  strategyUniversityCandidatesText?: string
+  strategyUniversityCandidatesText?: string,
+  /** 창체 원문 텍스트 — activityAnalysis 환각 keyActivities 검증에 사용 */
+  creativeActivitiesText?: string
 ): PostprocessResult => {
   const validationResults: SectionValidationResult[] = [];
 
@@ -86,7 +88,13 @@ export const postprocess = (
   const validatedSections: ReportSection[] = [];
 
   for (let section of rawSections) {
-    section = normalizeSection(section, preprocessed, plan, studentInfo);
+    section = normalizeSection(
+      section,
+      preprocessed,
+      plan,
+      studentInfo,
+      creativeActivitiesText
+    );
     const result = validateSection(section);
     validationResults.push(result);
 
@@ -113,20 +121,12 @@ export const postprocess = (
       if (sc.category === "career") profile.radarChart.career = sc.score;
       if (sc.category === "community") profile.radarChart.community = sc.score;
     }
-    if (compScore.growthGrade) {
-      // 등급 기준: S(90~100), A(75~89), B(60~74), C(40~59), D(0~39)
-      const growthMap: Record<string, number> = {
-        S: 95,
-        A: 82,
-        B: 67,
-        C: 50,
-        D: 20,
-      };
-      const growthNumeric =
-        growthMap[compScore.growthGrade] ?? profile.radarChart.growth;
-      profile.radarChart.growth = growthNumeric;
-      // 발전가능성 숫자 점수를 competencyScore 섹션에 주입
-      compScore.growthScore = growthNumeric;
+    // growthScore는 normalizeSection의 Pass B에서 preprocessor sti.growthScore로
+    // 결정적으로 설정된 후이므로, 여기서는 그 값을 그대로 radarChart에 동기화한다.
+    // 과거: growthGrade를 grade map으로 score로 환산해 덮어쓰는 로직이 있었으나,
+    // Pass B 이후 실행되어 totalScore와 growthScore가 어긋나는 모순을 만들어 제거함.
+    if (typeof compScore.growthScore === "number") {
+      profile.radarChart.growth = compScore.growthScore;
     }
   }
 
@@ -2144,7 +2144,8 @@ const normalizeSection = (
   section: ReportSection,
   pre: PreprocessedData,
   plan: ReportPlan,
-  studentInfo: StudentInfo
+  studentInfo: StudentInfo,
+  creativeActivitiesText?: string
 ): ReportSection => {
   let s = section as any;
 
@@ -2314,6 +2315,38 @@ const normalizeSection = (
         return "사회";
       return "기타";
     };
+
+    // ── 환각 과목 제거: 학생이 실제 이수하지 않은 과목명 필터 ──
+    // AI가 입력 [N학년 과목명] 라벨 대신 본문 내용을 보고 다른 과목명으로 라벨링
+    // (예: 1학년 「과학탐구실험」 세특 본문을 보고 "물리학1"로 잘못 라벨)하는 환각을 차단.
+    const normSubject = (n: string): string =>
+      (n ?? "")
+        .replace(/Ⅰ/g, "1")
+        .replace(/Ⅱ/g, "2")
+        .replace(/Ⅲ/g, "3")
+        .replace(/Ⅳ/g, "4")
+        .replace(/[·\s]/g, "")
+        .toLowerCase();
+    const takenSubjectSet = new Set<string>();
+    for (const g of pre.allSubjectGrades ?? []) {
+      if (g?.subject) takenSubjectSet.add(normSubject(g.subject));
+    }
+    for (const cs of pre.careerSubjects ?? []) {
+      if (cs?.subject) takenSubjectSet.add(normSubject(cs.subject));
+    }
+    if (takenSubjectSet.size > 0) {
+      s.subjects = s.subjects.filter((subj: any) => {
+        const name = normSubject(subj.subjectName ?? "");
+        if (!name) return false;
+        if (!takenSubjectSet.has(name)) {
+          console.warn(
+            `[postprocessor] subjectAnalysis 환각 과목 제거: ${subj.subjectName}`
+          );
+          return false;
+        }
+        return true;
+      });
+    }
 
     // 같은 과목명 중복 제거 (학년이 다르더라도 최초 1개만 유지)
     const seenSubjectNames = new Set<string>();
@@ -3040,6 +3073,12 @@ const normalizeSection = (
         /총점\s*\d+점/g,
         `총점 ${total}점`
       );
+      // "(NNN점 만점)" 만점 표기를 실제 만점(400)으로 교정
+      // AI가 "300점 만점"으로 잘못 적는 케이스 다수 발견 (실제는 academic+career+community+growth = 400)
+      s.interpretation = s.interpretation.replace(
+        /\(\s*\d+\s*점\s*만점\s*\)/g,
+        "(400점 만점)"
+      );
       // 역량별 점수 교정: "학업역량(NN점)" 등
       for (const sc of s.scores) {
         const label = sc.label ?? "";
@@ -3057,6 +3096,57 @@ const normalizeSection = (
           s.interpretation = s.interpretation.replace(
             scoreRegex2,
             `${label}(${sc.score}점)`
+          );
+        }
+      }
+    }
+
+    // ── growthComment: "X등급" 표기를 실제 growthGrade와 동기화 ──
+    // AI가 grade를 결정한 후 코멘트 작성하지만, postprocessor가 sti.growthScore
+    // 기반으로 grade를 재산정하면 본문 텍스트와 어긋날 수 있음.
+    if (typeof s.growthComment === "string" && s.growthGrade) {
+      s.growthComment = s.growthComment.replace(
+        /([SABCD])등급으로\s*평가/g,
+        `${s.growthGrade}등급으로 평가`
+      );
+    }
+
+    // ── 3학년 데이터 부재 시 growthComment의 3학년 단정 phrase 치환 ──
+    // 큰 단위 phrase만 안전한 표현으로 치환. sentence-level 제거는 한국어 분리 모호하여
+    // 의도치 않게 문장 전체를 삼킬 위험이 있으므로 프롬프트 가드에 의존.
+    if (
+      typeof s.growthComment === "string" &&
+      pre.dataYearsPresent &&
+      !pre.dataYearsPresent.year3
+    ) {
+      s.growthComment = s.growthComment
+        .replace(/1학년부터\s*3학년까지/g, "1학년부터 2학년까지")
+        .replace(/1\s*[~∼\-–]\s*3학년/g, "1·2학년")
+        .replace(/1[·\s,]+2[·\s,]+3학년/g, "1·2학년")
+        .replace(/2학년에서\s*3학년으로\s*넘어가[는며]?\s*시점/g, "2학년 후반")
+        .trim();
+    }
+
+    // ── subcategory.comment의 "-N점" 감점 표기를 score/maxScore 차이와 동기화 ──
+    // AI가 comment 텍스트로 적은 감점치(-N점)와 실제 score 사이의 불일치를 보정.
+    // (예: "...로 -2점" 적었는데 maxScore=25, score=18 → 실제 -7. 텍스트만 -7로 교체)
+    if (Array.isArray(s.scores)) {
+      for (const sc of s.scores) {
+        if (!Array.isArray(sc.subcategories)) continue;
+        for (const sub of sc.subcategories) {
+          if (
+            typeof sub.score !== "number" ||
+            typeof sub.maxScore !== "number" ||
+            typeof sub.comment !== "string"
+          ) {
+            continue;
+          }
+          const actualDeduction = sub.maxScore - sub.score;
+          if (actualDeduction <= 0) continue;
+          // "-N점", "- N점" 패턴을 실제 감점치로 교체
+          sub.comment = sub.comment.replace(
+            /-\s*\d+\s*점/g,
+            `-${actualDeduction}점`
           );
         }
       }
@@ -3224,6 +3314,39 @@ const normalizeSection = (
         activity.volumeAssessment = undefined;
         activity.keyActivities = [];
         activity.improvementDirection = undefined;
+      }
+    }
+
+    // ── 환각 활동 제거: keyActivities[].activity가 입력 원문에 없는 경우 ──
+    // AI가 입력 원문(자율활동 본문)에 등장하지 않은 활동명을 자체 생성
+    // (예: 본문에 "학급 규칙 제정" 어휘가 없는데 "학급 규칙 제정 프로젝트"로 라벨)하는 환각을 차단.
+    // 검증 방식: activity 문자열에서 한글 2자 이상 토큰을 추출 후, 입력 원문에 등장하는
+    // 토큰 비율이 50% 미만이면 환각으로 판단하여 제거.
+    const creativeText = creativeActivitiesText ?? "";
+    if (creativeText.length > 0) {
+      for (const activity of s.activities) {
+        if (!Array.isArray(activity.keyActivities)) continue;
+        activity.keyActivities = activity.keyActivities.filter((ka: any) => {
+          const activityName = (ka?.activity ?? "").trim();
+          if (!activityName) return false;
+          const tokens = activityName
+            .replace(/[(\)（）·,]/g, " ")
+            .split(/\s+/)
+            .map((t: string) => t.replace(/[^가-힣a-zA-Z0-9]/g, ""))
+            .filter((t: string) => t.length >= 2);
+          if (tokens.length === 0) return true;
+          const matchedCount = tokens.filter((t: string) =>
+            creativeText.includes(t)
+          ).length;
+          const matchRate = matchedCount / tokens.length;
+          if (matchRate < 0.5) {
+            console.warn(
+              `[postprocessor] activityAnalysis 환각 활동 제거: "${activityName}" (매칭률 ${Math.round(matchRate * 100)}%)`
+            );
+            return false;
+          }
+          return true;
+        });
       }
     }
   }
@@ -3598,6 +3721,33 @@ const normalizeSection = (
   // ── consultantReview: 졸업생은 생기부 마무리 방향 미노출 ──
   if (s.sectionId === "consultantReview" && studentInfo.isGraduate) {
     delete s.completionDirection;
+  }
+
+  // ── consultantReview: 3학년 데이터 부재 시 growthPotential의 3학년 단정 정정 ──
+  // (예: "1학년부터 3학년까지 꾸준히 약학 계열에 대한 관심이 심화되고 ...")
+  if (
+    s.sectionId === "consultantReview" &&
+    pre.dataYearsPresent &&
+    !pre.dataYearsPresent.year3
+  ) {
+    const stripYear3Phantoms = (text: unknown): unknown => {
+      if (typeof text !== "string") return text;
+      return text
+        .replace(/1학년부터\s*3학년까지/g, "1학년부터 2학년까지")
+        .replace(/1\s*[~∼\-–]\s*3학년/g, "1·2학년")
+        .replace(/1[·\s,]+2[·\s,]+3학년/g, "1·2학년")
+        .replace(/2학년에서\s*3학년으로\s*넘어가[는며]?\s*시점/g, "2학년 후반")
+        .trim();
+    };
+    if (typeof s.growthPotential === "string") {
+      s.growthPotential = stripYear3Phantoms(s.growthPotential);
+    }
+    if (s.evaluationGuide && typeof s.evaluationGuide === "object") {
+      const eg = s.evaluationGuide as Record<string, unknown>;
+      if (typeof eg.growthPotential === "string") {
+        eg.growthPotential = stripYear3Phantoms(eg.growthPotential);
+      }
+    }
   }
 
   // ── academicAnalysis: 재학생 improvementPriority에서 이미 이수 완료한 과목명 언급 항목 제거 ──

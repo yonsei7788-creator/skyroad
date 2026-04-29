@@ -588,7 +588,6 @@ export interface RecommendedCourseMatch {
   takenCourses: string[];
   missingCourses: string[];
   matchRate: number;
-  isCompleted: boolean;
 }
 
 // ─── 메디컬 계열 판별 ───

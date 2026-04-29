@@ -303,6 +303,12 @@ export interface PreprocessedData {
   existingCreativeSlots: { area: string; year: number }[];
   /** 데이터가 존재하는 행동특성 학년 (postprocessor "기록 없음" 판단용) */
   existingBehaviorYears: number[];
+  /**
+   * 학년별 의미 있는 데이터 존재 여부.
+   * 성적/세특/창체활동(hours>0 or note 있음)/출결/행동특성/수상/봉사 중 하나라도 존재 시 true.
+   * "1학년부터 3학년까지 성장 궤적" 같은 LLM의 단정 평가가 실제 데이터 부재와 어긋나는 것을 막기 위한 가드용.
+   */
+  dataYearsPresent: { year1: boolean; year2: boolean; year3: boolean };
   studentTypeInput: {
     academicScore: number;
     careerScore: number;
@@ -906,6 +912,47 @@ export const preprocess = (
     .filter((b) => b.assessment.trim().length > 0)
     .map((b) => b.year);
 
+  // 18. 학년별 의미 있는 데이터 존재 여부
+  // 4월 말 시점 등 갓 진학한 학생이 grade=high3여도 3학년 활동·성적 데이터가
+  // 0건이라 LLM이 "1학년부터 3학년까지의 성장"이라 단정하면 환각이 됨.
+  // 어떤 카테고리든 1건이라도 의미 있는 데이터가 있으면 해당 학년 평가 가능으로 본다.
+  const awards = (recordData.awards ?? []) as Array<{
+    year?: number;
+    name?: string;
+  }>;
+  const volunteers = recordData.volunteerActivities ?? [];
+  const hasYearData = (year: number): boolean => {
+    if (subjectEvals.some((s) => s.year === year)) return true;
+    if (generalSubjects.some((s) => s.year === year)) return true;
+    if (careerSubjects.some((s) => s.year === year)) return true;
+    if (
+      creativeActs.some(
+        (a) =>
+          a.year === year &&
+          ((a.hours ?? 0) > 0 || (a.note ?? "").trim().length > 0)
+      )
+    )
+      return true;
+    if (
+      behaviors.some(
+        (b) => b.year === year && (b.assessment ?? "").trim().length > 0
+      )
+    )
+      return true;
+    if (attendance.some((a) => a.year === year)) return true;
+    if (
+      awards.some((a) => a?.year === year && (a?.name ?? "").trim().length > 0)
+    )
+      return true;
+    if (volunteers.some((v) => v.year === year)) return true;
+    return false;
+  };
+  const dataYearsPresent = {
+    year1: hasYearData(1),
+    year2: hasYearData(2),
+    year3: hasYearData(3),
+  };
+
   const data: PreprocessedData = {
     overallAverage: Math.round(overallAverage * 100) / 100,
     averageByGrade,
@@ -932,6 +979,7 @@ export const preprocess = (
     studentTypeInput,
     existingCreativeSlots,
     existingBehaviorYears,
+    dataYearsPresent,
   };
 
   const texts = buildTexts(
@@ -1311,7 +1359,10 @@ export const matchRecommendedCourses = (
     }
   }
 
-  const isCompleted = studentGrade >= 3;
+  // isCompleted 필드는 과거 studentGrade>=3을 "선택 완료"로 단정해 LLM이
+  // "이미 이수 기회가 지났다"고 잘못 결론짓게 만든 원인이라 제거함.
+  // 실제 잠금 여부(졸업생/3학년 2학기 후반)는 wave-executor에서 currentDate
+  // 기반으로 enrollmentLocked로 판정해 프롬프트에 직접 전달한다.
 
   return {
     _referenceTargetMajor: matchingMajor?.major ?? targetDept,
@@ -1322,7 +1373,6 @@ export const matchRecommendedCourses = (
       requiredCourses.length > 0
         ? Math.round((takenCourses.length / requiredCourses.length) * 100)
         : 100,
-    isCompleted,
   };
 };
 

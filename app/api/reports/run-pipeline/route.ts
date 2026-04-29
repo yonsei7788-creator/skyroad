@@ -643,7 +643,8 @@ export const POST = async (request: NextRequest) => {
           reportId,
           state.preprocessedTexts?.universityCandidatesText,
           detectedMajor,
-          state.preprocessedTexts?.strategyUniversityCandidatesText
+          state.preprocessedTexts?.strategyUniversityCandidatesText,
+          state.preprocessedTexts?.creativeActivitiesText
         );
 
         console.log(

@@ -304,7 +304,7 @@ yearlyAnalysis[].summary, ratingRationale, activities[].overallComment, activiti
       "yearlyAnalysis": [
         {
           "year": 1,
-          "summary": "학급 회장으로서 학급 규칙 제정에 주도적 역할...",
+          "summary": "(원문 요약 — 입력에 등장한 활동/주제/역할만 인용)...",
           "rating": "good",
           "competencyTags": [
             {"category": "community", "subcategory": "리더십"}
@@ -315,8 +315,8 @@ yearlyAnalysis[].summary, ratingRationale, activities[].overallComment, activiti
       "volumeAssessment": "기록 분량이 적절하며...",
       "keyActivities": [
         {
-          "activity": "학급 규칙 제정 프로젝트",
-          "evaluation": "학급 규칙 제정 참여 기록이 있으나, 규칙의 구체적 내용이나 갈등 조율 과정이 드러나지 않아 입학사정관은 이를 일반적 수준의 활동으로 판단할 가능성이 높습니다.",
+          "activity": "(입력 원문에 등장한 구체 활동명·프로젝트명·발표 주제명을 그대로 인용 — 새 활동명 생성 금지)",
+          "evaluation": "(해당 활동에 대한 입학사정관 관점 평가 — '입학사정관/학종/평가/전형/면접/변별력' 키워드 1개 이상 포함)",
           "competencyTags": [{"category": "community", "subcategory": "리더십"}]
         }
       ],
@@ -377,12 +377,23 @@ ${ACTIVITY_EVALUATION_GUIDE}
 - ✅ 필수: "입학사정관은 이 기록에서 ~를 판단하며, ~가 부족하여 변별력이 낮습니다" 또는 "학종에서 ~로 평가될 수 있으나, ~가 빠져 있어 영향은 제한적입니다"
 - 긍정적 활동이라도 "다만 ~가 기록에 드러나지 않아" 등 한계를 반드시 병기하세요.
 
+### ⛔ keyActivities[].activity 강제 규칙 (최우선 — 위반 시 품질 실패)
+- activity 필드는 반드시 위 "창체 원문 데이터"에 등장한 활동명·주제명·프로젝트명·발표명·행사명을 **그대로 인용**하거나 **가까운 paraphrase**(원문 어휘 다수 포함)로 작성합니다.
+- 본문 흐름을 보고 새로운 활동명을 자체 생성하면 안 됩니다.
+- ✅ 입력에 "오호 물병 만들기"가 있으면 → activity: "오호 물병 만들기" 또는 "오호 물병 제작 실험"
+- ✅ 입력에 "학급자치회 회장"이 있으면 → activity: "학급자치회 회장 활동" 또는 "학급자치회 회장으로서의 역할"
+- ❌ 입력에 "학급 규칙 제정"이 없는데 activity: "학급 규칙 제정 프로젝트"로 적으면 환각 — 즉시 품질 실패
+- ❌ 입력의 활동을 추상화하여 새 라벨로 재명명(예: "학급 행사 주관" → "공동체 결속 프로젝트") 금지
+- yearlyAnalysis[].summary에서도 동일 — 입력 원문에 없는 활동·표현을 만들어내지 마세요.
+
 ## ⛔ 출력 전 자기 검증 (반드시 수행)
 JSON을 출력하기 전에 아래 항목을 점검하세요. 하나라도 위반하면 수정 후 출력합니다:
 1. 모든 keyActivities[].evaluation에 "입학사정관/학종/평가/전형/면접/변별력/판단/영향/제한적" 중 1개 이상 포함되었는가?
 2. 모든 yearlyAnalysis[].summary에 "입학사정관/학종/평가/전형/면접/변별력" 중 1개 이상 포함되었는가?
 3. evaluation이 "~역량이 우수합니다", "~를 보여줍니다"로만 끝나는 항목이 없는가?
 4. 모든 활동에 한계점/부족한 점이 1개 이상 서술되었는가?
+5. **모든 keyActivities[].activity가 "창체 원문 데이터"에 등장한 활동명·주제명을 인용하거나 가까운 paraphrase인가?** (입력에 없는 새 활동명 출력 시 즉시 수정)
+6. **모든 yearlyAnalysis[].summary 안의 구체 활동·역할 묘사가 입력 원문에서 확인 가능한가?** (예: "학급 규칙 제정 주도"라는 표현이 입력에 있어야 사용 가능)
 
 ${PLAN_SPECIFIC[plan]}`;
 };

@@ -525,6 +525,7 @@ export const executeTask = async (
         gradingSystem: state.preprocessedData!.gradingSystem,
         isMedical,
         isGyogwaOnly,
+        dataYearsPresent: state.preprocessedData!.dataYearsPresent,
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly
@@ -652,6 +653,16 @@ export const executeTask = async (
           studentInfo.grade
         );
       }
+      // 추가 과목 이수가 사실상 불가능한 시점 판정.
+      // - 졸업생: 항상 잠금
+      // - 3학년 + 2학기 후반(9월 이후): 학기 진행 중이라 새 진로선택과목 이수 어려움
+      //   (한국 고교 학사: 1학기 3~7월, 2학기 9~12월. 8월 방학·수강신청 직전까지는 가능)
+      // - 그 외(1·2학년, 3학년 1학기, 8월 이전): 잔여 학기에 이수 가능
+      const currentMonth = new Date().getMonth() + 1; // 1~12
+      const enrollmentLocked =
+        studentInfo.isGraduate === true ||
+        (studentInfo.grade === 3 && currentMonth >= 9);
+
       section = await callGemini<ReportSection>(
         buildCourseAlignmentPrompt(
           {
@@ -662,6 +673,9 @@ export const executeTask = async (
             gradingSystem: state.preprocessedData!.gradingSystem,
             isMedical,
             isGyogwaOnly,
+            isGraduate: studentInfo.isGraduate,
+            enrollmentLocked,
+            plannedSubjects: texts.plannedSubjectsText,
           },
           plan
         )
@@ -934,7 +948,6 @@ export const executeTask = async (
       // (사용자에게 "희망대학이 없어 분석을 못 했다"고 표시하는 fallback은 사용하지 않음)
       const gyogwaInput = {
         academicAnalysis: predGyogwaAcadText,
-        universityCandidates: texts.universityCandidatesText,
         studentProfile: texts.studentProfileText,
         academicAnalysisResult: predGyogwaAcadSectionText,
         targetUniversities: gyogwaTargetText,
@@ -974,7 +987,6 @@ export const executeTask = async (
                 competencyExtraction: predCompExtrText,
                 academicAnalysis: ser.acadAnalText!,
                 studentTypeClassification: ser.stuTypeText!,
-                universityCandidates: texts.universityCandidatesText,
                 studentProfile: texts.studentProfileText,
                 subjectAnalysisResult: ser.subjAnalysisText!,
                 academicAnalysisResult: ser.acadSectionText!,
@@ -1663,6 +1675,7 @@ export const executeTask = async (
         selectedAdmissionTypes,
         detectedMajorGroup: detectedMajorForFlags,
         aiRecommendedMajor: consultAiMajor,
+        dataYearsPresent: state.preprocessedData?.dataYearsPresent,
         // preprocessedAcademicData 제거: 등급 원본이 있으면 AI가 재나열함
         // 생성된 academicAnalysis 섹션에 이미 정확한 등급 정보가 포함됨
       };
