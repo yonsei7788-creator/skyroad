@@ -3510,6 +3510,69 @@ const normalizeSection = (
     }
   }
 
+  // ── activityAnalysis: rating-tone 일관성 보정 (6번 fix 스코프 확장) ──
+  // rating이 "good" 이상인 카드(또는 rating 정보 없는 영역)의 단정 부정 톤
+  // ("약점으로 작용할 겁니다" 등)을 보완 톤으로 정리.
+  // subjectAnalysis와 동일 정책. weak rating에서는 단정 부정 톤 허용.
+  if (s.sectionId === "activityAnalysis" && Array.isArray(s.activities)) {
+    const ACTIVITY_SOFTEN_REPLACEMENTS: Array<[RegExp, string]> = [
+      [/약점으로\s*작용할\s*겁니다/g, "보완이 필요한 부분입니다"],
+      [/약점으로\s*작용할\s*것입니다/g, "보완이 필요한 부분입니다"],
+      [/약점으로\s*작용할\s*수\s*있습니다/g, "보완이 필요할 수 있습니다"],
+      [/약점으로\s*판단될\s*수\s*있습니다/g, "보완이 필요할 수 있습니다"],
+      [/변별력이\s*부족하다고\s*판단/g, "변별력 강화 여지가 있다고 판단"],
+      [
+        /변별력을\s*갖기에는\s*한계가\s*있습니다/g,
+        "변별력 강화 여지가 있습니다",
+      ],
+      [/변별력은\s*낮습니다/g, "변별력 강화 여지가 있습니다"],
+      [/한계가\s*있다고\s*판단/g, "보완 여지가 있다고 판단"],
+      [/근거로\s*작용하기는\s*어렵습니다/g, "근거 강화에 보완이 필요합니다"],
+      [
+        /평가에\s*큰\s*영향을\s*주기\s*어렵습니다/g,
+        "평가에서 더 강한 영향을 위해 보완이 필요합니다",
+      ],
+      [
+        /평가\s*영향은\s*제한적입니다/g,
+        "평가에서 더 강한 영향을 위해 보완 여지가 있습니다",
+      ],
+    ];
+    const softenText = (text: string): string => {
+      let updated = text;
+      for (const [pattern, replacement] of ACTIVITY_SOFTEN_REPLACEMENTS) {
+        updated = updated.replace(pattern, replacement);
+      }
+      return updated;
+    };
+
+    for (const activity of s.activities) {
+      // yearlyAnalysis: rating !== "weak"인 카드만 톤 정리 (weak는 단정 톤 허용)
+      if (Array.isArray(activity.yearlyAnalysis)) {
+        for (const ya of activity.yearlyAnalysis) {
+          if (ya.rating !== "weak" && typeof ya.summary === "string") {
+            ya.summary = softenText(ya.summary);
+          }
+        }
+      }
+      // keyActivities[].evaluation: rating 필드 없음 → 일괄 정리
+      if (Array.isArray(activity.keyActivities)) {
+        for (const ka of activity.keyActivities) {
+          if (typeof ka.evaluation === "string") {
+            ka.evaluation = softenText(ka.evaluation);
+          }
+        }
+      }
+      // activity.overallComment 일괄 정리
+      if (typeof activity.overallComment === "string") {
+        activity.overallComment = softenText(activity.overallComment);
+      }
+    }
+    // section overallComment 일괄 정리
+    if (typeof s.overallComment === "string") {
+      s.overallComment = softenText(s.overallComment);
+    }
+  }
+
   // ── activityAnalysis: "입학사정관은" 패턴 다양화 (2번째부터 교체) ──
   if (s.sectionId === "activityAnalysis" && Array.isArray(s.activities)) {
     let assessorCount = 0;
