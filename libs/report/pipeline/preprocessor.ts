@@ -27,6 +27,7 @@ import {
   getDepartmentsByCategory,
 } from "../constants/department-category-map.ts";
 import { correctSubjectName } from "../constants/subject-name-corrections.ts";
+import { isNonMainSubject } from "../constants/non-main-subjects.ts";
 
 /**
  * 예체능 관련 키워드.
@@ -805,17 +806,32 @@ export const preprocess = (
   // 4. 등급 추이
   const gradeTrend = computeGradeTrend(averageByGrade);
 
-  // 5. Z-score + 백분위
-  const subjectStats = computeSubjectStats(generalSubjects);
+  // 비주요 과목 분류 기준: 예체능 학과 지원자는 체육·음악·미술이 핵심 과목.
+  // 분석용 통계(subjectStats / gradeVariance / majorRelated / rawAcademicDataText)에서
+  // 비주요 과목을 제외하기 위한 플래그.
+  const isArtSportApplicant = isArtSportDepartment(
+    studentInfo.targetDepartment ?? ""
+  );
 
-  // 6. 과목 간 편차
-  const gradeVariance = computeGradeVariance(gradesWithRank);
+  // 5. Z-score + 백분위 (비주요 과목 제외)
+  const subjectStats = computeSubjectStats(
+    generalSubjects,
+    isArtSportApplicant
+  );
 
-  // 7. 전공 관련 교과 성적
+  // 6. 과목 간 편차 (비주요 과목 제외 — 정보·일본어 등이 lowest로 잡혀
+  //    약점 분석이 잘못 가는 것 방지)
+  const gradeVariance = computeGradeVariance(
+    gradesWithRank,
+    isArtSportApplicant
+  );
+
+  // 7. 전공 관련 교과 성적 (비주요 과목 제외)
   const majorRelated = computeMajorRelated(
     generalSubjects,
     studentInfo.targetDepartment ?? "",
-    overallAverage
+    overallAverage,
+    isArtSportApplicant
   );
 
   // 8. 고교 유형별 등급 환산 (환산표 기반 선형 보간)
@@ -1070,7 +1086,10 @@ const computeGradeTrend = (
   return { direction: "stable", magnitude: Math.abs(slope) };
 };
 
-const computeSubjectStats = (subjects: GeneralSubjectRow[]): SubjectStat[] => {
+const computeSubjectStats = (
+  subjects: GeneralSubjectRow[],
+  isArtSportApplicant: boolean
+): SubjectStat[] => {
   return subjects
     .filter(
       (s) =>
@@ -1078,7 +1097,8 @@ const computeSubjectStats = (subjects: GeneralSubjectRow[]): SubjectStat[] => {
         s.average !== null &&
         s.standardDeviation !== null &&
         s.standardDeviation > 0 &&
-        s.gradeRank !== null
+        s.gradeRank !== null &&
+        !isNonMainSubject(s.subject, isArtSportApplicant)
     )
     .map((s) => {
       const zScore = (s.rawScore! - s.average!) / s.standardDeviation!;
@@ -1098,15 +1118,21 @@ const computeSubjectStats = (subjects: GeneralSubjectRow[]): SubjectStat[] => {
 };
 
 const computeGradeVariance = (
-  subjects: GeneralSubjectRow[]
+  subjects: GeneralSubjectRow[],
+  isArtSportApplicant: boolean
 ): PreprocessedData["gradeVariance"] => {
-  if (subjects.length === 0) {
+  // 비주요 과목은 합불에 결정적 영향 없으므로 highest/lowest 후보에서 제외.
+  // (정보·일본어·기술가정 등이 lowest로 잡혀 약점 분석이 잘못 가는 것 방지)
+  const coreSubjects = subjects.filter(
+    (s) => !isNonMainSubject(s.subject, isArtSportApplicant)
+  );
+  if (coreSubjects.length === 0) {
     return { highest: "-", lowest: "-", spread: 0 };
   }
 
   // Group by subject, take average grade per subject
   const subjectAvgs = new Map<string, number[]>();
-  for (const s of subjects) {
+  for (const s of coreSubjects) {
     if (!subjectAvgs.has(s.subject)) subjectAvgs.set(s.subject, []);
     subjectAvgs.get(s.subject)!.push(s.gradeRank!);
   }
@@ -1129,12 +1155,17 @@ const computeGradeVariance = (
 const computeMajorRelated = (
   subjects: GeneralSubjectRow[],
   targetDept: string,
-  overallAvg: number
+  overallAvg: number,
+  isArtSportApplicant: boolean
 ): PreprocessedData["majorRelated"] => {
   const majorKeywords = extractMajorKeywords(targetDept);
+  // 비주요 과목(정보·일본어·기술가정 등)은 전공 관련 평균에서 제외.
+  // 단 "정보처리"·"정보과학" 같은 핵심 변형은 isNonMainSubject prefix 규칙으로
+  // 비주요 분류에서 빠지므로 자연스럽게 매칭에 남는다.
   const related = subjects.filter(
     (s) =>
       s.gradeRank !== null &&
+      !isNonMainSubject(s.subject, isArtSportApplicant) &&
       majorKeywords.some((k) => {
         const area = CATEGORY_TO_AREA[s.category];
         return (
@@ -1605,7 +1636,8 @@ const buildTexts = (
   );
   const rawAcademicDataText = formatRawAcademicData(
     recordData.generalSubjects ?? [],
-    recordData.careerSubjects ?? []
+    recordData.careerSubjects ?? [],
+    isArtSportDepartment(studentInfo.targetDepartment ?? "")
   );
   // convertedGrade는 내부 계산용이므로 AI에 전달하지 않음
   const { convertedGrade: _cg, ...dataWithoutConvertedGrade } = data;
@@ -2918,9 +2950,17 @@ const formatBehavioralAssessments = (
 
 const formatRawAcademicData = (
   general: GeneralSubjectRow[],
-  career: CareerSubjectRow[]
+  career: CareerSubjectRow[],
+  isArtSportApplicant: boolean
 ): string => {
   const lines: string[] = [];
+
+  // 비주요 과목(정보·일본어·기술가정 등)은 합불에 결정적 영향이 없으므로,
+  // 분석 대상으로 거론되지 않도록 raw 표에서 제외.
+  // (학생 자신의 전체 등급은 PreprocessedData.allSubjectGrades로 출력 테이블에 노출됨)
+  const generalForAnalysis = general.filter(
+    (s) => !isNonMainSubject(s.subject, isArtSportApplicant)
+  );
 
   lines.push("## 일반 교과 성적");
   lines.push(
@@ -2929,7 +2969,7 @@ const formatRawAcademicData = (
   lines.push(
     "|------|------|------|------|--------|------|----------|------|----------|------|"
   );
-  for (const s of general.sort(
+  for (const s of generalForAnalysis.sort(
     (a, b) => a.year - b.year || a.semester - b.semester
   )) {
     const noteLabel = s.note ? s.note : "";
