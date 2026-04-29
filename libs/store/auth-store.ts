@@ -6,11 +6,13 @@ export interface AuthState {
   role: string | null;
   isProfileLoaded: boolean;
   onboardingCompleted: boolean;
+  hasRecord: boolean;
   isAuthModalOpen: boolean;
   setUser: (user: User | null) => void;
   setRole: (role: string | null) => void;
   setIsProfileLoaded: (loaded: boolean) => void;
   setOnboardingCompleted: (completed: boolean) => void;
+  setHasRecord: (hasRecord: boolean) => void;
   openAuthModal: () => void;
   closeAuthModal: () => void;
 }
@@ -23,12 +25,14 @@ export const createAuthStore = () =>
     role: null,
     isProfileLoaded: false,
     onboardingCompleted: false,
+    hasRecord: false,
     isAuthModalOpen: false,
     setUser: (user) => set({ user }),
     setRole: (role) => set({ role }),
     setIsProfileLoaded: (loaded) => set({ isProfileLoaded: loaded }),
     setOnboardingCompleted: (completed) =>
       set({ onboardingCompleted: completed }),
+    setHasRecord: (hasRecord) => set({ hasRecord }),
     openAuthModal: () => set({ isAuthModalOpen: true }),
     closeAuthModal: () => set({ isAuthModalOpen: false }),
   }));

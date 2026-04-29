@@ -17,6 +17,7 @@ import {
   GraduationCap,
   Shield,
   BookOpen,
+  FilePlus,
 } from "lucide-react";
 
 import { useAuthStore } from "@/libs/store/auth-provider";
@@ -42,12 +43,21 @@ export const Header = () => {
   const user = useAuthStore((s) => s.user);
   const role = useAuthStore((s) => s.role);
   const onboardingCompleted = useAuthStore((s) => s.onboardingCompleted);
+  const hasRecord = useAuthStore((s) => s.hasRecord);
   const openAuthModal = useAuthStore((s) => s.openAuthModal);
 
   const isProfileLoaded = useAuthStore((s) => s.isProfileLoaded);
   const isLoggedIn = !!user;
   const showRecordLink = isLoggedIn && onboardingCompleted;
   const showAdmin = isLoggedIn && isProfileLoaded && role === "admin";
+
+  // 생기부 등록 여부에 따라 메뉴 라벨/링크 토글:
+  // 미등록 → /record/submit (신규 등록), 등록됨 → /record/submit?mode=edit (수정)
+  const recordSubmitMenu = {
+    label: hasRecord ? "생기부 수정" : "생기부 등록",
+    href: hasRecord ? "/record/submit?mode=edit" : "/record/submit",
+    icon: FilePlus,
+  };
 
   const closeDropdown = useCallback(() => {
     setIsDropdownOpen(false);
@@ -177,6 +187,14 @@ export const Header = () => {
                 </button>
                 {isDropdownOpen && (
                   <div className={styles.dropdown}>
+                    <Link
+                      href={recordSubmitMenu.href}
+                      className={styles.dropdownItem}
+                      onClick={closeDropdown}
+                    >
+                      <recordSubmitMenu.icon size={16} />
+                      {recordSubmitMenu.label}
+                    </Link>
                     {PROFILE_MENU_ITEMS.map((item) => (
                       <Link
                         key={item.href}
@@ -270,6 +288,16 @@ export const Header = () => {
           {isLoggedIn && (
             <div className={styles.mobileGroup}>
               <div className={styles.mobileGroupLabel}>내 계정</div>
+              <Link
+                href={recordSubmitMenu.href}
+                className={styles.mobileLink}
+                onClick={closeMobileMenu}
+              >
+                <span className={styles.mobileLinkIcon}>
+                  <recordSubmitMenu.icon size={16} />
+                </span>
+                {recordSubmitMenu.label}
+              </Link>
               {PROFILE_MENU_ITEMS.map((item) => (
                 <Link
                   key={item.href}

@@ -101,18 +101,28 @@ export default async function RootLayout({
   let initialProfile: {
     role: string | null;
     onboardingCompleted: boolean;
-  } = { role: null, onboardingCompleted: false };
+    hasRecord: boolean;
+  } = { role: null, onboardingCompleted: false, hasRecord: false };
 
   if (user) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("role, onboarding_completed")
-      .eq("id", user.id)
-      .single();
+    const [{ data }, { data: recordRow }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("role, onboarding_completed")
+        .eq("id", user.id)
+        .single(),
+      supabase
+        .from("records")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle(),
+    ]);
     if (data) {
       initialProfile = {
         role: data.role ?? null,
         onboardingCompleted: data.onboarding_completed ?? false,
+        hasRecord: !!recordRow,
       };
     }
   }

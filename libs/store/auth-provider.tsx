@@ -22,6 +22,7 @@ interface AuthProviderProps {
   initialProfile?: {
     role: string | null;
     onboardingCompleted: boolean;
+    hasRecord: boolean;
   };
 }
 
@@ -38,6 +39,7 @@ export const AuthProvider = ({
       s.getState().setOnboardingCompleted(
         initialProfile?.onboardingCompleted ?? false
       );
+      s.getState().setHasRecord(initialProfile?.hasRecord ?? false);
       s.getState().setIsProfileLoaded(true);
     }
     return s;
@@ -52,21 +54,32 @@ export const AuthProvider = ({
       const version = ++fetchVersion;
       store.getState().setIsProfileLoaded(false);
       try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("onboarding_completed, role")
-          .eq("id", userId)
-          .single();
-        if (error) throw error;
+        const [{ data: profileData, error: profileErr }, { data: recordRow }] =
+          await Promise.all([
+            supabase
+              .from("profiles")
+              .select("onboarding_completed, role")
+              .eq("id", userId)
+              .single(),
+            supabase
+              .from("records")
+              .select("id")
+              .eq("user_id", userId)
+              .limit(1)
+              .maybeSingle(),
+          ]);
+        if (profileErr) throw profileErr;
         if (unmounted || version !== fetchVersion) return;
         const s = store.getState();
-        s.setOnboardingCompleted(data?.onboarding_completed ?? false);
-        s.setRole(data?.role ?? null);
+        s.setOnboardingCompleted(profileData?.onboarding_completed ?? false);
+        s.setRole(profileData?.role ?? null);
+        s.setHasRecord(!!recordRow);
       } catch {
         if (unmounted || version !== fetchVersion) return;
         const s = store.getState();
         s.setOnboardingCompleted(false);
         s.setRole(null);
+        s.setHasRecord(false);
       } finally {
         if (!unmounted && version === fetchVersion) {
           store.getState().setIsProfileLoaded(true);
@@ -88,6 +101,7 @@ export const AuthProvider = ({
         fetchVersion++;
         s.setOnboardingCompleted(false);
         s.setRole(null);
+        s.setHasRecord(false);
         s.setIsProfileLoaded(true);
       }
     });
