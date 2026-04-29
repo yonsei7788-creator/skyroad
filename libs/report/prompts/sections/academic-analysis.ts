@@ -56,22 +56,24 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   premium: `## 플랜별 출력: 정밀
 Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 포함)**을 반드시 출력하고 (actionItems 빈 배열 금지), 추가로 다음을 출력합니다:
 - 5등급제 전환 시뮬레이션 (fiveGradeSimulation):
-  - ⚠️ **고1·고2 학생(5등급제 적용)**: 이미 5등급제이므로 9등급 전환 시뮬레이션이 아님.
+  - ⚠️ **고1·고2 학생(5등급제 적용)** 만 출력. **고3/졸업생(9등급제 적용)** 은 빈 배열([])로 출력하세요.
+    - 9등급제 학생은 9등급제 입시 환경에서 평가받으므로 5등급제 환산값이 의사결정에 무관합니다. 출력하지 않습니다.
+  - 5등급제 학생 출력 형식:
     - currentGrade: 학생의 현재 5등급제 등급 (정수, 1~5)
     - simulatedGrade: currentGrade와 동일 값
     - interpretation: 5등급제 환경에서의 해당 등급의 의미 해석 (예: "5등급제 1등급(상위 10%)으로, 동일 등급 내 동점자가 많아 원점수와 세특으로 차별화 필요")
-  - ⚠️ **고3/졸업생(9등급제 적용)**: 9등급→5등급 전환 시뮬레이션
-    - currentGrade: 학생의 현재 9등급제 등급 (정수)
-    - simulatedGrade: 전처리 데이터의 fiveGradeConversion 환산값 사용 (소수점 포함)
-    - 환산 기준: 0.1 단위 정밀 환산 테이블 적용 (예: 9등급 2.0→5등급 1.33, 3.0→1.89, 4.0→2.43, 5.0→3.03, 6.0→3.63, 7.0→4.19, 8.0→4.72)
-    - 예시: {"subject": "국어", "currentGrade": 3, "simulatedGrade": 1.89, "interpretation": "9등급제 3등급은 5등급제 기준 약 1.89등급(2등급 상위)으로 환산"}
-  - **주요 5과목만** 배열 형태로 출력
-  - **subject, currentGrade, simulatedGrade 필드는 필수입니다. 절대 빈값이면 안 됩니다.**
+  - 5등급제 학생인 경우 **주요 5과목만** 배열 형태로 출력
+  - 5등급제 학생인 경우 **subject, currentGrade, simulatedGrade 필드는 필수**
 - 대학별 반영 방법 시뮬레이션 (universityGradeSimulations): **목표 대학 상위 3개만** 출력
   - **모든 필드(university, department, reflectionMethod, calculatedScore, interpretation)에 값이 있어야 합니다. 빈 문자열 금지.**
   - reflectionMethod: "학생부교과 등급 반영", "교과 평균 등급", "Z점수 환산" 등 구체적 방법
   - calculatedScore: 실제 수치 또는 등급 (예: "2.85", "상위 30%")
   - ⚠️ interpretation은 반드시 **80자 이내**로 핵심만 작성합니다 (테이블 셀이므로 간결해야 함).
+  - ⚠️ **interpretation 톤** — 합격 가능성 단정 표현 사용하지 않습니다. 학생 등급과 해당 대학 정량 기준의 적합도만 서술합니다.
+    - ❌ "지원 가능권입니다", "지원 가능합니다", "안정적으로 지원 가능합니다", "충분히 도전해볼 만합니다" — 합격 가능성 단정 (admissionPrediction 영역)
+    - ✅ "교과 평균 X등급으로 [대학] 정량 기준 대비 적합한 구간입니다."
+    - ✅ "환산 점수 Y로 정량 기준에 부합하는 수준입니다. 수학·화학 보완 시 적합도 강화."
+    - ✅ "[대학] 반영 방식 기준 산출값 Z로, 정량 기준 적합도 보통 수준."
   - 데이터 부족으로 정밀 시뮬이 불가능하면 이 필드를 아예 생략하세요 (빈 배열 출력).
 - 성적 개선 우선순위 (improvementPriority): **3개 이내** 문자열 배열 형태, 각 항목 **50자 이내**
   ⛔ 이수 완료 과목의 성적 향상을 우선순위로 제시하면 안 됩니다. 반드시 향후 이수 가능한 과목/영역 기준으로 작성하세요.
@@ -115,10 +117,13 @@ const GYOGWA_PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - 각 텍스트 필드는 **200자 이내**.`,
   premium: `## 플랜별 출력: 정밀
 Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 포함)**을 Standard와 동일한 규칙으로 출력하고, 추가로:
-- 5등급제 전환 시뮬레이션 (fiveGradeSimulation): 주요 5과목만 배열 형태로 출력
+- 5등급제 전환 시뮬레이션 (fiveGradeSimulation): **고1·고2 학생만** 주요 5과목 배열로 출력. **고3/졸업생은 빈 배열([])로 출력**.
 - 대학별 반영 방법 시뮬레이션 (universityGradeSimulations): 목표 대학 상위 3개만
   - reflectionMethod, calculatedScore, interpretation 필수
   - ⚠️ interpretation은 **80자 이내**
+  - ⚠️ interpretation 톤 — 합격 가능성 단정 표현은 사용하지 않습니다. 학생 등급과 해당 대학 정량 기준의 적합도만 서술합니다.
+    - ❌ "지원 가능권/지원 가능합니다/안정적 지원/도전해볼 만"
+    - ✅ "교과 평균 X등급으로 [대학] 정량 기준 대비 적합한 구간입니다."
 - 성적 개선 우선순위 (improvementPriority): 3개 이내 문자열 배열, 각 50자 이내
   ⛔ 이수 완료 과목 성적 향상을 우선순위로 제시하면 안 됩니다.
   - 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.

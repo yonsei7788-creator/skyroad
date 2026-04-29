@@ -21,14 +21,21 @@ export interface ConsultantReviewPromptInput {
   selectedAdmissionTypes?: string[];
   /** Phase 2에서 감지된 생기부 기반 강점 계열 */
   detectedMajorGroup?: string;
-  /** majorExploration AI 추천 1순위 학과 */
+  /** majorExploration AI 추천 1순위 학과 (보조 컨텍스트) */
   aiRecommendedMajor?: string;
+  /** 학생이 등록한 1지망 학과 — 모든 분석/평가의 프레임 중심 */
+  studentFirstChoiceMajor?: string;
   /** 학생이 입력한 수강 예정 과목 텍스트 */
   plannedSubjects?: string;
   /** 코드 전처리된 성적 원본 데이터 (등급·원점수·수강자수 등) */
   preprocessedAcademicData?: string;
   /** 학년별 데이터 존재 여부 — growthPotential 등에서 미존재 학년 평가 방지 */
   dataYearsPresent?: { year1: boolean; year2: boolean; year3: boolean };
+  /**
+   * 코드 계산: 과목별 평균 등급을 강점·보통·약점 3티어로 분류한 텍스트.
+   * academicAbility/gradeAnalysis 등이 강·약점 과목을 거론할 때 이 분류를 인용.
+   */
+  subjectGradeFacts?: string;
 }
 
 const buildPlanSpecific = (
@@ -36,7 +43,7 @@ const buildPlanSpecific = (
 ): string => `## 출력 기준: 정밀 총평 (컨설팅급)
 - gradeAnalysis: **500자 이내**. academicAnalysis의 성적 데이터를 전제로, 성적 구조가 전형 선택과 지원 전략에 미치는 **전략적 함의**만 서술. ⛔ 개별 과목 등급/원점수를 다시 나열하지 마세요. academicAnalysis에서 이미 다룬 내용을 반복하면 안 됩니다.
 - courseEffort: **500자 이내**. courseAlignment 분석을 전제로, 교과 이수 패턴이 전공 적합성 어필에 미치는 **종합적 영향**을 판단. ⛔ 개별 과목 이수 여부를 다시 나열하지 마세요.
-- admissionStrategy: **500자 이내**. admissionStrategy 섹션의 분석을 전제로, 컨설턴트 관점에서 **가장 현실적인 핵심 전략 1~2가지**만 간결하게 권고. ⛔ 전형별 가능성을 재분석하지 마세요. ⚠️ 합격 예측 결과(admissionPrediction)가 제공된 경우, 그 결과의 chance/passRateRange와 일관되게 서술하세요.
+- admissionStrategy: **500자 이내**. admissionStrategy 섹션의 분석을 전제로, 컨설턴트 관점에서 **가장 현실적인 핵심 전략 1~2가지**만 간결하게 권고. ⛔ 전형별 가능성을 재분석하지 마세요. 합격 가능성 단정(안정적 지원 가능 / 도전해볼 만 / 어렵다 등)은 사용하지 않습니다. 학생 생기부 ↔ 전형 부합도 기반의 전략 권고만.
 - completionDirection: **500자 이내**. 생기부 전체 스토리 완성 전략, 세특 보완 우선순위, 창체 마무리 방향, 면접 대비 스토리텔링 구성.
 - finalAdvice: **150자 이내**. 구체적이고 실행 가능한 종합 권고.
 
@@ -141,6 +148,9 @@ export const buildConsultantReviewPrompt = (
 1. **전공 적합성 (Major Fit)**: 입학사정관은 교과 세특, 탐구 활동, 동아리, 보고서/발표를 통해 전공 관련 역량을 판단합니다. 단순히 활동이 있는지가 아니라 "특정 분야와 연결된 학업 흐름이 존재하는가"를 평가합니다. ⚠️ **AI 추천 학과를 기준으로 평가하세요.** 생기부에서 실제로 드러나는 탐구 분야와 역량을 분석하고, AI 추천 학과와의 적합성을 판단하세요. → 이 학생의 생기부에서 어떤 분야의 전공 적합성이 드러나는지(또는 부족한지) 구체적으로 서술하세요.
 
 2. **학업 역량 (Academic Ability)**: 단순 내신 등급이 아니라 교과 성적 + 성적 추세 + 과목 선택 + 세특 내용을 종합 평가합니다. 특히 상위권 대학은 세특에서 나타나는 탐구 능력과 사고력을 매우 중요하게 봅니다. 질문을 제기하는 학생, 추가 자료를 찾아 분석하는 학생, 수업 토론에 적극 참여하는 학생이 높은 평가를 받습니다. → 이 학생의 학업 역량 수준을 입학사정관 관점에서 평가하세요.
+   - 강점·약점 과목을 거론할 때는 아래 "과목별 등급 분류 (확정 사실)"의 분류를 그대로 따라 인용합니다. 분류상 약점 티어에 있는 과목을 강점으로 서술하거나, 강점 티어 과목을 약점으로 서술하면 안 됩니다.
+   - ✅ 확정 사실에서 강점 티어로 분류된 과목만 "1~2등급으로 우수" 같은 강점 서술의 근거로 사용합니다.
+   - ✅ 확정 사실에서 약점 티어로 분류된 과목은 "성취도가 상대적으로 낮음" 등 약점 서술의 근거로 사용합니다.
 
 3. **탐구 역량 (Inquiry Ability)**: 입학사정관은 문제 제기 능력, 자료 분석 능력, 탐구 과정, 결과 해석을 통해 탐구 역량을 판단합니다. 특히 다음 구조가 나타나면 높은 평가를 받습니다: 수업 탐구 → 동아리 연구 → 보고서 작성 → 발표 및 확장. 이런 구조는 학생이 실제로 탐구를 수행했다는 증거로 평가됩니다. → 이 학생의 탐구 활동이 이 구조를 갖추고 있는지 판단하세요.
 
@@ -267,17 +277,39 @@ ${evaluationGuide}
 ## 입력 데이터
 
 ${
-  input.aiRecommendedMajor
-    ? `### ⚠️ AI 추천 학과 (모든 전략/면접/평가의 기준)
-- AI 전공 탐색 결과 가장 적합한 학과: **${input.aiRecommendedMajor}**
-${input.detectedMajorGroup ? `- 생기부 기반 강점 계열: **${getMajorGroupLabel(input.detectedMajorGroup ?? "")}**` : ""}
-- ⛔ admissionStrategy, completionDirection, finalAdvice, evaluationGuide 전체를 **${input.aiRecommendedMajor}** 기준으로 작성하세요.
+  input.studentFirstChoiceMajor
+    ? `### ⚠️ 학생 1지망 학과 (모든 전략/면접/평가의 프레임 중심)
+- 학생이 등록한 1지망 학과: **${input.studentFirstChoiceMajor}**
+
+⚠️ admissionStrategy, completionDirection, finalAdvice, evaluationGuide 전체는 **${input.studentFirstChoiceMajor}**를 분석 프레임의 중심으로 작성하세요. 이 학과의 평가 기준에 학생 생기부가 어떻게 부합하는지(또는 어떤 부분이 보완 필요한지)를 평가합니다.
+${
+  input.aiRecommendedMajor &&
+  input.aiRecommendedMajor !== input.studentFirstChoiceMajor
+    ? `
+### 참고: AI 전공 탐색 결과 (보조 옵션)
+- AI 전공 탐색이 가장 적합하다고 판단한 학과: **${input.aiRecommendedMajor}**
+- 학생 1지망(${input.studentFirstChoiceMajor})과 다릅니다. AI 추천은 "추가 고려 옵션" 수준에서만 짧게 언급할 수 있습니다. 학생 1지망 평가의 대체로 사용하지 마세요. evaluationGuide/admissionStrategy/completionDirection의 메인 프레임은 학생 1지망입니다.
 `
-    : input.detectedMajorGroup
-      ? `### ⚠️ 생기부 기반 강점 계열
+    : ""
+}${
+        input.detectedMajorGroup
+          ? `
+### 생기부 기반 강점 계열 (참고)
 - 생기부 기반 강점 계열: **${getMajorGroupLabel(input.detectedMajorGroup ?? "")}**
 `
-      : ""
+          : ""
+      }`
+    : input.aiRecommendedMajor
+      ? `### ⚠️ AI 추천 학과 (학생 1지망 미등록 — 보조 프레임)
+- AI 전공 탐색 결과 가장 적합한 학과: **${input.aiRecommendedMajor}**
+${input.detectedMajorGroup ? `- 생기부 기반 강점 계열: **${getMajorGroupLabel(input.detectedMajorGroup ?? "")}**` : ""}
+- 학생 1지망 미등록 상태이므로, AI 추천 학과를 분석 프레임으로 사용하세요.
+`
+      : input.detectedMajorGroup
+        ? `### 생기부 기반 강점 계열
+- 생기부 기반 강점 계열: **${getMajorGroupLabel(input.detectedMajorGroup ?? "")}**
+`
+        : ""
 }
 ### 역량 추출 결과
 ${input.competencyExtraction}
@@ -287,7 +319,16 @@ ${input.academicAnalysis}
 
 ⚠️ 위 데이터의 _judgments는 다른 섹션의 판단 방향입니다. 이 방향과 모순되지 않게 작성하되, **문장은 반드시 당신만의 표현으로 새로 작성**하세요.
 
-### 학생 프로필
+${
+  input.subjectGradeFacts
+    ? `### 과목별 등급 분류 (확정 사실 — 강·약점 거론 시 이 분류를 인용)
+${input.subjectGradeFacts}
+
+⚠️ academicAbility 등에서 특정 과목을 강점/약점으로 거론할 때는 위 분류와 일치시켜 서술하세요. 위 분류와 다른 티어로 과목을 묘사하면 안 됩니다.
+
+`
+    : ""
+}### 학생 프로필
 ${input.studentProfile}
 
 ${
@@ -481,7 +522,16 @@ ${input.academicAnalysis}
 
 ⚠️ 위 데이터의 _judgments는 다른 섹션의 판단 방향입니다. 이 방향과 모순되지 않게 작성하되, **문장은 반드시 당신만의 표현으로 새로 작성**하세요.
 
-### 학생 프로필
+${
+  input.subjectGradeFacts
+    ? `### 과목별 등급 분류 (확정 사실 — 강·약점 거론 시 이 분류를 인용)
+${input.subjectGradeFacts}
+
+⚠️ academicAbility/majorFit 등에서 특정 과목을 강점/약점으로 거론할 때는 위 분류와 일치시켜 서술하세요. 위 분류와 다른 티어로 과목을 묘사하면 안 됩니다.
+
+`
+    : ""
+}### 학생 프로필
 ${input.studentProfile}
 
 ${

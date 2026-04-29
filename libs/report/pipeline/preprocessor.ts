@@ -835,15 +835,12 @@ export const preprocess = (
   const gradingSystem: "5등급제" | "9등급제" =
     studentInfo.grade <= 2 ? "5등급제" : "9등급제";
 
-  // 5등급제 환산: 9등급제 학생(고3/졸업생)의 Premium에서만 의미 있음
-  const fiveGradeConversion =
-    plan === "premium" && gradingSystem === "9등급제"
-      ? gradesWithRank.map((s) => ({
-          subject: s.subject,
-          original: s.gradeRank!,
-          converted: convertToFiveGrade(s.gradeRank!),
-        }))
-      : undefined;
+  // 5등급제 환산은 더 이상 사용하지 않음.
+  // - 9등급제 학생은 9등급제 입시 환경에서 평가받으므로 5등급제 환산값이 의사결정에 무관.
+  // - 5등급제 학생은 이미 5등급제로 평가받으므로 환산이 무의미 (currentGrade = simulatedGrade).
+  // - frontend의 fiveGradeSimulation 렌더링 블록은 같은 이유로 이미 제거됨.
+  // 데이터 자체를 비활성화하여 무용한 LLM 토큰·스토리지·검수 혼란을 제거.
+  const fiveGradeConversion: undefined = undefined;
 
   // 10. 소인수 과목 식별
   const smallClassSubjects = generalSubjects

@@ -515,6 +515,30 @@ export const executeTask = async (
     }
 
     case "competencyScore": {
+      // 전공 관련 과목 평균 vs 전체 평균 비교 — 코드에서 결정적 판정.
+      // academicAnalysis가 같은 데이터로 동일 판정을 사용하므로 두 섹션의
+      // 결론이 학생/학부모에게 일관되게 보이게 한다.
+      const compMajorRelevanceFact = (() => {
+        const m = state.preprocessedData?.majorRelated;
+        if (
+          !m ||
+          typeof m.relatedAverage !== "number" ||
+          typeof m.overallAverage !== "number" ||
+          typeof m.diff !== "number"
+        ) {
+          return undefined;
+        }
+        const { relatedAverage, overallAverage, diff } = m;
+        const absDiff = Math.abs(diff).toFixed(2);
+        if (diff > 0.1) {
+          return `전공 관련 과목 평균 ${relatedAverage}등급 vs 전체 평균 ${overallAverage}등급 → 전공 관련 과목 평균이 전체 평균보다 ${absDiff}등급 낮은 성취도 (등급 숫자가 클수록 성취도 낮음). 진로역량 교과성취도에서 "전체 평균 대비 전공 관련 과목 성취도 낮음" 또는 "보완 필요"로 서술.`;
+        }
+        if (diff < -0.1) {
+          return `전공 관련 과목 평균 ${relatedAverage}등급 vs 전체 평균 ${overallAverage}등급 → 전공 관련 과목 평균이 전체 평균보다 ${absDiff}등급 높은 성취도 (등급 숫자가 작을수록 성취도 높음). 진로역량 교과성취도에서 "전체 평균 대비 전공 관련 과목 성취도 우수"로 서술.`;
+        }
+        return `전공 관련 과목 평균 ${relatedAverage}등급 vs 전체 평균 ${overallAverage}등급 → 두 평균이 ${absDiff}등급 이내로 유사. 진로역량 교과성취도에서 "전체 평균과 유사한 수준"으로 서술.`;
+      })();
+
       const compScoreInput = {
         studentTypeClassification: ser.stuTypeText!,
         competencyExtraction: ser.compExtrText!,
@@ -526,6 +550,7 @@ export const executeTask = async (
         isMedical,
         isGyogwaOnly,
         dataYearsPresent: state.preprocessedData!.dataYearsPresent,
+        majorRelevanceFact: compMajorRelevanceFact,
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly
@@ -1603,13 +1628,62 @@ export const executeTask = async (
     }
 
     case "consultantReview": {
-      // majorExploration AI 추천 1순위 학과 추출
+      // majorExploration AI 추천 1순위 학과 추출 (보조 컨텍스트용)
       const consultMajorExpl = sections.find(
         (s) => s.sectionId === "majorExploration"
       ) as Record<string, unknown> | undefined;
       const consultAiMajor = (
         consultMajorExpl?.suggestions as { major: string }[] | undefined
       )?.[0]?.major;
+
+      // 학생 1지망 학과 — 분석 프레임의 중심
+      const consultStudentFirstChoiceMajor =
+        studentInfo.targetDepartment ??
+        studentInfo.targetUniversities?.[0]?.department ??
+        undefined;
+
+      // 과목별 평균 등급 → 강점/보통/약점 3티어 분류.
+      // academicAbility 단락이 실제 등급과 어긋난 인상 평가를 만들지 않도록
+      // 코드에서 결정한 분류를 프롬프트에 직접 주입한다.
+      const consultSubjectGradeFacts = (() => {
+        try {
+          const acad = JSON.parse(ser.acadSectionText!);
+          const grades = acad.subjectGrades as
+            | Array<{ subject: string; grade: number }>
+            | undefined;
+          if (!Array.isArray(grades) || grades.length === 0) return undefined;
+          const bySubject = new Map<string, number[]>();
+          for (const g of grades) {
+            if (typeof g.grade !== "number" || !g.subject) continue;
+            const list = bySubject.get(g.subject) ?? [];
+            list.push(g.grade);
+            bySubject.set(g.subject, list);
+          }
+          const strength: string[] = [];
+          const middle: string[] = [];
+          const weakness: string[] = [];
+          for (const [subject, list] of [...bySubject.entries()].sort()) {
+            const m = list.reduce((s, v) => s + v, 0) / list.length;
+            const label =
+              list.length > 1
+                ? `${subject} (평균 ${m.toFixed(2)}등급)`
+                : `${subject} (${m}등급)`;
+            if (m <= 2.0) strength.push(label);
+            else if (m < 3.0) middle.push(label);
+            else weakness.push(label);
+          }
+          const lines: string[] = [];
+          if (strength.length)
+            lines.push(`- 강점 티어 (평균 1~2등급): ${strength.join(", ")}`);
+          if (middle.length)
+            lines.push(`- 보통 티어 (평균 2~3등급): ${middle.join(", ")}`);
+          if (weakness.length)
+            lines.push(`- 약점 티어 (평균 3등급 이상): ${weakness.join(", ")}`);
+          return lines.length > 0 ? lines.join("\n") : undefined;
+        } catch {
+          return undefined;
+        }
+      })();
 
       // ── 중복 방지: academicAnalysis의 수치 데이터 + 판단 키워드만 전달 ──
       // 해석 문장을 그대로 전달하면 AI가 복붙하므로,
@@ -1675,7 +1749,9 @@ export const executeTask = async (
         selectedAdmissionTypes,
         detectedMajorGroup: detectedMajorForFlags,
         aiRecommendedMajor: consultAiMajor,
+        studentFirstChoiceMajor: consultStudentFirstChoiceMajor,
         dataYearsPresent: state.preprocessedData?.dataYearsPresent,
+        subjectGradeFacts: consultSubjectGradeFacts,
         // preprocessedAcademicData 제거: 등급 원본이 있으면 AI가 재나열함
         // 생성된 academicAnalysis 섹션에 이미 정확한 등급 정보가 포함됨
       };

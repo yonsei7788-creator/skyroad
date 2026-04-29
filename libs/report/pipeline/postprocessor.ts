@@ -1586,7 +1586,9 @@ export const postprocess = (
       return "보통";
     };
 
-    // majorExploration AI 추천 1순위 학과를 전공 방향으로 사용
+    // 전공 방향: 학생 1지망 학과를 우선 사용. AI 추천(majorExploration)은 1지망이
+    // 없을 때만 fallback. 학생이 명시한 1지망을 AI 추천이 덮어쓰면 컨설턴트 검수와
+    // 비교과 경쟁력 분석이 학생 1지망과 어긋나는 분석 프레임으로 흐름.
     const majorExplSection = validatedSections.find(
       (s) => s.sectionId === "majorExploration"
     ) as Record<string, unknown> | undefined;
@@ -1594,9 +1596,10 @@ export const postprocess = (
       | { major: string }[]
       | undefined;
     const majorDirection =
+      studentInfo.targetDepartment ??
+      studentInfo.targetUniversities?.[0]?.department ??
       majorExplSuggestions?.[0]?.major ??
       (profile as any)?.catchPhrase?.split(" ")[0] ??
-      studentInfo.targetDepartment ??
       "미정";
 
     const keywords: string[] = [];
@@ -2190,6 +2193,69 @@ const normalizeSection = (
       }
     }
 
+    // ── rating 안전 규칙: weak는 자기주도 시그널이 0개일 때만 사용 ──
+    // 프롬프트의 시그널 카운트 가이드를 LLM이 무시하는 경우가 있어 후처리에서 결정적으로 보정.
+    // evaluationComment에 명시적 산출물·자기주도 시그널이 1개 이상이면 weak → average로 승격하고,
+    // 본문의 weak 단정 톤("약점으로 작용할 겁니다" 등)도 보정된 등급에 맞게 부드럽게 정리.
+    const SELF_DIRECTED_SIGNALS = [
+      "신문 제작",
+      "포스터 제작",
+      "포스터로 제작",
+      "보고서 작성",
+      "보고서를 작성",
+      "발표 자료 제작",
+      "발표 자료를 제작",
+      "프로젝트",
+      "실험 설계",
+      "실험을 설계",
+      "직접 작성",
+      "직접 제작",
+      "스스로 탐구",
+      "스스로 조사",
+      "비판적 질문",
+      "추가 자료를 찾",
+      "융합 탐구",
+      "심화 탐구",
+      "확장하여",
+      "주제를 선택하고",
+      "자기주도",
+      "자체 학습지",
+    ];
+    // 단정 부정 톤 → 부드러운 보완 톤 매핑
+    const SOFTEN_REPLACEMENTS: Array<[RegExp, string]> = [
+      [/약점으로\s*작용할\s*겁니다/g, "보완이 필요한 부분입니다"],
+      [/약점으로\s*작용할\s*것입니다/g, "보완이 필요한 부분입니다"],
+      [/약점으로\s*작용할\s*수\s*있습니다/g, "보완이 필요할 수 있습니다"],
+      [/약점으로\s*판단될\s*수\s*있습니다/g, "보완이 필요할 수 있습니다"],
+      [
+        /변별력이\s*부족하다고\s*판단할\s*수\s*있습니다/g,
+        "변별력 강화 여지가 있다고 판단할 수 있습니다",
+      ],
+      [
+        /변별력을\s*갖기에는\s*한계가\s*있습니다/g,
+        "변별력 강화 여지가 있습니다",
+      ],
+      [/한계가\s*있다고\s*판단/g, "보완 여지가 있다고 판단"],
+    ];
+    for (const subj of s.subjects) {
+      if (subj.rating !== "weak") continue;
+      const text =
+        typeof subj.evaluationComment === "string"
+          ? subj.evaluationComment
+          : "";
+      if (!text) continue;
+      const hasSignal = SELF_DIRECTED_SIGNALS.some((kw) => text.includes(kw));
+      if (hasSignal) {
+        subj.rating = "average";
+        // rating 등급 변경에 맞춰 본문의 단정 부정 톤도 함께 정리
+        let updated = subj.evaluationComment as string;
+        for (const [pattern, replacement] of SOFTEN_REPLACEMENTS) {
+          updated = updated.replace(pattern, replacement);
+        }
+        subj.evaluationComment = updated;
+      }
+    }
+
     // ── 과목 중요도 강제 보정 (계열별 세분화 기준) ──
     const targetDept = studentInfo.targetDepartment ?? "";
     const criteria = matchMajorEvaluationCriteria(targetDept);
@@ -2628,65 +2694,49 @@ const normalizeSection = (
           };
         });
       }
-    } else if (
-      Array.isArray(pre.fiveGradeConversion) &&
-      pre.fiveGradeConversion.length > 0
-    ) {
-      // 고3/졸업 (9등급제) + premium: 전처리 데이터 기반 강제 주입
-      const latestBySubject = new Map<
-        string,
-        { original: number; converted: number }
-      >();
-      for (const fc of pre.fiveGradeConversion) {
-        latestBySubject.set(fc.subject, {
-          original: fc.original,
-          converted: fc.converted,
-        });
-      }
-      const aiSimMap = new Map<string, string>(
-        (Array.isArray(s.fiveGradeSimulation) ? s.fiveGradeSimulation : []).map(
-          (sim: any): [string, string] => [
-            sim.subject ?? "",
-            sim.interpretation ?? "",
-          ]
-        )
-      );
-      const targetSubjects: string[] =
-        aiSimMap.size > 0
-          ? [...aiSimMap.keys()].slice(0, 5)
-          : [...latestBySubject.keys()].slice(0, 5);
-      s.fiveGradeSimulation = targetSubjects
-        .filter((subj: string) => latestBySubject.has(subj))
-        .map((subj) => {
-          const data = latestBySubject.get(subj)!;
-          return {
-            subject: subj,
-            currentGrade: data.original,
-            simulatedGrade: data.converted,
-            interpretation: aiSimMap.get(subj) || "",
-          };
-        });
-    } else if (Array.isArray(s.fiveGradeSimulation)) {
-      // 9등급제 + non-premium: AI 출력 유지 (수치 정규화만)
-      s.fiveGradeSimulation = s.fiveGradeSimulation.map((sim: any) => ({
-        subject: sim.subject ?? "",
-        currentGrade: sim.currentGrade ?? sim.original ?? null,
-        simulatedGrade: sim.simulatedGrade ?? sim.converted ?? null,
-        percentileCumulative: sim.percentileCumulative,
-        interpretation: sim.interpretation ?? "",
-      }));
+    } else {
+      // 9등급제 학생 (고3/졸업생): fiveGradeSimulation 비활성화.
+      // 9등급제 학생은 9등급제 입시 환경에서 평가받으므로 5등급제 환산값이 의사결정에 무관.
+      // frontend 렌더링도 같은 이유로 이미 제거됨. 데이터도 비활성화하여 admin 검수 혼란 제거.
+      s.fiveGradeSimulation = [];
     }
 
-    // ── universityGradeSimulations: 빈값 행 제거 ──
+    // ── universityGradeSimulations: 빈값 행 제거 + 합격 가능성 단정 톤 정리 ──
     if (Array.isArray(s.universityGradeSimulations)) {
+      // 합격 가능성 단정 → 정량 기준 적합도 톤으로 변환
+      const SIM_TONE_REPLACEMENTS: Array<[RegExp, string]> = [
+        [/지원\s*가능권입니다/g, "정량 기준에 부합하는 구간입니다"],
+        [/지원\s*가능권/g, "정량 기준 부합 구간"],
+        [/지원이?\s*가능합니다/g, "정량 기준에 부합합니다"],
+        [
+          /안정적(?:으로|인)?\s*지원이?\s*가능합니다/g,
+          "정량 기준 측면에서 안정적입니다",
+        ],
+        [
+          /충분히?\s*도전해볼\s*만합니다/g,
+          "정량 기준 적합도 강화 여지가 있습니다",
+        ],
+        [/도전해볼\s*만합니다/g, "정량 기준 적합도 강화 여지가 있습니다"],
+        [
+          /합격선\s*대비\s*여유가?\s*있습니다/g,
+          "정량 기준 측면에서 안정적입니다",
+        ],
+      ];
       s.universityGradeSimulations = s.universityGradeSimulations
-        .map((sim: any) => ({
-          university: sim.university ?? "",
-          department: sim.department ?? "",
-          reflectionMethod: sim.reflectionMethod || sim.method || "",
-          calculatedScore: sim.calculatedScore || sim.score || "",
-          interpretation: sim.interpretation ?? "",
-        }))
+        .map((sim: any) => {
+          let interpretation =
+            typeof sim.interpretation === "string" ? sim.interpretation : "";
+          for (const [pattern, replacement] of SIM_TONE_REPLACEMENTS) {
+            interpretation = interpretation.replace(pattern, replacement);
+          }
+          return {
+            university: sim.university ?? "",
+            department: sim.department ?? "",
+            reflectionMethod: sim.reflectionMethod || sim.method || "",
+            calculatedScore: sim.calculatedScore || sim.score || "",
+            interpretation,
+          };
+        })
         .filter(
           (sim: any) =>
             sim.department && sim.reflectionMethod && sim.calculatedScore
@@ -3127,10 +3177,14 @@ const normalizeSection = (
         .trim();
     }
 
-    // ── subcategory.comment의 "-N점" 감점 표기를 score/maxScore 차이와 동기화 ──
-    // AI가 comment 텍스트로 적은 감점치(-N점)와 실제 score 사이의 불일치를 보정.
-    // (예: "...로 -2점" 적었는데 maxScore=25, score=18 → 실제 -7. 텍스트만 -7로 교체)
+    // ── subcategory: 점수↔코멘트 양방향 정합성 보정 ──
+    // (1) score < maxScore + 코멘트에 -N점 있음 → N을 실제 감점치로 동기화
+    // (2) score < maxScore + 코멘트에 "감점 사유 없음" → "(-N점)"으로 교체
+    // (3) score < maxScore + 둘 다 없음 → 끝에 "(-N점)" 추가
+    // (4) score = maxScore + 코멘트에 -N점 → -N점 표기 제거
     if (Array.isArray(s.scores)) {
+      const DEDUCTION_RE = /-\s*\d+\s*점/g;
+      const NO_DEDUCTION_RE = /감점\s*사유\s*없음[.。]?/;
       for (const sc of s.scores) {
         if (!Array.isArray(sc.subcategories)) continue;
         for (const sub of sc.subcategories) {
@@ -3142,12 +3196,29 @@ const normalizeSection = (
             continue;
           }
           const actualDeduction = sub.maxScore - sub.score;
-          if (actualDeduction <= 0) continue;
-          // "-N점", "- N점" 패턴을 실제 감점치로 교체
-          sub.comment = sub.comment.replace(
-            /-\s*\d+\s*점/g,
-            `-${actualDeduction}점`
-          );
+          const hasDeductionMarker = /-\s*\d+\s*점/.test(sub.comment);
+
+          if (actualDeduction > 0) {
+            if (hasDeductionMarker) {
+              sub.comment = sub.comment.replace(
+                DEDUCTION_RE,
+                `-${actualDeduction}점`
+              );
+            } else if (NO_DEDUCTION_RE.test(sub.comment)) {
+              sub.comment = sub.comment.replace(
+                NO_DEDUCTION_RE,
+                `(-${actualDeduction}점).`
+              );
+            } else {
+              const trimmed = sub.comment.replace(/[.。]?\s*$/, "");
+              sub.comment = `${trimmed} (-${actualDeduction}점).`;
+            }
+          } else if (actualDeduction === 0 && hasDeductionMarker) {
+            sub.comment = sub.comment
+              .replace(DEDUCTION_RE, "")
+              .replace(/\s{2,}/g, " ")
+              .trim();
+          }
         }
       }
     }
@@ -3175,7 +3246,7 @@ const normalizeSection = (
     }
   }
 
-  // ── attendanceAnalysis: 전처리 출결 데이터 강제 주입 ──
+  // ── attendanceAnalysis: 전처리 출결 데이터 강제 주입 + 합격 가능성 단정 톤 정리 ──
   if (s.sectionId === "attendanceAnalysis") {
     const attendance = pre.attendanceSummary;
     if (Array.isArray(s.summaryByYear) && attendance.length > 0) {
@@ -3191,6 +3262,40 @@ const normalizeSection = (
         lateness: a.lateness,
         earlyLeave: a.earlyLeave,
       }));
+    }
+    // 합격 가능성 단정 표현 → 부합도/감점 여부 톤으로 정리.
+    // 출결만으로는 합격 안정성을 결론지을 수 없으므로 "안정적 지원 가능" 류 표현은 부적절.
+    const ATTENDANCE_TONE_REPLACEMENTS: Array<[RegExp, string]> = [
+      [
+        /안정적인?\s*지원이?\s*가능합니다/g,
+        "교과전형 출결 감점 요인이 없습니다",
+      ],
+      [/안정적으로\s*지원이?\s*가능합니다/g, "출결 감점 요인이 없습니다"],
+      [
+        /다른\s*지원자(?:들)?와의?\s*차별화\s*포인트로\s*작용할\s*겁니다/g,
+        "성실성 평가에서 긍정적 근거가 됩니다",
+      ],
+      [
+        /다른\s*지원자(?:들)?와의?\s*차별화\s*포인트로\s*작용할\s*것입니다/g,
+        "성실성 평가에서 긍정적 근거가 됩니다",
+      ],
+      [
+        /차별화\s*포인트로\s*작용할\s*겁니다/g,
+        "성실성 평가의 긍정적 근거가 됩니다",
+      ],
+      [
+        /합격선\s*대비\s*여유가?\s*있습니다/g,
+        "정량 기준 측면에서 안정적입니다",
+      ],
+    ];
+    for (const field of ["impactAnalysis", "integrityContribution"] as const) {
+      const value = (s as Record<string, unknown>)[field];
+      if (typeof value !== "string") continue;
+      let updated = value;
+      for (const [pattern, replacement] of ATTENDANCE_TONE_REPLACEMENTS) {
+        updated = updated.replace(pattern, replacement);
+      }
+      (s as Record<string, unknown>)[field] = updated;
     }
   }
 
