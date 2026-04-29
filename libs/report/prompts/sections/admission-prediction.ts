@@ -189,7 +189,6 @@ const OVERALL_ONLY_EXAMPLES_NO_TARGETS = `### ✅ 전형 적합도 서술 문장
 
 export interface GyogwaPredictionPromptInput {
   academicAnalysis: string;
-  universityCandidates: string;
   studentProfile: string;
   academicAnalysisResult?: string;
   targetUniversities?: string;
@@ -205,29 +204,6 @@ export const buildGyogwaPredictionPrompt = (
 ): string => {
   const hasTargetUniversities =
     !!input.targetUniversities && input.targetUniversities.trim().length > 0;
-
-  const gradeContext =
-    input.gradingSystem === "5등급제"
-      ? buildGradeContext5("gyogwa")
-      : input.gradingSystem === "9등급제"
-        ? buildGradeContext9("gyogwa")
-        : "";
-
-  const medicalContext = input.isMedical ? buildMedicalCtx("gyogwa") : "";
-  const artSportContext = input.isArtSportPractical
-    ? buildArtSportCtx("gyogwa")
-    : "";
-
-  const additionalInputs = [
-    input.academicAnalysisResult
-      ? `### 성적 분석 결과 (상세)\n${input.academicAnalysisResult}`
-      : "",
-    hasTargetUniversities
-      ? `### 유저 설정 희망대학 (교과전형만 해당)\n${input.targetUniversities}`
-      : "",
-  ]
-    .filter(Boolean)
-    .join("\n\n");
 
   // ── 희망대학 0건: "전형 적합도 일반 판단" 모드 ──
   // 학과 정보가 없으므로 특정 합격선 비교/단정 표현 금지. 학생 생기부가
@@ -250,6 +226,19 @@ export const buildGyogwaPredictionPrompt = (
 - 최종 평균 등급이 학생부교과전형에서 어느 정도 경쟁력을 가질지에 대한 **일반적·전반적 평가**까지만.
 - 합격 가능성은 희망 대학을 등록한 뒤 별도 판단이 필요함을 자연스럽게 안내.
 
+## ✅ analysis 필수 작성 구조 (반드시 이 3문장 구조로)
+다음의 3문장 구조를 그대로 따르세요. 문장 순서·역할을 변경하지 마세요.
+
+**예시 출력** (학생 평균이 2.46등급인 경우):
+> "최종 평균 등급은 2.46등급입니다. 학생부교과전형은 전체 평균 등급을 핵심 기준으로 삼는 정량 평가이므로, 이 등급은 해당 전형의 기본적인 경쟁력을 나타냅니다. 생기부 전반에서 안정적인 학업 흐름이 확인되어, 교과전형의 정량 평가 기준 측면에서 일정한 활용 가능성이 있습니다."
+
+**문장별 역할:**
+1. **1문장 — 사실 진술**: "최종 평균 등급은 X등급입니다." (X에는 학생의 실제 최종 평균 등급을 소수점 둘째 자리까지 그대로 기입. 합격선 비교·우열 판단 금지)
+2. **2문장 — 전형 특성 + 등급의 의미**: "학생부교과전형은 전체 평균 등급을 핵심 기준으로 삼는 정량 평가이므로, 이 등급은 해당 전형의 기본적인 경쟁력을 나타냅니다." (이 문장은 거의 그대로 사용. 등급 수치를 다시 언급하지 말고 "이 등급" 지칭만 사용)
+3. **3문장 — 생기부 기반 일반 활용 가능성**: "생기부 전반에서 [학업 흐름 특징]이 확인되어, 교과전형의 정량 평가 기준 측면에서 [활용 가능성 평가]가 있습니다." ([학업 흐름 특징]은 학생의 실제 추세에 맞춰 표현 — 안정적 흐름이면 "안정적인 학업 흐름", 상승 추세면 "꾸준한 성적 향상 흐름", 하락이면 "학년별 성적 변동" 등. 단정적 약점 진단·과목별 등급 언급 금지)
+
+⛔ 위 3문장 외 추가 문장(특히 합격선 비교·대학명 언급)은 출력에 포함하지 마세요.
+
 ${OVERALL_ONLY_EXAMPLES_NO_TARGETS}
 
 ## 입력 데이터
@@ -266,7 +255,7 @@ ${input.studentProfile}
   "admissionType": "교과",
   "passRateLabel": "데이터 없음",
   "passRateRange": [0, 0],
-  "analysis": "(학생 등급 사실 서술 + 학생부교과전형 적합도 일반 판단, 250자 이내)",
+  "analysis": "(위 3문장 구조 그대로. 학생의 실제 최종 평균 등급으로 X 자리만 채우고, 3문장 학업 흐름 표현만 학생 추세에 맞게 조정)",
   "overallComment": "(전형 적합도 종합 + 희망대학 등록 시 별도 합격 가능성 판단 가능 안내, 300자 이내)",
   "universityPredictions": []
 }
@@ -279,6 +268,27 @@ ${input.studentProfile}
 
 ${COMMON_OUTPUT_RULES}`;
   }
+
+  const gradeContext =
+    input.gradingSystem === "5등급제"
+      ? buildGradeContext5("gyogwa")
+      : input.gradingSystem === "9등급제"
+        ? buildGradeContext9("gyogwa")
+        : "";
+
+  const medicalContext = input.isMedical ? buildMedicalCtx("gyogwa") : "";
+  const artSportContext = input.isArtSportPractical
+    ? buildArtSportCtx("gyogwa")
+    : "";
+
+  const additionalInputs = [
+    input.academicAnalysisResult
+      ? `### 성적 분석 결과 (상세)\n${input.academicAnalysisResult}`
+      : "",
+    `### 유저 설정 희망대학 (교과전형만 해당)\n${input.targetUniversities}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   const targetUniversityRule = (() => {
     const tuList = input
@@ -368,7 +378,6 @@ export interface HakjongPredictionPromptInput {
   competencyExtraction: string;
   academicAnalysis: string;
   studentTypeClassification: string;
-  universityCandidates: string;
   studentProfile: string;
   subjectAnalysisResult?: string;
   academicAnalysisResult?: string;
@@ -389,35 +398,6 @@ export const buildHakjongPredictionPrompt = (
   const hasTargetUniversities =
     !!input.targetUniversities && input.targetUniversities.trim().length > 0;
 
-  const additionalInputs = [
-    input.subjectAnalysisResult
-      ? `### 교과 세특 분석 결과\n${input.subjectAnalysisResult}`
-      : "",
-    input.academicAnalysisResult
-      ? `### 성적 분석 결과 (상세)\n${input.academicAnalysisResult}`
-      : "",
-    input.attendanceAnalysisResult
-      ? `### 출결 분석 결과\n${input.attendanceAnalysisResult}`
-      : "",
-    hasTargetUniversities
-      ? `### 유저 설정 희망대학 (합격 예측 참고용 — 분석 방향을 좌우하면 안 됨)\n⚠️ 아래 희망대학은 해당 대학의 합격 가능성 예측에만 사용하세요.\n${input.targetUniversities}`
-      : "",
-  ]
-    .filter(Boolean)
-    .join("\n\n");
-
-  const gradeContext =
-    input.gradingSystem === "5등급제"
-      ? buildGradeContext5("hakjong")
-      : input.gradingSystem === "9등급제"
-        ? buildGradeContext9("hakjong")
-        : "";
-
-  const medicalContext = input.isMedical ? buildMedicalCtx("hakjong") : "";
-  const artSportContext = input.isArtSportPractical
-    ? buildArtSportCtx("hakjong")
-    : "";
-
   // ── 희망대학 0건: "전형 적합도 일반 판단" 모드 ──
   if (!hasTargetUniversities) {
     return `## 작업
@@ -436,11 +416,28 @@ export const buildHakjongPredictionPrompt = (
 - 세특 탐구 깊이, 진로 일관성, 활동의 구체성 등 학종 평가 핵심 요소 기반.
 - 학종 적합도가 어느 정도인지 일반 평가 (특정 대학·합격선과는 무관).
 - 합격 가능성은 희망 대학을 등록한 뒤 별도 판단이 필요함을 자연스럽게 안내.
-- analysis는 "생기부에서 ~분야 역량이 확인되며"로 시작.
+
+## ✅ analysis 필수 작성 구조 (반드시 이 4문장 구조로)
+다음의 4문장 구조를 그대로 따르세요. 문장 순서·역할을 변경하거나 문장을 추가/삭제하지 마세요.
+
+**예시 출력** (학생 평균이 2.46등급, 진로역량이 강점인 경우):
+> "최종 평균 등급은 2.46등급입니다. 학생부종합전형은 등급에 더해 진로역량, 학업역량, 공동체역량, 발전가능성을 종합적으로 살피는 정성 평가이므로, 등급 외에도 생기부 전반의 질이 중요한 평가 요소로 작용합니다. 생기부 전반에서 진로와 연결되는 탐구 활동의 흐름과 학년에 걸친 일관된 관심사가 확인됩니다. 이는 학종 평가에서 진로역량 측면의 적합도를 뒷받침하는 기반이 될 수 있습니다."
+
+**문장별 역할:**
+1. **1문장 — 사실 진술**: "최종 평균 등급은 X등급입니다." (X에는 학생의 실제 최종 평균 등급을 소수점 둘째 자리까지 그대로 기입. 합격선 비교·우열 판단 금지)
+2. **2문장 — 학종 평가 특성 안내**: "학생부종합전형은 등급에 더해 진로역량, 학업역량, 공동체역량, 발전가능성을 종합적으로 살피는 정성 평가이므로, 등급 외에도 생기부 전반의 질이 중요한 평가 요소로 작용합니다." (이 문장은 거의 그대로 사용. 4축 평가 구조 안내가 핵심)
+3. **3문장 — 생기부에서 확인되는 강점**: "생기부 전반에서 [구체 강점 1~2개]가 확인됩니다." ([구체 강점]은 역량 추출 결과에서 실제로 도출된 것만 기입 — "진로와 연결되는 탐구 활동의 흐름", "학년에 걸친 일관된 관심사", "구체적 산출물이 있는 활동", "공동체에 기여한 흔적", "주제를 깊이 파고든 탐구 깊이" 등. ⛔ 학생 생기부에 근거 없는 일반 칭찬 금지)
+4. **4문장 — 학종 적합도 일반 판단**: "이는 학종 평가에서 [관련 역량] 측면의 적합도를 뒷받침하는 기반이 될 수 있습니다." ([관련 역량]은 진로역량/학업역량/공동체역량/발전가능성 중 3문장의 강점에 직결되는 것. ⛔ 단정적 합격 가능성·특정 대학 언급 금지)
+
+⛔ 위 4문장 외 추가 문장(특히 합격선 비교·대학명 언급·약점 진단)은 출력에 포함하지 마세요.
+⛔ 3문장의 강점이 역량 추출 결과에서 확인되지 않으면, 일반 표현("탐구 활동의 흐름", "학업에 임하는 태도" 등)으로 보수적으로 서술하세요.
 
 ${OVERALL_ONLY_EXAMPLES_NO_TARGETS}
 
 ## 입력 데이터
+
+### 성적 분석 결과
+${input.academicAnalysis}
 
 ### 역량 추출 결과
 ${input.competencyExtraction}
@@ -460,7 +457,7 @@ ${input.studentProfile}
       "admissionType": "학종",
       "passRateLabel": "데이터 없음",
       "passRateRange": [0, 0],
-      "analysis": "생기부에서 확인되는 학종 적합도 일반 판단 (250자 이내)",
+      "analysis": "(위 4문장 구조 그대로. 학생의 실제 최종 평균 등급으로 X 자리를 채우고, 3문장 강점/4문장 관련 역량만 학생 생기부에 맞게 조정)",
       "universityPredictions": []
     }
   ],
@@ -473,6 +470,33 @@ ${input.studentProfile}
 
 ${COMMON_OUTPUT_RULES}`;
   }
+
+  const additionalInputs = [
+    input.subjectAnalysisResult
+      ? `### 교과 세특 분석 결과\n${input.subjectAnalysisResult}`
+      : "",
+    input.academicAnalysisResult
+      ? `### 성적 분석 결과 (상세)\n${input.academicAnalysisResult}`
+      : "",
+    input.attendanceAnalysisResult
+      ? `### 출결 분석 결과\n${input.attendanceAnalysisResult}`
+      : "",
+    `### 유저 설정 희망대학 (합격 예측 참고용 — 분석 방향을 좌우하면 안 됨)\n⚠️ 아래 희망대학은 해당 대학의 합격 가능성 예측에만 사용하세요.\n${input.targetUniversities}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  const gradeContext =
+    input.gradingSystem === "5등급제"
+      ? buildGradeContext5("hakjong")
+      : input.gradingSystem === "9등급제"
+        ? buildGradeContext9("hakjong")
+        : "";
+
+  const medicalContext = input.isMedical ? buildMedicalCtx("hakjong") : "";
+  const artSportContext = input.isArtSportPractical
+    ? buildArtSportCtx("hakjong")
+    : "";
 
   const targetUniversityRule = `### ⚠️ 유저 설정 희망대학 우선 규칙
 - 유저 희망대학 중 **(학생부종합)** 전형 대학은 학종 predictions에 포함.
@@ -516,7 +540,6 @@ ${input.academicAnalysis}
 ### 학생 유형 분류 결과
 ${input.studentTypeClassification}
 
-${hasTargetUniversities ? "" : `### 코드 산정 대학 후보군\n${input.universityCandidates}\n`}
 ### 학생 프로필
 ${input.studentProfile}
 
@@ -600,22 +623,6 @@ ${TIER_CHANCE_RULES}
 
 ${RATIONALE_RULES}
 
-${
-  hasTargetUniversities
-    ? ""
-    : `## 대학 추천 개인화 규칙
-- universityPredictions는 **"코드 산정 대학 후보군"에 포함된 대학만** 사용. ⛔ 후보군 외 대학 추가 금지.
-- 후보군 중 학생의 세특/활동과 학과 적합성이 높은 대학 우선.
-
-${GRADE_RANGE_RULES}
-
-### 특성화고 학생: 특성화고 특별전형 대학 우선 추천.
-### 여자대학교: 남학생에게 추천 금지. 확실하지 않으면 제외.
-
-### 합격가능성 분포
-- 후보군 내에서 다양한 chance 분포 배분. "very_high"가 전체 50% 초과 금지.
-`
-}
 ${targetUniversityRule}
 
 ### 종합 코멘트 (overallComment)
