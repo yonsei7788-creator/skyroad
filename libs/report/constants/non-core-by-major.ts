@@ -25,6 +25,15 @@ const NATURAL_LIKE_GROUPS: ReadonlySet<string> = new Set([
   "간호보건",
 ]);
 
+/** 경영경제·사회과학 계열로 묶이는 majorGroup. */
+const SOCIAL_LIKE_GROUPS: ReadonlySet<string> = new Set([
+  "경영경제",
+  "사회과학",
+]);
+
+/** 인문 계열 majorGroup. */
+const HUMANITIES_LIKE_GROUPS: ReadonlySet<string> = new Set(["인문"]);
+
 /**
  * 자연·공학·의학 계열에서 약점 분석 대상이 아닌 핵심 과목 prefix.
  * - 국어 일반선택(독서/문학/화법과 작문/언어와 매체/심화 국어): 진로 무관
@@ -43,7 +52,8 @@ const NATURAL_LIKE_NON_CORE_PREFIXES: readonly string[] = [
   "작문",
   "언어와 매체",
   "심화 국어",
-  // 사회 일반선택
+  "논술",
+  // 사회 일반선택 (정식 표기)
   "세계사",
   "세계지리",
   "동아시아사",
@@ -56,6 +66,86 @@ const NATURAL_LIKE_NON_CORE_PREFIXES: readonly string[] = [
   "생활과 윤리",
   "여행지리",
   "사회문제 탐구",
+  // 사회 일반선택 (표기 변형)
+  "사회문화",
+  "사회•문화",
+  // 사회 통합/시민 계열
+  "민주시민",
+  "세계시민",
+  "한국 사회의 이해",
+  "세계 문제",
+  "국제 정치",
+  "국제 경제",
+  "인간과 경제",
+  // AP 사회·경제
+  "AP 미시경제",
+  "AP 근대 세계사",
+];
+
+/**
+ * 경영경제·사회과학 계열에서 약점 분석 대상이 아닌 핵심 과목 prefix.
+ * 진로 직결: 정치와 법, 경제, 사회·문화, 세계사·지리, 한국지리 — 유지
+ * 진로 무관: 국어 일반선택, 과학 일반선택, 윤리 계열 사회 일반선택
+ */
+const SOCIAL_LIKE_NON_CORE_PREFIXES: readonly string[] = [
+  // 국어 일반선택
+  "독서",
+  "문학",
+  "화법과 작문",
+  "화법",
+  "작문",
+  "언어와 매체",
+  "심화 국어",
+  "논술",
+  // 과학 일반선택 (통합과학은 1학년 공통이라 prefix "통합과학"으로 시작해 매칭 안 됨)
+  "물리학",
+  "화학",
+  "생명과학",
+  "지구과학",
+  "과학사",
+  "융합과학",
+  // 사회 일반선택 중 비-경영/사회과학 직결 (윤리 계열·동아시아사)
+  "윤리와 사상",
+  "생활과 윤리",
+  "동아시아사",
+  "인간과 철학",
+  // 정보 계열 일반선택 (경영·사회과학 진로 무관)
+  "인공지능 기초",
+  "인공지능 프로그래밍",
+  "소프트웨어와 생활",
+];
+
+/**
+ * 인문 계열에서 약점 분석 대상이 아닌 핵심 과목 prefix.
+ * 진로 직결: 국어 일반선택, 사회 중 역사·세계지리·윤리 계열 — 유지
+ * 진로 무관: 과학 일반선택, 사회 중 정치/경제/사회·문화, 심화 수학(미적분/기하)
+ */
+const HUMANITIES_LIKE_NON_CORE_PREFIXES: readonly string[] = [
+  // 과학 일반선택
+  "물리학",
+  "화학",
+  "생명과학",
+  "지구과학",
+  "과학사",
+  "융합과학",
+  // 사회 일반선택 중 비-인문 직결 (정식 표기)
+  "정치와 법",
+  "경제",
+  "사회·문화",
+  "사회와 문화",
+  // 사회 일반선택 (표기 변형)
+  "사회문화",
+  "사회•문화",
+  "인간과 경제",
+  "AP 미시경제",
+  // 심화 수학 (수학Ⅰ/수학Ⅱ/확률과 통계는 인문도 평가)
+  "미적분",
+  "기하",
+  "수학과제 탐구",
+  // 정보 계열 일반선택 (인문 진로 무관)
+  "인공지능 기초",
+  "인공지능 프로그래밍",
+  "소프트웨어와 생활",
 ];
 
 /**
@@ -93,6 +183,12 @@ export const isNonCoreForMajor = (
   if (NATURAL_LIKE_GROUPS.has(majorGroup)) {
     return matchesAny(subjectName, NATURAL_LIKE_NON_CORE_PREFIXES);
   }
-  // 인문·사회·예체능은 별도 정책 필요 시 확장 (현재는 false — 약점 분석 대상 유지)
+  if (SOCIAL_LIKE_GROUPS.has(majorGroup)) {
+    return matchesAny(subjectName, SOCIAL_LIKE_NON_CORE_PREFIXES);
+  }
+  if (HUMANITIES_LIKE_GROUPS.has(majorGroup)) {
+    return matchesAny(subjectName, HUMANITIES_LIKE_NON_CORE_PREFIXES);
+  }
+  // 교육·간호보건(이미 NATURAL)·예체능·예체능교육 등은 정책 미적용
   return false;
 };
