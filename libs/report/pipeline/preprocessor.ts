@@ -28,6 +28,7 @@ import {
 } from "../constants/department-category-map.ts";
 import { correctSubjectName } from "../constants/subject-name-corrections.ts";
 import { isNonMainSubject } from "../constants/non-main-subjects.ts";
+import { isNonCoreForMajor } from "../constants/non-core-by-major.ts";
 
 /**
  * 예체능 관련 키워드.
@@ -808,25 +809,33 @@ export const preprocess = (
 
   // 비주요 과목 분류 기준: 예체능 학과 지원자는 체육·음악·미술이 핵심 과목.
   // 분석용 통계(subjectStats / gradeVariance / majorRelated / rawAcademicDataText)에서
-  // 비주요 과목을 제외하기 위한 플래그.
+  // 비주요 과목 + 진로 무관 핵심 과목을 제외하기 위한 플래그.
   const isArtSportApplicant = isArtSportDepartment(
     studentInfo.targetDepartment ?? ""
   );
+  // majorGroup — 자연·공학·의학 학생에서 국어 일반선택·사회 일반선택 등을
+  // 약점 분석 대상에서 제외하기 위함.
+  const majorCriteria = matchMajorEvaluationCriteria(
+    studentInfo.targetDepartment ?? ""
+  );
+  const majorGroup = majorCriteria?.majorGroup;
 
-  // 5. Z-score + 백분위 (비주요 과목 제외)
+  // 5. Z-score + 백분위 (비주요 + 진로 무관 핵심 과목 제외)
   const subjectStats = computeSubjectStats(
     generalSubjects,
-    isArtSportApplicant
+    isArtSportApplicant,
+    majorGroup
   );
 
-  // 6. 과목 간 편차 (비주요 과목 제외 — 정보·일본어 등이 lowest로 잡혀
-  //    약점 분석이 잘못 가는 것 방지)
+  // 6. 과목 간 편차 (비주요 + 진로 무관 핵심 제외 — 자연·공학 학생에서
+  //    독서·문학·세계사 등이 highest/lowest로 잡혀 진로 무관 약점 거론 방지)
   const gradeVariance = computeGradeVariance(
     gradesWithRank,
-    isArtSportApplicant
+    isArtSportApplicant,
+    majorGroup
   );
 
-  // 7. 전공 관련 교과 성적 (비주요 과목 제외)
+  // 7. 전공 관련 교과 성적 (비주요 + 진로 무관 핵심 제외)
   const majorRelated = computeMajorRelated(
     generalSubjects,
     studentInfo.targetDepartment ?? "",
@@ -1088,7 +1097,8 @@ const computeGradeTrend = (
 
 const computeSubjectStats = (
   subjects: GeneralSubjectRow[],
-  isArtSportApplicant: boolean
+  isArtSportApplicant: boolean,
+  majorGroup: string | undefined
 ): SubjectStat[] => {
   return subjects
     .filter(
@@ -1098,7 +1108,8 @@ const computeSubjectStats = (
         s.standardDeviation !== null &&
         s.standardDeviation > 0 &&
         s.gradeRank !== null &&
-        !isNonMainSubject(s.subject, isArtSportApplicant)
+        !isNonMainSubject(s.subject, isArtSportApplicant) &&
+        !isNonCoreForMajor(s.subject, majorGroup)
     )
     .map((s) => {
       const zScore = (s.rawScore! - s.average!) / s.standardDeviation!;
@@ -1119,12 +1130,16 @@ const computeSubjectStats = (
 
 const computeGradeVariance = (
   subjects: GeneralSubjectRow[],
-  isArtSportApplicant: boolean
+  isArtSportApplicant: boolean,
+  majorGroup: string | undefined
 ): PreprocessedData["gradeVariance"] => {
-  // 비주요 과목은 합불에 결정적 영향 없으므로 highest/lowest 후보에서 제외.
-  // (정보·일본어·기술가정 등이 lowest로 잡혀 약점 분석이 잘못 가는 것 방지)
+  // 비주요 과목 + 진로 무관 핵심 과목은 highest/lowest 후보에서 제외.
+  // (정보·일본어 등 비주요뿐 아니라, 자연·공학 학생의 독서·문학·세계사 등
+  //  진로 무관 핵심 과목도 약점 거론 대상에서 제외)
   const coreSubjects = subjects.filter(
-    (s) => !isNonMainSubject(s.subject, isArtSportApplicant)
+    (s) =>
+      !isNonMainSubject(s.subject, isArtSportApplicant) &&
+      !isNonCoreForMajor(s.subject, majorGroup)
   );
   if (coreSubjects.length === 0) {
     return { highest: "-", lowest: "-", spread: 0 };
@@ -1637,7 +1652,8 @@ const buildTexts = (
   const rawAcademicDataText = formatRawAcademicData(
     recordData.generalSubjects ?? [],
     recordData.careerSubjects ?? [],
-    isArtSportDepartment(studentInfo.targetDepartment ?? "")
+    isArtSportDepartment(studentInfo.targetDepartment ?? ""),
+    matchMajorEvaluationCriteria(studentInfo.targetDepartment ?? "")?.majorGroup
   );
   // convertedGrade는 내부 계산용이므로 AI에 전달하지 않음
   const { convertedGrade: _cg, ...dataWithoutConvertedGrade } = data;
@@ -2676,6 +2692,224 @@ export const buildUniversityCandidatesText = (
 };
 
 /**
+ * 학생 희망대학 중 majorExploration 추천 학과와 일치하는 대학을
+ * 추천대학에 포함시키기 위한 후보 산정.
+ *
+ * 정책:
+ * - 학과 매칭은 정규화(괄호/공백/접미사 "전공/과/부" 제거) 후 정확 일치
+ * - 매칭된 희망대학 중 ADMISSION_CUTOFF_DATA에 커트라인이 있는 곳:
+ *   학생 환산 등급 기준 |diff| 작은 순 → 최대 2개
+ *   (학종/교과 둘 다 보고 더 가까운 쪽으로 recommendedAdmissionType 결정.
+ *    isGyogwaOnly면 교과만 비교)
+ * - 매칭은 됐으나 커트라인 데이터가 전혀 없으면: priority 작은 순 1개만
+ *   (tier="fit" 부여, recommendedAdmissionType은 학생 입력 admission_type 매핑)
+ */
+export const buildHopeUniversityRecommendations = (
+  targetUniversities: StudentInfo["targetUniversities"],
+  majorNames: readonly string[],
+  overallAverage: number | undefined,
+  gradingSystem: "5등급제" | "9등급제" | undefined,
+  schoolType: string | undefined,
+  isGyogwaOnly: boolean
+): {
+  university: string;
+  department: string;
+  tier: "reach" | "ambitious" | "fit" | "safety";
+  recommendedAdmissionType: "학종" | "교과";
+}[] => {
+  if (!targetUniversities || targetUniversities.length === 0) return [];
+  if (!majorNames || majorNames.length === 0) return [];
+
+  // 학과명 정규화 (괄호/공백/조직 접미사 제거)
+  const normalize = (name: string): string =>
+    name
+      .replace(/\(.*\).*$/, "")
+      .replace(/\[.*\].*$/, "")
+      .split(" ")[0]
+      .replace(/(?:전공|과|부)$/, "")
+      .trim();
+
+  const normalizedMajors = new Set(majorNames.map(normalize));
+  const matched = targetUniversities
+    .filter((tu) => normalizedMajors.has(normalize(tu.department)))
+    .sort((a, b) => a.priority - b.priority);
+
+  if (matched.length === 0) return [];
+
+  // 학생 등급 환산 (5등급→9등급 → 고교유형 환산)
+  let studentGrade9: number | null = null;
+  if (overallAverage != null) {
+    const asNine =
+      gradingSystem === "5등급제"
+        ? fiveToNineGrade(overallAverage)
+        : overallAverage;
+    studentGrade9 = schoolType
+      ? convertGradeBySchoolType(schoolType, asNine)
+      : asNine;
+  }
+
+  const TOP_UNIVERSITIES_FOR_ADJUSTMENT = new Set([
+    "서울대학교",
+    "연세대학교",
+    "고려대학교",
+    "서강대학교",
+    "성균관대학교",
+    "한양대학교",
+    "중앙대학교",
+  ]);
+  const TOP_UNIV_HAKJONG_ADJUSTMENT = 0.4;
+
+  type WithCutoff = {
+    university: string;
+    department: string;
+    diff: number;
+    absDiff: number;
+    recommendedAdmissionType: "학종" | "교과";
+    tier: "reach" | "ambitious" | "fit" | "safety";
+    priority: number;
+  };
+  type WithoutCutoff = {
+    university: string;
+    department: string;
+    admissionType: string;
+    priority: number;
+  };
+
+  const withCutoff: WithCutoff[] = [];
+  const withoutCutoff: WithoutCutoff[] = [];
+
+  const findClosest = (
+    cuts: number[],
+    grade: number
+  ): { cut: number; diff: number } | null => {
+    if (cuts.length === 0) return null;
+    const cut = cuts.reduce((best, g) =>
+      Math.abs(g - grade) < Math.abs(best - grade) ? g : best
+    );
+    return { cut, diff: Math.round((grade - cut) * 1000) / 1000 };
+  };
+
+  for (const tu of matched) {
+    const tuCore = normalize(tu.department);
+    const cutoffs = ADMISSION_CUTOFF_DATA.filter(
+      (e) =>
+        e.university === tu.universityName && normalize(e.department) === tuCore
+    );
+
+    if (cutoffs.length === 0 || studentGrade9 == null) {
+      withoutCutoff.push({
+        university: tu.universityName,
+        department: tu.department,
+        admissionType: tu.admissionType,
+        priority: tu.priority,
+      });
+      continue;
+    }
+
+    const hakjongCutsRaw = cutoffs
+      .filter((c) => c.admissionType === "학종")
+      .filter(
+        (c): c is (typeof cutoffs)[number] & { cutoff50Grade: number } =>
+          c.cutoff50Grade != null
+      );
+    const gyogwaCuts = cutoffs
+      .filter((c) => c.admissionType === "교과")
+      .map((c) => c.cutoff50Grade)
+      .filter((g): g is number => g != null);
+
+    // 상위대학 학종 보정 (안성캠 제외)
+    const isTopUniv = TOP_UNIVERSITIES_FOR_ADJUSTMENT.has(tu.universityName);
+    const adjustedHakjong = hakjongCutsRaw.map((c) => {
+      const g = c.cutoff50Grade;
+      if (!isTopUniv || c.campus === "안성") return g;
+      return g >= 2.0
+        ? Math.round((g - TOP_UNIV_HAKJONG_ADJUSTMENT) * 100) / 100
+        : g;
+    });
+
+    const hakjongMatch = isGyogwaOnly
+      ? null
+      : findClosest(adjustedHakjong, studentGrade9);
+    const gyogwaMatch = findClosest(gyogwaCuts, studentGrade9);
+
+    if (!hakjongMatch && !gyogwaMatch) {
+      withoutCutoff.push({
+        university: tu.universityName,
+        department: tu.department,
+        admissionType: tu.admissionType,
+        priority: tu.priority,
+      });
+      continue;
+    }
+
+    let bestDiff: number;
+    let recommendedAdmissionType: "학종" | "교과";
+    if (hakjongMatch && gyogwaMatch) {
+      if (Math.abs(hakjongMatch.diff) <= Math.abs(gyogwaMatch.diff)) {
+        bestDiff = hakjongMatch.diff;
+        recommendedAdmissionType = "학종";
+      } else {
+        bestDiff = gyogwaMatch.diff;
+        recommendedAdmissionType = "교과";
+      }
+    } else if (hakjongMatch) {
+      bestDiff = hakjongMatch.diff;
+      recommendedAdmissionType = "학종";
+    } else {
+      bestDiff = gyogwaMatch!.diff;
+      recommendedAdmissionType = "교과";
+    }
+
+    const tier: "reach" | "ambitious" | "fit" | "safety" =
+      bestDiff >= 0.3
+        ? "reach"
+        : bestDiff > 0.1
+          ? "ambitious"
+          : bestDiff >= -0.1
+            ? "fit"
+            : "safety";
+
+    withCutoff.push({
+      university: tu.universityName,
+      department: tu.department,
+      diff: bestDiff,
+      absDiff: Math.abs(bestDiff),
+      recommendedAdmissionType,
+      tier,
+      priority: tu.priority,
+    });
+  }
+
+  // 1) 커트라인 있는 후보가 있으면 |diff| 작은 순 최대 2개
+  if (withCutoff.length > 0) {
+    return withCutoff
+      .sort((a, b) => a.absDiff - b.absDiff || a.priority - b.priority)
+      .slice(0, 2)
+      .map((c) => ({
+        university: c.university,
+        department: c.department,
+        tier: c.tier,
+        recommendedAdmissionType: c.recommendedAdmissionType,
+      }));
+  }
+
+  // 2) 모두 커트라인 없음 → priority 1순위 1개만
+  const [top] = withoutCutoff;
+  if (!top) return [];
+  const mappedType: "학종" | "교과" = top.admissionType.includes("교과")
+    ? "교과"
+    : "학종";
+  return [
+    {
+      university: top.university,
+      department: top.department,
+      tier: "fit",
+      recommendedAdmissionType: mappedType,
+    },
+  ];
+};
+
+/**
  * 대학에 실제 개설된 학과명을 찾아 반환.
  * 1순위: ADMISSION_CUTOFF_DATA에서 대학+학과 정확 매칭
  * 2순위: departments 변형으로 재조회
@@ -2951,15 +3185,19 @@ const formatBehavioralAssessments = (
 const formatRawAcademicData = (
   general: GeneralSubjectRow[],
   career: CareerSubjectRow[],
-  isArtSportApplicant: boolean
+  isArtSportApplicant: boolean,
+  majorGroup: string | undefined
 ): string => {
   const lines: string[] = [];
 
-  // 비주요 과목(정보·일본어·기술가정 등)은 합불에 결정적 영향이 없으므로,
+  // 비주요 과목(정보·일본어·기술가정 등) + 진로 무관 핵심 과목(자연·공학 학생의
+  // 독서·문학·세계사 등)은 합불에 결정적 영향이 없거나 진로와 무관하므로
   // 분석 대상으로 거론되지 않도록 raw 표에서 제외.
   // (학생 자신의 전체 등급은 PreprocessedData.allSubjectGrades로 출력 테이블에 노출됨)
   const generalForAnalysis = general.filter(
-    (s) => !isNonMainSubject(s.subject, isArtSportApplicant)
+    (s) =>
+      !isNonMainSubject(s.subject, isArtSportApplicant) &&
+      !isNonCoreForMajor(s.subject, majorGroup)
   );
 
   lines.push("## 일반 교과 성적");

@@ -61,6 +61,7 @@ import type { GeminiClient, GeminiModelName } from "./gemini-client.ts";
 import {
   preprocess,
   buildUniversityCandidatesText,
+  buildHopeUniversityRecommendations,
   rebuildRecommendedCourseMatchText,
   isArtSportPractical as isArtSportPracticalFn,
 } from "./preprocessor.ts";
@@ -1248,13 +1249,54 @@ export const executeTask = async (
         const codeRecommended = candidates.filter(
           (c) => c.recommendedAdmissionType
         );
-        if (codeRecommended.length > 0) {
+
+        // 희망대학 중 majorExploration 추천 학과와 매칭되는 곳을 1~2개 머지.
+        // 학생이 이미 의지 있는 곳을 추천대학에서 누락시키지 않기 위함.
+        let hopeRecommended: ReturnType<
+          typeof buildHopeUniversityRecommendations
+        > = [];
+        if (majorExplSection) {
+          const suggestions = (
+            majorExplSection as unknown as Record<string, unknown>
+          ).suggestions as { major: string }[] | undefined;
+          if (suggestions && suggestions.length > 0) {
+            hopeRecommended = buildHopeUniversityRecommendations(
+              studentInfo.targetUniversities,
+              suggestions.map((s) => s.major),
+              state.preprocessedData?.overallAverage,
+              state.preprocessedData?.gradingSystem,
+              studentInfo.schoolType,
+              isGyogwaOnly
+            );
+          }
+        }
+
+        // 중복 제거하면서 머지 — codeRecommended에 이미 있는 (대학,학과)는 유지
+        const mergedCards: {
+          university: string;
+          department: string;
+          tier?: string;
+          recommendedAdmissionType: "학종" | "교과";
+        }[] = codeRecommended.map((c) => ({
+          university: c.university,
+          department: c.department,
+          tier: c.tier,
+          recommendedAdmissionType: c.recommendedAdmissionType!,
+        }));
+        for (const hope of hopeRecommended) {
+          const dupKey = `${hope.university}|${hope.department}`;
+          const exists = mergedCards.some(
+            (m) => `${m.university}|${m.department}` === dupKey
+          );
+          if (!exists) mergedCards.push(hope);
+        }
+
+        if (mergedCards.length > 0) {
           const strat = section as unknown as Record<string, unknown>;
-          // simulations.cards를 코드 확정 추천대학으로 대체
           strat.simulations = [
             {
               description: "AI 추천 전공 기반 대학 추천",
-              cards: codeRecommended.map((c) => ({
+              cards: mergedCards.map((c) => ({
                 university: c.university,
                 department: c.department,
                 recommendedAdmissionType: c.recommendedAdmissionType,
@@ -1262,6 +1304,11 @@ export const executeTask = async (
               })),
             },
           ];
+          if (hopeRecommended.length > 0) {
+            console.log(
+              `[report:${reportId}] admissionStrategy 희망대학 ${hopeRecommended.length}개 머지: ${hopeRecommended.map((h) => `${h.university} ${h.department}`).join(", ")}`
+            );
+          }
         }
       } catch {
         // 후보군 파싱 실패 시 AI 생성 결과 유지
