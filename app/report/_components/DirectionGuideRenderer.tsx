@@ -1,7 +1,7 @@
 import type { DirectionGuideSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface DirectionGuideRendererProps {
@@ -54,7 +54,7 @@ export const DirectionGuideRenderer = ({
           <div className={styles.aiCommentaryContent}>
             <div className={styles.aiCommentaryLabel}>준비 조언</div>
             <div className={styles.aiCommentaryText}>
-              {safeText(data.preparationAdvice)}
+              {renderInsightMarkers(data.preparationAdvice)}
             </div>
           </div>
         </div>

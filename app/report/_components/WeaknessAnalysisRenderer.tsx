@@ -5,7 +5,7 @@ import type {
 } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface WeaknessAnalysisRendererProps {
@@ -129,12 +129,14 @@ export const WeaknessAnalysisRenderer = ({
             </div>
           )}
 
-          <p className={styles.small}>{safeText(area.description)}</p>
+          <p className={styles.small}>
+            {renderInsightMarkers(area.description)}
+          </p>
 
           {area.evidence && (
             <p className={`${styles.caption} ${styles.mt4}`}>
               <span className={styles.emphasis}>근거:</span>{" "}
-              {safeText(area.evidence)}
+              {renderInsightMarkers(area.evidence)}
             </p>
           )}
 
@@ -167,14 +169,16 @@ export const WeaknessAnalysisRenderer = ({
               <span className={`${styles.emphasis} ${styles.markerSky}`}>
                 실행 전략:
               </span>{" "}
-              {safeText(area.detailedStrategy ?? area.executionStrategy)}
+              {renderInsightMarkers(
+                area.detailedStrategy ?? area.executionStrategy
+              )}
             </p>
           )}
 
           {area.subjectLinkStrategy && (
             <p className={`${styles.caption} ${styles.mt4}`}>
               <span className={styles.emphasis}>교과 연계:</span>{" "}
-              {safeText(area.subjectLinkStrategy)}
+              {renderInsightMarkers(area.subjectLinkStrategy)}
             </p>
           )}
         </div>

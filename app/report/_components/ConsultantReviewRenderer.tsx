@@ -1,7 +1,7 @@
 import type { ConsultantReviewSection, ReportPlan } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface ConsultantReviewRendererProps {
@@ -35,7 +35,9 @@ export const ConsultantReviewRenderer = ({
               성적 및 교과 이수 노력 평가
             </span>
           </div>
-          <p className={styles.small}>{safeText(data.gradeAnalysis)}</p>
+          <p className={styles.small}>
+            {renderInsightMarkers(data.gradeAnalysis)}
+          </p>
         </div>
       </div>
 
@@ -43,14 +45,18 @@ export const ConsultantReviewRenderer = ({
         <div className={styles.h3}>
           <span className={styles.markerSky}>전공 관련 교과 성취도</span>
         </div>
-        <p className={styles.small}>{safeText(data.courseEffort)}</p>
+        <p className={styles.small}>
+          {renderInsightMarkers(data.courseEffort)}
+        </p>
       </div>
 
       <div>
         <div className={styles.h3}>
           <span className={styles.markerSky}>전형 전략 방향</span>
         </div>
-        <p className={styles.small}>{safeText(data.admissionStrategy)}</p>
+        <p className={styles.small}>
+          {renderInsightMarkers(data.admissionStrategy)}
+        </p>
       </div>
 
       {data.completionDirection && !isGraduate && (
@@ -58,7 +64,9 @@ export const ConsultantReviewRenderer = ({
           <div className={styles.h3}>
             <span className={styles.markerSky}>생기부 마무리 방향</span>
           </div>
-          <p className={styles.small}>{safeText(data.completionDirection)}</p>
+          <p className={styles.small}>
+            {renderInsightMarkers(data.completionDirection)}
+          </p>
         </div>
       )}
 
@@ -67,7 +75,7 @@ export const ConsultantReviewRenderer = ({
           <span className={styles.markerSky}>종합 조언</span>
         </div>
         <p className={`${styles.small} ${styles.emphasis}`}>
-          {safeText(data.finalAdvice)}
+          {renderInsightMarkers(data.finalAdvice)}
         </p>
       </div>
 
@@ -82,28 +90,28 @@ export const ConsultantReviewRenderer = ({
           <div className={styles.card}>
             <div className={styles.tableCellBold}>전공 적합성</div>
             <p className={styles.small}>
-              {safeText(data.evaluationGuide.majorFit)}
+              {renderInsightMarkers(data.evaluationGuide.majorFit)}
             </p>
           </div>
 
           <div className={`${styles.card} ${styles.mt12}`}>
             <div className={styles.tableCellBold}>학업 역량</div>
             <p className={styles.small}>
-              {safeText(data.evaluationGuide.academicAbility)}
+              {renderInsightMarkers(data.evaluationGuide.academicAbility)}
             </p>
           </div>
 
           <div className={`${styles.card} ${styles.mt12}`}>
             <div className={styles.tableCellBold}>탐구 역량</div>
             <p className={styles.small}>
-              {safeText(data.evaluationGuide.inquiryAbility)}
+              {renderInsightMarkers(data.evaluationGuide.inquiryAbility)}
             </p>
           </div>
 
           <div className={`${styles.card} ${styles.mt12}`}>
             <div className={styles.tableCellBold}>발전 가능성</div>
             <p className={styles.small}>
-              {safeText(data.evaluationGuide.growthPotential)}
+              {renderInsightMarkers(data.evaluationGuide.growthPotential)}
             </p>
           </div>
 
@@ -112,7 +120,7 @@ export const ConsultantReviewRenderer = ({
           >
             <div className={styles.calloutContent}>
               <span className={styles.emphasis}>핵심 인사이트:</span>{" "}
-              {safeText(data.evaluationGuide.keyInsights)}
+              {renderInsightMarkers(data.evaluationGuide.keyInsights)}
             </div>
           </div>
 
@@ -122,7 +130,9 @@ export const ConsultantReviewRenderer = ({
               <div className={styles.aiCommentaryContent}>
                 <div className={styles.aiCommentaryLabel}>분석 방법론</div>
                 <div className={styles.aiCommentaryText}>
-                  {safeText(data.evaluationGuide.analysisMethodology)}
+                  {renderInsightMarkers(
+                    data.evaluationGuide.analysisMethodology
+                  )}
                 </div>
               </div>
             </div>

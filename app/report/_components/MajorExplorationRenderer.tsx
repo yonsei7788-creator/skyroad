@@ -1,7 +1,7 @@
 import type { MajorExplorationSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface MajorExplorationRendererProps {
@@ -28,7 +28,7 @@ export const MajorExplorationRenderer = ({
               <div className={styles.cardTitle}>현재 목표 학과 평가</div>
             </div>
             <p className={`${styles.small} ${styles.mt6}`}>
-              {safeText(data.currentTargetAssessment)}
+              {renderInsightMarkers(data.currentTargetAssessment)}
             </p>
           </div>
         )}
@@ -88,11 +88,13 @@ export const MajorExplorationRenderer = ({
                   적합도 {s.fitScore}%
                 </span>
               </div>
-              <p className={styles.small}>{safeText(s.rationale)}</p>
+              <p className={styles.small}>
+                {renderInsightMarkers(s.rationale)}
+              </p>
               {s.gapAnalysis && (
                 <p className={`${styles.caption} ${styles.mt6}`}>
                   <span className={styles.emphasis}>보완 필요:</span>{" "}
-                  {safeText(s.gapAnalysis)}
+                  {renderInsightMarkers(s.gapAnalysis)}
                 </p>
               )}
             </div>

@@ -4,7 +4,7 @@ import type {
 } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface StoryAnalysisRendererProps {
@@ -35,7 +35,7 @@ export const StoryAnalysisRenderer = ({
             <div className={styles.cardTitle}>메인 스토리라인</div>
           </div>
           <p className={`${styles.small} ${styles.mt6}`}>
-            {safeText(data.mainStoryline)}
+            {renderInsightMarkers(data.mainStoryline)}
           </p>
         </div>
 
@@ -51,7 +51,9 @@ export const StoryAnalysisRenderer = ({
               <span className={styles.tableCellBold}>{yp.year}학년</span>
               <span className={styles.tag}>{yp.theme}</span>
             </div>
-            <p className={styles.small}>{safeText(yp.description)}</p>
+            <p className={styles.small}>
+              {renderInsightMarkers(yp.description)}
+            </p>
           </div>
         ))}
       </div>
@@ -67,7 +69,7 @@ export const StoryAnalysisRenderer = ({
             </span>
           </div>
           <p className={`${styles.small} ${styles.mt6}`}>
-            {safeText(data.careerConsistencyComment)}
+            {renderInsightMarkers(data.careerConsistencyComment)}
           </p>
         </div>
       </div>
@@ -129,7 +131,7 @@ export const StoryAnalysisRenderer = ({
                   면접 스토리텔링 가이드
                 </div>
                 <div className={styles.aiCommentaryText}>
-                  {safeText(data.interviewStoryGuide)}
+                  {renderInsightMarkers(data.interviewStoryGuide)}
                 </div>
               </div>
             </div>

@@ -1,7 +1,7 @@
 import type { AttendanceAnalysisSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface AttendanceAnalysisRendererProps {
@@ -102,7 +102,7 @@ export const AttendanceAnalysisRenderer = ({
             </table>
             {data.comparisonData.estimationBasis && (
               <p className={`${styles.caption} ${styles.mt4}`}>
-                * {safeText(data.comparisonData.estimationBasis)}
+                * {renderInsightMarkers(data.comparisonData.estimationBasis)}
               </p>
             )}
           </>
@@ -127,13 +127,13 @@ export const AttendanceAnalysisRenderer = ({
             <span className={`${styles.emphasis} ${styles.markerYellow}`}>
               입시 영향:
             </span>{" "}
-            {safeText(data.impactAnalysis)}
+            {renderInsightMarkers(data.impactAnalysis)}
           </p>
           <p className={`${styles.body} ${styles.mt8}`}>
             <span className={`${styles.emphasis} ${styles.markerYellow}`}>
               성실성 기여:
             </span>{" "}
-            {safeText(data.integrityContribution)}
+            {renderInsightMarkers(data.integrityContribution)}
           </p>
 
           {data.estimatedDeduction && (
@@ -141,7 +141,7 @@ export const AttendanceAnalysisRenderer = ({
               <span className={styles.emphasis}>
                 추정 감점: {data.estimatedDeduction.deductionPoints}점
               </span>{" "}
-              — {safeText(data.estimatedDeduction.rationale)}
+              — {renderInsightMarkers(data.estimatedDeduction.rationale)}
             </p>
           )}
         </div>
@@ -154,7 +154,7 @@ export const AttendanceAnalysisRenderer = ({
               <span className={`${styles.emphasis} ${styles.markerSky}`}>
                 개선 방향:
               </span>{" "}
-              {safeText(data.improvementAdvice)}
+              {renderInsightMarkers(data.improvementAdvice)}
             </div>
           </div>
         )}

@@ -2,7 +2,7 @@ import type { AdmissionStrategySection, ReportPlan } from "@/libs/report/types";
 
 import { ReportBadge } from "./ReportBadge";
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 /**
@@ -60,12 +60,12 @@ export const AdmissionStrategyRenderer = ({
             </div>
             {data.recommendedAdmissionType && (
               <span className={styles.profileRecommendationValue}>
-                {safeText(data.recommendedAdmissionType)}
+                {renderInsightMarkers(data.recommendedAdmissionType)}
               </span>
             )}
           </div>
           <p className={`${styles.small} ${styles.mt6}`}>
-            {safeText(data.recommendedPath)}
+            {renderInsightMarkers(data.recommendedPath)}
           </p>
         </div>
       </div>
@@ -116,7 +116,7 @@ export const AdmissionStrategyRenderer = ({
             )}
             {!isNewFormat && desc && (
               <p className={`${styles.small} ${styles.mb12}`}>
-                {safeText(desc)}
+                {renderInsightMarkers(desc)}
               </p>
             )}
             <table className={styles.compactTable}>
@@ -186,7 +186,7 @@ export const AdmissionStrategyRenderer = ({
               <div className={styles.cardTitle}>다음 학기 전략</div>
             </div>
             <p className={`${styles.small} ${styles.mt6}`}>
-              {safeText(data.nextSemesterStrategy)}
+              {renderInsightMarkers(data.nextSemesterStrategy)}
             </p>
           </div>
         </div>
@@ -335,7 +335,9 @@ export const AdmissionStrategyRenderer = ({
                     borderTop: "1px solid var(--report-border)",
                   }}
                 >
-                  <p className={styles.small}>{safeText(analysis)}</p>
+                  <p className={styles.small}>
+                    {renderInsightMarkers(analysis)}
+                  </p>
                 </div>
               )}
             </div>

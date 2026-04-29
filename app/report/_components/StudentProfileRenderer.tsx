@@ -1,7 +1,7 @@
 import type { ReportPlan, StudentProfileSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface StudentProfileRendererProps {
@@ -56,7 +56,7 @@ export const StudentProfileRenderer = ({
         <div className={styles.profileTypeInfo}>
           <div className={styles.profileTypeName}>{data.typeName}</div>
           <p className={styles.profileTypeDesc}>
-            {safeText(data.typeDescription)}
+            {renderInsightMarkers(data.typeDescription)}
           </p>
         </div>
       </div>
@@ -114,7 +114,7 @@ export const StudentProfileRenderer = ({
         }
       >
         <span className={styles.profileCatchPhraseText}>
-          {safeText(data.catchPhrase)}
+          {renderInsightMarkers(data.catchPhrase)}
         </span>
       </div>
 
@@ -128,7 +128,7 @@ export const StudentProfileRenderer = ({
                 추천 전형
               </span>
               <span className={styles.profileRecommendationValue}>
-                {safeText(data.recommendedAdmissionType)}
+                {renderInsightMarkers(data.recommendedAdmissionType)}
               </span>
             </div>
           )}
@@ -141,7 +141,7 @@ export const StudentProfileRenderer = ({
                     key={`strategy-${idx}`}
                     className={styles.profileStrategyItem}
                   >
-                    {safeText(String(item))}
+                    {renderInsightMarkers(String(item))}
                   </li>
                 ))}
               </ul>

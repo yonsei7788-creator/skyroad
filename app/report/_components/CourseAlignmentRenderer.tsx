@@ -2,7 +2,7 @@ import type { CourseAlignmentSection } from "@/libs/report/types";
 
 import { ReportProgress } from "./ReportProgress";
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface CourseAlignmentRendererProps {
@@ -90,7 +90,7 @@ export const CourseAlignmentRenderer = ({
             <span className={`${styles.emphasis} ${styles.markerYellow}`}>
               미이수 과목 영향:
             </span>{" "}
-            {safeText(data.missingCourseImpact)}
+            {renderInsightMarkers(data.missingCourseImpact)}
           </div>
         </div>
 
@@ -102,7 +102,7 @@ export const CourseAlignmentRenderer = ({
                 <span className={styles.markerSky}>이수 전략</span>
               </div>
               <div className={styles.aiCommentaryText}>
-                {safeText(data.recommendation)}
+                {renderInsightMarkers(data.recommendation)}
               </div>
             </div>
           </div>
@@ -138,7 +138,9 @@ export const CourseAlignmentRenderer = ({
                       {req.met ? "충족" : "미충족"}
                     </span>
                   </td>
-                  <td className={styles.small}>{safeText(req.details)}</td>
+                  <td className={styles.small}>
+                    {renderInsightMarkers(req.details)}
+                  </td>
                 </tr>
               ))}
             </tbody>

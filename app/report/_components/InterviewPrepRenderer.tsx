@@ -1,7 +1,7 @@
 import type { InterviewPrepSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface InterviewPrepRendererProps {
@@ -77,7 +77,7 @@ export const InterviewPrepRenderer = ({
               <span className={`${styles.emphasis} ${styles.markerSky}`}>
                 출제 의도:
               </span>{" "}
-              {safeText(q.intent)}
+              {renderInsightMarkers(q.intent)}
             </p>
           )}
 
@@ -94,7 +94,7 @@ export const InterviewPrepRenderer = ({
           {q.answerStrategy && (
             <p className={`${styles.small} ${styles.mt8}`}>
               <span className={styles.emphasis}>답변 전략:</span>{" "}
-              {safeText(q.answerStrategy)}
+              {renderInsightMarkers(q.answerStrategy)}
             </p>
           )}
 
@@ -102,7 +102,7 @@ export const InterviewPrepRenderer = ({
             <div className={`${styles.callout} ${styles.mt12}`}>
               <div className={styles.calloutContent}>
                 <span className={styles.emphasis}>모범 답변:</span>{" "}
-                {safeText(q.sampleAnswer)}
+                {renderInsightMarkers(q.sampleAnswer)}
               </div>
             </div>
           )}
@@ -114,7 +114,7 @@ export const InterviewPrepRenderer = ({
                   <span className={styles.emphasis}>
                     꼬리 {fqIdx + 1}. {fq.question}
                   </span>{" "}
-                  — {safeText(fq.context)}
+                  — {renderInsightMarkers(fq.context)}
                 </p>
               ))}
             </div>

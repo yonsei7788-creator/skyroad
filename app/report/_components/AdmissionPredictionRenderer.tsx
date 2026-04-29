@@ -4,7 +4,7 @@ import type {
 } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface AdmissionPredictionRendererProps {
@@ -91,7 +91,7 @@ export const AdmissionPredictionRenderer = ({
               </span>
             </div>
             <p className={styles.admissionCardAnalysis}>
-              {safeText(pred.analysis)}
+              {renderInsightMarkers(pred.analysis)}
             </p>
             {pred.universityPredictions &&
               pred.universityPredictions.length > 0 && (
@@ -136,7 +136,7 @@ export const AdmissionPredictionRenderer = ({
               <span className={styles.markerSky}>종합 코멘트</span>
             </div>
             <div className={styles.aiCommentaryText}>
-              {safeText(data.overallComment)}
+              {renderInsightMarkers(data.overallComment)}
             </div>
           </div>
         </div>

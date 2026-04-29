@@ -1,7 +1,7 @@
 import type { AcademicAnalysisSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface AcademicAnalysisRendererProps {
@@ -231,7 +231,7 @@ export const AcademicAnalysisRenderer = ({
               <span className={styles.markerSky}>성적 분석</span>
             </div>
             <div className={styles.aiCommentaryText}>
-              {safeText(data.interpretation)}
+              {renderInsightMarkers(data.interpretation)}
             </div>
           </div>
         </div>
@@ -265,7 +265,9 @@ export const AcademicAnalysisRenderer = ({
           </div>
           {data.gradeDeviationAnalysis!.riskAssessment && (
             <p className={`${styles.body} ${styles.mt12}`}>
-              {safeText(data.gradeDeviationAnalysis!.riskAssessment)}
+              {renderInsightMarkers(
+                data.gradeDeviationAnalysis!.riskAssessment
+              )}
             </p>
           )}
         </div>
@@ -280,13 +282,15 @@ export const AcademicAnalysisRenderer = ({
           {data.majorRelevanceAnalysis!.enrollmentEffort && (
             <p className={`${styles.small} ${styles.mt8}`}>
               <span className={styles.emphasis}>이수 노력:</span>{" "}
-              {safeText(data.majorRelevanceAnalysis!.enrollmentEffort)}
+              {renderInsightMarkers(
+                data.majorRelevanceAnalysis!.enrollmentEffort
+              )}
             </p>
           )}
           {data.majorRelevanceAnalysis!.achievement && (
             <p className={`${styles.small} ${styles.mt8}`}>
               <span className={styles.emphasis}>성취도:</span>{" "}
-              {safeText(data.majorRelevanceAnalysis!.achievement)}
+              {renderInsightMarkers(data.majorRelevanceAnalysis!.achievement)}
             </p>
           )}
           {Array.isArray(data.majorRelevanceAnalysis!.recommendedSubjects) &&
@@ -322,7 +326,9 @@ export const AcademicAnalysisRenderer = ({
                 )}
               </div>
               {gca.prediction && (
-                <p className={styles.body}>{safeText(gca.prediction)}</p>
+                <p className={styles.body}>
+                  {renderInsightMarkers(gca.prediction)}
+                </p>
               )}
               {(gca.actionItems ?? []).length > 0 && (
                 <>
@@ -395,7 +401,7 @@ export const AcademicAnalysisRenderer = ({
                       {item.achievement || "—"}
                     </td>
                     <td className={styles.small}>
-                      {safeText(item.interpretation)}
+                      {renderInsightMarkers(item.interpretation)}
                     </td>
                   </tr>
                 ))}
@@ -435,7 +441,7 @@ export const AcademicAnalysisRenderer = ({
                           {sc.grade && ` (${sc.grade}등급)`}
                         </td>
                         <td className={styles.small}>
-                          {safeText(sc.interpretation)}
+                          {renderInsightMarkers(sc.interpretation)}
                         </td>
                       </tr>
                     ))}
@@ -450,7 +456,7 @@ export const AcademicAnalysisRenderer = ({
             >
               <div className={styles.calloutContent}>
                 <span className={styles.emphasis}>등급 인플레이션:</span>{" "}
-                {safeText(data.gradeInflationContext)}
+                {renderInsightMarkers(data.gradeInflationContext)}
               </div>
             </div>
           )}

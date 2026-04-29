@@ -5,7 +5,7 @@ import type {
 } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface CompetencyScoreRendererProps {
@@ -108,7 +108,7 @@ export const CompetencyScoreRenderer = ({
 
       {score.grade && score.gradeComment && (
         <div className={styles.competencyDimWideGradeComment}>
-          {safeText(score.gradeComment)}
+          {renderInsightMarkers(score.gradeComment)}
         </div>
       )}
     </div>
@@ -238,7 +238,7 @@ export const CompetencyScoreRenderer = ({
 
           {data.growthComment && (
             <div className={styles.competencyDimWideGradeComment}>
-              {safeText(data.growthComment)}
+              {renderInsightMarkers(data.growthComment)}
             </div>
           )}
         </div>
@@ -252,7 +252,7 @@ export const CompetencyScoreRenderer = ({
             <span className={styles.markerYellow}>점수 해석</span>
           </div>
           <div className={styles.aiCommentaryText}>
-            {safeText(data.interpretation)}
+            {renderInsightMarkers(data.interpretation)}
           </div>
         </div>
       </div>

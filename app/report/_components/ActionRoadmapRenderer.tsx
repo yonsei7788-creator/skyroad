@@ -1,7 +1,7 @@
 import type { ActionRoadmapSection, ReportPlan } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface ActionRoadmapRendererProps {
@@ -28,7 +28,7 @@ export const ActionRoadmapRenderer = ({
             </div>
           </div>
           <p className={`${styles.small} ${styles.mt6}`}>
-            {safeText(data.completionStrategy)}
+            {renderInsightMarkers(data.completionStrategy)}
           </p>
         </div>
 
@@ -201,7 +201,7 @@ export const ActionRoadmapRenderer = ({
                   <span className={styles.markerSky}>면접 대비 타임라인</span>
                 </div>
                 <div className={styles.aiCommentaryText}>
-                  {safeText(data.interviewTimeline)}
+                  {renderInsightMarkers(data.interviewTimeline)}
                 </div>
               </div>
             </div>

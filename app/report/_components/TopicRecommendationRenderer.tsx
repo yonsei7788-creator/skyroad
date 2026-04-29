@@ -1,7 +1,7 @@
 import type { TopicRecommendationSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface TopicRecommendationRendererProps {
@@ -113,19 +113,21 @@ export const TopicRecommendationRenderer = ({
             ))}
           </div>
 
-          <p className={styles.small}>{safeText(topic.description)}</p>
+          <p className={styles.small}>
+            {renderInsightMarkers(topic.description)}
+          </p>
 
           {topic.rationale && (
             <p className={`${styles.caption} ${styles.mt6}`}>
               <span className={styles.emphasis}>선정 이유:</span>{" "}
-              {safeText(topic.rationale)}
+              {renderInsightMarkers(topic.rationale)}
             </p>
           )}
 
           {topic.existingConnection && (
             <p className={`${styles.caption} ${styles.mt4}`}>
               <span className={styles.emphasis}>기존 탐구 연결:</span>{" "}
-              {safeText(topic.existingConnection)}
+              {renderInsightMarkers(topic.existingConnection)}
             </p>
           )}
 
@@ -145,7 +147,7 @@ export const TopicRecommendationRenderer = ({
               </div>
               <p className={`${styles.small} ${styles.mt6}`}>
                 <span className={styles.emphasis}>예상 결과물:</span>{" "}
-                {safeText(topic.activityDesign.expectedResult)}
+                {renderInsightMarkers(topic.activityDesign.expectedResult)}
               </p>
             </div>
           )}
@@ -154,7 +156,7 @@ export const TopicRecommendationRenderer = ({
             <div className={`${styles.callout} ${styles.mt12}`}>
               <div className={styles.calloutContent}>
                 <span className={styles.emphasis}>세특 서술 예시:</span>{" "}
-                {safeText(topic.sampleEvaluation)}
+                {renderInsightMarkers(topic.sampleEvaluation)}
               </div>
             </div>
           )}
