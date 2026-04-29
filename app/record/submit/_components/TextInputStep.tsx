@@ -986,18 +986,7 @@ export const TextInputStep = ({
         </p>
       </div>
 
-      {ACCORDION_STEPS.map((step) => (
-        <AccordionStep
-          key={step.stepNumber}
-          step={step}
-          record={record}
-          onRecordChange={onRecordChange}
-          defaultOpen={step.stepNumber === 1}
-          errorKeys={errorKeys}
-        />
-      ))}
-
-      {/* 수강 예정 과목 — 모의고사/생기부 아코디언 아래 */}
+      {/* 수강 예정 과목 — 생기부 아코디언 위 (제일 위) */}
       {onPlannedSubjectsChange && (
         <div className={styles.plannedSubjectsSection}>
           <div className={styles.plannedSubjectsHeader}>
@@ -1019,6 +1008,17 @@ export const TextInputStep = ({
           </p>
         </div>
       )}
+
+      {ACCORDION_STEPS.map((step) => (
+        <AccordionStep
+          key={step.stepNumber}
+          step={step}
+          record={record}
+          onRecordChange={onRecordChange}
+          defaultOpen={step.stepNumber === 1}
+          errorKeys={errorKeys}
+        />
+      ))}
 
       {/* 필수 항목 체크리스트 */}
       <div className={styles.requiredChecklist}>
