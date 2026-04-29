@@ -1036,7 +1036,7 @@ AI 프롬프트 생성 시 아래 양적 기준을 준수하여 경쟁사 수준
 
 - **Lite**: 공통 항목 + 간단 해석 (3~5줄)
 - **Standard**: + 과목별 원점수-평균-표준편차 실질 위치 분석 (subjectStatAnalyses), 과목 간 편차 리스크 (gradeDeviationAnalysis), 전공 관련 교과 이수 노력/성취도 (majorRelevanceAnalysis), 고교 유형별 환산 (schoolTypeAdjustment), 등급 변화 가능성 (gradeChangeAnalysis), 진로선택과목 분석 (careerSubjectAnalyses), 소인수 과목 분석 (smallClassSubjectAnalyses), 성적 인플레이션 맥락 (gradeInflationContext)
-- **Premium**: Standard 전체 + 5등급제 전환 시뮬레이션 (fiveGradeSimulation: 5등급제 등급별 비율 1등급 10%/2등급 24%/3등급 32%/4등급 24%/5등급 10% 기준으로 환산), 대학별 반영 방법 시뮬레이션 (universityGradeSimulations: 해석 부분 **최소 3~4줄**), 성적 개선 우선순위 (improvementPriority)
+- **Premium**: Standard 전체 + 5등급제 전환 시뮬레이션 (fiveGradeSimulation: 5등급제 등급별 비율 1등급 10%/2등급 24%/3등급 32%/4등급 24%/5등급 10% 기준으로 환산), 성적 개선 우선순위 (improvementPriority)
   - **주의**: Premium은 하위 플랜보다 분석 과목 수가 더 많아야 합니다.
   - **표준편차 표현 주의**: "표준편차보다 높다/낮다"는 표현 금지. "원점수가 평균보다 N점 높음" 등으로 표현
   - **5등급제 등급 표기**: "상위 10%"는 "상위 10% 내" 또는 "상위 10% 위치"로 오해 소지 없이 표기

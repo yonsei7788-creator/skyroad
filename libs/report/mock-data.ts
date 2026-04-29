@@ -535,24 +535,6 @@ const academicAnalysisPremium: AcademicAnalysisSection = {
       percentileCumulative: 34,
     },
   ],
-  universityGradeSimulations: [
-    {
-      university: "서울대학교",
-      department: "컴퓨터공학과",
-      reflectionMethod: "학종 종합평가 (등급 + 세특 + 활동)",
-      calculatedScore: 78,
-      interpretation:
-        "전공 교과 성적은 합격선에 근접하나, 비전공 교과와 활동 보강 시 경쟁력 상승",
-    },
-    {
-      university: "고려대학교",
-      department: "컴퓨터학과",
-      reflectionMethod: "학종 학업우수형 (교과 중심 평가)",
-      calculatedScore: 85,
-      interpretation:
-        "교과 성적과 세특 활동 모두 합격선 이상으로 안정적 합격 예상",
-    },
-  ],
   improvementPriority: [
     "국어 교과 2등급 달성",
     "한국사 2등급 달성",

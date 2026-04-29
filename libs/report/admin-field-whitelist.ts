@@ -148,13 +148,6 @@ const SECTION_FIELD_WHITELIST: Record<string, SectionWhitelistConfig> = {
         interpretation: true,
       },
       gradeInflationContext: true,
-      universityGradeSimulations: {
-        university: true,
-        department: true,
-        reflectionMethod: true,
-        calculatedScore: "readonly",
-        interpretation: true,
-      },
       improvementPriority: true,
       interpretation: true,
     },

@@ -399,15 +399,6 @@ interface FiveGradeSimulation {
   interpretation: string;
 }
 
-/** Premium: 대학별 반영 방법 시뮬레이션 */
-interface UniversityGradeSimulation {
-  university: string;
-  department: string;
-  reflectionMethod: string;
-  calculatedScore: number;
-  interpretation: string;
-}
-
 /** Standard+: 소인수 과목 분석 */
 interface SmallClassSubjectAnalysis {
   subject: string;
@@ -440,7 +431,6 @@ export interface AcademicAnalysisSection extends BaseSection {
 
   // Premium
   fiveGradeSimulation?: FiveGradeSimulation[];
-  universityGradeSimulations?: UniversityGradeSimulation[];
   improvementPriority?: string[];
 }
 ```
@@ -1484,14 +1474,6 @@ const FiveGradeSimulationSchema = z.object({
   interpretation: z.string().min(1),
 });
 
-const UniversityGradeSimulationSchema = z.object({
-  university: z.string().min(1),
-  department: z.string().min(1),
-  reflectionMethod: z.string().min(1),
-  calculatedScore: z.number(),
-  interpretation: z.string().min(1),
-});
-
 const SmallClassSubjectAnalysisSchema = z.object({
   subject: z.string().min(1),
   enrollmentSize: z.number().int(),
@@ -1520,9 +1502,6 @@ const AcademicAnalysisSectionSchema = z.object({
     .optional(),
   gradeInflationContext: z.string().optional(),
   fiveGradeSimulation: z.array(FiveGradeSimulationSchema).optional(),
-  universityGradeSimulations: z
-    .array(UniversityGradeSimulationSchema)
-    .optional(),
   improvementPriority: z.array(z.string().min(1)).optional(),
 });
 

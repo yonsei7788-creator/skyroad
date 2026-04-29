@@ -2701,48 +2701,6 @@ const normalizeSection = (
       s.fiveGradeSimulation = [];
     }
 
-    // ── universityGradeSimulations: 빈값 행 제거 + 합격 가능성 단정 톤 정리 ──
-    if (Array.isArray(s.universityGradeSimulations)) {
-      // 합격 가능성 단정 → 정량 기준 적합도 톤으로 변환
-      const SIM_TONE_REPLACEMENTS: Array<[RegExp, string]> = [
-        [/지원\s*가능권입니다/g, "정량 기준에 부합하는 구간입니다"],
-        [/지원\s*가능권/g, "정량 기준 부합 구간"],
-        [/지원이?\s*가능합니다/g, "정량 기준에 부합합니다"],
-        [
-          /안정적(?:으로|인)?\s*지원이?\s*가능합니다/g,
-          "정량 기준 측면에서 안정적입니다",
-        ],
-        [
-          /충분히?\s*도전해볼\s*만합니다/g,
-          "정량 기준 적합도 강화 여지가 있습니다",
-        ],
-        [/도전해볼\s*만합니다/g, "정량 기준 적합도 강화 여지가 있습니다"],
-        [
-          /합격선\s*대비\s*여유가?\s*있습니다/g,
-          "정량 기준 측면에서 안정적입니다",
-        ],
-      ];
-      s.universityGradeSimulations = s.universityGradeSimulations
-        .map((sim: any) => {
-          let interpretation =
-            typeof sim.interpretation === "string" ? sim.interpretation : "";
-          for (const [pattern, replacement] of SIM_TONE_REPLACEMENTS) {
-            interpretation = interpretation.replace(pattern, replacement);
-          }
-          return {
-            university: sim.university ?? "",
-            department: sim.department ?? "",
-            reflectionMethod: sim.reflectionMethod || sim.method || "",
-            calculatedScore: sim.calculatedScore || sim.score || "",
-            interpretation,
-          };
-        })
-        .filter(
-          (sim: any) =>
-            sim.department && sim.reflectionMethod && sim.calculatedScore
-        );
-    }
-
     // ── 비주요(비핵심) 과목 안내: interpretation 끝에 정적 텍스트 append ──
     // 학생의 실제 비주요과목명을 나열하여 "이 과목 등급은 합불에 결정적 영향이 아님"을 안내.
     // 예체능 학과 지원자는 체육/음악/미술이 핵심 과목이므로 제외.

@@ -387,15 +387,6 @@ interface FiveGradeSimulation {
   percentileCumulative?: number;
 }
 
-/** Premium: 대학별 반영 방법 시뮬레이션 */
-interface UniversityGradeSimulation {
-  university: string;
-  department: string;
-  reflectionMethod: string;
-  calculatedScore: number;
-  interpretation: string;
-}
-
 /** Standard+: 소인수 과목 분석 */
 interface SmallClassSubjectAnalysis {
   subject: string;
@@ -428,7 +419,6 @@ export interface AcademicAnalysisSection extends BaseSection {
 
   // Premium
   fiveGradeSimulation?: FiveGradeSimulation[];
-  universityGradeSimulations?: UniversityGradeSimulation[];
   improvementPriority?: string[];
 
   // ─── v4 추가 ───

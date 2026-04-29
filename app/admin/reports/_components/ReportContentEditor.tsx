@@ -160,9 +160,6 @@ const FIELD_LABELS: Record<string, string> = {
   smallClassSubjectAnalyses: "소수 선택 과목 분석",
   enrollmentSize: "수강 인원수",
   gradeInflationContext: "등급 인플레이션 맥락",
-  universityGradeSimulations: "대학별 환산 점수 시뮬레이션",
-  reflectionMethod: "반영 방법",
-  calculatedScore: "환산 점수",
   improvementPriority: "개선 우선순위",
 
   // 교과 정합성

@@ -461,86 +461,23 @@ export const AcademicAnalysisRenderer = ({
           5등급제 생기부는 5등급제 기준으로, 9등급제 생기부는 9등급제 기준으로 각 평가.
           변환 등급을 알려줄 필요 없음 */}
 
-      {/* Block 8: University simulations + Improvement priority */}
-      {((Array.isArray(data.universityGradeSimulations) &&
-        data.universityGradeSimulations.length > 0) ||
-        (Array.isArray(data.improvementPriority) &&
-          data.improvementPriority.length > 0)) && (
-        <div>
-          {Array.isArray(data.universityGradeSimulations) &&
-            data.universityGradeSimulations.length > 0 && (
-              <>
-                <div className={styles.ceSubheading}>
-                  대학별 반영 방법 시뮬레이션
-                </div>
-                <table className={`${styles.table} ${styles.mb16}`}>
-                  <thead>
-                    <tr>
-                      <th style={{ whiteSpace: "nowrap" }}>대학</th>
-                      <th style={{ whiteSpace: "nowrap", minWidth: 80 }}>
-                        학과
-                      </th>
-                      <th className={styles.tableAlignCenter}>반영 방법</th>
-                      <th
-                        className={styles.tableAlignCenter}
-                        style={{ whiteSpace: "nowrap" }}
-                      >
-                        환산 점수
-                      </th>
-                      <th>해석</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.universityGradeSimulations.map((sim) => (
-                      <tr key={`${sim.university}-${sim.department}`}>
-                        <td
-                          className={styles.tableCellBold}
-                          style={{ whiteSpace: "nowrap" }}
-                        >
-                          {sim.university}
-                        </td>
-                        <td style={{ whiteSpace: "nowrap" }}>
-                          {sim.department}
-                        </td>
-                        <td className={styles.tableAlignCenter}>
-                          {sim.reflectionMethod}
-                        </td>
-                        <td className={styles.tableAlignCenter}>
-                          {sim.calculatedScore}
-                        </td>
-                        <td className={styles.small}>
-                          {safeText(sim.interpretation)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </>
-            )}
-
-          {Array.isArray(data.improvementPriority) &&
-            data.improvementPriority.length > 0 && (
-              <div className={styles.cardHighlight}>
-                <div className={styles.cardTitle}>
-                  <span className={styles.markerSky}>성적 개선 우선순위</span>
-                </div>
-                <ol className={`${styles.numberedList} ${styles.mt12}`}>
-                  {data.improvementPriority.map((item, idx) => (
-                    <li
-                      key={`priority-${idx}`}
-                      className={styles.numberedListItem}
-                    >
-                      <span className={styles.numberedListNumber}>
-                        {idx + 1}
-                      </span>
-                      {toText(item)}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
-        </div>
-      )}
+      {/* Block 8: Improvement priority */}
+      {Array.isArray(data.improvementPriority) &&
+        data.improvementPriority.length > 0 && (
+          <div className={styles.cardHighlight}>
+            <div className={styles.cardTitle}>
+              <span className={styles.markerSky}>성적 개선 우선순위</span>
+            </div>
+            <ol className={`${styles.numberedList} ${styles.mt12}`}>
+              {data.improvementPriority.map((item, idx) => (
+                <li key={`priority-${idx}`} className={styles.numberedListItem}>
+                  <span className={styles.numberedListNumber}>{idx + 1}</span>
+                  {toText(item)}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
     </>
   );
 };

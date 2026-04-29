@@ -328,14 +328,6 @@ const FiveGradeSimulationSchema = z.object({
   percentileCumulative: z.number().optional(),
 });
 
-const UniversityGradeSimulationSchema = z.object({
-  university: z.string().min(1),
-  department: z.string().min(1),
-  reflectionMethod: z.string().min(1),
-  calculatedScore: z.number(),
-  interpretation: z.string().min(1),
-});
-
 const SmallClassSubjectAnalysisSchema = z.object({
   subject: z.string().min(1),
   enrollmentSize: z.number().int(),
@@ -364,9 +356,6 @@ export const AcademicAnalysisSectionSchema = z.object({
     .optional(),
   gradeInflationContext: z.string().optional(),
   fiveGradeSimulation: z.array(FiveGradeSimulationSchema).optional(),
-  universityGradeSimulations: z
-    .array(UniversityGradeSimulationSchema)
-    .optional(),
   improvementPriority: z.array(z.string().min(1)).optional(),
   // v4
   detailedGradeTable: z
