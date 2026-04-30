@@ -1169,7 +1169,8 @@ export const executeTask = async (
                 studentInfo.schoolType,
                 isGyogwaOnly,
                 studentInfo.gender,
-                plan
+                plan,
+                state.preprocessedData?.overallAverage
               );
               if (candidate === "[]") continue;
               rebuilt = candidate;

@@ -1983,7 +1983,14 @@ export const buildUniversityCandidatesText = (
   /** 학생 성별 — "male"이면 여대 제외 */
   gender?: "male" | "female" | null,
   /** 플랜 — premium일 때 서울권 대학 우선 포함 (admissionStrategy 전용) */
-  plan?: ReportPlan
+  plan?: ReportPlan,
+  /**
+   * 학생 본인의 미보정 평균 등급 (admissionStrategy에서 overallAverage를
+   * 상향 대학 포함을 위해 -0.1 보정해 넘기는데, SKY 차단 등 학생 등급 자체를
+   * 평가하는 로직은 보정 전 값을 써야 하므로 별도로 받음. 미지정 시
+   * overallAverage를 그대로 사용)
+   */
+  studentActualOverallAverage?: number
 ): string => {
   // 남학생일 때 제외할 여대 목록
   const WOMENS_UNIVERSITIES = [
@@ -1996,6 +2003,25 @@ export const buildUniversityCandidatesText = (
     "이화여자대학교",
   ];
   const excludeWomensUniv = gender === "male";
+
+  // 일반고/특성화고 학생이 9등급제 환산 등급(5등급제→9등급 환산만 적용,
+  // 학교유형 환산은 미적용 — 학생이 보는 본인 등급 기준) 2등급대(2.0~2.99)인
+  // 경우 서울대·연세대·고려대는 추천 후보에서 제외 (특수전형 포함).
+  // ※ overallAverage는 admissionStrategy 호출에서 -0.1 보정된 값일 수 있으므로,
+  //   학생 실제 등급은 studentActualOverallAverage(우선) → overallAverage(폴백) 사용.
+  const SKY_BLOCK_UNIVERSITIES = new Set([
+    "서울대학교",
+    "연세대학교",
+    "고려대학교",
+  ]);
+  const blockSkyForMidTier = (() => {
+    if (schoolType !== "일반고" && schoolType !== "특성화고") return false;
+    const actualGrade = studentActualOverallAverage ?? overallAverage;
+    if (actualGrade == null) return false;
+    const grade9 =
+      gradingSystem === "5등급제" ? fiveToNineGrade(actualGrade) : actualGrade;
+    return grade9 >= 2.0 && grade9 < 3.0;
+  })();
 
   const SPECIAL_ADMISSION_KEYWORDS = [
     "기회균형",
@@ -2061,6 +2087,8 @@ export const buildUniversityCandidatesText = (
       for (const e of ADMISSION_CUTOFF_DATA) {
         if (!deptNames.has(e.department)) continue;
         if (excludeWomensUniv && WOMENS_UNIVERSITIES.includes(e.university))
+          continue;
+        if (blockSkyForMidTier && SKY_BLOCK_UNIVERSITIES.has(e.university))
           continue;
         if (
           !includeSpecialAdmission &&
@@ -2417,6 +2445,11 @@ export const buildUniversityCandidatesText = (
               if (
                 excludeWomensUniv &&
                 WOMENS_UNIVERSITIES.includes(e.university)
+              )
+                continue;
+              if (
+                blockSkyForMidTier &&
+                SKY_BLOCK_UNIVERSITIES.has(e.university)
               )
                 continue;
               if (
