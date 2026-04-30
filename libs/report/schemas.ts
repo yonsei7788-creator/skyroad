@@ -937,13 +937,6 @@ export const StoryAnalysisSectionSchema = z.object({
 
 // ─── 섹션 18: 실행 로드맵 ───
 
-const RoadmapPhaseSchema = z.object({
-  phase: z.string().min(1),
-  period: z.string().min(1),
-  goals: z.array(z.string().min(1)).min(1),
-  tasks: z.array(z.string().min(1)).min(1),
-});
-
 const EvaluationWritingGuideSchema = z.object({
   structure: z.array(z.string().min(1)).min(1),
   goodExample: z.string().min(1),
@@ -954,7 +947,6 @@ export const ActionRoadmapSectionSchema = z.object({
   sectionId: z.literal("actionRoadmap"),
   title: z.string().min(1),
   completionStrategy: z.string().min(1),
-  phases: z.array(RoadmapPhaseSchema).min(1),
   prewriteProposals: z.array(z.string().min(1)).optional(),
   evaluationWritingGuide: EvaluationWritingGuideSchema.optional(),
   interviewTimeline: z.string().optional(),
@@ -1035,7 +1027,6 @@ const EvaluationGuideSchema = z.object({
   inquiryAbility: z.string().min(1),
   growthPotential: z.string().min(1),
   keyInsights: z.string().min(1),
-  analysisMethodology: z.string().min(1),
 });
 
 export const ConsultantReviewSectionSchema = z.object({

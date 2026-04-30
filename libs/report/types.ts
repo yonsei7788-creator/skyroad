@@ -1100,13 +1100,6 @@ export interface StoryAnalysisSection extends BaseSection {
 
 // ─── 섹션 18: 실행 로드맵 (actionRoadmap) ───
 
-interface RoadmapPhase {
-  phase: string;
-  period: string;
-  goals: string[];
-  tasks: string[];
-}
-
 interface EvaluationWritingGuide {
   structure: string[];
   goodExample: string;
@@ -1119,8 +1112,6 @@ export interface ActionRoadmapSection extends BaseSection {
   // Standard (간략)
   /** 생기부 마무리 전략 */
   completionStrategy: string;
-  /** 학기별 실행 계획 */
-  phases: RoadmapPhase[];
 
   // Premium (확장)
   /** Premium: 방학 중 사전 준비 보고서/활동 */
@@ -1210,8 +1201,6 @@ export interface EvaluationGuide {
   growthPotential: string;
   /** 핵심 인사이트 (활동 깊이, 세특 핵심, 탐구 > 리더십) */
   keyInsights: string;
-  /** AI 분석 방법론 설명 (전공 적합성 분석 + 학업 흐름 분석) */
-  analysisMethodology: string;
 }
 
 export interface ConsultantReviewSection extends BaseSection {

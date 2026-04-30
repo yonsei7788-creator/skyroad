@@ -402,11 +402,6 @@ const SECTION_FIELD_WHITELIST: Record<string, SectionWhitelistConfig> = {
   actionRoadmap: {
     fields: {
       completionStrategy: true,
-      phases: {
-        phase: true,
-        period: true,
-        goals: true,
-      },
       milestones: {
         title: true,
         category: true,
@@ -459,7 +454,6 @@ const SECTION_FIELD_WHITELIST: Record<string, SectionWhitelistConfig> = {
         inquiryAbility: true,
         growthPotential: true,
         keyInsights: true,
-        analysisMethodology: true,
       },
     },
   },

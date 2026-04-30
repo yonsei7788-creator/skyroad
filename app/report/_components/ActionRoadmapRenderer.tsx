@@ -1,4 +1,4 @@
-import type { ActionRoadmapSection, ReportPlan } from "@/libs/report/types";
+import type { ActionRoadmapSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
 import { renderInsightMarkers } from "./insight-marker";
@@ -7,17 +7,15 @@ import { SectionHeader } from "./SectionHeader";
 interface ActionRoadmapRendererProps {
   data: ActionRoadmapSection;
   sectionNumber: number;
-  plan?: ReportPlan;
 }
 
 export const ActionRoadmapRenderer = ({
   data,
   sectionNumber,
-  plan = "lite",
 }: ActionRoadmapRendererProps) => {
   return (
     <>
-      {/* Block 1: Header + completion strategy + phases table */}
+      {/* Block 1: Header + completion strategy */}
       <div>
         <SectionHeader number={sectionNumber} title={data.title} />
 
@@ -31,30 +29,6 @@ export const ActionRoadmapRenderer = ({
             {renderInsightMarkers(data.completionStrategy)}
           </p>
         </div>
-
-        <div className={`${styles.h3} ${styles.mt24} ${styles.mb12}`}>
-          학기별 실행 계획
-        </div>
-        <table className={styles.compactTable}>
-          <thead>
-            <tr>
-              <th>단계</th>
-              <th>기간</th>
-              <th>핵심 목표</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(data.phases ?? []).map((phase, idx) => (
-              <tr key={idx}>
-                <td className={styles.tableCellBold}>{phase.phase}</td>
-                <td className={styles.caption}>{phase.period}</td>
-                <td className={styles.small}>
-                  {(phase.goals ?? []).join(", ")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
 
       {/* Block 2: Milestones (v4) + Prewrite proposals */}

@@ -296,10 +296,6 @@ const FIELD_LABELS: Record<string, string> = {
   month: "월",
   action: "실행 항목",
   completionStrategy: "완성 전략",
-  phases: "단계별 계획",
-  phase: "단계",
-  period: "기간",
-  goals: "목표",
   deadline: "마감 기한",
   estimatedImpact: "예상 임팩트",
   prewriteProposals: "사전 작성 제안",
@@ -366,7 +362,6 @@ const FIELD_LABELS: Record<string, string> = {
   inquiryAbility: "탐구 역량",
   growthPotential: "발전 가능성",
   keyInsights: "핵심 인사이트",
-  analysisMethodology: "분석 방법론",
 
   // 비교과 경쟁력 분석
   competitiveProfiling: "비교과 경쟁력 분석",

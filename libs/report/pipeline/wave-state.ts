@@ -81,7 +81,7 @@ export const buildTaskQueue = (
     tasks.push(isGrade1Only ? "directionGuide" : "admissionStrategy");
   }
   // storyAnalysis 제외 (피드백 반영: 모든 항목에서 스토리 분석 제외)
-  // 졸업생/N수생은 학기별 실행 계획 미노출
+  // 졸업생/N수생은 생기부 수정 불가 → 실행 로드맵 미노출
   if (has("actionRoadmap") && !isGraduate) tasks.push("actionRoadmap");
 
   // Group 6

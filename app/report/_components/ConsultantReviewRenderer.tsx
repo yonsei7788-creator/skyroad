@@ -123,20 +123,6 @@ export const ConsultantReviewRenderer = ({
               {renderInsightMarkers(data.evaluationGuide.keyInsights)}
             </div>
           </div>
-
-          {data.evaluationGuide.analysisMethodology && (
-            <div className={`${styles.aiCommentary} ${styles.mt16}`}>
-              <div className={styles.aiCommentaryIcon}>✦</div>
-              <div className={styles.aiCommentaryContent}>
-                <div className={styles.aiCommentaryLabel}>분석 방법론</div>
-                <div className={styles.aiCommentaryText}>
-                  {renderInsightMarkers(
-                    data.evaluationGuide.analysisMethodology
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </>

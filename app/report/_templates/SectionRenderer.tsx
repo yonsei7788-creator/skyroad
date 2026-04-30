@@ -147,11 +147,7 @@ export const SectionRenderer = ({
       );
     case "actionRoadmap":
       return (
-        <ActionRoadmapRenderer
-          data={section}
-          sectionNumber={sectionNumber}
-          plan={plan}
-        />
+        <ActionRoadmapRenderer data={section} sectionNumber={sectionNumber} />
       );
 
     // 전임 컨설턴트 총평
