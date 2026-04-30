@@ -136,7 +136,7 @@ export const CompetitiveProfilingRenderer = ({
 
         <div className={`${styles.callout} ${styles.mt8}`}>
           <div className={styles.calloutContent}>
-            <span className={styles.markerYellow} style={{ fontWeight: 600 }}>
+            <span style={{ fontWeight: 600 }}>
               {TEMPLATES.competitorCoreDifference[connectivity]}
             </span>
           </div>
@@ -167,7 +167,7 @@ export const CompetitiveProfilingRenderer = ({
               <span className={styles.tableCellBold}>예상 변화: </span>
               {TEMPLATES.expectedChanges.join(" → ")}
               {" → "}
-              <span className={styles.markerYellow}>합격 가능성 상승</span>
+              <span className={styles.tableCellBold}>합격 가능성 상승</span>
             </p>
           </div>
         </div>

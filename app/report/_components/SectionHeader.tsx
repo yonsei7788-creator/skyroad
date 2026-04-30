@@ -4,7 +4,7 @@ interface SectionHeaderProps {
   number: number;
   title: string;
   subtitle?: string;
-  /** 노란색 형광펜 효과 적용 */
+  /** 노란색 형광펜 효과 적용 (기본값: true). false를 명시해야 미적용 */
   highlighted?: boolean;
 }
 
@@ -12,7 +12,7 @@ export const SectionHeader = ({
   number,
   title,
   subtitle,
-  highlighted,
+  highlighted = true,
 }: SectionHeaderProps) => {
   return (
     <div className={styles.sectionHeader}>

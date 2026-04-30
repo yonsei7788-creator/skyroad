@@ -51,9 +51,7 @@ export const MajorExplorationRenderer = ({
             <tbody>
               {suggestions.map((s, idx) => (
                 <tr key={idx}>
-                  <td className={styles.tableCellBold}>
-                    <span className={styles.markerSky}>{s.major}</span>
-                  </td>
+                  <td className={styles.tableCellBold}>{s.major}</td>
                   <td
                     className={`${styles.tableAlignCenter} ${styles.tableCellBold}`}
                   >

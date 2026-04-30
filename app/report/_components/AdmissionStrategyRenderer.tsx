@@ -108,10 +108,8 @@ export const AdmissionStrategyRenderer = ({
             <div className={`${styles.h3} ${styles.mb8}`}>대학 추천</div>
             {isNewFormat && (
               <p className={`${styles.small} ${styles.mb12}`}>
-                <span className={styles.markerYellow}>
-                  추천된 학교, 학과, 전형은 합격 가능성이 있거나 인재상에
-                  부합하는 최적의 선택지만 선별했습니다.
-                </span>
+                추천된 학교, 학과, 전형은 합격 가능성이 있거나 인재상에 부합하는
+                최적의 선택지만 선별했습니다.
               </p>
             )}
             {!isNewFormat && desc && (
