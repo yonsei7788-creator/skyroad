@@ -1639,6 +1639,16 @@ const buildTexts = (
       ` 이수 전략은 ${studentInfo.grade}학년에서 이수할 과목부터 추천하세요.`;
   }
 
+  // 입력 데이터 시점 컨텍스트 — AI가 입력에 없는 학기(예: 3학년 1학기)의 등급·세특을
+  // 사실인 양 서술하는 환각을 방지하기 위해 학생 보유 데이터의 마지막 학기를 명시.
+  if (maxGradeYear > 0 && maxSemester > 0) {
+    studentProfileText +=
+      `\n입력된 마지막 학기: ${maxGradeYear}학년 ${maxSemester}학기.` +
+      ` 이 학기까지의 성적·세특·활동만 사실로 서술하고, 그 이후 학기(예: 다음 학기/내년)에 대해서는 "남은 학기", "앞으로의 기간"처럼 미래형 표현만 사용합니다.` +
+      ` 입력에 없는 학기의 등급·세특·활동을 본문에 사실인 것처럼 서술하지 않습니다.` +
+      ` 학생의 전체 평균(overallAverage)은 입력된 모든 학기를 합산한 값이며 특정 학기 등급이 아닙니다.`;
+  }
+
   const recordDataText = formatRecordData(recordData);
   const subjectDataText = formatSubjectEvaluations(
     recordData.subjectEvaluations ?? []
@@ -3459,10 +3469,23 @@ const formatTargetUniversitiesWithCutoff = (
       (c) =>
         `- ${c.priority}지망: ${c.universityName} ${stripDeptParens(c.department)} (${c.admissionType}) — 판단: ${c.tierLabel}`
     );
+    const tierCounts = {
+      safety: classified.filter(
+        (c) => c.tierLabel === TARGET_TIER_LABELS.safety
+      ).length,
+      fit: classified.filter((c) => c.tierLabel === TARGET_TIER_LABELS.fit)
+        .length,
+      ambitious: classified.filter(
+        (c) => c.tierLabel === TARGET_TIER_LABELS.ambitious
+      ).length,
+      reach: classified.filter((c) => c.tierLabel === TARGET_TIER_LABELS.reach)
+        .length,
+    };
     sections.push(
       [
         `## 유저 설정 희망대학 — 합격 가능성 구간 분류 (본문 묶음 서술 대상)`,
         `각 대학별 판단 라벨은 시스템이 미리 산정한 결과입니다. predictions[].analysis 본문 묶음 서술과 universityPredictions[].rationale에서 이 라벨을 그대로 사용합니다. 사용 가능한 라벨: "${TARGET_TIER_LABELS.safety}" / "${TARGET_TIER_LABELS.fit}" / "${TARGET_TIER_LABELS.ambitious}" / "${TARGET_TIER_LABELS.reach}".`,
+        `분류 통계: "${TARGET_TIER_LABELS.safety}" ${tierCounts.safety}개 / "${TARGET_TIER_LABELS.fit}" ${tierCounts.fit}개 / "${TARGET_TIER_LABELS.ambitious}" ${tierCounts.ambitious}개 / "${TARGET_TIER_LABELS.reach}" ${tierCounts.reach}개. 본문 마무리 문구는 이 통계와 일치해야 합니다(아래 작성 가이드 참조).`,
         ``,
         lines.join("\n"),
       ].join("\n")
