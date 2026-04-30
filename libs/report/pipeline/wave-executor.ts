@@ -1284,12 +1284,25 @@ export const executeTask = async (
           tier: c.tier,
           recommendedAdmissionType: c.recommendedAdmissionType!,
         }));
+        // 희망대학이 reach("지원을 권장하지 않는 구간")로 분류된 경우,
+        // admissionPrediction 본문이 "다른 카드를 우선"하라고 명시하므로
+        // 추천 카드에 머지하지 않는다 (분류와 추천이 모순되지 않도록).
+        const skippedReachHopes: typeof hopeRecommended = [];
         for (const hope of hopeRecommended) {
+          if (hope.tier === "reach") {
+            skippedReachHopes.push(hope);
+            continue;
+          }
           const dupKey = `${hope.university}|${hope.department}`;
           const exists = mergedCards.some(
             (m) => `${m.university}|${m.department}` === dupKey
           );
           if (!exists) mergedCards.push(hope);
+        }
+        if (skippedReachHopes.length > 0) {
+          console.log(
+            `[report:${reportId}] admissionStrategy 희망대학 reach 분류로 머지 제외: ${skippedReachHopes.map((h) => `${h.university} ${h.department}`).join(", ")}`
+          );
         }
 
         if (mergedCards.length > 0) {
