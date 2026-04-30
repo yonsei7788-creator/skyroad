@@ -3372,6 +3372,14 @@ const computeTier = (diff: number): "reach" | "ambitious" | "fit" | "safety" =>
         ? "fit"
         : "safety";
 
+/**
+ * 학과명의 후행 괄호 부분 제거 (예: "전기전자공학부(고른기회)" → "전기전자공학부").
+ * 사용자가 학과 입력 시 전형/캠퍼스 등을 괄호로 덧붙인 경우 본문에 그대로
+ * 노출되지 않도록 AI 입력 시점에서 정리. cutoff 조회는 원본 학과명으로 수행됨.
+ */
+const stripDeptParens = (dept: string): string =>
+  dept.replace(/\s*\([^)]*\)\s*$/u, "").trim();
+
 const formatTargetUniversitiesWithCutoff = (
   targetUniversities: StudentInfo["targetUniversities"] | undefined,
   variant: "hakjong" | "gyogwa",
@@ -3449,7 +3457,7 @@ const formatTargetUniversitiesWithCutoff = (
   if (classified.length > 0) {
     const lines = classified.map(
       (c) =>
-        `- ${c.priority}지망: ${c.universityName} ${c.department} (${c.admissionType}) — 판단: ${c.tierLabel}`
+        `- ${c.priority}지망: ${c.universityName} ${stripDeptParens(c.department)} (${c.admissionType}) — 판단: ${c.tierLabel}`
     );
     sections.push(
       [
@@ -3464,7 +3472,7 @@ const formatTargetUniversitiesWithCutoff = (
   if (supplemental.length > 0) {
     const lines = supplemental.map(
       (t) =>
-        `- ${t.priority}지망: ${t.universityName} ${t.department} (${t.admissionType})`
+        `- ${t.priority}지망: ${t.universityName} ${stripDeptParens(t.department)} (${t.admissionType})`
     );
     sections.push(
       [
