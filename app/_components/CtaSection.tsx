@@ -17,7 +17,7 @@ export const CtaSection = () => {
         <FadeIn>
           <div className={styles.card}>
             <h2 className={styles.headline}>
-              내 생기부, AI + 전문가가
+              내 생기부, 자체개발 프로그램 + 전문가가
               <br />
               72시간 안에 분석해드립니다
             </h2>
