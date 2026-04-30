@@ -211,7 +211,7 @@ export const AdmissionStrategyRenderer = ({
               className={`${styles.caption} ${styles.mt4}`}
               style={{ fontWeight: 700 }}
             >
-              근거: {ts.reason}
+              <span className={styles.markerYellow}>근거: {ts.reason}</span>
             </p>
           </div>
         </div>
