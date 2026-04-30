@@ -1704,16 +1704,37 @@ const buildTexts = (
   const targetUniversitiesText = formatTargetUniversities(
     studentInfo.targetUniversities
   );
-  // 전형별 필터링된 희망대학 텍스트
+  // 전형별 필터링된 희망대학 텍스트 — 합격 예측에는 커트라인 비교 결과까지 포함.
+  // 학생 환산 등급(9등급제 일반고 기준)을 산출하여 미리 tier를 분류해 둠.
   const gyogwaUniversities = studentInfo.targetUniversities?.filter(
     (t) => t.admissionType === "학생부교과"
   );
   const hakjongUniversities = studentInfo.targetUniversities?.filter(
     (t) => t.admissionType !== "학생부교과"
   );
+
+  let studentGrade9: number | null = null;
+  if (data.overallAverage != null) {
+    const asNine =
+      data.gradingSystem === "5등급제"
+        ? fiveToNineGrade(data.overallAverage)
+        : data.overallAverage;
+    studentGrade9 = studentInfo.schoolType
+      ? convertGradeBySchoolType(studentInfo.schoolType, asNine)
+      : asNine;
+  }
+
   const targetUniversitiesByType = {
-    gyogwa: formatTargetUniversities(gyogwaUniversities),
-    hakjong: formatTargetUniversities(hakjongUniversities),
+    gyogwa: formatTargetUniversitiesWithCutoff(
+      gyogwaUniversities,
+      "gyogwa",
+      studentGrade9
+    ),
+    hakjong: formatTargetUniversitiesWithCutoff(
+      hakjongUniversities,
+      "hakjong",
+      studentGrade9
+    ),
   };
 
   return {
@@ -3272,6 +3293,157 @@ const formatTargetUniversities = (
   });
 
   return `## 유저 설정 희망대학\n${lines.join("\n")}`;
+};
+
+/**
+ * 합격 예측 섹션 전용 — 각 희망대학을 코드에서 학종/교과 커트라인과 학생
+ * 환산 등급으로 비교해 tier(safety/fit/ambitious/reach)를 미리 산정하고,
+ * AI에는 (학교명, 학과명, 분류 라벨)만 노출한다.
+ *
+ * 환산 등급 / 커트라인 / diff 등 계산 디테일은 AI에 노출하지 않는다
+ * (환각 / 본문에 환산 등급 누출 위험을 차단).
+ *
+ * tier 산식 (buildHopeUniversityRecommendations와 동일):
+ *   diff = 학생 환산 등급(9등급제) - 커트라인 cutoff50Grade
+ *     diff ≥ 0.3       → reach     "지원을 권장하지 않는 구간"
+ *     0.1 < diff < 0.3 → ambitious "합격이 어려울 수 있는 구간"
+ *     -0.1 ≤ diff ≤ 0.1 → fit      "지원은 가능한 구간"
+ *     diff < -0.1      → safety    "합격가능성이 있는 구간"
+ *
+ * 상위대학 학종에 한해 -0.4 보정을 적용 (실제 합격선이 공개 커트라인보다 엄격).
+ */
+const TARGET_TIER_LABELS = {
+  safety: "합격가능성이 있는 구간",
+  fit: "지원은 가능한 구간",
+  ambitious: "합격이 어려울 수 있는 구간",
+  reach: "지원을 권장하지 않는 구간",
+} as const;
+
+const TARGET_TOP_UNIVERSITIES_FOR_ADJUSTMENT = new Set([
+  "서울대학교",
+  "연세대학교",
+  "고려대학교",
+  "서강대학교",
+  "성균관대학교",
+  "한양대학교",
+  "중앙대학교",
+]);
+const TARGET_TOP_UNIV_HAKJONG_ADJUSTMENT = 0.4;
+
+const computeTier = (diff: number): "reach" | "ambitious" | "fit" | "safety" =>
+  diff >= 0.3
+    ? "reach"
+    : diff > 0.1
+      ? "ambitious"
+      : diff >= -0.1
+        ? "fit"
+        : "safety";
+
+const formatTargetUniversitiesWithCutoff = (
+  targetUniversities: StudentInfo["targetUniversities"] | undefined,
+  variant: "hakjong" | "gyogwa",
+  studentGrade9: number | null
+): string => {
+  if (!targetUniversities || targetUniversities.length === 0) return "";
+
+  const cutoffType: "학종" | "교과" = variant === "hakjong" ? "학종" : "교과";
+
+  type Classified = {
+    priority: number;
+    universityName: string;
+    department: string;
+    admissionType: string;
+    tierLabel: string;
+  };
+
+  const classified: Classified[] = [];
+  const supplemental: typeof targetUniversities = [];
+
+  for (const t of targetUniversities) {
+    const practical = isArtSportPractical(t.department);
+    if (practical) {
+      // 실기 학과는 universityPredictions에서도 제외 — supplemental에도 넣지 않음
+      continue;
+    }
+
+    const cutoffs = findCutoffData(
+      t.universityName,
+      t.department,
+      cutoffType
+    ).filter(
+      (c): c is typeof c & { cutoff50Grade: number } => c.cutoff50Grade != null
+    );
+
+    if (cutoffs.length === 0 || studentGrade9 == null) {
+      // 커트라인 데이터 없는 대학은 본문 묶음 서술 대상에서 제외하고
+      // universityPredictions에는 포함되도록 supplemental에만 보관.
+      supplemental.push(t);
+      continue;
+    }
+
+    const isTopUniv =
+      variant === "hakjong" &&
+      TARGET_TOP_UNIVERSITIES_FOR_ADJUSTMENT.has(t.universityName);
+
+    const adjustedCuts = cutoffs.map((c) => {
+      const g = c.cutoff50Grade;
+      if (!isTopUniv || c.campus === "안성") return g;
+      return g >= 2.0
+        ? Math.round((g - TARGET_TOP_UNIV_HAKJONG_ADJUSTMENT) * 100) / 100
+        : g;
+    });
+
+    const closest = adjustedCuts.reduce((best, g) =>
+      Math.abs(g - studentGrade9) < Math.abs(best - studentGrade9) ? g : best
+    );
+    const diff = Math.round((studentGrade9 - closest) * 1000) / 1000;
+    const tier = computeTier(diff);
+    const tierLabel = TARGET_TIER_LABELS[tier];
+
+    classified.push({
+      priority: t.priority,
+      universityName: t.universityName,
+      department: t.department,
+      admissionType: t.admissionType,
+      tierLabel,
+    });
+  }
+
+  if (classified.length === 0 && supplemental.length === 0) return "";
+
+  const sections: string[] = [];
+
+  if (classified.length > 0) {
+    const lines = classified.map(
+      (c) =>
+        `- ${c.priority}지망: ${c.universityName} ${c.department} (${c.admissionType}) — 판단: ${c.tierLabel}`
+    );
+    sections.push(
+      [
+        `## 유저 설정 희망대학 — 합격 가능성 구간 분류 (본문 묶음 서술 대상)`,
+        `각 대학별 판단 라벨은 시스템이 미리 산정한 결과입니다. predictions[].analysis 본문 묶음 서술과 universityPredictions[].rationale에서 이 라벨을 그대로 사용합니다. 사용 가능한 라벨: "${TARGET_TIER_LABELS.safety}" / "${TARGET_TIER_LABELS.fit}" / "${TARGET_TIER_LABELS.ambitious}" / "${TARGET_TIER_LABELS.reach}".`,
+        ``,
+        lines.join("\n"),
+      ].join("\n")
+    );
+  }
+
+  if (supplemental.length > 0) {
+    const lines = supplemental.map(
+      (t) =>
+        `- ${t.priority}지망: ${t.universityName} ${t.department} (${t.admissionType})`
+    );
+    sections.push(
+      [
+        `## 유저 설정 희망대학 — universityPredictions 리스트에만 포함 (본문 서술 대상 아님)`,
+        `이 그룹은 universityPredictions에 반드시 포함하되, predictions[].analysis 본문 묶음 서술에는 등장시키지 않습니다. universityPredictions[].rationale에는 합격 가능성 구간 라벨 없이, 진로 일관성·탐구 흐름·활동 흐름 등 일반 학종 평가 어휘로만 짧게 서술합니다.`,
+        ``,
+        lines.join("\n"),
+      ].join("\n")
+    );
+  }
+
+  return sections.join("\n\n");
 };
 
 /**
