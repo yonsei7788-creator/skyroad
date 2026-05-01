@@ -18,6 +18,18 @@ export interface WeaknessAnalysisPromptInput {
   plannedSubjects?: string;
   studentGrade?: number;
   isGraduate?: boolean;
+  /**
+   * competencyScore 섹션 결과 — 약점 evidence 정합성 검증용.
+   * 채점에서 만점/근사 만점으로 평가된 subcategory의 활동을 약점 evidence로
+   * 사용하지 않아야 동일 활동에 대한 양극단 평가 모순을 방지할 수 있다.
+   */
+  competencyScoreResult?: string;
+  /**
+   * competencyScore의 만점근사 (maxScore - score ≤ 5) subcategory만
+   * 추출한 텍스트. AI가 강점 영역을 명시적으로 인지하여 약점 evidence
+   * 작성 시 키워드 충돌을 피할 수 있도록 별도 강조 블록으로 제공.
+   */
+  competencyStrengthAreas?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -86,6 +98,24 @@ export const buildWeaknessAnalysisPrompt = (
 이 섹션은 **부족점 진단과 구체적 개선 방안**에 집중합니다. 약점을 정확히 짚고 실행 가능한 보완 방향을 제시하세요.
 - "~가 부족하며, ~를 통해 보완할 수 있다", "~영역의 증거가 빈약하므로 ~가 필요하다" 등 진단-처방 어투를 사용하세요.
 
+## ✅ 학생 학년별 시점 가이드 (executionStrategy · suggestedActivities 등 모든 보완 전략 필드 공통)
+${
+  input.isGraduate
+    ? `- 이 학생은 **졸업생**입니다. 생기부 수정 불가 — 보완 전략은 면접·수능·지원 전략 관점에서만 서술합니다.`
+    : input.studentGrade === 1
+      ? `- 이 학생은 **1학년**입니다. 보완 전략은 "**남은 1학년 학기와 2·3학년 동안**"으로 시작합니다.
+- ✅ 권장 어휘: "남은 학기동안", "앞으로의 기간 동안", "2·3학년에 걸쳐", "2학년부터", "3학년에서"
+- ✅ 시점 표현 예시: "남은 학기동안 ~ 보완", "2학년부터 ~ 심화", "3학년에서 ~ 정리"`
+      : input.studentGrade === 2
+        ? `- 이 학생은 **2학년**입니다. 보완 전략은 "**남은 2학년 학기와 3학년 동안**"으로 시작합니다.
+- ✅ 권장 어휘: "남은 학기동안", "앞으로의 기간 동안", "2학년 잔여 학기", "3학년에서"
+- ✅ 시점 표현 예시: "남은 2학년 학기와 3학년 1학기에 걸쳐 ~ 보완", "앞으로의 기간 동안 ~ 심화"
+- 특정 학기를 단일하게 지칭(예: "3학년 1학기 세특에서만")하지 않고, 학생이 활용할 수 있는 학기 범위를 함께 제시합니다.`
+        : `- 이 학생은 **3학년**입니다. 보완 전략은 "**남은 3학년 학기 동안**" 실행 가능한 활동만 제시합니다.
+- ✅ 권장 어휘: "남은 학기동안", "남은 3학년 1학기 동안", "면접 대비 시점에"
+- 이미 지난 학기는 보완 대상이 아닙니다.`
+}
+
 ${
   input.isGraduate
     ? `## ⚠️ 졸업생 규칙 (최우선)
@@ -135,7 +165,7 @@ ${
       "priority": "high (enum: 'high' | 'medium' | 'low' 중 반드시 하나)",
       "urgency": "high (enum: 'high' | 'medium' | 'low' 중 반드시 하나)",
       "effectiveness": "high (enum: 'high' | 'medium' | 'low' 중 반드시 하나)",
-      "executionStrategy": "3학년 1학기 세특에서 탐구 과정을 구체적으로... (⚠️ '성적을 N등급으로 올리세요' 같은 성적 향상 목표 금지 — 역량 보완 활동만 제시)",
+      "executionStrategy": "<학생의 잔여 학기 시점에 맞춘 보완 전략. 학생 학년 가이드를 따라 '남은 학기동안 ~', '앞으로의 기간 동안 ~' 같은 표현 사용. 특정 학기(예: '3학년 1학기')를 박지 말 것. ⚠️ '성적을 N등급으로 올리세요' 같은 성적 향상 목표 금지 — 역량 보완 활동만 제시>",
       "subjectLinkStrategy": "사회·문화와 정치와법 연계 탐구..."
     }
   ]
@@ -222,6 +252,18 @@ ${input.majorEvaluationContext}
 - evidence에는 "2학년 물리학 1학기 3등급", "세특에서 '조사함'으로 마무리" 등 **자연어로 풀어 쓴 근거**만 작성하세요.
 - 입력 데이터의 JSON 구조나 필드명을 그대로 복사하면 품질 실패입니다.
 
+## ✅ competencyScore 채점 결과와의 정합성 (필수 준수)
+
+competencyScore 섹션은 학업역량/진로역량/공동체역량 + 발전가능성을 4축으로 채점하며, 각 subcategory마다 score(획득점수)/maxScore(만점)/comment(차감 사유 또는 만점 근거)를 출력합니다. weaknessAnalysis는 동일 학생 데이터를 다루므로 채점 결과와 모순되는 약점 evidence를 만들지 않아야 합니다.
+
+✅ **강점으로 평가된 영역의 활동을 약점 evidence로 사용하지 않습니다.** subcategory의 \`maxScore - score ≤ 5\`(만점 또는 근사 만점)이면 그 영역은 강점으로 확정된 영역입니다. 이 영역의 comment에서 인용된 활동(예: comment에 "리튬 이온 전지 탐구 등 깊이 있는 탐구 과정이 구체적으로 서술되어 만점")이 그대로 약점 evidence로 등장하면 안 됩니다.
+
+✅ **약점 area는 competencyScore에서 차감이 발생한 영역과 일치하도록 설계합니다.** 예: competencyScore에서 학업역량.학업태도가 -2점, 진로역량.교과이수노력이 -20점 차감됐다면, weaknessAnalysis area는 "학업태도 보완", "심화 과목 이수" 같은 차감 영역에서 도출합니다.
+
+✅ **evidence는 차감 사유와 같은 방향으로 일관되게 인용합니다.** competencyScore comment에서 "심화 과목 미이수로 -20점"이라고 했다면, weaknessAnalysis evidence도 "미적분Ⅱ·기하·물리학 등 핵심 권장과목 미이수"처럼 같은 사실을 짚습니다. 같은 활동을 한쪽에서는 강점, 다른 쪽에서는 약점으로 평가하지 않습니다.
+
+✅ **competencyScore 결과가 입력으로 제공되지 않으면 본 정합성 규칙을 적용할 수 없으므로 일반 약점 분석 절차를 따릅니다.**
+
 ## 입력 데이터
 
 ### 역량 추출 결과
@@ -232,6 +274,19 @@ ${input.academicAnalysis}
 
 ### 학생 프로필
 ${input.studentProfile}
+
+${input.competencyScoreResult ? `### competencyScore 채점 결과 (정합성 검증용)\n${input.competencyScoreResult}\n\n→ 위 채점 결과의 score/maxScore/comment를 확인하고, 만점·근사 만점 영역의 활동을 약점 evidence로 인용하지 않습니다. 약점 area는 차감이 발생한 영역에서 도출합니다.` : ""}
+
+${input.competencyStrengthAreas ? `### ⛔ 강점 영역 (만점근사 — 약점 evidence 사용 금지)\n아래 subcategory는 competencyScore에서 만점근사(maxScore - score ≤ 5)로 평가된 강점 영역입니다. 각 comment에 인용된 활동·탐구 주제·과목명·키워드는 **약점 evidence로 사용하면 안 됩니다.** 같은 활동을 강점/약점 양극단으로 평가하면 리포트 신뢰도가 무너집니다.\n\n${input.competencyStrengthAreas}\n\n약점 evidence 작성 시 위 강점 comment의 활동(예: "리튬 이온 전지", "수질 정화", "무선 전력 전송" 등 따옴표·강조된 활동명·탐구 주제) 키워드와 단어 단위로 겹치지 않도록 다른 활동/측면을 evidence로 선택하세요.` : ""}
+
+## ✅ 출력 전 자가 점검 (필수 — 모든 area 작성 후 수행)
+
+각 area 작성 직후 evidence를 다음 절차로 검증합니다:
+
+1. evidence에 등장한 **활동명·탐구 주제·따옴표 안 키워드**를 추출합니다 (예: "리튬 이온 전지의 위험성 해결 방안", "수질 정화 미디어 블록").
+2. 위 "강점 영역 (만점근사)" 블록의 comment에서 인용된 활동/탐구 주제 키워드와 비교합니다.
+3. 키워드가 **단어 단위로 겹치면** evidence를 다른 활동/측면으로 교체합니다. 예: 강점 영역 comment에 "리튬 이온 전지 안정성"이 있으면, 약점 evidence는 리튬 이온 전지가 아닌 다른 활동(예: "AI 뉴스 비교 분석", "탄소중립 포스터")을 인용하거나, 같은 영역의 구조적 약점(예: "1학년 활동 간 연결 부재")을 evidence로 사용합니다.
+4. 교체할 evidence가 없는 경우, 그 area는 "약점"으로 부적합하므로 area 자체를 다른 영역으로 변경합니다 (강점 영역과 충돌 없는 차감 영역에서 area 도출).
 
 ${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}` : ""}
 ${
@@ -261,6 +316,17 @@ export const buildGyogwaWeaknessAnalysisPrompt = (
 ## 서술 관점: 보완 전략가
 이 섹션은 **부족점 진단과 구체적 개선 방안**에 집중합니다.
 - "~가 부족하며, ~를 통해 보완할 수 있다" 등 진단-처방 어투를 사용하세요.
+
+## ✅ 학생 학년별 시점 가이드 (executionStrategy · suggestedActivities 등 모든 보완 전략 필드 공통)
+${
+  input.isGraduate
+    ? `- 이 학생은 **졸업생**입니다. 보완 전략은 면접·수능·지원 전략 관점에서만 서술합니다.`
+    : input.studentGrade === 1
+      ? `- 이 학생은 **1학년**입니다. 보완 전략은 "**남은 1학년 학기와 2·3학년 동안**"으로 시작합니다. 권장 어휘: "남은 학기동안", "2학년부터", "3학년에서".`
+      : input.studentGrade === 2
+        ? `- 이 학생은 **2학년**입니다. 보완 전략은 "**남은 2학년 학기와 3학년 동안**"으로 시작합니다. 권장 어휘: "남은 학기동안", "2학년 잔여 학기", "3학년에서". 특정 학기를 단일하게 지칭(예: "3학년 1학기"만)하지 않고 학생이 활용할 수 있는 학기 범위를 함께 제시합니다.`
+        : `- 이 학생은 **3학년**입니다. 보완 전략은 "**남은 3학년 학기 동안**" 실행 가능한 활동만 제시합니다. 이미 지난 학기는 보완 대상이 아닙니다.`
+}
 
 ## ⛔ 다른 섹션과의 역할 경계 (필수)
 - ❌ 등급 수치의 입시적 의미 해석 (예: "N등급이라 합격이 어렵다", "N점대라 약점으로 작용할 것이다") → academicAnalysis·admissionPrediction에서 다룸
@@ -308,6 +374,14 @@ export const buildGyogwaWeaknessAnalysisPrompt = (
 ## 내부 데이터 노출 금지
 JSON 키-값, 변수명, 배열 리터럴 등을 출력하지 마세요.
 
+## ✅ competencyScore 채점 결과와의 정합성 (필수 준수)
+
+competencyScore 섹션은 학업역량/진로역량/공동체역량 + 발전가능성을 4축으로 채점하며, 각 subcategory마다 score(획득점수)/maxScore(만점)/comment(차감 사유 또는 만점 근거)를 출력합니다. 동일 학생 데이터를 다루므로 채점 결과와 모순되는 약점 evidence를 만들지 않아야 합니다.
+
+✅ subcategory의 \`maxScore - score ≤ 5\`(만점 또는 근사 만점)이면 그 영역은 강점으로 확정된 영역이므로, comment에서 인용된 활동을 약점 evidence로 사용하지 않습니다.
+✅ 약점 area는 competencyScore에서 차감이 발생한 영역(예: -20점, -11점)과 일치하도록 도출합니다.
+✅ evidence는 차감 사유와 같은 사실을 짚도록 일관되게 인용합니다.
+
 ## 입력 데이터
 
 ### 역량 추출 결과
@@ -318,6 +392,18 @@ ${input.academicAnalysis}
 
 ### 학생 프로필
 ${input.studentProfile}
+
+${input.competencyScoreResult ? `### competencyScore 채점 결과 (정합성 검증용)\n${input.competencyScoreResult}\n\n→ 위 채점 결과의 score/maxScore/comment를 확인하고, 만점·근사 만점 영역의 활동을 약점 evidence로 인용하지 않습니다. 약점 area는 차감이 발생한 영역에서 도출합니다.` : ""}
+
+${input.competencyStrengthAreas ? `### ⛔ 강점 영역 (만점근사 — 약점 evidence 사용 금지)\n아래 subcategory는 competencyScore에서 만점근사(maxScore - score ≤ 5)로 평가된 강점 영역입니다. 각 comment에 인용된 활동·탐구 주제·과목명·키워드는 **약점 evidence로 사용하면 안 됩니다.** 같은 활동을 강점/약점 양극단으로 평가하면 리포트 신뢰도가 무너집니다.\n\n${input.competencyStrengthAreas}\n\n약점 evidence 작성 시 위 강점 comment의 활동(예: 따옴표·강조된 활동명·탐구 주제) 키워드와 단어 단위로 겹치지 않도록 다른 활동/측면을 evidence로 선택하세요.` : ""}
+
+## ✅ 출력 전 자가 점검 (필수 — 모든 area 작성 후 수행)
+
+각 area 작성 직후 evidence를 다음 절차로 검증합니다:
+1. evidence에 등장한 활동명·탐구 주제·따옴표 안 키워드를 추출합니다.
+2. 위 "강점 영역 (만점근사)" 블록의 comment에서 인용된 활동/탐구 주제 키워드와 비교합니다.
+3. 키워드가 단어 단위로 겹치면 evidence를 다른 활동/측면으로 교체합니다.
+4. 교체할 evidence가 없는 경우, 그 area는 "약점"으로 부적합하므로 area 자체를 차감이 발생한 다른 영역으로 변경합니다.
 
 ${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}\n→ 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.` : ""}
 

@@ -13,6 +13,11 @@ export interface ActionRoadmapPromptInput {
   completedSubjectsByYear?: string;
   /** 학생이 입력한 수강 예정 과목 텍스트 */
   plannedSubjects?: string;
+  /**
+   * activityAnalysis 섹션 결과 — prewriteProposals/completionStrategy에서
+   * 학생이 실제로 속한 동아리·자율·진로 활동만 인용하도록 사실 출처로 제공.
+   */
+  activityAnalysisResult?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -46,6 +51,12 @@ Standard의 모든 항목 + 다음을 추가로 출력하세요:
 
 ### 4. 면접 대비 타임라인 (interviewTimeline)
 - 면접 준비 시작 시점과 단계별 준비 방법을 **3줄 이내**로 간결하게 서술
+- 면접 준비의 핵심 자료는 **학생 본인의 생활기록부**입니다. 단계별 준비 방법은 다음 활동 중에서 골라 구체적으로 서술하세요:
+  - 생기부 기반 예상 질문 도출 및 답변 정리
+  - 세특·탐구 활동·동아리 활동의 구체 사례 숙지 (꼬리질문 대비)
+  - 진로 동기·전공 적합성 스토리텔링 정리
+  - 모의 면접 실시 및 답변 보완
+- ✅ 권장 어휘: "생기부 기반 예상 질문", "세특 내용 숙지", "모의 면접", "꼬리질문 대비"
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - completionStrategy는 **300자 이내**로 작성합니다.
@@ -154,6 +165,8 @@ ${input.admissionStrategyResult}
 
 ### 학생 프로필
 ${input.studentProfile}
+
+${input.activityAnalysisResult ? `### 활동 분석 결과 (학생이 실제로 속한 동아리·자율·진로 활동의 사실 출처)\n${input.activityAnalysisResult}\n\n✅ prewriteProposals와 completionStrategy에서 동아리·자율·진로 활동을 사례로 거론할 때는 위 활동 분석 결과에 등장한 동아리명·활동명만 인용하세요.\n✅ 위 분석에 등장하지 않는 동아리(예: "과학 동아리", "토론 동아리")를 새로 만들어 활동을 제안하지 않습니다. 학생이 실제 소속한 동아리 안에서 수행 가능한 형태로 제안하세요.\n✅ 활동 분석에 동아리 정보가 없거나 비어 있다면, 동아리 활동 대신 세특·진로활동·자기주도 탐구 형태로 제안하세요.` : ""}
 
 ${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n⛔ 위 과목은 재이수 불가. 이수 완료 과목의 성적/성취도 향상을 절대 제시하지 마세요.` : ""}
 

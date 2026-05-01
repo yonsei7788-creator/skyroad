@@ -12,6 +12,12 @@ export interface MajorExplorationPromptInput {
   detectedMajorGroup?: string;
   /** Phase 2에서 감지된 구체적 학과명 후보 (3~5개) */
   detectedDepartments?: string[];
+  /**
+   * 학년별 데이터 존재 여부.
+   * currentTargetAssessment에서 "남은 학기"·"앞으로의 기간" 등
+   * 학생 시점에 맞는 표현을 사용하도록 가이드.
+   */
+  dataYearsPresent?: { year1: boolean; year2: boolean; year3: boolean };
 }
 
 /** 플랜 무관하게 항상 Premium 수준(풀 필드, 3개)으로 생성 → postprocessor에서 플랜별 트리밍 */
@@ -194,6 +200,21 @@ ${input.academicAnalysis}
 ${input.studentProfile}
 
 ${input.targetDepartment ? `### 학생의 희망 학과 (currentTargetAssessment 생성용 — 추천 전공 목록에는 영향 없음)\n⚠️ 아래 희망 학과는 currentTargetAssessment에서 "이 학과에 대한 적합도 평가"를 작성하는 용도로만 사용하세요. suggestions 배열의 추천 전공은 반드시 생기부 기반으로 독립 판단하세요.\n희망 학과: ${input.targetDepartment}` : ""}
+
+${
+  input.dataYearsPresent
+    ? `### 학년별 데이터 가용성 (currentTargetAssessment 시점 표현 가이드)
+- 1학년 데이터: ${input.dataYearsPresent.year1 ? "있음" : "없음"}
+- 2학년 데이터: ${input.dataYearsPresent.year2 ? "있음" : "없음"}
+- 3학년 데이터: ${input.dataYearsPresent.year3 ? "있음" : "없음"}
+
+✅ currentTargetAssessment 등에서 향후 보완 방향을 언급할 때는 학생의 현재 학년(${input.studentGrade}학년)과 가용 학년 데이터를 기준으로 **"남은 학기"·"앞으로의 기간"·"다음 학기" 등 학생 시점에 부합하는 표현**을 사용합니다.
+✅ "있음"으로 표시된 학년의 활동·세특만 평가 근거로 사용합니다.
+✅ "없음" 학년의 활동 부재는 감점 사유가 아닙니다 — 학생이 아직 해당 학년에 도달하지 않았거나 데이터가 미입력된 상태로 처리합니다.
+✅ 학년 표현 예시 (학생이 ${input.studentGrade}학년 재학 중이고 가용 학년이 부분적인 경우): "${input.studentGrade === 2 ? "남은 2학년 학기와 3학년 동안 ~ 선택과목을 추가 이수하면" : input.studentGrade === 1 ? "앞으로의 기간 동안 ~ 선택과목을 이수하면" : "남은 학기에서 ~ 선택과목을 이수하면"} 전공 적합성을 더욱 보완할 수 있습니다"
+`
+    : ""
+}
 
 ${PLAN_SPECIFIC_UNIFIED}`;
 };

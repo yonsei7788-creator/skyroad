@@ -24,6 +24,15 @@ export interface SerializedTexts {
   weaknessText?: string;
   admPredText?: string;
   admStratText?: string;
+  /** activityAnalysis 섹션 결과 — consultantReview에서 활동 사실 인용 시 참조 */
+  activityAnalysisText?: string;
+  /** behaviorAnalysis 섹션 결과 — consultantReview에서 행동특성 사실 인용 시 참조 */
+  behaviorAnalysisText?: string;
+  /**
+   * competencyScore 섹션 결과 — weaknessAnalysis에서 약점 evidence가
+   * 채점에서 강점으로 판정된 영역의 활동을 침범하지 않도록 정합성 검증용.
+   */
+  competencyScoreText?: string;
 }
 
 export interface WaveState {

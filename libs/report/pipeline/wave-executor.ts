@@ -552,12 +552,19 @@ export const executeTask = async (
         isGyogwaOnly,
         dataYearsPresent: state.preprocessedData!.dataYearsPresent,
         majorRelevanceFact: compMajorRelevanceFact,
+        // 5등급제 학생의 9등급 환산 확정값 — AI 자체 보간 환각 방지용
+        nineGradeAverage: state.preprocessedData!.nineGradeAverage,
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly
           ? buildGyogwaCompetencyScorePrompt(compScoreInput, plan)
           : buildCompetencyScorePrompt(compScoreInput, plan)
       );
+      // weaknessAnalysis에서 정합성 검증(강점 영역 침범 방지)에 사용
+      updatedSer = {
+        ...updatedSer,
+        competencyScoreText: JSON.stringify(section),
+      };
       break;
     }
 
@@ -647,6 +654,11 @@ export const executeTask = async (
           plan
         )
       );
+      // 후속 태스크(consultantReview)가 활동 사실을 인용할 때 참조
+      updatedSer = {
+        ...updatedSer,
+        activityAnalysisText: JSON.stringify(section),
+      };
       break;
 
     case "courseAlignment": {
@@ -732,6 +744,20 @@ export const executeTask = async (
 
       const yearsToCall = [1, 2, 3].filter((y) => blocksByYear.has(y));
 
+      // [DEBUG-SUBJ] 학년별 데이터 분포 출력
+      console.log(
+        `[DEBUG-SUBJ:${reportId}] subjectDataAll length=${subjectDataAll.length}, blocks=${blocks.length}, yearsToCall=[${yearsToCall.join(",")}]`
+      );
+      for (const y of yearsToCall) {
+        const yBlocks = blocksByYear.get(y) ?? [];
+        const subjNames = yBlocks
+          .map((b) => b.match(/^\[(\d)학년\s+(.+?)\]/)?.[2])
+          .filter(Boolean);
+        console.log(
+          `[DEBUG-SUBJ:${reportId}] year=${y} blocks=${yBlocks.length} subjects=[${subjNames.join(", ")}]`
+        );
+      }
+
       // 학년별 데이터가 전혀 없는 경우 — 기존처럼 전체 한 번 호출 (분할 의미 없음)
       if (yearsToCall.length === 0) {
         section = await callGemini<ReportSection>(
@@ -752,30 +778,50 @@ export const executeTask = async (
           ),
           { maxOutputTokens: 16384 }
         );
+        const fallbackSubjects =
+          (section as unknown as { subjects?: unknown[] }).subjects ?? [];
+        console.log(
+          `[DEBUG-SUBJ:${reportId}] fallback 통합 호출 결과 subjects=${fallbackSubjects.length}개`
+        );
       } else {
         // 학년별 병렬 호출
         const yearResults = await Promise.all(
-          yearsToCall.map((year) =>
-            callGemini<ReportSection>(
-              buildSubjectAnalysisPrompt(
-                {
-                  subjectData: blocksByYear.get(year)!.join("\n\n"),
-                  studentProfile: texts.studentProfileText,
-                  studentGrade: studentInfo.grade,
-                  isGraduate: studentInfo.isGraduate,
-                  isMedical,
-                  gradingSystem: state.preprocessedData!.gradingSystem,
-                  isGyogwaOnly,
-                  detectedMajorGroupLabel: detectedMajorForFlags
-                    ? getMajorGroupLabel(detectedMajorForFlags)
-                    : undefined,
-                  targetYear: year,
-                },
-                plan
-              ),
-              { maxOutputTokens: 16384 }
-            )
-          )
+          yearsToCall.map(async (year) => {
+            const prompt = buildSubjectAnalysisPrompt(
+              {
+                subjectData: blocksByYear.get(year)!.join("\n\n"),
+                studentProfile: texts.studentProfileText,
+                studentGrade: studentInfo.grade,
+                isGraduate: studentInfo.isGraduate,
+                isMedical,
+                gradingSystem: state.preprocessedData!.gradingSystem,
+                isGyogwaOnly,
+                detectedMajorGroupLabel: detectedMajorForFlags
+                  ? getMajorGroupLabel(detectedMajorForFlags)
+                  : undefined,
+                targetYear: year,
+              },
+              plan
+            );
+            // [DEBUG-SUBJ] prompt 길이 + 시작/끝 일부 + minimum/maximum 가이드 부분 추출
+            const minMatch = prompt.match(/최소[\s\S]{0,80}최대[\s\S]{0,80}/);
+            console.log(
+              `[DEBUG-SUBJ:${reportId}] year=${year} prompt length=${prompt.length}, minimum/maximum 가이드: "${minMatch ? minMatch[0].replace(/\n/g, " | ").slice(0, 200) : "(미발견)"}"`
+            );
+            const result = await callGemini<ReportSection>(prompt, {
+              maxOutputTokens: 16384,
+            });
+            const aiSubjects =
+              (result as unknown as { subjects?: unknown[] }).subjects ?? [];
+            const aiSubjectNames = aiSubjects.map(
+              (s: unknown) =>
+                (s as { subjectName?: string })?.subjectName ?? "?"
+            );
+            console.log(
+              `[DEBUG-SUBJ:${reportId}] year=${year} AI 응답 subjects=${aiSubjects.length}개 [${aiSubjectNames.join(", ")}]`
+            );
+            return result;
+          })
         );
 
         // 결과 합치기 — 같은 subjectName은 가장 최근 학년만 유지
@@ -795,6 +841,9 @@ export const executeTask = async (
             }
           }
         }
+        console.log(
+          `[DEBUG-SUBJ:${reportId}] merge 후 subjects=${merged.size}개 [${[...merged.keys()].join(", ")}]`
+        );
         const mergedSubjects = Array.from(merged.values()).sort((a, b) => {
           const ay = (a.year as number | undefined) ?? 0;
           const by = (b.year as number | undefined) ?? 0;
@@ -834,6 +883,11 @@ export const executeTask = async (
           plan
         )
       );
+      // 후속 태스크(consultantReview)가 행동특성 사실을 인용할 때 참조
+      updatedSer = {
+        ...updatedSer,
+        behaviorAnalysisText: JSON.stringify(section),
+      };
       break;
 
     case "weaknessAnalysis": {
@@ -850,6 +904,38 @@ export const executeTask = async (
           // 파싱 실패 시 무시
         }
       }
+      // competencyScore의 만점근사 (maxScore - score ≤ 5) subcategory를
+      // "약점 evidence 사용 금지 영역"으로 추출. AI가 단순 JSON 덤프에서
+      // 강점 영역을 인지 못해 같은 활동을 약점으로 평가하는 환각을 차단.
+      const strengthAreas = (() => {
+        if (!ser.competencyScoreText) return undefined;
+        try {
+          const compScore = JSON.parse(ser.competencyScoreText);
+          const lines: string[] = [];
+          for (const score of (compScore.scores ?? []) as Array<{
+            label?: string;
+            subcategories?: Array<{
+              name?: string;
+              score?: number;
+              maxScore?: number;
+              comment?: string;
+            }>;
+          }>) {
+            for (const sub of score.subcategories ?? []) {
+              const max = sub.maxScore ?? 0;
+              const sc = sub.score ?? 0;
+              if (max > 0 && max - sc <= 5) {
+                lines.push(
+                  `- [${score.label}/${sub.name}] ${sc}/${max} (만점근사) → comment: "${sub.comment ?? ""}"`
+                );
+              }
+            }
+          }
+          return lines.length > 0 ? lines.join("\n") : undefined;
+        } catch {
+          return undefined;
+        }
+      })();
       const weaknessInput = {
         competencyExtraction: ser.compExtrText!,
         academicAnalysis: weaknessAcadText,
@@ -862,6 +948,12 @@ export const executeTask = async (
         plannedSubjects: texts.plannedSubjectsText,
         studentGrade: studentInfo.grade,
         isGraduate: studentInfo.isGraduate,
+        // 정합성 보장: competencyScore에서 강점 영역으로 판정된 활동을
+        // 약점 evidence로 사용하지 않도록 채점 결과 입력 전달
+        competencyScoreResult: ser.competencyScoreText,
+        // 강점 영역 comment 명시적 추출 (B 옵션) — AI가 만점근사 영역을
+        // 명확히 인지하여 약점 evidence 키워드 충돌 방지
+        competencyStrengthAreas: strengthAreas,
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly
@@ -1382,6 +1474,8 @@ export const executeTask = async (
             isMedical,
             completedSubjectsByYear: texts.completedSubjectsByYearText,
             plannedSubjects: texts.plannedSubjectsText,
+            // 학생 실제 동아리·활동 사실 — prewriteProposals 환각 방지용
+            activityAnalysisResult: ser.activityAnalysisText,
           },
           plan
         )
@@ -1425,6 +1519,8 @@ export const executeTask = async (
         targetDepartment: studentInfo.targetDepartment,
         detectedMajorGroup: detectedMajorForExploration,
         detectedDepartments: detectedDepartmentsForExploration,
+        // currentTargetAssessment 시점 표현 ("남은 학기" 등) + 미존재 학년 평가 보류
+        dataYearsPresent: state.preprocessedData?.dataYearsPresent,
       });
       // 플랜 간 추천 전공 일관성을 위해 시스템 prefix도 플랜 무관하게 고정
       // (systemPrefix는 플랜별 "분석 깊이" 지시를 포함하므로, 여기서는 premium 기준 사용)
@@ -1800,6 +1896,10 @@ export const executeTask = async (
         studentProfile: texts.studentProfileText,
         subjectAnalysisResult: ser.subjAnalysisText!,
         weaknessAnalysisResult: ser.weaknessText,
+        // 활동/행동특성 사실 인용 시 환각 방지용 — 활동·행동 사례를
+        // 임의로 추정하지 않고 실제 분석 결과만 인용하도록 입력으로 전달
+        activityAnalysisResult: ser.activityAnalysisText,
+        behaviorAnalysisResult: ser.behaviorAnalysisText,
         gradingSystem: state.preprocessedData?.gradingSystem,
         studentGrade: studentInfo.grade,
         isGraduate: studentInfo.isGraduate,

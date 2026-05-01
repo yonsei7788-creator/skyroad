@@ -76,14 +76,11 @@ ${input.studentProfile}
 {
   "sectionId": "attendanceAnalysis",
   "title": "출결 분석",
-  "summaryByYear": [
-    {"year": 1, "totalAbsence": 2, "illness": 2, "unauthorized": 0, "etc": 0, "lateness": 1, "earlyLeave": 0},
-    {"year": 2, "totalAbsence": 1, "illness": 1, "unauthorized": 0, "etc": 0, "lateness": 0, "earlyLeave": 0}
-  ],
-  "overallRating": "우수",
-  "impactAnalysis": "전체 출결 상황이 매우 우수하며...",
-  "integrityContribution": "출결 상황이 성실성 평가에 긍정적으로...",
-  "improvementAdvice": ""
+  "summaryByYear": "<입력 attendanceSummary에 실제로 존재하는 학년만 객체로 변환 (각 객체: {year, totalAbsence, illness, unauthorized, etc, lateness, earlyLeave}). 입력에 없는 학년은 출력에도 포함하지 않음>",
+  "overallRating": "<우수|보통|주의|경고 중 하나, 아래 기준표대로 선택>",
+  "impactAnalysis": "<입력 attendanceSummary에 존재하는 학년의 수치만 인용하여 입시 영향을 서술>",
+  "integrityContribution": "<출결 기록을 성실성 평가 측면에서 서술>",
+  "improvementAdvice": "<주의/경고 시 개선 조언, 우수/보통 시 빈 문자열>"
 }
 
 ## 출력 지시

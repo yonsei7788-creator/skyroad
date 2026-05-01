@@ -9,6 +9,10 @@ export interface ConsultantReviewPromptInput {
   studentProfile: string;
   subjectAnalysisResult: string;
   weaknessAnalysisResult?: string;
+  /** activityAnalysis 섹션 결과 — 자율·동아리·진로 활동의 사실 인용 시 참조 */
+  activityAnalysisResult?: string;
+  /** behaviorAnalysis 섹션 결과 — 행동특성의 사실 인용 시 참조 */
+  behaviorAnalysisResult?: string;
   gradingSystem?: "5등급제" | "9등급제";
   studentGrade: number;
   isGraduate?: boolean;
@@ -148,12 +152,16 @@ export const buildConsultantReviewPrompt = (
 
 3. **탐구 역량 (Inquiry Ability)**: 입학사정관은 문제 제기 능력, 자료 분석 능력, 탐구 과정, 결과 해석을 통해 탐구 역량을 판단합니다. 특히 다음 구조가 나타나면 높은 평가를 받습니다: 수업 탐구 → 동아리 연구 → 보고서 작성 → 발표 및 확장. 이런 구조는 학생이 실제로 탐구를 수행했다는 증거로 평가됩니다. → 이 학생의 탐구 활동이 이 구조를 갖추고 있는지 판단하세요.
 
-4. **발전 가능성 (Growth Potential)**: 대학은 완성된 학생보다 성장 가능성이 있는 학생을 선호합니다. 입학사정관은 성적 상승 흐름, 학업 태도, 탐구 활동 확장, 학업 관심 변화를 통해 발전 가능성을 판단합니다. 1학년→관심 발견, 2학년→탐구 활동, 3학년→심화 연구의 흐름이 보이면 긍정적 평가를 받습니다. → 이 학생의 성장 궤적을 평가하세요.
-   ⛔ **데이터 가용 학년만으로 서술**: 아래 "학년별 데이터 가용성"에서 미존재(없음)로 표시된 학년의 활동·성적·세특을 단정해서 평가하면 안 됩니다.
-   - ❌ "1학년부터 3학년까지 꾸준히 ~가 심화" (3학년 데이터 없으면 단정 불가)
-   - ❌ "2학년에서 3학년으로 넘어가는 시점의 ~ 상승" (3학년 데이터 없으면 비교 불가)
-   - ❌ "3학년 들어 탐구가 깊어졌다" (3학년 데이터 없으면 단정 금지)
-   - ✅ "1·2학년에 걸쳐 ~의 흐름이 확인되며, 3학년 데이터는 아직 누적되지 않아 평가 보류"
+4. **발전 가능성 (Growth Potential)**: 대학은 완성된 학생보다 성장 가능성이 있는 학생을 선호합니다. 입학사정관은 학생이 도달한 학년에서의 학업 태도, 탐구 활동의 깊이·구체성, 자기주도성, 끈기 등을 통해 발전 가능성을 판단합니다. 학생이 여러 학년에 걸친 데이터를 가지고 있으면 학년 간 흐름(관심 발견 → 탐구 활동 → 심화 연구)도 평가 자료가 됩니다. → 이 학생의 가용 학년 데이터 범위 안에서 발전가능성을 평가하세요.
+   ✅ 아래 "학년별 데이터 가용성"에 **"있음"으로 표시된 학년의 활동·성적·세특만** 근거로 평가합니다. "없음" 학년은 "아직 누적되지 않아 평가 보류"로 처리합니다.
+   ✅ **가용 학년의 양적 한정 자체는 부정 평가 사유가 아닙니다.** "1학년 활동만으로 성장 스토리가 드러나지 않아 아쉽다", "2학년 이후의 흐름이 보이지 않아 아쉽다" 같은 표현은 학생이 아직 시간상 도달하지 않은 영역을 부재로 단정하는 것이므로 사용하지 않습니다. 학생은 도달한 학년 안에서 가능한 활동을 한 것이며, 학년 수가 적다는 이유로 "아쉽다"고 결론짓지 않습니다.
+   ✅ 평가는 **가용 학년 안에서 드러난 활동의 깊이·구체성·일관성·자기주도성**을 기준으로 작성합니다. 가용 학년 데이터가 충실하면 그 자체로 발전가능성 긍정 평가의 근거입니다.
+   ✅ 가용 학년 조합별 권장 결론 톤:
+   - 1학년만 있음: "1학년 활동에서 [구체 강점]이 확인되어 발전가능성의 긍정적 신호로 평가됩니다. 2학년 이후 데이터는 아직 누적되지 않아 추이 평가는 보류합니다."
+   - 1·2학년 있음: "1·2학년에 걸쳐 [구체 강점]의 흐름이 확인됩니다. 3학년 데이터는 아직 누적되지 않아 평가 보류."
+   - 1·2·3학년 모두 있음: "1학년부터 3학년까지 [구체 강점]의 흐름이 누적되어 발전가능성이 명확히 드러납니다."
+   ✅ 학년 간 비교/추세(예: "X학년 → Y학년 상승")는 두 학년 모두 "있음"인 경우에만 서술합니다.
+   ✅ **결론 톤 일관성**: growthPotential 필드 안에서 "긍정적 평가" + "아쉽다" 두 톤을 결론 없이 병렬하지 않습니다. 가용 학년 데이터 안에서 평가한 결과를 한 방향(긍정/중립/보완 필요 중 하나)으로 마무리합니다.
 
 ### 학생에게 알려줄 핵심 인사이트 3가지 (반드시 포함)
 1. **활동 개수는 중요하지 않습니다**: 입학사정관은 활동 개수보다 활동의 깊이, 전공 관련성, 탐구 과정을 평가합니다. 단순 나열형(봉사+캠프+대회+동아리)보다 탐구 확장형(수업 탐구→동아리 연구→보고서 작성→발표)이 훨씬 높은 평가를 받습니다.
@@ -162,7 +170,7 @@ export const buildConsultantReviewPrompt = (
 
 3. **리더십 활동은 필수가 아닙니다**: 학생회, 반장, 임원 활동보다 수업 참여 태도, 질문과 토론, 탐구 과정이 더 중요합니다. 대학은 "리더"보다 "탐구하는 학생"을 선호합니다.
 
-→ 위 3가지 인사이트를 이 학생의 구체적 사례와 연결하여 evaluationGuide.keyInsights에 작성하세요.`;
+→ 위 3가지 인사이트를 이 학생의 구체적 사례와 연결하여 evaluationGuide.keyInsights에 작성합니다. (사례 인용 출처는 위에서 정의한 "## ✅ 사례 인용 출처 규칙"을 그대로 따릅니다.)`;
 
   const toneExample = isGyogwaOnly
     ? `- 단순 사실 나열 금지: "성적이 3등급이므로" (X) → "최종 평균 3.02등급으로, 전공 핵심 과목에서는 2등급대를 유지하고 있어 전공 적합성 측면에서 경쟁력이 있습니다" (O)`
@@ -192,6 +200,47 @@ admissionStrategy, finalAdvice 등 모든 필드에서 선택하지 않은 전�
 - ❌ 개별 세특 평가 재서술 → subjectAnalysis에서 다룸
 - ✅ 이 섹션에서 할 것: 여러 섹션의 분석을 **교차 종합**하여 도출되는 새로운 인사이트, 섹션 간 연결에서 나오는 전략적 판단, 최종 실행 권고
 - ✅ 약점을 언급해야 할 경우 "~를 고려할 때"로 짧게 전제하고 즉시 전략/조언으로 넘어가세요. 약점 자체를 다시 설명하지 마세요.
+
+## ✅ 사례 인용 출처 규칙 (모든 출력 필드 공통 준수)
+
+이 규칙은 **gradeAnalysis · courseEffort · admissionStrategy · completionDirection · finalAdvice · evaluationGuide.majorFit · evaluationGuide.academicAbility · evaluationGuide.inquiryAbility · evaluationGuide.growthPotential · evaluationGuide.keyInsights** 등 **모든 출력 필드**에 일괄 적용됩니다.
+
+✅ 학생의 구체적 사례(과목명, 세특 활동, 탐구 주제, 동아리, 자율·진로 활동, 행동특성)를 거론할 때는 **입력 데이터에 실제로 등장한 사실만** 사용합니다. 인용 가능 출처:
+- 과목명·세특 사례: \`subjectAnalysis 섹션 생성 결과\` 입력에 등장한 과목과 활동만 인용
+- 자율·동아리·진로 활동: \`activityAnalysis 섹션 생성 결과\` 입력에 등장한 활동만 인용
+- 행동특성·성격 사례: \`behaviorAnalysis 섹션 생성 결과\` 입력에 등장한 사례만 인용
+- 성적·등급 수치: \`성적 데이터 + 판단 키워드\` 입력에 등장한 값만 인용
+
+✅ 입력에 등장하지 않는 활동·과목·세특 사례를 학생의 실제 활동인 것처럼 단정하지 않습니다. 예시:
+- ❌ activityAnalysis에 없는 "시각장애인 음성 보조공학 시스템" 탐구를 학생 활동으로 단정
+- ❌ generalSubjects에 없는 체육 세특을 평가 근거로 인용
+- ❌ subjectAnalysis에 없는 새 탐구 주제를 학생이 수행한 것처럼 서술
+
+✅ 인용할 만한 구체 활동/사례가 입력에 부족하면, 가공 활동을 만들어내지 말고 **일반 권고 형태**로 서술합니다:
+- "이 학생의 경우 ~ 탐구 활동의 깊이가 더 중요한 평가 요소입니다"
+- "현재까지의 활동을 바탕으로 ~ 방향을 심화하는 것이 중요합니다"
+- "생기부에서 드러난 강점을 ~로 연결하는 전략이 필요합니다"
+
+✅ activityAnalysis/behaviorAnalysis 입력이 비어 있거나 제공되지 않으면, 활동·행동 사례를 단정해서 거론하지 않고 일반 권고로만 작성합니다.
+
+## ✅ 결론 톤 일관성 (모든 출력 필드 공통 준수)
+
+이 규칙은 **gradeAnalysis · courseEffort · admissionStrategy · completionDirection · finalAdvice · evaluationGuide.majorFit · evaluationGuide.academicAbility · evaluationGuide.inquiryAbility · evaluationGuide.growthPotential · evaluationGuide.keyInsights** 등 **모든 평가 필드**에 일괄 적용됩니다.
+
+✅ 각 필드는 평가 결과를 **한 방향(긍정 / 중립 / 보완 필요 / 부정 중 하나)**으로 마무리합니다. "긍정적으로 평가될 겁니다" + "아쉽습니다"처럼 강한 두 톤이 결론 없이 병렬되면 학생/검수자가 결국 어느 방향인지 판단할 수 없으므로 사용하지 않습니다.
+
+✅ 강점과 보완점을 함께 다룰 때는 결론 한 문장으로 종합합니다. 보완점이 강점 우위면 "~한 강점이 확인되며, ~는 보완 여지가 있는 영역입니다"처럼 강점을 결론으로 마무리합니다. 반대면 "~한 강점이 있으나, ~한 보완이 우선되어야 합니다"처럼 보완을 결론으로 마무리합니다.
+
+✅ 권장 패턴 (강점 우위 결론):
+- "1학년 활동에서 [구체 강점]이 확인되어 발전가능성의 긍정적 신호로 평가됩니다. 2학년 이후 데이터는 아직 누적되지 않아 추이 평가는 보류합니다."
+- "[구체 강점]이 학업역량 평가의 긍정적 근거로 작용합니다. 일부 [구체 보완점]은 향후 보완 여지로 남는 영역입니다."
+
+✅ 권장 패턴 (보완 우위 결론):
+- "[구체 강점]이 부분적으로 확인되나, [구체 보완점]이 평가의 핵심 변수이므로 보완이 우선되어야 합니다."
+
+✅ 회피 패턴 (결론 없는 톤 병렬):
+- "긍정적으로 평가될 겁니다. ... 다만 ~는 아쉽습니다." (강한 긍정 + 강한 부정 결론 부재)
+- "우수합니다. 그러나 ~ 부족합니다." (대등한 두 단정 병렬)
 
 ## 역할 및 톤
 - "~입니다/~합니다" 존댓말을 사용합니다.
@@ -319,12 +368,15 @@ ${input.studentProfile}
 
 ${
   input.dataYearsPresent
-    ? `### 학년별 데이터 가용성 (growthPotential 등 평가 시 필수 준수)
-- 1학년 데이터: ${input.dataYearsPresent.year1 ? "있음" : "**없음**"}
-- 2학년 데이터: ${input.dataYearsPresent.year2 ? "있음" : "**없음**"}
-- 3학년 데이터: ${input.dataYearsPresent.year3 ? "있음" : "**없음**"}
+    ? `### 학년별 데이터 가용성 (gradeAnalysis · growthPotential · completionDirection · admissionStrategy 등 모든 평가 필드 공통 준수)
+- 1학년 데이터: ${input.dataYearsPresent.year1 ? "있음" : "없음"}
+- 2학년 데이터: ${input.dataYearsPresent.year2 ? "있음" : "없음"}
+- 3학년 데이터: ${input.dataYearsPresent.year3 ? "있음" : "없음"}
 
-⛔ "**없음**"인 학년에 대한 활동·성적·세특·성장 흐름을 단정해서 평가하지 마세요. 가용 학년 범위 안에서만 서술하고, 미존재 학년은 "아직 누적되지 않아 평가 보류"로 처리하세요.
+✅ 모든 필드에서 학년별 등급/활동/세특/성장 흐름을 서술할 때는 **"있음"으로 표시된 학년의 정보만** 사용합니다.
+✅ "없음" 학년은 "해당 학년 데이터가 아직 누적되지 않아 평가 보류"로 처리합니다.
+✅ 학년 간 비교나 추세 표현(예: "X학년 → Y학년 상승", "X학년 평균이 Y학년 평균으로 향상")은 두 학년 모두 "있음"인 경우에만 서술합니다.
+✅ 학년별 평균 등급/원점수 등 **수치는 academicAnalysis 입력의 gradesByYear에 실제로 존재하는 학년 항목에서만 인용**합니다.
 `
     : ""
 }
@@ -335,6 +387,8 @@ ${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubje
 ### subjectAnalysis 섹션 생성 결과 (이미 분석 완료 — 이 내용을 재서술하지 마세요)
 ${input.subjectAnalysisResult}
 ${input.weaknessAnalysisResult ? `\n### weaknessAnalysis 섹션 생성 결과 (이미 분석 완료 — 이 내용을 재서술하지 마세요)\n${input.weaknessAnalysisResult}` : ""}
+${input.activityAnalysisResult ? `\n### activityAnalysis 섹션 생성 결과 (자율·동아리·진로 활동의 사실 출처 — 학생 활동을 사례로 거론할 때 이 분석 안에 등장한 활동만 인용)\n${input.activityAnalysisResult}` : ""}
+${input.behaviorAnalysisResult ? `\n### behaviorAnalysis 섹션 생성 결과 (행동특성의 사실 출처 — 학생 행동·성격 특성을 거론할 때 이 분석 안에 등장한 사례만 인용)\n${input.behaviorAnalysisResult}` : ""}
 
 ${buildPlanSpecific(isGyogwaOnly)}`;
 };
@@ -394,6 +448,37 @@ export const buildGyogwaConsultantReviewPrompt = (
 - ❌ 대학별 합격 가능성 재판단 → admissionPrediction에서 다룸
 - ✅ 이 섹션에서 할 것: 여러 섹션을 **교차 종합**한 새로운 인사이트와 최종 실행 권고만
 
+## ✅ 사례 인용 출처 규칙 (모든 출력 필드 공통 준수)
+
+이 규칙은 **gradeAnalysis · courseEffort · admissionStrategy · completionDirection · finalAdvice · evaluationGuide.majorFit · evaluationGuide.academicAbility · evaluationGuide.inquiryAbility · evaluationGuide.attendanceDiligence · evaluationGuide.keyInsights** 등 **모든 출력 필드**에 일괄 적용됩니다.
+
+✅ 학생의 구체적 사례(과목명, 세특 활동, 탐구 주제, 동아리, 자율·진로 활동, 행동특성)를 거론할 때는 **입력 데이터에 실제로 등장한 사실만** 사용합니다. 인용 가능 출처:
+- 과목명·세특 사례: \`subjectAnalysis 섹션 생성 결과\` 입력에 등장한 과목과 활동만 인용
+- 자율·동아리·진로 활동: \`activityAnalysis 섹션 생성 결과\` 입력에 등장한 활동만 인용
+- 행동특성·성격 사례: \`behaviorAnalysis 섹션 생성 결과\` 입력에 등장한 사례만 인용
+- 성적·등급 수치: \`성적 데이터 + 판단 키워드\` 입력에 등장한 값만 인용
+
+✅ 입력에 등장하지 않는 활동·과목·세특 사례를 학생의 실제 활동인 것처럼 단정하지 않습니다. 예시:
+- ❌ activityAnalysis에 없는 활동을 학생 활동으로 단정 (예: "시각장애인 음성 보조공학 시스템" 탐구가 입력에 없는데 단정)
+- ❌ generalSubjects에 없는 체육 세특을 평가 근거로 인용
+- ❌ subjectAnalysis에 없는 새 탐구 주제를 학생이 수행한 것처럼 서술
+
+✅ 인용할 만한 구체 활동/사례가 입력에 부족하면, 가공 활동을 만들어내지 말고 **일반 권고 형태**로 서술합니다:
+- "이 학생의 경우 ~ 학업 성취도와 교과 이수 패턴이 더 중요한 평가 요소입니다"
+- "현재까지의 활동을 바탕으로 ~ 방향을 심화하는 것이 중요합니다"
+
+✅ activityAnalysis/behaviorAnalysis 입력이 비어 있거나 제공되지 않으면, 활동·행동 사례를 단정해서 거론하지 않고 일반 권고로만 작성합니다.
+
+## ✅ 결론 톤 일관성 (모든 출력 필드 공통 준수)
+
+이 규칙은 **gradeAnalysis · courseEffort · admissionStrategy · completionDirection · finalAdvice · evaluationGuide.majorFit · evaluationGuide.academicAbility · evaluationGuide.inquiryAbility · evaluationGuide.attendanceDiligence · evaluationGuide.keyInsights** 등 **모든 평가 필드**에 일괄 적용됩니다.
+
+✅ 각 필드는 평가 결과를 한 방향(긍정 / 중립 / 보완 필요 / 부정 중 하나)으로 마무리합니다. "긍정적으로 평가될 겁니다" + "아쉽습니다"처럼 강한 두 톤이 결론 없이 병렬되면 학생/검수자가 결국 어느 방향인지 판단할 수 없으므로 사용하지 않습니다.
+
+✅ 강점과 보완점을 함께 다룰 때는 결론 한 문장으로 종합합니다. 보완점이 강점 우위면 "~한 강점이 확인되며, ~는 보완 여지가 있는 영역입니다"처럼 강점을 결론으로, 반대면 "~한 강점이 있으나, ~한 보완이 우선되어야 합니다"처럼 보완을 결론으로 마무리합니다.
+
+✅ 회피 패턴: "우수합니다. 그러나 ~ 부족합니다." 같이 강한 긍정·강한 부정이 결론 없이 병렬되는 형태.
+
 ## 역할 및 톤
 - "~입니다/~합니다" 존댓말을 사용합니다.
 - 실제 컨설턴트가 상담실에서 학부모/학생에게 직접 말하는 톤으로 작성합니다.
@@ -449,7 +534,7 @@ ${gradeTimingRule}
 2. **교과전형에서도 서류평가가 확대되고 있습니다**: 동국대 등 일부 대학은 교과전형에서도 서류종합평가를 반영합니다.
 3. **교과전형과 학종을 병행하세요**: 교과전형만으로 6장을 채우기보다, 학종과 병행하여 원서 전략을 세우는 것이 현실적입니다.
 
-→ 위 3가지 인사이트를 이 학생의 구체적 사례와 연결하여 evaluationGuide.keyInsights에 작성하세요.
+→ 위 3가지 인사이트를 이 학생의 구체적 사례와 연결하여 evaluationGuide.keyInsights에 작성합니다. (사례 인용 출처는 위에서 정의한 "## ✅ 사례 인용 출처 규칙"을 그대로 따릅니다.)
 
 ## 출력 기준: 정밀 총평 (컨설팅급)
 - gradeAnalysis: **500자 이내**. academicAnalysis의 성적 데이터를 전제로, 최종 평균 등급이 교과전형 합격선 대비 어떤 위치인지 **전략적 함의**만 서술. ⛔ 개별 과목 등급/원점수를 다시 나열하지 마세요.
@@ -515,12 +600,15 @@ ${input.studentProfile}
 
 ${
   input.dataYearsPresent
-    ? `### 학년별 데이터 가용성 (평가 시 필수 준수)
-- 1학년 데이터: ${input.dataYearsPresent.year1 ? "있음" : "**없음**"}
-- 2학년 데이터: ${input.dataYearsPresent.year2 ? "있음" : "**없음**"}
-- 3학년 데이터: ${input.dataYearsPresent.year3 ? "있음" : "**없음**"}
+    ? `### 학년별 데이터 가용성 (gradeAnalysis · completionDirection · admissionStrategy 등 모든 평가 필드 공통 준수)
+- 1학년 데이터: ${input.dataYearsPresent.year1 ? "있음" : "없음"}
+- 2학년 데이터: ${input.dataYearsPresent.year2 ? "있음" : "없음"}
+- 3학년 데이터: ${input.dataYearsPresent.year3 ? "있음" : "없음"}
 
-⛔ "**없음**"인 학년에 대한 활동·성적·세특·성장 흐름을 단정해서 평가하지 마세요. 가용 학년 범위 안에서만 서술하세요.
+✅ 모든 필드에서 학년별 등급/활동/세특을 서술할 때는 **"있음"으로 표시된 학년의 정보만** 사용합니다.
+✅ "없음" 학년은 "해당 학년 데이터가 아직 누적되지 않아 평가 보류"로 처리합니다.
+✅ 학년 간 비교나 추세 표현은 두 학년 모두 "있음"인 경우에만 서술합니다.
+✅ 학년별 평균 등급 등 **수치는 academicAnalysis 입력의 gradesByYear에 실제로 존재하는 학년 항목에서만 인용**합니다.
 `
     : ""
 }
@@ -531,6 +619,8 @@ ${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubje
 ### subjectAnalysis 섹션 생성 결과 (이미 분석 완료 — 이 내용을 재서술하지 마세요)
 ${input.subjectAnalysisResult}
 ${input.weaknessAnalysisResult ? `\n### weaknessAnalysis 섹션 생성 결과 (이미 분석 완료 — 이 내용을 재서술하지 마세요)\n${input.weaknessAnalysisResult}` : ""}
+${input.activityAnalysisResult ? `\n### activityAnalysis 섹션 생성 결과 (자율·동아리·진로 활동의 사실 출처 — 학생 활동을 사례로 거론할 때 이 분석 안에 등장한 활동만 인용)\n${input.activityAnalysisResult}` : ""}
+${input.behaviorAnalysisResult ? `\n### behaviorAnalysis 섹션 생성 결과 (행동특성의 사실 출처 — 학생 행동·성격 특성을 거론할 때 이 분석 안에 등장한 사례만 인용)\n${input.behaviorAnalysisResult}` : ""}
 
 ## 출력 전 자기 검증 (교과전형 필수)
 1. gradeAnalysis의 모든 문장이 "최종 평균 N등급은 합격선 대비 ~" 형식인가?

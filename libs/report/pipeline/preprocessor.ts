@@ -270,6 +270,13 @@ export interface PreprocessedData {
   convertedGrade: { schoolType: string; original: number; converted: number };
   /** 학생의 등급제: 고1·고2는 "5등급제", 고3/졸업생은 "9등급제" */
   gradingSystem: "5등급제" | "9등급제";
+  /**
+   * 5등급제 학생의 9등급제 환산 평균 (코드 보간 결과).
+   * AI가 자체 보간으로 환산값을 임의 산출하지 않도록, 코드 단일 정답값을
+   * prompt에 주입하기 위한 필드. 9등급제 학생은 undefined.
+   * @see fiveToNineGrade, FIVE_TO_NINE_TABLE
+   */
+  nineGradeAverage?: number;
   /** 모든 과목의 성적 데이터 (postprocessor AI 출력 보정용) */
   allSubjectGrades?: {
     subject: string;
@@ -280,6 +287,12 @@ export interface PreprocessedData {
     average: number | null;
     studentCount: number | null;
   }[];
+  /**
+   * 학생이 실제로 이수한 모든 과목명 목록 (정규화된 형태).
+   * generalSubjects + careerSubjects + artsPhysicalSubjects + subjectEvaluations
+   * 출처를 모두 포함하여 postprocessor의 "환각 과목 제거" 판정의 정답 출처로 사용.
+   */
+  allTakenSubjects?: string[];
   fiveGradeConversion?: {
     subject: string;
     original: number;
@@ -926,6 +939,29 @@ export const preprocess = (
     studentCount: s.studentCount,
   }));
 
+  // 학생이 실제 이수한 모든 과목명 통합 목록 (postprocessor 환각 판정용).
+  // generalSubjects + careerSubjects + artsPhysicalSubjects + subjectEvaluations
+  // 4개 출처를 모두 포함하여 체육·음악·미술 같은 예체능 과목 또는 세특에만
+  // 등장한 과목까지 정상적으로 인정되도록 한다.
+  const allTakenSubjects = (() => {
+    const set = new Set<string>();
+    for (const s of generalSubjects ?? []) {
+      if (s?.subject) set.add(s.subject);
+    }
+    for (const cs of careerSubjects ?? []) {
+      if (cs?.subject) set.add(cs.subject);
+    }
+    for (const aps of (recordData.artsPhysicalSubjects ?? []) as Array<{
+      subject?: string;
+    }>) {
+      if (aps?.subject) set.add(aps.subject);
+    }
+    for (const se of subjectEvals ?? []) {
+      if (se?.subject) set.add(se.subject);
+    }
+    return [...set];
+  })();
+
   // 17. 데이터 존재 여부 맵 (postprocessor에서 "기록 없음" 판단용)
   const existingCreativeSlots = creativeActs
     .filter((a) => a.area !== "봉사활동" && a.note.trim().length > 0)
@@ -975,6 +1011,12 @@ export const preprocess = (
     year3: hasYearData(3),
   };
 
+  // 5등급제 학생만 9등급제 환산값 계산 (AI 자체 보간 환각 방지용)
+  const nineGradeAverage =
+    gradingSystem === "5등급제" && overallAverage > 0
+      ? Math.round(fiveToNineGrade(overallAverage) * 100) / 100
+      : undefined;
+
   const data: PreprocessedData = {
     overallAverage: Math.round(overallAverage * 100) / 100,
     averageByGrade,
@@ -985,8 +1027,10 @@ export const preprocess = (
     majorRelated,
     convertedGrade,
     gradingSystem,
+    nineGradeAverage,
     fiveGradeConversion,
     allSubjectGrades,
+    allTakenSubjects,
     smallClassSubjects,
     careerSubjects: careerSubjects.map((cs) => ({
       subject: cs.subject,

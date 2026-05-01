@@ -199,17 +199,11 @@ ${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubje
 {
   "sectionId": "academicAnalysis",
   "title": "학업 분석",
-  "overallAverageGrade": 2.85,
-  "gradesByYear": [
-    {"year": 1, "semester": 1, "averageGrade": 3.20},
-    {"year": 1, "semester": 2, "averageGrade": 2.90},
-    {"year": 2, "semester": 1, "averageGrade": 2.60}
-  ],
-  "gradeTrend": "상승",
-  "subjectGrades": [
-    {"subject": "국어", "year": 1, "semester": 1, "grade": 3, "rawScore": 78, "classAverage": 65.2, "standardDeviation": 12.5, "studentCount": 250}
-  ],
-  "interpretation": "최종 평균 2.85등급으로, 1학년 대비 2학년에서 등급이 하락한 점이 아쉽습니다. 전공 관련 과목에서는 상대적으로 우수한 성적을 유지하고 있어 전공 적합성 측면에서 강점이 있습니다."
+  "overallAverageGrade": "<전처리 overallAverage 값 그대로 (number)>",
+  "gradesByYear": "<전처리 averageByGrade 배열 그대로 (array of {year, semester, averageGrade})>",
+  "gradeTrend": "<전처리 gradeTrend.direction 한글 변환 (상승|유지|하락)>",
+  "subjectGrades": "<후처리 자동 주입, 빈 배열로 두어도 됨>",
+  "interpretation": "<학생의 실제 최종 평균 등급(전처리 overallAverage)으로 시작하여 교과전형 합격선 대비 위치를 서술. 환산/보정 표현 금지. 200자 이내>"
 }
 Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다 (아래 플랜별 출력 참조).
 ⚠️ subjectCombinations, subjectGrades 필드는 출력하지 마세요. 후처리에서 자동 주입됩니다.
@@ -354,21 +348,12 @@ ${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubje
 {
   "sectionId": "academicAnalysis",
   "title": "학업 분석",
-  "overallAverageGrade": 2.85,
-  "gradesByYear": [
-    {"year": 1, "semester": 1, "averageGrade": 3.20},
-    {"year": 1, "semester": 2, "averageGrade": 2.90},
-    {"year": 2, "semester": 1, "averageGrade": 2.60}
-  ],
-  "subjectCombinations": [
-    {"combination": "국수영사", "averageGrade": 2.50},
-    {"combination": "국수영과", "averageGrade": 3.10}
-  ],
-  "gradeTrend": "상승",
-  "subjectGrades": [
-    {"subject": "국어", "year": 1, "semester": 1, "grade": 3, "rawScore": 78, "classAverage": 65.2, "standardDeviation": 12.5, "studentCount": 250}
-  ],
-  "interpretation": "전체 평균 2.85등급으로, 학기별 등급이 점진적으로 상승하는 추세..."
+  "overallAverageGrade": "<전처리 overallAverage 값 그대로 (number)>",
+  "gradesByYear": "<전처리 averageByGrade 배열 그대로 (array of {year, semester, averageGrade})>",
+  "subjectCombinations": "<전처리 subjectCombinations 배열에서 name→combination, average→averageGrade로 매핑한 그대로>",
+  "gradeTrend": "<전처리 gradeTrend.direction 한글 변환 (상승|유지|하락)>",
+  "subjectGrades": "<후처리 자동 주입, 빈 배열로 두어도 됨>",
+  "interpretation": "<학생의 실제 최종 평균 등급(전처리 overallAverage)으로 시작하여 입학사정관 관점의 해석을 서술. 환산/보정 표현 금지>"
 }
 Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다 (아래 플랜별 출력 참조).
 
