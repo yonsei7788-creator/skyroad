@@ -1666,7 +1666,14 @@ const buildTexts = (
     matchMajorEvaluationCriteria(studentInfo.targetDepartment ?? "")?.majorGroup
   );
   // convertedGrade는 내부 계산용이므로 AI에 전달하지 않음
-  const { convertedGrade: _cg, ...dataWithoutConvertedGrade } = data;
+  // allSubjectGrades는 postprocessor 보정용 raw 데이터(비주요 과목 포함)이므로
+  // AI prompt에서 빼서 비주요 과목 등급이 majorRelevanceAnalysis 등에서 거론되는
+  // leak을 차단한다. subjectGrades 표는 postprocessor가 단일 정답 소스로 주입.
+  const {
+    convertedGrade: _cg,
+    allSubjectGrades: _asg,
+    ...dataWithoutConvertedGrade
+  } = data;
   const preprocessedAcademicDataText = JSON.stringify(
     dataWithoutConvertedGrade,
     null,
@@ -1767,7 +1774,8 @@ const buildTexts = (
     completedSubjectsByYearText: formatCompletedSubjectsByYear(
       recordData,
       studentInfo.grade,
-      studentInfo.isGraduate
+      studentInfo.isGraduate,
+      isArtSportDepartment(studentInfo.targetDepartment ?? "")
     ),
     plannedSubjectsText: formatPlannedSubjects(plannedSubjects),
     isArtSportPractical: artSportPractical,
@@ -3094,20 +3102,25 @@ const formatMockExamText = (mockExams: MockExamRow[]): string => {
 const formatCompletedSubjectsByYear = (
   recordData: RecordData,
   currentGrade: number,
-  isGraduate?: boolean
+  isGraduate?: boolean,
+  isArtSportApplicant: boolean = false
 ): string => {
   const generalSubjects = recordData.generalSubjects ?? [];
   const careerSubjects = recordData.careerSubjects ?? [];
 
-  // 학년별 이수 과목 그룹핑
+  // 학년별 이수 과목 그룹핑 — 비주요 과목(아동발달과 부모, 일본어, 정보 등)은
+  // 학종 평가에서 핵심 변별 대상이 아니므로 입력에서 제외해 AI가
+  // majorRelevanceAnalysis 등에서 거론하지 않게 한다.
   const byYear = new Map<number, string[]>();
   for (const s of generalSubjects) {
+    if (isNonMainSubject(s.subject, isArtSportApplicant)) continue;
     const list = byYear.get(s.year) ?? [];
     list.push(s.subject);
     byYear.set(s.year, list);
   }
   for (const s of careerSubjects) {
     if (s.year > 0) {
+      if (isNonMainSubject(s.subject, isArtSportApplicant)) continue;
       const list = byYear.get(s.year) ?? [];
       list.push(`${s.subject}(진로선택)`);
       byYear.set(s.year, list);

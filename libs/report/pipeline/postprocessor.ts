@@ -2477,9 +2477,11 @@ const normalizeSection = (
     };
     s.gradeTrend = trendMap[pre.gradeTrend.direction] || "유지";
 
-    // ── subjectGrades: AI가 미생성/빈 배열이면 전처리 데이터로 fallback ──
+    // ── subjectGrades: 전처리 데이터로 강제 주입 ──
+    //   AI prompt에서는 allSubjectGrades를 빼서 비주요 과목 등급이 leak되어
+    //   majorRelevanceAnalysis 등에서 거론되는 경로를 차단했다. 표는 단일
+    //   정답 소스(전처리)에서 항상 덮어쓴다.
     if (
-      (!Array.isArray(s.subjectGrades) || s.subjectGrades.length === 0) &&
       Array.isArray(pre.allSubjectGrades) &&
       pre.allSubjectGrades.length > 0
     ) {

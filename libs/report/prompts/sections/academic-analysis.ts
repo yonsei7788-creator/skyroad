@@ -21,9 +21,9 @@ export interface AcademicAnalysisPromptInput {
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 간략
-- 공통 항목(전과목 평균, 학년별 평균, 교과 조합별 평균, 등급 추이, 과목별 등급, 해석)을 출력합니다.
+- 공통 항목(전과목 평균, 학년별 평균, 교과 조합별 평균, 등급 추이, 해석)을 출력합니다.
 - 해석은 **200자 이내**로 작성합니다.
-- subjectGrades는 **입력 데이터에 있는 모든 과목**을 출력합니다. totalSubjects도 실제 전체 과목 수와 일치해야 합니다.
+- subjectGrades 필드는 출력하지 마세요. 후처리에서 자동 주입됩니다.
 - subjectStatAnalyses, careerSubjectAnalyses, gradeInflationContext, gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis, schoolTypeAdjustment 등 Standard+ 전용 필드는 출력하지 않습니다.`,
   standard: `## 플랜별 출력: 상세
 공통 항목에 추가로 **아래 핵심 3개 필드만 반드시 출력**합니다:
@@ -82,9 +82,9 @@ Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysi
 // ── 교과전형 전용 플랜별 출력 (추세/편차/사정관 해석 개념 없음) ──
 const GYOGWA_PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 간략
-- 공통 항목(전과목 평균, 학년별 평균, 등급 추이, 과목별 등급, 해석)을 출력합니다.
+- 공통 항목(전과목 평균, 학년별 평균, 등급 추이, 해석)을 출력합니다.
 - 해석은 **200자 이내**로 작성합니다.
-- subjectGrades는 **입력 데이터에 있는 모든 과목**을 출력합니다. totalSubjects도 실제 전체 과목 수와 일치해야 합니다.`,
+- subjectGrades 필드는 출력하지 마세요. 후처리에서 자동 주입됩니다.`,
   standard: `## 플랜별 출력: 상세
 공통 항목에 추가로 **아래 핵심 3개 필드만 반드시 출력**합니다:
 
@@ -212,7 +212,7 @@ ${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubje
   "interpretation": "최종 평균 2.85등급으로, 1학년 대비 2학년에서 등급이 하락한 점이 아쉽습니다. 전공 관련 과목에서는 상대적으로 우수한 성적을 유지하고 있어 전공 적합성 측면에서 강점이 있습니다."
 }
 Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다 (아래 플랜별 출력 참조).
-⚠️ subjectCombinations 필드는 출력하지 마세요. 후처리에서 자동 주입됩니다.
+⚠️ subjectCombinations, subjectGrades 필드는 출력하지 마세요. 후처리에서 자동 주입됩니다.
 
 ## 데이터 출처 구분 (필수 준수)
 

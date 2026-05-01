@@ -575,6 +575,7 @@ export const executeTask = async (
         }
       }
       // isGyogwaOnly → 학기별 데이터 제거 (AI가 추세를 추론하지 못하게)
+      // allSubjectGrades는 preprocessor 단계에서 이미 제거되어 모든 prompt에 일관 적용됨.
       let acadPreprocessedText = texts.preprocessedAcademicDataText;
       if (isGyogwaOnly) {
         try {
