@@ -466,7 +466,7 @@ export interface AcademicAnalysisSection extends BaseSection {
 
 interface CourseMatchDetail {
   course: string;
-  status: "이수" | "미이수";
+  status: "이수" | "이수 예정" | "미이수";
   importance: "필수" | "권장";
 }
 

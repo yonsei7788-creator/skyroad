@@ -422,7 +422,7 @@ export const AcademicAnalysisSectionSchema = z.object({
 
 const CourseMatchDetailSchema = z.object({
   course: z.string().min(1),
-  status: z.enum(["이수", "미이수"]),
+  status: z.enum(["이수", "이수 예정", "미이수"]),
   importance: z.enum(["필수", "권장"]),
 });
 

@@ -23,6 +23,7 @@ import {
   convertGradeBySchoolType,
   fiveToNineGrade,
   isArtSportDepartment,
+  normalizeSubjectName,
   type PreprocessedData,
 } from "./preprocessor.ts";
 import { matchMajorEvaluationCriteria } from "../constants/major-evaluation-criteria.ts";
@@ -2111,6 +2112,37 @@ const cleanInsightMarkers = (text: string): string => {
   return result;
 };
 
+/**
+ * 미완성 문장 절단 — AI가 분량 가이드를 어기거나 maxOutputTokens 한도에 걸려
+ * JSON 출력이 도중에 잘리면 마지막 문자열 필드가 종결 부호 없이 끝남.
+ * 끝이 정상 종결 부호(. ! ? … 닫는 따옴표/괄호)가 아니면, 마지막 종결 부호
+ * 위치까지 잘라내 사용자에게는 완결된 문장만 노출되도록 한다.
+ *
+ * 보수적 휴리스틱:
+ * - 길이 20자 미만이면 짧은 절일 가능성이 높아 그대로 둠 (false positive 방지)
+ * - 종결 부호로 끝나면 그대로
+ * - 종결 부호가 텍스트 안에 1개라도 있으면 마지막 종결 부호 다음 잘린 절 제거
+ * - 종결 부호가 아예 없으면 그대로 (단일 절·요약일 수 있음)
+ */
+const SENTENCE_ENDING_RE = /[.!?…」"')\]]\s*$/u;
+const truncateIncompleteSentence = (text: string): string => {
+  if (!text) return text;
+  const trimmed = text.trimEnd();
+  if (trimmed.length < 20) return text;
+  if (SENTENCE_ENDING_RE.test(trimmed)) return text;
+
+  const lastEnding = Math.max(
+    trimmed.lastIndexOf("."),
+    trimmed.lastIndexOf("?"),
+    trimmed.lastIndexOf("!"),
+    trimmed.lastIndexOf("…")
+  );
+  if (lastEnding > 0) {
+    return trimmed.slice(0, lastEnding + 1);
+  }
+  return text;
+};
+
 /** 객체의 모든 문자열 필드를 재귀적으로 AI 톤 치환 + 영단어 치환 + 마커 정리 */
 const sanitizeDeep = (obj: unknown, fieldName?: string): unknown => {
   if (typeof obj === "string") {
@@ -2128,6 +2160,8 @@ const sanitizeDeep = (obj: unknown, fieldName?: string): unknown => {
     result = result.replace(/\s{2,}/g, " ");
     // 사정관 평가 마커 정리 (단일 태그 제거, 매칭 쌍 보존)
     result = cleanInsightMarkers(result);
+    // 미완성 문장 절단 (AI 분량 위반/토큰 한도 절단 안전망)
+    result = truncateIncompleteSentence(result);
     return result;
   }
   if (Array.isArray(obj)) return obj.map((item) => sanitizeDeep(item));
@@ -2186,6 +2220,37 @@ const normalizeSection = (
         .map((subj) => subj.subjectName ?? "?")
         .join(", ")}]`
     );
+
+    // ── subjectName 표기 통일 + 같은 (year, 정규화된 이름) 중복 제거 ──
+    // AI가 입력 라벨을 그대로 복사하라는 룰을 어기고 "물리학Ⅰ"을 "물리학1"처럼
+    // 변형해 같은 과목을 두 번 출력하는 경우가 있어 후처리에서 결정적으로 정리.
+    // 정규화된 이름으로 subjectName을 통일하고, 중복은 첫 번째 항목만 유지한다.
+    const subjectsArr = s.subjects as Array<{
+      subjectName?: string;
+      year?: number;
+    }>;
+    const dedupedSubjects: typeof subjectsArr = [];
+    const seenKeys = new Set<string>();
+    let duplicatesRemoved = 0;
+    for (const subj of subjectsArr) {
+      const rawName = subj.subjectName ?? "";
+      const normalizedName = rawName ? normalizeSubjectName(rawName) : rawName;
+      const key = `${subj.year ?? ""}|${normalizedName}`;
+      if (seenKeys.has(key)) {
+        duplicatesRemoved += 1;
+        continue;
+      }
+      seenKeys.add(key);
+      // 표기 통일: AI가 만든 변형 표기를 정규화된 이름으로 강제
+      if (normalizedName) subj.subjectName = normalizedName;
+      dedupedSubjects.push(subj);
+    }
+    if (duplicatesRemoved > 0) {
+      console.log(
+        `[DEBUG-SUBJ:postproc] 표기 변형 중복 ${duplicatesRemoved}개 제거 후 subjects=${dedupedSubjects.length}개 [${dedupedSubjects.map((subj) => subj.subjectName ?? "?").join(", ")}]`
+      );
+    }
+    s.subjects = dedupedSubjects;
     const impactMap: Record<string, string> = {
       "very high": "very_high",
       "매우 높음": "very_high",
@@ -2717,24 +2782,11 @@ const normalizeSection = (
       };
     }
 
-    // ── careerSubjectAnalyses: AI 필드명 정규화 + 전처리 데이터 주입 ──
-    if (Array.isArray(s.careerSubjectAnalyses)) {
-      const careerMap = new Map(
-        pre.careerSubjects.map((cs) => [cs.subject, cs])
-      );
-      s.careerSubjectAnalyses = s.careerSubjectAnalyses.map((cs: any) => {
-        const preData = careerMap.get(cs.subject);
-        return {
-          subject: cs.subject ?? "",
-          achievement: cs.achievement || preData?.achievement || "",
-          achievementDistribution:
-            cs.achievementDistribution ||
-            preData?.achievementDistribution ||
-            "",
-          interpretation: cs.interpretation || cs.analysis || cs.comment || "",
-        };
-      });
-    }
+    // ── careerSubjectAnalyses: 강제 빈 배열 ──
+    // 진로선택과목은 학업 평가 영역이 아닌 성실도·진로 탐색 영역에서만 다룬다.
+    // 입력 단계에서 진로선택과목 데이터를 academicAnalysis에 전달하지 않으므로
+    // AI가 만들 수 없지만, 우회로 생성됐을 경우를 대비해 후처리에서도 강제 차단.
+    s.careerSubjectAnalyses = [];
 
     // ── fiveGradeSimulation: 등급제에 따라 처리 분기 ──
     if (pre.gradingSystem === "5등급제") {
@@ -4135,9 +4187,14 @@ const normalizeSection = (
     const prMatch = pre.recommendedCourseMatch;
     if (prMatch.requiredCourses.length > 0) {
       const takenSet = new Set(prMatch.takenCourses);
+      const plannedSet = new Set(prMatch.plannedCourses ?? []);
       s.courses = prMatch.requiredCourses.map((course: string) => ({
         course,
-        status: takenSet.has(course) ? "이수" : "미이수",
+        status: takenSet.has(course)
+          ? "이수"
+          : plannedSet.has(course)
+            ? "이수 예정"
+            : "미이수",
         importance: "권장",
       }));
       s.matchRate = prMatch.matchRate;

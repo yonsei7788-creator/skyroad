@@ -583,21 +583,33 @@ export const executeTask = async (
       }
       // isGyogwaOnly → 학기별 데이터 제거 (AI가 추세를 추론하지 못하게)
       // allSubjectGrades는 preprocessor 단계에서 이미 제거되어 모든 prompt에 일관 적용됨.
+      // 또한 이 섹션에 한해 진로선택과목 정보(careerSubjects, careerSubjectInterpretations)를
+      // 제거 — 학업 평가 영역에서 진로선택과목을 평가 근거로 사용하지 못하게 한다.
       let acadPreprocessedText = texts.preprocessedAcademicDataText;
-      if (isGyogwaOnly) {
-        try {
-          const parsed = JSON.parse(acadPreprocessedText);
+      try {
+        const parsed = JSON.parse(acadPreprocessedText);
+        delete parsed.careerSubjects;
+        if (isGyogwaOnly) {
           delete parsed.subjectCombinations;
           delete parsed.averageByGrade;
           delete parsed.gradeTrend;
-          acadPreprocessedText = JSON.stringify(parsed, null, 2);
-        } catch {
-          // 파싱 실패 시 원본 유지
         }
+        acadPreprocessedText = JSON.stringify(parsed, null, 2);
+      } catch {
+        // 파싱 실패 시 원본 유지
+      }
+
+      let acadQuantitativeText = ser.acadAnalText!;
+      try {
+        const parsed = JSON.parse(acadQuantitativeText);
+        delete parsed.careerSubjectInterpretations;
+        acadQuantitativeText = JSON.stringify(parsed);
+      } catch {
+        // 파싱 실패 시 원본 유지
       }
 
       const acadInput = {
-        quantitativeAnalysis: ser.acadAnalText!,
+        quantitativeAnalysis: acadQuantitativeText,
         preprocessedAcademicData: acadPreprocessedText,
         studentProfile: texts.studentProfileText,
         gradingSystem: preData.gradingSystem,
@@ -1236,7 +1248,7 @@ export const executeTask = async (
                   const cut = parseFloat(cutMatch[1]);
                   if (!adjustedAvg) continue;
                   const diff = adjustedAvg - cut;
-                  if (diff >= 0.3) reach++;
+                  if (diff >= 0.4) reach++;
                   else if (diff > 0.1)
                     reach++; // 소신 → reach 그룹
                   else if (diff >= -0.1) fit++;
@@ -1331,8 +1343,15 @@ export const executeTask = async (
           : buildAdmissionStrategyPrompt(stratInput, plan)
       );
 
-      // 코드 확정 추천대학을 simulations.cards에 삽입
-      // AI가 생성한 cards를 코드에서 확정된 추천대학으로 대체
+      // 추천대학(simulations.cards)은 100% 코드 결정으로 강제 덮어쓰기.
+      // AI가 자체 생성한 cards는 majorExploration 추천 전공과 어긋날 수 있으므로
+      // 항상 무시하고 코드 후보(stratCandidatesText)와 희망대학 머지 결과만 사용.
+      let mergedCards: {
+        university: string;
+        department: string;
+        tier?: string;
+        recommendedAdmissionType: "학종" | "교과";
+      }[] = [];
       try {
         const candidates = JSON.parse(stratCandidatesText) as {
           university: string;
@@ -1366,12 +1385,7 @@ export const executeTask = async (
         }
 
         // 중복 제거하면서 머지 — codeRecommended에 이미 있는 (대학,학과)는 유지
-        const mergedCards: {
-          university: string;
-          department: string;
-          tier?: string;
-          recommendedAdmissionType: "학종" | "교과";
-        }[] = codeRecommended.map((c) => ({
+        mergedCards = codeRecommended.map((c) => ({
           university: c.university,
           department: c.department,
           tier: c.tier,
@@ -1397,29 +1411,34 @@ export const executeTask = async (
             `[report:${reportId}] admissionStrategy 희망대학 reach 분류로 머지 제외: ${skippedReachHopes.map((h) => `${h.university} ${h.department}`).join(", ")}`
           );
         }
-
-        if (mergedCards.length > 0) {
-          const strat = section as unknown as Record<string, unknown>;
-          strat.simulations = [
-            {
-              description: "AI 추천 전공 기반 대학 추천",
-              cards: mergedCards.map((c) => ({
-                university: c.university,
-                department: c.department,
-                recommendedAdmissionType: c.recommendedAdmissionType,
-                tier: c.tier,
-              })),
-            },
-          ];
-          if (hopeRecommended.length > 0) {
-            console.log(
-              `[report:${reportId}] admissionStrategy 희망대학 ${hopeRecommended.length}개 머지: ${hopeRecommended.map((h) => `${h.university} ${h.department}`).join(", ")}`
-            );
-          }
+        if (hopeRecommended.length > 0) {
+          console.log(
+            `[report:${reportId}] admissionStrategy 희망대학 ${hopeRecommended.length}개 머지: ${hopeRecommended.map((h) => `${h.university} ${h.department}`).join(", ")}`
+          );
         }
-      } catch {
-        // 후보군 파싱 실패 시 AI 생성 결과 유지
+      } catch (err) {
+        console.warn(
+          `[report:${reportId}] admissionStrategy 후보군 파싱 실패 — 빈 cards로 강제: ${err instanceof Error ? err.message : String(err)}`
+        );
+        mergedCards = [];
       }
+
+      // AI가 생성했을 수 있는 simulations를 무시하고, 항상 코드 결정으로 덮어쓴다.
+      const strat = section as unknown as Record<string, unknown>;
+      strat.simulations = [
+        {
+          description:
+            mergedCards.length > 0
+              ? "AI 추천 전공 기반 대학 추천"
+              : "추천 전공에 매칭되는 대학 후보 데이터가 부족하여 추천을 제공하지 않습니다.",
+          cards: mergedCards.map((c) => ({
+            university: c.university,
+            department: c.department,
+            recommendedAdmissionType: c.recommendedAdmissionType,
+            tier: c.tier,
+          })),
+        },
+      ];
 
       updatedSer = {
         ...updatedSer,

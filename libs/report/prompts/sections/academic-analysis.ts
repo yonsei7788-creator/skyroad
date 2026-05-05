@@ -24,7 +24,7 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - 공통 항목(전과목 평균, 학년별 평균, 교과 조합별 평균, 등급 추이, 해석)을 출력합니다.
 - 해석은 **200자 이내**로 작성합니다.
 - subjectGrades 필드는 출력하지 마세요. 후처리에서 자동 주입됩니다.
-- subjectStatAnalyses, careerSubjectAnalyses, gradeInflationContext, gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis, schoolTypeAdjustment 등 Standard+ 전용 필드는 출력하지 않습니다.`,
+- subjectStatAnalyses, gradeInflationContext, gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis, schoolTypeAdjustment, careerSubjectAnalyses 등 Standard+ 전용 필드는 출력하지 않습니다.`,
   standard: `## 플랜별 출력: 상세
 공통 항목에 추가로 **아래 핵심 3개 필드만 반드시 출력**합니다:
 
@@ -51,8 +51,7 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 ⚠️ **분량 제한 (반드시 준수)**:
 - gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis **3개 필드만** 출력합니다. 이 3개 외 추가 분석 필드는 절대 출력하지 마세요.
 - 각 필드의 텍스트(riskAssessment, enrollmentEffort, achievement, prediction 등)는 반드시 **200자 이내**로 작성합니다. 200자 초과 금지.
-- careerSubjectAnalyses는 **최대 5개**만 출력하며, 각 interpretation은 **150자 이내**로 작성합니다.
-- smallClassSubjectAnalyses, schoolTypeAdjustment, gradeInflationContext는 출력하지 않습니다.
+- careerSubjectAnalyses, smallClassSubjectAnalyses, schoolTypeAdjustment, gradeInflationContext는 출력하지 않습니다.
 - ⚠️ schoolTypeAdjustment는 절대 출력하지 마세요.`,
   premium: `## 플랜별 출력: 정밀
 Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 포함)**을 반드시 출력하고 (actionItems 빈 배열 금지), 추가로 다음을 출력합니다:
@@ -74,7 +73,7 @@ Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysi
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - 모든 필드 출력 가능하지만, 각 분석 텍스트(riskAssessment, enrollmentEffort, achievement, prediction 등)는 반드시 **200자 이내**로 작성합니다. 200자 초과 금지.
-- careerSubjectAnalyses는 **최대 5개**만 출력합니다. 5개 초과 금지.
+- careerSubjectAnalyses 필드는 출력하지 않습니다.
 - subjectStatAnalyses 등 해석 필드도 각 **150자 이내**로 간결하게 서술합니다.
 - ⚠️ 이 섹션의 성적 개선 우선순위는 **A4 1페이지 이내**에 들어와야 합니다.`,
 };
@@ -224,7 +223,7 @@ Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다
 ## 비핵심 과목 구분
 
 아래 과목은 교과전형에서도 전 과목 반영 시 포함되지만, 핵심 변별 과목이 아닙니다:
-- 기술·가정, 정보, 제2외국어, 한문, 교양, 진로와 직업
+- 기술·가정, 정보, 제2외국어, 한문, 교양
 - 체육, 음악, 미술 (예체능 지원자 제외)
 이 과목의 성적이 낮더라도 "핵심 약점"으로 지목하지 마세요.
 핵심 과목: 국어, 수학, 영어, 사회탐구, 과학탐구.
@@ -380,6 +379,8 @@ Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다
 ## 비핵심 과목 구분 (시스템 프롬프트 규칙 적용)
 - **gradeChangeAnalysis, gradeDeviationAnalysis 등에서 비핵심 과목을 핵심 약점으로 지목하지 마세요.**
 - 핵심 평가 과목은 국어, 수학, 영어, 사회탐구(한국사, ${input.gradingSystem === "5등급제" ? "사회와 문화, 정치, 법과 사회, 경제" : "사회·문화, 정치와법, 경제"} 등), 과학탐구(물리학, 화학, 생명과학, 지구과학 등)입니다.
+- 입력 데이터에는 일반선택·공통과목만 들어 있습니다. 모든 AI 생성 필드는 입력에 존재하는 과목만 사용하여 작성하세요.
+- careerSubjectAnalyses 필드는 출력하지 않습니다.
 
 ## ⚠️ 생기부 기반 강점 계열 (필수 준수)
 

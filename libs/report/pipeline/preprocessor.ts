@@ -310,6 +310,8 @@ export interface PreprocessedData {
     achievementDistribution: string;
   }[];
   recommendedCourseMatch: RecommendedCourseMatch;
+  /** 학생이 직접 입력한 수강 예정 과목 (Phase 2 후 detectedMajorGroup 기반 재매칭에서 사용) */
+  plannedSubjectsRaw?: string;
   curriculumVersion: "2015" | "2022";
   attendanceSummary: AttendanceSummaryItem[];
   recordVolume: RecordVolumeItem[];
@@ -903,7 +905,8 @@ export const preprocess = (
     careerSubjects,
     studentInfo.targetDepartment ?? "",
     studentInfo.grade,
-    curriculumVersion
+    curriculumVersion,
+    plannedSubjects
   );
 
   // 13. 출결 데이터 정규화
@@ -1038,6 +1041,7 @@ export const preprocess = (
       achievementDistribution: cs.achievementDistribution,
     })),
     recommendedCourseMatch,
+    plannedSubjectsRaw: plannedSubjects,
     curriculumVersion,
     attendanceSummary,
     recordVolume,
@@ -1282,20 +1286,59 @@ const extractMajorKeywords = (targetDept: string): string[] => {
  * 권장과목: "수학Ⅰ", "수학Ⅱ", "물리학Ⅰ" (공백 없음 + 전각 로마숫자)
  * → 모두 "공백 없음 + 전각 로마숫자" 형식으로 통일
  */
-const normalizeSubjectName = (name: string): string => {
-  return (
-    name
-      // 공백 + ASCII "I"/"II" → 전각 로마숫자
-      .replace(/\s+III\s*$/, "Ⅲ")
-      .replace(/\s+II\s*$/, "Ⅱ")
-      .replace(/\s+I\s*$/, "Ⅰ")
-      // 공백 + 전각 로마숫자 → 공백 제거
-      .replace(/\s+(Ⅰ|Ⅱ|Ⅲ)\s*$/, "$1")
-      // 공백 없이 ASCII "I"/"II" → 전각
-      .replace(/III\s*$/, "Ⅲ")
-      .replace(/II\s*$/, "Ⅱ")
-      .replace(/I\s*$/, "Ⅰ")
-  );
+/**
+ * 학생이 수강 예정/이수 과목을 줄임 표기로 입력하는 흔한 패턴을 정식 명칭으로 변환.
+ * 권장과목이 정식 명칭("물리학Ⅰ", "생명과학Ⅱ", "확률과 통계", "미적분")으로 등록되어 있으므로,
+ * 학생 표기("물리1", "생명2", "확통", "미적") 매칭을 위해 정식 명칭으로 통일한다.
+ *
+ * 키 = 정규화 후의 줄임 형태 (로마숫자 변환 후 기준)
+ * 값 = 정식 명칭
+ */
+const SHORT_TO_FULL_NAME: Record<string, string> = {
+  // 과학탐구 줄임 → 정식명
+  물리: "물리학",
+  생명: "생명과학",
+  지구: "지구과학",
+  // 수학 줄임 → 정식명
+  미적: "미적분",
+  확통: "확률과 통계",
+  // 사회탐구 흔한 표기 차이
+  사회문화: "사회와 문화",
+  "사회·문화": "사회와 문화",
+  정법: "정치와 법",
+};
+
+export const normalizeSubjectName = (name: string): string => {
+  let result = name.trim();
+
+  // 1) 끝의 아라비아숫자 1/2/3 → 전각 로마숫자 (학생 표기 "물리1" → "물리Ⅰ")
+  result = result.replace(/([1-3])\s*$/, (_, digit) => {
+    const digitMap: Record<string, string> = { "1": "Ⅰ", "2": "Ⅱ", "3": "Ⅲ" };
+    return digitMap[digit] ?? digit;
+  });
+
+  // 2) 공백 + ASCII "I"/"II" → 전각 로마숫자
+  result = result
+    .replace(/\s+III\s*$/, "Ⅲ")
+    .replace(/\s+II\s*$/, "Ⅱ")
+    .replace(/\s+I\s*$/, "Ⅰ")
+    // 공백 + 전각 로마숫자 → 공백 제거
+    .replace(/\s+(Ⅰ|Ⅱ|Ⅲ)\s*$/, "$1")
+    // 공백 없이 ASCII "I"/"II" → 전각
+    .replace(/III\s*$/, "Ⅲ")
+    .replace(/II\s*$/, "Ⅱ")
+    .replace(/I\s*$/, "Ⅰ");
+
+  // 3) 줄임 표기 → 정식 명칭 (후행 로마숫자 보존)
+  // 후행 로마숫자 부분 분리 후 root만 줄임/정식 변환, 로마숫자는 그대로 결합
+  const romaMatch = result.match(/^(.+?)(Ⅰ|Ⅱ|Ⅲ)?$/);
+  if (romaMatch) {
+    const [, root, roma = ""] = romaMatch;
+    const full = SHORT_TO_FULL_NAME[root];
+    if (full) result = full + roma;
+  }
+
+  return result;
 };
 
 /**
@@ -1401,7 +1444,9 @@ export const matchRecommendedCourses = (
   careerSubjects: CareerSubjectRow[],
   targetDept: string,
   studentGrade: number,
-  curriculumVersion?: "2015" | "2022"
+  curriculumVersion?: "2015" | "2022",
+  /** 학생이 직접 입력한 수강 예정 과목(comma-separated). 없으면 undefined. */
+  plannedSubjects?: string
 ): RecommendedCourseMatch => {
   // 학생이 이수한 과목명을 정규화하여 Set 구축
   const takenRawSet = new Set<string>();
@@ -1419,6 +1464,22 @@ export const matchRecommendedCourses = (
   }
   const takenNormalizedSet = new Set(normalizedToRaw.keys());
 
+  // 수강 예정 과목 정규화 — 콤마/줄바꿈 분리 후 같은 정규화 함수 적용
+  const plannedRawSet = new Set<string>();
+  const plannedNormalizedSet = new Set<string>();
+  const plannedBaseSet = new Set<string>();
+  if (plannedSubjects && plannedSubjects.trim().length > 0) {
+    const tokens = plannedSubjects
+      .split(/[,\n]/)
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+    for (const t of tokens) {
+      plannedRawSet.add(t);
+      plannedNormalizedSet.add(normalizeSubjectName(t));
+      plannedBaseSet.add(normalizeToBaseSubject(t));
+    }
+  }
+
   // Find matching major recommendation (교육과정 버전에 따라 분기)
   const courseRecommendations = getMajorCourseRecommendations(
     studentGrade,
@@ -1429,18 +1490,29 @@ export const matchRecommendedCourses = (
   const requiredCourses = matchingMajor?.recommendedCourses ?? [];
 
   // 정규화된 이름으로 매칭 (로마숫자 정규화 + 기본 교과명 매칭)
+  // 우선순위: 이수 → 이수 예정 → 미이수
   const takenCourses: string[] = [];
+  const plannedCourses: string[] = [];
   const missingCourses: string[] = [];
   for (const course of requiredCourses) {
     const normalized = normalizeSubjectName(course);
     const base = normalizeToBaseSubject(course);
-    if (
+    const isTaken =
       takenNormalizedSet.has(normalized) ||
       takenRawSet.has(course) ||
       baseSubjectSet.has(base) ||
-      baseSubjectSet.has(normalized)
-    ) {
+      baseSubjectSet.has(normalized);
+    if (isTaken) {
       takenCourses.push(course);
+      continue;
+    }
+    const isPlanned =
+      plannedNormalizedSet.has(normalized) ||
+      plannedRawSet.has(course) ||
+      plannedBaseSet.has(base) ||
+      plannedBaseSet.has(normalized);
+    if (isPlanned) {
+      plannedCourses.push(course);
     } else {
       missingCourses.push(course);
     }
@@ -1455,10 +1527,16 @@ export const matchRecommendedCourses = (
     _referenceTargetMajor: matchingMajor?.major ?? targetDept,
     requiredCourses,
     takenCourses,
+    plannedCourses,
     missingCourses,
+    // matchRate는 이수 + 이수 예정 합산 (학생이 입력한 수강 예정도 진행 중인 노력으로 인정)
     matchRate:
       requiredCourses.length > 0
-        ? Math.round((takenCourses.length / requiredCourses.length) * 100)
+        ? Math.round(
+            ((takenCourses.length + plannedCourses.length) /
+              requiredCourses.length) *
+              100
+          )
         : 100,
   };
 };
@@ -2125,7 +2203,7 @@ export const buildUniversityCandidatesText = (
     // 학생 등급 환산 (5등급→9등급→고교유형 환산 순서 적용)
     const studentGrade9 = computeGrade9ForCutoff();
     const MARGIN = 0.4;
-    // 부동소수점 보정
+    // 부동소수점 보정 — 적정~상향 후보 풀(±0.4)만 잡는다. 하향(safety)은 추천에서 제외.
     const gradeRangeLo =
       studentGrade9 != null
         ? Math.round((studentGrade9 - MARGIN) * 100) / 100
@@ -2322,10 +2400,11 @@ export const buildUniversityCandidatesText = (
         }
 
         const { repCut, diff } = bestMatch;
-        // safety(학생 등급보다 합격선이 나쁜 대학)는 추천에서 제외 — 작업 4
+        // safety(학생 등급보다 합격선이 충분히 좋은 대학 = 학생이 충분히 갈 만한 대학)는 추천에서 제외.
+        // 적정~상향만 추천. 6개가 채워지지 않아도 하향은 포함하지 않는다.
         if (diff < -0.15) continue;
-        const tier: "reach" | "ambitious" | "fit" | "safety" =
-          diff >= 0.3 ? "reach" : diff > 0.1 ? "ambitious" : "fit";
+        const tier: "reach" | "ambitious" | "fit" =
+          diff >= 0.4 ? "reach" : diff > 0.1 ? "ambitious" : "fit";
         const cutoffSummary = cutoffs
           .map((c) => {
             const cut = c.cutoff50Grade;
@@ -2384,12 +2463,14 @@ export const buildUniversityCandidatesText = (
     // Phase 1: 1순위 키워드 정확매칭 → 유사학과
     // Phase 2: 2순위 키워드 정확매칭 → 유사학과 (부족 티어 보충)
     // Phase 3: 3순위 키워드 전체 (부족 티어 보충)
+    // — 적정~상향(reach/ambitious/fit)만 추천. 하향(safety)은 extractCandidates에서 이미 제외됨.
+    //   6개가 채워지지 않아도 하향은 포함하지 않는다.
     const selected: CandidateEntry[] = [];
     const usedKeys = new Set<string>(); // 이미 수집된 대학+학과
     const sortByDist = (arr: CandidateEntry[]) =>
       [...arr].sort((a, b) => Math.abs(a.diff) - Math.abs(b.diff));
 
-    // 부족한 티어만 필터링하여 추가하는 헬퍼 (safety 제외 — 작업 4)
+    // 부족한 티어만 필터링하여 추가하는 헬퍼
     const addMissingTiers = (candidates: CandidateEntry[]): void => {
       const currentReachAmbitious = selected.filter(
         (c) => c.tier === "reach" || c.tier === "ambitious"
@@ -2465,7 +2546,7 @@ export const buildUniversityCandidatesText = (
       }
     }
 
-    // 최대 6개로 제한
+    // 최대 6개로 제한 (적정~상향만으로 6개 미달이어도 그대로 노출, 하향은 미포함)
     const MAX_CANDIDATES = 6;
     let final = selected.slice(0, MAX_CANDIDATES);
 
@@ -2808,17 +2889,21 @@ export const buildUniversityCandidatesText = (
 };
 
 /**
- * 학생 희망대학 중 majorExploration 추천 학과와 일치하는 대학을
- * 추천대학에 포함시키기 위한 후보 산정.
+ * 학생 희망대학을 추천대학에 포함시키기 위한 후보 산정.
  *
- * 정책:
- * - 학과 매칭은 정규화(괄호/공백/접미사 "전공/과/부" 제거) 후 정확 일치
- * - 매칭된 희망대학 중 ADMISSION_CUTOFF_DATA에 커트라인이 있는 곳:
- *   학생 환산 등급 기준 |diff| 작은 순 → 최대 2개
- *   (학종/교과 둘 다 보고 더 가까운 쪽으로 recommendedAdmissionType 결정.
- *    isGyogwaOnly면 교과만 비교)
- * - 매칭은 됐으나 커트라인 데이터가 전혀 없으면: priority 작은 순 1개만
- *   (tier="fit" 부여, recommendedAdmissionType은 학생 입력 admission_type 매핑)
+ * 정책 (두 그룹 산정):
+ * (A) 학과 매칭 그룹 — 학생 희망대학 중 majorExploration 추천 학과와 학과명이 일치:
+ *   - 매칭은 정규화(괄호/공백/접미사 "전공/과/부" 제거) 후 정확 일치
+ *   - 커트라인 있는 곳: |diff| 작은 순 → 최대 2개
+ *   - 커트라인 데이터가 전혀 없으면: priority 1순위 1개만 (tier="fit" 부여)
+ * (B) 학과 불일치 + 등급 매칭 그룹 — 학과는 다르지만 학생이 가고 싶어하는 곳 중
+ *   학생 등급 기준 적정~상향(fit/ambitious) 구간:
+ *   - 커트라인 데이터가 있고 적정~상향에 해당하는 곳만 → 최대 2개
+ *   - reach(매우 어려움)·safety(매우 쉬움)는 미포함
+ *   - 커트라인 없거나 학종/교과 모두 범위 밖이면 미포함
+ *
+ * 두 그룹을 합쳐 최대 4개까지 반환. wave-executor가 reach·safety를 한 번 더
+ * 거르고 최종 카드로 머지한다.
  */
 export const buildHopeUniversityRecommendations = (
   targetUniversities: StudentInfo["targetUniversities"],
@@ -2834,7 +2919,6 @@ export const buildHopeUniversityRecommendations = (
   recommendedAdmissionType: "학종" | "교과";
 }[] => {
   if (!targetUniversities || targetUniversities.length === 0) return [];
-  if (!majorNames || majorNames.length === 0) return [];
 
   // 학과명 정규화 (괄호/공백/조직 접미사 제거)
   const normalize = (name: string): string =>
@@ -2845,12 +2929,15 @@ export const buildHopeUniversityRecommendations = (
       .replace(/(?:전공|과|부)$/, "")
       .trim();
 
-  const normalizedMajors = new Set(majorNames.map(normalize));
+  const normalizedMajors = new Set((majorNames ?? []).map((m) => normalize(m)));
+
   const matched = targetUniversities
     .filter((tu) => normalizedMajors.has(normalize(tu.department)))
     .sort((a, b) => a.priority - b.priority);
 
-  if (matched.length === 0) return [];
+  const nonMatched = targetUniversities
+    .filter((tu) => !normalizedMajors.has(normalize(tu.department)))
+    .sort((a, b) => a.priority - b.priority);
 
   // 학생 등급 환산 (5등급→9등급 → 고교유형 환산)
   let studentGrade9: number | null = null;
@@ -2884,15 +2971,6 @@ export const buildHopeUniversityRecommendations = (
     tier: "reach" | "ambitious" | "fit" | "safety";
     priority: number;
   };
-  type WithoutCutoff = {
-    university: string;
-    department: string;
-    admissionType: string;
-    priority: number;
-  };
-
-  const withCutoff: WithCutoff[] = [];
-  const withoutCutoff: WithoutCutoff[] = [];
 
   const findClosest = (
     cuts: number[],
@@ -2905,22 +2983,17 @@ export const buildHopeUniversityRecommendations = (
     return { cut, diff: Math.round((grade - cut) * 1000) / 1000 };
   };
 
-  for (const tu of matched) {
+  // 단일 희망대학을 cutoff 기반 분류 (cutoff 없거나 매칭 실패 시 null)
+  const classifyByCutoff = (
+    tu: NonNullable<StudentInfo["targetUniversities"]>[number]
+  ): WithCutoff | null => {
+    if (studentGrade9 == null) return null;
     const tuCore = normalize(tu.department);
     const cutoffs = ADMISSION_CUTOFF_DATA.filter(
       (e) =>
         e.university === tu.universityName && normalize(e.department) === tuCore
     );
-
-    if (cutoffs.length === 0 || studentGrade9 == null) {
-      withoutCutoff.push({
-        university: tu.universityName,
-        department: tu.department,
-        admissionType: tu.admissionType,
-        priority: tu.priority,
-      });
-      continue;
-    }
+    if (cutoffs.length === 0) return null;
 
     const hakjongCutsRaw = cutoffs
       .filter((c) => c.admissionType === "학종")
@@ -2948,15 +3021,7 @@ export const buildHopeUniversityRecommendations = (
       : findClosest(adjustedHakjong, studentGrade9);
     const gyogwaMatch = findClosest(gyogwaCuts, studentGrade9);
 
-    if (!hakjongMatch && !gyogwaMatch) {
-      withoutCutoff.push({
-        university: tu.universityName,
-        department: tu.department,
-        admissionType: tu.admissionType,
-        priority: tu.priority,
-      });
-      continue;
-    }
+    if (!hakjongMatch && !gyogwaMatch) return null;
 
     let bestDiff: number;
     let recommendedAdmissionType: "학종" | "교과";
@@ -2977,7 +3042,7 @@ export const buildHopeUniversityRecommendations = (
     }
 
     const tier: "reach" | "ambitious" | "fit" | "safety" =
-      bestDiff >= 0.3
+      bestDiff >= 0.4
         ? "reach"
         : bestDiff > 0.1
           ? "ambitious"
@@ -2985,7 +3050,7 @@ export const buildHopeUniversityRecommendations = (
             ? "fit"
             : "safety";
 
-    withCutoff.push({
+    return {
       university: tu.universityName,
       department: tu.department,
       diff: bestDiff,
@@ -2993,12 +3058,65 @@ export const buildHopeUniversityRecommendations = (
       recommendedAdmissionType,
       tier,
       priority: tu.priority,
-    });
-  }
+    };
+  };
 
-  // 1) 커트라인 있는 후보가 있으면 |diff| 작은 순 최대 2개
-  if (withCutoff.length > 0) {
-    return withCutoff
+  type Output = {
+    university: string;
+    department: string;
+    tier: "reach" | "ambitious" | "fit" | "safety";
+    recommendedAdmissionType: "학종" | "교과";
+  };
+
+  // ── 그룹 (A): 학과 매칭된 희망대학 — 최대 2개 ──
+  const matchedResult: Output[] = (() => {
+    if (matched.length === 0) return [];
+    const matchedWithCutoff: WithCutoff[] = [];
+    const matchedWithoutCutoff: typeof matched = [];
+    for (const tu of matched) {
+      const result = classifyByCutoff(tu);
+      if (result) matchedWithCutoff.push(result);
+      else matchedWithoutCutoff.push(tu);
+    }
+    if (matchedWithCutoff.length > 0) {
+      return matchedWithCutoff
+        .sort((a, b) => a.absDiff - b.absDiff || a.priority - b.priority)
+        .slice(0, 2)
+        .map((c) => ({
+          university: c.university,
+          department: c.department,
+          tier: c.tier,
+          recommendedAdmissionType: c.recommendedAdmissionType,
+        }));
+    }
+    // 커트라인 없는 매칭 희망대학 — priority 1순위 1개 (tier "fit" 부여)
+    const [top] = matchedWithoutCutoff;
+    if (!top) return [];
+    const mappedType: "학종" | "교과" = top.admissionType.includes("교과")
+      ? "교과"
+      : "학종";
+    return [
+      {
+        university: top.universityName,
+        department: top.department,
+        tier: "fit",
+        recommendedAdmissionType: mappedType,
+      },
+    ];
+  })();
+
+  // ── 그룹 (B): 학과 불일치 + 적정~상향(fit/ambitious) — 최대 2개 ──
+  // reach(매우 어려움)·safety(매우 쉬움)는 의도적으로 제외 — 학생 의지 + 지원 가능 구간 둘 다 충족하는 곳만 머지.
+  const nonMatchedResult: Output[] = (() => {
+    if (nonMatched.length === 0 || studentGrade9 == null) return [];
+    const candidates: WithCutoff[] = [];
+    for (const tu of nonMatched) {
+      const result = classifyByCutoff(tu);
+      if (!result) continue;
+      if (result.tier !== "fit" && result.tier !== "ambitious") continue;
+      candidates.push(result);
+    }
+    return candidates
       .sort((a, b) => a.absDiff - b.absDiff || a.priority - b.priority)
       .slice(0, 2)
       .map((c) => ({
@@ -3007,22 +3125,9 @@ export const buildHopeUniversityRecommendations = (
         tier: c.tier,
         recommendedAdmissionType: c.recommendedAdmissionType,
       }));
-  }
+  })();
 
-  // 2) 모두 커트라인 없음 → priority 1순위 1개만
-  const [top] = withoutCutoff;
-  if (!top) return [];
-  const mappedType: "학종" | "교과" = top.admissionType.includes("교과")
-    ? "교과"
-    : "학종";
-  return [
-    {
-      university: top.university,
-      department: top.department,
-      tier: "fit",
-      recommendedAdmissionType: mappedType,
-    },
-  ];
+  return [...matchedResult, ...nonMatchedResult];
 };
 
 /**
@@ -3275,10 +3380,31 @@ const formatRecordData = (recordData: RecordData): string => {
 };
 
 const formatSubjectEvaluations = (evals: SubjectEvaluationRow[]): string => {
-  const sorted = [...evals].sort(
+  // 학년 + 정규화된 과목명 단위로 통합. 같은 학생 생기부 안에서 표기가
+  // 일관되지 않은 경우(예: "물리학1" + "물리학Ⅰ") 같은 과목으로 묶어 한 번만
+  // 분석되도록 한다. 정규화 후의 과목명을 출력 라벨로 사용.
+  const merged = new Map<
+    string,
+    { year: number; subject: string; evaluation: string }
+  >();
+  for (const e of evals) {
+    const normalizedSubject = normalizeSubjectName(e.subject);
+    const key = `${e.year}|${normalizedSubject}`;
+    const existing = merged.get(key);
+    if (existing) {
+      existing.evaluation = `${existing.evaluation}\n\n${e.evaluation}`;
+    } else {
+      merged.set(key, {
+        year: e.year,
+        subject: normalizedSubject,
+        evaluation: e.evaluation,
+      });
+    }
+  }
+  const items = [...merged.values()].sort(
     (a, b) => a.year - b.year || a.subject.localeCompare(b.subject)
   );
-  return sorted
+  return items
     .map((e) => `[${e.year}학년 ${e.subject}]\n${e.evaluation}`)
     .join("\n\n");
 };
@@ -3405,8 +3531,8 @@ const formatTargetUniversities = (
  *
  * tier 산식 (buildHopeUniversityRecommendations와 동일):
  *   diff = 학생 환산 등급(9등급제) - 커트라인 cutoff50Grade
- *     diff ≥ 0.3       → reach     "지원을 권장하지 않는 구간"
- *     0.1 < diff < 0.3 → ambitious "합격이 어려울 수 있는 구간"
+ *     diff ≥ 0.4       → reach     "지원을 권장하지 않는 구간"
+ *     0.1 < diff < 0.4 → ambitious "합격이 어려울 수 있는 구간"
  *     -0.1 ≤ diff ≤ 0.1 → fit      "지원은 가능한 구간"
  *     diff < -0.1      → safety    "합격가능성이 있는 구간"
  *
@@ -3431,7 +3557,7 @@ const TARGET_TOP_UNIVERSITIES_FOR_ADJUSTMENT = new Set([
 const TARGET_TOP_UNIV_HAKJONG_ADJUSTMENT = 0.4;
 
 const computeTier = (diff: number): "reach" | "ambitious" | "fit" | "safety" =>
-  diff >= 0.3
+  diff >= 0.4
     ? "reach"
     : diff > 0.1
       ? "ambitious"
@@ -3610,7 +3736,8 @@ export const rebuildRecommendedCourseMatchText = (
     careerSubjects,
     detectedMajorGroup,
     studentGrade,
-    preData.curriculumVersion
+    preData.curriculumVersion,
+    preData.plannedSubjectsRaw
   );
 
   return JSON.stringify(result, null, 2);

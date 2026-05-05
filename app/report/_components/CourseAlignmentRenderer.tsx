@@ -11,8 +11,9 @@ interface CourseAlignmentRendererProps {
 }
 
 const STATUS_CLASS: Record<string, string> = {
-  "\uC774\uC218": styles.tagStrength,
-  "\uBBF8\uC774\uC218": styles.tagWeakness,
+  "\uC774\uC218": styles.tagStrength, // \uC774\uC218
+  "\uC774\uC218 \uC608\uC815": styles.tagAccent, // \uC774\uC218 \uC608\uC815 (\uD559\uC0DD\uC774 \uC218\uAC15 \uC608\uC815 \uC785\uB825)
+  "\uBBF8\uC774\uC218": styles.tagWeakness, // \uBBF8\uC774\uC218
 };
 
 const IMPORTANCE_CLASS: Record<string, string> = {
@@ -34,7 +35,9 @@ export const CourseAlignmentRenderer = ({
       ? data.matchRate
       : courses.length > 0
         ? Math.round(
-            (courses.filter((c) => c.status === "이수").length /
+            (courses.filter(
+              (c) => c.status === "이수" || c.status === "이수 예정"
+            ).length /
               courses.length) *
               100
           )

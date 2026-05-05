@@ -586,6 +586,8 @@ export interface RecommendedCourseMatch {
   _referenceTargetMajor: string;
   requiredCourses: string[];
   takenCourses: string[];
+  /** 이미 이수하지는 않았으나 학생이 수강 예정 과목으로 입력한 권장과목 */
+  plannedCourses: string[];
   missingCourses: string[];
   matchRate: number;
 }
