@@ -13288,8 +13288,8 @@ export const ADMISSION_CUTOFF_DATA: AdmissionCutoffEntry[] = [
     admissionName: "교과우수자전형",
     quota: 7,
     competitionRate: 13.9,
-    cutoff50Grade: 2.19,
-    cutoff70Grade: 2.22,
+    cutoff50Grade: 2.85,
+    cutoff70Grade: 2.99,
   },
   {
     university: "경북대학교",
