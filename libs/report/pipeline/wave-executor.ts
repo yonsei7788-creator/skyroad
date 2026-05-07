@@ -1481,6 +1481,9 @@ export const executeTask = async (
           s.sectionId === "admissionStrategy" ||
           s.sectionId === "directionGuide"
       );
+      // 수강 예정 과목이 입력된 경우, 다른 과목 정보(이수 완료 과목)는 제외하고
+      // 수강 예정 과목만 후보 풀로 사용하도록 한다. 미입력 시에는 기존처럼 동작.
+      const hasPlannedSubjects = texts.plannedSubjectsText.trim().length > 0;
       section = await callGemini<ReportSection>(
         buildActionRoadmapPrompt(
           {
@@ -1491,7 +1494,9 @@ export const executeTask = async (
             studentGrade: studentInfo.grade,
             isGraduate: studentInfo.isGraduate,
             isMedical,
-            completedSubjectsByYear: texts.completedSubjectsByYearText,
+            completedSubjectsByYear: hasPlannedSubjects
+              ? undefined
+              : texts.completedSubjectsByYearText,
             plannedSubjects: texts.plannedSubjectsText,
             // 학생 실제 동아리·활동 사실 — prewriteProposals 환각 방지용
             activityAnalysisResult: ser.activityAnalysisText,
