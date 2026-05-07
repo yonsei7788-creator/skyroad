@@ -361,6 +361,34 @@
   color: var(--color-fg);
 }
 
+.methodGuideHint {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+  font-size: 0.875rem;
+  color: var(--color-fg-secondary);
+}
+
+.methodGuideLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-primary-600);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.methodGuideLink:hover {
+  color: var(--color-primary-700);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .extractingState {
   display: flex;
   flex-direction: column;

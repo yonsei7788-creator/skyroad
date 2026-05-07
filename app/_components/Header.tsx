@@ -18,6 +18,7 @@ import {
   Shield,
   BookOpen,
   FilePlus,
+  HelpCircle,
 } from "lucide-react";
 
 import { useAuthStore } from "@/libs/store/auth-provider";
@@ -26,7 +27,10 @@ import { createClient } from "@/libs/supabase/client";
 import { AuthModal } from "./AuthModal";
 import styles from "./Header.module.css";
 
-const NAV_ITEMS = [{ label: "서비스 소개", href: "/about", icon: BookOpen }];
+const NAV_ITEMS = [
+  { label: "서비스 소개", href: "/about", icon: BookOpen },
+  { label: "발급 가이드", href: "/guide/record", icon: HelpCircle },
+];
 
 const PROFILE_MENU_ITEMS = [
   { label: "컨설팅 내역", href: "/profile/consulting", icon: FileText },

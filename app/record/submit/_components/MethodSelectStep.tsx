@@ -1,4 +1,6 @@
 import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 import type { InputMethod } from "./types";
 
@@ -26,20 +28,34 @@ const METHODS = [
 ] as const;
 
 export const MethodSelectStep = ({ onSelect }: MethodSelectStepProps) => (
-  <div className={styles.methodGrid}>
-    {METHODS.map(({ id, image, title, description }) => (
-      <button
-        key={id}
-        type="button"
-        className={styles.methodCard}
-        onClick={() => onSelect(id)}
+  <>
+    <div className={styles.methodGrid}>
+      {METHODS.map(({ id, image, title, description }) => (
+        <button
+          key={id}
+          type="button"
+          className={styles.methodCard}
+          onClick={() => onSelect(id)}
+        >
+          <div className={styles.methodIcon}>
+            <Image src={image} alt={title} width={56} height={56} />
+          </div>
+          <span className={styles.methodTitle}>{title}</span>
+          <span className={styles.methodDesc}>{description}</span>
+        </button>
+      ))}
+    </div>
+    <p className={styles.methodGuideHint}>
+      생기부 PDF가 없으신가요?
+      <Link
+        href="/guide/record"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.methodGuideLink}
       >
-        <div className={styles.methodIcon}>
-          <Image src={image} alt={title} width={56} height={56} />
-        </div>
-        <span className={styles.methodTitle}>{title}</span>
-        <span className={styles.methodDesc}>{description}</span>
-      </button>
-    ))}
-  </div>
+        발급 방법 보기
+        <ArrowRight size={14} />
+      </Link>
+    </p>
+  </>
 );
