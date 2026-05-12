@@ -23,15 +23,95 @@ interface SubmitBody {
   plannedSubjects?: string;
 }
 
+const parseIntSafe = (v: unknown): number | null => {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "number") return Number.isFinite(v) ? Math.trunc(v) : null;
+  if (typeof v === "string") {
+    const t = v.trim();
+    if (!t) return null;
+    const n = parseInt(t, 10);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+};
+
+const parseNumberSafe = (v: unknown): number | null => {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  if (typeof v === "string") {
+    const t = v.trim();
+    if (!t) return null;
+    const n = Number(t);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+};
+
+// PDF 파서가 year에 캘린더 연도(2025 등)를 넣는 경우 학년(1-3)으로 매핑.
+// admission_year가 있으면 정확히 환산하고, 없으면 정렬 순서로 추정.
+const buildCalendarYearMap = (
+  record: SchoolRecord,
+  admissionYear: number | null
+): Map<number, number> => {
+  const map = new Map<number, number>();
+  const calendarYears = new Set<number>();
+  for (const rows of Object.values(record)) {
+    if (!Array.isArray(rows)) continue;
+    for (const row of rows as Array<Record<string, unknown>>) {
+      const n = parseIntSafe(row.year);
+      if (n !== null && n >= 1000) calendarYears.add(n);
+    }
+  }
+  if (calendarYears.size === 0) return map;
+
+  if (admissionYear !== null) {
+    for (const cy of calendarYears) {
+      const grade = cy - admissionYear + 1;
+      map.set(cy, Math.max(1, Math.min(3, grade)));
+    }
+    return map;
+  }
+
+  // fallback: 캘린더 연도가 여러 개면 정렬 후 최신 → 3학년에 가깝게
+  const sorted = [...calendarYears].sort((a, b) => a - b);
+  const lastIdx = sorted.length - 1;
+  sorted.forEach((cy, i) => {
+    const grade = sorted.length === 1 ? 1 : Math.max(1, 3 - (lastIdx - i));
+    map.set(cy, grade);
+  });
+  return map;
+};
+
+const clampGradeYear = (v: unknown, yearMap: Map<number, number>): number => {
+  const n = parseIntSafe(v);
+  if (n === null) return 1;
+  if (n >= 1 && n <= 3) return n;
+  if (n >= 1000) {
+    const mapped = yearMap.get(n);
+    if (mapped !== undefined) return mapped;
+  }
+  return 1;
+};
+
+const clampSemester = (v: unknown): number => {
+  const n = parseIntSafe(v);
+  if (n === null) return 1;
+  return n >= 1 && n <= 2 ? n : 1;
+};
+
 const deriveGradeLevel = (
-  record: SchoolRecord
+  record: SchoolRecord,
+  yearMap: Map<number, number>
 ): "high1" | "high2" | "high3" => {
   let maxYear = 1;
   for (const rows of Object.values(record)) {
-    for (const row of rows) {
-      const { year } = row;
-      if (typeof year === "number" && year > maxYear) {
-        maxYear = year;
+    if (!Array.isArray(rows)) continue;
+    for (const row of rows as Array<Record<string, unknown>>) {
+      const n = parseIntSafe(row.year);
+      if (n === null) continue;
+      const grade = n >= 1000 ? (yearMap.get(n) ?? 1) : n;
+      if (grade > maxYear && grade <= 3) {
+        maxYear = grade;
       }
     }
   }
@@ -152,12 +232,69 @@ const FIELD_MAPS: Record<keyof SchoolRecord, Record<string, string>> = {
   },
 };
 
+// RPC에서 ::INT 캐스팅되는 snake_case 필드 (year/semester는 별도 처리)
+const INT_FIELDS_BY_SECTION: Partial<Record<keyof SchoolRecord, string[]>> = {
+  attendance: [
+    "total_days",
+    "absence_illness",
+    "absence_unauthorized",
+    "absence_other",
+    "lateness_illness",
+    "lateness_unauthorized",
+    "lateness_other",
+    "early_leave_illness",
+    "early_leave_unauthorized",
+    "early_leave_other",
+    "class_missed_illness",
+    "class_missed_unauthorized",
+    "class_missed_other",
+  ],
+  creativeActivities: ["hours"],
+  volunteerActivities: ["hours"],
+  generalSubjects: ["credits", "student_count", "grade_rank"],
+  careerSubjects: ["credits", "student_count"],
+  artsPhysicalSubjects: ["credits"],
+};
+
+// RPC에서 ::NUMERIC 캐스팅되는 snake_case 필드
+const NUMERIC_FIELDS_BY_SECTION: Partial<Record<keyof SchoolRecord, string[]>> =
+  {
+    generalSubjects: ["raw_score", "average", "standard_deviation"],
+    careerSubjects: ["raw_score", "average"],
+  };
+
 const mapSection = (
   rows: Record<string, unknown>[],
-  fieldMap: Record<string, string>
+  sectionKey: keyof SchoolRecord,
+  yearMap: Map<number, number>
 ): Record<string, unknown>[] => {
   if (!Array.isArray(rows) || rows.length === 0) return [];
-  return rows.map((row) => toSnake(row as Record<string, unknown>, fieldMap));
+  const fieldMap = FIELD_MAPS[sectionKey];
+  const intFields = INT_FIELDS_BY_SECTION[sectionKey] ?? [];
+  const numericFields = NUMERIC_FIELDS_BY_SECTION[sectionKey] ?? [];
+  return rows.map((row) => {
+    const out = toSnake(row as Record<string, unknown>, fieldMap);
+    if ("year" in out) {
+      out.year = clampGradeYear(out.year, yearMap);
+    }
+    if ("semester" in out) {
+      out.semester = clampSemester(out.semester);
+    }
+    for (const f of intFields) {
+      if (f in out) out[f] = parseIntSafe(out[f]);
+    }
+    for (const f of numericFields) {
+      if (f in out) out[f] = parseNumberSafe(out[f]);
+    }
+    // grade_rank는 DB 제약상 1-9 외에는 null
+    if (sectionKey === "generalSubjects" && "grade_rank" in out) {
+      const gr = out.grade_rank;
+      if (typeof gr === "number" && (gr < 1 || gr > 9)) {
+        out.grade_rank = null;
+      }
+    }
+    return out;
+  });
 };
 
 export async function POST(request: NextRequest) {
@@ -190,7 +327,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const gradeLevel = deriveGradeLevel(record);
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("admission_year")
+    .eq("id", user.id)
+    .maybeSingle();
+  const admissionYear =
+    typeof profileRow?.admission_year === "number"
+      ? profileRow.admission_year
+      : null;
+
+  const yearMap = buildCalendarYearMap(record, admissionYear);
+  const gradeLevel = deriveGradeLevel(record, yearMap);
 
   // RPC로 원자적 트랜잭션 실행
   const { data, error } = await supabase.rpc("upsert_record", {
@@ -198,43 +346,52 @@ export async function POST(request: NextRequest) {
     p_submission_type: method,
     p_grade_level: gradeLevel,
     p_existing_record_id: existingRecordId ?? null,
-    p_attendance: mapSection(record.attendance, FIELD_MAPS.attendance),
-    p_awards: mapSection(record.awards, FIELD_MAPS.awards),
+    p_attendance: mapSection(record.attendance, "attendance", yearMap),
+    p_awards: mapSection(record.awards, "awards", yearMap),
     p_certifications: mapSection(
       record.certifications,
-      FIELD_MAPS.certifications
+      "certifications",
+      yearMap
     ),
     p_creative_activities: mapSection(
       record.creativeActivities,
-      FIELD_MAPS.creativeActivities
+      "creativeActivities",
+      yearMap
     ),
     p_volunteer_activities: mapSection(
       record.volunteerActivities,
-      FIELD_MAPS.volunteerActivities
+      "volunteerActivities",
+      yearMap
     ),
     p_general_subjects: mapSection(
       record.generalSubjects,
-      FIELD_MAPS.generalSubjects
+      "generalSubjects",
+      yearMap
     ),
     p_career_subjects: mapSection(
       record.careerSubjects,
-      FIELD_MAPS.careerSubjects
+      "careerSubjects",
+      yearMap
     ),
     p_arts_physical_subjects: mapSection(
       record.artsPhysicalSubjects,
-      FIELD_MAPS.artsPhysicalSubjects
+      "artsPhysicalSubjects",
+      yearMap
     ),
     p_subject_evaluations: mapSection(
       record.subjectEvaluations,
-      FIELD_MAPS.subjectEvaluations
+      "subjectEvaluations",
+      yearMap
     ),
     p_reading_activities: mapSection(
       record.readingActivities,
-      FIELD_MAPS.readingActivities
+      "readingActivities",
+      yearMap
     ),
     p_behavioral_assessments: mapSection(
       record.behavioralAssessments,
-      FIELD_MAPS.behavioralAssessments
+      "behavioralAssessments",
+      yearMap
     ),
     p_mock_exams: [],
     p_planned_subjects: plannedSubjects ?? null,
