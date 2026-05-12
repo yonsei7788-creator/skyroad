@@ -7,7 +7,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown, Search, Pencil } from "lucide-react";
 
 import styles from "./SearchableSelect.module.css";
 
@@ -18,6 +18,8 @@ interface SearchableSelectProps {
   placeholder?: string;
   hasError?: boolean;
   disabled?: boolean;
+  /** 검색 결과가 없을 때 입력한 값을 직접 사용 가능하게 허용 */
+  allowCustom?: boolean;
 }
 
 const highlightMatch = (text: string, query: string): ReactNode => {
@@ -43,6 +45,7 @@ export const SearchableSelect = ({
   placeholder = "선택해주세요",
   hasError = false,
   disabled = false,
+  allowCustom = false,
 }: SearchableSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -94,6 +97,12 @@ export const SearchableSelect = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, handleClose]);
 
+  const trimmedQuery = query.trim();
+  const canUseCustom =
+    allowCustom &&
+    trimmedQuery.length > 0 &&
+    !filtered.some((o) => o.toLowerCase() === trimmedQuery.toLowerCase());
+
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -108,9 +117,14 @@ export const SearchableSelect = ({
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setActiveIndex((prev) => (prev > 0 ? prev - 1 : prev));
-    } else if (e.key === "Enter" && activeIndex >= 0) {
-      e.preventDefault();
-      handleSelect(filtered[activeIndex]);
+    } else if (e.key === "Enter") {
+      if (activeIndex >= 0) {
+        e.preventDefault();
+        handleSelect(filtered[activeIndex]);
+      } else if (canUseCustom) {
+        e.preventDefault();
+        handleSelect(trimmedQuery);
+      }
     }
   };
 
@@ -172,7 +186,24 @@ export const SearchableSelect = ({
 
           <div className={styles.optionList} ref={listRef}>
             {filtered.length === 0 ? (
-              <div className={styles.empty}>검색 결과가 없습니다</div>
+              canUseCustom ? (
+                <button
+                  type="button"
+                  className={`${styles.option} ${styles.customOption}`}
+                  onClick={() => handleSelect(trimmedQuery)}
+                >
+                  <Pencil size={14} className={styles.customOptionIcon} />
+                  <span>
+                    <strong>{trimmedQuery}</strong> 직접 입력
+                  </span>
+                </button>
+              ) : (
+                <div className={styles.empty}>
+                  {allowCustom
+                    ? "검색어를 입력하면 직접 입력할 수 있어요"
+                    : "검색 결과가 없습니다"}
+                </div>
+              )
             ) : (
               filtered.map((opt, idx) => (
                 <button

@@ -172,3 +172,18 @@
   font-size: 0.8125rem;
   color: var(--color-fg-tertiary);
 }
+
+/* ---- Custom (직접 입력) ---- */
+.customOption {
+  gap: 8px;
+  color: var(--color-fg-primary);
+}
+
+.customOption strong {
+  font-weight: 600;
+}
+
+.customOptionIcon {
+  flex-shrink: 0;
+  color: var(--color-fg-primary);
+}

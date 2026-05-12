@@ -526,6 +526,7 @@ export const UniversityStep = ({
                               }
                               placeholder="모집단위를 선택해주세요"
                               hasError={!!errors[`${priority}-department`]}
+                              allowCustom
                             />
                           ) : (
                             <input
