@@ -7,7 +7,7 @@ import { ArrowRight, X, ZoomIn } from "lucide-react";
 
 import styles from "./RecordGuide.module.css";
 
-type IssueMethod = "kakao" | "gov24";
+type IssueMethod = "kakao" | "naver" | "gov24";
 type StepSection = "issue" | "upload";
 type CalloutType = "tip" | "warning" | "note";
 type AspectKind = "landscape" | "portrait";
@@ -34,6 +34,8 @@ interface IssueGuide {
 
 const KAKAO_IMAGE_WIDTH = 360;
 const KAKAO_IMAGE_HEIGHT = 779;
+const NAVER_IMAGE_WIDTH = 360;
+const NAVER_IMAGE_HEIGHT = 780;
 const GOV24_IMAGE_WIDTH = 960;
 const GOV24_IMAGE_HEIGHT = 540;
 
@@ -129,6 +131,132 @@ const ISSUE_GUIDES: Record<IssueMethod, IssueGuide> = {
           alt: "PDF 파일 업로드 화면",
           width: KAKAO_IMAGE_WIDTH,
           height: KAKAO_IMAGE_HEIGHT,
+        },
+      },
+    ],
+  },
+  naver: {
+    aspect: "portrait",
+    steps: [
+      {
+        title: "네이버앱 접속 후 하단의 '마이' 탭 클릭",
+      },
+      {
+        title: "상단의 '신분증·인증' 버튼 클릭",
+        image: {
+          src: "/images/record/guide/naver/네이버(1).JPG",
+          alt: "마이 화면 상단의 신분증·인증 버튼",
+          width: NAVER_IMAGE_WIDTH,
+          height: NAVER_IMAGE_HEIGHT,
+        },
+      },
+      {
+        title: "하단의 '전자증명서' 버튼 클릭",
+        image: {
+          src: "/images/record/guide/naver/네이버(2).JPG",
+          alt: "신분증·인증 화면의 전자증명서 버튼",
+          width: NAVER_IMAGE_WIDTH,
+          height: NAVER_IMAGE_HEIGHT,
+        },
+      },
+      {
+        title: "상단의 '신청하기' 버튼 클릭",
+        image: {
+          src: "/images/record/guide/naver/네이버(3).JPG",
+          alt: "전자증명서 화면 상단의 신청하기 버튼",
+          width: NAVER_IMAGE_WIDTH,
+          height: NAVER_IMAGE_HEIGHT,
+        },
+      },
+      {
+        title: "'학교생활기록부(초중고)' 버튼 클릭",
+        image: {
+          src: "/images/record/guide/naver/네이버(4).PNG",
+          alt: "전자증명서 신청 목록의 학교생활기록부(초중고) 항목",
+          width: NAVER_IMAGE_WIDTH,
+          height: NAVER_IMAGE_HEIGHT,
+        },
+      },
+      {
+        title: "시도교육청·학교 검색 후 약관 동의하고 '신청하기' 클릭",
+        description:
+          "'학교 이름' 부분의 돋보기 버튼으로 시도교육청과 소속 고등학교명을 입력하고, 약관에 동의한 후 하단 '신청하기' 버튼을 눌러주세요.",
+        image: {
+          src: "/images/record/guide/naver/네이버(5).PNG",
+          alt: "학교 검색 및 약관 동의 후 신청하기 화면",
+          width: NAVER_IMAGE_WIDTH,
+          height: NAVER_IMAGE_HEIGHT,
+        },
+      },
+      {
+        title: "본인 인증 진행",
+        description: "본인 명의의 인증 수단으로 본인 인증을 완료해주세요.",
+      },
+      {
+        title: "하단의 '저장' 버튼 클릭",
+        image: {
+          src: "/images/record/guide/naver/네이버(6).PNG",
+          alt: "발급 완료 후 하단의 저장 버튼",
+          width: NAVER_IMAGE_WIDTH,
+          height: NAVER_IMAGE_HEIGHT,
+        },
+      },
+      {
+        title: "비밀번호 입력 없이 '바로 저장' 버튼 클릭",
+        notice:
+          "비밀번호를 설정하면 스카이로드 업로드 시 인식되지 않을 수 있어요. 비밀번호 입력하지 말고 '바로 저장'을 선택해주세요.",
+        image: {
+          src: "/images/record/guide/naver/네이버(7).PNG",
+          alt: "비밀번호 없이 바로 저장 선택 화면",
+          width: NAVER_IMAGE_WIDTH,
+          height: NAVER_IMAGE_HEIGHT,
+        },
+      },
+    ],
+    uploadSteps: [
+      {
+        title: "스카이로드 우측 상단의 메뉴 버튼(줄 3개) 클릭",
+        image: {
+          src: "/images/record/guide/naver/네이버(8).PNG",
+          alt: "스카이로드 모바일 화면의 우측 상단 메뉴 버튼",
+          width: NAVER_IMAGE_WIDTH,
+          height: NAVER_IMAGE_HEIGHT,
+        },
+      },
+      {
+        title: "메뉴에서 '생기부 분석' 선택",
+        image: {
+          src: "/images/record/guide/naver/네이버(9).PNG",
+          alt: "사이드 메뉴의 생기부 분석 항목",
+          width: NAVER_IMAGE_WIDTH,
+          height: NAVER_IMAGE_HEIGHT,
+        },
+      },
+      {
+        title: "보라색 '등록하기' 버튼 클릭",
+        image: {
+          src: "/images/record/guide/naver/네이버(10).PNG",
+          alt: "생활기록부 분석 화면의 등록하기 버튼",
+          width: NAVER_IMAGE_WIDTH,
+          height: NAVER_IMAGE_HEIGHT,
+        },
+      },
+      {
+        title: "중앙의 'PDF 업로드' 버튼 클릭",
+        image: {
+          src: "/images/record/guide/naver/네이버(11).PNG",
+          alt: "PDF 업로드 옵션 선택 화면",
+          width: NAVER_IMAGE_WIDTH,
+          height: NAVER_IMAGE_HEIGHT,
+        },
+      },
+      {
+        title: "생기부 PDF 파일 업로드",
+        image: {
+          src: "/images/record/guide/naver/네이버(12).PNG",
+          alt: "PDF 파일 업로드 화면",
+          width: NAVER_IMAGE_WIDTH,
+          height: NAVER_IMAGE_HEIGHT,
         },
       },
     ],
@@ -255,6 +383,7 @@ const ISSUE_GUIDES: Record<IssueMethod, IssueGuide> = {
 
 const METHOD_OPTIONS: { key: IssueMethod; label: string; sub: string }[] = [
   { key: "kakao", label: "카카오톡 전자증명서", sub: "모바일" },
+  { key: "naver", label: "네이버 전자증명서", sub: "모바일" },
   { key: "gov24", label: "정부24", sub: "PC" },
 ];
 
@@ -375,7 +504,9 @@ export const RecordGuide = () => {
               lead={
                 method === "kakao"
                   ? "카카오톡 전자증명서로 모바일에서 바로 PDF를 발급받습니다."
-                  : "PC 브라우저로 정부24에 접속해 PDF를 발급받습니다."
+                  : method === "naver"
+                    ? "네이버 전자증명서로 모바일에서 바로 PDF를 발급받습니다."
+                    : "PC 브라우저로 정부24에 접속해 PDF를 발급받습니다."
               }
             >
               {guide.steps.map((step, idx) => (
