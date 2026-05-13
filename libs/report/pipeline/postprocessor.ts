@@ -488,7 +488,11 @@ export const postprocess = (
         const asNine =
           gs === "5등급제" && avg != null ? fiveToNineGrade(avg) : (avg ?? 0);
         const studentGrade9 = studentInfo.schoolType
-          ? convertGradeBySchoolType(studentInfo.schoolType, asNine)
+          ? convertGradeBySchoolType(
+              studentInfo.schoolType,
+              asNine,
+              studentInfo.schoolName
+            )
           : asNine;
 
         const gapToChance = (gap: number): string => {
@@ -799,7 +803,11 @@ export const postprocess = (
       // 학생 등급을 일반고 9등급제로 환산 (preprocessor와 동일 흐름)
       const asNine = gs === "5등급제" ? fiveToNineGrade(avg) : avg;
       const studentGrade9 = studentInfo.schoolType
-        ? convertGradeBySchoolType(studentInfo.schoolType, asNine)
+        ? convertGradeBySchoolType(
+            studentInfo.schoolType,
+            asNine,
+            studentInfo.schoolName
+          )
         : asNine;
 
       // 대학별 커트라인 조회: 학과별 실제 데이터 → 하드코딩 fallback
@@ -1899,13 +1907,11 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/을 나타납니다/g, "이 나타납니다"],
   [/를 나타납니다/g, "가 나타납니다"],
   [/되어지고 있습니다/g, "되고 있습니다"],
-  [/보여지고 있습니다/g, "보이고 있습니다"],
-  [/보여집니다/g, "보입니다"],
   [/되어집니다/g, "됩니다"],
   [/되어지는/g, "되는"],
-  [/보여지는/g, "보이는"],
-  [/것으로 보여집니다/g, "것으로 보입니다"],
-  [/할 것으로 보여집니다/g, "할 것으로 보입니다"],
+  // "보여집니다", "것으로 보여집니다" 등은 활동 사실 서술 관찰형 종결로 사용자가 선호 (a.md #3).
+  // 이중피동(보이다+지다)이지만 자연스러운 어감을 위해 보존.
+  // 따라서 보여지고 있습니다/보여집니다/보여지는 → 보이다 변환 규칙은 적용하지 않음.
 
   // ── STEP 9: 가운뎃점(·) 오용 수정 — 문장 중간 부적절 삽입 제거 ──
   [/([가-힣])\·([가-힣]{4,})/g, "$1 $2"], // "활동·보고서를 작성" → "활동 보고서를 작성" (4글자 이상 연결 시)
@@ -2033,9 +2039,40 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/강화되었/g, "탄탄해졌"],
   [/강화되는/g, "탄탄해지는"],
   [/강화시키/g, "보완하"],
+
+  // "시사하다" — AI가 분석적 표현으로 과용 (사용자 피드백 a.md #2).
+  // 동사 어미만 매칭 → 명사 "시사점"(활동 구조 라벨), "시사회", "도시사회학" 등 보존.
+  // 더 긴 패턴 우선 (시사했음을 → 시사함을 → 시사함 순서로 매칭되도록).
+  [/시사했습니다/g, "보여줬습니다"],
+  [/시사했음을/g, "보여줬음을"],
+  [/시사했음이/g, "보여줬음이"],
+  [/시사했고/g, "보여줬고"],
+  [/시사했던/g, "보여줬던"],
+  [/시사했다/g, "보여줬다"],
+  [/시사한다고/g, "보여준다고"],
+  [/시사한다는/g, "보여준다는"],
+  [/시사한다/g, "보여준다"],
+  [/시사합니다/g, "보여줍니다"],
+  [/시사하는/g, "보여주는"],
+  [/시사하여/g, "보여주어"],
+  [/시사하고/g, "보여주고"],
+  [/시사하며/g, "보여주며"],
+  [/시사하면/g, "보여주면"],
+  [/시사하지만/g, "보여주지만"],
+  [/시사하지/g, "보여주지"],
+  [/시사하기/g, "보여주기"],
+  [/시사할/g, "보여줄"],
+  [/시사함에도/g, "보여줌에도"],
+  [/시사함에/g, "보여줌에"],
+  [/시사함을/g, "보여줌을"],
+  [/시사함이/g, "보여줌이"],
+  [/시사함/g, "보여줌"],
+  [/시사해서/g, "보여줘서"],
+  [/시사해\b/g, "보여줘"],
 ];
 
-const sanitizeAiTone = (text: string): string => {
+// 검증 스크립트(scripts/verify-*.ts)에서 직접 호출하기 위해 노출.
+export const sanitizeAiTone = (text: string): string => {
   let result = text;
   for (const [pattern, replacement] of AI_TONE_REPLACEMENTS) {
     result = result.replace(pattern, replacement);
