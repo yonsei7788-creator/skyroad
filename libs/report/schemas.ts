@@ -1082,6 +1082,7 @@ const StudentInfoSchema = z.object({
     "체육고",
     "마이스터고",
   ]),
+  schoolName: z.string().optional(),
   targetUniversity: z.string().optional(),
   targetDepartment: z.string().optional(),
   hasMockExamData: z.boolean(),

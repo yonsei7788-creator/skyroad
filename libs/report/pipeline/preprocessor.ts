@@ -513,12 +513,62 @@ const SCHOOL_TYPE_TABLE: Record<string, [number, number][] | null> = {
   마이스터고: VOCATIONAL_TO_GENERAL,
 };
 
+// 일반고이지만 입시 평가에서 자사고/특목고에 준하는 학업 강도로 인정되는
+// 탈일반고 명문 학교 — 환산 등급 산정 시 SPECIAL_TO_GENERAL 테이블을 적용한다.
+// (학교 유형 자체는 "일반고"로 유지되며, 환산 등급에만 영향)
+const ELITE_GENERAL_HIGH_SCHOOLS = new Set<string>([
+  // 서울 (강남·서초·송파 8학군 + 자사고 전환·기타 명문)
+  "세화고등학교",
+  "세화여자고등학교",
+  "휘문고등학교",
+  "중동고등학교",
+  "현대고등학교",
+  "숙명여자고등학교",
+  "진선여자고등학교",
+  "은광여자고등학교",
+  "양정고등학교",
+  "한가람고등학교",
+  "대일고등학교",
+  "보인고등학교",
+  "배재고등학교",
+  "숭문고등학교",
+  "서울고등학교",
+  "이화여자고등학교",
+  // 경기 (분당·판교권)
+  "낙생고등학교",
+  "분당중앙고등학교",
+  "서현고등학교",
+  // 지역 명문
+  "공주한일고등학교",
+  "청원고등학교",
+  "대전고등학교",
+  "경북고등학교",
+  "부산고등학교",
+]);
+
+/** 환산 테이블 키 결정 — 탈일반고 명문 일반고는 자사고와 동일하게 처리 */
+const resolveConversionKey = (
+  schoolType: string,
+  schoolName?: string
+): string => {
+  if (
+    schoolType === "일반고" &&
+    schoolName &&
+    ELITE_GENERAL_HIGH_SCHOOLS.has(schoolName)
+  ) {
+    return "자율고";
+  }
+  return schoolType;
+};
+
 /** breakpoint 테이블 기반 선형 보간으로 등급 환산 */
 export const convertGradeBySchoolType = (
   schoolType: string,
-  grade: number
+  grade: number,
+  schoolName?: string
 ): number => {
-  const table = SCHOOL_TYPE_TABLE[schoolType];
+  const key = resolveConversionKey(schoolType, schoolName);
+  const table = SCHOOL_TYPE_TABLE[key];
   if (!table) return grade; // 일반고, 예술고, 체육고는 그대로
 
   // 테이블 범위 밖 처리
@@ -861,7 +911,8 @@ export const preprocess = (
   // 8. 고교 유형별 등급 환산 (환산표 기반 선형 보간)
   const convertedValue = convertGradeBySchoolType(
     studentInfo.schoolType,
-    overallAverage
+    overallAverage,
+    studentInfo.schoolName
   );
   const convertedGrade = {
     schoolType: studentInfo.schoolType,
@@ -1859,7 +1910,11 @@ const buildTexts = (
         ? fiveToNineGrade(data.overallAverage)
         : data.overallAverage;
     studentGrade9 = studentInfo.schoolType
-      ? convertGradeBySchoolType(studentInfo.schoolType, asNine)
+      ? convertGradeBySchoolType(
+          studentInfo.schoolType,
+          asNine,
+          studentInfo.schoolName
+        )
       : asNine;
   }
 
@@ -2130,7 +2185,9 @@ export const buildUniversityCandidatesText = (
    * 평가하는 로직은 보정 전 값을 써야 하므로 별도로 받음. 미지정 시
    * overallAverage를 그대로 사용)
    */
-  studentActualOverallAverage?: number
+  studentActualOverallAverage?: number,
+  /** 학교명 — 탈일반고 명문 일반고 환산 적용용 */
+  schoolName?: string
 ): string => {
   // 남학생일 때 제외할 여대 목록
   const WOMENS_UNIVERSITIES = [
@@ -2156,6 +2213,14 @@ export const buildUniversityCandidatesText = (
   ]);
   const blockSkyForMidTier = (() => {
     if (schoolType !== "일반고" && schoolType !== "특성화고") return false;
+    // 탈일반고 명문 일반고는 자율고/특목고와 동일 취급 — SKY 차단 미적용
+    if (
+      schoolType === "일반고" &&
+      schoolName &&
+      ELITE_GENERAL_HIGH_SCHOOLS.has(schoolName)
+    ) {
+      return false;
+    }
     const actualGrade = studentActualOverallAverage ?? overallAverage;
     if (actualGrade == null) return false;
     const grade9 =
@@ -2183,8 +2248,10 @@ export const buildUniversityCandidatesText = (
       gradingSystem === "5등급제"
         ? fiveToNineGrade(overallAverage)
         : overallAverage;
-    // Step 2: 고교유형 환산 (일반고는 그대로)
-    return schoolType ? convertGradeBySchoolType(schoolType, asNine) : asNine;
+    // Step 2: 고교유형 환산 (일반고는 그대로, 탈일반고 명문 일반고는 자율고와 동일)
+    return schoolType
+      ? convertGradeBySchoolType(schoolType, asNine, schoolName)
+      : asNine;
   };
 
   // ── 학과명 기반 커트라인 직접 검색 (Phase 2 이후 주 경로) ──
@@ -2911,7 +2978,8 @@ export const buildHopeUniversityRecommendations = (
   overallAverage: number | undefined,
   gradingSystem: "5등급제" | "9등급제" | undefined,
   schoolType: string | undefined,
-  isGyogwaOnly: boolean
+  isGyogwaOnly: boolean,
+  schoolName?: string
 ): {
   university: string;
   department: string;
@@ -2947,7 +3015,7 @@ export const buildHopeUniversityRecommendations = (
         ? fiveToNineGrade(overallAverage)
         : overallAverage;
     studentGrade9 = schoolType
-      ? convertGradeBySchoolType(schoolType, asNine)
+      ? convertGradeBySchoolType(schoolType, asNine, schoolName)
       : asNine;
   }
 

@@ -370,7 +370,10 @@ export const executeTask = async (
         detectedDepts.length > 0 ? detectedDepts : undefined,
         studentInfo.schoolType,
         isGyogwaOnly,
-        studentInfo.gender
+        studentInfo.gender,
+        undefined,
+        undefined,
+        studentInfo.schoolName
       );
       const correctedCourseMatch = rebuildRecommendedCourseMatchText(
         detected,
@@ -1275,7 +1278,8 @@ export const executeTask = async (
                 isGyogwaOnly,
                 studentInfo.gender,
                 plan,
-                state.preprocessedData?.overallAverage
+                state.preprocessedData?.overallAverage,
+                studentInfo.schoolName
               );
               if (candidate === "[]") continue;
               rebuilt = candidate;
@@ -1379,7 +1383,8 @@ export const executeTask = async (
               state.preprocessedData?.overallAverage,
               state.preprocessedData?.gradingSystem,
               studentInfo.schoolType,
-              isGyogwaOnly
+              isGyogwaOnly,
+              studentInfo.schoolName
             );
           }
         }

@@ -1337,6 +1337,8 @@ export interface StudentInfo {
     | "예술고"
     | "체육고"
     | "마이스터고";
+  /** 학교명 — 탈일반고 명문 일반고 환산 적용에 사용 */
+  schoolName?: string;
   targetUniversity?: string;
   targetDepartment?: string;
   /** 성별 — 남학생이면 여대 제외 */

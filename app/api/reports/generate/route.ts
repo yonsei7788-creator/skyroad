@@ -124,13 +124,16 @@ export const POST = async (request: NextRequest) => {
 
       const { data: userProfile } = await supabase
         .from("profiles")
-        .select("name, grade, gender, high_school_type, high_school_region")
+        .select(
+          "name, grade, gender, high_school_name, high_school_type, high_school_region"
+        )
         .eq("id", order.user_id)
         .single();
 
       const profiles = userProfile ?? {
         name: "학생",
         grade: "high2",
+        high_school_name: null,
         high_school_type: "일반고",
         gender: null,
         high_school_region: null,
@@ -157,6 +160,7 @@ export const POST = async (request: NextRequest) => {
         track: "통합",
         schoolType:
           (profiles.high_school_type as StudentInfo["schoolType"]) ?? "일반고",
+        schoolName: profiles.high_school_name ?? undefined,
         targetUniversity: targetUni?.university_name,
         targetDepartment: targetUni?.department,
         gender: (profiles.gender as "male" | "female" | null) ?? null,
@@ -273,13 +277,16 @@ export const POST = async (request: NextRequest) => {
 
   const { data: userProfile } = await dbClient
     .from("profiles")
-    .select("name, grade, high_school_type, high_school_region")
+    .select(
+      "name, grade, high_school_name, high_school_type, high_school_region"
+    )
     .eq("id", order.user_id)
     .single();
 
   const profiles = userProfile ?? {
     name: "학생",
     grade: "high2",
+    high_school_name: null,
     high_school_type: "일반고",
     high_school_region: null,
   };
@@ -318,6 +325,7 @@ export const POST = async (request: NextRequest) => {
     track: "통합",
     schoolType:
       (profiles.high_school_type as StudentInfo["schoolType"]) ?? "일반고",
+    schoolName: profiles.high_school_name ?? undefined,
     targetUniversity: targetUni?.university_name,
     targetDepartment: targetUni?.department,
     highSchoolRegion: profiles.high_school_region ?? undefined,
