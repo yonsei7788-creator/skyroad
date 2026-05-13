@@ -7,7 +7,7 @@ import { ArrowRight, X, ZoomIn } from "lucide-react";
 
 import styles from "./RecordGuide.module.css";
 
-type IssueMethod = "kakao" | "naver" | "gov24";
+type IssueMethod = "kakao" | "naver";
 type StepSection = "issue" | "upload";
 type CalloutType = "tip" | "warning" | "note";
 type AspectKind = "landscape" | "portrait";
@@ -36,8 +36,6 @@ const KAKAO_IMAGE_WIDTH = 360;
 const KAKAO_IMAGE_HEIGHT = 779;
 const NAVER_IMAGE_WIDTH = 360;
 const NAVER_IMAGE_HEIGHT = 780;
-const GOV24_IMAGE_WIDTH = 960;
-const GOV24_IMAGE_HEIGHT = 540;
 
 const ISSUE_GUIDES: Record<IssueMethod, IssueGuide> = {
   kakao: {
@@ -261,130 +259,11 @@ const ISSUE_GUIDES: Record<IssueMethod, IssueGuide> = {
       },
     ],
   },
-  gov24: {
-    aspect: "landscape",
-    steps: [
-      {
-        title: "정부24 접속",
-        description: "PC 브라우저에서 정부24(gov.kr) 웹사이트에 접속해주세요.",
-      },
-      {
-        title: "검색창에 '학교생활기록부(초중고)'를 선택해서 발급",
-        notice:
-          "재학생의 경우 '학교생활기록부(대입전형용)'을 선택하면 발급되지 않습니다. 반드시 '학교생활기록부(초중고)'를 선택해주세요.",
-        image: {
-          src: "/images/record/guide/24/정부24-1.png",
-          alt: "정부24에서 학교생활기록부(초중고) 검색 결과",
-          width: GOV24_IMAGE_WIDTH,
-          height: GOV24_IMAGE_HEIGHT,
-        },
-      },
-      {
-        title: "'신청 내용' 칸의 '검색' 버튼 클릭",
-        image: {
-          src: "/images/record/guide/24/정부24-2.png",
-          alt: "신청 내용 칸의 검색 버튼",
-          width: GOV24_IMAGE_WIDTH,
-          height: GOV24_IMAGE_HEIGHT,
-        },
-      },
-      {
-        title: "시도교육청 선택 후 학교 검색",
-        description:
-          "시도교육청을 선택하고, 소속 고등학교명을 입력해 '검색' 버튼을 눌러주세요.",
-        image: {
-          src: "/images/record/guide/24/정부24-3.png",
-          alt: "시도교육청과 학교 검색 화면",
-          width: GOV24_IMAGE_WIDTH,
-          height: GOV24_IMAGE_HEIGHT,
-        },
-      },
-      {
-        title: "수령방법 '온라인발급(본인출력)' 선택 후 '신청하기' 클릭",
-        description:
-          "소속 고등학교 선택 후 수령방법을 '온라인발급(본인출력)'으로 설정하고 우측 하단 '신청하기' 버튼을 누르세요.",
-        image: {
-          src: "/images/record/guide/24/정부24-4.png",
-          alt: "수령방법 온라인발급(본인출력) 선택",
-          width: GOV24_IMAGE_WIDTH,
-          height: GOV24_IMAGE_HEIGHT,
-        },
-      },
-      {
-        title: "'서비스 신청 내역'에서 '문서출력' 버튼 클릭",
-        image: {
-          src: "/images/record/guide/24/정부24-5.png",
-          alt: "서비스 신청 내역의 문서출력 버튼",
-          width: GOV24_IMAGE_WIDTH,
-          height: GOV24_IMAGE_HEIGHT,
-        },
-      },
-      {
-        title: "'문서출력' 창 상단의 '인쇄' 버튼 클릭",
-        image: {
-          src: "/images/record/guide/24/정부24-6.png",
-          alt: "문서출력 창 상단의 인쇄 버튼",
-          width: GOV24_IMAGE_WIDTH,
-          height: GOV24_IMAGE_HEIGHT,
-        },
-      },
-      {
-        title: "'대상'을 'PDF로 저장'으로 설정 후 '저장' 클릭",
-        description:
-          "인쇄 다이얼로그의 대상 항목을 'PDF로 저장'으로 변경한 뒤 하단 '저장' 버튼을 누르면 PDF 파일이 생성됩니다.",
-        image: {
-          src: "/images/record/guide/24/정부24-7.png",
-          alt: "인쇄 대화상자의 PDF로 저장 설정",
-          width: GOV24_IMAGE_WIDTH,
-          height: GOV24_IMAGE_HEIGHT,
-        },
-      },
-    ],
-    uploadSteps: [
-      {
-        title: "스카이로드 상단 메뉴에서 '생기부 분석' 버튼 클릭",
-        image: {
-          src: "/images/record/guide/24/정부24-8.png",
-          alt: "스카이로드 상단의 생기부 분석 버튼",
-          width: GOV24_IMAGE_WIDTH,
-          height: GOV24_IMAGE_HEIGHT,
-        },
-      },
-      {
-        title: "보라색 '등록하기' 버튼 클릭",
-        image: {
-          src: "/images/record/guide/24/정부24-9.png",
-          alt: "생활기록부 분석 화면의 등록하기 버튼",
-          width: GOV24_IMAGE_WIDTH,
-          height: GOV24_IMAGE_HEIGHT,
-        },
-      },
-      {
-        title: "'PDF 업로드' 선택",
-        image: {
-          src: "/images/record/guide/24/정부24-10.png",
-          alt: "PDF 업로드 옵션 선택",
-          width: GOV24_IMAGE_WIDTH,
-          height: GOV24_IMAGE_HEIGHT,
-        },
-      },
-      {
-        title: "생기부 PDF 파일 업로드",
-        image: {
-          src: "/images/record/guide/24/정부24-11.png",
-          alt: "PDF 파일 업로드 화면",
-          width: GOV24_IMAGE_WIDTH,
-          height: GOV24_IMAGE_HEIGHT,
-        },
-      },
-    ],
-  },
 };
 
 const METHOD_OPTIONS: { key: IssueMethod; label: string; sub: string }[] = [
   { key: "kakao", label: "카카오톡 전자증명서", sub: "모바일" },
   { key: "naver", label: "네이버 전자증명서", sub: "모바일" },
-  { key: "gov24", label: "정부24", sub: "PC" },
 ];
 
 const buildStepId = (method: IssueMethod, section: StepSection, idx: number) =>
@@ -504,9 +383,7 @@ export const RecordGuide = () => {
               lead={
                 method === "kakao"
                   ? "카카오톡 전자증명서로 모바일에서 바로 PDF를 발급받습니다."
-                  : method === "naver"
-                    ? "네이버 전자증명서로 모바일에서 바로 PDF를 발급받습니다."
-                    : "PC 브라우저로 정부24에 접속해 PDF를 발급받습니다."
+                  : "네이버 전자증명서로 모바일에서 바로 PDF를 발급받습니다."
               }
             >
               {guide.steps.map((step, idx) => (
