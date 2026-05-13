@@ -908,10 +908,22 @@ export const preprocess = (
     isArtSportApplicant
   );
 
-  // 8. 고교 유형별 등급 환산 (환산표 기반 선형 보간)
+  // 8. 등급제 판별
+  // 2026년 기준: 고1·고2(grade 1, 2)는 2022 개정 교육과정 → 5등급제
+  // 고3/졸업생(grade 3 이상)은 2015 개정 교육과정 → 9등급제
+  const gradingSystem: "5등급제" | "9등급제" =
+    studentInfo.grade <= 2 ? "5등급제" : "9등급제";
+
+  // 9. 고교 유형별 등급 환산 (환산표 기반 선형 보간)
+  //    SPECIAL_TO_GENERAL/VOCATIONAL_TO_GENERAL 환산표는 9등급제 기준이므로,
+  //    5등급제 학생은 먼저 9등급제로 환산한 뒤 고교유형 환산을 적용한다.
+  const overallAverageForConversion =
+    gradingSystem === "5등급제"
+      ? fiveToNineGrade(overallAverage)
+      : overallAverage;
   const convertedValue = convertGradeBySchoolType(
     studentInfo.schoolType,
-    overallAverage,
+    overallAverageForConversion,
     studentInfo.schoolName
   );
   const convertedGrade = {
@@ -919,12 +931,6 @@ export const preprocess = (
     original: Math.round(overallAverage * 100) / 100,
     converted: Math.round(Math.max(1, convertedValue) * 100) / 100,
   };
-
-  // 9. 등급제 판별 및 5등급제 환산
-  // 2026년 기준: 고1·고2(grade 1, 2)는 2022 개정 교육과정 → 5등급제
-  // 고3/졸업생(grade 3 이상)은 2015 개정 교육과정 → 9등급제
-  const gradingSystem: "5등급제" | "9등급제" =
-    studentInfo.grade <= 2 ? "5등급제" : "9등급제";
 
   // 5등급제 환산은 더 이상 사용하지 않음.
   // - 9등급제 학생은 9등급제 입시 환경에서 평가받으므로 5등급제 환산값이 의사결정에 무관.
