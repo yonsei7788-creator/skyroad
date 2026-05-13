@@ -4,6 +4,7 @@ import type {
 } from "@/libs/report/types";
 
 import { TEMPLATES, fillTemplate } from "./competitive-profiling-templates";
+import { renderInsightMarkers } from "./insight-marker";
 import styles from "./report.module.css";
 import { SectionHeader } from "./SectionHeader";
 
@@ -99,7 +100,7 @@ export const CompetitiveProfilingRenderer = ({
         <div className={`${styles.cardAccent} ${styles.mt8}`}>
           <div className={styles.cardTitle}>구체적 탈락 원인</div>
           <p className={`${styles.small} ${styles.mt4}`}>
-            {TEMPLATES.rejectionCause[level]}
+            {renderInsightMarkers(TEMPLATES.rejectionCause[level])}
           </p>
         </div>
 
@@ -137,7 +138,9 @@ export const CompetitiveProfilingRenderer = ({
         <div className={`${styles.callout} ${styles.mt8}`}>
           <div className={styles.calloutContent}>
             <span style={{ fontWeight: 600 }}>
-              {TEMPLATES.competitorCoreDifference[connectivity]}
+              {renderInsightMarkers(
+                TEMPLATES.competitorCoreDifference[connectivity]
+              )}
             </span>
           </div>
         </div>
@@ -179,14 +182,16 @@ export const CompetitiveProfilingRenderer = ({
 
         <div className={styles.quoteBox}>
           <div className={styles.quoteText}>
-            {fillTemplate(TEMPLATES.evaluatorComment[level], data)}
+            {renderInsightMarkers(
+              fillTemplate(TEMPLATES.evaluatorComment[level], data)
+            )}
           </div>
         </div>
 
         <div className={`${styles.verdict} ${styles.mt12}`}>
           <div className={styles.verdictTitle}>최종 결론</div>
           <div className={styles.verdictBody}>
-            {TEMPLATES.finalConclusion[level]}
+            {renderInsightMarkers(TEMPLATES.finalConclusion[level])}
           </div>
         </div>
       </div>
