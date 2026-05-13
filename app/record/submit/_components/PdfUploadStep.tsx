@@ -24,7 +24,9 @@ export const PdfUploadStep = ({
     if (!file || file.type !== "application/pdf") return;
 
     if (file.size > MAX_FILE_SIZE) {
-      setSizeError("파일 크기는 3MB를 초과할 수 없습니다.");
+      setSizeError(
+        "파일 크기가 3MB를 초과합니다. 카카오톡·네이버 전자증명서 또는 정부24 앱에서 발급한 정식 생활기록부 PDF로 다시 시도해 주세요."
+      );
       return;
     }
 
