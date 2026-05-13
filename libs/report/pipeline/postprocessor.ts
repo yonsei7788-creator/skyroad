@@ -2212,6 +2212,110 @@ const sanitizeDeep = (obj: unknown, fieldName?: string): unknown => {
   return obj;
 };
 
+// ─── competencyScore: gradeComment 결정적 재생성 ───
+//
+// AI가 작성한 gradeComment는 자체 추정 subcategory 점수 기반이므로,
+// 후처리 단계의 점수 force-overwrite·scaling·cap 적용 후에는 약점 claim이
+// stale 상태가 될 수 있다 (예: "성취도에서 다소 아쉬움" 이라고 적혔는데 해당
+// 항목이 만점이 된 경우). 최종 점수에서 감점이 가장 큰 하위항목을 기준으로
+// 결정적 템플릿으로 다시 작성한다.
+//
+// 톤은 입학사정관이 학종 평가서를 작성하는 어휘로 통일한다:
+//   ✅ "변별 포인트", "차별화 요소", "두드러진 강점", "구체성·깊이",
+//      "평가 근거", "변별력 제한적", "평가 가능한 증거"
+//   ❌ "보완 시 X등급 진입 가능", "S등급 진입은 어려움", "보강 시 상위 진입"
+//      — 학생을 향한 컨설팅·미래 가정 톤은 사용하지 않음.
+const buildCompetencyGradeComment = (sc: unknown): string | undefined => {
+  if (
+    !sc ||
+    typeof sc !== "object" ||
+    !("subcategories" in sc) ||
+    !Array.isArray((sc as any).subcategories)
+  ) {
+    return (sc as any)?.gradeComment;
+  }
+  const detail = sc as {
+    label?: string;
+    grade?: string;
+    score?: number;
+    gradeComment?: string;
+    subcategories: Array<{ name?: string; score?: number; maxScore?: number }>;
+  };
+
+  const label = detail.label ?? "역량";
+  const { grade } = detail;
+
+  type Sub = {
+    name: string;
+    score: number;
+    maxScore: number;
+    deduction: number;
+  };
+  const subs: Sub[] = [];
+  for (const sub of detail.subcategories) {
+    if (
+      typeof sub?.name === "string" &&
+      typeof sub?.score === "number" &&
+      typeof sub?.maxScore === "number"
+    ) {
+      subs.push({
+        name: sub.name,
+        score: sub.score,
+        maxScore: sub.maxScore,
+        deduction: sub.maxScore - sub.score,
+      });
+    }
+  }
+  if (subs.length === 0) return detail.gradeComment;
+
+  const totalScore =
+    typeof detail.score === "number"
+      ? detail.score
+      : subs.reduce((sum, s) => sum + s.score, 0);
+  const totalDeduction = subs.reduce((sum, s) => sum + s.deduction, 0);
+
+  if (totalDeduction === 0) {
+    return grade === "S"
+      ? `${label} 전 항목 만점. 평가 가능한 모든 영역에서 우수성이 확인되는 최상위권 수행.`
+      : `${label} 전 항목 감점 없이 안정적인 ${grade ?? ""}등급 수행 확인.`;
+  }
+
+  const withDeduction = subs
+    .filter((s) => s.deduction > 0)
+    .sort((a, b) => b.deduction - a.deduction);
+  const [top] = withDeduction;
+  const top2Names = withDeduction
+    .slice(0, 2)
+    .map((s) => s.name)
+    .join("·");
+  const oneItem = withDeduction.length === 1;
+
+  if (grade === "S") {
+    // 96~100: 만점 근접 — 학종 평가에서 두드러진 강점으로 작용할 수준.
+    if (totalScore >= 96) {
+      return oneItem
+        ? `${label} 전 항목 균형 잡힌 최상위권 수행. ${top.name}에서만 미세한 차감이 관찰되며, 학종 평가에서 두드러진 강점으로 작용할 수 있는 수준입니다.`
+        : `${label} 전 항목 균형 잡힌 최상위권 수행. ${top2Names}에서 미세한 차감이 있으나, 학종 평가에서 두드러진 강점으로 작용할 수 있는 수준입니다.`;
+    }
+    // 90~95: 정상 S — 우수성 확인되나 일부 항목에서 추가 보강 여지.
+    return oneItem
+      ? `${label} 전반에서 우수한 수행이 확인됨. ${top.name} 항목에서 구체성·깊이가 추가로 보강될 여지가 있습니다.`
+      : `${label} 전반에서 우수한 수행이 확인됨. ${top2Names} 항목에서 구체성·깊이가 추가로 보강될 여지가 있습니다.`;
+  }
+  if (grade === "A") {
+    // A 등급 — 안정적이나 차별화 요소 부족으로 변별 포인트 약함.
+    return `${label} 안정적인 수행이 확인되나, ${top.name} 항목의 차별화 요소가 부족하여 변별 포인트로 작용하기에는 다소 약합니다..`;
+  }
+  if (grade === "B") {
+    // B 등급 — 평이한 수준, 변별력 제한적.
+    return `${label} 평이한 수준. ${top2Names} 항목에서 평가 근거의 구체성·깊이가 부족하여 변별력이 제한적입니다.`;
+  }
+  if (grade === "C") {
+    return `${label} 평가 가능한 구체적 증거가 다수 항목에서 부족하여 변별력 매우 제한적입니다.`;
+  }
+  return `${label} 전 항목에서 평가 가능한 증거가 매우 부족하여 평가에 큰 제약입니다.`;
+};
+
 // ─── AI 출력 필드명 정규화 + 전처리 데이터 보강 ───
 
 const normalizeSection = (
@@ -3134,7 +3238,12 @@ const normalizeSection = (
       }
     }
 
-    // ── 학업성취도 ↔ 교과성취도 동기화 (만점 동일 35, 동일 점수 강제) ──
+    // ── 학업성취도 ↔ 교과성취도 maxScore 정합성 (강제 점수 동기화는 제거) ──
+    // 학업성취도는 전체 평균, 교과성취도는 전공 관련 과목 평균 기반으로 측정 대상이 다르므로
+    // 두 점수를 강제로 동기화하면 majorRelevanceFact에 기반한 AI 코멘트와 의미가 충돌함.
+    // (전공 평균이 전체 평균보다 낮은 학생이 두 점수 모두 만점으로 표시되어
+    //  "전공 평균이 다소 낮음"이라는 코멘트와 어긋나는 문제가 발생.)
+    // 점수는 AI 산정값(scaling 후) 그대로 사용하고, maxScore만 일관성 보정.
     if (Array.isArray(s.scores)) {
       const academicScore = s.scores.find(
         (sc: any) => sc.category === "academic"
@@ -3147,17 +3256,8 @@ const normalizeSection = (
         const courseAchievement = careerScore.subcategories.find(
           (sub: any) => sub.name === "교과성취도"
         );
-        if (academicAchievement && courseAchievement) {
-          // 교과성취도를 학업성취도 점수로 강제 동기화
-          courseAchievement.score = academicAchievement.score;
-          courseAchievement.maxScore = 35;
-          academicAchievement.maxScore = 35;
-          // 진로역량 소계 재계산
-          careerScore.score = careerScore.subcategories.reduce(
-            (sum: number, sub: any) => sum + (sub.score ?? 0),
-            0
-          );
-        }
+        if (academicAchievement) academicAchievement.maxScore = 35;
+        if (courseAchievement) courseAchievement.maxScore = 35;
       }
     }
 
@@ -3314,12 +3414,30 @@ const normalizeSection = (
 
     // ── subcategory: 점수↔코멘트 양방향 정합성 보정 ──
     // (1) score < maxScore + 코멘트에 -N점 있음 → N을 실제 감점치로 동기화
-    // (2) score < maxScore + 코멘트에 "감점 사유 없음" → "(-N점)"으로 교체
+    //     + 모순적인 "감점 사유 없음" 류 표현이 함께 있으면 제거
+    // (2) score < maxScore + 코멘트에 "감점 사유 없음" 변형 → "(-N점)"으로 교체
     // (3) score < maxScore + 둘 다 없음 → 끝에 "(-N점)" 추가
-    // (4) score = maxScore + 코멘트에 -N점 → -N점 표기 제거
+    // (4) score = maxScore + 코멘트에 -N점 → -N점 표기 + 주변 orphan phrase 제거,
+    //     문장이 끝나지 않은 잘림 패턴을 자연스럽게 마감
     if (Array.isArray(s.scores)) {
       const DEDUCTION_RE = /-\s*\d+\s*점/g;
-      const NO_DEDUCTION_RE = /감점\s*사유\s*없음[.。]?/;
+      // "감점 사유 없음", "감점 사유는 없음", "감점 없음", "감점은 없음",
+      // "감점이 없음" 등 조사·구문 변형까지 매칭. 끝 점은 옵션.
+      const NO_DEDUCTION_RE =
+        /감점\s*(?:사유)?\s*(?:은|는|이|가)?\s*없(?:음|다)[.。]?/;
+      const NO_DEDUCTION_RE_GLOBAL = new RegExp(NO_DEDUCTION_RE.source, "g");
+      // "(-N점)" — 괄호를 포함한 감점 표기 전체
+      const PAREN_DEDUCTION_RE = /\s*\(\s*-?\s*\d+\s*점\s*\)\s*\.?/g;
+      // orphan 패턴: "감점은 .", "감점이 ." 같이 값이 사라진 후 남는 잔해
+      const ORPHAN_GAMJEOM_RE = /감점\s*(?:은|이)\s*\.?\s*(?=\s|$)/g;
+      // orphan 패턴: 마지막 마침표(또는 콤마) 이후 사유 절이 감점값 없이 끝난
+      // 문장 전체 제거. 예) "...우수. 다만, 일부 과목 편차로 ." → 첫 마침표까지만 남김.
+      const ORPHAN_TAIL_AFTER_BOUNDARY_RE =
+        /([.。,，])\s*[^.。]*?(?:으로|로|하여|있어|인해|있으나|편차로|차이로)\s*[.。]\s*$/;
+      // 위 패턴이 못 잡는 단독 케이스: 코멘트 시작부터 사유 절로만 구성된 경우
+      const ORPHAN_REASON_TAIL_RE =
+        /\s*([가-힣]+(?:으로|로|하여|있어|있으나|있고|편차로|차이로))\s*[.。]\s*$/;
+
       for (const sc of s.scores) {
         if (!Array.isArray(sc.subcategories)) continue;
         for (const sub of sc.subcategories) {
@@ -3335,10 +3453,14 @@ const normalizeSection = (
 
           if (actualDeduction > 0) {
             if (hasDeductionMarker) {
-              sub.comment = sub.comment.replace(
-                DEDUCTION_RE,
-                `-${actualDeduction}점`
-              );
+              // 감점치만 동기화. 동시에 모순적인 "감점 없음" 표현이 함께
+              // 있으면 제거 (예: "감점 사유는 없음 (-7점)" 같은 케이스).
+              sub.comment = sub.comment
+                .replace(DEDUCTION_RE, `-${actualDeduction}점`)
+                .replace(NO_DEDUCTION_RE_GLOBAL, "")
+                .replace(/\s{2,}/g, " ")
+                .replace(/\s+([.,;])/g, "$1")
+                .trim();
             } else if (NO_DEDUCTION_RE.test(sub.comment)) {
               sub.comment = sub.comment.replace(
                 NO_DEDUCTION_RE,
@@ -3349,12 +3471,57 @@ const normalizeSection = (
               sub.comment = `${trimmed} (-${actualDeduction}점).`;
             }
           } else if (actualDeduction === 0 && hasDeductionMarker) {
-            sub.comment = sub.comment
+            // -N점 표기 제거 + 주변 orphan phrase 정리.
+            // AI가 "...로 -N점.", "감점은 -N점.", "(-N점)." 등 다양한 형태로
+            // 작성하기 때문에 각 패턴을 자연스러운 마감으로 치환.
+            let cleaned = sub.comment
+              // "(-N점)" 또는 "(- N 점)" 통째 제거
+              .replace(PAREN_DEDUCTION_RE, "")
+              // "감점은 -N점" / "감점이 -N점" → "감점 사유 없음"
+              .replace(/감점\s*(?:은|이|는)?\s*-\s*\d+\s*점/g, "감점 사유 없음")
+              // 남아있는 평문 "-N점" 제거 ("...로 -N점" 같은 형태)
               .replace(DEDUCTION_RE, "")
+              // 위에서 "감점은" 만 남는 orphan ("감점은 .") 정리
+              .replace(ORPHAN_GAMJEOM_RE, "감점 사유 없음")
+              // 마지막 마침표·콤마 이후 사유 절만 잘림으로 남은 경우
+              // 그 절 통째 제거 (앞 마침표는 유지).
+              .replace(ORPHAN_TAIL_AFTER_BOUNDARY_RE, "$1")
+              // 코멘트 전체가 사유 절뿐이라 위 패턴이 못 잡는 경우 안전망
+              .replace(ORPHAN_REASON_TAIL_RE, "")
+              // 공백·구두점 정리
+              .replace(/\s+([.,;])/g, "$1")
               .replace(/\s{2,}/g, " ")
               .trim();
+
+            // 끝 문장이 "감점 사유 없음." 으로 마감되지 않으면 추가.
+            // "[근거]. 감점 사유 없음." 형태로 자연스럽게 마감.
+            if (!/감점\s*사유\s*없음[.。]?$/.test(cleaned)) {
+              cleaned = cleaned.replace(/[.。]\s*$/, "");
+              cleaned =
+                cleaned.length > 0
+                  ? `${cleaned}. 감점 사유 없음.`
+                  : "감점 사유 없음.";
+            } else if (!/[.。]$/.test(cleaned)) {
+              cleaned = `${cleaned}.`;
+            }
+
+            sub.comment = cleaned;
           }
         }
+      }
+    }
+
+    // ── gradeComment: 최종 subcategory 점수 기반 재생성 ──
+    // AI가 작성한 gradeComment는 자체 추정 점수에 기반하므로, 점수가 force-overwrite
+    // 되거나 sync 로직으로 조정된 후에는 약점 claim이 stale 해질 수 있음
+    // (예: "성취도에서 다소 아쉬움" 이라고 적혔는데 해당 항목이 만점인 경우).
+    // 최종 점수에서 감점이 가장 큰 하위항목을 기준으로 결정적 템플릿 사용.
+    if (Array.isArray(s.scores)) {
+      for (const sc of s.scores) {
+        if (!Array.isArray(sc.subcategories) || sc.subcategories.length === 0) {
+          continue;
+        }
+        sc.gradeComment = buildCompetencyGradeComment(sc);
       }
     }
 

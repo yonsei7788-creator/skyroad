@@ -522,6 +522,13 @@ export const executeTask = async (
       // 전공 관련 과목 평균 vs 전체 평균 비교 — 코드에서 결정적 판정.
       // academicAnalysis가 같은 데이터로 동일 판정을 사용하므로 두 섹션의
       // 결론이 학생/학부모에게 일관되게 보이게 한다.
+      //
+      // 분류 기준:
+      // 1) 절대값 우수 가드: 전공 평균이 2.0등급 이하면(상위권), diff와 무관하게
+      //    "절대적 우수"로 분류. 1.4 vs 1.84처럼 둘 다 상위권인데 작은 차이로
+      //    "낮음"으로 라벨링되어 교과성취도가 부당하게 깎이는 문제 방지.
+      // 2) 의미 있는 차이 임계값: 0.5등급. 학종 평가 실무에서 0.5등급 미만은
+      //    "유사한 수준"으로 본다 (이전 0.1은 노이즈 수준에 가까웠음).
       const compMajorRelevanceFact = (() => {
         const m = state.preprocessedData?.majorRelated;
         if (
@@ -534,13 +541,20 @@ export const executeTask = async (
         }
         const { relatedAverage, overallAverage, diff } = m;
         const absDiff = Math.abs(diff).toFixed(2);
-        if (diff > 0.1) {
+
+        // 절대값 우수 가드 — 두 평균이 모두 2등급 이하이면 차이와 무관하게
+        // "절대적으로 우수한 수준" 으로 분류. AI 가 "낮음"이라 적지 않도록 강제.
+        if (relatedAverage <= 2.0 && overallAverage <= 2.0) {
+          return `전공 관련 과목 평균 ${relatedAverage}등급 vs 전체 평균 ${overallAverage}등급 → 두 평균 모두 2등급 이내로 절대적으로 우수한 수준. 진로역량 교과성취도에서 "전공 관련 과목 성취도 우수" 로 서술하며, 두 평균 차이를 감점 근거로 삼지 않습니다.`;
+        }
+
+        if (diff > 0.5) {
           return `전공 관련 과목 평균 ${relatedAverage}등급 vs 전체 평균 ${overallAverage}등급 → 전공 관련 과목 평균이 전체 평균보다 ${absDiff}등급 낮은 성취도 (등급 숫자가 클수록 성취도 낮음). 진로역량 교과성취도에서 "전체 평균 대비 전공 관련 과목 성취도 낮음" 또는 "보완 필요"로 서술.`;
         }
-        if (diff < -0.1) {
+        if (diff < -0.5) {
           return `전공 관련 과목 평균 ${relatedAverage}등급 vs 전체 평균 ${overallAverage}등급 → 전공 관련 과목 평균이 전체 평균보다 ${absDiff}등급 높은 성취도 (등급 숫자가 작을수록 성취도 높음). 진로역량 교과성취도에서 "전체 평균 대비 전공 관련 과목 성취도 우수"로 서술.`;
         }
-        return `전공 관련 과목 평균 ${relatedAverage}등급 vs 전체 평균 ${overallAverage}등급 → 두 평균이 ${absDiff}등급 이내로 유사. 진로역량 교과성취도에서 "전체 평균과 유사한 수준"으로 서술.`;
+        return `전공 관련 과목 평균 ${relatedAverage}등급 vs 전체 평균 ${overallAverage}등급 → 두 평균이 ${absDiff}등급 이내로 유사. 진로역량 교과성취도에서 "전체 평균과 유사한 수준"으로 서술하며, 두 평균 차이를 감점 근거로 삼지 않습니다.`;
       })();
 
       const compScoreInput = {
