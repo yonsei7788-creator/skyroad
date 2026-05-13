@@ -100,7 +100,6 @@ export const RecordSubmitWizard = ({
       : { ...INITIAL_WIZARD_STATE }
   );
   const [toast, setToast] = useState<ToastData | null>(null);
-  const [fallbackNotice, setFallbackNotice] = useState<string | null>(null);
   const [pendingDraft, setPendingDraft] = useState<{
     method: InputMethod;
     record: SchoolRecord;
@@ -286,41 +285,16 @@ export const RecordSubmitWizard = ({
         uploadedPaths.push({ path: storagePath, mimeType: file.type });
       }
 
-      // 1차 시도: parse-pdf (worker 기반 파서)
-      // 실패 시 parse API(Gemini 기반)로 폴백한다.
-      // parse-pdf는 실패 시 storage 파일을 삭제하지 않으므로 재활용 가능.
-      let response = await fetch("/api/records/parse-pdf", {
+      const response = await fetch("/api/records/parse-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ storagePaths: uploadedPaths }),
       });
 
-      let usedFallback = false;
       if (!response.ok) {
-        console.warn(
-          `[record/submit] parse-pdf 실패 (${response.status}) — parse API로 폴백`
+        throw new Error(
+          "PDF 파싱에 실패했습니다. 카카오톡 전자증명서, 네이버 전자증명서, 또는 정부24 앱에서 발급한 정식 생활기록부 PDF로 다시 시도해주세요."
         );
-        usedFallback = true;
-        response = await fetch("/api/records/parse", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ storagePaths: uploadedPaths }),
-        });
-      }
-
-      if (!response.ok) {
-        let message = "파싱에 실패했습니다.";
-        try {
-          const data = await response.json();
-          message = data.error || message;
-        } catch {
-          // Vercel/Next.js 게이트웨이 에러 등 non-JSON 응답
-          if (response.status === 504 || response.status === 502) {
-            message =
-              "AI 분석 시간이 초과되었습니다. 파일 크기를 줄이거나 다시 시도해주세요.";
-          }
-        }
-        throw new Error(message);
       }
 
       const parsed = await response.json();
@@ -357,12 +331,6 @@ export const RecordSubmitWizard = ({
 
       if (warning) {
         showToast(warning, "error");
-      }
-
-      if (usedFallback) {
-        setFallbackNotice(
-          "누락되거나 잘못 기재된 항목이 있을 수 있으니 각 섹션의 내용을 하나하나 꼼꼼히 확인해주세요."
-        );
       }
     } catch (err) {
       const raw =
@@ -712,32 +680,6 @@ export const RecordSubmitWizard = ({
             <AlertCircle size={16} />
           )}
           {toast.message}
-        </div>
-      )}
-
-      {fallbackNotice && (
-        <div
-          className={styles.noticeOverlay}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="fallback-notice-title"
-        >
-          <div className={styles.noticeDialog}>
-            <div className={styles.noticeIcon}>
-              <AlertCircle size={22} />
-            </div>
-            <h3 id="fallback-notice-title" className={styles.noticeTitle}>
-              AI로 생기부 내용을 추출했습니다
-            </h3>
-            <p className={styles.noticeText}>{fallbackNotice}</p>
-            <button
-              type="button"
-              className={styles.noticeConfirmBtn}
-              onClick={() => setFallbackNotice(null)}
-            >
-              확인했습니다
-            </button>
-          </div>
         </div>
       )}
     </div>

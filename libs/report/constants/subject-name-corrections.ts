@@ -1,8 +1,8 @@
 /**
  * 과목명 오타 보정 맵.
  *
- * PDF 파싱(Gemini OCR) 시 빈번하게 발생하는 과목명 오타를 정규화한다.
- * - 입력 단계: app/api/records/parse/route.ts (DB 저장 전 보정)
+ * PDF 파싱 시 빈번하게 발생하는 과목명 오타를 정규화한다.
+ * - 입력 단계: app/api/records/parse-pdf/route.ts (DB 저장 전 보정)
  * - 출력 단계: libs/report/pipeline/preprocessor.ts (리포트 생성 시 보정)
  *
  * 키: 오타 과목명 (정확히 일치해야 함)
