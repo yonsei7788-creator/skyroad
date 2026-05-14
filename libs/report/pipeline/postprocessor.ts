@@ -2304,7 +2304,7 @@ const buildCompetencyGradeComment = (sc: unknown): string | undefined => {
   }
   if (grade === "A") {
     // A 등급 — 안정적이나 차별화 요소 부족으로 변별 포인트 약함.
-    return `${label} 안정적인 수행이 확인되나, ${top.name} 항목의 차별화 요소가 부족하여 변별 포인트로 작용하기에는 다소 약합니다..`;
+    return `${label} 안정적인 수행이 확인되나, ${top.name} 항목의 차별화 요소가 부족하여 변별 포인트로 작용하기에는 다소 약합니다.`;
   }
   if (grade === "B") {
     // B 등급 — 평이한 수준, 변별력 제한적.

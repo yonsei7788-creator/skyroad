@@ -546,6 +546,29 @@ const ELITE_GENERAL_HIGH_SCHOOLS = new Set<string>([
   "부산고등학교",
 ]);
 
+/**
+ * 추천대학 dedup 용 학교명 정규화.
+ *
+ * 캠퍼스 변형을 부모 학교명과 동일하게 취급하여, 같은 학교의 캠퍼스만 다른
+ * 항목이 추천 후보에 중복 노출되지 않게 한다.
+ *   "명지대학교 인문캠퍼스"     → "명지대학교"
+ *   "고려대학교 세종캠퍼스"     → "고려대학교"
+ *   "한양대학교 ERICA캠퍼스"   → "한양대학교"
+ *   "연세대학교 미래캠퍼스"     → "연세대학교"
+ *   "고려대학교(세종)"          → "고려대학교"
+ *   "상명대학교(천안)"          → "상명대학교"
+ *   "한양대학교(ERICA)"        → "한양대학교"
+ *
+ * ⚠️ dedup 용도로만 사용. cutoff 매칭/SKY 차단/서울권 분류 등은 캠퍼스마다
+ *    별도 처리되어야 하므로 원본 학교명을 그대로 사용한다.
+ */
+const normalizeUniversityForDedup = (name: string): string => {
+  return name
+    .replace(/\s*\([^)]+\)\s*$/, "")
+    .replace(/\s+[\w가-힣]+캠퍼스\s*$/, "")
+    .trim();
+};
+
 /** 환산 테이블 키 결정 — 탈일반고 명문 일반고는 자사고와 동일하게 처리 */
 const resolveConversionKey = (
   schoolType: string,
@@ -2514,20 +2537,27 @@ export const buildUniversityCandidatesText = (
 
     // ── 후보 풀에 새 후보 추가 (중복 방지) ──
     // 같은 대학+학과 중복 방지 + 같은 대학명 중복 방지 (학과가 달라도 대학명 중복 제외)
+    // 캠퍼스 변형("○○대학교 인문캠퍼스", "○○대학교(세종)" 등)은 정규화 후
+    // 부모 학교명과 동일 취급하여 같은 학교가 캠퍼스만 달리해 중복 추천되지 않게 한다.
     const addToPool = (
       pool: CandidateEntry[],
       newCandidates: CandidateEntry[]
     ): void => {
       const existingKeys = new Set(
-        pool.map((c) => `${c.university}|${c.department}`)
+        pool.map(
+          (c) => `${normalizeUniversityForDedup(c.university)}|${c.department}`
+        )
       );
-      const existingUnivs = new Set(pool.map((c) => c.university));
+      const existingUnivs = new Set(
+        pool.map((c) => normalizeUniversityForDedup(c.university))
+      );
       for (const c of newCandidates) {
-        const key = `${c.university}|${c.department}`;
-        if (!existingKeys.has(key) && !existingUnivs.has(c.university)) {
+        const normUniv = normalizeUniversityForDedup(c.university);
+        const key = `${normUniv}|${c.department}`;
+        if (!existingKeys.has(key) && !existingUnivs.has(normUniv)) {
           pool.push(c);
           existingKeys.add(key);
-          existingUnivs.add(c.university);
+          existingUnivs.add(normUniv);
         }
       }
     };
@@ -2635,19 +2665,31 @@ export const buildUniversityCandidatesText = (
 
       if (seoulInFinal.length < MIN_SEOUL) {
         // Step 1: selected 풀에 있는 서울권 후보 수집
+        // 캠퍼스 변형 dedup: 정규화한 학교명+학과 키로 중복 판단.
         const finalKeys = new Set(
-          final.map((c) => `${c.university}|${c.department}`)
+          final.map(
+            (c) =>
+              `${normalizeUniversityForDedup(c.university)}|${c.department}`
+          )
         );
         const seoulCandidates = selected.filter(
           (c) =>
             SEOUL_AREA_PRIORITY_UNIVERSITIES.has(c.university) &&
-            !finalKeys.has(`${c.university}|${c.department}`)
+            !finalKeys.has(
+              `${normalizeUniversityForDedup(c.university)}|${c.department}`
+            )
         );
 
         // Step 2: 풀에 부족하면 전체 키워드의 정확매칭+카테고리로 서울권 별도 탐색
         if (seoulInFinal.length + seoulCandidates.length < MIN_SEOUL) {
-          const finalUnivs = new Set(final.map((c) => c.university));
-          const seoulUnivs = new Set(seoulCandidates.map((c) => c.university));
+          const finalUnivs = new Set(
+            final.map((c) => normalizeUniversityForDedup(c.university))
+          );
+          const seoulUnivs = new Set(
+            seoulCandidates.map((c) =>
+              normalizeUniversityForDedup(c.university)
+            )
+          );
           // 서울권만 필터링하는 collectEntries 변형
           const collectSeoulEntries = (
             deptNames: Set<string>
@@ -2656,7 +2698,8 @@ export const buildUniversityCandidatesText = (
             for (const e of ADMISSION_CUTOFF_DATA) {
               if (!deptNames.has(e.department)) continue;
               if (!SEOUL_AREA_PRIORITY_UNIVERSITIES.has(e.university)) continue;
-              if (finalUnivs.has(e.university) || seoulUnivs.has(e.university))
+              const normEUniv = normalizeUniversityForDedup(e.university);
+              if (finalUnivs.has(normEUniv) || seoulUnivs.has(normEUniv))
                 continue;
               if (
                 excludeWomensUniv &&
@@ -2696,9 +2739,10 @@ export const buildUniversityCandidatesText = (
             const exactSeoul = collectSeoulEntries(exactDepts);
             const exactCands = extractCandidates(exactSeoul);
             for (const c of sortByDist(exactCands)) {
-              if (!seoulUnivs.has(c.university)) {
+              const normUniv = normalizeUniversityForDedup(c.university);
+              if (!seoulUnivs.has(normUniv)) {
                 seoulCandidates.push(c);
-                seoulUnivs.add(c.university);
+                seoulUnivs.add(normUniv);
               }
             }
             // 카테고리매칭
@@ -2707,9 +2751,10 @@ export const buildUniversityCandidatesText = (
             const catSeoul = collectSeoulEntries(catDepts);
             const catCands = extractCandidates(catSeoul);
             for (const c of sortByDist(catCands)) {
-              if (!seoulUnivs.has(c.university)) {
+              const normUniv = normalizeUniversityForDedup(c.university);
+              if (!seoulUnivs.has(normUniv)) {
                 seoulCandidates.push(c);
-                seoulUnivs.add(c.university);
+                seoulUnivs.add(normUniv);
               }
             }
             if (seoulInFinal.length + seoulCandidates.length >= MAX_SEOUL)
@@ -2930,9 +2975,13 @@ export const buildUniversityCandidatesText = (
       selected.push(...pick(fit, 3));
 
       if (selected.length < MAX_CANDIDATES) {
-        const selectedSet = new Set(selected.map((c) => `${c.university}`));
+        const selectedSet = new Set(
+          selected.map((c) => normalizeUniversityForDedup(c.university))
+        );
         const remaining = filtered
-          .filter((c) => !selectedSet.has(c.university))
+          .filter(
+            (c) => !selectedSet.has(normalizeUniversityForDedup(c.university))
+          )
           .sort(
             (a, b) =>
               Math.abs(getMinCutoff(a) - studentGrade) -
