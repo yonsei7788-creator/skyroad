@@ -986,7 +986,8 @@ export const preprocess = (
     studentInfo.targetDepartment ?? "",
     studentInfo.grade,
     curriculumVersion,
-    plannedSubjects
+    plannedSubjects,
+    studentInfo.isGraduate
   );
 
   // 13. 출결 데이터 정규화
@@ -1410,13 +1411,21 @@ export const normalizeSubjectName = (name: string): string => {
     .replace(/I\s*$/, "Ⅰ");
 
   // 3) 줄임 표기 → 정식 명칭 (후행 로마숫자 보존)
-  // 후행 로마숫자 부분 분리 후 root만 줄임/정식 변환, 로마숫자는 그대로 결합
+  // 후행 로마숫자 부분 분리 후 root에서 공백 제거 → 줄임/정식 변환,
+  // 로마숫자는 그대로 결합. ("사회 문화" / "사회문화" 모두 동일 키로 매칭)
   const romaMatch = result.match(/^(.+?)(Ⅰ|Ⅱ|Ⅲ)?$/);
   if (romaMatch) {
     const [, root, roma = ""] = romaMatch;
-    const full = SHORT_TO_FULL_NAME[root];
+    const rootNoSpace = root.replace(/\s+/g, "");
+    const full = SHORT_TO_FULL_NAME[rootNoSpace] ?? SHORT_TO_FULL_NAME[root];
     if (full) result = full + roma;
   }
+
+  // 4) 한국어 과목명 내부 공백 제거 — 사용자 입력 공백 차이로 매칭 실패 방지.
+  //    "경제 수학" ↔ "경제수학", "확률과 통계" ↔ "확률과통계",
+  //    "사회와 문화" ↔ "사회와문화" 모두 같은 키로 처리한다.
+  //    (한국어 과목명은 공백 유무에 따른 의미 차이가 없음)
+  result = result.replace(/\s+/g, "");
 
   return result;
 };
@@ -1526,8 +1535,15 @@ export const matchRecommendedCourses = (
   studentGrade: number,
   curriculumVersion?: "2015" | "2022",
   /** 학생이 직접 입력한 수강 예정 과목(comma-separated). 없으면 undefined. */
-  plannedSubjects?: string
+  plannedSubjects?: string,
+  /** 졸업생 여부. true 또는 studentGrade === 3 이면 plannedSubjects를
+   *  "이수 예정"이 아닌 "이수 완료"로 처리한다. */
+  isGraduate?: boolean
 ): RecommendedCourseMatch => {
+  // 3학년·졸업생은 수강 예정 개념이 의미 없으므로 plannedSubjects를
+  // 이수 완료로 합쳐서 처리한다. (이수/이수예정/미이수 → 이수/미이수)
+  const treatPlannedAsTaken = isGraduate === true || studentGrade === 3;
+
   // 학생이 이수한 과목명을 정규화하여 Set 구축
   const takenRawSet = new Set<string>();
   const normalizedToRaw = new Map<string, string>();
@@ -1542,13 +1558,34 @@ export const matchRecommendedCourses = (
     normalizedToRaw.set(normalizeSubjectName(s.subject), s.subject);
     baseSubjectSet.add(normalizeToBaseSubject(s.subject));
   }
+  // 3학년·졸업생: planned 과목도 이수 set에 미리 합친다.
+  if (
+    treatPlannedAsTaken &&
+    plannedSubjects &&
+    plannedSubjects.trim().length > 0
+  ) {
+    const tokens = plannedSubjects
+      .split(/[,\n]/)
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+    for (const t of tokens) {
+      takenRawSet.add(t);
+      normalizedToRaw.set(normalizeSubjectName(t), t);
+      baseSubjectSet.add(normalizeToBaseSubject(t));
+    }
+  }
   const takenNormalizedSet = new Set(normalizedToRaw.keys());
 
-  // 수강 예정 과목 정규화 — 콤마/줄바꿈 분리 후 같은 정규화 함수 적용
+  // 수강 예정 과목 정규화 — 콤마/줄바꿈 분리 후 같은 정규화 함수 적용.
+  // 3학년·졸업생은 위에서 이미 이수로 처리했으므로 별도 set은 비워둔다.
   const plannedRawSet = new Set<string>();
   const plannedNormalizedSet = new Set<string>();
   const plannedBaseSet = new Set<string>();
-  if (plannedSubjects && plannedSubjects.trim().length > 0) {
+  if (
+    !treatPlannedAsTaken &&
+    plannedSubjects &&
+    plannedSubjects.trim().length > 0
+  ) {
     const tokens = plannedSubjects
       .split(/[,\n]/)
       .map((t) => t.trim())
@@ -3849,7 +3886,8 @@ const formatTargetUniversitiesWithCutoff = (
 export const rebuildRecommendedCourseMatchText = (
   detectedMajorGroup: string,
   preData: PreprocessedData,
-  studentGrade: number
+  studentGrade: number,
+  isGraduate?: boolean
 ): string => {
   // allSubjectGrades를 matchRecommendedCourses 호환 형태로 변환
   const generalSubjects = (preData.allSubjectGrades ?? []).map((s) => ({
@@ -3885,7 +3923,8 @@ export const rebuildRecommendedCourseMatchText = (
     detectedMajorGroup,
     studentGrade,
     preData.curriculumVersion,
-    preData.plannedSubjectsRaw
+    preData.plannedSubjectsRaw,
+    isGraduate
   );
 
   return JSON.stringify(result, null, 2);
