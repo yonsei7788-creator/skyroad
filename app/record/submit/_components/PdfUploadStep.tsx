@@ -16,7 +16,7 @@ export const PdfUploadStep = ({
   pdfFileName,
   onPdfChange,
 }: PdfUploadStepProps) => {
-  const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
   const [sizeError, setSizeError] = useState<string | null>(null);
 
   const handleFiles = (files: File[]) => {
@@ -25,7 +25,7 @@ export const PdfUploadStep = ({
 
     if (file.size > MAX_FILE_SIZE) {
       setSizeError(
-        "파일 크기가 3MB를 초과합니다. 카카오톡·네이버 전자증명서 또는 정부24 앱에서 발급한 정식 생활기록부 PDF로 다시 시도해 주세요."
+        "파일 크기가 5MB를 초과합니다. 카카오톡·네이버 전자증명서 또는 정부24 앱에서 발급한 정식 생활기록부 PDF로 다시 시도해 주세요."
       );
       return;
     }
@@ -61,7 +61,7 @@ export const PdfUploadStep = ({
           <DropZone
             accept=".pdf,application/pdf"
             label="PDF 파일을 드래그하거나 클릭하여 업로드"
-            hint="PDF 파일만 지원됩니다 (최대 3MB)"
+            hint="PDF 파일만 지원됩니다 (최대 5MB)"
             onFiles={handleFiles}
           />
           {sizeError && <p className={styles.pdfSizeError}>{sizeError}</p>}

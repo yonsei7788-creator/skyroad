@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
       const errorData = await workerRes.json().catch(() => null);
       const errorMsg =
         (errorData as { error?: string } | null)?.error ??
-        "PDF 파싱에 실패했습니다.";
+        "PDF 파싱에 실패했습니다. 카카오톡 전자증명서, 네이버 전자증명서, 또는 정부24 앱에서 발급한 정식 생활기록부 PDF로 다시 시도해주세요.";
       throw new Error(errorMsg);
     }
 
@@ -199,7 +199,8 @@ export async function POST(request: NextRequest) {
     const valueErrorMatch = raw.match(/ValueError:\s*(.+?)$/m);
     const message = valueErrorMatch
       ? valueErrorMatch[1].trim()
-      : raw || "생기부 PDF 파싱에 실패했습니다. 다시 시도해주세요.";
+      : raw ||
+        "PDF 파싱에 실패했습니다. 카카오톡 전자증명서, 네이버 전자증명서, 또는 정부24 앱에서 발급한 정식 생활기록부 PDF로 다시 시도해주세요.";
 
     return NextResponse.json({ error: message }, { status: 500 });
   }
