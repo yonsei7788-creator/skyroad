@@ -1977,13 +1977,23 @@ const buildTexts = (
     targetUniversitiesByType,
     curriculumVersion: data.curriculumVersion,
     majorEvaluationContextText,
+    // 3학년·졸업생: 학생이 입력한 "수강 예정 과목"은 더 이상 예정 개념이
+    // 적용되지 않으므로 "이미 이수한 과목"으로 처리한다. completedSubjectsByYear
+    // 에 "추가 이수 완료" 항목으로 합치고 plannedSubjectsText는 비워서
+    // "수강 예정" 프롬프트 블록이 자연스럽게 비활성화되게 한다.
     completedSubjectsByYearText: formatCompletedSubjectsByYear(
       recordData,
       studentInfo.grade,
       studentInfo.isGraduate,
-      isArtSportDepartment(studentInfo.targetDepartment ?? "")
+      isArtSportDepartment(studentInfo.targetDepartment ?? ""),
+      studentInfo.isGraduate === true || studentInfo.grade === 3
+        ? plannedSubjects
+        : undefined
     ),
-    plannedSubjectsText: formatPlannedSubjects(plannedSubjects),
+    plannedSubjectsText:
+      studentInfo.isGraduate === true || studentInfo.grade === 3
+        ? ""
+        : formatPlannedSubjects(plannedSubjects),
     isArtSportPractical: artSportPractical,
     mockExamText: formatMockExamText(recordData.mockExams ?? []),
   };
@@ -3375,7 +3385,12 @@ const formatCompletedSubjectsByYear = (
   recordData: RecordData,
   currentGrade: number,
   isGraduate?: boolean,
-  isArtSportApplicant: boolean = false
+  isArtSportApplicant: boolean = false,
+  /**
+   * 3학년·졸업생이 학생 입력으로 추가한 이수 완료 과목.
+   * (학년별로 매핑되지 않은 평문 문자열 — "추가 이수 완료" 항목으로 별도 표기.)
+   */
+  extraCompletedSubjects?: string
 ): string => {
   const generalSubjects = recordData.generalSubjects ?? [];
   const careerSubjects = recordData.careerSubjects ?? [];
@@ -3410,6 +3425,12 @@ const formatCompletedSubjectsByYear = (
     const subjects = byYear.get(year) ?? [];
     const uniqueSubjects = [...new Set(subjects)];
     lines.push(`- ${year}학년 이수 완료: ${uniqueSubjects.join(", ")}`);
+  }
+
+  if (extraCompletedSubjects && extraCompletedSubjects.trim().length > 0) {
+    lines.push(
+      `- 추가 이수 완료 (학생 직접 입력): ${extraCompletedSubjects.trim()}`
+    );
   }
 
   // 학년/졸업 상태별 명확한 제약 조건
@@ -3453,6 +3474,10 @@ const formatCompletedSubjectsByYear = (
  * 수강 예정 과목 텍스트 생성.
  * 학생이 직접 입력한 수강 예정 과목 정보를 AI 프롬프트에 전달할 형태로 포맷.
  * 입력이 없으면 빈 문자열을 반환.
+ *
+ * 3학년·졸업생은 호출하기 전에 buildTexts에서 미리 빈 문자열로 비워둔다.
+ * (해당 학생은 더 이상 "수강 예정" 개념이 의미 없고, 입력한 과목은
+ *  completedSubjectsByYearText에 "추가 이수 완료" 항목으로 합쳐진다.)
  */
 const formatPlannedSubjects = (plannedSubjects?: string): string => {
   if (!plannedSubjects?.trim()) return "";
