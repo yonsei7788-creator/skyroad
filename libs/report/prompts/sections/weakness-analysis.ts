@@ -16,6 +16,13 @@ export interface WeaknessAnalysisPromptInput {
   majorEvaluationContext?: string;
   /** 학생이 입력한 수강 예정 과목 텍스트 */
   plannedSubjects?: string;
+  /**
+   * 학년별 이수 완료 과목 텍스트.
+   * 3학년·졸업생인 경우 학생 입력 수강예정 과목이 "추가 이수 완료"로
+   * 합쳐져 있으므로, 권장과목 대비 미이수 판단 시 반드시 이 목록도 함께 보고
+   * "수강 예정 → 미이수"로 잘못 분류하지 않도록 한다.
+   */
+  completedSubjectsByYear?: string;
   studentGrade?: number;
   isGraduate?: boolean;
   /**
@@ -288,6 +295,7 @@ ${input.competencyStrengthAreas ? `### ⛔ 강점 영역 (만점근사 — 약�
 3. 키워드가 **단어 단위로 겹치면** evidence를 다른 활동/측면으로 교체합니다. 예: 강점 영역 comment에 "리튬 이온 전지 안정성"이 있으면, 약점 evidence는 리튬 이온 전지가 아닌 다른 활동(예: "AI 뉴스 비교 분석", "탄소중립 포스터")을 인용하거나, 같은 영역의 구조적 약점(예: "1학년 활동 간 연결 부재")을 evidence로 사용합니다.
 4. 교체할 evidence가 없는 경우, 그 area는 "약점"으로 부적합하므로 area 자체를 다른 영역으로 변경합니다 (강점 영역과 충돌 없는 차감 영역에서 area 도출).
 
+${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n→ 권장과목 미이수 판정 시 반드시 이 목록을 우선 참조합니다. 위 목록에 포함된 과목(특히 "추가 이수 완료 (학생 직접 입력)" 라인)은 이미 이수 완료 처리된 과목이므로, "권장과목 미이수" 약점 사유로 잡지 마세요.` : ""}
 ${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}` : ""}
 ${
   input.detectedMajorGroup
@@ -404,6 +412,8 @@ ${input.competencyStrengthAreas ? `### ⛔ 강점 영역 (만점근사 — 약�
 2. 위 "강점 영역 (만점근사)" 블록의 comment에서 인용된 활동/탐구 주제 키워드와 비교합니다.
 3. 키워드가 단어 단위로 겹치면 evidence를 다른 활동/측면으로 교체합니다.
 4. 교체할 evidence가 없는 경우, 그 area는 "약점"으로 부적합하므로 area 자체를 차감이 발생한 다른 영역으로 변경합니다.
+
+${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n→ 권장과목 미이수 판정 시 반드시 이 목록을 우선 참조합니다. "추가 이수 완료 (학생 직접 입력)" 라인의 과목은 이미 이수 완료된 것으로 간주하여 미이수 약점으로 잡지 마세요.` : ""}
 
 ${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}\n→ 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.` : ""}
 

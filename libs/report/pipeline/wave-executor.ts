@@ -378,7 +378,8 @@ export const executeTask = async (
       const correctedCourseMatch = rebuildRecommendedCourseMatchText(
         detected,
         state.preprocessedData!,
-        studentInfo.grade
+        studentInfo.grade,
+        studentInfo.isGraduate
       );
       correctedTexts = {
         ...texts,
@@ -571,6 +572,10 @@ export const executeTask = async (
         majorRelevanceFact: compMajorRelevanceFact,
         // 5등급제 학생의 9등급 환산 확정값 — AI 자체 보간 환각 방지용
         nineGradeAverage: state.preprocessedData!.nineGradeAverage,
+        // 3학년·졸업생의 수강예정 과목이 "추가 이수 완료" 라인으로 합쳐져
+        // 있어, 교과이수노력 채점 시 이를 미이수로 잘못 잡지 않도록 전달.
+        isGraduate: studentInfo.isGraduate,
+        completedSubjectsByYear: texts.completedSubjectsByYearText,
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly
@@ -718,7 +723,8 @@ export const executeTask = async (
         courseMatchText = rebuildRecommendedCourseMatchText(
           detectedGroup,
           state.preprocessedData!,
-          studentInfo.grade
+          studentInfo.grade,
+          studentInfo.isGraduate
         );
       }
       // 추가 과목 이수가 사실상 불가능한 시점 판정.
@@ -975,6 +981,9 @@ export const executeTask = async (
         detectedMajorGroup: weaknessMajorGroup,
         majorEvaluationContext: texts.majorEvaluationContextText,
         plannedSubjects: texts.plannedSubjectsText,
+        // 3학년·졸업생은 학생 입력 수강예정 과목이 "추가 이수 완료" 라인으로
+        // 합쳐져 있어, weakness AI가 "권장과목 미이수"로 오판하지 않도록 전달.
+        completedSubjectsByYear: texts.completedSubjectsByYearText,
         studentGrade: studentInfo.grade,
         isGraduate: studentInfo.isGraduate,
         // 정합성 보장: competencyScore에서 강점 영역으로 판정된 활동을
