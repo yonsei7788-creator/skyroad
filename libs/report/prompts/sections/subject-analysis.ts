@@ -433,19 +433,12 @@ subjects[].evaluationComment, subjects[].detailedEvaluation, subjects[].improvem
    - 후퇴: 2학년 세특이 1학년보다 형식적
    evaluationComment에 해당 판단을 자연스럽게 반영합니다.
 16. **improvementDirection은 생기부 전체 흐름을 고려 (필수)**:
-${
-  input.isGraduate
-    ? `   - ⚠️ **이 학생은 졸업생입니다.** 생기부를 더 이상 수정할 수 없으므로, "3학년에서는...", "다음 학기에...", "~를 보완하세요" 같은 활동/학업 관련 제안은 금지합니다.
-   - improvementDirection은 **면접에서 이 과목을 어떤 관점으로 설명하면 효과적인지** 방향으로 작성하세요.
-   - improvementExample은 **면접에서 강조할 수 있는 포인트**로 작성하세요.
-   - 예: "이 과목은 1학년 통합과학에서 시작한 에너지 탐구가 물리학으로 심화된 흐름으로 설명하면, 정량 분석의 부족함보다 학년별 성장 궤적이 부각되어 효과적입니다."`
-    : `   - improvementDirection은 이 과목에서 확인된 탐구·활동이 **다른 과목·창체·면접에서 어떻게 확장될 수 있는지**를 제시합니다. 이 과목은 학생이 이수한 결과물(=세특이 작성된 시점)이므로, 미래형 표현(향후/앞으로/다음에/N학년에서는)은 **분석 대상 과목이 아닌 다른 영역**에 적용합니다.
+   - improvementDirection은 이 과목에서 확인된 탐구·활동이 **다른 과목·창체·면접에서 어떻게 확장될 수 있는지**를 제시합니다. 이 과목은 학생이 이수한 결과물(=세특이 작성된 시점)이므로, 미래형 표현(향후/앞으로/다음에/N학년에서는)은 **분석 대상 과목이 아닌 다른 영역**에 적용합니다.
    - 반드시 다음 중 하나 이상을 포함하세요:
      a) **다른 과목 세특과의 연결**: "이 탐구를 XX 과목 세특에서도 연결하면 교과 간 일관성이 생깁니다"
      b) **이전 학년 탐구와의 심화 연결**: "1학년에서 다룬 XX 주제를 2학년 다른 과목에서 확장하면 학년별 심화 흐름이 만들어집니다"
      c) **창체/동아리 활동과의 연결**: "이 탐구를 동아리 활동으로 확장하면 진로 일관성이 더 단단해집니다"
-   - **공통과목(통합과학·통합사회·과학탐구실험·한국사·공통국어·공통영어·공통수학)은 1학년에서 이수가 종결되는 과목**입니다. 이 학생이 해당 공통과목을 이미 이수한 경우, 같은 공통과목명을 미래형으로 다시 언급하지 않고 일반선택·진로선택·융합선택 과목 또는 창체·동아리·면접 영역으로 확장 방향을 제시합니다.`
-}
+   - **공통과목(통합과학·통합사회·과학탐구실험·한국사·공통국어·공통영어·공통수학)은 1학년에서 이수가 종결되는 과목**입니다. 이 학생이 해당 공통과목을 이미 이수한 경우, 같은 공통과목명을 미래형으로 다시 언급하지 않고 일반선택·진로선택·융합선택 과목 또는 창체·동아리·면접 영역으로 확장 방향을 제시합니다.
    - 입학사정관은 과목별로 분리해서 보지 않고 생기부 전체의 스토리라인을 봅니다. 개선 방향도 이 관점에서 제시하세요.
    - ⛔ **improvementDirection과 improvementExample은 세특 원문에 등장하는 키워드가 아니라, 아래 강점 계열 방향에서 이 과목을 어떻게 활용할 수 있는지를 제시해야 합니다.** 세특 원문에 강점 계열과 무관한 키워드(예: "마케팅", "광고", "경영" 등)가 있더라도, 개선 방향은 반드시 강점 계열과 연결되는 탐구로 전환하세요. 원문 키워드를 확장하여 우회 연결(예: 광고→미디어→사회 문제)하는 것도 금지입니다. 위반 시 품질 실패입니다.
 
@@ -468,6 +461,112 @@ ${input.studentProfile}
 ${input.subjectData}
 
 ${planText}
+
+${plan !== "lite" ? SESPEC_EXPRESSION_GUIDE : ""}`;
+};
+
+/**
+ * 졸업생 전용 subjectAnalysis 프롬프트.
+ * 생기부가 이미 확정되어 있으므로, 모든 평가·서술은 면접 활용 관점으로만 작성한다.
+ * 비졸업생 분기와 분리해 positive instruction만 사용 (Gemini 오판 방지).
+ */
+export const buildGraduateSubjectAnalysisPrompt = (
+  input: SubjectAnalysisPromptInput,
+  plan: ReportPlan
+): string => {
+  const yearScope = input.targetYear
+    ? `이 호출은 **${input.targetYear}학년 세특만** 분석합니다. subjects[].year는 모두 ${input.targetYear}로 출력합니다.`
+    : "전 학년의 세특을 통합해 분석합니다.";
+
+  const gradingLine =
+    input.gradingSystem === "5등급제"
+      ? "이 학생은 5등급제 환경에서 평가받았습니다 (등급 1~5)."
+      : "이 학생은 9등급제 환경에서 평가받았습니다 (등급 1~9).";
+
+  const planScope =
+    plan === "lite"
+      ? "subjects 배열에 핵심 5개 과목만 출력합니다. improvementDirection·improvementExample·detailedEvaluation·sentenceAnalysis는 생략합니다."
+      : plan === "standard"
+        ? "subjects 배열에 5~7개 과목을 출력합니다. 각 과목에 evaluationComment, detailedEvaluation, improvementDirection(면접 활용 관점), improvementExample(면접 답변 예시), keyQuotes를 포함합니다."
+        : "subjects 배열에 5~10개 핵심 과목을 출력합니다. 상위 2개 전공 관련 과목에 한해 sentenceAnalysis를 포함하되 각 5문장 이내로 작성합니다.";
+
+  const majorContext = input.detectedMajorGroupLabel
+    ? `\n## 강점 계열\n이 학생의 강점 계열: **${input.detectedMajorGroupLabel}**\nimprovementDirection·improvementExample은 위 강점 계열과 연결되는 면접 활용 관점으로 작성합니다.\n`
+    : "";
+
+  return `## 졸업생 전용 세특 분석 (면접 활용 관점)
+
+이 학생은 **졸업생**입니다. 생기부 세특이 이미 확정되어 있으므로, 이 섹션은 **확정된 세특을 면접에서 어떻게 활용·설명할지**를 다룹니다.
+
+${yearScope}
+${gradingLine}
+${majorContext}
+
+## 분석 관점
+- 각 과목 세특에서 드러나는 학업역량·탐구력·자기주도성을 객관적으로 평가합니다.
+- improvementDirection은 **면접에서 이 과목 세특을 어떤 흐름으로 설명하면 효과적인지** 방향으로 작성합니다.
+- improvementExample은 **면접에서 학생이 사용할 수 있는 답변 예시**로 작성합니다 ("~했습니다", "~라고 답변할 수 있습니다" 어조).
+- 평가자 관점: 입학사정관이 이 세특을 어떻게 해석할지 + 학생이 면접에서 어떤 강점으로 풀어낼 수 있는지를 함께 서술합니다.
+
+## 작성 어조 (positive instruction)
+- improvementDirection: "이 과목 세특은 면접에서 ~로 설명하면 ~ 효과적입니다", "~ 경험을 ~ 관점으로 풀어 답변하면 ~ 어필됩니다"
+- improvementExample: "면접 답변 예시: '~ 시간에 ~ 주제에 관심을 가졌고, 이후 ~ 학습으로 이어졌습니다.'"
+- evaluationComment: 사정관 평가 관점을 자연스럽게 포함 + 면접에서 이 세특을 어떻게 활용 가능한지 1문장 추가
+
+## 출력 JSON 스키마
+
+{
+  "sectionId": "subjectAnalysis",
+  "title": "세특 분석",
+  "subjects": [
+    {
+      "subjectName": "통합과학",
+      "year": 1,
+      "rating": "good",
+      "activitySummary": "에너지 전환 효율 탐구를 진행하고 발표함.",
+      "evaluationComment": "에너지 전환을 정량적으로 분석한 점은 사정관이 탐구력 측면에서 긍정적으로 평가할 요소입니다. 면접에서 탐구 동기와 분석 과정을 구체적으로 설명하면 더 부각될 수 있습니다.",
+      "keyQuotes": ["에너지 전환 효율을 ..."],
+      "detailedEvaluation": "이 세특은 ...",
+      "improvementDirection": "이 과목 세특은 면접에서 1학년 통합과학에서 시작한 에너지 탐구가 어떻게 발전했는지 흐름으로 설명하면 학년별 성장 궤적이 부각되어 효과적입니다.",
+      "improvementExample": "면접 답변 예시: '통합과학에서 에너지 전환 효율에 관심을 가졌고, 이후 물리학에서 카르노 효율 개념까지 학습하며 한계와 의미를 이해했습니다.'",
+      "competencyTags": [{"category": "academic", "subcategory": "탐구력"}],
+      "evaluationImpact": "high"
+    }
+  ]
+}
+
+${COMPETENCY_TAG_GUIDE}
+
+## 규칙
+1. **subjectName 강제 규칙**: subjects[].subjectName은 반드시 "교과 세특 원문 데이터"의 [N학년 과목명] 라벨에 등장한 과목명을 그대로 복사하세요.
+2. 평가는 반드시 원문 내용에 근거합니다.
+3. **"과목다운 세특" 관점**: 해당 과목의 본질적 특성에 맞는 세특인지 평가합니다.
+4. **활동 밀도 분석**: 활동 수 대비 분량을 확인하고, 깊이 있는 세특을 높이 평가합니다.
+5. **rating 결정 기준** (자기주도성 시그널 카운트):
+   - 학생이 직접 제기한 질문/궁금증에서 출발
+   - 추가 자료(논문·통계·실험)를 찾아 분석
+   - 수업 토론·발표에서 자신의 견해 제시
+   - 1학년 → 2학년 → 3학년으로 주제 심화
+   - 구체적 산출물(보고서·발표·실험)
+   - 교과 간 융합·연결 시도
+   매핑: 4점+ excellent / 2~3점 good / 1점 average / 0점 weak.
+6. **evaluationComment 작성**:
+   - "입학사정관" 또는 "평가" 또는 "전형" 키워드 포함
+   - 200~250자 이내
+   - 사정관 해석 + 면접 활용 관점 1문장
+7. **improvementDirection / improvementExample**:
+   - 면접 활용 관점만 작성 (위 작성 어조 참고)
+   - 강점 계열과 연결되는 방향으로 작성
+
+${planScope}
+
+## 입력 데이터
+
+### 교과 세특 원문 데이터
+${input.subjectData}
+
+### 학생 프로필
+${input.studentProfile}
 
 ${plan !== "lite" ? SESPEC_EXPRESSION_GUIDE : ""}`;
 };

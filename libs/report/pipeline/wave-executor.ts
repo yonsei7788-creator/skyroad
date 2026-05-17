@@ -32,17 +32,27 @@ import {
 import {
   buildAcademicAnalysisPrompt,
   buildGyogwaAcademicAnalysisPrompt,
+  buildGraduateAcademicAnalysisPrompt,
 } from "../prompts/sections/academic-analysis.ts";
-import { buildCourseAlignmentPrompt } from "../prompts/sections/course-alignment.ts";
+import {
+  buildCourseAlignmentPrompt,
+  buildGraduateCourseAlignmentPrompt,
+} from "../prompts/sections/course-alignment.ts";
 import { buildAttendanceAnalysisPrompt } from "../prompts/sections/attendance-analysis.ts";
 import { buildActivityAnalysisPrompt } from "../prompts/sections/activity-analysis.ts";
-import { buildSubjectAnalysisPrompt } from "../prompts/sections/subject-analysis.ts";
+import {
+  buildSubjectAnalysisPrompt,
+  buildGraduateSubjectAnalysisPrompt,
+} from "../prompts/sections/subject-analysis.ts";
 import { buildBehaviorAnalysisPrompt } from "../prompts/sections/behavior-analysis.ts";
 import {
   buildWeaknessAnalysisPrompt,
   buildGyogwaWeaknessAnalysisPrompt,
 } from "../prompts/sections/weakness-analysis.ts";
-import { buildTopicRecommendationPrompt } from "../prompts/sections/topic-recommendation.ts";
+import {
+  buildTopicRecommendationPrompt,
+  buildGraduateTopicRecommendationPrompt,
+} from "../prompts/sections/topic-recommendation.ts";
 import { buildInterviewPrepPrompt } from "../prompts/sections/interview-prep.ts";
 import {
   buildAdmissionStrategyPrompt,
@@ -643,9 +653,11 @@ export const executeTask = async (
         isGyogwaOnly,
       };
       section = await callGemini<ReportSection>(
-        isGyogwaOnly
-          ? buildGyogwaAcademicAnalysisPrompt(acadInput, plan)
-          : buildAcademicAnalysisPrompt(acadInput, plan)
+        studentInfo.isGraduate
+          ? buildGraduateAcademicAnalysisPrompt(acadInput, plan)
+          : isGyogwaOnly
+            ? buildGyogwaAcademicAnalysisPrompt(acadInput, plan)
+            : buildAcademicAnalysisPrompt(acadInput, plan)
       );
       // 후속 태스크에서 사용할 직렬화 텍스트 저장
       updatedSer = {
@@ -662,6 +674,7 @@ export const executeTask = async (
             attendanceSummary: texts.attendanceSummaryText,
             studentProfile: texts.studentProfileText,
             studentGrade: studentInfo.grade,
+            isGraduate: studentInfo.isGraduate,
           },
           plan
         )
@@ -737,23 +750,25 @@ export const executeTask = async (
         studentInfo.isGraduate === true ||
         (studentInfo.grade === 3 && currentMonth >= 9);
 
-      section = await callGemini<ReportSection>(
-        buildCourseAlignmentPrompt(
-          {
-            recommendedCourseMatch: courseMatchText,
-            competencyExtraction: ser.compExtrText!,
-            studentProfile: texts.studentProfileText,
-            studentGrade: studentInfo.grade,
-            gradingSystem: state.preprocessedData!.gradingSystem,
-            isMedical,
-            isGyogwaOnly,
-            isGraduate: studentInfo.isGraduate,
-            enrollmentLocked,
-            plannedSubjects: texts.plannedSubjectsText,
-          },
-          plan
-        )
-      );
+      {
+        const courseAlignInput = {
+          recommendedCourseMatch: courseMatchText,
+          competencyExtraction: ser.compExtrText!,
+          studentProfile: texts.studentProfileText,
+          studentGrade: studentInfo.grade,
+          gradingSystem: state.preprocessedData!.gradingSystem,
+          isMedical,
+          isGyogwaOnly,
+          isGraduate: studentInfo.isGraduate,
+          enrollmentLocked,
+          plannedSubjects: texts.plannedSubjectsText,
+        };
+        section = await callGemini<ReportSection>(
+          studentInfo.isGraduate
+            ? buildGraduateCourseAlignmentPrompt(courseAlignInput, plan)
+            : buildCourseAlignmentPrompt(courseAlignInput, plan)
+        );
+      }
       break;
     }
 
@@ -795,22 +810,22 @@ export const executeTask = async (
 
       // 학년별 데이터가 전혀 없는 경우 — 기존처럼 전체 한 번 호출 (분할 의미 없음)
       if (yearsToCall.length === 0) {
+        const subjectInput = {
+          subjectData: subjectDataAll,
+          studentProfile: texts.studentProfileText,
+          studentGrade: studentInfo.grade,
+          isGraduate: studentInfo.isGraduate,
+          isMedical,
+          gradingSystem: state.preprocessedData!.gradingSystem,
+          isGyogwaOnly,
+          detectedMajorGroupLabel: detectedMajorForFlags
+            ? getMajorGroupLabel(detectedMajorForFlags)
+            : undefined,
+        };
         section = await callGemini<ReportSection>(
-          buildSubjectAnalysisPrompt(
-            {
-              subjectData: subjectDataAll,
-              studentProfile: texts.studentProfileText,
-              studentGrade: studentInfo.grade,
-              isGraduate: studentInfo.isGraduate,
-              isMedical,
-              gradingSystem: state.preprocessedData!.gradingSystem,
-              isGyogwaOnly,
-              detectedMajorGroupLabel: detectedMajorForFlags
-                ? getMajorGroupLabel(detectedMajorForFlags)
-                : undefined,
-            },
-            plan
-          ),
+          studentInfo.isGraduate
+            ? buildGraduateSubjectAnalysisPrompt(subjectInput, plan)
+            : buildSubjectAnalysisPrompt(subjectInput, plan),
           { maxOutputTokens: 16384 }
         );
         const fallbackSubjects =
@@ -822,22 +837,22 @@ export const executeTask = async (
         // 학년별 병렬 호출
         const yearResults = await Promise.all(
           yearsToCall.map(async (year) => {
-            const prompt = buildSubjectAnalysisPrompt(
-              {
-                subjectData: blocksByYear.get(year)!.join("\n\n"),
-                studentProfile: texts.studentProfileText,
-                studentGrade: studentInfo.grade,
-                isGraduate: studentInfo.isGraduate,
-                isMedical,
-                gradingSystem: state.preprocessedData!.gradingSystem,
-                isGyogwaOnly,
-                detectedMajorGroupLabel: detectedMajorForFlags
-                  ? getMajorGroupLabel(detectedMajorForFlags)
-                  : undefined,
-                targetYear: year,
-              },
-              plan
-            );
+            const subjectInputByYear = {
+              subjectData: blocksByYear.get(year)!.join("\n\n"),
+              studentProfile: texts.studentProfileText,
+              studentGrade: studentInfo.grade,
+              isGraduate: studentInfo.isGraduate,
+              isMedical,
+              gradingSystem: state.preprocessedData!.gradingSystem,
+              isGyogwaOnly,
+              detectedMajorGroupLabel: detectedMajorForFlags
+                ? getMajorGroupLabel(detectedMajorForFlags)
+                : undefined,
+              targetYear: year,
+            };
+            const prompt = studentInfo.isGraduate
+              ? buildGraduateSubjectAnalysisPrompt(subjectInputByYear, plan)
+              : buildSubjectAnalysisPrompt(subjectInputByYear, plan);
             // [DEBUG-SUBJ] prompt 길이 + 시작/끝 일부 + minimum/maximum 가이드 부분 추출
             const minMatch = prompt.match(/최소[\s\S]{0,80}최대[\s\S]{0,80}/);
             console.log(
@@ -914,6 +929,7 @@ export const executeTask = async (
             competencyExtraction: ser.compExtrText!,
             studentProfile: texts.studentProfileText,
             studentGrade: studentInfo.grade,
+            isGraduate: studentInfo.isGraduate,
           },
           plan
         )
@@ -1016,22 +1032,24 @@ export const executeTask = async (
         ?.map((s) => s.major)
         ?.slice(0, 2);
 
-      section = await callGemini<ReportSection>(
-        buildTopicRecommendationPrompt(
-          {
-            // subjectAnalysis AI 결과 대신 raw subjectData 사용 → subjectAnalysis 의존성 제거
-            subjectData: texts.subjectDataText,
-            weaknessAnalysisResult: ser.weaknessText ?? "[]",
-            studentProfile: texts.studentProfileText,
-            isGyogwaOnly,
-            aiRecommendedMajors: topicAiMajors,
-            plannedSubjects: texts.plannedSubjectsText,
-            studentGrade: studentInfo.grade,
-            isGraduate: studentInfo.isGraduate,
-          },
-          plan
-        )
-      );
+      {
+        const topicInput = {
+          // subjectAnalysis AI 결과 대신 raw subjectData 사용 → subjectAnalysis 의존성 제거
+          subjectData: texts.subjectDataText,
+          weaknessAnalysisResult: ser.weaknessText ?? "[]",
+          studentProfile: texts.studentProfileText,
+          isGyogwaOnly,
+          aiRecommendedMajors: topicAiMajors,
+          plannedSubjects: texts.plannedSubjectsText,
+          studentGrade: studentInfo.grade,
+          isGraduate: studentInfo.isGraduate,
+        };
+        section = await callGemini<ReportSection>(
+          studentInfo.isGraduate
+            ? buildGraduateTopicRecommendationPrompt(topicInput, plan)
+            : buildTopicRecommendationPrompt(topicInput, plan)
+        );
+      }
       break;
     }
 
@@ -1568,6 +1586,7 @@ export const executeTask = async (
         academicAnalysis: ser.acadAnalText!,
         studentProfile: texts.studentProfileText,
         studentGrade: studentInfo.grade,
+        isGraduate: studentInfo.isGraduate,
         targetDepartment: studentInfo.targetDepartment,
         detectedMajorGroup: detectedMajorForExploration,
         detectedDepartments: detectedDepartmentsForExploration,

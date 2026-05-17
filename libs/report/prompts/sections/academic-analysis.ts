@@ -134,13 +134,7 @@ export const buildGyogwaAcademicAnalysisPrompt = (
 - 이 학생의 등급은 1~9 범위입니다.
 - fiveGradeSimulation 출력 시: 9등급→5등급 전환 시뮬레이션을 수행하세요.`;
 
-  const graduateActionContext = input.isGraduate
-    ? `\n## ⚠️ 졸업생 actionItems 규칙 (필수)
-이 학생은 **졸업생**입니다. 성적 향상·과목 이수·활동 보완 관련 조언을 **절대 하지 마세요**. "~를 보완하세요" 표현도 금지합니다.
-actionItems는 **면접 대비, 수능 전략, 지원 전략** 관점에서 작성하세요.\n`
-    : "";
-
-  return `${gradingSystemWarning}${graduateActionContext}
+  return `${gradingSystemWarning}
 
 ## ⚠️ 환산 등급 노출 금지 (필수)
 - "환산 등급", "보정 등급", "환산 내신", "보정 내신" 등의 표현을 절대 사용하지 마세요.
@@ -282,16 +276,7 @@ export const buildAcademicAnalysisPrompt = (
 `
     : "";
 
-  const graduateActionContext = input.isGraduate
-    ? `\n## ⚠️ 졸업생 actionItems 규칙 (필수)
-이 학생은 **졸업생**입니다. 성적 향상·과목 이수·활동 보완 관련 조언을 **절대 하지 마세요**. "~를 보완하세요" 표현도 금지합니다.
-actionItems는 **면접 대비, 수능 전략, 지원 전략** 관점에서 작성하세요.
-- ✅ "성적 추이의 상승 흐름은 면접에서 발전가능성의 근거로 설명하면 효과적입니다"
-- ✅ "강점 교과를 활용한 전형이 유리한 구조입니다"
-- ❌ "국어 교과 성적을 높이세요" (졸업생은 성적 변경 불가)\n`
-    : "";
-
-  return `${gyogwaOnlyContext}${gradingSystemWarning}${graduateActionContext}
+  return `${gyogwaOnlyContext}${gradingSystemWarning}
 
 ## ⚠️ 환산 등급 노출 금지 (필수)
 - ⚠️ **"환산 등급", "보정 등급", "환산 내신", "보정 내신" 등의 표현을 리포트 텍스트에 절대 사용하지 마세요.**
@@ -408,4 +393,95 @@ Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다
   - ✅ "평균 2.42등급으로, 학종에서는 세특 품질에 따라 가능성이 열려 있습니다. 상승 추세(2.57→2.0)는 사정관이 긍정적으로 평가하는 요소입니다."
 
 ${PLAN_SPECIFIC[plan]}`;
+};
+
+/**
+ * 졸업생 전용 academicAnalysis 프롬프트.
+ * 졸업생은 성적이 이미 확정되어 변경 불가하므로, 최종 평균과 합격선 비교 + 면접·수능 활용 관점으로만 작성.
+ * 비졸업생 분기와 분리해 positive instruction만 사용 (Gemini 오판 방지).
+ */
+export const buildGraduateAcademicAnalysisPrompt = (
+  input: AcademicAnalysisPromptInput,
+  plan: ReportPlan
+): string => {
+  const gyogwaScope = input.isGyogwaOnly
+    ? "이 학생은 모든 희망대학이 학생부교과전형입니다. 최종 평균 등급과 합격선 비교가 평가의 전부이며, 학종 관점·사정관 해석 표현은 사용하지 않습니다."
+    : "이 학생은 학생부종합전형 중심으로 평가됩니다. 성적의 정량 해석과 함께 사정관 관점의 의미를 담아 작성합니다.";
+
+  const planAddendum =
+    plan === "premium"
+      ? `\n\n## Premium 추가 출력
+- fiveGradeSimulation: 빈 배열([])로 출력합니다. 졸업생은 9등급제 환경에서 평가받았으므로 5등급제 환산이 무의미합니다.
+- improvementPriority: 빈 배열([])로 출력합니다. 성적은 확정되었으므로 우선순위를 산정하지 않습니다.`
+      : "";
+
+  return `## 졸업생 전용 성적 분석 (positive instruction only)
+
+이 학생은 **졸업생**입니다. 성적이 이미 확정되어 있으므로, 이 섹션은 **확정된 성적 구조의 평가 + 면접·수능·지원 전략에서 어떻게 활용할지**만 다룹니다.
+
+${gyogwaScope}
+
+## 분석 관점
+- 정량 분석가 관점에서 최종 평균 등급·학년별 추이·과목 편차를 객관적으로 해석합니다.
+- 모든 해석은 **확정된 성적의 입시적 의미**(합격선 대비 위치, 사정관 관점의 강점·약점)와 **면접·수능 활용 방향**으로 마무리합니다.
+- 상승 추세는 면접에서 발전가능성의 근거로 활용 가능한 점, 하락 추세는 면접에서 사유 설명·만회 서사로 활용할 수 있는 점을 함께 서술합니다.
+
+## 출력 JSON 스키마
+
+{
+  "sectionId": "academicAnalysis",
+  "title": "학업 분석",
+  "overallAverageGrade": "<전처리 overallAverage 값 그대로 (number)>",
+  "gradesByYear": "<전처리 averageByGrade 배열 그대로>",
+  "subjectCombinations": "<전처리 subjectCombinations 배열에서 name→combination, average→averageGrade로 매핑한 그대로>",
+  "gradeTrend": "<전처리 gradeTrend.direction 한글 변환 (상승|유지|하락)>",
+  "subjectGrades": "<후처리 자동 주입, 빈 배열로 두어도 됨>",
+  "interpretation": "<최종 평균 등급으로 시작하여 입학사정관 관점의 해석을 서술. 면접·수능 활용 관점으로 마무리.>",
+  "gradeDeviationAnalysis": {
+    "highestSubject": "<최고 과목명>",
+    "lowestSubject": "<최저 과목명>",
+    "deviationRange": "<편차 등급 수>",
+    "riskAssessment": "<편차의 입시적 의미 + 면접에서 어떻게 설명할지를 서술. 예: '국수영 간 2등급 편차는 사정관이 특정 교과 편중 학습으로 해석할 수 있으므로, 면접에서 강점 교과에 집중한 학습 전략으로 설명하면 효과적입니다.'>"
+  },
+  "majorRelevanceAnalysis": {
+    "enrollmentEffort": "<전공 관련 교과 이수 노력을 확정된 사실로 서술. '이미 ~을 이수하여' 톤.>",
+    "achievement": "<이수한 전공 관련 교과의 성취도 평가 + 면접에서 어떻게 어필할지>",
+    "recommendedSubjects": []
+  },
+  "gradeChangeAnalysis": {
+    "currentTrend": "상승|유지|하락",
+    "prediction": "<'최종 평균 X등급은 합격선 대비 ~한 위치입니다' 형식으로 작성. 추세 의미를 함께 서술.>",
+    "actionItems": ["<면접 대비·수능 전략·지원 전략 관점의 항목만>", "<예: 상승 추세를 면접 자기소개에서 발전가능성 근거로 활용>"],
+    "actionItemPriorities": ["high"]
+  }${planAddendum}
+}
+
+## 작성 어조 (반드시 준수)
+- 모든 권고는 **이미 확정된 성적·기록의 활용 관점**으로 작성합니다.
+- 권장 표현: "~로 평가될 수 있습니다", "면접에서 ~로 설명하면 효과적입니다", "수능 ~과목 성취가 ~ 전형 활용에 유리합니다", "확정된 ~ 강점을 ~ 관점으로 어필할 수 있습니다".
+- ⚠️ actionItems는 **면접·수능·지원 전략 관점만** 작성합니다. 성적 자체를 변경하는 권고는 작성하지 않습니다.
+- ⚠️ recommendedSubjects는 빈 배열([])로 출력합니다 — 졸업생에게 추천 과목 개념이 적용되지 않습니다.
+
+## 데이터 시점 사용 원칙
+- overallAverageGrade(전체 평균)는 입력된 모든 학기의 합산 평균이며 특정 학기의 등급이 아닙니다.
+- 학기별 등급을 인용할 때는 입력 데이터에 실제 존재하는 학기만 사용합니다.
+
+## ⚠️ 환산 등급 노출 금지
+- "환산 등급", "보정 등급", "환산 내신", "보정 내신" 표현을 리포트에 노출하지 마세요.
+- schoolTypeAdjustment 필드를 출력하지 마세요.
+
+${input.detectedMajorGroup ? `## 생기부 기반 강점 계열\n이 학생의 강점 계열: **${getMajorGroupLabel(input.detectedMajorGroup)}**\n- majorRelevanceAnalysis의 enrollmentEffort/achievement는 위 강점 계열을 기준으로 평가합니다.\n` : ""}
+
+## 입력 데이터
+
+### 정량 분석 결과
+${input.quantitativeAnalysis}
+
+### 성적 전처리 결과 (코드 계산 완료)
+${input.preprocessedAcademicData}
+
+### 학생 프로필
+${input.studentProfile}
+
+${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}` : ""}`;
 };

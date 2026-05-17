@@ -59,22 +59,11 @@ export const buildTopicRecommendationPrompt = (
 `
     : "";
 
-  const graduateContext = input.isGraduate
-    ? `## ⚠️ 졸업생 규칙 (최우선)
-이 학생은 **졸업생**입니다. 생기부를 더 이상 수정할 수 없습니다.
-- "향후 세특에 활용할 주제" 대신 **"면접에서 활용할 탐구 주제"**로 전환하세요.
-- description에서 "세특에 작성하면...", "3학년에서 탐구하면...", "~를 보완하세요" 같은 표현을 **절대 사용하지 마세요**.
-- "이 주제는 ~관점으로 정리하면 면접에서 진로역량을 어필할 수 있습니다", "이 주제를 ~와 연결하면 탐구의 일관성을 보여주기에 효과적입니다" 등으로 작성하세요.
-- 주제 자체는 동일하게 추천하되, 활용 맥락을 **면접에서의 설명 관점**으로 바꾸세요.
-
-`
-    : "";
-
-  return `${gyogwaOnlyContext}${graduateContext}## 작업
-${input.isGraduate ? "학생의 면접에서 활용할 수 있는 탐구 주제를 맞춤 추천하세요." : "학생의 향후 세특에 활용할 수 있는 탐구 주제를 맞춤 추천하세요."}
+  return `${gyogwaOnlyContext}## 작업
+학생의 향후 세특에 활용할 수 있는 탐구 주제를 맞춤 추천하세요.
 
 ## 서술 관점: 탐구 설계자
-${input.isGraduate ? "이 섹션은 **면접에서 활용할 탐구 주제**를 설계합니다. 기존 탐구의 확장 관점과 면접 답변에서의 활용 방법을 중심으로 서술하세요." : "이 섹션은 **향후 세특에 활용할 구체적 탐구 주제**를 설계합니다. 기존 탐구의 확장 가능성과 실현 방법을 중심으로 서술하세요."}
+이 섹션은 **향후 세특에 활용할 구체적 탐구 주제**를 설계합니다. 기존 탐구의 확장 가능성과 실현 방법을 중심으로 서술하세요.
 - "기존 ~탐구를 확장하여 ~주제로 발전시킬 수 있다", "~과목에서 ~방향의 탐구가 효과적이다" 등 주제 설계 어투를 사용하세요.
 
 ## ⛔ 다른 섹션과의 역할 경계 (필수)
@@ -172,4 +161,94 @@ ${input.studentProfile}
 ${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}` : ""}
 
 ${PLAN_SPECIFIC[plan]}`;
+};
+
+/**
+ * 졸업생 전용 topicRecommendation 프롬프트.
+ * 생기부가 확정되어 새로운 탐구 수행이 불가하므로, 추천 주제는 "면접에서 활용할 수 있는 설명 포인트"로 작성한다.
+ * 비졸업생 분기와 분리해 positive instruction만 사용 (Gemini 오판 방지).
+ */
+export const buildGraduateTopicRecommendationPrompt = (
+  input: TopicRecommendationPromptInput,
+  plan: ReportPlan
+): string => {
+  const gyogwaScope = input.isGyogwaOnly
+    ? "이 학생은 모든 희망대학이 학생부교과전형입니다. description은 교과전형 평가·면접 활용 관점으로 작성합니다."
+    : "";
+
+  const planScope =
+    plan === "lite"
+      ? "topics 배열에 3개 주제를 출력합니다. activityDesign, sampleEvaluation은 생략하고 description에 면접 활용 의의를 포함합니다."
+      : plan === "standard"
+        ? "topics 배열에 최대 3개를 출력합니다. activityDesign·sampleEvaluation은 생략합니다. description·rationale·existingConnection을 포함합니다."
+        : "topics 배열에 최대 5개를 출력합니다. activityDesign(면접 답변 설계 단계)·sampleEvaluation(면접 답변 예시)를 모든 주제에 포함합니다.";
+
+  const aiMajorBlock =
+    input.aiRecommendedMajors && input.aiRecommendedMajors.length > 0
+      ? `### AI 분석 기반 추천 학과\n${input.aiRecommendedMajors.map((m, i) => `${i + 1}순위: ${m}`).join("\n")}\n\n위 학과 방향과 관련된 주제를 우선 배치합니다.`
+      : "추천 학과 정보가 없으므로 생기부 탐구 흐름에 근거한 주제만 추천합니다.";
+
+  return `## 졸업생 전용 주제 추천 (면접 활용 관점)
+
+이 학생은 **졸업생**입니다. 생기부 세특에 새 탐구를 추가할 수 없으므로, 이 섹션은 **면접에서 학생이 활용할 수 있는 탐구 주제**를 추천합니다.
+추천 주제는 기존 세특·창체·독서 활동에서 자연스럽게 연결되는 설명 포인트로 작성하며, 학생이 새로운 활동을 수행하는 것이 아니라 **이미 한 경험을 어떻게 풀어 답변할지**를 설계합니다.
+
+${gyogwaScope}
+
+## 작성 어조 (positive instruction)
+- description: "이 주제는 ~ 경험을 ~ 관점으로 정리하면 면접에서 진로역량을 어필할 수 있습니다", "~ 와 연결해 답변하면 탐구의 일관성을 보여주기에 효과적입니다"
+- activityDesign.steps: "1단계: 기존 세특·동아리에서 이 주제와 연결되는 활동 추출 → 2단계: 면접 답변용 STAR 구조 정리 → 3단계: 꼬리질문 대비 보강 자료 준비"
+- expectedResult: "면접 답변 정리물 + 꼬리질문 대비 노트"
+- sampleEvaluation: 면접 답변 예시 ("~ 시간에 ~ 주제에 관심을 가졌고, 이후 ~ 학습으로 이어졌습니다.")
+
+## 출력 JSON 스키마
+
+{
+  "sectionId": "topicRecommendation",
+  "title": "주제 추천",
+  "topics": [
+    {
+      "topic": "지역 복지 정책의 효과성 비교 분석",
+      "relatedSubjects": ["사회탐구"],
+      "description": "이 주제는 학생의 사회·문화 세특에서 다룬 복지 문제 탐구의 연장선입니다. 정책 효과성 관점으로 정리해 면접에서 설명하면, 진로역량을 중점적으로 평가하는 대학에서 분석적 사고를 어필할 수 있습니다.",
+      "importance": "high",
+      "rationale": "기존 사회·문화 탐구를 면접에서 정책 분석 깊이로 풀어내는 방향입니다.",
+      "existingConnection": "2학년 사회·문화에서 복지 문제를 다룬 경험을 면접에서 정책 효과성 분석으로 확장 설명할 수 있습니다.",
+      "activityDesign": {
+        "steps": ["1단계: 기존 세특·동아리에서 이 주제와 연결되는 활동 추출", "2단계: 면접 답변용 STAR 구조 정리 (배경·내용·분석·결과)", "3단계: 꼬리질문 대비 보강 자료 준비"],
+        "expectedResult": "면접 답변 정리물 + 꼬리질문 대비 노트"
+      },
+      "sampleEvaluation": "면접 답변 예시: '사회·문화 시간에 복지 사각지대 문제를 다루며 지자체별 정책 효과 차이에 관심을 갖게 되었습니다. 정책 효과를 비교할 때는 ~ 기준을 고려해야 한다고 생각합니다.'"
+    }
+  ]
+}
+
+## 추천 기준 (우선순위 순)
+1. 학생의 기존 탐구·세특·창체 활동과 자연스럽게 이어지는 주제 (면접 답변으로 활용 가능)
+2. 생기부에서 드러나는 강점 계열과 관련성이 높은 주제
+3. 면접에서 깊이를 보여주기 쉬운 주제 (단순 조사 회상이 아닌, 분석·해석 답변이 가능한 주제)
+4. 꼬리질문 대비가 명확한 주제 (학생이 추가 학습을 통해 답변 깊이를 확장 가능)
+
+## 엮으면 좋은 과목 영역 규칙
+- 각 추천 주제의 relatedSubjects는 **대분류 과목 영역 1개만** 출력합니다.
+- 허용되는 대분류: 국어, 영어, 수학, 사회, 과학, 사회탐구, 과학탐구
+- 가장 직접적으로 관련된 핵심 과목 영역 1개만 선택합니다.
+
+## 분석 방향
+주제 추천의 기반은 **생기부에서 실제로 축적된 탐구 방향**입니다.
+
+${aiMajorBlock}
+
+## 입력 데이터
+
+### 세특 원문 데이터
+${input.subjectData}
+
+### 약점 분석 결과
+${input.weaknessAnalysisResult}
+
+### 학생 프로필
+${input.studentProfile}
+
+${planScope}`;
 };

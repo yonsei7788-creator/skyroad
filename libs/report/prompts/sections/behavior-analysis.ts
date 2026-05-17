@@ -8,6 +8,8 @@ export interface BehaviorAnalysisPromptInput {
   studentProfile: string;
   /** 학생의 현재 학년 (1, 2, 3) */
   studentGrade: number;
+  /** 졸업생 여부 — 행동특성도 이미 확정이므로 보완 표현 금지 */
+  isGraduate?: boolean;
 }
 
 const PLAN_VOLUME_GUIDE: Record<ReportPlan, string> = {
@@ -74,8 +76,14 @@ export const buildBehaviorAnalysisPrompt = (
 }
 
 ## 현재 학년 정보
-- 학생의 현재 학년: ${input.studentGrade}학년
-- **현재 학년 이후의 데이터가 없는 것은 당연합니다.** 아직 해당 학년이 종료되지 않았거나 시작되지 않았기 때문입니다.
+${
+  input.isGraduate
+    ? `- 이 학생은 **졸업생**입니다. 행동특성도 이미 확정이므로 보완·개선 권고를 절대 하지 마세요.
+- overallComment, admissionRelevance에서 "앞으로", "남은 기간", "보완하세요", "~를 추가하면" 같은 미래형·개선형 표현을 사용하지 마세요.
+- admissionRelevance는 **면접에서 이 행동특성을 어떻게 활용·설명할지** 관점으로만 작성하세요. 예: "갈등 중재 경험을 STAR 구조로 정리하여 면접에서 설명하면 효과적입니다."`
+    : `- 학생의 현재 학년: ${input.studentGrade}학년
+- **현재 학년 이후의 데이터가 없는 것은 당연합니다.** 아직 해당 학년이 종료되지 않았거나 시작되지 않았기 때문입니다.`
+}
 
 ## ⛔ 기록 부재 언급 금지 (절대 준수)
 - "N학년 기록이 부재하여 아쉽습니다", "N학년 데이터가 없어 분석이 제한됩니다" 등 **기록 부재에 대한 부정적 언급은 절대 금지**합니다.

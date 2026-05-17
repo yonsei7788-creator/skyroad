@@ -6,6 +6,8 @@ export interface AttendanceAnalysisPromptInput {
   attendanceSummary: string;
   studentProfile: string;
   studentGrade: number;
+  /** 졸업생 여부 — 출결이 이미 확정이므로 개선 조언 금지 */
+  isGraduate?: boolean;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -38,9 +40,9 @@ export const buildAttendanceAnalysisPrompt = (
   plan: ReportPlan
 ): string => {
   return `## 작업
-이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.
+${input.isGraduate ? "이 학생은 **졸업생**입니다. 출결이 이미 확정되었으므로 면접·지원 전략 관점에서만 영향을 평가하세요." : `이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.`}
 
-학생의 출결 데이터를 분석하고 입시에 미치는 영향을 평가하세요.
+학생의 출결 데이터를 분석하고 입시에 미치는 영향을 평가하세요.${input.isGraduate ? '\n\n## ⚠️ 졸업생 규칙 (최우선)\n이 학생은 **졸업생**입니다. 출결은 이미 확정이므로 개선 조언을 절대 하지 마세요.\n- improvementAdvice 필드는 overallRating에 관계없이 **반드시 빈 문자열("")**로 출력하세요.\n- impactAnalysis, integrityContribution에서도 "앞으로", "남은 기간", "개선", "보완" 같은 미래형·개선형 표현을 사용하지 마세요.\n- 출결이 좋지 않다면 "면접 시 자기소개·태도 측면에서 설명을 보강하면 좋습니다" 같은 면접 활용 관점으로만 서술하세요.' : ""}
 
 ## 서술 관점: 출결 기록 분석가
 이 섹션은 **출석 데이터의 입시 영향도**를 객관적으로 평가합니다. 출결 수치와 그 의미를 중심으로 서술하세요.
@@ -80,7 +82,7 @@ ${input.studentProfile}
   "overallRating": "<우수|보통|주의|경고 중 하나, 아래 기준표대로 선택>",
   "impactAnalysis": "<입력 attendanceSummary에 존재하는 학년의 수치만 인용하여 입시 영향을 서술>",
   "integrityContribution": "<출결 기록을 성실성 평가 측면에서 서술>",
-  "improvementAdvice": "<주의/경고 시 개선 조언, 우수/보통 시 빈 문자열>"
+  "improvementAdvice": "<주의/경고 시 개선 조언, 우수/보통 시 빈 문자열. ⚠️ 졸업생이면 overallRating 무관하게 반드시 빈 문자열>"
 }
 
 ## 출력 지시

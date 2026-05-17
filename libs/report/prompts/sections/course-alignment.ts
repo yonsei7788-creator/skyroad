@@ -146,13 +146,13 @@ ${medicalCourseContext}
 ### 권장과목 매칭 데이터 (생기부 기반 — 코드 전처리 결과)
 ⚠️⚠️⚠️ **아래 데이터가 이 섹션의 핵심 입력입니다. courses 배열은 반드시 이 데이터의 requiredCourses를 그대로 사용하세요.**
 - requiredCourses → courses 배열의 과목 목록
-- takenCourses → status: "이수" (이미 생기부에 이수 기록 존재${input.isGraduate === true || input.studentGrade === 3 ? ", 또는 학생 직접 입력 수강예정 과목 — 3학년/졸업생은 동일 취급" : ""})
-- plannedCourses → status: "이수 예정" (학생이 직접 입력한 수강 예정 과목 안에 포함${input.isGraduate === true || input.studentGrade === 3 ? " — ⚠️ 3학년·졸업생은 이 배열이 비어 있고, 수강예정 과목은 takenCourses에 이미 합쳐져 있음" : ""})
+- takenCourses → status: "이수" (이미 생기부에 이수 기록 존재${input.studentGrade === 3 ? ", 또는 학생 직접 입력 수강예정 과목 — 고3은 동일 취급" : ""})
+- plannedCourses → status: "이수 예정" (학생이 직접 입력한 수강 예정 과목 안에 포함${input.studentGrade === 3 ? " — ⚠️ 고3은 이 배열이 비어 있고, 수강예정 과목은 takenCourses에 이미 합쳐져 있음" : ""})
 - missingCourses → status: "미이수" (이수도 안 했고 수강 예정에도 없음)
 - matchRate → 출력의 matchRate (이수 + 이수 예정 합산 비율)
 ${
-  input.isGraduate === true || input.studentGrade === 3
-    ? `\n⛔ **이 학생은 ${input.isGraduate ? "졸업생" : "고3"} 이므로 "수강 예정", "이수 예정", "잔여 학기에 이수하면" 같은 미래 시제·예정 표현을 절대 사용하지 마세요.** takenCourses 항목은 모두 "이미 이수 완료"로 다루고, "수강한", "이수한", "이미 학습한" 등 완료형으로 서술합니다. missingCourses만 "미이수"로 표현합니다.\n`
+  input.studentGrade === 3
+    ? `\n⛔ **이 학생은 ${"고3"} 이므로 "수강 예정", "이수 예정", "잔여 학기에 이수하면" 같은 미래 시제·예정 표현을 절대 사용하지 마세요.** takenCourses 항목은 모두 "이미 이수 완료"로 다루고, "수강한", "이수한", "이미 학습한" 등 완료형으로 서술합니다. missingCourses만 "미이수"로 표현합니다.\n`
     : ""
 }
 ${input.recommendedCourseMatch}
@@ -166,14 +166,10 @@ ${input.competencyExtraction}
 ${input.studentProfile}
 
 ### 학년·시점별 분석 방향
-- 학생 학년: ${input.studentGrade}학년${input.isGraduate ? " (졸업생)" : ""}
+- 학생 학년: ${input.studentGrade}학년
 ${
-  input.isGraduate
-    ? `- 이 학생은 **졸업생**입니다. 생기부 수정 시점이 이미 지났습니다.
-- 현재 이수 완료된 과목 기준으로만 입시 영향을 분석하세요.
-- recommendation은 미이수 권장과목에 대한 면접 대응(미이수 사유 설명, 강점 과목으로 보완) 방향으로 작성합니다.`
-    : input.studentGrade === 3
-      ? `- 이 학생은 **3학년 재학생**입니다. 3학년 선택과목은 학년 시작 시점에 시간표가 확정되어, 3학년 동안 새로 권장과목을 추가 선택하는 일은 일어나지 않습니다.
+  input.studentGrade === 3
+    ? `- 이 학생은 **3학년 재학생**입니다. 3학년 선택과목은 학년 시작 시점에 시간표가 확정되어, 3학년 동안 새로 권장과목을 추가 선택하는 일은 일어나지 않습니다.
 - recommendation은 **3학년 시간표에 미이수 권장과목이 포함되어 있는지 여부**에 따라 다음 트랙 중 하나로 작성합니다.
 ${
   input.plannedSubjects
@@ -193,12 +189,12 @@ ${
   }`
 }
 - 1·2학년에 개설되는 권장과목 중 미이수가 있는 경우, 그 과목은 이미 이수 시점이 지났으므로 우회 보완 + 면접 대응 방향으로만 정리합니다.`
-      : `- 이 학생은 **${input.studentGrade}학년 재학생**으로, 남은 학기에 추가 과목 이수가 가능한 시점입니다.
+    : `- 이 학생은 **${input.studentGrade}학년 재학생**으로, 남은 학기에 추가 과목 이수가 가능한 시점입니다.
 - 미이수 권장과목에 대해 잔여 학기 이수 전략을 구체적으로 제안합니다.${
-          input.plannedSubjects
-            ? `\n- 학생이 수강 예정 과목을 입력한 경우, 이수 전략은 그 범위 또는 잔여 학기 일반 가능 과목 안에서 제시합니다. 학교 교육과정에 있는 과목 안에서만 추천합니다.`
-            : ""
-        }`
+        input.plannedSubjects
+          ? `\n- 학생이 수강 예정 과목을 입력한 경우, 이수 전략은 그 범위 또는 잔여 학기 일반 가능 과목 안에서 제시합니다. 학교 교육과정에 있는 과목 안에서만 추천합니다.`
+          : ""
+      }`
 }${
     input.plannedSubjects
       ? `
@@ -213,7 +209,7 @@ ${input.plannedSubjects}`
 중요: courses 배열의 각 요소는 반드시 아래와 같은 완전한 객체여야 합니다.
 
 ${
-  input.isGraduate === true || input.studentGrade === 3
+  input.studentGrade === 3
     ? `{
   "sectionId": "courseAlignment",
   "title": "과목 적합도",
@@ -262,8 +258,8 @@ ${
 
 ### 미이수 과목 영향 분석 (missingCourseImpact)
 ${
-  input.isGraduate === true || input.studentGrade === 3
-    ? `- 이 학생은 ${input.isGraduate ? "졸업생" : "고3"}이므로 takenCourses(이수 완료)와 missingCourses(미이수)만 존재합니다. "이수 예정" 개념·표현을 사용하지 마세요.
+  input.studentGrade === 3
+    ? `- 이 학생은 ${"고3"}이므로 takenCourses(이수 완료)와 missingCourses(미이수)만 존재합니다. "이수 예정" 개념·표현을 사용하지 마세요.
   - takenCourses: "이미 이수하여 권장과목 충족도가 높다" 톤으로 서술합니다. ("잔여 학기에 이수하면" 같은 미래형 표현 금지.)
   - missingCourses: 학종 "교과 이수 노력" 평가에서 어떻게 읽힐지, 보완이 필요한 영역인지 서술합니다.`
     : `- "이수 예정" 과목과 "미이수" 과목을 분리해서 서술합니다.
@@ -277,7 +273,7 @@ ${
   - ✅ 권장: "~해주세요", "~하면 좋겠습니다", "~를 권합니다", "~로 정리해주세요"
   - 권장 형태: "이미 이수한 경제 세특에서 면접 시 어떻게 풀어 설명할지 정리해주세요", "다른 사회 교과 세특에서 우회 보완하면 좋겠습니다"
 ${
-  input.isGraduate === true || input.studentGrade === 3
+  input.studentGrade === 3
     ? `- takenCourses(이수 완료) 과목은 "이미 이수한 OO 과목 세특에서 면접 시 어떤 탐구·발표 내용을 풀어 설명할지 정리해주세요" 형태로 서술합니다.
 - missingCourses는 시간표가 확정된 시점이므로 우회 보완(다른 교과 세특·동아리·자율탐구·독서 등) + 면접 대응(미이수 사유 설명) 방향으로 권유합니다.
 - 미이수 과목이 여러 개일 때는 한 단락으로 통합 서술합니다.`
@@ -292,6 +288,79 @@ ${
   - B. 미이수가 유지될 경우: 해당 과목 없이 지원할 때의 불이익과 이를 보완할 수 있는 대안 전략을 제시합니다.
 - **3학년 재학생**: 위 "학년·시점별 분석 방향"의 트랙 A·B를 그대로 적용합니다. "이수 예정" 과목은 트랙 A로 자동 진입합니다.
 - **졸업생**: 미이수 상태에서의 면접 대응(미이수 사유 설명, 강점 과목으로 보완)만 작성합니다.
+
+${PLAN_SPECIFIC[plan]}`;
+};
+
+/**
+ * 졸업생 전용 courseAlignment 프롬프트.
+ * 생기부 이수 과목이 이미 확정되어 변경 불가하므로, recommendation은 면접 대응 관점만 작성한다.
+ * 비졸업생 분기와 분리해 positive instruction만 사용 (Gemini 오판 방지).
+ *
+ * 참고: 졸업생 리포트에서는 SectionRenderer 측에서 이 섹션을 UI에 노출하지 않지만, 파이프라인은 이 섹션을 생성하여 다른 섹션의 컨텍스트(권장과목 매칭)로 활용한다.
+ */
+export const buildGraduateCourseAlignmentPrompt = (
+  input: CourseAlignmentPromptInput,
+  plan: ReportPlan
+): string => {
+  const gyogwaScope = input.isGyogwaOnly
+    ? "이 학생은 모든 희망대학이 학생부교과전형입니다. recommendation은 교과전형 평가·면접 활용 관점으로 작성합니다."
+    : "";
+
+  const medicalContext = input.isMedical
+    ? "\n## 의·치·한·약·수 계열 — 미이수 과목이 있는 경우 면접에서 학습 의지를 어떻게 보여줄지, 수능 핵심 과목 성취도와 어떻게 연결해 어필할지를 함께 작성합니다.\n"
+    : "";
+
+  return `## 졸업생 전용 권장과목 이수율 분석 (면접 대응 관점)
+
+이 학생은 **졸업생**입니다. 생기부에 기록된 이수 과목이 이미 확정되어 있으므로, 이 섹션은 **이수 완료된 권장과목의 입시적 의미 + 미이수 과목에 대한 면접 대응 방향**만 다룹니다.
+
+${gyogwaScope}
+${medicalContext}
+
+## 작성 어조 (positive instruction)
+- missingCourseImpact: "이미 ~ 과목을 이수하여 권장과목 충족도가 ~ 합니다. ~ 미이수는 학종 교과 이수 노력 평가에서 ~ 영역입니다." (이미 확정된 사실 + 평가적 의미)
+- recommendation: "이미 이수한 ~ 세특에서 ~ 어떻게 풀어냈는지 면접에서 설명할 수 있도록 정리해주세요. 미이수 과목에 대해서는 면접에서 ~ 관점으로 사유를 설명하고, 이미 이수한 ~ 강점 과목·세특·동아리 경험을 면접에서 ~ 연결해 어필하면 효과적입니다."
+
+## 분석 관점
+- 이미 이수한 권장과목과 미이수 권장과목의 충족 상태를 명확히 정리합니다.
+- 미이수 과목은 객관적 사실로 평가하고, 면접에서 어떻게 설명·보완 서사로 활용할지를 함께 작성합니다.
+- 기존 강점 과목 세특·창체·독서·동아리 활동 중 미이수 과목의 핵심 주제와 연결되는 경험을 면접에서 어떻게 어필할지 설계합니다.
+
+## 출력 JSON 스키마
+
+{
+  "sectionId": "courseAlignment",
+  "title": "과목 적합도",
+  "targetMajor": "사회과학",
+  "matchRate": 75,
+  "courses": [
+    {"course": "정치와법", "status": "이수", "importance": "권장"},
+    {"course": "사회·문화", "status": "이수", "importance": "권장"},
+    {"course": "경제", "status": "이수", "importance": "권장"},
+    {"course": "세계사", "status": "미이수", "importance": "권장"}
+  ],
+  "missingCourseImpact": "정치와법·사회·문화·경제 과목을 이미 이수하여 권장과목 충족도가 높습니다. 세계사 미이수는 학종 교과 이수 노력 평가에서 다소 약점으로 남습니다.",
+  "recommendation": "이미 이수한 경제 세특에서 사회과학 핵심 주제 탐구를 어떻게 풀어냈는지 면접에서 설명할 수 있도록 정리해주세요. 세계사 미이수에 대해서는 면접에서 사유를 솔직히 설명하고, 사회·문화·정치와법 세특에 담긴 사회과학적 분석 경험으로 관련 역량을 어필하면 효과적입니다."
+}
+
+## 입력 데이터
+
+### 권장과목 매칭 데이터 (생기부 기반 — 코드 전처리 결과)
+⚠️ **이 데이터의 requiredCourses 목록을 그대로 사용**하세요. AI가 과목을 임의로 추가/변경하지 마세요.
+- requiredCourses → courses 배열의 과목 목록
+- takenCourses → status: "이수"
+- missingCourses → status: "미이수"
+- matchRate → 출력의 matchRate 값
+${input.recommendedCourseMatch}
+
+### 역량 추출 결과
+${input.competencyExtraction}
+
+⚠️ **targetMajor**: 위 역량 추출 결과의 detectedMajorGroup 값을 그대로 사용하세요.
+
+### 학생 프로필
+${input.studentProfile}
 
 ${PLAN_SPECIFIC[plan]}`;
 };
