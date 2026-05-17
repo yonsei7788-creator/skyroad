@@ -89,7 +89,8 @@ export const ReportCover = ({ meta }: ReportCoverProps) => {
         <div className={styles.coverStudentRow}>
           <span className={styles.coverStudentLabel}>학년 / 계열</span>
           <span className={styles.coverStudentValue}>
-            {studentInfo.grade}학년 / {studentInfo.track}
+            {studentInfo.isGraduate ? "졸업생" : `${studentInfo.grade}학년`} /{" "}
+            {studentInfo.track}
           </span>
         </div>
         {studentInfo.targetUniversity && (
