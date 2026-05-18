@@ -291,7 +291,7 @@ export const postprocess = (
   if (targetDept) {
     const majorInfo = findMajorInfo(targetDept);
     if (majorInfo) {
-      for (const university of majorInfo.universities) {
+      for (const university of Object.keys(majorInfo.departmentsByUniversity)) {
         candidateSet.add(`${university}|${majorInfo.majorName}`);
         candidateUniversities.add(university);
       }
@@ -306,23 +306,21 @@ export const postprocess = (
     }
   }
 
-  // 커리어넷 기반: 대학에 실제 존재하는 학과인지 검증
+  // 커리어넷 + admission-cutoff 기반: 대학에 실제 존재하는 학과인지 검증
+  const normalizeDept = (s: string): string => s.replace(/[과부]$/, "");
   const isRealDepartment = (
     university: string,
     department: string
   ): boolean => {
+    const deptNorm = normalizeDept(department);
     for (const m of MAJOR_INFO_DATA) {
-      const deptMatch =
-        m.majorName === department ||
-        m.departments.some(
-          (d) =>
-            d === department ||
-            department === d ||
-            department.replace(/[과부]$/, "") === d.replace(/[과부]$/, "")
-        );
-      if (!deptMatch) continue;
-
-      if (m.universities.includes(university)) return true;
+      const univDepts = m.departmentsByUniversity[university];
+      if (!univDepts) continue;
+      if (m.majorName === department) return true;
+      if (
+        univDepts.some((d) => d === department || normalizeDept(d) === deptNorm)
+      )
+        return true;
     }
     return false;
   };

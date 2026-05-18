@@ -102,7 +102,7 @@ export const isArtSportPractical = (targetDept: string): boolean => {
   const majorInfo = findMajorInfo(targetDept);
   if (!majorInfo) return true;
 
-  const hasCutoff = majorInfo.universities.some(
+  const hasCutoff = Object.keys(majorInfo.departmentsByUniversity).some(
     (u) => findCutoffData(u, majorInfo.majorName).length > 0
   );
   return !hasCutoff;
@@ -1952,7 +1952,7 @@ const buildTexts = (
     ? `\n\n### 커리어넷 학과 관련 교과 (${majorInfoFromApi.majorName})\n` +
       `- 일반선택 관련 교과: ${majorInfoFromApi.electiveSubjects.join(", ") || "없음"}\n` +
       `- 진로선택 관련 교과: ${majorInfoFromApi.careerSubjects.join(", ") || "없음"}\n` +
-      `- 개설 대학: ${majorInfoFromApi.universities.slice(0, 10).join(", ")}`
+      `- 개설 대학: ${Object.keys(majorInfoFromApi.departmentsByUniversity).slice(0, 10).join(", ")}`
     : "";
   const majorEvaluationContextText = majorEvalBase + careerNetContext;
 
@@ -2903,7 +2903,7 @@ export const buildUniversityCandidatesText = (
   }
   if (!majorInfo) return "[]";
 
-  const universities = majorInfo.universities as string[];
+  const universities = Object.keys(majorInfo.departmentsByUniversity);
 
   // 커트라인 데이터에서 추가 대학 보충 (정규화 후 정확 매칭)
   const deptCore = normalizeDeptCore(majorInfo.majorName);
@@ -3302,48 +3302,33 @@ export const buildHopeUniversityRecommendations = (
 
 /**
  * 대학에 실제 개설된 학과명을 찾아 반환.
- * 1순위: ADMISSION_CUTOFF_DATA에서 대학+학과 정확 매칭
- * 2순위: departments 변형으로 재조회
- * 3순위: majorInfo.majorName (커리어넷 표준명 fallback)
+ * 1순위: departmentsByUniversity 변형 중 ADMISSION_CUTOFF_DATA에 존재하는 항목
+ * 2순위: departmentsByUniversity의 첫 번째 변형 (커리어넷 majorName 등)
+ * 3순위: majorInfo.majorName (fallback)
  */
 const resolveActualDepartment = (
   university: string,
   majorInfo: MajorInfo
 ): string => {
-  const uniNorm = university.replace(/대학교$/, "").trim();
+  const variants = majorInfo.departmentsByUniversity[university] ?? [];
+  if (variants.length === 0) return majorInfo.majorName;
 
-  // 해당 대학의 모든 커트라인 엔트리
+  const uniNorm = university.replace(/대학교$/, "").trim();
   const uniEntries = ADMISSION_CUTOFF_DATA.filter((e) => {
     const eUni = e.university.replace(/대학교$/, "").trim();
     return eUni === uniNorm || e.university === university;
   });
 
-  if (uniEntries.length === 0) return majorInfo.majorName;
-
-  // 1. majorName으로 정확 매칭
-  const exactByMajorName = uniEntries.find(
-    (e) => e.department === majorInfo.majorName
-  );
-  if (exactByMajorName) return exactByMajorName.department;
-
-  // 2. departments 배열의 각 변형으로 정확 매칭
-  for (const dept of majorInfo.departments) {
-    const exactByDept = uniEntries.find((e) => e.department === dept);
-    if (exactByDept) return exactByDept.department;
+  // 1. 변형 중 커트라인에 정확 매칭되는 학과 우선
+  for (const v of variants) {
+    if (uniEntries.some((e) => e.department === v)) return v;
   }
 
-  // 3. 정규화 매칭 (접미사 제거 후 비교)
-  const majorNorm = majorInfo.majorName.replace(/[과부학]$/, "").trim();
-  for (const dept of [majorInfo.majorName, ...majorInfo.departments]) {
-    const deptNorm = dept.replace(/[과부학]$/, "").trim();
-    const match = uniEntries.find((e) => {
-      const eNorm = e.department.replace(/[과부학]$/, "").trim();
-      return eNorm === deptNorm || eNorm === majorNorm;
-    });
-    if (match) return match.department;
-  }
+  // 2. majorName이 변형에 포함되어 있으면 그것 우선
+  if (variants.includes(majorInfo.majorName)) return majorInfo.majorName;
 
-  return majorInfo.majorName;
+  // 3. 첫 번째 변형
+  return variants[0];
 };
 
 const formatStudentProfile = (

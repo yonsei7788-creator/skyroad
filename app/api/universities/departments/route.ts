@@ -19,13 +19,11 @@ export const GET = (request: NextRequest) => {
     );
   }
 
-  const matchingMajors = MAJOR_INFO_DATA.filter((m) =>
-    m.universities.includes(university)
-  );
-
   const departmentSet = new Set<string>();
-  for (const major of matchingMajors) {
-    for (const dept of major.departments) {
+  for (const major of MAJOR_INFO_DATA) {
+    const depts = major.departmentsByUniversity[university];
+    if (!depts) continue;
+    for (const dept of depts) {
       departmentSet.add(dept);
     }
   }
