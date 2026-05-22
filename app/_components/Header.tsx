@@ -29,7 +29,7 @@ import styles from "./Header.module.css";
 
 const NAV_ITEMS = [
   { label: "서비스 소개", href: "/about", icon: BookOpen },
-  { label: "발급 가이드", href: "/guide/record", icon: HelpCircle },
+  { label: "생기부 등록 가이드", href: "/guide/record", icon: HelpCircle },
 ];
 
 const PROFILE_MENU_ITEMS = [

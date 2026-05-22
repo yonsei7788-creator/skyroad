@@ -327,7 +327,7 @@ export const RecordGuide = () => {
     <article className={styles.guide}>
       <header className={styles.hero}>
         <div className={styles.heroInner}>
-          <p className={styles.heroEyebrow}>발급 가이드</p>
+          <p className={styles.heroEyebrow}>생기부 등록 가이드</p>
           <h1 className={styles.heroTitle}>
             학교생활기록부 발급부터 업로드까지
           </h1>
