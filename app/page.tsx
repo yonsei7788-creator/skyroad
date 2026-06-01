@@ -10,7 +10,7 @@ import { ProcessSection } from "./_components/ProcessSection";
 import { ServiceCardSection } from "./_components/ServiceCardSection";
 import { PreviewSection } from "./_components/PreviewSection";
 import { PricingSection } from "./_components/PricingSection";
-import { ReviewSlider } from "./_components/ReviewSlider";
+import { FeaturedReviewSection } from "./_components/FeaturedReviewSection";
 import { FaqSection } from "./_components/FaqSection";
 import { CtaSection } from "./_components/CtaSection";
 import { Footer } from "./_components/Footer";
@@ -30,7 +30,6 @@ export default function Home() {
       <Header />
       <main>
         <HeroSection />
-        <CtaSection />
         <div className={heroStyles.mobileOnly}>
           <HeroPreview />
         </div>
@@ -40,9 +39,10 @@ export default function Home() {
         <ServiceCardSection />
         <PreviewSection />
         <PricingSection />
-        <ReviewSlider />
-        <FaqSection />
+        <FeaturedReviewSection />
         <TrustSection />
+        <CtaSection />
+        <FaqSection />
       </main>
       <Footer />
     </>

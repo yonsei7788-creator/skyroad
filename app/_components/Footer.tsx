@@ -1,6 +1,20 @@
 import Link from "next/link";
+import { Instagram, MessageCircle } from "lucide-react";
 
 import styles from "./Footer.module.css";
+
+const SOCIAL_LINKS = [
+  {
+    label: "인스타그램",
+    href: "https://www.instagram.com/skyroad_official?igsh=czF3ZHMzYmp4dGE0",
+    icon: Instagram,
+  },
+  {
+    label: "카카오톡 문의",
+    href: "https://open.kakao.com/o/sGtx5Hli",
+    icon: MessageCircle,
+  },
+] as const;
 
 export const Footer = () => {
   return (
@@ -16,6 +30,24 @@ export const Footer = () => {
               <br />
               합리적인 가격의 입시 컨설팅을 제공합니다.
             </p>
+
+            <div className={styles.socialWrap}>
+              <p className={styles.socialLabel}>FOLLOW US</p>
+              <div className={styles.socialList}>
+                {SOCIAL_LINKS.map(({ label, href, icon: Icon }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.socialButton}
+                    aria-label={label}
+                  >
+                    <Icon size={18} strokeWidth={2} />
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div>

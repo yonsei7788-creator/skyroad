@@ -63,7 +63,9 @@ export const DualVerificationSection = () => {
                 <div className={styles.iconCirclePrimary}>
                   <ShieldCheck size={24} />
                 </div>
-                <h3 className={styles.cardTitlePrimary}>SKYROAD</h3>
+                <h3 className={styles.cardTitlePrimary}>
+                  SKY<span className={styles.logoAccent}>ROAD</span>
+                </h3>
               </div>
               <ul className={styles.itemList}>
                 {SKYROAD_ITEMS.map((text) => (

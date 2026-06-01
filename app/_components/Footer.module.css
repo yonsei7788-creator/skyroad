@@ -37,6 +37,49 @@
   line-height: 1.7;
 }
 
+.socialWrap {
+  margin-top: 24px;
+}
+
+.socialLabel {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--color-neutral-500);
+  text-transform: uppercase;
+}
+
+.socialList {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.socialButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.06);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  color: var(--color-neutral-300);
+  transition:
+    background 0.2s,
+    color 0.2s,
+    transform 0.2s,
+    border-color 0.2s;
+}
+
+.socialButton:hover {
+  background: rgb(255 255 255 / 0.12);
+  border-color: rgb(255 255 255 / 0.18);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
 .linkTitle {
   font-size: 0.8125rem;
   font-weight: 700;

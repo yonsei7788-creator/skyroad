@@ -19,6 +19,7 @@ import {
   BookOpen,
   FilePlus,
   HelpCircle,
+  MessageSquareHeart,
 } from "lucide-react";
 
 import { useAuthStore } from "@/libs/store/auth-provider";
@@ -29,6 +30,7 @@ import styles from "./Header.module.css";
 
 const NAV_ITEMS = [
   { label: "서비스 소개", href: "/about", icon: BookOpen },
+  { label: "후기", href: "/#reviews", icon: MessageSquareHeart },
   { label: "생기부 등록 가이드", href: "/guide/record", icon: HelpCircle },
 ];
 

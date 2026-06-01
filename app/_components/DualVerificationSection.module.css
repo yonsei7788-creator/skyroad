@@ -107,6 +107,10 @@
     var(--shadow-lg);
 }
 
+.logoAccent {
+  color: var(--color-primary-600);
+}
+
 /* Recommend Badge */
 .recommendBadge {
   position: absolute;
