@@ -36,6 +36,7 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
    - 예: "수학-과학 간 편차가 작고 둘 다 상위 등급이므로, 사정관은 이공계 학업 기초가 탄탄하다고 판단할 것입니다."
 2. **majorRelevanceAnalysis** (필수): 전공 관련 교과 이수 노력/성취도
    형식: {"enrollmentEffort": "...", "achievement": "...", "recommendedSubjects": ["과목1", "과목2"]}
+   - ⚠️ recommendedSubjects의 각 항목은 반드시 **20자 이내**로 작성합니다. 20자 초과 금지.
 3. **gradeChangeAnalysis** (필수): 등급 변화 가능성
    형식: {"currentTrend": "상승|유지|하락", "prediction": "...", "actionItems": ["구체적 실행 항목 문장1", "구체적 실행 항목 문장2"], "actionItemPriorities": ["high", "medium"]}
    - **actionItems는 반드시 1~3개의 구체적 실행 항목을 포함**해야 합니다. 빈 배열 금지.
@@ -93,6 +94,7 @@ const GYOGWA_PLAN_SPECIFIC: Record<ReportPlan, string> = {
    - 모범 예시: "최종 평균 2.55등급으로, 2학년 1학기 하락 이후 반등에 성공한 점은 긍정적입니다. 전체 평균을 끌어올리는 것이 핵심입니다."
 2. **majorRelevanceAnalysis** (필수): 전공 관련 교과 이수 현황
    형식: {"enrollmentEffort": "...", "achievement": "...", "recommendedSubjects": ["과목1", "과목2"]}
+   - ⚠️ recommendedSubjects의 각 항목은 반드시 **20자 이내**로 작성합니다. 20자 초과 금지.
 3. **gradeChangeAnalysis** (필수): **합격선 도달을 위한 남은 학기 목표**
    형식: {"currentTrend": "상승|유지|하락", "prediction": "...", "actionItems": ["구체적 실행 항목1", "구체적 실행 항목2"], "actionItemPriorities": ["high", "medium"]}
    - **actionItems는 반드시 1~3개의 구체적 실행 항목을 포함.** 빈 배열 금지.

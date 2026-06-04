@@ -1365,6 +1365,12 @@
   border-color: #e2e8f0;
 }
 
+.tagAccentWrap {
+  composes: tagAccent;
+  white-space: normal;
+  word-break: keep-all;
+}
+
 .tagStrength {
   composes: tag;
   background: #ecfdf5;

@@ -300,7 +300,7 @@ export const AcademicAnalysisRenderer = ({
                   (sub, i) => (
                     <span
                       key={typeof sub === "string" ? sub : i}
-                      className={styles.tagAccent}
+                      className={styles.tagAccentWrap}
                     >
                       {typeof sub === "string" ? sub : String(sub)}
                     </span>
