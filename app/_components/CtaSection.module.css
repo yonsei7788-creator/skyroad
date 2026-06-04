@@ -69,6 +69,10 @@
   letter-spacing: -0.02em;
 }
 
+.mobileBreak {
+  display: none;
+}
+
 @media (min-width: 1024px) {
   .headline {
     font-size: 2.5rem;
@@ -145,6 +149,10 @@
 
   .headline {
     font-size: 1.625rem;
+  }
+
+  .mobileBreak {
+    display: inline;
   }
 
   .subtext {

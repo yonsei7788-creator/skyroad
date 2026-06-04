@@ -45,6 +45,7 @@
   text-align: center;
   font-size: 1.0625rem;
   color: var(--color-fg-secondary);
+  word-break: keep-all;
 }
 
 .cardsGrid {
@@ -149,6 +150,7 @@
   font-size: 0.9375rem;
   line-height: 1.75;
   color: var(--color-fg-secondary);
+  word-break: keep-all;
 }
 
 .highlight {
@@ -161,6 +163,7 @@
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--color-fg-primary);
+  word-break: keep-all;
 }
 
 .highlightIcon {
@@ -172,4 +175,5 @@
   text-align: center;
   font-size: 0.8125rem;
   color: var(--color-fg-tertiary);
+  word-break: keep-all;
 }
