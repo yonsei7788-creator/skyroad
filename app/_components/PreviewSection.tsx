@@ -60,7 +60,7 @@ export const PreviewSection = () => {
         <FadeIn>
           <p className={styles.sectionLabel}>Preview</p>
           <h2 className={styles.sectionTitle}>
-            AI 분석 + 전문가 검수, 이런 리포트가 완성됩니다
+            빅데이터 분석 + 전문가 검수, 이런 리포트가 완성됩니다
           </h2>
           <p className={styles.sectionSubtitle}>
             실제 분석 결과의 일부를 미리 확인해보세요
