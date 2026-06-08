@@ -2218,11 +2218,173 @@ const sanitizeDeep = (obj: unknown, fieldName?: string): unknown => {
 // 항목이 만점이 된 경우). 최종 점수에서 감점이 가장 큰 하위항목을 기준으로
 // 결정적 템플릿으로 다시 작성한다.
 //
-// 톤은 입학사정관이 학종 평가서를 작성하는 어휘로 통일한다:
-//   ✅ "변별 포인트", "차별화 요소", "두드러진 강점", "구체성·깊이",
-//      "평가 근거", "변별력 제한적", "평가 가능한 증거"
-//   ❌ "보완 시 X등급 진입 가능", "S등급 진입은 어려움", "보강 시 상위 진입"
-//      — 학생을 향한 컨설팅·미래 가정 톤은 사용하지 않음.
+// 피드백은 단순 점수 요약이 아니라 학생이 "왜 이 점수가 나왔는지 + 무엇을
+// 보완해야 하는지"를 이해할 수 있도록 3단 구조로 작성한다:
+//   1) 강점 항목 인정 — 감점이 적은 하위항목을 명시
+//   2) 약점 하위항목의 구체적 원인 — 감점이 가장 큰 항목의 질적 한계
+//   3) 개선 방향 제안 — 해당 약점을 보완할 수 있는 구체적 활동
+// 원인·개선 문구는 하위항목 이름을 키로 하는 SUB_META에서 가져오며, 약점
+// 항목은 최종 점수의 감점 폭으로 결정되므로 점수와 항상 정합한다.
+//
+// 톤 규칙:
+//   ✅ 차별화 요소·평가 근거·구체성·깊이 등 입학사정관 평가 어휘를 유지하되,
+//      "~한다면 ~을 더욱 높일 수 있을 것으로 판단됩니다" 형태의 질적 개선
+//      방향 제안은 허용한다 (학생이 실행 가능한 보완점을 알 수 있도록).
+//   ❌ "보완 시 S등급 진입 가능", "보강 시 상위 진입" 등 특정 등급 상승을
+//      약속하는 표현은 금지. 개선 효과는 "경쟁력/완성도를 높일 수 있다"
+//      수준의 질적 서술로만 표현한다.
+
+// 한글 받침(종성) 유무 판정 — 조사 선택용
+const hasJongseong = (word: string): boolean => {
+  if (!word) return false;
+  const code = word.charCodeAt(word.length - 1);
+  if (code < 0xac00 || code > 0xd7a3) return false; // 한글 음절이 아니면 false
+  return (code - 0xac00) % 28 !== 0;
+};
+
+const eunNeun = (word: string): string =>
+  `${word}${hasJongseong(word) ? "은" : "는"}`;
+
+const eulReul = (word: string): string =>
+  `${word}${hasJongseong(word) ? "을" : "를"}`;
+
+// 강점 항목 나열 — 2개는 와/과, 3개 이상은 ·로 결합
+const joinStrengths = (words: string[]): string => {
+  if (words.length <= 1) return words[0] ?? "";
+  if (words.length === 2) {
+    const [a, b] = words;
+    return `${a}${hasJongseong(a) ? "과" : "와"} ${b}`;
+  }
+  return words.join("·");
+};
+
+// 하위항목별 강점 라벨·약점 원인·개선 방향 문구
+//  - strengthLabel: 강점으로 인정할 때 사용하는 자연스러운 표현
+//  - cause: 감점 항목으로 지목될 때의 질적 한계 (종속절, "~어/아/않아"로 종결)
+//  - improveIf: 개선 방향 (조건절, "~한다면"으로 종결)
+// 키는 공백을 제거한 하위항목 이름. AI 출력 표기 흔들림(공백 유무, 축약형)을
+// 흡수하기 위해 별칭도 함께 등록한다.
+type CompetencySubMeta = {
+  strengthLabel: string;
+  cause: string;
+  improveIf: string;
+};
+
+const COMPETENCY_SUB_META: Record<string, CompetencySubMeta> = {
+  // 학업역량
+  학업성취도: {
+    strengthLabel: "학업성취도",
+    cause: "내신 성취도가 안정적인 상위권으로 자리 잡지 못해",
+    improveIf: "주요 과목의 성취도를 끌어올리고 성적 추이를 개선해 간다면",
+  },
+  학업태도: {
+    strengthLabel: "학업태도",
+    cause: "수업 참여와 자기주도 학습의 능동성이 충분히 드러나지 않아",
+    improveIf:
+      "수업 중 주도적 참여와 자기주도 학습 과정을 세특에 구체적으로 남긴다면",
+  },
+  탐구력: {
+    strengthLabel: "탐구활동",
+    cause: "탐구활동이 수업 내용의 이해 수준에 머물러 있어",
+    improveIf:
+      "세특 내 탐구 주제를 심화하거나 교과 간 연계 탐구 사례를 추가한다면",
+  },
+  // 진로역량
+  교과이수노력: {
+    strengthLabel: "교과 이수의 충실성",
+    cause: "전공 관련 권장·심화 과목의 이수가 충분히 채워지지 않아",
+    improveIf: "전공 관련 권장과목과 진로선택과목을 적극적으로 이수한다면",
+  },
+  교과성취도: {
+    strengthLabel: "전공 관련 교과 성취도",
+    cause: "전공 관련 교과의 성취 수준이 상위권으로 뚜렷하게 드러나지 않아",
+    improveIf: "전공 관련 교과의 성취도를 끌어올린다면",
+  },
+  진로탐색활동: {
+    strengthLabel: "진로 활동의 방향성",
+    cause: "진로 선택의 이유와 탐색 과정이 구체적으로 드러나지 않아",
+    improveIf: "전공 관련 독서·탐구·프로젝트 경험을 추가적으로 연결한다면",
+  },
+  // 공동체역량
+  나눔과배려: {
+    strengthLabel: "나눔·배려",
+    cause: "타인을 돕거나 배려한 구체적 사례가 충분히 드러나지 않아",
+    improveIf: "나눔과 배려가 드러나는 구체적 활동 사례를 남긴다면",
+  },
+  소통및협업: {
+    strengthLabel: "소통·협업",
+    cause: "모둠·토론 등 협업 과정에서의 기여가 구체적으로 드러나지 않아",
+    improveIf: "모둠·토론 활동에서 맡은 역할과 기여를 구체적으로 기록한다면",
+  },
+  리더십: {
+    strengthLabel: "리더십",
+    cause: "주도적으로 이끈 역할과 그 영향이 구체적으로 드러나지 않아",
+    improveIf: "주도적으로 이끈 역할과 그 성과를 구체적으로 남긴다면",
+  },
+  성실성: {
+    strengthLabel: "성실성",
+    cause: "출결·역할 이행 등 성실성을 뒷받침하는 근거가 충분히 드러나지 않아",
+    improveIf: "출결을 안정적으로 관리하고 맡은 역할을 꾸준히 이행한다면",
+  },
+};
+
+// 표기 흔들림 흡수용 별칭 → 정규 키
+const COMPETENCY_SUB_ALIAS: Record<string, string> = {
+  교과이수: "교과이수노력",
+  교과이수노력도: "교과이수노력",
+  진로탐색: "진로탐색활동",
+  진로탐색활동도: "진로탐색활동",
+  진로활동: "진로탐색활동",
+  소통협업: "소통및협업",
+  협업및소통: "소통및협업",
+  소통과협업: "소통및협업",
+  나눔배려: "나눔과배려",
+  나눔및배려: "나눔과배려",
+};
+
+const getCompetencySubMeta = (name: string): CompetencySubMeta => {
+  const key = name.replace(/\s+/g, "");
+  const meta =
+    COMPETENCY_SUB_META[key] ?? COMPETENCY_SUB_META[COMPETENCY_SUB_ALIAS[key]];
+  if (meta) return meta;
+  // 미등록 항목도 재발 없이 처리 — 항목 이름 기반 일반 문구로 폴백
+  return {
+    strengthLabel: name,
+    cause: `${name} 항목의 평가 근거가 구체적으로 드러나지 않아`,
+    improveIf: `${name} 관련 활동의 구체적 근거를 보강한다면`,
+  };
+};
+
+// 역량별 약점 해석 프레임·개선 명사구·마무리 명사
+type CompetencyFrame = {
+  frame: string; // 약점 → 평가상 의미 (종속절, "~기에는"으로 종결)
+  improveNoun: string; // C·D 등급에서 보강 대상 (명사구)
+  closing: string; // 개선 시 높아지는 대상 (경쟁력/완성도)
+};
+
+const COMPETENCY_FRAME: Record<string, CompetencyFrame> = {
+  academic: {
+    frame: "상위권 대학 평가에서 강한 차별화 요소로 작용하기에는",
+    improveNoun: "교과 세특의 탐구 과정과 학업 태도를 뒷받침하는 근거",
+    closing: "경쟁력",
+  },
+  career: {
+    frame: "깊이 있는 진로 탐색으로 해석되기에는",
+    improveNoun: "전공 관련 과목 이수와 진로 탐색 활동의 기록",
+    closing: "완성도",
+  },
+  community: {
+    frame: "공동체 역량의 뚜렷한 강점으로 평가되기에는",
+    improveNoun: "협업·리더십·나눔 등 공동체 활동의 구체적 사례",
+    closing: "완성도",
+  },
+};
+
+const COMPETENCY_LABEL_TO_CATEGORY: Record<string, string> = {
+  학업역량: "academic",
+  진로역량: "career",
+  공동체역량: "community",
+};
 const buildCompetencyGradeComment = (sc: unknown): string | undefined => {
   if (
     !sc ||
@@ -2233,6 +2395,7 @@ const buildCompetencyGradeComment = (sc: unknown): string | undefined => {
     return (sc as any)?.gradeComment;
   }
   const detail = sc as {
+    category?: string;
     label?: string;
     grade?: string;
     score?: number;
@@ -2242,6 +2405,9 @@ const buildCompetencyGradeComment = (sc: unknown): string | undefined => {
 
   const label = detail.label ?? "역량";
   const { grade } = detail;
+  const category =
+    detail.category ?? COMPETENCY_LABEL_TO_CATEGORY[label] ?? "academic";
+  const comp = COMPETENCY_FRAME[category] ?? COMPETENCY_FRAME.academic;
 
   type Sub = {
     name: string;
@@ -2274,44 +2440,60 @@ const buildCompetencyGradeComment = (sc: unknown): string | undefined => {
 
   if (totalDeduction === 0) {
     return grade === "S"
-      ? `${label} 전 항목 만점. 평가 가능한 모든 영역에서 우수성이 확인되는 최상위권 수행.`
-      : `${label} 전 항목 감점 없이 안정적인 ${grade ?? ""}등급 수행 확인.`;
+      ? `${label} 전 항목에서 평가 가능한 모든 영역의 우수성이 확인되는 최상위권 수행입니다.`
+      : `${label} 전 항목에서 감점 없이 안정적인 수행이 확인됩니다.`;
   }
 
+  // 약점 항목: 최종 점수의 감점 폭이 가장 큰 하위항목 (점수와 정합)
   const withDeduction = subs
     .filter((s) => s.deduction > 0)
     .sort((a, b) => b.deduction - a.deduction);
-  const [top] = withDeduction;
-  const top2Names = withDeduction
+  const [weak] = withDeduction;
+  const weakMeta = getCompetencySubMeta(weak.name);
+
+  // 강점 항목: 약점 항목을 제외하고 감점이 적은 순으로 최대 2개
+  const strengthLabels = subs
+    .filter((s) => s.name !== weak.name)
+    .sort((a, b) => a.deduction - b.deduction)
     .slice(0, 2)
-    .map((s) => s.name)
-    .join("·");
-  const oneItem = withDeduction.length === 1;
+    .map((s) => getCompetencySubMeta(s.name).strengthLabel);
+  const strengthClause = joinStrengths(strengthLabels);
+
+  // 개선 방향 제안 (3단 구조의 마지막 문장)
+  const improveSentence = `${weakMeta.improveIf} ${label}의 ${eulReul(
+    comp.closing
+  )} 더욱 높일 수 있을 것으로 판단됩니다.`;
 
   if (grade === "S") {
-    // 96~100: 만점 근접 — 학종 평가에서 두드러진 강점으로 작용할 수준.
+    // 96~100: 만점 근접 — 강점 인정 위주, 미세 보강 여지만 언급.
     if (totalScore >= 96) {
-      return oneItem
-        ? `${label} 전 항목 균형 잡힌 최상위권 수행. ${top.name}에서만 미세한 차감이 관찰되며, 학종 평가에서 두드러진 강점으로 작용할 수 있는 수준입니다.`
-        : `${label} 전 항목 균형 잡힌 최상위권 수행. ${top2Names}에서 미세한 차감이 있으나, 학종 평가에서 두드러진 강점으로 작용할 수 있는 수준입니다.`;
+      return `${label} 전 항목에서 균형 잡힌 최상위권 수행이 확인됩니다. ${weakMeta.strengthLabel}에서만 미세한 보강 여지가 관찰될 뿐, 학종 평가에서 두드러진 강점으로 작용할 수 있는 수준입니다.`;
     }
-    // 90~95: 정상 S — 우수성 확인되나 일부 항목에서 추가 보강 여지.
-    return oneItem
-      ? `${label} 전반에서 우수한 수행이 확인됨. ${top.name} 항목에서 구체성·깊이가 추가로 보강될 여지가 있습니다.`
-      : `${label} 전반에서 우수한 수행이 확인됨. ${top2Names} 항목에서 구체성·깊이가 추가로 보강될 여지가 있습니다.`;
+    // 90~95: 우수성 인정 + 약점 원인 + 개선 방향 (3단 구조).
+    return `${eunNeun(
+      strengthClause
+    )} 우수한 수준으로 평가됩니다. 다만 ${weakMeta.cause} ${comp.frame} 다소 아쉬움이 있습니다. ${improveSentence}`;
   }
   if (grade === "A") {
-    // A 등급 — 안정적이나 차별화 요소 부족으로 변별 포인트 약함.
-    return `${label} 안정적인 수행이 확인되나, ${top.name} 항목의 차별화 요소가 부족하여 변별 포인트로 작용하기에는 다소 약합니다.`;
+    // 강점 인정 + 약점 원인 + 개선 방향 (3단 구조).
+    return `${eunNeun(
+      strengthClause
+    )} 안정적으로 확인되나, ${weakMeta.cause} ${comp.frame} 다소 아쉽습니다. ${improveSentence}`;
   }
   if (grade === "B") {
-    // B 등급 — 평이한 수준, 변별력 제한적.
-    return `${label} 평이한 수준. ${top2Names} 항목에서 평가 근거의 구체성·깊이가 부족하여 변별력이 제한적입니다.`;
+    // 평이한 수준 — 거짓 강점 주장 없이 약점 원인 + 개선 방향.
+    return `${label}은 평이한 수준으로, ${weakMeta.cause} ${comp.frame} 변별력이 제한적입니다. ${improveSentence}`;
   }
   if (grade === "C") {
-    return `${label} 평가 가능한 구체적 증거가 다수 항목에서 부족하여 변별력 매우 제한적입니다.`;
+    const weakNames = withDeduction
+      .slice(0, 2)
+      .map((s) => getCompetencySubMeta(s.name).strengthLabel)
+      .join("·");
+    return `${label}은 ${weakNames} 등 다수 항목에서 평가 가능한 구체적 증거가 부족하여 변별력이 매우 제한적입니다. ${eulReul(
+      comp.improveNoun
+    )} 우선적으로 보강할 필요가 있습니다.`;
   }
-  return `${label} 전 항목에서 평가 가능한 증거가 매우 부족하여 평가에 큰 제약입니다.`;
+  return `${label}은 전 항목에서 평가 가능한 증거가 매우 부족하여 평가에 큰 제약이 있습니다. ${comp.improveNoun}부터 단계적으로 보완할 필요가 있습니다.`;
 };
 
 // ─── AI 출력 필드명 정규화 + 전처리 데이터 보강 ───
@@ -2905,9 +3087,9 @@ const normalizeSection = (
       // prediction 빈 문자열 방지 (Zod 검증 실패 방지)
       if (!prediction || prediction.trim().length === 0) {
         const trendPredictions: Record<string, string> = {
-          상승: "성적 상승 추세는 입학사정관이 발전가능성을 긍정적으로 평가하는 핵심 근거입니다. 현재 추세를 유지하면서 약점 과목을 보완하면 경쟁력을 높일 수 있습니다.",
-          유지: "성적이 안정적으로 유지되고 있습니다. 현 수준을 바탕으로 세특과 활동의 깊이를 강화하면 학종에서 경쟁력을 확보할 수 있습니다.",
-          하락: "성적 하락 추세는 학업 태도에 대한 의문으로 이어질 수 있습니다. 조속한 성적 반등이 필요하며, 하락 원인을 파악하고 학습 전략을 재수립해야 합니다.",
+          상승: "현재 성적이 상승 추세에 있습니다(현재 상태). 강점 과목의 학습 방식이 자리를 잡아가는 흐름으로, 상승 추세는 사정관이 발전가능성과 학업 태도를 긍정적으로 판단하는 핵심 근거입니다(개선 이유). 이 학습 방식을 약점 과목에도 적용해 상승세를 유지하면 최종 평균이 개선되어 상위 학과 지원 시 학업역량 신뢰도를 높일 수 있습니다(기대 효과).",
+          유지: "성적이 안정적으로 유지되고 있어 학업 성실성 측면에서는 긍정적입니다(현재 상태). 다만 정체 구간은 변별력 측면에서 강점으로 부각되기 어려운 구조이므로(원인), 핵심 과목에서 한 단계 상승을 만들면 사정관이 학업역량을 더 뚜렷하게 평가하는 근거가 됩니다(개선 이유). 정체를 만든 과목의 학습 전략을 보완하면 학종 서류에서 학업역량 경쟁력을 높일 수 있습니다(기대 효과).",
+          하락: "현재 성적이 하락 추세에 있습니다(현재 상태). 하락 추세는 사정관이 학업 태도와 성실성에 의문을 가질 수 있는 신호이므로(개선 이유), 하락을 만든 과목·학기의 원인을 파악해 학습 전략을 재정비하는 것이 시급합니다(문제 원인). 남은 학기에 반등을 만들면 만회 서사를 통해 오히려 발전가능성을 강점으로 전환할 수 있습니다(기대 효과).",
         };
         prediction = trendPredictions[trend] ?? trendPredictions["유지"];
       }
