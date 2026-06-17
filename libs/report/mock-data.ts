@@ -199,6 +199,56 @@ const competencyScoreLite: CompetencyScoreSection = {
   ],
   interpretation:
     "학업 역량과 진로 역량에서 강점을 보이나, 공동체 역량이 상대적으로 약합니다. 리더십과 봉사 활동을 통해 균형 잡힌 역량 프로필을 만들 필요가 있습니다.",
+  competencyAxes: [
+    { key: "naesin", label: "내신", score: 84, isStrength: true },
+    { key: "setuk", label: "세특", score: 78 },
+    { key: "majorFit", label: "전공적합성", score: 78 },
+    {
+      key: "extracurricular",
+      label: "비교과",
+      score: 65,
+      isWeakness: true,
+    },
+    { key: "growth", label: "성장성", score: 68 },
+  ],
+  competencyHighlights: {
+    strengths: [
+      {
+        name: "교과 성취도",
+        categoryLabel: "학업 역량",
+        score: 85,
+        maxScore: 100,
+        gap: 15,
+        reason: "주요 교과 평균 2.1등급으로 상위권 유지",
+      },
+      {
+        name: "전공 적합성",
+        categoryLabel: "진로 역량",
+        score: 82,
+        maxScore: 100,
+        gap: 18,
+        reason: "컴퓨터공학 관련 활동(코딩, 알고리즘 대회)이 일관되게 기록됨",
+      },
+    ],
+    improvements: [
+      {
+        name: "리더십",
+        categoryLabel: "공동체 역량",
+        score: 60,
+        maxScore: 100,
+        gap: 40,
+        reason: "소규모 프로젝트 리더 경험은 있으나 공식적 리더 역할 부족",
+      },
+      {
+        name: "봉사 및 나눔",
+        categoryLabel: "공동체 역량",
+        score: 62,
+        maxScore: 100,
+        gap: 38,
+        reason: "진로 연계 봉사 경험이 부족하여 인성 영역 보완이 필요",
+      },
+    ],
+  },
 };
 
 const competencyScoreStandard: CompetencyScoreSection = {

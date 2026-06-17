@@ -9,6 +9,10 @@ import { z } from "zod/v4";
 
 import { ReportSectionSchema, validateByPlan } from "../schemas.ts";
 import { SECTION_ORDER } from "../types.ts";
+import {
+  buildCompetencyAxes,
+  buildCompetencyHighlights,
+} from "./competency-axes.ts";
 import type {
   ReportPlan,
   ReportContent,
@@ -1676,7 +1680,7 @@ export const postprocess = (
       hasMockExamData: studentInfo.hasMockExamData,
     },
     createdAt: new Date().toISOString(),
-    version: 4,
+    version: 5,
   };
 
   // 6. ReportContent 조합
@@ -3718,6 +3722,24 @@ const normalizeSection = (
         s.scores[0]
       );
       s.interpretation = `총점 ${total}점(300점 만점)으로 ${strongest?.label ?? ""}이 가장 우수하며, ${weakest?.label ?? ""}은 상대적으로 보완이 필요합니다.`;
+    }
+
+    // ── 신규 리포트(v5+): 5축 세분화 레이더 결정적 재집계 ──
+    // 학생별 강·약점을 직관적으로 드러내기 위해, 기존 4대 역량 하위항목 점수를
+    // 5개 축(내신/세특/전공적합성/비교과/성장성)으로 결정적 재집계한다.
+    // 추가 AI 추정 없이 이미 확정된 점수만 사용하므로 사실 정합성이 보장된다.
+    if (Array.isArray(s.scores)) {
+      const growthScore = typeof s.growthScore === "number" ? s.growthScore : 0;
+      s.competencyAxes = buildCompetencyAxes(s.scores, growthScore);
+      // 데이터 기반 강점·보완 항목 (어떤 부분을 보완하면 +N점 향상되는지 실제 사유 포함)
+      s.competencyHighlights = buildCompetencyHighlights(s.scores);
+
+      // 가짜 평균(지원적정/전체) 제거 — 신규 리포트는 본인 프로필형 레이더로 대체.
+      // myScore - 10/30 으로 결정적 고정되던 비현실적 비교 기준을 표시하지 않는다.
+      if (s.comparison) {
+        delete s.comparison.targetRangeAvg;
+        delete s.comparison.overallAvg;
+      }
     }
 
     // ── lite 플랜: percentile/comparison 필드 제거 ──

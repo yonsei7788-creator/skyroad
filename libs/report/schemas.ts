@@ -142,6 +142,15 @@ const ComparisonDataSchema = z.object({
   overallAvg: z.number().min(0).optional(),
 });
 
+const CompetencyHighlightItemSchema = z.object({
+  name: z.string().min(1),
+  categoryLabel: z.string().min(1),
+  score: z.number(),
+  maxScore: z.number(),
+  gap: z.number(),
+  reason: z.string(),
+});
+
 export const CompetencyScoreSectionSchema = z.object({
   sectionId: z.literal("competencyScore"),
   title: z.string().min(1),
@@ -158,6 +167,31 @@ export const CompetencyScoreSectionSchema = z.object({
   percentileLabel: z.string().optional(),
   comparison: ComparisonDataSchema.optional(),
   interpretation: z.string().min(1),
+  // v5: 5축 세분화 레이더 (신규 리포트 전용, postprocessor 결정적 주입)
+  competencyAxes: z
+    .array(
+      z.object({
+        key: z.enum([
+          "naesin",
+          "setuk",
+          "majorFit",
+          "extracurricular",
+          "growth",
+        ]),
+        label: z.string().min(1),
+        score: z.number().min(0).max(100),
+        isStrength: z.boolean().optional(),
+        isWeakness: z.boolean().optional(),
+      })
+    )
+    .optional(),
+  // v5: 데이터 기반 강점·보완 항목 (postprocessor 결정적 주입)
+  competencyHighlights: z
+    .object({
+      strengths: z.array(CompetencyHighlightItemSchema),
+      improvements: z.array(CompetencyHighlightItemSchema),
+    })
+    .optional(),
   // v4
   scoreComparisons: z
     .tuple([

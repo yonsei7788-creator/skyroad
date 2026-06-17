@@ -190,6 +190,50 @@ interface ComparisonData {
   overallAvg?: number;
 }
 
+/** 5축 세분화 레이더 축 키 (신규 리포트 v5+) */
+export type CompetencyAxisKey =
+  | "naesin" // 내신
+  | "setuk" // 세특
+  | "majorFit" // 전공적합성
+  | "extracurricular" // 비교과
+  | "growth"; // 성장성
+
+/**
+ * 5축 세분화 역량 축 (신규 리포트 v5+).
+ * 기존 4대 역량 하위항목 점수를 0~100으로 결정적 재집계한 값 (추가 AI 추정 없음).
+ */
+export interface CompetencyAxis {
+  key: CompetencyAxisKey;
+  /** 표시 라벨 (내신/세특/전공적합성/비교과/성장성) */
+  label: string;
+  /** 0~100 (기존 하위항목 점수 결정적 재집계) */
+  score: number;
+  /** 5축 중 최고점 축 (강점) */
+  isStrength?: boolean;
+  /** 5축 중 최저점 축 (보완 필요) */
+  isWeakness?: boolean;
+}
+
+/**
+ * 데이터 기반 강점·보완 항목 (신규 리포트 v5+).
+ * 하위항목의 점수·만점·실제 채점 코멘트에서 결정적으로 도출 (추가 AI 추정 없음).
+ * 감점액(gap = maxScore - score)이 곧 "보완하면 향상되는 점수 여지"다.
+ */
+export interface CompetencyHighlightItem {
+  /** 하위항목명 (예: 탐구력, 교과이수노력, 리더십) */
+  name: string;
+  /** 소속 역량 라벨 (학업역량/진로역량/공동체역량) */
+  categoryLabel: string;
+  /** 현재 점수 */
+  score: number;
+  /** 만점 */
+  maxScore: number;
+  /** 향상 여지 (maxScore - score). 보완 항목에서 활용 */
+  gap: number;
+  /** 실제 채점 코멘트 (근거·감점사유) */
+  reason: string;
+}
+
 export interface CompetencyScoreSection extends BaseSection {
   sectionId: "competencyScore";
 
@@ -216,6 +260,24 @@ export interface CompetencyScoreSection extends BaseSection {
 
   /** 점수 해석 */
   interpretation: string;
+
+  /**
+   * 신규 리포트(v5+) 전용: 5축 세분화 레이더 점수
+   * (내신/세특/전공적합성/비교과/성장성, 각 0~100).
+   * 기존 4대 역량 하위항목 점수를 결정적 재집계한 값.
+   * 기존 리포트에는 없음 → 렌더러가 이 필드 존재 여부로 신·구 UI를 분기한다.
+   */
+  competencyAxes?: CompetencyAxis[];
+
+  /**
+   * 신규 리포트(v5+) 전용: 데이터 기반 강점·보완 항목.
+   * 하위항목 점수·코멘트에서 결정적으로 도출하여, "어떤 항목이 강점이고
+   * 어떤 부분을 보완하면 점수가 향상되는지"를 학생별로 구체 제시한다.
+   */
+  competencyHighlights?: {
+    strengths: CompetencyHighlightItem[];
+    improvements: CompetencyHighlightItem[];
+  };
 
   // ─── v4 추가 ───
 
