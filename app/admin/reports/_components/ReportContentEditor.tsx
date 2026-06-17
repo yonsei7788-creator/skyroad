@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 import { filterSectionFields } from "@/libs/report/admin-field-whitelist";
 import type { ReportPlan } from "@/libs/report/types";
 
+import { CompetencyExtrasEditor } from "./CompetencyExtrasEditor";
 import styles from "./ReportContentEditor.module.css";
 
 interface ReportContentEditorProps {
@@ -796,14 +797,24 @@ export const SingleSectionEditor = ({
   const mergedReadonlyKeys = new Set([...READONLY_KEYS, ...readonlyKeys]);
 
   return (
-    <FieldRenderer
-      fields={filtered}
-      path={["sections", sectionIndex]}
-      depth={0}
-      content={content}
-      onChange={onChange}
-      readonlyKeys={mergedReadonlyKeys}
-    />
+    <>
+      <FieldRenderer
+        fields={filtered}
+        path={["sections", sectionIndex]}
+        depth={0}
+        content={content}
+        onChange={onChange}
+        readonlyKeys={mergedReadonlyKeys}
+      />
+      {/* 역량 점수 섹션: 제네릭 에디터가 다루지 못하는 신규 필드(5축·강점/보완) 전용 편집 */}
+      {sectionId === "competencyScore" && (
+        <CompetencyExtrasEditor
+          content={content}
+          sectionIndex={sectionIndex}
+          onChange={onChange}
+        />
+      )}
+    </>
   );
 };
 
