@@ -544,6 +544,9 @@ const ELITE_GENERAL_HIGH_SCHOOLS = new Set<string>([
   "대전고등학교",
   "경북고등학교",
   "부산고등학교",
+  "한일고등학교",
+  "민사고등학교",
+  "북일고등학교",
 ]);
 
 /**
