@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useState, useRef } from "react";
 import { AlertCircle, Check, Plus, X } from "lucide-react";
 
 import { AccordionStep } from "./SectionTable";
@@ -955,6 +955,14 @@ const ACCORDION_STEPS: AccordionStepDef[] = [
 // TextInputStep
 // ============================================
 
+const parseSubjects = (str: string): string[] => {
+  if (!str.trim()) return [];
+  return str
+    .split(/[,、，\n]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+};
+
 interface TextInputStepProps {
   record: SchoolRecord;
   onRecordChange: (record: SchoolRecord) => void;
@@ -962,6 +970,122 @@ interface TextInputStepProps {
   plannedSubjects?: string;
   onPlannedSubjectsChange?: (value: string) => void;
 }
+
+const PlannedSubjectsInput = ({
+  plannedSubjects = "",
+  onPlannedSubjectsChange,
+}: {
+  plannedSubjects: string;
+  onPlannedSubjectsChange: (value: string) => void;
+}) => {
+  const [subjects, setSubjects] = useState<string[]>(() => {
+    const parsed = parseSubjects(plannedSubjects);
+    return parsed.length > 0 ? parsed : [""];
+  });
+
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const commit = (next: string[]) => {
+    setSubjects(next);
+    onPlannedSubjectsChange(next.filter(Boolean).join(", "));
+  };
+
+  const handleSubjectChange = (index: number, value: string) => {
+    commit(subjects.map((s, i) => (i === index ? value : s)));
+  };
+
+  const handleAddSubject = () => {
+    const next = [...subjects, ""];
+    commit(next);
+    setTimeout(() => inputRefs.current[next.length - 1]?.focus(), 0);
+  };
+
+  const handleRemoveSubject = (index: number) => {
+    if (subjects.length <= 1) {
+      commit([""]);
+      setTimeout(() => inputRefs.current[0]?.focus(), 0);
+      return;
+    }
+    commit(subjects.filter((_, i) => i !== index));
+    setTimeout(() => inputRefs.current[Math.max(0, index - 1)]?.focus(), 0);
+  };
+
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const next = [
+        ...subjects.slice(0, index + 1),
+        "",
+        ...subjects.slice(index + 1),
+      ];
+      commit(next);
+      setTimeout(() => inputRefs.current[index + 1]?.focus(), 0);
+    } else if (
+      e.key === "Backspace" &&
+      subjects[index] === "" &&
+      subjects.length > 1
+    ) {
+      e.preventDefault();
+      handleRemoveSubject(index);
+    }
+  };
+
+  return (
+    <div className={styles.plannedSubjectsSection}>
+      <div className={styles.plannedSubjectsHeader}>
+        <span className={styles.plannedSubjectsTitle}>수강 예정 과목</span>
+        <span className={styles.plannedSubjectsOptionalBadge}>선택</span>
+      </div>
+      <p className={styles.plannedSubjectsDesc}>
+        현재 학기 또는 다음 학기에 수강할 예정인 과목을 입력하면, 리포트에서
+        해당 과목에 맞는 맞춤 조언을 받을 수 있습니다.
+      </p>
+
+      <div className={styles.plannedSubjectsList}>
+        {subjects.map((subject, index) => (
+          <div key={index} className={styles.plannedSubjectItem}>
+            <span className={styles.plannedSubjectIndex}>{index + 1}</span>
+            <input
+              ref={(el) => {
+                inputRefs.current[index] = el;
+              }}
+              type="text"
+              className={styles.plannedSubjectInput}
+              value={subject}
+              onChange={(e) => handleSubjectChange(index, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, index)}
+              placeholder={
+                index === 0 ? "예: 물리학II, 미적분" : "과목명을 입력하세요"
+              }
+              aria-label={`수강 예정 과목 ${index + 1}`}
+            />
+            <button
+              type="button"
+              className={styles.plannedSubjectRemoveBtn}
+              onClick={() => handleRemoveSubject(index)}
+              aria-label={`${index + 1}번 과목 삭제`}
+              tabIndex={-1}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        className={styles.plannedSubjectAddBtn}
+        onClick={handleAddSubject}
+      >
+        <Plus size={14} />
+        과목 추가
+      </button>
+    </div>
+  );
+};
 
 export const TextInputStep = ({
   record,
@@ -988,25 +1112,10 @@ export const TextInputStep = ({
 
       {/* 수강 예정 과목 — 생기부 아코디언 위 (제일 위) */}
       {onPlannedSubjectsChange && (
-        <div className={styles.plannedSubjectsSection}>
-          <div className={styles.plannedSubjectsHeader}>
-            <span className={styles.plannedSubjectsTitle}>수강 예정 과목</span>
-            <span className={styles.plannedSubjectsOptionalBadge}>선택</span>
-          </div>
-          <p className={styles.plannedSubjectsDesc}>
-            현재 학기 또는 다음 학기에 수강할 예정인 과목을 입력하면, 리포트에서
-            해당 과목에 맞는 맞춤 조언을 받을 수 있습니다.
-          </p>
-          <textarea
-            className={styles.plannedSubjectsTextarea}
-            value={plannedSubjects}
-            onChange={(e) => onPlannedSubjectsChange(e.target.value)}
-            placeholder="예: 물리학II, 미적분, 사회·문화, 생명과학II"
-          />
-          <p className={styles.plannedSubjectsHint}>
-            쉼표로 구분하여 입력해주세요.
-          </p>
-        </div>
+        <PlannedSubjectsInput
+          plannedSubjects={plannedSubjects}
+          onPlannedSubjectsChange={onPlannedSubjectsChange}
+        />
       )}
 
       {ACCORDION_STEPS.map((step) => (
