@@ -18,9 +18,9 @@ export interface WeaknessAnalysisPromptInput {
   plannedSubjects?: string;
   /**
    * 학년별 이수 완료 과목 텍스트.
-   * 3학년·졸업생인 경우 학생 입력 수강예정 과목이 "추가 이수 완료"로
-   * 합쳐져 있으므로, 권장과목 대비 미이수 판단 시 반드시 이 목록도 함께 보고
-   * "수강 예정 → 미이수"로 잘못 분류하지 않도록 한다.
+   * 졸업생인 경우 학생 입력 수강예정 과목이 "추가 이수 완료"로 합쳐져 있음.
+   * 3학년은 수강 예정 과목이 별도 plannedSubjects로 제공되므로
+   * 이 목록에는 포함되지 않음.
    */
   completedSubjectsByYear?: string;
   studentGrade?: number;

@@ -1539,13 +1539,13 @@ export const matchRecommendedCourses = (
   curriculumVersion?: "2015" | "2022",
   /** 학생이 직접 입력한 수강 예정 과목(comma-separated). 없으면 undefined. */
   plannedSubjects?: string,
-  /** 졸업생 여부. true 또는 studentGrade === 3 이면 plannedSubjects를
-   *  "이수 예정"이 아닌 "이수 완료"로 처리한다. */
+  /** 졸업생 여부. true이면 plannedSubjects를 "이수 예정"이 아닌 "이수 완료"로 처리한다.
+   *  (3학년은 2학기 수강 예정 과목이 있으므로 "이수 예정"으로 유지.) */
   isGraduate?: boolean
 ): RecommendedCourseMatch => {
-  // 3학년·졸업생은 수강 예정 개념이 의미 없으므로 plannedSubjects를
-  // 이수 완료로 합쳐서 처리한다. (이수/이수예정/미이수 → 이수/미이수)
-  const treatPlannedAsTaken = isGraduate === true || studentGrade === 3;
+  // 졸업생만 plannedSubjects를 이수 완료로 처리한다.
+  // 3학년은 2학기 수강 예정 과목이 "이수 예정" 상태이므로 별도 set으로 관리.
+  const treatPlannedAsTaken = isGraduate === true;
 
   // 학생이 이수한 과목명을 정규화하여 Set 구축
   const takenRawSet = new Set<string>();
@@ -2017,23 +2017,25 @@ const buildTexts = (
     targetUniversitiesByType,
     curriculumVersion: data.curriculumVersion,
     majorEvaluationContextText,
-    // 3학년·졸업생: 학생이 입력한 "수강 예정 과목"은 더 이상 예정 개념이
-    // 적용되지 않으므로 "이미 이수한 과목"으로 처리한다. completedSubjectsByYear
-    // 에 "추가 이수 완료" 항목으로 합치고 plannedSubjectsText는 비워서
-    // "수강 예정" 프롬프트 블록이 자연스럽게 비활성화되게 한다.
+    // 졸업생: 학생이 입력한 "수강 예정 과목"은 더 이상 예정 개념이 없으므로
+    // "이미 이수한 과목"으로 처리한다. completedSubjectsByYear에 "추가 이수 완료"
+    // 항목으로 합치고 plannedSubjectsText는 비워서 "수강 예정" 블록을 비활성화한다.
+    //
+    // 3학년: 2학기 수강 예정 과목은 성적이 입시에 반영되지 않지만 세특·탐구는
+    // 학종 평가에 중요하므로 "이수 예정"으로 유지한다.
+    // completedSubjectsByYear에 합치지 않고, plannedSubjectsText에 3학년 전용
+    // 메시지로 제공하여 세특 조언·교과 연계 전략이 정상 작동하도록 한다.
     completedSubjectsByYearText: formatCompletedSubjectsByYear(
       recordData,
       studentInfo.grade,
       studentInfo.isGraduate,
       isArtSportDepartment(studentInfo.targetDepartment ?? ""),
-      studentInfo.isGraduate === true || studentInfo.grade === 3
-        ? plannedSubjects
-        : undefined
+      studentInfo.isGraduate === true ? plannedSubjects : undefined
     ),
     plannedSubjectsText:
-      studentInfo.isGraduate === true || studentInfo.grade === 3
+      studentInfo.isGraduate === true
         ? ""
-        : formatPlannedSubjects(plannedSubjects),
+        : formatPlannedSubjects(plannedSubjects, studentInfo.grade === 3),
     isArtSportPractical: artSportPractical,
     mockExamText: formatMockExamText(recordData.mockExams ?? []),
   };
@@ -3469,14 +3471,15 @@ const formatCompletedSubjectsByYear = (
     if (hasGrade3Data) {
       lines.push(
         "",
-        "⚠️ 이 학생은 고3이며, 3학년 1학기 성적까지 확정되었습니다. 고3 2학기 성적은 대학 입시에 반영되지 않습니다.",
-        "→ 성적 향상 관련 조언 대신 수능 준비, 면접 대비, 전형별 지원 전략을 제시하세요."
+        "⚠️ 이 학생은 고3이며, 3학년 1학기 성적까지 확정되었습니다.",
+        "→ 3학년 2학기 성적(등급)은 입시에 반영되지 않으므로 '성적 올리기' 조언은 금지합니다.",
+        "→ 단, 3학년 1학기 세특 주제 심화, 교과 연계 탐구, 수강 예정 과목 세특 전략, 면접 대비, 지원 전략 조언은 제공하세요."
       );
     } else {
       lines.push(
         "",
         "⚠️ 이 학생은 고3이며, 아직 3학년 성적이 반영되지 않았습니다. 3학년 1학기 성적이 입시에 반영되는 마지막 성적입니다.",
-        "→ 3학년 1학기 성적 향상에 집중하는 실행 항목을 제시하세요. 3학년 2학기 성적은 입시에 반영되지 않습니다."
+        "→ 3학년 1학기 성적 향상에 집중하는 실행 항목을 제시하세요. 3학년 2학기 성적(등급)은 입시에 반영되지 않습니다."
       );
     }
   } else {
@@ -3504,10 +3507,26 @@ const formatCompletedSubjectsByYear = (
  * (해당 학생은 더 이상 "수강 예정" 개념이 의미 없고, 입력한 과목은
  *  completedSubjectsByYearText에 "추가 이수 완료" 항목으로 합쳐진다.)
  */
-const formatPlannedSubjects = (plannedSubjects?: string): string => {
+const formatPlannedSubjects = (
+  plannedSubjects?: string,
+  isGrade3?: boolean
+): string => {
   if (!plannedSubjects?.trim()) return "";
 
-  const lines: string[] = [
+  if (isGrade3) {
+    return [
+      "## 3학년 2학기 수강 예정 과목 (학생 직접 입력)",
+      `과목: ${plannedSubjects.trim()}`,
+      "",
+      "※ 위 과목은 학생이 3학년 2학기에 수강할 예정이라고 직접 입력한 과목입니다.",
+      "※ 3학년 2학기 성적(등급)은 대학 입시에 반영되지 않으므로 '성적 향상' 조언은 절대 하지 마세요.",
+      "→ 위 과목의 세특(교과 세부능력·특기사항) 주제 조언, 탐구 활동 방향, 교과 연계 전략은 제공하세요.",
+      "→ 해당 과목에서 어떤 탐구·발표·보고서를 하면 학종 평가에서 교과 이수 노력으로 인정받을 수 있는지 구체적으로 안내하세요.",
+      "→ 위 목록에 없는 과목의 수강을 새로 권고하지 마세요.",
+    ].join("\n");
+  }
+
+  return [
     "## 수강 예정 과목 (학생 직접 입력)",
     `과목: ${plannedSubjects.trim()}`,
     "",
@@ -3515,9 +3534,7 @@ const formatPlannedSubjects = (plannedSubjects?: string): string => {
     "→ 성적 향상, 과목 추천, 탐구 주제 등의 조언은 위 수강 예정 과목 범위 내에서만 제시하세요.",
     "→ 위 목록에 없는 과목의 수강이나 성적 향상을 권고하지 마세요.",
     "→ 단, 이수 완료 과목의 기존 성과를 언급하거나 분석하는 것은 허용됩니다.",
-  ];
-
-  return lines.join("\n");
+  ].join("\n");
 };
 
 /** 생기부 원문의 "희망분야 OOO" 라벨을 제거하여 Phase 2 분류 bias 방지 */
