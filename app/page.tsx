@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 
 import { Header } from "./_components/Header";
+import { MarketingBanner } from "./_components/MarketingBanner";
+import { BANNER_COOKIE_NAME } from "./_components/marketing-banner-constants";
 import { HeroSection, HeroPreview } from "./_components/HeroSection";
 import heroStyles from "./_components/HeroSection.module.css";
 import { TrustSection } from "./_components/TrustSection";
@@ -24,9 +27,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Home() {
+export default async function Home() {
+  const cookieStore = await cookies();
+  const isBannerDismissed = cookieStore.get(BANNER_COOKIE_NAME)?.value === "1";
+
   return (
     <>
+      <MarketingBanner initiallyDismissed={isBannerDismissed} />
       <Header />
       <main>
         <HeroSection />

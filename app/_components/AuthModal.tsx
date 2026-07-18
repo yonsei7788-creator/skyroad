@@ -52,6 +52,7 @@ const translateError = (message: string): string => {
 export const AuthModal = () => {
   const router = useRouter();
   const isOpen = useAuthStore((s) => s.isAuthModalOpen);
+  const authRedirectTo = useAuthStore((s) => s.authRedirectTo);
   const closeAuthModal = useAuthStore((s) => s.closeAuthModal);
 
   const [activeTab, setActiveTab] = useState<TabType>("login");
@@ -256,7 +257,14 @@ export const AuthModal = () => {
       return;
     }
 
+    const redirectTo = authRedirectTo;
     closeAuthModal();
+
+    if (redirectTo) {
+      router.push(redirectTo);
+      return;
+    }
+
     router.refresh();
   };
 

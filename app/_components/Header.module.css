@@ -1,6 +1,6 @@
 .header {
   position: fixed;
-  top: 0;
+  top: var(--marketing-banner-height, 0px);
   left: 0;
   right: 0;
   z-index: 100;
@@ -8,10 +8,11 @@
   background: rgb(255 255 255 / 0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  transition: top 0.2s ease;
 }
 
 .spacer {
-  height: 64px;
+  height: calc(64px + var(--marketing-banner-height, 0px));
 }
 
 .inner {
@@ -204,7 +205,7 @@
 .mobileOverlay {
   display: none;
   position: fixed;
-  inset: 64px 0 0;
+  inset: calc(64px + var(--marketing-banner-height, 0px)) 0 0;
   z-index: 99;
   background: rgb(0 0 0 / 0);
   transition: background 0.25s ease;
@@ -224,7 +225,7 @@
 /* ---- Mobile Menu ---- */
 .mobileMenu {
   position: fixed;
-  top: 64px;
+  top: calc(64px + var(--marketing-banner-height, 0px));
   left: 0;
   right: 0;
   bottom: 0;
