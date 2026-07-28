@@ -204,8 +204,8 @@ export const ReferralCodeForm = ({ existingCoupon }: ReferralCodeFormProps) => {
               <br />
               만료일: {formatDate(successCoupon.expiresAt)}
             </p>
-            <Link href="/pricing" className={styles.successLink}>
-              리포트 구매하기
+            <Link href="/profile/consulting" className={styles.successLink}>
+              컨설팅 내역 보기
               <ArrowRight size={16} />
             </Link>
           </div>

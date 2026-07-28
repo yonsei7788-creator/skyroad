@@ -12,7 +12,6 @@ import { DualVerificationSection } from "./_components/DualVerificationSection";
 import { ProcessSection } from "./_components/ProcessSection";
 import { ServiceCardSection } from "./_components/ServiceCardSection";
 import { PreviewSection } from "./_components/PreviewSection";
-import { PricingSection } from "./_components/PricingSection";
 import { FeaturedReviewSection } from "./_components/FeaturedReviewSection";
 import { FaqSection } from "./_components/FaqSection";
 import { CtaSection } from "./_components/CtaSection";
@@ -45,7 +44,6 @@ export default async function Home() {
         <ProcessSection />
         <ServiceCardSection />
         <PreviewSection />
-        <PricingSection />
         <FeaturedReviewSection />
         <TrustSection />
         <CtaSection />

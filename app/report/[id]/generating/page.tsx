@@ -74,7 +74,7 @@ const GeneratingContent = () => {
     const run = async () => {
       if (!orderId) {
         setPhase("error");
-        setError("주문 정보가 없습니다. 결제 내역에서 다시 시도해 주세요.");
+        setError("주문 정보가 없습니다. 컨설팅 내역에서 다시 시도해 주세요.");
         return;
       }
 

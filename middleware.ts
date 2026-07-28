@@ -1,20 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const PUBLIC_PATHS = ["/", "/about", "/api", "/auth"];
+const PUBLIC_PATHS = ["/login", "/auth"];
 
 const isPublicPath = (pathname: string): boolean => {
   if (PUBLIC_PATHS.includes(pathname)) return true;
-  return PUBLIC_PATHS.some((p) => p !== "/" && pathname.startsWith(`${p}/`));
+  return PUBLIC_PATHS.some((p) => pathname.startsWith(`${p}/`));
 };
-
-const isAdminPath = (pathname: string): boolean =>
-  pathname === "/admin" || pathname.startsWith("/admin/");
 
 const isOnboardingPath = (pathname: string): boolean =>
   pathname === "/onboarding" || pathname.startsWith("/onboarding/");
-
-const isHashAnchor = (pathname: string): boolean => pathname.startsWith("/#");
 
 export const updateSession = async (request: NextRequest) => {
   let supabaseResponse = NextResponse.next({
@@ -50,55 +45,45 @@ export const updateSession = async (request: NextRequest) => {
 
   const { pathname } = request.nextUrl;
 
-  if (isAdminPath(pathname)) {
-    if (!user) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/";
-      return NextResponse.redirect(url);
+  if (!user) {
+    if (isPublicPath(pathname)) {
+      return supabaseResponse;
     }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "admin") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/";
-      return NextResponse.redirect(url);
-    }
-
-    return supabaseResponse;
-  }
-
-  if (!user || isPublicPath(pathname) || isHashAnchor(pathname)) {
-    return supabaseResponse;
-  }
-
-  if (isOnboardingPath(pathname)) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("onboarding_completed")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.onboarding_completed) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/record";
-      return NextResponse.redirect(url);
-    }
-
-    return supabaseResponse;
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
   }
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("onboarding_completed")
+    .select("role, onboarding_completed")
     .eq("id", user.id)
     .single();
 
-  if (profile && !profile.onboarding_completed) {
+  if (profile?.role !== "admin") {
+    await supabase.auth.signOut();
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("error", "not_admin");
+    return NextResponse.redirect(url);
+  }
+
+  if (pathname === "/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
+  }
+
+  if (isOnboardingPath(pathname)) {
+    if (profile.onboarding_completed) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/record";
+      return NextResponse.redirect(url);
+    }
+    return supabaseResponse;
+  }
+
+  if (!profile.onboarding_completed) {
     const url = request.nextUrl.clone();
     url.pathname = "/onboarding";
     return NextResponse.redirect(url);

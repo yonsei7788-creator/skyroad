@@ -10,7 +10,6 @@ import {
   CircleUser,
   ChevronDown,
   FileText,
-  CreditCard,
   UserCog,
   LogOut,
   ClipboardList,
@@ -25,7 +24,6 @@ import {
 import { useAuthStore } from "@/libs/store/auth-provider";
 import { createClient } from "@/libs/supabase/client";
 
-import { AuthModal } from "./AuthModal";
 import styles from "./Header.module.css";
 
 const NAV_ITEMS = [
@@ -36,7 +34,6 @@ const NAV_ITEMS = [
 
 const PROFILE_MENU_ITEMS = [
   { label: "컨설팅 내역", href: "/profile/consulting", icon: FileText },
-  { label: "결제내역", href: "/profile/payments", icon: CreditCard },
   { label: "목표 대학 수정", href: "/profile/target", icon: GraduationCap },
   { label: "추천인 코드", href: "/profile/referral", icon: Ticket },
   { label: "내 정보 수정", href: "/profile/settings", icon: UserCog },
@@ -50,7 +47,6 @@ export const Header = () => {
   const role = useAuthStore((s) => s.role);
   const onboardingCompleted = useAuthStore((s) => s.onboardingCompleted);
   const hasRecord = useAuthStore((s) => s.hasRecord);
-  const openAuthModal = useAuthStore((s) => s.openAuthModal);
 
   const isProfileLoaded = useAuthStore((s) => s.isProfileLoaded);
   const isLoggedIn = !!user;
@@ -110,11 +106,6 @@ export const Header = () => {
     };
   }, [isMobileMenuOpen]);
 
-  const handleOpenAuthModal = () => {
-    openAuthModal();
-    closeMobileMenu();
-  };
-
   const handleSignOut = async () => {
     const supabase = createClient();
     const { error } = await supabase.auth.signOut();
@@ -169,10 +160,6 @@ export const Header = () => {
                 어드민
               </Link>
             )}
-            <Link href="/pricing" className={styles.ticketButton}>
-              <Ticket size={16} className={styles.ticketIcon} />
-              이용권
-            </Link>
             <span className={styles.divider} />
             {isLoggedIn ? (
               <div className={styles.profileWrapper} ref={dropdownRef}>
@@ -225,14 +212,10 @@ export const Header = () => {
                 )}
               </div>
             ) : (
-              <button
-                type="button"
-                className={styles.authButton}
-                onClick={handleOpenAuthModal}
-              >
+              <Link href="/login" className={styles.authButton}>
                 로그인
                 <ArrowRight size={16} />
-              </button>
+              </Link>
             )}
           </div>
 
@@ -332,26 +315,18 @@ export const Header = () => {
           )}
 
           {/* CTA Area */}
-          <div className={styles.mobileCta}>
-            <Link
-              href="/pricing"
-              className={styles.mobileTicket}
-              onClick={closeMobileMenu}
-            >
-              <Ticket size={16} className={styles.ticketIcon} />
-              이용권 구매
-            </Link>
-            {!isLoggedIn && (
-              <button
-                type="button"
+          {!isLoggedIn && (
+            <div className={styles.mobileCta}>
+              <Link
+                href="/login"
                 className={styles.mobileAuthButton}
-                onClick={handleOpenAuthModal}
+                onClick={closeMobileMenu}
               >
                 로그인
                 <ArrowRight size={16} />
-              </button>
-            )}
-          </div>
+              </Link>
+            </div>
+          )}
 
           {/* Admin Link */}
           {showAdmin && (
@@ -367,8 +342,6 @@ export const Header = () => {
         </nav>
       </div>
       <div className={styles.spacer} />
-
-      <AuthModal />
     </>
   );
 };

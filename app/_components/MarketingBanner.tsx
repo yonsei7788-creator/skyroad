@@ -5,8 +5,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Sparkle, X } from "lucide-react";
 
-import { useAuthStore } from "@/libs/store/auth-provider";
-
 import {
   BANNER_COOKIE_MAX_AGE,
   BANNER_COOKIE_NAME,
@@ -23,8 +21,6 @@ export const MarketingBanner = ({
   const router = useRouter();
   const bannerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(!initiallyDismissed);
-  const user = useAuthStore((s) => s.user);
-  const openAuthModal = useAuthStore((s) => s.openAuthModal);
 
   // 헤더가 배너 높이만큼 아래로 밀려나도록 CSS 변수로 실제 높이를 전달
   useEffect(() => {
@@ -54,11 +50,7 @@ export const MarketingBanner = ({
   }, [isVisible]);
 
   const handleClick = () => {
-    if (user) {
-      router.push("/pricing");
-      return;
-    }
-    openAuthModal("/pricing");
+    router.push("/record");
   };
 
   const handleClose = (e: React.MouseEvent) => {

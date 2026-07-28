@@ -1110,10 +1110,10 @@ const DemoOverlay = () => (
   <div className={styles.demoOverlay}>
     <span className={styles.demoBadge}>샘플 데이터</span>
     <span className={styles.demoText}>
-      리포트를 구매하면 나만의 성적 분석을 확인할 수 있어요
+      리포트를 생성하면 나만의 성적 분석을 확인할 수 있어요
     </span>
-    <Link href="/pricing" className={styles.demoButton}>
-      리포트 구매하기
+    <Link href="/profile/consulting" className={styles.demoButton}>
+      리포트 생성하러 가기
       <ArrowRight size={14} />
     </Link>
   </div>
@@ -1121,12 +1121,12 @@ const DemoOverlay = () => (
 
 const PaidOverlay = () => (
   <div className={styles.demoOverlay}>
-    <span className={styles.demoBadge}>유료 기능</span>
+    <span className={styles.demoBadge}>리포트 필요</span>
     <span className={styles.demoText}>
-      리포트를 구매하면 상세 성적 분석을 확인할 수 있어요
+      리포트를 생성하면 상세 성적 분석을 확인할 수 있어요
     </span>
-    <Link href="/pricing" className={styles.demoButton}>
-      리포트 구매하기
+    <Link href="/profile/consulting" className={styles.demoButton}>
+      리포트 생성하러 가기
       <ArrowRight size={14} />
     </Link>
   </div>

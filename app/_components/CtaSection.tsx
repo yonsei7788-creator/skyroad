@@ -5,7 +5,7 @@ import { FadeIn } from "./FadeIn";
 import styles from "./CtaSection.module.css";
 
 const SUB_ITEMS = [
-  "간편 회원가입 후 바로 이용",
+  "로그인 후 바로 이용",
   "72시간 내 리포트 전달",
   "전임 컨설턴트 검수 포함",
 ];

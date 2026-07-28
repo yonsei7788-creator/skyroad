@@ -1,12 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import {
-  FileText,
-  ArrowRight,
-  ClipboardList,
-  CreditCard,
-  GraduationCap,
-} from "lucide-react";
+import { ArrowRight, ClipboardList, GraduationCap } from "lucide-react";
 
 import { Header } from "@/app/_components/Header";
 import { Footer } from "@/app/_components/Footer";
@@ -203,18 +197,6 @@ const OrderCard = ({
         )}
 
       {/* Action area */}
-      {order.status === "pending_payment" && (
-        <div className={styles.actionArea}>
-          <Link
-            href={`/checkout?plan=${order.plans.name}`}
-            className={styles.actionButton}
-          >
-            <CreditCard size={16} />
-            결제하기
-          </Link>
-        </div>
-      )}
-
       {order.status === "paid" &&
         (order.reports.length === 0 ||
           order.reports[0].ai_status === "pending" ||
@@ -359,15 +341,10 @@ const ConsultingHistoryPage = async () => {
               </div>
               <p className={styles.emptyText}>아직 컨설팅 내역이 없습니다</p>
               <p className={styles.emptySubtext}>
-                리포트를 구매하면 이곳에서 진행 상황과
+                리포트를 생성하면 이곳에서 진행 상황과
                 <br />
                 결과를 확인할 수 있습니다.
               </p>
-              <Link href="/pricing" className={styles.emptyCta}>
-                <FileText size={16} />
-                리포트 구매하기
-                <ArrowRight size={16} />
-              </Link>
             </div>
           )}
         </div>
