@@ -11,10 +11,29 @@ const isPublicPath = (pathname: string): boolean => {
 const isOnboardingPath = (pathname: string): boolean =>
   pathname === "/onboarding" || pathname.startsWith("/onboarding/");
 
+const isInternalPdfRequest = (
+  request: NextRequest,
+  pathname: string
+): boolean => {
+  if (!pathname.startsWith("/report/")) return false;
+  const pdfSecret = process.env.PDF_SECRET_TOKEN;
+  if (!pdfSecret) return false;
+  return request.nextUrl.searchParams.get("_token") === pdfSecret;
+};
+
 export const updateSession = async (request: NextRequest) => {
   let supabaseResponse = NextResponse.next({
     request,
   });
+
+  const { pathname } = request.nextUrl;
+
+  // 서버사이드 PDF 생성(Puppeteer)이 로그인 세션 없이 리포트 렌더링 페이지에
+  // 접근하는 내부 요청. 페이지 자체가 _token을 검증하므로 미들웨어에서는
+  // 로그인/권한 체크 없이 그대로 통과시킨다.
+  if (isInternalPdfRequest(request, pathname)) {
+    return supabaseResponse;
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -42,8 +61,6 @@ export const updateSession = async (request: NextRequest) => {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
 
   if (!user) {
     if (isPublicPath(pathname)) {

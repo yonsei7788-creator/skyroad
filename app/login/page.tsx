@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 
 import { LoginForm } from "./_components/LoginForm";
+import { NoticeModal } from "./_components/NoticeModal";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -14,6 +15,7 @@ const LoginPage = () => {
       <Suspense fallback={null}>
         <LoginForm />
       </Suspense>
+      <NoticeModal />
     </div>
   );
 };
