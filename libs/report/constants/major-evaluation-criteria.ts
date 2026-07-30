@@ -1037,6 +1037,9 @@ export const findCriteriaByMajorGroup = findCriteria;
 const EXTRA_MAJOR_GROUP_LABELS: Record<string, string> = {
   생명바이오: "생명과학 계열", // 레거시 호환
   화학재료: "화학/재료 계열",
+  식품: "식품 계열",
+  농생명: "농생명 계열",
+  관광호텔외식: "관광/호텔/외식 계열",
 };
 
 export const getMajorGroupLabel = (code: string): string => {
