@@ -79,6 +79,13 @@ export const buildTaskQueue = (
   tasks.push("subjectAnalysis");
   if (has("behaviorAnalysis")) tasks.push("behaviorAnalysis");
 
+  // Group 3.5: majorExploration은 topicRecommendation/admissionStrategy가
+  // 참조하는 검증된 학과 후보(TASK_DEPS 의존)이므로 그보다 먼저 큐에 넣는다.
+  // (SSE 정상 경로는 buildWaves가 TASK_DEPS로 순서를 재조정하지만,
+  //  run-task 폴백 경로는 이 flat 큐 순서를 그대로 순차 실행하므로
+  //  큐 자체의 순서가 의존성과 어긋나면 안 됨)
+  tasks.push("majorExploration");
+
   // Group 4
   if (has("weaknessAnalysis")) tasks.push("weaknessAnalysis");
   if (has("topicRecommendation")) tasks.push("topicRecommendation");
@@ -92,9 +99,6 @@ export const buildTaskQueue = (
   // storyAnalysis 제외 (피드백 반영: 모든 항목에서 스토리 분석 제외)
   // 졸업생/N수생은 생기부 수정 불가 → 실행 로드맵 미노출
   if (has("actionRoadmap") && !isGraduate) tasks.push("actionRoadmap");
-
-  // Group 6
-  tasks.push("majorExploration");
 
   // Group 7: 전임 컨설턴트 총평 (모든 분석 결과 종합)
   tasks.push("consultantReview");
