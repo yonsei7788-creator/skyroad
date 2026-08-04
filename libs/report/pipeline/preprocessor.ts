@@ -1856,14 +1856,25 @@ const buildTexts = (
     }
   }
   // 현재 진행 중인 학년/학기 계산
+  // 3학년 + 9월 이후는 생기부 마감(8/31) 이후이므로, 데이터가 3학년 1학기까지만
+  // 있어도 "2학기 진행 중"이 아니라 "생기부 확정"으로 판단한다.
+  // (wave-executor.ts의 courseAlignment enrollmentLocked와 동일 기준)
+  const currentMonth = new Date().getMonth() + 1;
+  const grade3RecordFinalized = studentInfo.grade === 3 && currentMonth >= 9;
+
   let currentSemesterLabel = "";
+  let recordFinalizedGrade3 = false;
   if (!studentInfo.isGraduate && studentInfo.grade > 0) {
     if (maxGradeYear < studentInfo.grade) {
       // 현재 학년 성적이 아예 없음 → 현재 학년 1학기 진행 중
       currentSemesterLabel = `${studentInfo.grade}학년 1학기 진행 중`;
     } else if (maxGradeYear === studentInfo.grade && maxSemester === 1) {
-      // 현재 학년 1학기까지만 성적 있음 → 2학기 진행 중
-      currentSemesterLabel = `${studentInfo.grade}학년 2학기 진행 중`;
+      if (grade3RecordFinalized) {
+        recordFinalizedGrade3 = true;
+      } else {
+        // 현재 학년 1학기까지만 성적 있음 → 2학기 진행 중
+        currentSemesterLabel = `${studentInfo.grade}학년 2학기 진행 중`;
+      }
     }
   }
 
@@ -1879,6 +1890,12 @@ const buildTexts = (
     studentProfileText +=
       `\n${studentInfo.grade}학년 이후 과목은 아직 이수 전이므로, 미이수를 약점으로 분석하지 마세요.` +
       ` 이수 전략은 ${studentInfo.grade}학년에서 이수할 과목부터 추천하세요.`;
+  } else if (recordFinalizedGrade3) {
+    studentProfileText += `\n현재 시점: 3학년 1학기로 생기부 최종 확정 (수시 반영 완료)`;
+    studentProfileText +=
+      `\n지금부터 실행 가능한 것은 면접 준비, 자기소개서 정리, 수능 마무리, 정시 지원 전략입니다.` +
+      ` 성적 향상, 새 과목 이수, 세특/활동 추가 같은 조언은 이 학생의 생기부에는 더 이상 반영될 수 없으니,` +
+      ` 위 4가지 실행 가능한 범위 안에서만 앞으로의 방향을 제시하세요.`;
   }
 
   // 입력 데이터 시점 컨텍스트 — AI가 입력에 없는 학기(예: 3학년 1학기)의 등급·세특을
