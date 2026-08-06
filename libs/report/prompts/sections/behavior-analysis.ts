@@ -10,6 +10,11 @@ export interface BehaviorAnalysisPromptInput {
   studentGrade: number;
   /** 졸업생 여부 — 행동특성도 이미 확정이므로 보완 표현 금지 */
   isGraduate?: boolean;
+  /**
+   * 생기부가 더 이상 바뀔 수 없는 상태 — 졸업생이거나, 3학년 1학기까지만
+   * 데이터가 있고 7월 이후(1학기 기말고사 종료)인 경우 true.
+   */
+  isRecordFinalized?: boolean;
 }
 
 const PLAN_VOLUME_GUIDE: Record<ReportPlan, string> = {
@@ -77,8 +82,8 @@ export const buildBehaviorAnalysisPrompt = (
 
 ## 현재 학년 정보
 ${
-  input.isGraduate
-    ? `- 이 학생은 **졸업생**입니다. 행동특성도 이미 확정이므로 보완·개선 권고를 절대 하지 마세요.
+  input.isGraduate || input.isRecordFinalized
+    ? `- 이 학생은 **${input.isGraduate ? "졸업생" : "생기부가 최종 확정된 3학년"}**입니다. 행동특성도 이미 확정이므로 보완·개선 권고를 절대 하지 마세요.
 - overallComment, admissionRelevance에서 "앞으로", "남은 기간", "보완하세요", "~를 추가하면" 같은 미래형·개선형 표현을 사용하지 마세요.
 - admissionRelevance는 **면접에서 이 행동특성을 어떻게 활용·설명할지** 관점으로만 작성하세요. 예: "갈등 중재 경험을 STAR 구조로 정리하여 면접에서 설명하면 효과적입니다."`
     : `- 학생의 현재 학년: ${input.studentGrade}학년

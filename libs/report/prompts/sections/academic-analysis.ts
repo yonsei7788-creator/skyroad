@@ -431,14 +431,21 @@ ${PLAN_SPECIFIC[plan]}`;
 };
 
 /**
- * 졸업생 전용 academicAnalysis 프롬프트.
- * 졸업생은 성적이 이미 확정되어 변경 불가하므로, 최종 평균과 합격선 비교 + 면접·수능 활용 관점으로만 작성.
- * 비졸업생 분기와 분리해 positive instruction만 사용 (Gemini 오판 방지).
+ * 성적 확정 학생(졸업생, 또는 3학년으로 생기부가 최종 확정된 재학생) 전용
+ * academicAnalysis 프롬프트.
+ * 성적이 이미 확정되어 변경 불가하므로, 최종 평균과 합격선 비교 + 면접·수능 활용 관점으로만 작성.
+ * 비확정 분기와 분리해 positive instruction만 사용 (Gemini 오판 방지).
  */
 export const buildGraduateAcademicAnalysisPrompt = (
   input: AcademicAnalysisPromptInput,
   plan: ReportPlan
 ): string => {
+  // 실제 졸업생이 아니면(3학년 재학생인데 생기부만 확정된 경우) "졸업생"이라고
+  // 부르면 사실과 다르므로, 실제 졸업 여부에 따라 표현을 분기한다.
+  const statusLabel = input.isGraduate
+    ? "졸업생"
+    : "3학년으로 생기부가 최종 확정된 재학생";
+
   const gyogwaScope = input.isGyogwaOnly
     ? "이 학생은 모든 희망대학이 학생부교과전형입니다. 최종 평균 등급과 합격선 비교가 평가의 전부이며, 학종 관점·사정관 해석 표현은 사용하지 않습니다."
     : "이 학생은 학생부종합전형 중심으로 평가됩니다. 성적의 정량 해석과 함께 사정관 관점의 의미를 담아 작성합니다.";
@@ -446,13 +453,13 @@ export const buildGraduateAcademicAnalysisPrompt = (
   const planAddendum =
     plan === "premium"
       ? `\n\n## Premium 추가 출력
-- fiveGradeSimulation: 빈 배열([])로 출력합니다. 졸업생은 9등급제 환경에서 평가받았으므로 5등급제 환산이 무의미합니다.
+- fiveGradeSimulation: 빈 배열([])로 출력합니다. ${statusLabel}은 9등급제 환경에서 평가받으므로 5등급제 환산이 무의미합니다.
 - improvementPriority: 빈 배열([])로 출력합니다. 성적은 확정되었으므로 우선순위를 산정하지 않습니다.`
       : "";
 
   return `## 졸업생 전용 성적 분석 (positive instruction only)
 
-이 학생은 **졸업생**입니다. 성적이 이미 확정되어 있으므로, 이 섹션은 **확정된 성적 구조의 평가 + 면접·수능·지원 전략에서 어떻게 활용할지**만 다룹니다.
+이 학생은 **${statusLabel}**입니다. 성적이 이미 확정되어 있으므로, 이 섹션은 **확정된 성적 구조의 평가 + 면접·수능·지원 전략에서 어떻게 활용할지**만 다룹니다.
 
 ${gyogwaScope}
 
@@ -495,7 +502,7 @@ ${gyogwaScope}
 - 모든 권고는 **이미 확정된 성적·기록의 활용 관점**으로 작성합니다.
 - 권장 표현: "~로 평가될 수 있습니다", "면접에서 ~로 설명하면 효과적입니다", "수능 ~과목 성취가 ~ 전형 활용에 유리합니다", "확정된 ~ 강점을 ~ 관점으로 어필할 수 있습니다".
 - ⚠️ actionItems는 **면접·수능·지원 전략 관점만** 작성합니다. 성적 자체를 변경하는 권고는 작성하지 않습니다.
-- ⚠️ recommendedSubjects는 빈 배열([])로 출력합니다 — 졸업생에게 추천 과목 개념이 적용되지 않습니다.
+- ⚠️ recommendedSubjects는 빈 배열([])로 출력합니다 — ${statusLabel}에게 추천 과목 개념이 적용되지 않습니다.
 
 ## 데이터 시점 사용 원칙
 - overallAverageGrade(전체 평균)는 입력된 모든 학기의 합산 평균이며 특정 학기의 등급이 아닙니다.

@@ -54,8 +54,8 @@ describe("3학년 1학기까지 데이터가 있을 때 현재 시점 판단 (�
     global.Date = MockDate;
   };
 
-  it("7월(생기부 마감 전)이면 '2학기 진행 중'으로 보고 이수 전략 조언을 유지한다", () => {
-    mockCurrentDate("2026-07-15T00:00:00+09:00");
+  it("6월(1학기 기말고사 전)이면 '2학기 진행 중'으로 보고 이수 전략 조언을 유지한다", () => {
+    mockCurrentDate("2026-06-15T00:00:00+09:00");
 
     const result = preprocess(
       recordDataUpToGrade3Sem1,
@@ -65,6 +65,22 @@ describe("3학년 1학기까지 데이터가 있을 때 현재 시점 판단 (�
 
     expect(result.texts.studentProfileText).toContain("3학년 2학기 진행 중");
     expect(result.texts.studentProfileText).toContain("이수 전략은");
+  });
+
+  it("7월(1학기 기말고사 후)이면 '생기부 최종 확정'으로 보고 미래형 이수 조언을 넣지 않는다", () => {
+    mockCurrentDate("2026-07-15T00:00:00+09:00");
+
+    const result = preprocess(
+      recordDataUpToGrade3Sem1,
+      baseStudentInfo,
+      "standard"
+    );
+
+    expect(result.texts.studentProfileText).toContain("생기부 최종 확정");
+    expect(result.texts.studentProfileText).not.toContain("2학기 진행 중");
+    expect(result.texts.studentProfileText).not.toContain("이수 전략은");
+    expect(result.texts.studentProfileText).toContain("면접 준비");
+    expect(result.texts.studentProfileText).toContain("정시 지원 전략");
   });
 
   it("9월(생기부 마감 후)이면 '생기부 최종 확정'으로 보고 미래형 이수 조언을 넣지 않는다", () => {

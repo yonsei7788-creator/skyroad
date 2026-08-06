@@ -494,9 +494,15 @@ export const buildGraduateSubjectAnalysisPrompt = (
     ? `\n## 강점 계열\n이 학생의 강점 계열: **${input.detectedMajorGroupLabel}**\nimprovementDirection·improvementExample은 위 강점 계열과 연결되는 면접 활용 관점으로 작성합니다.\n`
     : "";
 
+  // 실제 졸업생이 아니면(3학년 재학생인데 생기부만 확정된 경우) "졸업생"이라고
+  // 부르면 사실과 다르므로, 실제 졸업 여부에 따라 표현을 분기한다.
+  const statusLabel = input.isGraduate
+    ? "졸업생"
+    : "3학년으로 생기부가 최종 확정된 재학생";
+
   return `## 졸업생 전용 세특 분석 (면접 활용 관점)
 
-이 학생은 **졸업생**입니다. 생기부 세특이 이미 확정되어 있으므로, 이 섹션은 **확정된 세특을 면접에서 어떻게 활용·설명할지**를 다룹니다.
+이 학생은 **${statusLabel}**입니다. 생기부 세특이 이미 확정되어 있으므로, 이 섹션은 **확정된 세특을 면접에서 어떻게 활용·설명할지**를 다룹니다.
 
 ${yearScope}
 ${gradingLine}

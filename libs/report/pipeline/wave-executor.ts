@@ -167,6 +167,13 @@ export const executeTask = async (
     ? [...new Set(studentInfo.targetUniversities.map((t) => t.admissionType))]
     : undefined;
 
+  // 생기부가 더 이상 바뀔 수 없는 상태 — 졸업생이거나, 3학년 1학기까지만
+  // 데이터가 있고 7월 이후(1학기 기말고사 종료)인 경우. 각 섹션은 이 값을
+  // isGraduate와 동일하게 취급해 "성적 향상/과목 이수 보완" 조언을 생략하고
+  // 면접·수능·지원 전략 중심으로 서술해야 한다.
+  const isRecordFinalized =
+    studentInfo.isGraduate === true || texts.isRecordFinalized === true;
+
   const systemPrefix = buildSystemPromptPrefix(plan, { isGyogwaOnly });
   const sections = [...(state.completedSections ?? [])];
   // 생기부 기반 메디컬 판별 (Phase 2 결과 기반, 희망학과 아님)
@@ -653,7 +660,7 @@ export const executeTask = async (
         isGyogwaOnly,
       };
       section = await callGemini<ReportSection>(
-        studentInfo.isGraduate
+        isRecordFinalized
           ? buildGraduateAcademicAnalysisPrompt(acadInput, plan)
           : isGyogwaOnly
             ? buildGyogwaAcademicAnalysisPrompt(acadInput, plan)
@@ -675,6 +682,7 @@ export const executeTask = async (
             studentProfile: texts.studentProfileText,
             studentGrade: studentInfo.grade,
             isGraduate: studentInfo.isGraduate,
+            isRecordFinalized,
           },
           plan
         )
@@ -695,6 +703,7 @@ export const executeTask = async (
             curriculumVersion: texts.curriculumVersion,
             studentGrade: studentInfo.grade,
             isGraduate: studentInfo.isGraduate,
+            isRecordFinalized,
             isMedical,
             isGyogwaOnly,
           },
@@ -740,15 +749,9 @@ export const executeTask = async (
           studentInfo.isGraduate
         );
       }
-      // 추가 과목 이수가 사실상 불가능한 시점 판정.
-      // - 졸업생: 항상 잠금
-      // - 3학년 + 2학기 후반(9월 이후): 학기 진행 중이라 새 진로선택과목 이수 어려움
-      //   (한국 고교 학사: 1학기 3~7월, 2학기 9~12월. 8월 방학·수강신청 직전까지는 가능)
-      // - 그 외(1·2학년, 3학년 1학기, 8월 이전): 잔여 학기에 이수 가능
-      const currentMonth = new Date().getMonth() + 1; // 1~12
-      const enrollmentLocked =
-        studentInfo.isGraduate === true ||
-        (studentInfo.grade === 3 && currentMonth >= 9);
+      // 추가 과목 이수가 사실상 불가능한 시점 판정 — 공통 isRecordFinalized 재사용
+      // (졸업생 또는 3학년 1학기까지 데이터 + 7월 이후)
+      const enrollmentLocked = isRecordFinalized;
 
       {
         const courseAlignInput = {
@@ -764,7 +767,7 @@ export const executeTask = async (
           plannedSubjects: texts.plannedSubjectsText,
         };
         section = await callGemini<ReportSection>(
-          studentInfo.isGraduate
+          isRecordFinalized
             ? buildGraduateCourseAlignmentPrompt(courseAlignInput, plan)
             : buildCourseAlignmentPrompt(courseAlignInput, plan)
         );
@@ -823,7 +826,7 @@ export const executeTask = async (
             : undefined,
         };
         section = await callGemini<ReportSection>(
-          studentInfo.isGraduate
+          isRecordFinalized
             ? buildGraduateSubjectAnalysisPrompt(subjectInput, plan)
             : buildSubjectAnalysisPrompt(subjectInput, plan),
           { maxOutputTokens: 16384 }
@@ -850,7 +853,7 @@ export const executeTask = async (
                 : undefined,
               targetYear: year,
             };
-            const prompt = studentInfo.isGraduate
+            const prompt = isRecordFinalized
               ? buildGraduateSubjectAnalysisPrompt(subjectInputByYear, plan)
               : buildSubjectAnalysisPrompt(subjectInputByYear, plan);
             // [DEBUG-SUBJ] prompt 길이 + 시작/끝 일부 + minimum/maximum 가이드 부분 추출
@@ -930,6 +933,7 @@ export const executeTask = async (
             studentProfile: texts.studentProfileText,
             studentGrade: studentInfo.grade,
             isGraduate: studentInfo.isGraduate,
+            isRecordFinalized,
           },
           plan
         )
@@ -1002,6 +1006,7 @@ export const executeTask = async (
         completedSubjectsByYear: texts.completedSubjectsByYearText,
         studentGrade: studentInfo.grade,
         isGraduate: studentInfo.isGraduate,
+        isRecordFinalized,
         // 정합성 보장: competencyScore에서 강점 영역으로 판정된 활동을
         // 약점 evidence로 사용하지 않도록 채점 결과 입력 전달
         competencyScoreResult: ser.competencyScoreText,
@@ -1045,7 +1050,7 @@ export const executeTask = async (
           isGraduate: studentInfo.isGraduate,
         };
         section = await callGemini<ReportSection>(
-          studentInfo.isGraduate
+          isRecordFinalized
             ? buildGraduateTopicRecommendationPrompt(topicInput, plan)
             : buildTopicRecommendationPrompt(topicInput, plan)
         );
@@ -1365,6 +1370,7 @@ export const executeTask = async (
         gradingSystem: state.preprocessedData!.gradingSystem,
         studentGrade: studentInfo.grade,
         isGraduate: studentInfo.isGraduate,
+        isRecordFinalized,
         currentDate: new Date().toISOString().slice(0, 10),
         isMedical,
         completedSubjectsByYear: texts.completedSubjectsByYearText,
@@ -1539,6 +1545,7 @@ export const executeTask = async (
             currentDate: new Date().toISOString().slice(0, 10),
             studentGrade: studentInfo.grade,
             isGraduate: studentInfo.isGraduate,
+            isRecordFinalized,
             isMedical,
             completedSubjectsByYear: hasPlannedSubjects
               ? undefined
@@ -1587,6 +1594,7 @@ export const executeTask = async (
         studentProfile: texts.studentProfileText,
         studentGrade: studentInfo.grade,
         isGraduate: studentInfo.isGraduate,
+        isRecordFinalized,
         targetDepartment: studentInfo.targetDepartment,
         detectedMajorGroup: detectedMajorForExploration,
         detectedDepartments: detectedDepartmentsForExploration,
@@ -1974,6 +1982,7 @@ export const executeTask = async (
         gradingSystem: state.preprocessedData?.gradingSystem,
         studentGrade: studentInfo.grade,
         isGraduate: studentInfo.isGraduate,
+        isRecordFinalized,
         currentDate: new Date().toISOString().slice(0, 10),
         isMedical,
         completedSubjectsByYear: texts.completedSubjectsByYearText,

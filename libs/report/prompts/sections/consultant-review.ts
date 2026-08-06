@@ -16,6 +16,11 @@ export interface ConsultantReviewPromptInput {
   gradingSystem?: "5등급제" | "9등급제";
   studentGrade: number;
   isGraduate?: boolean;
+  /**
+   * 생기부가 더 이상 바뀔 수 없는 상태 — 졸업생이거나, 3학년 1학기까지만
+   * 데이터가 있고 7월 이후(1학기 기말고사 종료)인 경우 true.
+   */
+  isRecordFinalized?: boolean;
   currentDate: string;
   isMedical?: boolean;
   completedSubjectsByYear?: string;
@@ -263,8 +268,9 @@ ${analysisProcedure}
 - ✅ "사회탐구 영역에서 사회와 문화, 윤리와 사상 등 선택과목 성적이 중요합니다"
 - ✅ "교과전형에서 최종 등급을 끌어올리는 전략이 필요합니다"
 ${
-  input.isGraduate
-    ? `- 졸업생입니다. completionDirection은 생략하세요.`
+  input.isGraduate || input.isRecordFinalized
+    ? `- 이 학생은 ${input.isGraduate ? "졸업생" : "생기부가 최종 확정된 3학년"}입니다. completionDirection은 생략하세요.
+- gradeAnalysis, academicAbility 등 다른 필드에서도 "성적 향상", "등급을 끌어올려야", "보완이 필요합니다" 같은 표현을 사용하지 마세요. 성적은 이미 확정되었으므로, 확정된 성적의 입시적 의미 + 면접·수능·지원 전략 관점으로만 서술하세요.`
     : input.studentGrade <= 2
       ? `- 이 학생은 아직 ${input.studentGrade}학년입니다. **"남은 기간동안"으로 시작**하세요.
 - ❌ "남은 3학년 기간", "3학년 1학기 내신을 1등급으로" → 아직 3학년이 아닙니다.
@@ -426,14 +432,16 @@ export const buildGyogwaConsultantReviewPrompt = (
 `
     : "";
 
-  const gradeTimingRule = input.isGraduate
-    ? `- 졸업생입니다. completionDirection은 생략하세요.`
-    : input.studentGrade <= 2
-      ? `- 이 학생은 아직 ${input.studentGrade}학년입니다. **"남은 기간동안"으로 시작**하세요.
+  const gradeTimingRule =
+    input.isGraduate || input.isRecordFinalized
+      ? `- 이 학생은 ${input.isGraduate ? "졸업생" : "생기부가 최종 확정된 3학년"}입니다. completionDirection은 생략하세요.
+- gradeAnalysis 등 다른 필드에서도 "성적 향상", "등급을 끌어올려야", "보완이 필요합니다" 같은 표현을 사용하지 마세요. 성적은 이미 확정되었으므로, 확정된 성적의 입시적 의미 + 면접·수능·지원 전략 관점으로만 서술하세요.`
+      : input.studentGrade <= 2
+        ? `- 이 학생은 아직 ${input.studentGrade}학년입니다. **"남은 기간동안"으로 시작**하세요.
 - ❌ "남은 3학년 기간", "3학년 1학기 내신을 1등급으로" → 아직 3학년이 아닙니다.
 - ✅ "남은 기간동안 성적을 끌어올려야 합니다", "앞으로의 학기에서 ~"
 - 특정 학기(3학년 1학기 등)를 지칭하지 말고 "남은 학기", "앞으로의 기간" 등 유연한 표현을 사용하세요.`
-      : `- 이 학생은 3학년입니다. 현재 시점에서 실행 가능한 전략만 제시하세요.
+        : `- 이 학생은 3학년입니다. 현재 시점에서 실행 가능한 전략만 제시하세요.
 - 이미 지난 시기의 조언은 하지 마세요.`;
 
   return `${fiveGradeContext}${medicalContext}## 작업

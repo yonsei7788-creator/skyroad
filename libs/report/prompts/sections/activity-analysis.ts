@@ -10,6 +10,11 @@ export interface ActivityAnalysisPromptInput {
   curriculumVersion: "2015" | "2022";
   studentGrade: number;
   isGraduate?: boolean;
+  /**
+   * 생기부가 더 이상 바뀔 수 없는 상태 — 졸업생이거나, 3학년 1학기까지만
+   * 데이터가 있고 7월 이후(1학기 기말고사 종료)인 경우 true.
+   */
+  isRecordFinalized?: boolean;
   /** 계열별 입학사정관 평가 기준 */
   majorEvaluationContext?: string;
   isMedical?: boolean;
@@ -197,9 +202,9 @@ yearlyAnalysis[].summary, ratingRationale, activities[].overallComment, activiti
 - 해당 교육과정의 영역 구분에 맞춰 분석합니다.
 
 ${
-  input.isGraduate
-    ? `## ⚠️ 졸업생 규칙 (최우선)
-이 학생은 **졸업생**입니다. 생기부를 더 이상 수정할 수 없습니다.
+  input.isGraduate || input.isRecordFinalized
+    ? `## ⚠️ 생기부 확정 규칙 (최우선)
+이 학생은 **${input.isGraduate ? "졸업생" : "생기부가 최종 확정된 3학년"}**입니다. 생기부를 더 이상 수정할 수 없습니다.
 - improvementDirection에서 "3학년에서는...", "향후 활동으로...", "~를 보완하세요" 같은 제안을 **절대 하지 마세요**.
 - improvementDirection은 **면접에서 이 활동을 어떤 관점으로 설명하면 효과적인지** 방향으로 작성하세요.
 - 예: "이 영역은 2학년 탐구 주제가 진로와 연결되는 흐름으로 설명하면, 활동의 일관성이 부각되어 효과적입니다."

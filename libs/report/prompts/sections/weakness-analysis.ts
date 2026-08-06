@@ -26,6 +26,12 @@ export interface WeaknessAnalysisPromptInput {
   studentGrade?: number;
   isGraduate?: boolean;
   /**
+   * 생기부가 더 이상 바뀔 수 없는 상태 — 졸업생이거나, 3학년 1학기까지만
+   * 데이터가 있고 7월 이후(1학기 기말고사 종료)인 경우 true.
+   * isGraduate와 OR 조건으로 "졸업생 규칙"을 적용할 때 사용한다.
+   */
+  isRecordFinalized?: boolean;
+  /**
    * competencyScore 섹션 결과 — 약점 evidence 정합성 검증용.
    * 채점에서 만점/근사 만점으로 평가된 subcategory의 활동을 약점 evidence로
    * 사용하지 않아야 동일 활동에 대한 양극단 평가 모순을 방지할 수 있다.
@@ -70,6 +76,12 @@ export const buildWeaknessAnalysisPrompt = (
   input: WeaknessAnalysisPromptInput,
   plan: ReportPlan
 ): string => {
+  // 졸업생이거나, 3학년으로 생기부가 최종 확정된 재학생이면 동일하게
+  // "생기부 수정 불가" 규칙을 적용한다. 실제 졸업 여부에 따라 표현만 분기.
+  const isLocked = input.isGraduate || input.isRecordFinalized;
+  const statusLabel = input.isGraduate
+    ? "졸업생"
+    : "생기부가 최종 확정된 3학년 재학생";
   const medicalWeaknessContext = input.isMedical
     ? `## ⚠️ 의·치·한·약·수 계열 약점 분석 기준 (반드시 적용)
 
@@ -107,8 +119,8 @@ export const buildWeaknessAnalysisPrompt = (
 
 ## ✅ 학생 학년별 시점 가이드 (executionStrategy · suggestedActivities 등 모든 보완 전략 필드 공통)
 ${
-  input.isGraduate
-    ? `- 이 학생은 **졸업생**입니다. 생기부 수정 불가 — 보완 전략은 면접·수능·지원 전략 관점에서만 서술합니다.`
+  isLocked
+    ? `- 이 학생은 **${statusLabel}**입니다. 생기부 수정 불가 — 보완 전략은 면접·수능·지원 전략 관점에서만 서술합니다.`
     : input.studentGrade === 1
       ? `- 이 학생은 **1학년**입니다. 보완 전략은 "**남은 1학년 학기와 2·3학년 동안**"으로 시작합니다.
 - ✅ 권장 어휘: "남은 학기동안", "앞으로의 기간 동안", "2·3학년에 걸쳐", "2학년부터", "3학년에서"
@@ -124,9 +136,9 @@ ${
 }
 
 ${
-  input.isGraduate
-    ? `## ⚠️ 졸업생 규칙 (최우선)
-이 학생은 **졸업생**입니다. 생기부를 더 이상 수정할 수 없습니다.
+  isLocked
+    ? `## ⚠️ 생기부 확정 규칙 (최우선)
+이 학생은 **${statusLabel}**입니다. 생기부를 더 이상 수정할 수 없습니다.
 - suggestedActivities에서 "탐구 보고서 작성", "동아리 활동 확대", "세특 보완", "~를 보완하세요" 같은 **활동/학업 관련 제안을 절대 하지 마세요**.
 - suggestedActivities는 **면접에서 이 부족한 부분을 어떤 관점으로 설명하면 효과적인지** 방향으로 작성하세요.
 - executionStrategy도 면접에서의 설명 전략 관점에서 작성하세요.
@@ -328,6 +340,12 @@ export const buildGyogwaWeaknessAnalysisPrompt = (
   input: WeaknessAnalysisPromptInput,
   plan: ReportPlan
 ): string => {
+  // 졸업생이거나, 3학년으로 생기부가 최종 확정된 재학생이면 동일하게
+  // "생기부 수정 불가" 규칙을 적용한다. 실제 졸업 여부에 따라 표현만 분기.
+  const isLocked = input.isGraduate || input.isRecordFinalized;
+  const statusLabel = input.isGraduate
+    ? "졸업생"
+    : "생기부가 최종 확정된 3학년 재학생";
   return `## 작업
 이 학생은 모든 지원 대학이 **학생부교과전형**입니다.
 교과전형 합격선 도달을 위해 보완이 필요한 영역을 식별하고 구체적인 개선 방향을 제시하세요.
@@ -338,8 +356,8 @@ export const buildGyogwaWeaknessAnalysisPrompt = (
 
 ## ✅ 학생 학년별 시점 가이드 (executionStrategy · suggestedActivities 등 모든 보완 전략 필드 공통)
 ${
-  input.isGraduate
-    ? `- 이 학생은 **졸업생**입니다. 보완 전략은 면접·수능·지원 전략 관점에서만 서술합니다.`
+  isLocked
+    ? `- 이 학생은 **${statusLabel}**입니다. 보완 전략은 면접·수능·지원 전략 관점에서만 서술합니다.`
     : input.studentGrade === 1
       ? `- 이 학생은 **1학년**입니다. 보완 전략은 "**남은 1학년 학기와 2·3학년 동안**"으로 시작합니다. 권장 어휘: "남은 학기동안", "2학년부터", "3학년에서".`
       : input.studentGrade === 2

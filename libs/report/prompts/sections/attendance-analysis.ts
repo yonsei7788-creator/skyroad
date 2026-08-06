@@ -8,6 +8,11 @@ export interface AttendanceAnalysisPromptInput {
   studentGrade: number;
   /** 졸업생 여부 — 출결이 이미 확정이므로 개선 조언 금지 */
   isGraduate?: boolean;
+  /**
+   * 생기부가 더 이상 바뀔 수 없는 상태 — 졸업생이거나, 3학년 1학기까지만
+   * 데이터가 있고 7월 이후(1학기 기말고사 종료)인 경우 true.
+   */
+  isRecordFinalized?: boolean;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -39,10 +44,14 @@ export const buildAttendanceAnalysisPrompt = (
   input: AttendanceAnalysisPromptInput,
   plan: ReportPlan
 ): string => {
+  const isLocked = input.isGraduate || input.isRecordFinalized;
+  const statusLabel = input.isGraduate
+    ? "졸업생"
+    : "생기부가 최종 확정된 3학년";
   return `## 작업
-${input.isGraduate ? "이 학생은 **졸업생**입니다. 출결이 이미 확정되었으므로 면접·지원 전략 관점에서만 영향을 평가하세요." : `이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.`}
+${isLocked ? `이 학생은 **${statusLabel}**입니다. 출결이 이미 확정되었으므로 면접·지원 전략 관점에서만 영향을 평가하세요.` : `이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.`}
 
-학생의 출결 데이터를 분석하고 입시에 미치는 영향을 평가하세요.${input.isGraduate ? '\n\n## ⚠️ 졸업생 규칙 (최우선)\n이 학생은 **졸업생**입니다. 출결은 이미 확정이므로 개선 조언을 절대 하지 마세요.\n- improvementAdvice 필드는 overallRating에 관계없이 **반드시 빈 문자열("")**로 출력하세요.\n- impactAnalysis, integrityContribution에서도 "앞으로", "남은 기간", "개선", "보완" 같은 미래형·개선형 표현을 사용하지 마세요.\n- 출결이 좋지 않다면 "면접 시 자기소개·태도 측면에서 설명을 보강하면 좋습니다" 같은 면접 활용 관점으로만 서술하세요.' : ""}
+학생의 출결 데이터를 분석하고 입시에 미치는 영향을 평가하세요.${isLocked ? `\n\n## ⚠️ 생기부 확정 규칙 (최우선)\n이 학생은 **${statusLabel}**입니다. 출결은 이미 확정이므로 개선 조언을 절대 하지 마세요.\n- improvementAdvice 필드는 overallRating에 관계없이 **반드시 빈 문자열("")**로 출력하세요.\n- impactAnalysis, integrityContribution에서도 "앞으로", "남은 기간", "개선", "보완" 같은 미래형·개선형 표현을 사용하지 마세요.\n- 출결이 좋지 않다면 "면접 시 자기소개·태도 측면에서 설명을 보강하면 좋습니다" 같은 면접 활용 관점으로만 서술하세요.` : ""}
 
 ## 서술 관점: 출결 기록 분석가
 이 섹션은 **출석 데이터의 입시 영향도**를 객관적으로 평가합니다. 출결 수치와 그 의미를 중심으로 서술하세요.

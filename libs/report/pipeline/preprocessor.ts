@@ -367,6 +367,12 @@ export interface PreprocessedTexts {
   strategyUniversityCandidatesText?: string;
   /** 모의고사 데이터 텍스트 (없으면 빈 문자열) */
   mockExamText: string;
+  /**
+   * 3학년 재학생인데 1학기까지만 생기부 데이터가 있고 현재 시점이 7월 이후인 경우 true.
+   * 1학기 기말고사 종료 후에는 성적이 더 이상 바뀌지 않으므로, 이 학생은 졸업생과
+   * 동일하게 "생기부 확정" 취급한다 (isGraduate와 OR 조건으로 사용).
+   */
+  isRecordFinalized: boolean;
 }
 
 export interface PreprocessResult {
@@ -1856,11 +1862,13 @@ const buildTexts = (
     }
   }
   // 현재 진행 중인 학년/학기 계산
-  // 3학년 + 9월 이후는 생기부 마감(8/31) 이후이므로, 데이터가 3학년 1학기까지만
-  // 있어도 "2학기 진행 중"이 아니라 "생기부 확정"으로 판단한다.
+  // 3학년 1학기 기말고사는 보통 7월 초·중순에 끝나고 곧바로 여름방학이라,
+  // 데이터가 3학년 1학기까지만 있으면 7월부터는 "2학기 진행 중"이 아니라
+  // "생기부 확정"으로 판단한다. (NEIS 행정 마감일인 8/31이 아니라 실제로
+  // 더 이상 성적·활동이 추가되지 않는 시점 기준)
   // (wave-executor.ts의 courseAlignment enrollmentLocked와 동일 기준)
   const currentMonth = new Date().getMonth() + 1;
-  const grade3RecordFinalized = studentInfo.grade === 3 && currentMonth >= 9;
+  const grade3RecordFinalized = studentInfo.grade === 3 && currentMonth >= 7;
 
   let currentSemesterLabel = "";
   let recordFinalizedGrade3 = false;
@@ -2034,27 +2042,31 @@ const buildTexts = (
     targetUniversitiesByType,
     curriculumVersion: data.curriculumVersion,
     majorEvaluationContextText,
-    // 졸업생: 학생이 입력한 "수강 예정 과목"은 더 이상 예정 개념이 없으므로
-    // "이미 이수한 과목"으로 처리한다. completedSubjectsByYear에 "추가 이수 완료"
-    // 항목으로 합치고 plannedSubjectsText는 비워서 "수강 예정" 블록을 비활성화한다.
+    // 졸업생, 또는 3학년으로 생기부가 최종 확정된 재학생: 학생이 입력한
+    // "수강 예정 과목"은 더 이상 예정 개념이 없으므로 "이미 이수한 과목"으로
+    // 처리한다. completedSubjectsByYear에 "추가 이수 완료" 항목으로 합치고
+    // plannedSubjectsText는 비워서 "수강 예정" 블록을 비활성화한다.
     //
-    // 3학년: 2학기 수강 예정 과목은 성적이 입시에 반영되지 않지만 세특·탐구는
-    // 학종 평가에 중요하므로 "이수 예정"으로 유지한다.
+    // 3학년(생기부 확정 전): 2학기 수강 예정 과목은 성적이 입시에 반영되지
+    // 않지만 세특·탐구는 학종 평가에 중요하므로 "이수 예정"으로 유지한다.
     // completedSubjectsByYear에 합치지 않고, plannedSubjectsText에 3학년 전용
     // 메시지로 제공하여 세특 조언·교과 연계 전략이 정상 작동하도록 한다.
     completedSubjectsByYearText: formatCompletedSubjectsByYear(
       recordData,
       studentInfo.grade,
-      studentInfo.isGraduate,
+      studentInfo.isGraduate === true || grade3RecordFinalized,
       isArtSportDepartment(studentInfo.targetDepartment ?? ""),
-      studentInfo.isGraduate === true ? plannedSubjects : undefined
+      studentInfo.isGraduate === true || grade3RecordFinalized
+        ? plannedSubjects
+        : undefined
     ),
     plannedSubjectsText:
-      studentInfo.isGraduate === true
+      studentInfo.isGraduate === true || grade3RecordFinalized
         ? ""
         : formatPlannedSubjects(plannedSubjects, studentInfo.grade === 3),
     isArtSportPractical: artSportPractical,
     mockExamText: formatMockExamText(recordData.mockExams ?? []),
+    isRecordFinalized: recordFinalizedGrade3,
   };
 };
 

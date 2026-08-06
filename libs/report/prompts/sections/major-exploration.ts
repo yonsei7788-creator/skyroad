@@ -9,6 +9,11 @@ export interface MajorExplorationPromptInput {
   studentGrade: number;
   /** 졸업생 여부 — 생기부 수정 불가하므로 추가 이수·향후 보완 표현 금지 */
   isGraduate?: boolean;
+  /**
+   * 생기부가 더 이상 바뀔 수 없는 상태 — 졸업생이거나, 3학년 1학기까지만
+   * 데이터가 있고 7월 이후(1학기 기말고사 종료)인 경우 true.
+   */
+  isRecordFinalized?: boolean;
   targetDepartment?: string;
   /** Phase 2에서 감지된 생기부 기반 강점 계열 (단수). 모든 섹션에서 동일하게 사용. */
   detectedMajorGroup?: string;
@@ -31,11 +36,15 @@ const PLAN_SPECIFIC_UNIFIED = `## 출력 규칙
 export const buildMajorExplorationPrompt = (
   input: MajorExplorationPromptInput
 ): string => {
+  const isLocked = input.isGraduate || input.isRecordFinalized;
+  const statusLabel = input.isGraduate
+    ? "졸업생"
+    : "생기부가 최종 확정된 3학년";
   return `## 작업
 학생의 역량과 활동 이력을 분석하여 적합한 전공/학과를 추천하세요.
 
 ## 이 섹션의 역할
-${input.isGraduate ? "이 학생은 **졸업생**입니다. 생기부가 이미 확정되었으므로 면접·지원 전략 관점에서 적합 학과를 매칭하세요." : `이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.`}
+${isLocked ? `이 학생은 **${statusLabel}**입니다. 생기부가 이미 확정되었으므로 면접·지원 전략 관점에서 적합 학과를 매칭하세요.` : `이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.`}
 
 생기부 강점을 기반으로 **적합 학과를 추천하고 적합도를 판단**합니다.
 활동·세특의 상세 분석은 activityAnalysis·subjectAnalysis, 합격 가능성은 admissionPrediction, 이수 과목 매칭은 courseAlignment에서 각각 다루므로, 여기서는 학과 적합도 판단 근거만 간결하게 서술합니다.
@@ -211,10 +220,10 @@ fitScore의 **최고점은 85점**입니다. 86점 이상은 절대 부여하지
 - 학생의 강점과 매칭되는 포인트(strengthMatch)를 명시합니다.
 - 보완이 필요한 부분(gapAnalysis)도 솔직하게 제시합니다.
 ${
-  input.isGraduate
+  isLocked
     ? `
-## ⚠️ 졸업생 규칙 (최우선)
-이 학생은 **졸업생**입니다. 생기부를 더 이상 수정할 수 없습니다.
+## ⚠️ 생기부 확정 규칙 (최우선)
+이 학생은 **${statusLabel}**입니다. 생기부를 더 이상 수정할 수 없습니다.
 - currentTargetAssessment, gapAnalysis, rationale, strengthMatch 등 **모든 서술 필드**에서 "남은 학기", "앞으로의 기간", "다음 학기", "추가 이수", "선택과목을 이수하면", "보완하세요", "보완할 수 있습니다" 같은 **미래형·생기부 개선 표현을 절대 사용하지 마세요**.
 - gapAnalysis는 "이 학과 관점에서 생기부에 부족했던 부분"을 **객관적 사실로만** 1줄 서술합니다. 보완 권고는 하지 마세요.
 - 예: "정량 분석 경험 부족은 면접에서 통계 활용 사례를 보강하여 설명하는 방식으로 대응할 수 있습니다." (면접 활용 관점)
@@ -245,8 +254,8 @@ ${
 - 3학년 데이터: ${input.dataYearsPresent.year3 ? "있음" : "없음"}
 
 ${
-  input.isGraduate
-    ? `✅ 이 학생은 **졸업생**이므로 생기부 수정 권고를 절대 하지 마세요. currentTargetAssessment, gapAnalysis 등 모든 필드에서 "남은 학기", "앞으로", "다음 학기", "추가 이수", "보완할 수 있습니다" 같은 미래형·개선형 표현을 사용하지 않습니다. 부족한 부분은 "면접에서 ~ 관점으로 설명하면 효과적입니다" 또는 객관적 사실 진술로만 다룹니다.
+  isLocked
+    ? `✅ 이 학생은 **${statusLabel}**이므로 생기부 수정 권고를 절대 하지 마세요. currentTargetAssessment, gapAnalysis 등 모든 필드에서 "남은 학기", "앞으로", "다음 학기", "추가 이수", "보완할 수 있습니다" 같은 미래형·개선형 표현을 사용하지 않습니다. 부족한 부분은 "면접에서 ~ 관점으로 설명하면 효과적입니다" 또는 객관적 사실 진술로만 다룹니다.
 ✅ "있음"으로 표시된 학년의 활동·세특만 평가 근거로 사용합니다.`
     : `✅ currentTargetAssessment 등에서 향후 보완 방향을 언급할 때는 학생의 현재 학년(${input.studentGrade}학년)과 가용 학년 데이터를 기준으로 **"남은 학기"·"앞으로의 기간"·"다음 학기" 등 학생 시점에 부합하는 표현**을 사용합니다.
 ✅ "있음"으로 표시된 학년의 활동·세특만 평가 근거로 사용합니다.

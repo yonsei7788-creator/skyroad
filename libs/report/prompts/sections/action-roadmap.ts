@@ -9,6 +9,11 @@ export interface ActionRoadmapPromptInput {
   currentDate?: string;
   studentGrade?: number;
   isGraduate?: boolean;
+  /**
+   * 생기부가 더 이상 바뀔 수 없는 상태 — 졸업생이거나, 3학년 1학기까지만
+   * 데이터가 있고 7월 이후(1학기 기말고사 종료)인 경우 true.
+   */
+  isRecordFinalized?: boolean;
   isMedical?: boolean;
   completedSubjectsByYear?: string;
   /** 학생이 입력한 수강 예정 과목 텍스트 */
@@ -77,22 +82,26 @@ export const buildActionRoadmapPrompt = (
   const currentMonth = parseInt(monthStr, 10);
   const grade = input.studentGrade;
 
-  const gradeContext = input.isGraduate
-    ? `\n- 이 학생은 **졸업생**입니다. 생기부를 더 이상 수정할 수 없습니다.
+  // 졸업생, 또는 3학년으로 생기부가 최종 확정된 재학생(1학기 기말고사 종료
+  // 후 7월 이후)은 동일하게 "생기부 수정 불가" 규칙을 적용한다. 실제 졸업
+  // 여부에 따라 표현만 분기하고, "언제부터 잠기는지"는 wave-executor에서
+  // 전달하는 isRecordFinalized 하나로만 판단한다 (날짜를 여기서 재계산하지 않음).
+  const gradeContext =
+    input.isGraduate || input.isRecordFinalized
+      ? `\n- 이 학생은 **${input.isGraduate ? "졸업생" : "생기부가 최종 확정된 3학년"}**입니다. 생기부를 더 이상 수정할 수 없습니다.
 - "세특 보완", "활동 추가", "성적 향상", "~를 보완하세요" 같은 교내 활동/학업 관련 제안을 **절대 하지 마세요**.
 - completionStrategy는 **면접 대비, 수능 준비, 지원 전략 수립** 중심으로 작성하세요.`
-    : grade === 3
-      ? `\n- 이 학생은 **고3**입니다. 한국 대입은 ${currentYear}년 8월 31일이 생기부 마감 → 9월 초 수시 원서접수입니다.
-- ✅ 생기부 활동(세특/탐구/동아리)은 반드시 **${currentYear}년 8월까지** 마무리하는 방향으로 제시하세요.
-- ✅ 9월 이후 시점은 **면접 대비, 수능 마무리, 정시 지원 전략** 중심으로 작성하세요.`
-      : grade === 2
-        ? `\n- 이 학생은 2학년입니다. 다음 해 8월 31일이 생기부 마감이고, 그 직후 9월 초 수시 원서접수입니다.
-- "3학년 1학기", "3학년 ${currentYear + 1}년 8월" 등을 지칭하지 말고 "남은 학기", "앞으로의 기간" 유연한 표현 사용.
+      : grade === 3
+        ? `\n- 이 학생은 **고3**입니다. 아직 1학기 성적·세특이 확정되지 않았습니다.
+- ✅ 생기부 활동(세특/탐구/동아리)은 남은 1학기 동안 마무리하는 방향으로 제시하세요.
+- ✅ 생기부가 확정된 이후에는 면접 대비, 수능 마무리, 정시 지원 전략 중심으로 전환됨을 감안하세요.`
+        : grade === 2
+          ? `\n- 이 학생은 2학년입니다. "3학년 1학기" 등 특정 학기를 지칭하지 말고 "남은 학기", "앞으로의 기간" 유연한 표현 사용.
 - ❌ "3학년 1학기 내신을 1등급으로" → 아직 2학년이므로 부적절합니다.
 - ✅ "남은 기간 성적을 끌어올려야 합니다", "다음 학년에서 ~를 보완"`
-        : grade === 1
-          ? `\n- 이 학생은 1학년입니다. 다다음 해 8월 31일이 생기부 마감입니다.`
-          : "";
+          : grade === 1
+            ? `\n- 이 학생은 1학년입니다.`
+            : "";
 
   return `## ⚠️⚠️⚠️ 현재 날짜: ${currentYear}년 ${currentMonth}월 (최우선 — 위반 시 품질 실패)${grade ? `\n- 학생 학년: ${grade}학년` : ""}
 ${gradeContext}

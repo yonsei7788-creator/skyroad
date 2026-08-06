@@ -10,6 +10,11 @@ export interface AdmissionStrategyPromptInput {
   gradingSystem?: "5등급제" | "9등급제";
   studentGrade: number;
   isGraduate?: boolean;
+  /**
+   * 생기부가 더 이상 바뀔 수 없는 상태 — 졸업생이거나, 3학년 1학기까지만
+   * 데이터가 있고 7월 이후(1학기 기말고사 종료)인 경우 true.
+   */
+  isRecordFinalized?: boolean;
   currentDate: string;
   isMedical?: boolean;
   /** 학년별 이수 완료 과목 요약 */
@@ -209,7 +214,7 @@ export const buildAdmissionStrategyPrompt = (
   const timeContext = `## ⚠️ 시점 규칙
 - 현재 날짜: ${input.currentDate}
 - 학생 학년: ${input.studentGrade}학년
-${input.isGraduate ? `- 졸업생입니다. nextSemesterStrategy는 생략하세요.` : input.studentGrade <= 2 ? `- 이 학생은 아직 ${input.studentGrade}학년입니다. "3학년 1학기" 등 특정 학기를 지칭하지 말고 "남은 학기", "앞으로의 기간" 등으로 표현하세요.` : `- 이 학생은 3학년입니다. 현재 시점에서 실행 가능한 전략만 제시하세요.`}
+${input.isGraduate || input.isRecordFinalized ? `- 이 학생은 ${input.isGraduate ? "졸업생" : "생기부가 최종 확정된 3학년"}입니다. nextSemesterStrategy는 생략하세요. "성적 향상", "등급을 끌어올려야" 같은 표현을 사용하지 말고, 확정된 성적의 입시적 의미 + 면접·수능·지원 전략 관점으로만 서술하세요.` : input.studentGrade <= 2 ? `- 이 학생은 아직 ${input.studentGrade}학년입니다. "3학년 1학기" 등 특정 학기를 지칭하지 말고 "남은 학기", "앞으로의 기간" 등으로 표현하세요.` : `- 이 학생은 3학년입니다. 현재 시점에서 실행 가능한 전략만 제시하세요.`}
 - ❌ 현재 날짜 기준 이미 지난 시기를 언급하지 마세요 (예: 3월인데 "방학 사전 준비").
 
 `;
@@ -458,7 +463,7 @@ export const buildGyogwaAdmissionStrategyPrompt = (
   const timeContext = `## 시점 규칙
 - 현재 날짜: ${input.currentDate}
 - 학생 학년: ${input.studentGrade}학년
-${input.isGraduate ? `- 졸업생입니다. nextSemesterStrategy는 생략하세요.` : input.studentGrade <= 2 ? `- 이 학생은 아직 ${input.studentGrade}학년입니다. "남은 학기", "앞으로의 기간" 등 유연한 표현을 사용하세요.` : `- 이 학생은 3학년입니다. 현재 시점에서 실행 가능한 전략만 제시하세요.`}
+${input.isGraduate || input.isRecordFinalized ? `- 이 학생은 ${input.isGraduate ? "졸업생" : "생기부가 최종 확정된 3학년"}입니다. nextSemesterStrategy는 생략하세요. "성적 향상", "등급을 끌어올려야" 같은 표현을 사용하지 말고, 확정된 성적의 입시적 의미 + 면접·수능·지원 전략 관점으로만 서술하세요.` : input.studentGrade <= 2 ? `- 이 학생은 아직 ${input.studentGrade}학년입니다. "남은 학기", "앞으로의 기간" 등 유연한 표현을 사용하세요.` : `- 이 학생은 3학년입니다. 현재 시점에서 실행 가능한 전략만 제시하세요.`}
 
 `;
 
