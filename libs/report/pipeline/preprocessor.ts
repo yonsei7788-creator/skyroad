@@ -29,6 +29,7 @@ import {
 import { correctSubjectName } from "../constants/subject-name-corrections.ts";
 import { isNonMainSubject } from "../constants/non-main-subjects.ts";
 import { isNonCoreForMajor } from "../constants/non-core-by-major.ts";
+import { getSubjectCategory } from "../constants/subject-category.ts";
 
 /**
  * 예체능 관련 키워드.
@@ -2200,6 +2201,100 @@ export const fiveToNineGrade = (five: number): number => {
     }
   }
   return 9.0;
+};
+
+/**
+ * 교과군별(국어/수학/영어/사회탐구/과학탐구) 실제 등급 범위를 코드에서 결정적으로
+ * 계산해 "확정 사실" 텍스트로 만든다.
+ *
+ * AI가 "국어, 수학, 영어 등 주요 과목에서 1~2등급 유지"처럼 여러 과목을 뭉뚱그려
+ * 요약할 때, 실제로는 범위를 벗어나는 교과군이 섞여 들어가는 오류가 프롬프트
+ * 지시만으로는 반복적으로 재발했다. raw 표를 AI가 직접 요약하게 두지 않고
+ * 코드가 계산한 범위를 그대로 인용하도록 강제하기 위한 용도.
+ */
+export const computeSubjectGradeRangeFact = (
+  allSubjectGrades: { subject: string; gradeRank: number | null }[] | undefined
+): string | undefined => {
+  if (!allSubjectGrades || allSubjectGrades.length === 0) return undefined;
+  const CATEGORY_LABELS: Record<string, string> = {
+    국어: "국어",
+    수학: "수학",
+    영어: "영어",
+    사회: "사회탐구",
+    물리: "과학탐구",
+    화학: "과학탐구",
+    생명과학: "과학탐구",
+    지구과학: "과학탐구",
+    과학공통: "과학탐구",
+  };
+  const byLabel = new Map<string, number[]>();
+  for (const g of allSubjectGrades) {
+    if (g.gradeRank == null) continue;
+    const label = CATEGORY_LABELS[getSubjectCategory(g.subject)];
+    if (!label) continue;
+    if (!byLabel.has(label)) byLabel.set(label, []);
+    byLabel.get(label)!.push(g.gradeRank);
+  }
+  if (byLabel.size === 0) return undefined;
+  const order = ["국어", "수학", "영어", "사회탐구", "과학탐구"];
+  const lines = order
+    .filter((label) => byLabel.has(label))
+    .map((label) => {
+      const list = byLabel.get(label)!;
+      const min = Math.min(...list);
+      const max = Math.max(...list);
+      return `- ${label}: ${min === max ? `${min}등급` : `${min}~${max}등급`}`;
+    });
+  return (
+    `### 교과군별 등급 범위 (확정값 — preprocessedAcademicData의 원본 표를 직접 계산한 결과, 그대로 인용)\n${lines.join("\n")}\n\n` +
+    `✅ "OO, XX 등 주요 과목에서 N~M등급 유지"처럼 여러 교과군을 묶어 서술할 때는, 나열하는 모든 교과군의 범위가 위 목록에서 N~M등급 안에 실제로 들어오는 교과군만 포함하세요.`
+  );
+};
+
+/**
+ * 전공 계열의 핵심/권장 과목(coreSubjects + recommendedSubjects) 중 이 학생이
+ * 실제로 이수한 과목만 등급과 함께 코드에서 결정적으로 계산한다.
+ *
+ * "학과 맞춤 평가 기준의 권장과목을 우선 사용하라"는 프롬프트 지시만으로는
+ * 같은 리포트 안에서도 하위항목마다 다른 과목(예: 학업성취도는 권장과목을
+ * 올바르게 골랐는데 교과성취도는 권장 목록에 없는 과목을 고르는 등)을
+ * 인용하는 비일관성이 검증됨. 후보를 코드가 직접 좁혀 제공해 AI가 그
+ * 안에서만 고르도록 강제한다.
+ */
+export const computeMajorStrengthSubjectsFact = (
+  criteria:
+    | { coreSubjects: string[]; recommendedSubjects: string[] }
+    | undefined,
+  allSubjectGrades: { subject: string; gradeRank: number | null }[] | undefined
+): string | undefined => {
+  if (!criteria) return undefined;
+  const candidateNames = [
+    ...criteria.coreSubjects,
+    ...criteria.recommendedSubjects,
+  ];
+  if (candidateNames.length === 0) return undefined;
+  if (!allSubjectGrades || allSubjectGrades.length === 0) return undefined;
+
+  const candidateSet = new Set(candidateNames.map(normalizeSubjectName));
+  const matched = new Map<string, number>();
+  for (const g of allSubjectGrades) {
+    if (g.gradeRank == null) continue;
+    if (!candidateSet.has(normalizeSubjectName(g.subject))) continue;
+    const existing = matched.get(g.subject);
+    if (existing == null || g.gradeRank < existing) {
+      matched.set(g.subject, g.gradeRank);
+    }
+  }
+  if (matched.size === 0) return undefined;
+
+  const lines = Array.from(matched.entries())
+    .sort((a, b) => a[1] - b[1])
+    .map(([subject, grade]) => `- ${subject}: ${grade}등급`);
+
+  return (
+    `### 전공 관련 강점 과목 후보 (확정값 — 이 학생이 실제로 이수한 전공 핵심·권장 과목만, 등급 좋은 순)\n${lines.join("\n")}\n\n` +
+    `✅ 학업성취도·교과성취도 comment에서 "전공 관련 과목"의 강점 사례로 특정 과목명을 인용할 때는 위 목록에서만 선택하세요. 목록에 없는 과목은 전공 관련 강점 근거로 인용하지 마세요.`
+  );
 };
 
 /**

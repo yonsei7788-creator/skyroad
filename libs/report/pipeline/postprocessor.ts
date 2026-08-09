@@ -40,6 +40,7 @@ import {
 import { findCutoffData } from "../constants/admission-cutoff-data.ts";
 import { correctSubjectNamesInText } from "../constants/subject-name-corrections.ts";
 import { collectNonMainSubjects } from "../constants/non-main-subjects.ts";
+import { getSubjectCategory } from "../constants/subject-category.ts";
 
 // ─── 검증 결과 타입 ───
 
@@ -2759,53 +2760,6 @@ const normalizeSection = (
     //
     // 결합 과목명 처리: AI가 "공통국어1·공통국어2"처럼 1·2학기를 결합한 형태로 출력하므로
     // 분할 후 첫 부분만 카테고리 매칭에 사용한다.
-    //
-    // 신 교육과정(2022 개정) 대응: "공통" prefix(공통국어/공통수학/공통영어), 통합과학,
-    // 한국사, 과학탐구실험, 인공지능 기초, 체육·음악·미술 등 핵심 과목들을 명시적으로
-    // 분류해야 거의 모든 과목이 "기타" 묶음에 빠져 MAX_PER_CATEGORY=2로 잘리지 않는다.
-    const getSubjectCategory = (name: string): string => {
-      const n = name
-        .split(/[·∙・/／]/)[0]
-        .replace(/^\d학년\s*/, "")
-        .replace(/\s+/g, "")
-        .replace(/[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ1-9]+$/, "");
-      if (
-        /^(수학|미적분|기하|확률과통계|인공지능수학|경제수학|공통수학|대수)/.test(
-          n
-        )
-      )
-        return "수학";
-      if (/^(물리학|물리|역학과에너지|전자기와양자)/.test(n)) return "물리";
-      if (/^(화학|화학반응의세계|물질과에너지)/.test(n)) return "화학";
-      if (/^(생명과학|생물|세포와물질대사|생물의유전)/.test(n))
-        return "생명과학";
-      if (/^(지구과학|천문|지구시스템과학|행성우주과학)/.test(n))
-        return "지구과학";
-      if (
-        /^(국어|문학|화법|언어와매체|독서|실용국어|심화국어|공통국어|화법과언어|독서와작문|주제탐구독서|문학과영상)/.test(
-          n
-        )
-      )
-        return "국어";
-      if (
-        /^(영어|영어Ⅰ|영어Ⅱ|실용영어|심화영어|영어독해|영어회화|공통영어)/.test(
-          n
-        )
-      )
-        return "영어";
-      if (
-        /^(통합사회|사회|정치|경제|세계사|동아시아사|한국지리|세계지리|사회문화|윤리|한국사|법과사회|사회와문화|국제관계의이해|세계시민과지리|동아시아역사기행|한국지리탐구)/.test(
-          n
-        )
-      )
-        return "사회";
-      if (/^(통합과학|과학탐구실험|융합과학탐구)/.test(n)) return "과학공통";
-      if (/^(인공지능|정보|컴퓨터|소프트웨어|데이터과학)/.test(n))
-        return "정보";
-      if (/^(체육|음악|미술|무용|연극|실용음악|디자인|미디어아트)/.test(n))
-        return "예체능";
-      return "기타";
-    };
 
     // ── 환각 과목 제거: 학생이 실제 이수하지 않은 과목명 필터 ──
     // AI가 입력 [N학년 과목명] 라벨 대신 본문 내용을 보고 다른 과목명으로 라벨링

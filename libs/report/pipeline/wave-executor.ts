@@ -74,6 +74,8 @@ import {
   buildHopeUniversityRecommendations,
   rebuildRecommendedCourseMatchText,
   isArtSportPractical as isArtSportPracticalFn,
+  computeSubjectGradeRangeFact,
+  computeMajorStrengthSubjectsFact,
 } from "./preprocessor.ts";
 import { loadRecordData } from "./load-record.ts";
 import type { WaveState } from "./wave-state.ts";
@@ -460,6 +462,11 @@ export const executeTask = async (
   // ─── Phase 2 Classify: studentTypeClassification (phase2Extract 결과 필요) ───
   // 이 태스크는 다른 Wave 2 섹션 태스크들과 병렬로 실행됨.
   if (taskId === "phase2Classify") {
+    const classifyDetectedMajorGroup =
+      state.phase2Results?.competencyExtraction?.detectedMajorGroup;
+    const classifyCriteria = classifyDetectedMajorGroup
+      ? findCriteriaByMajorGroup(classifyDetectedMajorGroup)
+      : matchMajorEvaluationCriteria(studentInfo.targetDepartment ?? "");
     const studentTypeClassification =
       await callGeminiPhase2<StudentTypeClassificationOutput>(
         buildStudentTypeClassificationPrompt({
@@ -467,6 +474,14 @@ export const executeTask = async (
           preprocessedAcademicData: texts.preprocessedAcademicDataText,
           studentProfile: texts.studentProfileText,
           gradingSystem: state.preprocessedData?.gradingSystem,
+          majorEvaluationContext: texts.majorEvaluationContextText,
+          subjectGradeRangeFact: computeSubjectGradeRangeFact(
+            state.preprocessedData?.allSubjectGrades
+          ),
+          majorStrengthSubjectsFact: computeMajorStrengthSubjectsFact(
+            classifyCriteria,
+            state.preprocessedData?.allSubjectGrades
+          ),
         })
       );
 
@@ -575,6 +590,34 @@ export const executeTask = async (
         return `전공 관련 과목 평균 ${relatedAverage}등급 vs 전체 평균 ${overallAverage}등급 → 두 평균이 ${absDiff}등급 이내로 유사. 진로역량 교과성취도에서 "전체 평균과 유사한 수준"으로 서술하며, 두 평균 차이를 감점 근거로 삼지 않습니다.`;
       })();
 
+      // 교과군별(국어/수학/영어/사회탐구/과학탐구) 등급 범위 — 코드에서 결정적 계산.
+      // AI가 "국어, 수학, 영어 등 주요 과목에서 1~2등급 유지"처럼 여러 과목을
+      // 뭉뚱그려 요약할 때, 실제로는 일부 교과군이 그 범위를 벗어나는데도
+      // 함께 묶어버리는 오류가 반복 관찰되어(예: 수학이 3~4등급인데 "1~2등급
+      // 유지"에 포함) 원본 데이터에서 교과군별 실제 범위를 직접 계산해
+      // "그대로 인용" 확정값으로 제공한다. AI가 raw 표를 스스로 요약하게
+      // 두면 신뢰할 수 없다는 것이 반복 검증됨.
+      const compSubjectGradeRangeFact = computeSubjectGradeRangeFact(
+        state.preprocessedData?.allSubjectGrades
+      );
+
+      // 전공 관련 강점 과목 후보 — 코드에서 결정적 계산.
+      // "학과 맞춤 평가 기준의 권장과목을 우선 사용하라"는 프롬프트 지시만으로는
+      // 같은 리포트 안에서도 하위항목마다 다른 과목을 인용하는 비일관성이
+      // 검증되어(예: 학업성취도는 권장과목을 올바르게 골랐는데 교과성취도는
+      // 권장 목록에 없는 과목을 인용), 생기부 기반 감지 계열(또는 희망학과)
+      // 기준 핵심·권장 과목 중 학생이 실제 이수한 과목만 코드가 직접 추려
+      // 제공한다.
+      const scoreDetectedMajorGroup =
+        state.phase2Results?.competencyExtraction?.detectedMajorGroup;
+      const scoreCriteria = scoreDetectedMajorGroup
+        ? findCriteriaByMajorGroup(scoreDetectedMajorGroup)
+        : matchMajorEvaluationCriteria(studentInfo.targetDepartment ?? "");
+      const compMajorStrengthSubjectsFact = computeMajorStrengthSubjectsFact(
+        scoreCriteria,
+        state.preprocessedData?.allSubjectGrades
+      );
+
       const compScoreInput = {
         studentTypeClassification: ser.stuTypeText!,
         competencyExtraction: ser.compExtrText!,
@@ -587,6 +630,12 @@ export const executeTask = async (
         isGyogwaOnly,
         dataYearsPresent: state.preprocessedData!.dataYearsPresent,
         majorRelevanceFact: compMajorRelevanceFact,
+        subjectGradeRangeFact: compSubjectGradeRangeFact,
+        majorStrengthSubjectsFact: compMajorStrengthSubjectsFact,
+        // competencyScore 자체 프롬프트에서도 학과 맞춤 평가 기준(핵심 평가
+        // 교과·권장과목)을 참조하도록 전달 — 기존에는 이 필드가 누락되어
+        // 프롬프트의 "학과 맞춤 평가 기준" 블록이 항상 비어 있었음.
+        majorEvaluationContext: texts.majorEvaluationContextText,
         // 5등급제 학생의 9등급 환산 확정값 — AI 자체 보간 환각 방지용
         nineGradeAverage: state.preprocessedData!.nineGradeAverage,
         // 3학년·졸업생의 수강예정 과목이 "추가 이수 완료" 라인으로 합쳐져
