@@ -502,8 +502,8 @@ ${input.isGraduate || input.isRecordFinalized ? `- 이 학생은 ${input.isGradu
       "description": "학생의 최종 등급을 기준으로 교과전형 지원 가능 대학을 추천합니다.",
       "cards": [
         {
-          "university": "충남대학교",
-          "department": "행정학과",
+          "university": "(입력에 등장한 실제 대학명)",
+          "department": "(입력에 등장한 실제 학과명)",
           "subject": {
             "admissionType": "학생부교과",
             "chance": "medium",

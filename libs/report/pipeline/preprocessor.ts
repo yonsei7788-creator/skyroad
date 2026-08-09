@@ -3978,6 +3978,24 @@ const formatTargetUniversitiesWithCutoff = (
       reach: classified.filter((c) => c.tierLabel === TARGET_TIER_LABELS.reach)
         .length,
     };
+    // 라벨별 그룹핑을 코드가 직접 계산해 제공 — AI가 평면 목록(대학별 1줄)을
+    // 보고 스스로 라벨별로 묶어 서술하다가 서로 다른 대학을 같은 이름으로
+    // 착각하거나(예: "경성대학교"를 두 라벨 모두에 배치) 잘못 그룹핑하는
+    // 오류가 관찰되어, 라벨별 대학 목록을 미리 묶어 "그대로 따라야 할
+    // 그룹핑"으로 제시한다.
+    const grouped = (["safety", "fit", "ambitious", "reach"] as const)
+      .map((key) => {
+        const items = classified.filter(
+          (c) => c.tierLabel === TARGET_TIER_LABELS[key]
+        );
+        if (items.length === 0) return null;
+        const names = items
+          .map((c) => `${c.universityName} ${stripDeptParens(c.department)}`)
+          .join(", ");
+        return `- "${TARGET_TIER_LABELS[key]}": ${names}`;
+      })
+      .filter((line): line is string => line !== null);
+
     sections.push(
       [
         `## 유저 설정 희망대학 — 합격 가능성 구간 분류 (본문 묶음 서술 대상)`,
@@ -3985,6 +4003,10 @@ const formatTargetUniversitiesWithCutoff = (
         `분류 통계: "${TARGET_TIER_LABELS.safety}" ${tierCounts.safety}개 / "${TARGET_TIER_LABELS.fit}" ${tierCounts.fit}개 / "${TARGET_TIER_LABELS.ambitious}" ${tierCounts.ambitious}개 / "${TARGET_TIER_LABELS.reach}" ${tierCounts.reach}개. 본문 마무리 문구는 이 통계와 일치해야 합니다(아래 작성 가이드 참조).`,
         ``,
         lines.join("\n"),
+        ``,
+        `### 라벨별 그룹 목록 (확정값 — 묶음 서술 시 이 그룹핑을 그대로 따르세요)`,
+        `같은 대학·학과명을 서로 다른 라벨 그룹에 동시에 배치하지 마세요. 아래 목록에 없는 조합(예: 다른 라벨에 속한 대학을 잘못 옮겨 서술)을 만들지 마세요.`,
+        grouped.join("\n"),
       ].join("\n")
     );
   }

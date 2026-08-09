@@ -77,7 +77,7 @@ ${isLocked ? `이 학생은 **${statusLabel}**입니다. 생기부가 이미 확
   "suggestions": [
     {
       "major": "사회학과",
-      "university": "서울대학교",
+      "university": "(생기부 강점에 맞춰 추천하는 실제 대학명)",
       "fitScore": 72,
       "rationale": "사회 구조 분석과 질적 연구 방법론에 대한 지속적 관심과 탐구 경험이...",
       "strengthMatch": ["사회 구조 분석 역량", "질적 연구 탐구 경험", "비교사회 관심"],

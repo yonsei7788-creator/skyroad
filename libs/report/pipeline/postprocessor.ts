@@ -3575,6 +3575,11 @@ const normalizeSection = (
       // 위 패턴이 못 잡는 단독 케이스: 코멘트 시작부터 사유 절로만 구성된 경우
       const ORPHAN_REASON_TAIL_RE =
         /\s*([가-힣]+(?:으로|로|하여|있어|있으나|있고|편차로|차이로))\s*[.。]\s*$/;
+      // 이중 괄호 잔해: AI가 "(N점 ...)" 형태의 불완전한 괄호 조각을 남긴 뒤
+      // 그 안에 실제 "(-M점)."이 다시 중첩되어 "(N점 (-M점).)." 형태로 남는
+      // 사례가 관찰됨. 중첩된 실제 감점 표기만 남기고 바깥 괄호를 제거한다.
+      const NESTED_DEDUCTION_PAREN_RE =
+        /\(\s*\d+\s*점\s*(\(-\s*\d+\s*점\)\.?)\)\.?/g;
 
       for (const sc of s.scores) {
         if (!Array.isArray(sc.subcategories)) continue;
@@ -3596,6 +3601,12 @@ const normalizeSection = (
               sub.comment = sub.comment
                 .replace(DEDUCTION_RE, `-${actualDeduction}점`)
                 .replace(NO_DEDUCTION_RE_GLOBAL, "")
+                // 이중 괄호 잔해 정리 (예: "(2점 (-5점).)." → "(-5점).")
+                .replace(NESTED_DEDUCTION_PAREN_RE, "$1")
+                // 문장이 끝나지 않은 잘림 패턴 정리 — 기존에는 감점=0 분기에만
+                // 적용되어 있었으나, 감점>0 분기에서도 동일한 잘림이 관찰됨.
+                .replace(ORPHAN_TAIL_AFTER_BOUNDARY_RE, "$1")
+                .replace(ORPHAN_REASON_TAIL_RE, "")
                 .replace(/\s{2,}/g, " ")
                 .replace(/\s+([.,;])/g, "$1")
                 .trim();
