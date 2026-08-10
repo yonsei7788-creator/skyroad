@@ -160,6 +160,10 @@ export const Header = () => {
                 어드민
               </Link>
             )}
+            <Link href="/pricing" className={styles.ticketButton}>
+              <Ticket size={16} className={styles.ticketIcon} />
+              이용권
+            </Link>
             <span className={styles.divider} />
             {isLoggedIn ? (
               <div className={styles.profileWrapper} ref={dropdownRef}>
@@ -315,8 +319,16 @@ export const Header = () => {
           )}
 
           {/* CTA Area */}
-          {!isLoggedIn && (
-            <div className={styles.mobileCta}>
+          <div className={styles.mobileCta}>
+            <Link
+              href="/pricing"
+              className={styles.mobileTicket}
+              onClick={closeMobileMenu}
+            >
+              <Ticket size={16} className={styles.ticketIcon} />
+              이용권 구매
+            </Link>
+            {!isLoggedIn && (
               <Link
                 href="/login"
                 className={styles.mobileAuthButton}
@@ -325,8 +337,8 @@ export const Header = () => {
                 로그인
                 <ArrowRight size={16} />
               </Link>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Admin Link */}
           {showAdmin && (

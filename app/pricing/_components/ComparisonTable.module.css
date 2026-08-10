@@ -1,0 +1,146 @@
+.section {
+  background: var(--color-bg);
+  padding: 96px 0;
+}
+
+@media (min-width: 1024px) {
+  .section {
+    padding: 120px 0;
+  }
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.sectionLabel {
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-fg-primary);
+}
+
+.sectionTitle {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-fg);
+}
+
+@media (min-width: 1024px) {
+  .sectionTitle {
+    font-size: 2.5rem;
+  }
+}
+
+.sectionSubtitle {
+  max-width: 520px;
+  margin: 16px auto 0;
+  text-align: center;
+  font-size: 1.0625rem;
+  color: var(--color-fg-secondary);
+}
+
+/* Table */
+.tableWrapper {
+  margin-top: 56px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-bg-elevated);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table {
+  width: 100%;
+  min-width: 580px;
+  border-collapse: collapse;
+}
+
+.headerRow {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-neutral-50);
+}
+
+.headerFeature {
+  padding: 18px 20px;
+  text-align: left;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-fg-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.headerPlan {
+  padding: 18px 16px;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-fg);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.headerPopular {
+  color: var(--color-fg-primary);
+}
+
+.row {
+  transition: background 0.15s;
+}
+
+.row:hover {
+  background: var(--color-primary-50);
+}
+
+.row:last-child .featureCell,
+.row:last-child .valueCell {
+  border-bottom: none;
+}
+
+.featureCell {
+  padding: 14px 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-fg);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.valueCell {
+  padding: 14px 16px;
+  text-align: center;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.valueCellPopular {
+  background: rgb(79 70 229 / 0.03);
+}
+
+.cellText {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-fg-primary);
+}
+
+.cellIcon {
+  display: inline-block;
+}
+
+.cellIconSuccess {
+  color: var(--color-success-600);
+}
+
+.cellIconMuted {
+  color: var(--color-neutral-300);
+}

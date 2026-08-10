@@ -1,0 +1,354 @@
+.section {
+  background: var(--color-bg-secondary);
+  padding: 64px 0 96px;
+}
+
+@media (min-width: 1024px) {
+  .section {
+    padding: 80px 0 120px;
+  }
+}
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Cards */
+.cardsGrid {
+  display: grid;
+  gap: 24px;
+  align-items: stretch;
+}
+
+@media (min-width: 1024px) {
+  .cardsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.cardWrapper {
+  height: 100%;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 28px 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-bg-elevated);
+  transition: all 0.3s;
+}
+
+@media (min-width: 640px) {
+  .card {
+    padding: 36px 28px;
+  }
+}
+
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+}
+
+.card_lite {
+  border: 1.5px solid var(--color-neutral-400);
+}
+
+.card_standard {
+  border: 1.5px solid var(--color-primary-500);
+}
+
+.card_premium {
+  border: 2px solid var(--color-neutral-900);
+}
+
+.cardPopular {
+  border-color: var(--color-primary-300);
+  background: var(--color-bg-elevated);
+  box-shadow: 0 8px 40px rgb(79 70 229 / 0.12);
+}
+
+.cardPopular::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 21px;
+  padding: 2px;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-400),
+    var(--color-primary-600),
+    var(--color-primary-300)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@media (min-width: 1024px) {
+  .cardPopular {
+    transform: scale(1.04);
+  }
+
+  .cardPopular:hover {
+    transform: scale(1.04) translateY(-4px);
+  }
+}
+
+.popularBadge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 18px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-600),
+    var(--color-primary-500)
+  );
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: var(--shadow-glow-sm);
+}
+
+.cardTag {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 4px 12px;
+  border-radius: 8px;
+  background: var(--color-bg-primary-subtle);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-fg-primary);
+  margin-bottom: 16px;
+}
+
+.cardHeader {
+  text-align: center;
+}
+
+.cardSubtitle {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-fg-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cardName {
+  margin-top: 4px;
+  font-size: 1.375rem;
+  font-weight: 800;
+  color: var(--color-fg);
+}
+
+.priceBlock {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+}
+
+.cardPopular .priceBlock {
+  background: var(--color-primary-50);
+  border-color: var(--color-primary-200);
+}
+
+.priceOriginalRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.priceOriginal {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-fg-tertiary);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+
+.discountBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--color-error-500);
+  color: #ffffff;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.priceRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.priceValue {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--color-fg-primary);
+}
+
+.priceUnit {
+  margin-left: 2px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-fg-secondary);
+}
+
+.cardPages {
+  margin-top: 8px;
+  font-size: 0.875rem;
+  color: var(--color-fg-tertiary);
+}
+
+.verifiedBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: var(--color-success-50);
+  border: 1px solid rgb(22 163 74 / 0.2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-success-600);
+}
+
+.divider {
+  height: 1px;
+  margin: 28px 0;
+  background: var(--color-border);
+}
+
+.point {
+  margin-bottom: 20px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--color-bg-primary-subtle);
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-fg-primary);
+}
+
+.features {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.875rem;
+  color: var(--color-fg);
+  line-height: 1.4;
+}
+
+.featureDisabled {
+  color: var(--color-fg-tertiary);
+  text-decoration: line-through;
+}
+
+.featureIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.featureIconSuccess {
+  color: var(--color-success-600);
+}
+
+.featureIconMuted {
+  color: var(--color-neutral-300);
+}
+
+.cardCta {
+  display: block;
+  width: 100%;
+  margin-top: 32px;
+  padding: 15px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  transition: all 0.25s;
+}
+
+.cardCtaPrimary {
+  background: var(--color-bg-primary);
+  color: #ffffff;
+  box-shadow: var(--shadow-glow-sm);
+}
+
+.cardCtaPrimary:hover {
+  background: var(--color-bg-primary-hover);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+.cardCtaDefault {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg);
+  color: var(--color-fg);
+}
+
+.cardCtaDefault:hover {
+  border-color: var(--color-primary-300);
+  background: var(--color-bg-primary-subtle);
+  color: var(--color-fg-primary);
+}
+
+@media (max-width: 639px) {
+  .priceBlock {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .priceOriginal {
+    font-size: 0.8125rem;
+  }
+
+  .discountBadge {
+    font-size: 0.625rem;
+    padding: 2px 6px;
+  }
+
+  .priceValue {
+    font-size: 2rem;
+  }
+}
+
+.note {
+  margin-top: 32px;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--color-fg-tertiary);
+}
