@@ -226,14 +226,27 @@ describe("졸업생 프롬프트 분기", () => {
       studentGrade: 3,
     };
 
-    it("졸업생 전용: 면접·수능·지원 전략 관점 안내", () => {
+    it("졸업생 전용: 확정된 성적 데이터 자체에 대한 사실적 평가만 안내 (면접·서류 판단 없음)", () => {
       const grad = buildGraduateAcademicAnalysisPrompt(
         { ...base, isGraduate: true },
         "premium"
       );
 
       expect(grad).toContain("졸업생 전용 성적 분석");
-      expect(grad).toContain("면접·수능");
+      expect(grad).toContain("확정된 성적 데이터 자체");
+      // academicAnalysis는 교과 성적 평가 섹션이므로 면접·서류 판단이 섞이면 안 됨
+      expect(grad).not.toContain("면접");
+      expect(grad).not.toContain("자기소개서");
+    });
+
+    it("졸업생 전용: 성적이 확정되어 gradeChangeAnalysis에 실행 항목을 요구하지 않음", () => {
+      const grad = buildGraduateAcademicAnalysisPrompt(
+        { ...base, isGraduate: true },
+        "premium"
+      );
+
+      expect(grad).toContain('"actionItems": []');
+      expect(grad).toContain('"actionItemPriorities": []');
     });
 
     it("졸업생 전용: recommendedSubjects가 빈 배열 출력 명시", () => {

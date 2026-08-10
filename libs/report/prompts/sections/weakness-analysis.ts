@@ -357,7 +357,7 @@ export const buildGyogwaWeaknessAnalysisPrompt = (
 ## ✅ 학생 학년별 시점 가이드 (executionStrategy · suggestedActivities 등 모든 보완 전략 필드 공통)
 ${
   isLocked
-    ? `- 이 학생은 **${statusLabel}**입니다. 보완 전략은 면접·수능·지원 전략 관점에서만 서술합니다.`
+    ? `- 이 학생은 **${statusLabel}**입니다. 보완 전략은 확정된 최종 평균 등급의 합격선 대비 정량 기준 적합도 관점에서만 서술합니다.`
     : input.studentGrade === 1
       ? `- 이 학생은 **1학년**입니다. 보완 전략은 "**남은 1학년 학기와 2·3학년 동안**"으로 시작합니다. 권장 어휘: "남은 학기동안", "2학년부터", "3학년에서".`
       : input.studentGrade === 2

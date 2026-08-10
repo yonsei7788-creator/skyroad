@@ -98,4 +98,45 @@ describe("3학년 1학기까지 데이터가 있을 때 현재 시점 판단 (�
     expect(result.texts.studentProfileText).toContain("면접 준비");
     expect(result.texts.studentProfileText).toContain("정시 지원 전략");
   });
+
+  it("3학년 1학기 마감 시에도 academicAnalysis 전용 프로필에는 면접/서류/수능 언급 없이 확정 성적 평가 안내만 들어간다", () => {
+    mockCurrentDate("2026-07-15T00:00:00+09:00");
+
+    const result = preprocess(
+      recordDataUpToGrade3Sem1,
+      baseStudentInfo,
+      "standard"
+    );
+
+    expect(result.texts.studentProfileAcademicText).toContain(
+      "생기부 최종 확정"
+    );
+    expect(result.texts.studentProfileAcademicText).toContain(
+      "확정된 등급과 추이를 있는 그대로 분석"
+    );
+    expect(result.texts.studentProfileAcademicText).not.toContain("면접");
+    expect(result.texts.studentProfileAcademicText).not.toContain("자기소개서");
+    expect(result.texts.studentProfileAcademicText).not.toContain("수능");
+
+    expect(result.texts.completedSubjectsByYearAcademicText).not.toContain(
+      "면접"
+    );
+    expect(result.texts.completedSubjectsByYearAcademicText).not.toContain(
+      "수능"
+    );
+  });
+
+  it("3학년 1학기 마감 전(6월)에는 academicAnalysis 전용 프로필이 studentProfileText와 동일하다", () => {
+    mockCurrentDate("2026-06-15T00:00:00+09:00");
+
+    const result = preprocess(
+      recordDataUpToGrade3Sem1,
+      baseStudentInfo,
+      "standard"
+    );
+
+    expect(result.texts.studentProfileAcademicText).toBe(
+      result.texts.studentProfileText
+    );
+  });
 });

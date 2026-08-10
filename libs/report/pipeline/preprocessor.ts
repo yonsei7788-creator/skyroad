@@ -338,6 +338,15 @@ export interface PreprocessedData {
 /** 프롬프트에 주입 가능한 텍스트 형태의 전처리 결과 */
 export interface PreprocessedTexts {
   studentProfileText: string;
+  /**
+   * 정량 확정 평가 전용(academicAnalysis, 교과전형 전용 competencyScore) 학생
+   * 프로필 텍스트. studentProfileText는 3학년 1학기로 생기부가 확정되면
+   * 면접·자기소개서·수능·정시 전략 안내를 포함하지만, 위 섹션들은 정성 전형
+   * 요소를 판단하는 섹션이 아니라 확정된 성적 데이터 자체를 사실적으로
+   * 평가하는 섹션이므로 그 안내 대신 "확정된 성적 평가" 안내로 대체한
+   * 버전이다. 확정 전이면 studentProfileText와 동일하다.
+   */
+  studentProfileAcademicText: string;
   recordDataText: string;
   subjectDataText: string;
   creativeActivitiesText: string;
@@ -360,6 +369,14 @@ export interface PreprocessedTexts {
   majorEvaluationContextText: string;
   /** 학년별 이수 완료 과목 요약 (AI가 이수 완료 과목 성적 개선 권고를 방지하기 위함) */
   completedSubjectsByYearText: string;
+  /**
+   * 정량 확정 평가 전용(academicAnalysis, 교과전형 전용 competencyScore) 이수
+   * 완료 과목 요약. 위 섹션들은 확정된 성적 데이터 자체를 사실적으로 평가하는
+   * 섹션이며 면접·서류 등 정성 전형 요소를 판단하는 섹션이 아니므로,
+   * completedSubjectsByYearText와 달리 면접·수능·지원전략 언급 없이 "확정된
+   * 성적 평가"로만 안내한다.
+   */
+  completedSubjectsByYearAcademicText: string;
   /** 수강 예정 과목 텍스트 (학생 직접 입력, 없으면 빈 문자열) */
   plannedSubjectsText: string;
   /** 실기 예체능 학과 여부 (커트라인 데이터 없는 예체능계열) */
@@ -1842,6 +1859,20 @@ const computeStudentTypeInput = (
 
 // ─── 텍스트 빌더 ───
 
+// 3학년 1학기로 생기부가 최종 확정된 재학생에게 안내하는 "지금부터 할 수 있는 것"
+// 가이드. studentProfileText(대부분의 섹션 공통 입력)에 사용되며, academicAnalysis
+// 전용 변형(studentProfileAcademicText)을 만들 때 정확히 같은 문자열을 치환 대상으로
+// 참조하기 위해 상수로 분리한다.
+const FINALIZED_STRATEGY_GUIDANCE =
+  `\n지금부터 실행 가능한 것은 면접 준비, 자기소개서 정리, 수능 마무리, 정시 지원 전략입니다.` +
+  ` 성적 향상, 새 과목 이수, 세특/활동 추가 같은 조언은 이 학생의 생기부에는 더 이상 반영될 수 없으니,` +
+  ` 위 4가지 실행 가능한 범위 안에서만 앞으로의 방향을 제시하세요.`;
+
+// academicAnalysis(교과 성적 분석)는 정성 전형 요소(면접·서류)를 판단하는
+// 섹션이 아니라 확정된 성적 데이터 자체를 사실적으로 평가하는 섹션이므로,
+// 위 가이드 대신 이 안내로 대체한다.
+const FINALIZED_ACADEMIC_GUIDANCE = `\n교과 성적은 3학년 1학기까지 확정된 값이 최종 데이터입니다. 확정된 등급과 추이를 있는 그대로 분석하고 해석하는 것이 이 섹션의 역할입니다.`;
+
 const buildTexts = (
   data: PreprocessedData,
   recordData: RecordData,
@@ -1901,10 +1932,7 @@ const buildTexts = (
       ` 이수 전략은 ${studentInfo.grade}학년에서 이수할 과목부터 추천하세요.`;
   } else if (recordFinalizedGrade3) {
     studentProfileText += `\n현재 시점: 3학년 1학기로 생기부 최종 확정 (수시 반영 완료)`;
-    studentProfileText +=
-      `\n지금부터 실행 가능한 것은 면접 준비, 자기소개서 정리, 수능 마무리, 정시 지원 전략입니다.` +
-      ` 성적 향상, 새 과목 이수, 세특/활동 추가 같은 조언은 이 학생의 생기부에는 더 이상 반영될 수 없으니,` +
-      ` 위 4가지 실행 가능한 범위 안에서만 앞으로의 방향을 제시하세요.`;
+    studentProfileText += FINALIZED_STRATEGY_GUIDANCE;
   }
 
   // 입력 데이터 시점 컨텍스트 — AI가 입력에 없는 학기(예: 3학년 1학기)의 등급·세특을
@@ -1916,6 +1944,17 @@ const buildTexts = (
       ` 입력에 없는 학기의 등급·세특·활동을 본문에 사실인 것처럼 서술하지 않습니다.` +
       ` 학생의 전체 평균(overallAverage)은 입력된 모든 학기를 합산한 값이며 특정 학기 등급이 아닙니다.`;
   }
+
+  // academicAnalysis(교과 성적 분석) 전용 프로필 텍스트.
+  // academicAnalysis는 확정된 교과 성적 데이터 자체를 사실적으로 평가하는
+  // 섹션이며 면접·서류 등 정성 전형 요소를 판단하는 섹션이 아니므로,
+  // 위 면접/자기소개서/수능/정시 안내 대신 "확정된 성적 평가" 안내로 대체한다.
+  const studentProfileAcademicText = recordFinalizedGrade3
+    ? studentProfileText.replace(
+        FINALIZED_STRATEGY_GUIDANCE,
+        FINALIZED_ACADEMIC_GUIDANCE
+      )
+    : studentProfileText;
 
   const recordDataText = formatRecordData(recordData);
   const subjectDataText = formatSubjectEvaluations(
@@ -2028,6 +2067,7 @@ const buildTexts = (
 
   return {
     studentProfileText,
+    studentProfileAcademicText,
     recordDataText,
     subjectDataText,
     creativeActivitiesText,
@@ -2060,6 +2100,18 @@ const buildTexts = (
       studentInfo.isGraduate === true || grade3RecordFinalized
         ? plannedSubjects
         : undefined
+    ),
+    // academicAnalysis 전용 — 확정 성적을 "면접 대비/수능/지원 전략" 활용
+    // 관점이 아닌, 성적 데이터 자체에 대한 사실적 평가 관점으로 안내한다.
+    completedSubjectsByYearAcademicText: formatCompletedSubjectsByYear(
+      recordData,
+      studentInfo.grade,
+      studentInfo.isGraduate === true || grade3RecordFinalized,
+      isArtSportDepartment(studentInfo.targetDepartment ?? ""),
+      studentInfo.isGraduate === true || grade3RecordFinalized
+        ? plannedSubjects
+        : undefined,
+      /* academicOnly */ true
     ),
     plannedSubjectsText:
       studentInfo.isGraduate === true || grade3RecordFinalized
@@ -3541,7 +3593,14 @@ const formatCompletedSubjectsByYear = (
    * 3학년·졸업생이 학생 입력으로 추가한 이수 완료 과목.
    * (학년별로 매핑되지 않은 평문 문자열 — "추가 이수 완료" 항목으로 별도 표기.)
    */
-  extraCompletedSubjects?: string
+  extraCompletedSubjects?: string,
+  /**
+   * true면 academicAnalysis(교과 성적 분석) 전용 텍스트를 생성한다.
+   * academicAnalysis는 정성 전형 요소(면접·서류)를 판단하는 섹션이 아니라
+   * 확정된 성적 데이터 자체를 사실적으로 평가하는 섹션이므로, isGraduate
+   * 분기의 안내를 "확정된 성적 평가" 관점으로 대체한다.
+   */
+  academicOnly: boolean = false
 ): string => {
   const generalSubjects = recordData.generalSubjects ?? [];
   const careerSubjects = recordData.careerSubjects ?? [];
@@ -3588,7 +3647,9 @@ const formatCompletedSubjectsByYear = (
   if (isGraduate) {
     lines.push(
       "",
-      "→ 위 과목은 최종 확정 성적입니다. 조언은 수능 준비, 면접 대비, 전형별 지원 전략 중심으로 작성하세요."
+      academicOnly
+        ? "→ 위 과목은 최종 확정 성적입니다. 확정된 성적 자체를 있는 그대로 분석하고 해석하세요."
+        : "→ 위 과목은 최종 확정 성적입니다. 조언은 수능 준비, 면접 대비, 전형별 지원 전략 중심으로 작성하세요."
     );
   } else if (currentGrade >= 3) {
     const hasGrade3Data = byYear.has(3);

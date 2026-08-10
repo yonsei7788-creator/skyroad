@@ -618,12 +618,19 @@ export const executeTask = async (
         state.preprocessedData?.allSubjectGrades
       );
 
+      // 교과전형 전용(buildGyogwaCompetencyScorePrompt)은 "면접 준비/자기소개서/
+      // 수능/정시" 같은 정성 전형 문구 없이 확정 성적 평가만 다루므로, 다른
+      // 섹션과 공유하는 texts.studentProfileText 대신 academicAnalysis와 동일한
+      // 면접·서류 언급 없는 전용 변형을 사용한다. 학종 포함 시(buildCompetencyScorePrompt)는
+      // 기존 공유 텍스트를 그대로 사용한다.
       const compScoreInput = {
         studentTypeClassification: ser.stuTypeText!,
         competencyExtraction: ser.compExtrText!,
         preprocessedAcademicData: texts.preprocessedAcademicDataText,
         attendanceSummary: texts.attendanceSummaryText,
-        studentProfile: texts.studentProfileText,
+        studentProfile: isGyogwaOnly
+          ? texts.studentProfileAcademicText
+          : texts.studentProfileText,
         studentGrade: studentInfo.grade,
         gradingSystem: state.preprocessedData!.gradingSystem,
         isMedical,
@@ -641,7 +648,9 @@ export const executeTask = async (
         // 3학년·졸업생의 수강예정 과목이 "추가 이수 완료" 라인으로 합쳐져
         // 있어, 교과이수노력 채점 시 이를 미이수로 잘못 잡지 않도록 전달.
         isGraduate: studentInfo.isGraduate,
-        completedSubjectsByYear: texts.completedSubjectsByYearText,
+        completedSubjectsByYear: isGyogwaOnly
+          ? texts.completedSubjectsByYearAcademicText
+          : texts.completedSubjectsByYearText,
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly
@@ -696,15 +705,19 @@ export const executeTask = async (
         // 파싱 실패 시 원본 유지
       }
 
+      // academicAnalysis는 확정된 교과 성적 데이터 자체를 사실적으로 평가하는
+      // 섹션이며 면접·서류 등 정성 전형 요소를 판단하는 섹션이 아니므로,
+      // 다른 섹션과 공유하는 studentProfileText/completedSubjectsByYearText 대신
+      // 면접·수능·지원전략 언급이 제거된 전용 변형을 사용한다.
       const acadInput = {
         quantitativeAnalysis: acadQuantitativeText,
         preprocessedAcademicData: acadPreprocessedText,
-        studentProfile: texts.studentProfileText,
+        studentProfile: texts.studentProfileAcademicText,
         gradingSystem: preData.gradingSystem,
         studentGrade: studentInfo.grade,
         isGraduate: studentInfo.isGraduate,
         detectedMajorGroup: detectedMajorForAcad,
-        completedSubjectsByYear: texts.completedSubjectsByYearText,
+        completedSubjectsByYear: texts.completedSubjectsByYearAcademicText,
         plannedSubjects: texts.plannedSubjectsText,
         isGyogwaOnly,
       };
@@ -1415,14 +1428,24 @@ export const executeTask = async (
         gyogwaAcademicAnalysis: isGyogwaOnly ? undefined : stratGyogwaAcadText,
         universityCandidates: stratCandidatesText,
         recommendedCourseMatch: texts.recommendedCourseMatchText,
-        studentProfile: texts.studentProfileText,
+        // 교과전형 전용(buildGyogwaAdmissionStrategyPrompt)은 프롬프트 자체
+        // 지시문(timeContext)에서 면접·수능 언급을 제거해도, 이 학생 프로필/
+        // 이수 완료 과목 입력 데이터에 "면접 준비/자기소개서/수능/정시 지원전략"
+        // 문구가 그대로 남아 있으면 AI가 이를 그대로 옮겨 적는다. academicAnalysis와
+        // 동일한 면접·서류 언급 없는 전용 변형을 사용한다. 학종 포함 시(buildAdmissionStrategyPrompt)는
+        // 학종 type 분석에 면접 맥락이 정당하게 필요하므로 기존 공유 텍스트를 유지한다.
+        studentProfile: isGyogwaOnly
+          ? texts.studentProfileAcademicText
+          : texts.studentProfileText,
         gradingSystem: state.preprocessedData!.gradingSystem,
         studentGrade: studentInfo.grade,
         isGraduate: studentInfo.isGraduate,
         isRecordFinalized,
         currentDate: new Date().toISOString().slice(0, 10),
         isMedical,
-        completedSubjectsByYear: texts.completedSubjectsByYearText,
+        completedSubjectsByYear: isGyogwaOnly
+          ? texts.completedSubjectsByYearAcademicText
+          : texts.completedSubjectsByYearText,
         plannedSubjects: texts.plannedSubjectsText,
         isArtSportPractical: texts.isArtSportPractical,
         selectedAdmissionTypes,

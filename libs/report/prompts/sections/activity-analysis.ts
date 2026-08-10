@@ -203,7 +203,16 @@ yearlyAnalysis[].summary, ratingRationale, activities[].overallComment, activiti
 
 ${
   input.isGraduate || input.isRecordFinalized
-    ? `## ⚠️ 생기부 확정 규칙 (최우선)
+    ? input.isGyogwaOnly
+      ? `## ⚠️ 생기부 확정 규칙 (최우선)
+이 학생은 **${input.isGraduate ? "졸업생" : "생기부가 최종 확정된 3학년"}**입니다. 생기부를 더 이상 수정할 수 없습니다.
+- improvementDirection에서 "3학년에서는...", "향후 활동으로...", "~를 보완하세요" 같은 제안을 **절대 하지 마세요**.
+- improvementDirection은 이 활동이 학업 성실성·탐구 역량 측면에서 어떤 의미를 갖는지, 확정된 기록 자체를 사실적으로 정리하는 방향으로 작성하세요.
+- 예: "이 영역은 2학년 탐구 주제가 진로와 연결되는 흐름으로 정리되어, 활동의 일관성이 확인됩니다."
+- 예: "이 영역은 기록이 약하지만, 수업 내 비교과 경험과 연결된 진로 탐색 과정으로 정리됩니다."
+
+`
+      : `## ⚠️ 생기부 확정 규칙 (최우선)
 이 학생은 **${input.isGraduate ? "졸업생" : "생기부가 최종 확정된 3학년"}**입니다. 생기부를 더 이상 수정할 수 없습니다.
 - improvementDirection에서 "3학년에서는...", "향후 활동으로...", "~를 보완하세요" 같은 제안을 **절대 하지 마세요**.
 - improvementDirection은 **면접에서 이 활동을 어떤 관점으로 설명하면 효과적인지** 방향으로 작성하세요.
