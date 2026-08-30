@@ -40,7 +40,7 @@ export const ReportCover = ({ meta }: ReportCoverProps) => {
       {/* Header: brand + plan badge */}
       <div className={styles.coverHeader}>
         <div className={styles.coverBrand}>
-          SKY<span className={styles.coverBrandAccent}>ROAD</span>
+          시대 <span className={styles.coverBrandAccent}>컨설팅</span>
         </div>
         <div
           className={`${styles.coverPlanBadge} ${
