@@ -24,6 +24,7 @@ import type {
   CompetitiveProfilingSection,
 } from "../types.ts";
 import {
+  computeRecordClosed,
   convertGradeBySchoolType,
   fiveToNineGrade,
   isArtSportDepartment,
@@ -2027,8 +2028,11 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/기여함을/g, "도움이 됨을"],
   [/기여함이/g, "도움이 됨이"],
 
-  [/강화한다/g, "보완해주세요"],
-  [/강화합니다/g, "보완해주세요"],
+  // 평서형 어미는 평서형으로 치환한다. "보완해주세요"(명령형)로 바꾸면
+  // "이 활동은 진로역량을 강화합니다" 같은 서술 문장이 "~를 보완해주세요"라는
+  // 지시문으로 뒤집혀, 생기부가 확정된 학생에게 실행 불가능한 조언이 된다.
+  [/강화한다/g, "탄탄하게 만든다"],
+  [/강화합니다/g, "탄탄하게 만듭니다"],
   [/강화하는/g, "보완하는"],
   [/강화하여/g, "보완하여"],
   [/강화하고/g, "보완하고"],
@@ -2238,6 +2242,13 @@ const sanitizeDeep = (obj: unknown, fieldName?: string): unknown => {
 //   ❌ "보완 시 S등급 진입 가능", "보강 시 상위 진입" 등 특정 등급 상승을
 //      약속하는 표현은 금지. 개선 효과는 "경쟁력/완성도를 높일 수 있다"
 //      수준의 질적 서술로만 표현한다.
+//
+// 생기부 확정 학생(졸업생 / 3학년 1학기 마감)의 3단계:
+//   이 학생들은 성적·세특·활동을 더 이상 추가하거나 수정할 수 없으므로,
+//   3단계의 "생기부를 이렇게 보강하라"는 제안이 성립하지 않는다. 같은 약점
+//   항목에 대해 지금 실행 가능한 대응(면접·서류에서 직접 설명)으로 문장을
+//   바꿔 쓴다(SUB_META.finalizedFocus). 약점을 지적하고 끝내는 대신 실행
+//   가능한 방향으로 이어지는 3단 구조 자체는 그대로 유지된다.
 
 // 한글 받침(종성) 유무 판정 — 조사 선택용
 const hasJongseong = (word: string): boolean => {
@@ -2267,12 +2278,15 @@ const joinStrengths = (words: string[]): string => {
 //  - strengthLabel: 강점으로 인정할 때 사용하는 자연스러운 표현
 //  - cause: 감점 항목으로 지목될 때의 질적 한계 (종속절, "~어/아/않아"로 종결)
 //  - improveIf: 개선 방향 (조건절, "~한다면"으로 종결)
+//  - finalizedFocus: 생기부 확정 학생용 대응 방향 (완결 문장). 기록을 바꾸는
+//    제안 대신, 확정된 기록을 면접·서류에서 어떻게 설명할지를 제시한다.
 // 키는 공백을 제거한 하위항목 이름. AI 출력 표기 흔들림(공백 유무, 축약형)을
 // 흡수하기 위해 별칭도 함께 등록한다.
 type CompetencySubMeta = {
   strengthLabel: string;
   cause: string;
   improveIf: string;
+  finalizedFocus: string;
 };
 
 const COMPETENCY_SUB_META: Record<string, CompetencySubMeta> = {
@@ -2281,55 +2295,75 @@ const COMPETENCY_SUB_META: Record<string, CompetencySubMeta> = {
     strengthLabel: "학업성취도",
     cause: "내신 성취도가 안정적인 상위권으로 자리 잡지 못해",
     improveIf: "주요 과목의 성취도를 끌어올리고 성적 추이를 개선해 간다면",
+    finalizedFocus:
+      "성적이 확정된 지금은 면접에서 성취도의 흐름과 그 배경을 설명할 근거를 정리해두는 것이 이 항목에 대한 대응입니다.",
   },
   학업태도: {
     strengthLabel: "학업태도",
     cause: "수업 참여와 자기주도 학습의 능동성이 충분히 드러나지 않아",
     improveIf:
       "수업 중 주도적 참여와 자기주도 학습 과정을 세특에 구체적으로 남긴다면",
+    finalizedFocus:
+      "면접에서 스스로 학습 방향을 정하고 수업에 참여했던 경험을 사례로 준비하면, 기록에 압축된 학업태도를 직접 설명할 수 있습니다.",
   },
   탐구력: {
     strengthLabel: "탐구활동",
     cause: "탐구활동이 수업 내용의 이해 수준에 머물러 있어",
     improveIf:
       "세특 내 탐구 주제를 심화하거나 교과 간 연계 탐구 사례를 추가한다면",
+    finalizedFocus:
+      "면접에서 탐구의 문제의식과 한계 인식까지 설명할 수 있도록 준비하면, 세특 문장에 담기지 않은 탐구 과정을 직접 보여줄 수 있습니다.",
   },
   // 진로역량
   교과이수노력: {
     strengthLabel: "교과 이수의 충실성",
     cause: "전공 관련 권장·심화 과목의 이수가 충분히 채워지지 않아",
     improveIf: "전공 관련 권장과목과 진로선택과목을 적극적으로 이수한다면",
+    finalizedFocus:
+      "이수가 마무리된 지금은 선택한 과목과 진로의 연결 고리를 면접에서 설명할 수 있도록 정리해두는 것이 이 항목에 대한 대응입니다.",
   },
   교과성취도: {
     strengthLabel: "전공 관련 교과 성취도",
     cause: "전공 관련 교과의 성취 수준이 상위권으로 뚜렷하게 드러나지 않아",
     improveIf: "전공 관련 교과의 성취도를 끌어올린다면",
+    finalizedFocus:
+      "성적이 확정된 지금은 면접에서 전공 관련 과목의 학습 과정과 성취 배경을 설명할 준비를 하는 것이 이 항목에 대한 대응입니다.",
   },
   진로탐색활동: {
     strengthLabel: "진로 활동의 방향성",
     cause: "진로 선택의 이유와 탐색 과정이 구체적으로 드러나지 않아",
     improveIf: "전공 관련 독서·탐구·프로젝트 경험을 추가적으로 연결한다면",
+    finalizedFocus:
+      "면접과 자기소개서에서 진로를 구체화해 온 계기와 탐색 과정을 시간 순으로 설명하면, 기록만으로는 드러나지 않는 진로 탐색의 맥락을 전달할 수 있습니다.",
   },
   // 공동체역량
   나눔과배려: {
     strengthLabel: "나눔·배려",
     cause: "타인을 돕거나 배려한 구체적 사례가 충분히 드러나지 않아",
     improveIf: "나눔과 배려가 드러나는 구체적 활동 사례를 남긴다면",
+    finalizedFocus:
+      "면접에서 타인을 도왔던 구체적 상황과 그때의 판단을 사례로 준비하면, 기록에 담기지 않은 부분을 직접 설명할 수 있습니다.",
   },
   소통및협업: {
     strengthLabel: "소통·협업",
     cause: "모둠·토론 등 협업 과정에서의 기여가 구체적으로 드러나지 않아",
     improveIf: "모둠·토론 활동에서 맡은 역할과 기여를 구체적으로 기록한다면",
+    finalizedFocus:
+      "면접에서 협업 과정에서 맡은 역할과 의견을 조율했던 경험을 사례로 준비하면, 기록에 압축된 협업 기여를 직접 설명할 수 있습니다.",
   },
   리더십: {
     strengthLabel: "리더십",
     cause: "주도적으로 이끈 역할과 그 영향이 구체적으로 드러나지 않아",
     improveIf: "주도적으로 이끈 역할과 그 성과를 구체적으로 남긴다면",
+    finalizedFocus:
+      "면접에서 주도적으로 이끌었던 상황과 그 결과를 사례로 준비하면, 역할명만 남은 기록의 빈틈을 직접 채울 수 있습니다.",
   },
   성실성: {
     strengthLabel: "성실성",
     cause: "출결·역할 이행 등 성실성을 뒷받침하는 근거가 충분히 드러나지 않아",
     improveIf: "출결을 안정적으로 관리하고 맡은 역할을 꾸준히 이행한다면",
+    finalizedFocus:
+      "면접에서 맡은 역할을 끝까지 이행했던 경험을 사례로 준비하면, 출결 기록만으로는 드러나지 않는 성실성을 설명할 수 있습니다.",
   },
 };
 
@@ -2357,6 +2391,7 @@ const getCompetencySubMeta = (name: string): CompetencySubMeta => {
     strengthLabel: name,
     cause: `${name} 항목의 평가 근거가 구체적으로 드러나지 않아`,
     improveIf: `${name} 관련 활동의 구체적 근거를 보강한다면`,
+    finalizedFocus: `면접에서 ${name} 관련 경험을 구체적 사례로 준비하면, 기록에 담기지 않은 부분을 직접 설명할 수 있습니다.`,
   };
 };
 
@@ -2390,7 +2425,11 @@ const COMPETENCY_LABEL_TO_CATEGORY: Record<string, string> = {
   진로역량: "career",
   공동체역량: "community",
 };
-const buildCompetencyGradeComment = (sc: unknown): string | undefined => {
+const buildCompetencyGradeComment = (
+  sc: unknown,
+  /** 생기부 확정 학생이면 true — 3단계를 "지금 실행 가능한 대응"으로 바꿔 쓴다. */
+  isRecordClosed: boolean
+): string | undefined => {
   if (
     !sc ||
     typeof sc !== "object" ||
@@ -2464,10 +2503,14 @@ const buildCompetencyGradeComment = (sc: unknown): string | undefined => {
     .map((s) => getCompetencySubMeta(s.name).strengthLabel);
   const strengthClause = joinStrengths(strengthLabels);
 
-  // 개선 방향 제안 (3단 구조의 마지막 문장)
-  const improveSentence = `${weakMeta.improveIf} ${label}의 ${eulReul(
-    comp.closing
-  )} 더욱 높일 수 있을 것으로 판단됩니다.`;
+  // 개선 방향 제안 (3단 구조의 마지막 문장).
+  // 생기부가 확정된 학생은 기록 자체를 보강할 수 없으므로, 같은 약점에 대해
+  // 지금 실행 가능한 대응(면접·서류에서의 설명)으로 문장을 바꿔 쓴다.
+  const improveSentence = isRecordClosed
+    ? weakMeta.finalizedFocus
+    : `${weakMeta.improveIf} ${label}의 ${eulReul(
+        comp.closing
+      )} 더욱 높일 수 있을 것으로 판단됩니다.`;
 
   if (grade === "S") {
     // 96~100: 만점 근접 — 강점 인정 위주, 미세 보강 여지만 언급.
@@ -2494,11 +2537,19 @@ const buildCompetencyGradeComment = (sc: unknown): string | undefined => {
       .slice(0, 2)
       .map((s) => getCompetencySubMeta(s.name).strengthLabel)
       .join("·");
-    return `${label}은 ${weakNames} 등 다수 항목에서 평가 가능한 구체적 증거가 부족하여 변별력이 매우 제한적입니다. ${eulReul(
-      comp.improveNoun
-    )} 우선적으로 보강할 필요가 있습니다.`;
+    const closing = isRecordClosed
+      ? `기록이 확정된 지금은 ${eulReul(
+          comp.improveNoun
+        )} 면접과 자기소개서에서 직접 설명할 수 있도록 준비하는 것이 우선입니다.`
+      : `${eulReul(comp.improveNoun)} 우선적으로 보강할 필요가 있습니다.`;
+    return `${label}은 ${weakNames} 등 다수 항목에서 평가 가능한 구체적 증거가 부족하여 변별력이 매우 제한적입니다. ${closing}`;
   }
-  return `${label}은 전 항목에서 평가 가능한 증거가 매우 부족하여 평가에 큰 제약이 있습니다. ${comp.improveNoun}부터 단계적으로 보완할 필요가 있습니다.`;
+  const dClosing = isRecordClosed
+    ? `기록이 확정된 지금은 ${eulReul(
+        comp.improveNoun
+      )} 면접·자기소개서에서 직접 설명하는 준비와 함께, 수능·정시 비중을 높인 지원 전략을 병행 검토하는 것이 현실적입니다.`
+    : `${comp.improveNoun}부터 단계적으로 보완할 필요가 있습니다.`;
+  return `${label}은 전 항목에서 평가 가능한 증거가 매우 부족하여 평가에 큰 제약이 있습니다. ${dClosing}`;
 };
 
 // ─── AI 출력 필드명 정규화 + 전처리 데이터 보강 ───
@@ -2511,6 +2562,21 @@ const normalizeSection = (
   creativeActivitiesText?: string
 ): ReportSection => {
   let s = section as any;
+
+  // 생기부가 확정되어 성적·세특·활동을 더 이상 바꿀 수 없는 학생인지.
+  // 후처리가 결정적으로 만들어내는 문장(gradeComment, 추이 예측, 편차 위험
+  // 평가 등)은 이 값에 따라 "생기부를 보강하라"가 아니라 "지금 실행 가능한
+  // 대응"으로 서술해야 한다. isRecordClosed 도입 이전에 시작된 리포트는
+  // 전처리 데이터에 이 필드가 없으므로 동일 기준으로 다시 판정한다.
+  const isRecordClosed =
+    pre.isRecordClosed ??
+    computeRecordClosed(
+      studentInfo,
+      (pre.allSubjectGrades ?? []).map((g) => ({
+        year: g.year,
+        semester: g.semester,
+      }))
+    );
 
   // ── AI 금지 표현 치환 (모든 섹션 공통) ──
   s = sanitizeDeep(s) as any;
@@ -3005,9 +3071,17 @@ const normalizeSection = (
         if (gv.spread <= 1) {
           fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 차이로, 과목 간 편차가 크지 않아 입학사정관이 학업 균형성을 긍정적으로 평가할 수 있는 구조입니다. 다만 전체 등급대에서의 경쟁력은 별도로 판단해야 합니다.`;
         } else if (gv.spread <= 2) {
-          fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 편차가 있습니다. 입학사정관은 이 정도 편차를 '특정 교과 편중 학습'으로 해석할 수 있으며, 학종에서 학업역량의 균형성 평가에서 약점이 될 수 있습니다. 교과전형에서는 평균 등급에 직접 영향을 주므로 최저 과목 보완이 필요합니다.`;
+          fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 편차가 있습니다. 입학사정관은 이 정도 편차를 '특정 교과 편중 학습'으로 해석할 수 있으며, 학종에서 학업역량의 균형성 평가에서 약점이 될 수 있습니다. ${
+            isRecordClosed
+              ? `성적이 확정된 지금은 ${gv.lowest} 과목의 학습 상황을 면접에서 설명할 준비를 하고, 이 과목의 반영 비중이 낮은 대학을 함께 검토하는 것이 유효합니다.`
+              : "교과전형에서는 평균 등급에 직접 영향을 주므로 최저 과목 보완이 필요합니다."
+          }`;
         } else {
-          fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급의 큰 편차가 있습니다. 입학사정관은 이를 학업 관리 능력의 부족 또는 특정 교과 회피로 판단할 가능성이 높으며, 학종과 교과 모두에서 불리하게 작용합니다. 최저 과목이 전공 핵심 과목인 경우 영향이 더 크므로 즉각적인 보완이 필요합니다.`;
+          fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급의 큰 편차가 있습니다. 입학사정관은 이를 학업 관리 능력의 부족 또는 특정 교과 회피로 판단할 가능성이 높으며, 학종과 교과 모두에서 불리하게 작용합니다. ${
+            isRecordClosed
+              ? `최저 과목이 전공 핵심 과목인 경우 영향이 더 크므로, ${gv.lowest} 과목의 학습 상황을 면접에서 설명할 준비와 함께 이 과목의 반영 비중이 낮은 대학을 우선 탐색하는 것이 현실적입니다.`
+              : "최저 과목이 전공 핵심 과목인 경우 영향이 더 크므로 즉각적인 보완이 필요합니다."
+          }`;
         }
       }
     } else {
@@ -3044,12 +3118,25 @@ const normalizeSection = (
       let prediction = g.prediction || g.analysis || "";
       // prediction 빈 문자열 방지 (Zod 검증 실패 방지)
       if (!prediction || prediction.trim().length === 0) {
+        // 성적이 아직 바뀔 수 있는 학생(고1·고2, 3학년 1학기 이전)용 —
+        // 남은 학기의 학습 전략까지 포함한 서술.
         const trendPredictions: Record<string, string> = {
           상승: "현재 성적이 상승 추세에 있습니다(현재 상태). 강점 과목의 학습 방식이 자리를 잡아가는 흐름으로, 상승 추세는 사정관이 발전가능성과 학업 태도를 긍정적으로 판단하는 핵심 근거입니다(개선 이유). 이 학습 방식을 약점 과목에도 적용해 상승세를 유지하면 최종 평균이 개선되어 상위 학과 지원 시 학업역량 신뢰도를 높일 수 있습니다(기대 효과).",
           유지: "성적이 안정적으로 유지되고 있어 학업 성실성 측면에서는 긍정적입니다(현재 상태). 다만 정체 구간은 변별력 측면에서 강점으로 부각되기 어려운 구조이므로(원인), 핵심 과목에서 한 단계 상승을 만들면 사정관이 학업역량을 더 뚜렷하게 평가하는 근거가 됩니다(개선 이유). 정체를 만든 과목의 학습 전략을 보완하면 학종 서류에서 학업역량 경쟁력을 높일 수 있습니다(기대 효과).",
           하락: "현재 성적이 하락 추세에 있습니다(현재 상태). 하락 추세는 사정관이 학업 태도와 성실성에 의문을 가질 수 있는 신호이므로(개선 이유), 하락을 만든 과목·학기의 원인을 파악해 학습 전략을 재정비하는 것이 시급합니다(문제 원인). 남은 학기에 반등을 만들면 만회 서사를 통해 오히려 발전가능성을 강점으로 전환할 수 있습니다(기대 효과).",
         };
-        prediction = trendPredictions[trend] ?? trendPredictions["유지"];
+        // 생기부가 확정된 학생용 — 추세는 이미 최종 결과이므로 "앞으로의
+        // 학습 전략"이 아니라 확정된 추세의 입시적 의미와 지금 실행 가능한
+        // 대응(면접에서의 설명, 지원 라인 조정)으로 서술한다.
+        const finalizedTrendPredictions: Record<string, string> = {
+          상승: "성적이 상승 추세로 마무리되었습니다(확정 결과). 상승 추세는 사정관이 발전가능성과 학업 태도를 긍정적으로 판단하는 핵심 근거이므로(평가 의미), 어떤 학습 방식의 변화가 이 상승을 만들었는지 면접과 자기소개서에서 설명할 수 있도록 정리해두는 것이 유효합니다(실행 방향).",
+          유지: "성적이 전 학년에 걸쳐 안정적으로 유지된 상태로 확정되었습니다(확정 결과). 꾸준함은 학업 성실성 측면에서 긍정적이지만, 정체 구간은 변별력 측면에서 강점으로 부각되기는 어려운 구조입니다(평가 의미). 확정된 평균에 맞춰 지원 라인을 조정하고, 꾸준함을 뒷받침하는 근거를 면접에서 설명하는 것이 지금 실행 가능한 방향입니다(실행 방향).",
+          하락: "성적이 하락 추세로 마무리되었습니다(확정 결과). 하락 추세는 사정관이 학업 태도와 성실성에 의문을 가질 수 있는 신호입니다(평가 의미). 하락이 나타난 과목·학기의 사유를 면접에서 설명할 수 있도록 정리하고, 확정된 평균을 기준으로 지원 대학 라인을 재조정하는 것이 지금의 핵심 과제입니다(실행 방향).",
+        };
+        const trendSource = isRecordClosed
+          ? finalizedTrendPredictions
+          : trendPredictions;
+        prediction = trendSource[trend] ?? trendSource["유지"];
       }
       s.gradeChangeAnalysis = {
         currentTrend: trend,
@@ -3670,7 +3757,7 @@ const normalizeSection = (
         if (!Array.isArray(sc.subcategories) || sc.subcategories.length === 0) {
           continue;
         }
-        sc.gradeComment = buildCompetencyGradeComment(sc);
+        sc.gradeComment = buildCompetencyGradeComment(sc, isRecordClosed);
       }
     }
 
@@ -3686,7 +3773,9 @@ const normalizeSection = (
           sc.score < (worst?.score ?? 999) ? sc : worst,
         s.scores[0]
       );
-      s.interpretation = `총점 ${total}점(300점 만점)으로 ${strongest?.label ?? ""}이 가장 우수하며, ${weakest?.label ?? ""}은 상대적으로 보완이 필요합니다.`;
+      s.interpretation = isRecordClosed
+        ? `총점 ${total}점(300점 만점)으로 ${strongest?.label ?? ""}이 가장 우수하며, ${weakest?.label ?? ""}은 상대적으로 낮게 평가됩니다.`
+        : `총점 ${total}점(300점 만점)으로 ${strongest?.label ?? ""}이 가장 우수하며, ${weakest?.label ?? ""}은 상대적으로 보완이 필요합니다.`;
     }
 
     // ── 신규 리포트(v5+): 5축 세분화 레이더 결정적 재집계 ──

@@ -333,6 +333,17 @@ export interface PreprocessedData {
     communityScore: number;
     growthScore: number;
   };
+  /**
+   * 생기부가 더 이상 보완될 수 없는 상태(= 졸업생이거나, 3학년 1학기로 기록이
+   * 마감된 재학생)면 true. `isGraduate || texts.isRecordFinalized`와 같은 값을
+   * 갖는 단일 판정값으로, 두 조건을 각자 OR로 조합하다가 한쪽을 빠뜨리는
+   * 문제를 막기 위해 전처리 단계에서 한 번만 확정한다.
+   *
+   * true인 학생에게는 성적 향상·과목 추가 이수·세특/활동 보강 같은 "생기부를
+   * 바꾸는" 조언이 성립하지 않는다. 앞으로의 방향은 면접 준비, 자기소개서·서류
+   * 정리, 수능 마무리, 지원 전략 4가지 범위에서만 제시한다.
+   */
+  isRecordClosed: boolean;
 }
 
 /** 프롬프트에 주입 가능한 텍스트 형태의 전처리 결과 */
@@ -1158,6 +1169,8 @@ export const preprocess = (
     existingCreativeSlots,
     existingBehaviorYears,
     dataYearsPresent,
+    // buildTexts가 학기 데이터를 보고 확정 여부를 판정하므로 아래에서 채운다.
+    isRecordClosed: false,
   };
 
   const texts = buildTexts(
@@ -1168,7 +1181,40 @@ export const preprocess = (
     plannedSubjects
   );
 
+  // 생기부 확정 여부를 여기서 한 번만 확정해 data에 싣는다. wave-executor는
+  // 프롬프트 분기에, postprocessor는 결정적 문구 생성에 같은 값을 사용한다.
+  data.isRecordClosed =
+    studentInfo.isGraduate === true || texts.isRecordFinalized === true;
+
   return { data, texts };
+};
+
+/**
+ * 전처리 데이터 없이 "생기부 확정" 여부를 재판정한다.
+ * `PreprocessedData.isRecordClosed` 도입 이전에 생성된 wave-state로 이어서
+ * 실행되는 리포트에서는 그 필드가 undefined이므로, 이수 과목의 마지막 학기를
+ * 근거로 buildTexts와 동일한 기준으로 다시 판정하기 위한 폴백이다.
+ *
+ * 기준은 buildTexts와 동일: 졸업생이거나, 3학년 재학생인데 1학기까지만 성적이
+ * 있고 현재가 7월 이후(1학기 기말고사 종료 후)인 경우.
+ */
+export const computeRecordClosed = (
+  studentInfo: StudentInfo,
+  subjects: { year: number; semester: number }[]
+): boolean => {
+  if (studentInfo.isGraduate === true) return true;
+  if (studentInfo.grade !== 3) return false;
+  if (new Date().getMonth() + 1 < 7) return false;
+
+  let maxYear = 0;
+  let maxSemester = 0;
+  for (const s of subjects) {
+    if (s.year > maxYear || (s.year === maxYear && s.semester > maxSemester)) {
+      maxYear = s.year;
+      maxSemester = s.semester;
+    }
+  }
+  return maxYear === 3 && maxSemester === 1;
 };
 
 // ─── 보조 함수들 ───

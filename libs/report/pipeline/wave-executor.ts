@@ -173,10 +173,16 @@ export const executeTask = async (
   // 데이터가 있고 7월 이후(1학기 기말고사 종료)인 경우. 각 섹션은 이 값을
   // isGraduate와 동일하게 취급해 "성적 향상/과목 이수 보완" 조언을 생략하고
   // 면접·수능·지원 전략 중심으로 서술해야 한다.
+  // preprocessedData.isRecordClosed가 같은 판정을 이미 담고 있다. 이 필드 도입
+  // 이전에 시작되어 저장된 wave-state로 이어서 실행되는 리포트만 아래 OR로 폴백.
   const isRecordFinalized =
-    studentInfo.isGraduate === true || texts.isRecordFinalized === true;
+    state.preprocessedData?.isRecordClosed ??
+    (studentInfo.isGraduate === true || texts.isRecordFinalized === true);
 
-  const systemPrefix = buildSystemPromptPrefix(plan, { isGyogwaOnly });
+  const systemPrefix = buildSystemPromptPrefix(plan, {
+    isGyogwaOnly,
+    isRecordFinalized,
+  });
   const sections = [...(state.completedSections ?? [])];
   // 생기부 기반 메디컬 판별 (Phase 2 결과 기반, 희망학과 아님)
   let detectedMajorForFlags =
@@ -648,6 +654,9 @@ export const executeTask = async (
         // 3학년·졸업생의 수강예정 과목이 "추가 이수 완료" 라인으로 합쳐져
         // 있어, 교과이수노력 채점 시 이를 미이수로 잘못 잡지 않도록 전달.
         isGraduate: studentInfo.isGraduate,
+        // 생기부 확정 학생은 interpretation을 "보완이 필요하다"가 아니라
+        // 확정된 평가 결과 + 면접·지원 전략 대응으로 서술해야 한다.
+        isRecordFinalized,
         completedSubjectsByYear: isGyogwaOnly
           ? texts.completedSubjectsByYearAcademicText
           : texts.completedSubjectsByYearText,
@@ -1677,6 +1686,7 @@ export const executeTask = async (
       // (systemPrefix는 플랜별 "분석 깊이" 지시를 포함하므로, 여기서는 premium 기준 사용)
       const majorSystemPrefix = buildSystemPromptPrefix("premium", {
         isGyogwaOnly,
+        isRecordFinalized,
       });
       const majorResult = await client.call<ReportSection>({
         systemPrefix: majorSystemPrefix,
