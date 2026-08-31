@@ -2552,6 +2552,107 @@ const buildCompetencyGradeComment = (
   return `${label}은 전 항목에서 평가 가능한 증거가 매우 부족하여 평가에 큰 제약이 있습니다. ${dClosing}`;
 };
 
+// ─── courseAlignment 서술 정합성 보정 ───
+
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** "미이수"를 뜻하는 서술 패턴 (사이 공백·조사 허용) */
+const MISSING_COURSE_PATTERN =
+  "(?:미\\s*이수|이수하지\\s*(?:않|못)|이수를\\s*하지\\s*(?:않|못)|이수 기회를 놓)";
+
+/** 과목명 뒤에 다른 로마숫자·숫자가 붙는 과목(물리학 vs 물리학Ⅱ) 오인 방지 */
+const COURSE_NAME_BOUNDARY = "(?![Ⅰ-Ⅲ0-9])";
+
+/**
+ * 이수·이수 예정으로 확정된 과목을 "미이수"로 서술한 내용을 제거한다.
+ *
+ * courses 배열은 전처리 매칭 데이터로 강제 대체되지만 missingCourseImpact ·
+ * recommendation 같은 서술 필드는 AI 출력이 그대로 남는다. 그 결과 표에는
+ * "이수 예정"인 과목이 본문에서는 "미이수"로 서술되는 불일치가 생길 수 있어,
+ * 아래 두 단계로 정리한다.
+ *
+ * 1) 여러 과목을 나열한 문장이면 확정 이수 과목만 나열에서 제거한다.
+ *    ("물리학Ⅰ·화학Ⅱ 미이수" → "화학Ⅱ 미이수")
+ * 2) 그래도 확정 이수 과목이 미이수로 남아 있는 문장은 통째로 제거한다.
+ *
+ * 모든 문장이 제거되면 빈 문자열을 반환하며, 호출부가 확정 데이터 기반
+ * 문장으로 대체한다.
+ */
+export const removeMisstatedMissingCourses = (
+  text: string,
+  completedCourses: string[]
+): string => {
+  // 긴 이름부터 처리해야 "물리학"이 "물리학Ⅱ"를 잘라먹지 않는다.
+  const names = [...completedCourses]
+    .filter((c) => c.trim().length > 0)
+    .sort((a, b) => b.length - a.length);
+  if (names.length === 0) return text;
+
+  const sentences = text.match(/[^.!?]+[.!?]*\s*/g) ?? [text];
+  const kept: string[] = [];
+
+  for (const sentence of sentences) {
+    if (!new RegExp(MISSING_COURSE_PATTERN).test(sentence)) {
+      kept.push(sentence);
+      continue;
+    }
+
+    // 1) 나열형에서 확정 이수 과목만 제거
+    let cleaned = sentence;
+    for (const name of names) {
+      const escaped = escapeRegExp(name);
+      cleaned = cleaned
+        .replace(
+          new RegExp(`${escaped}${COURSE_NAME_BOUNDARY}\\s*[·,、/]\\s*`, "g"),
+          ""
+        )
+        .replace(
+          new RegExp(`\\s*[·,、/]\\s*${escaped}${COURSE_NAME_BOUNDARY}`, "g"),
+          ""
+        );
+    }
+
+    // 2) 여전히 확정 이수 과목이 미이수로 서술되면 문장을 통째로 제거
+    const stillMisstated = names.some((name) =>
+      new RegExp(
+        `${escapeRegExp(name)}${COURSE_NAME_BOUNDARY}[은는이가을를도]?\\s*(?:${MISSING_COURSE_PATTERN})`
+      ).test(cleaned)
+    );
+    if (stillMisstated) continue;
+
+    kept.push(cleaned);
+  }
+
+  return kept.join("").trim();
+};
+
+/** 서술 필드가 통째로 제거된 경우 확정 매칭 데이터로 문장을 재구성한다. */
+const buildCourseAlignmentFallbackText = (
+  field: "missingCourseImpact" | "recommendation",
+  takenCourses: string[],
+  plannedCourses: string[],
+  missingCourses: string[]
+): string => {
+  const completed = [...takenCourses, ...plannedCourses];
+  const completedLabel = completed.join("·");
+  const missingLabel = missingCourses.join("·");
+
+  if (field === "missingCourseImpact") {
+    if (missingCourses.length === 0) {
+      return `${completedLabel} 등 권장과목을 모두 이수하여 교과 이수 노력이 충실하게 갖춰져 있습니다.`;
+    }
+    return completed.length > 0
+      ? `${completedLabel}을(를) 이수하여 권장과목 요건을 상당 부분 충족했습니다. ${missingLabel} 미이수는 학종 교과 이수 노력 평가에서 보완이 필요한 영역입니다.`
+      : `${missingLabel} 미이수는 학종 교과 이수 노력 평가에서 보완이 필요한 영역입니다.`;
+  }
+
+  if (missingCourses.length === 0) {
+    return `이미 이수한 ${completedLabel} 세특에서 전공 관련 탐구를 어떻게 풀어냈는지 정리해 면접과 서류에서 설명할 수 있도록 준비하세요.`;
+  }
+  return `이미 이수한 ${completedLabel || "교과"} 세특·동아리·독서 활동에서 ${missingLabel}의 핵심 주제를 다룬 경험을 정리해, 면접에서 교과 이수 노력을 설명할 근거로 활용하세요.`;
+};
+
 // ─── AI 출력 필드명 정규화 + 전처리 데이터 보강 ───
 
 const normalizeSection = (
@@ -4660,6 +4761,39 @@ const normalizeSection = (
       s.matchRate = prMatch.matchRate;
       // targetMajor는 AI가 생기부 기반으로 생성한 값을 유지 (희망학과 기반 덮어쓰기 금지)
       // s.targetMajor = prMatch._referenceTargetMajor;
+
+      // ── 표(courses)와 본문 서술 정합성 보정 ──
+      // courses 배열은 위에서 확정 데이터로 덮어쓰지만 missingCourseImpact ·
+      // recommendation은 AI 출력이 그대로 남아, 표에는 "이수"·"이수 예정"인
+      // 과목이 본문에서는 "미이수"로 서술되는 불일치가 발생할 수 있다.
+      const completedCourses = [...takenSet, ...plannedSet];
+      if (completedCourses.length > 0) {
+        for (const field of [
+          "missingCourseImpact",
+          "recommendation",
+        ] as const) {
+          const original = s[field];
+          if (typeof original !== "string" || original.length === 0) continue;
+          const corrected = removeMisstatedMissingCourses(
+            original,
+            completedCourses
+          );
+          if (corrected !== original) {
+            console.log(
+              `[postprocess] courseAlignment.${field}: 이수(예정) 과목을 미이수로 서술한 문장 보정`
+            );
+            s[field] =
+              corrected.length > 0
+                ? corrected
+                : buildCourseAlignmentFallbackText(
+                    field,
+                    [...takenSet],
+                    [...plannedSet],
+                    prMatch.missingCourses ?? []
+                  );
+          }
+        }
+      }
     } else if (Array.isArray(s.courses) && s.courses.length > 0) {
       const taken = s.courses.filter((c: any) => c.status === "이수").length;
       s.matchRate = Math.round((taken / s.courses.length) * 100);

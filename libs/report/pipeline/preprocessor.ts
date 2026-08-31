@@ -402,6 +402,12 @@ export interface PreprocessedTexts {
    * 동일하게 "생기부 확정" 취급한다 (isGraduate와 OR 조건으로 사용).
    */
   isRecordFinalized: boolean;
+  /**
+   * 학생이 입력한 수강 예정 과목을 "이수 완료"로 취급하는 학생인지 여부.
+   * (졸업생 또는 생기부 확정 3학년 — isPlannedTreatedAsCompleted 판정값)
+   * 권장과목 매칭 결과와 프롬프트 서술 지시가 같은 값을 공유하기 위해 노출한다.
+   */
+  plannedAsCompleted: boolean;
 }
 
 export interface PreprocessResult {
@@ -1025,7 +1031,7 @@ export const preprocess = (
     studentInfo.grade,
     curriculumVersion,
     plannedSubjects,
-    studentInfo.isGraduate
+    isPlannedTreatedAsCompleted(studentInfo.isGraduate, studentInfo.grade)
   );
 
   // 13. 출결 데이터 정규화
@@ -1601,6 +1607,24 @@ const findMatchingMajor = (
   );
 };
 
+/**
+ * 학생이 직접 입력한 "수강 예정 과목"을 이수 완료로 취급할지 판정한다.
+ *
+ * 졸업생, 그리고 생기부가 확정된 3학년(7월 이후 — 1학기 기말 종료 시점)은
+ * 시간표가 이미 고정되어 있어 입력한 수강 예정 과목이 실제로 이수되는 과목이다.
+ * 따라서 이 학생들의 수강 예정 과목은 "이수 완료"로 다룬다.
+ *
+ * 권장과목 매칭(matchRecommendedCourses), 학년별 이수 과목 텍스트, 프롬프트
+ * 서술 지시가 모두 이 한 판정값을 공유하여 섹션 간 이수/미이수 서술이
+ * 엇갈리지 않도록 한다.
+ */
+export const isPlannedTreatedAsCompleted = (
+  isGraduate: boolean | undefined,
+  studentGrade: number,
+  now: Date = new Date()
+): boolean =>
+  isGraduate === true || (studentGrade === 3 && now.getMonth() + 1 >= 7);
+
 export const matchRecommendedCourses = (
   generalSubjects: GeneralSubjectRow[],
   careerSubjects: CareerSubjectRow[],
@@ -1609,13 +1633,13 @@ export const matchRecommendedCourses = (
   curriculumVersion?: "2015" | "2022",
   /** 학생이 직접 입력한 수강 예정 과목(comma-separated). 없으면 undefined. */
   plannedSubjects?: string,
-  /** 졸업생 여부. true이면 plannedSubjects를 "이수 예정"이 아닌 "이수 완료"로 처리한다.
-   *  (3학년은 2학기 수강 예정 과목이 있으므로 "이수 예정"으로 유지.) */
-  isGraduate?: boolean
+  /** true이면 plannedSubjects를 "이수 예정"이 아닌 "이수 완료"로 처리한다.
+   *  (isPlannedTreatedAsCompleted로 판정 — 졸업생 또는 생기부 확정 3학년) */
+  plannedAsCompleted?: boolean
 ): RecommendedCourseMatch => {
-  // 졸업생만 plannedSubjects를 이수 완료로 처리한다.
-  // 3학년은 2학기 수강 예정 과목이 "이수 예정" 상태이므로 별도 set으로 관리.
-  const treatPlannedAsTaken = isGraduate === true;
+  // 졸업생·생기부 확정 3학년은 plannedSubjects를 이수 완료로 처리한다.
+  // 그 외(1·2학년, 확정 전 3학년)는 "이수 예정" 상태이므로 별도 set으로 관리.
+  const treatPlannedAsTaken = plannedAsCompleted === true;
 
   // 학생이 이수한 과목명을 정규화하여 Set 구축
   const takenRawSet = new Set<string>();
@@ -1638,7 +1662,7 @@ export const matchRecommendedCourses = (
     plannedSubjects.trim().length > 0
   ) {
     const tokens = plannedSubjects
-      .split(/[,\n]/)
+      .split(/[,、，\n]/)
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
     for (const t of tokens) {
@@ -1660,7 +1684,7 @@ export const matchRecommendedCourses = (
     plannedSubjects.trim().length > 0
   ) {
     const tokens = plannedSubjects
-      .split(/[,\n]/)
+      .split(/[,、，\n]/)
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
     for (const t of tokens) {
@@ -1947,6 +1971,13 @@ const buildTexts = (
   // (wave-executor.ts의 courseAlignment enrollmentLocked와 동일 기준)
   const currentMonth = new Date().getMonth() + 1;
   const grade3RecordFinalized = studentInfo.grade === 3 && currentMonth >= 7;
+  // 수강 예정 과목을 이수 완료로 볼지 판정 (졸업생 또는 생기부 확정 3학년).
+  // 권장과목 매칭(matchRecommendedCourses)과 동일한 판정 함수를 사용해
+  // "표는 이수 예정, 본문은 미이수" 같은 불일치를 원천 차단한다.
+  const plannedAsCompleted = isPlannedTreatedAsCompleted(
+    studentInfo.isGraduate,
+    studentInfo.grade
+  );
 
   let currentSemesterLabel = "";
   let recordFinalizedGrade3 = false;
@@ -2141,28 +2172,27 @@ const buildTexts = (
     completedSubjectsByYearText: formatCompletedSubjectsByYear(
       recordData,
       studentInfo.grade,
-      studentInfo.isGraduate === true || grade3RecordFinalized,
+      plannedAsCompleted,
       isArtSportDepartment(studentInfo.targetDepartment ?? ""),
-      studentInfo.isGraduate === true || grade3RecordFinalized
-        ? plannedSubjects
-        : undefined
+      plannedAsCompleted ? plannedSubjects : undefined,
+      /* academicOnly */ false,
+      plannedAsCompleted ? undefined : plannedSubjects
     ),
     // academicAnalysis 전용 — 확정 성적을 "면접 대비/수능/지원 전략" 활용
     // 관점이 아닌, 성적 데이터 자체에 대한 사실적 평가 관점으로 안내한다.
     completedSubjectsByYearAcademicText: formatCompletedSubjectsByYear(
       recordData,
       studentInfo.grade,
-      studentInfo.isGraduate === true || grade3RecordFinalized,
+      plannedAsCompleted,
       isArtSportDepartment(studentInfo.targetDepartment ?? ""),
-      studentInfo.isGraduate === true || grade3RecordFinalized
-        ? plannedSubjects
-        : undefined,
-      /* academicOnly */ true
+      plannedAsCompleted ? plannedSubjects : undefined,
+      /* academicOnly */ true,
+      plannedAsCompleted ? undefined : plannedSubjects
     ),
-    plannedSubjectsText:
-      studentInfo.isGraduate === true || grade3RecordFinalized
-        ? ""
-        : formatPlannedSubjects(plannedSubjects, studentInfo.grade === 3),
+    plannedSubjectsText: plannedAsCompleted
+      ? ""
+      : formatPlannedSubjects(plannedSubjects, studentInfo.grade === 3),
+    plannedAsCompleted,
     isArtSportPractical: artSportPractical,
     mockExamText: formatMockExamText(recordData.mockExams ?? []),
     isRecordFinalized: recordFinalizedGrade3,
@@ -3646,7 +3676,13 @@ const formatCompletedSubjectsByYear = (
    * 확정된 성적 데이터 자체를 사실적으로 평가하는 섹션이므로, isGraduate
    * 분기의 안내를 "확정된 성적 평가" 관점으로 대체한다.
    */
-  academicOnly: boolean = false
+  academicOnly: boolean = false,
+  /**
+   * 아직 이수 완료로 취급하지 않는 수강 예정 과목(1·2학년, 확정 전 3학년).
+   * 이 과목들은 생기부에 기록이 없어 "이수하지 않았다"로 오판되기 쉬우므로,
+   * 목록에 없더라도 미이수가 아닌 "이수 예정"임을 함께 안내한다.
+   */
+  pendingPlannedSubjects?: string
 ): string => {
   const generalSubjects = recordData.generalSubjects ?? [];
   const careerSubjects = recordData.careerSubjects ?? [];
@@ -3686,6 +3722,15 @@ const formatCompletedSubjectsByYear = (
   if (extraCompletedSubjects && extraCompletedSubjects.trim().length > 0) {
     lines.push(
       `- 추가 이수 완료 (학생 직접 입력): ${extraCompletedSubjects.trim()}`
+    );
+  }
+
+  // 이수 예정 과목은 생기부에 아직 기록이 없다. 위 "이수하지 않았다" 안내가
+  // 이 과목까지 미이수로 단정하지 않도록 예외를 명시한다.
+  if (pendingPlannedSubjects && pendingPlannedSubjects.trim().length > 0) {
+    lines.push(
+      `- 이수 예정 (학생 직접 입력, 위 목록에 없어도 미이수가 아님): ${pendingPlannedSubjects.trim()}`,
+      "   → 위 '이수 예정' 과목은 학생이 앞으로 수강할 과목이므로 '이수 예정'으로 서술하고, 교과 이수 노력에 포함해 평가하세요."
     );
   }
 
@@ -3750,6 +3795,7 @@ const formatPlannedSubjects = (
       `과목: ${plannedSubjects.trim()}`,
       "",
       "※ 위 과목은 학생이 3학년 2학기에 수강할 예정이라고 직접 입력한 과목입니다.",
+      "※ 위 과목은 생기부 이수 기록에 아직 없지만 실제로 수강할 과목이므로, '이수 예정'으로 서술하고 교과 이수 노력에 포함해 평가하세요.",
       "※ 3학년 2학기 성적(등급)은 대학 입시에 반영되지 않으므로 '성적 향상' 조언은 절대 하지 마세요.",
       "→ 위 과목의 세특(교과 세부능력·특기사항) 주제 조언, 탐구 활동 방향, 교과 연계 전략은 제공하세요.",
       "→ 해당 과목에서 어떤 탐구·발표·보고서를 하면 학종 평가에서 교과 이수 노력으로 인정받을 수 있는지 구체적으로 안내하세요.",
@@ -3762,6 +3808,7 @@ const formatPlannedSubjects = (
     `과목: ${plannedSubjects.trim()}`,
     "",
     "※ 위 과목은 학생이 현재 학기 또는 다음 학기에 수강할 예정이라고 직접 입력한 과목입니다.",
+    "※ 위 과목은 생기부 이수 기록에 아직 없지만 실제로 수강할 과목이므로, '이수 예정'으로 서술하고 교과 이수 노력에 포함해 평가하세요.",
     "→ 성적 향상, 과목 추천, 탐구 주제 등의 조언은 위 수강 예정 과목 범위 내에서만 제시하세요.",
     "→ 위 목록에 없는 과목의 수강이나 성적 향상을 권고하지 마세요.",
     "→ 단, 이수 완료 과목의 기존 성과를 언급하거나 분석하는 것은 허용됩니다.",
@@ -4145,7 +4192,8 @@ export const rebuildRecommendedCourseMatchText = (
   detectedMajorGroup: string,
   preData: PreprocessedData,
   studentGrade: number,
-  isGraduate?: boolean
+  /** 수강 예정 과목을 이수 완료로 취급할지 여부 (isPlannedTreatedAsCompleted 판정값) */
+  plannedAsCompleted?: boolean
 ): string => {
   // allSubjectGrades를 matchRecommendedCourses 호환 형태로 변환
   const generalSubjects = (preData.allSubjectGrades ?? []).map((s) => ({
@@ -4182,7 +4230,7 @@ export const rebuildRecommendedCourseMatchText = (
     studentGrade,
     preData.curriculumVersion,
     preData.plannedSubjectsRaw,
-    isGraduate
+    plannedAsCompleted
   );
 
   return JSON.stringify(result, null, 2);

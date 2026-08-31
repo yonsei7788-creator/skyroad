@@ -73,6 +73,7 @@ import {
   buildUniversityCandidatesText,
   buildHopeUniversityRecommendations,
   rebuildRecommendedCourseMatchText,
+  isPlannedTreatedAsCompleted,
   isArtSportPractical as isArtSportPracticalFn,
   computeSubjectGradeRangeFact,
   computeMajorStrengthSubjectsFact,
@@ -178,6 +179,14 @@ export const executeTask = async (
   const isRecordFinalized =
     state.preprocessedData?.isRecordClosed ??
     (studentInfo.isGraduate === true || texts.isRecordFinalized === true);
+
+  // 학생이 입력한 수강 예정 과목을 "이수 완료"로 취급하는 학생인지 여부.
+  // 전처리(권장과목 매칭·이수 과목 텍스트)와 동일한 판정값을 써야 표의
+  // status와 본문 서술이 엇갈리지 않는다. 이 필드 도입 이전에 저장된
+  // wave-state로 이어 실행되는 리포트는 같은 기준으로 다시 판정한다.
+  const plannedAsCompleted =
+    texts.plannedAsCompleted ??
+    isPlannedTreatedAsCompleted(studentInfo.isGraduate, studentInfo.grade);
 
   const systemPrefix = buildSystemPromptPrefix(plan, {
     isGyogwaOnly,
@@ -404,7 +413,7 @@ export const executeTask = async (
         detected,
         state.preprocessedData!,
         studentInfo.grade,
-        studentInfo.isGraduate
+        plannedAsCompleted
       );
       correctedTexts = {
         ...texts,
@@ -660,6 +669,8 @@ export const executeTask = async (
         completedSubjectsByYear: isGyogwaOnly
           ? texts.completedSubjectsByYearAcademicText
           : texts.completedSubjectsByYearText,
+        // 이수 예정 과목을 미이수 감점 사유로 잡지 않도록 함께 전달.
+        plannedSubjects: texts.plannedSubjectsText,
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly
@@ -817,7 +828,7 @@ export const executeTask = async (
           detectedGroup,
           state.preprocessedData!,
           studentInfo.grade,
-          studentInfo.isGraduate
+          plannedAsCompleted
         );
       }
       // 추가 과목 이수가 사실상 불가능한 시점 판정 — 공통 isRecordFinalized 재사용
@@ -836,6 +847,7 @@ export const executeTask = async (
           isGraduate: studentInfo.isGraduate,
           enrollmentLocked,
           plannedSubjects: texts.plannedSubjectsText,
+          plannedAsCompleted,
         };
         section = await callGemini<ReportSection>(
           isRecordFinalized
@@ -1590,6 +1602,8 @@ export const executeTask = async (
           studentGrade: studentInfo.grade,
           currentDate: new Date().toISOString().slice(0, 10),
           completedSubjectsByYear: texts.completedSubjectsByYearText,
+          // 이수 예정 과목을 미이수로 서술하지 않도록 함께 전달.
+          plannedSubjects: texts.plannedSubjectsText,
         })
       );
       break;

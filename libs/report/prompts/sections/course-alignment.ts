@@ -21,6 +21,13 @@ export interface CourseAlignmentPromptInput {
   enrollmentLocked?: boolean;
   /** 학생이 직접 입력한 수강 예정 과목 (있는 경우) */
   plannedSubjects?: string;
+  /**
+   * 수강 예정 과목이 "이수 완료"로 취급된 학생인지 여부.
+   * (졸업생 또는 생기부 확정 3학년 — preprocessor의 isPlannedTreatedAsCompleted 판정값)
+   * true이면 매칭 데이터의 plannedCourses는 비어 있고 수강 예정 과목이
+   * takenCourses에 합쳐져 있으므로, 프롬프트 설명을 실제 데이터와 일치시킨다.
+   */
+  plannedAsCompleted?: boolean;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -146,13 +153,15 @@ ${medicalCourseContext}
 ### 권장과목 매칭 데이터 (생기부 기반 — 코드 전처리 결과)
 ⚠️⚠️⚠️ **아래 데이터가 이 섹션의 핵심 입력입니다. courses 배열은 반드시 이 데이터의 requiredCourses를 그대로 사용하세요.**
 - requiredCourses → courses 배열의 과목 목록
-- takenCourses → status: "이수" (이미 생기부에 이수 기록 존재${input.studentGrade === 3 ? ", 또는 학생 직접 입력 수강예정 과목 — 고3은 동일 취급" : ""})
-- plannedCourses → status: "이수 예정" (학생이 직접 입력한 수강 예정 과목 안에 포함${input.studentGrade === 3 ? " — ⚠️ 고3은 이 배열이 비어 있고, 수강예정 과목은 takenCourses에 이미 합쳐져 있음" : ""})
-- missingCourses → status: "미이수" (이수도 안 했고 수강 예정에도 없음)
+- takenCourses → status: "이수" (이미 생기부에 이수 기록 존재${input.plannedAsCompleted ? ", 또는 학생이 직접 입력한 수강 예정 과목 — 이 학생은 시간표가 확정되어 이수 완료와 동일 취급" : ""})
+- plannedCourses → status: "이수 예정" (학생이 직접 입력한 수강 예정 과목에 포함된 과목${input.plannedAsCompleted ? " — 이 학생은 수강 예정 과목이 takenCourses에 이미 합쳐져 있어 이 배열은 비어 있습니다" : ""})
+- missingCourses → status: "미이수" (생기부 이수 기록에도, 학생이 입력한 수강 예정 과목에도 없는 과목)
 - matchRate → 출력의 matchRate (이수 + 이수 예정 합산 비율)
+
+⚠️ **plannedCourses에 들어 있는 과목은 학생이 실제로 수강할 과목입니다. "이수 예정"으로 서술하고, 교과 이수 노력에 포함해 평가하세요. "미이수"로 분류하는 과목은 missingCourses 배열에 있는 과목뿐입니다.**
 ${
-  input.studentGrade === 3
-    ? `\n⛔ **이 학생은 ${"고3"} 이므로 "수강 예정", "이수 예정", "잔여 학기에 이수하면" 같은 미래 시제·예정 표현을 절대 사용하지 마세요.** takenCourses 항목은 모두 "이미 이수 완료"로 다루고, "수강한", "이수한", "이미 학습한" 등 완료형으로 서술합니다. missingCourses만 "미이수"로 표현합니다.\n`
+  input.plannedAsCompleted
+    ? `\n✅ **이 학생은 생기부가 확정되어 takenCourses 항목을 모두 "이미 이수 완료"로 다룹니다.** "수강한", "이수한", "이미 학습한" 등 완료형으로 서술하고, "미이수"는 missingCourses 항목에만 사용합니다.\n`
     : ""
 }
 ${input.recommendedCourseMatch}
@@ -172,15 +181,18 @@ ${
     ? `- 이 학생은 **3학년 재학생**입니다. 3학년 선택과목은 학년 시작 시점에 시간표가 확정되어, 3학년 동안 새로 권장과목을 추가 선택하는 일은 일어나지 않습니다.
 - recommendation은 **3학년 시간표에 미이수 권장과목이 포함되어 있는지 여부**에 따라 다음 트랙 중 하나로 작성합니다.
 ${
-  input.plannedSubjects
-    ? `  - **트랙 A — 시간표에 해당 권장과목이 포함된 경우 (학생 수강 예정 과목 데이터에서 확인 가능)**:${
-        input.enrollmentLocked
-          ? " 이미 학기 후반이라 새 활동 추가 여지는 적습니다. 남은 수업 안에서 어떤 발표·보고서·탐구 마무리로 깊이를 만들면 좋을지를 짧고 구체적으로 제시하고, 면접에서 해당 세특을 어떻게 풀어 설명할지 함께 안내합니다."
-          : " 남은 학기 동안 그 과목 세특에서 어떤 탐구·발표·보고서 방향을 잡으면 미이수 인상을 보완할 수 있을지 구체적으로 제시합니다."
-      }
+  input.plannedAsCompleted
+    ? `  - 이 학생은 3학년 시간표가 확정되어, 학생이 입력한 수강 예정 과목이 위 매칭 데이터의 takenCourses에 "이수"로 이미 반영되어 있습니다. 해당 과목은 이수한 과목으로 서술합니다.
+  - 남은 미이수 권장과목(missingCourses)은 이미 이수한 다른 교과 세특·동아리·자율탐구·독서에서 그 핵심 주제(예: 미적분 → 수열·함수 모델링 탐구)를 우회로 다루는 전략과, 면접에서 미이수 사유를 설명하는 방향으로 정리합니다.`
+    : input.plannedSubjects
+      ? `  - **트랙 A — 시간표에 해당 권장과목이 포함된 경우 (학생 수강 예정 과목 데이터에서 확인 가능)**:${
+          input.enrollmentLocked
+            ? " 이미 학기 후반이라 새 활동 추가 여지는 적습니다. 남은 수업 안에서 어떤 발표·보고서·탐구 마무리로 깊이를 만들면 좋을지를 짧고 구체적으로 제시하고, 면접에서 해당 세특을 어떻게 풀어 설명할지 함께 안내합니다."
+            : " 남은 학기 동안 그 과목 세특에서 어떤 탐구·발표·보고서 방향을 잡으면 미이수 인상을 보완할 수 있을지 구체적으로 제시합니다."
+        }
   - **트랙 B — 시간표에 해당 권장과목이 포함되지 않은 경우 (다시 선택 불가)**: 이미 이수한 다른 교과 세특·동아리·자율탐구·독서 등에서 해당 과목의 핵심 주제(예: 미적분 → 수열·함수 모델링 탐구)를 우회로 다루는 전략을 제시합니다. 학종 "교과 이수 노력" 평가에서 어떻게 읽힐지, 면접에서 미이수 사유를 어떻게 풀어 설명하면 좋을지를 함께 작성합니다.
   - 위 트랙 판단은 "학생 수강 예정 과목" 데이터를 기준으로 합니다. 데이터에 들어 있는 과목은 트랙 A, 들어 있지 않은 미이수 권장과목은 트랙 B로 구분해 모두 반영합니다.`
-    : `  - 학생의 3학년 시간표 정보가 입력에 없는 상태이므로, recommendation은 단일 트랙으로 작성합니다.
+      : `  - 학생의 3학년 시간표 정보가 입력에 없는 상태이므로, recommendation은 단일 트랙으로 작성합니다.
   - 이미 이수한 다른 교과 세특·동아리·자율탐구·독서 등에서 미이수 권장과목의 핵심 주제(예: 미적분 → 수열·함수 모델링 탐구)를 우회로 다루는 전략을 제시합니다.
   - 학종 "교과 이수 노력" 평가에서 미이수가 어떻게 읽힐지, 면접에서 미이수 사유를 어떻게 풀어 설명하면 좋을지를 함께 작성합니다.${
     input.enrollmentLocked
@@ -361,8 +373,9 @@ ${medicalContext}
 ### 권장과목 매칭 데이터 (생기부 기반 — 코드 전처리 결과)
 ⚠️ **이 데이터의 requiredCourses 목록을 그대로 사용**하세요. AI가 과목을 임의로 추가/변경하지 마세요.
 - requiredCourses → courses 배열의 과목 목록
-- takenCourses → status: "이수"
-- missingCourses → status: "미이수"
+- takenCourses → status: "이수" (생기부 이수 기록 + 학생이 직접 입력한 수강 예정 과목. 이 학생은 시간표가 확정되어 수강 예정 과목도 이수 완료로 처리됩니다)
+- plannedCourses → status: "이수 예정" (수강 예정 과목이 위 takenCourses에 이미 합쳐져 있어 보통 비어 있습니다. 값이 있으면 "이수 예정"으로 서술하고 교과 이수 노력에 포함해 평가합니다)
+- missingCourses → status: "미이수" (생기부 이수 기록에도, 학생이 입력한 수강 예정 과목에도 없는 과목. "미이수"는 이 배열의 과목에만 사용합니다)
 - matchRate → 출력의 matchRate 값
 ${input.recommendedCourseMatch}
 

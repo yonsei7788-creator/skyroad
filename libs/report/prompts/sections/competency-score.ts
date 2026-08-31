@@ -54,6 +54,12 @@ export interface CompetencyScorePromptInput {
   isRecordFinalized?: boolean;
   /** 학년별 이수 완료 과목 텍스트 (추가 이수 완료 라인 포함) */
   completedSubjectsByYear?: string;
+  /**
+   * 학생이 직접 입력한 수강 예정 과목 텍스트 (아직 이수 완료로 합쳐지지 않은 학생).
+   * 이 과목은 생기부 이수 기록에 없으므로 교과이수노력 채점에서 미이수로
+   * 오판되기 쉬워, 이수 예정임을 함께 전달한다.
+   */
+  plannedSubjects?: string;
 }
 
 /**
@@ -310,9 +316,11 @@ ${input.studentProfile}
 ${input.majorEvaluationContext ? `### 학과 맞춤 평가 기준 (입학사정관 관점)\n${input.majorEvaluationContext}\n\n⚠️ 위 계열별 가중치를 참고하여 진로역량의 하위항목 점수를 배분하세요. 핵심 교과 성취도가 진로역량 "교과성취도" 점수에 직접 반영되어야 합니다.` : ""}
 
 ${input.completedSubjectsByYear ? `### 이수 완료 과목 정보 (교과이수노력 채점 시 필수 참조)\n${input.completedSubjectsByYear}\n→ 교과이수노력 코멘트에서 "OO 미이수" 사유를 쓰기 전 반드시 위 목록을 확인합니다. 위 목록에 포함된 과목(특히 "추가 이수 완료 (학생 직접 입력)" 라인)은 이미 이수 완료 처리되었으므로 미이수 감점 사유로 사용하면 안 됩니다.` : ""}
+
+${input.plannedSubjects ? `### 수강 예정 과목 정보 (교과이수노력 채점 시 필수 참조)\n${input.plannedSubjects}\n→ 위 과목은 학생이 실제로 수강할 과목이므로 교과이수노력에서 "이수 예정"으로 인정하고, 미이수 감점 사유는 이 목록에 없는 과목으로 한정합니다.` : ""}
 ${
   input.isGraduate === true || input.studentGrade === 3
-    ? `\n⛔ **이 학생은 ${input.isGraduate ? "졸업생" : "고3"} 입니다. preprocessedAcademicData.plannedSubjectsRaw 의 과목은 "수강 예정"이 아닌 "이미 이수 완료"로 처리합니다.** 교과이수노력 코멘트에서 plannedSubjectsRaw 과목을 "미이수"로 잡지 마세요. 권장과목 미이수 사유는 takenCourses(record + plannedSubjectsRaw 합산)에 모두 없는 과목에 한정합니다.\n`
+    ? `\n✅ **이 학생은 ${input.isGraduate ? "졸업생" : "고3"} 입니다. preprocessedAcademicData.plannedSubjectsRaw 의 과목은 학생이 실제로 수강하는 과목이므로 교과이수노력에서 이수한 과목으로 인정합니다.** 권장과목 미이수 사유는 생기부 이수 기록과 plannedSubjectsRaw 어디에도 없는 과목에 한정해 작성합니다.\n`
     : ""
 }
 
@@ -823,7 +831,9 @@ ${input.studentProfile}
 ${input.majorEvaluationContext ? `### 학과 맞춤 평가 기준\n${input.majorEvaluationContext}` : ""}
 
 ${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n→ "OO 미이수" 사유를 쓰기 전 반드시 위 목록을 확인합니다. "추가 이수 완료 (학생 직접 입력)" 라인의 과목은 이미 이수 완료 처리되어 미이수 감점 사유로 사용 금지.` : ""}
-${input.isGraduate === true || input.studentGrade === 3 ? `\n⛔ 이 학생은 ${input.isGraduate ? "졸업생" : "고3"}이므로 plannedSubjectsRaw 과목은 모두 이미 이수 완료된 것으로 처리합니다. "수강 예정", "미이수" 표현으로 잡지 마세요.\n` : ""}
+
+${input.plannedSubjects ? `### 수강 예정 과목 정보 (교과이수노력 채점 시 필수 참조)\n${input.plannedSubjects}\n→ 위 과목은 학생이 실제로 수강할 과목이므로 교과이수노력에서 "이수 예정"으로 인정하고, 미이수 감점 사유는 이 목록에 없는 과목으로 한정합니다.` : ""}
+${input.isGraduate === true || input.studentGrade === 3 ? `\n✅ 이 학생은 ${input.isGraduate ? "졸업생" : "고3"}이므로 plannedSubjectsRaw 과목은 실제로 수강하는 과목으로 이수 인정합니다. 미이수 사유는 생기부 이수 기록과 plannedSubjectsRaw 어디에도 없는 과목에 한정합니다.\n` : ""}
 
 ${PLAN_SPECIFIC[plan]}`;
 };
