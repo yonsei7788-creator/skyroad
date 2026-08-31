@@ -2514,8 +2514,12 @@ const buildCompetencyGradeComment = (
 
   if (grade === "S") {
     // 96~100: 만점 근접 — 강점 인정 위주, 미세 보강 여지만 언급.
+    // 생기부가 확정된 학생에게는 "보강 여지"가 실행 불가능한 서술이므로,
+    // 확정된 평가 결과를 그대로 읽어주는 문장으로 바꾼다.
     if (totalScore >= 96) {
-      return `${label} 전 항목에서 균형 잡힌 최상위권 수행이 확인됩니다. ${weakMeta.strengthLabel}에서만 미세한 보강 여지가 관찰될 뿐, 학종 평가에서 두드러진 강점으로 작용할 수 있는 수준입니다.`;
+      return isRecordClosed
+        ? `${label} 전 항목에서 균형 잡힌 최상위권 수행이 확인됩니다. ${weakMeta.strengthLabel}에서만 미세한 차이가 관찰될 뿐, 확정된 기록 기준으로 학종 평가에서 두드러진 강점으로 작용할 수 있는 수준입니다.`
+        : `${label} 전 항목에서 균형 잡힌 최상위권 수행이 확인됩니다. ${weakMeta.strengthLabel}에서만 미세한 보강 여지가 관찰될 뿐, 학종 평가에서 두드러진 강점으로 작용할 수 있는 수준입니다.`;
     }
     // 90~95: 우수성 인정 + 약점 원인 + 개선 방향 (3단 구조).
     return `${eunNeun(
@@ -2651,6 +2655,90 @@ const buildCourseAlignmentFallbackText = (
     return `이미 이수한 ${completedLabel} 세특에서 전공 관련 탐구를 어떻게 풀어냈는지 정리해 면접과 서류에서 설명할 수 있도록 준비하세요.`;
   }
   return `이미 이수한 ${completedLabel || "교과"} 세특·동아리·독서 활동에서 ${missingLabel}의 핵심 주제를 다룬 경험을 정리해, 면접에서 교과 이수 노력을 설명할 근거로 활용하세요.`;
+};
+
+// ─── 생기부 확정 학생의 실행 불가능한 조언 제거 ───
+
+/**
+ * 생기부가 확정된 학생에게 성립하지 않는 조언 패턴.
+ * 성적을 바꾸거나 세특·활동을 새로 만드는 것을 전제한 서술만 골라낸다.
+ * ("면접에서 보완 설명", "수능 최저 충족" 등 지금 실행 가능한 조언은 제외)
+ */
+const UNACTIONABLE_ADVICE_PATTERNS: RegExp[] = [
+  /성적[^.]{0,15}(향상|개선|올리|끌어올|유지하기|관리하기)/,
+  /(취약|약점|부족)[^.]{0,12}보완[^.]{0,15}(학습|계획|공부)/,
+  /학습\s*계획을?\s*(수립|세우)/,
+  /내신[^.]{0,10}(향상|개선|올리|끌어올|관리)/,
+  /세특[^.]{0,12}(보완|추가|심화|작성 방향)/,
+  /(새로운|추가로?)\s*(탐구|활동|보고서|프로젝트)/,
+  /(동아리|활동)[^.]{0,10}(추가|새로 시작)/,
+  /이수[^.]{0,10}(추가|권장|하세요)/,
+];
+
+const isUnactionableForFinalizedRecord = (text: string): boolean =>
+  UNACTIONABLE_ADVICE_PATTERNS.some((pattern) => pattern.test(text));
+
+/** 생기부 확정 학생에게 completionStrategy가 통째로 지워졌을 때 쓰는 확정 문장 */
+const FINALIZED_COMPLETION_STRATEGY =
+  "생기부가 최종 확정되었으므로, 남은 기간은 면접 준비와 자기소개서·서류 정리, 수능 마무리, 지원 전략 수립에 집중하는 것이 효과적입니다. 확정된 기록 중 전공과 연결되는 활동을 골라 면접에서 설명할 수 있도록 정리해주세요.";
+
+/**
+ * 생기부가 확정된 학생의 actionRoadmap에서 실행 불가능한 조언을 제거한다.
+ *
+ * 프롬프트에서 이미 확정 학생용으로 분기하지만, 모델이 일반 규칙을 따라
+ * "성적 보완 학습 계획"이나 "세특 서술 가이드"를 출력하는 경우가 있어
+ * 결정적 안전장치를 둔다.
+ * - evaluationWritingGuide: 앞으로 작성될 세특이 없으므로 제거
+ * - prewriteProposals: 성적·세특·새 활동 전제 항목 제거 (비면 필드 자체 제거)
+ * - completionStrategy: 해당 문장 제거, 전부 지워지면 확정 학생용 문장으로 대체
+ */
+export const stripUnactionableRoadmapAdvice = (
+  s: any,
+  reportLabel: string
+): void => {
+  if (s.evaluationWritingGuide) {
+    delete s.evaluationWritingGuide;
+    console.log(
+      `${reportLabel} actionRoadmap: 생기부 확정 학생 — evaluationWritingGuide 제거`
+    );
+  }
+
+  if (Array.isArray(s.prewriteProposals)) {
+    const kept = s.prewriteProposals.filter(
+      (proposal: unknown) =>
+        typeof proposal === "string" &&
+        !isUnactionableForFinalizedRecord(proposal)
+    );
+    if (kept.length !== s.prewriteProposals.length) {
+      console.log(
+        `${reportLabel} actionRoadmap: 실행 불가능한 prewriteProposals ${
+          s.prewriteProposals.length - kept.length
+        }건 제거`
+      );
+    }
+    if (kept.length > 0) {
+      s.prewriteProposals = kept;
+    } else {
+      delete s.prewriteProposals;
+    }
+  }
+
+  if (typeof s.completionStrategy === "string") {
+    const sentences = s.completionStrategy.match(/[^.!?]+[.!?]*\s*/g) ?? [
+      s.completionStrategy,
+    ];
+    const kept = sentences.filter(
+      (sentence: string) => !isUnactionableForFinalizedRecord(sentence)
+    );
+    if (kept.length !== sentences.length) {
+      const rewritten = kept.join("").trim();
+      s.completionStrategy =
+        rewritten.length > 0 ? rewritten : FINALIZED_COMPLETION_STRATEGY;
+      console.log(
+        `${reportLabel} actionRoadmap: completionStrategy에서 실행 불가능한 서술 제거`
+      );
+    }
+  }
 };
 
 // ─── AI 출력 필드명 정규화 + 전처리 데이터 보강 ───
@@ -4741,6 +4829,12 @@ const normalizeSection = (
         }
       }
     }
+  }
+
+  if (s.sectionId === "actionRoadmap" && isRecordClosed) {
+    // 생기부 확정 학생에게 성적 향상·세특 보완처럼 실행 불가능한 조언이
+    // 남아 있으면 제거한다. (프롬프트 분기의 결정적 안전장치)
+    stripUnactionableRoadmapAdvice(s, "[postprocess]");
   }
 
   if (s.sectionId === "courseAlignment") {
