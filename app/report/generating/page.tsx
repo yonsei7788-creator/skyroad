@@ -25,7 +25,6 @@ const TASK_LABELS: Record<string, string> = {
   interviewPrep: "면접 준비",
   admissionPrediction: "희망 학교·학과 판단",
   admissionStrategy: "입시 전략",
-  directionGuide: "방향 가이드",
   storyAnalysis: "스토리 분석",
   actionRoadmap: "실행 로드맵",
   majorExploration: "학과 탐색",

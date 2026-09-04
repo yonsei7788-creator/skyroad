@@ -51,7 +51,6 @@ const TASK_DEPS: Record<string, string[]> = {
   behaviorAnalysis: [],
   weaknessAnalysis: [],
   majorExploration: [],
-  directionGuide: [],
   topicRecommendation: ["majorExploration"],
   interviewPrep: [],
   admissionPrediction: [
@@ -65,7 +64,7 @@ const TASK_DEPS: Record<string, string[]> = {
     "majorExploration",
     "admissionPrediction",
   ],
-  actionRoadmap: ["weaknessAnalysis", "admissionStrategy", "directionGuide"],
+  actionRoadmap: ["weaknessAnalysis", "admissionStrategy"],
   consultantReview: [
     "competencyScore",
     "academicAnalysis",

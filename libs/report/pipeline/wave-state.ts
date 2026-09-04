@@ -57,7 +57,6 @@ export interface WaveState {
 
 export const buildTaskQueue = (
   plan: ReportPlan,
-  isGrade1Only: boolean,
   isGraduate: boolean = false
 ): string[] => {
   // Phase 2 분할:
@@ -93,9 +92,9 @@ export const buildTaskQueue = (
   if (has("admissionPrediction")) tasks.push("admissionPrediction");
 
   // Group 5
-  if (has("admissionStrategy") || isGrade1Only) {
-    tasks.push(isGrade1Only ? "directionGuide" : "admissionStrategy");
-  }
+  // 고1 생기부만 있어도 추천 대학을 제공한다 — 학기 데이터가 하나라도 있으면
+  // admissionStrategy를 생성한다. (구 directionGuide 대체 분기는 폐기)
+  if (has("admissionStrategy")) tasks.push("admissionStrategy");
   // storyAnalysis 제외 (피드백 반영: 모든 항목에서 스토리 분석 제외)
   // 졸업생/N수생은 생기부 수정 불가 → 실행 로드맵 미노출
   if (has("actionRoadmap") && !isGraduate) tasks.push("actionRoadmap");

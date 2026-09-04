@@ -12,7 +12,6 @@ import {
   CompetitiveProfilingRenderer,
   ConsultantReviewRenderer,
   CourseAlignmentRenderer,
-  DirectionGuideRenderer,
   InterviewPrepRenderer,
   MajorExplorationRenderer,
   StoryAnalysisRenderer,
@@ -136,10 +135,6 @@ export const SectionRenderer = ({
           data={section}
           sectionNumber={sectionNumber}
         />
-      );
-    case "directionGuide":
-      return (
-        <DirectionGuideRenderer data={section} sectionNumber={sectionNumber} />
       );
     case "storyAnalysis":
       return (

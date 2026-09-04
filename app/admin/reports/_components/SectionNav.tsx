@@ -28,7 +28,6 @@ const PART_CONFIG = [
       "topicRecommendation",
       "interviewPrep",
       "admissionStrategy",
-      "directionGuide",
       "storyAnalysis",
       "actionRoadmap",
     ],

@@ -5,7 +5,7 @@ describe("majorExploration 순서 수정 검증 (심리학 케이스)", () => {
   it.each(["lite", "standard", "premium"] as const)(
     "%s 플랜: majorExploration이 topicRecommendation/admissionStrategy보다 먼저 큐에 들어간다",
     (plan) => {
-      const queue = buildTaskQueue(plan, false, false);
+      const queue = buildTaskQueue(plan, false);
       const idxMajorExpl = queue.indexOf("majorExploration");
       const idxTopicRec = queue.indexOf("topicRecommendation");
       const idxAdmStrat = queue.indexOf("admissionStrategy");

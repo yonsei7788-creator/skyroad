@@ -57,7 +57,6 @@ import { buildInterviewPrepPrompt } from "../prompts/sections/interview-prep.ts"
 import {
   buildAdmissionStrategyPrompt,
   buildGyogwaAdmissionStrategyPrompt,
-  buildDirectionGuidePrompt,
 } from "../prompts/sections/admission-strategy.ts";
 import { buildStoryAnalysisPrompt } from "../prompts/sections/story-analysis.ts";
 import { buildActionRoadmapPrompt } from "../prompts/sections/action-roadmap.ts";
@@ -122,8 +121,7 @@ export const executePreprocess = async (
   // universityCandidatesText는 preprocessor에서 환산등급 기반으로 자동 생성됨
   // 외부 주입값은 무시 (희망대학만 반복 추천하는 문제 방지)
 
-  const isGrade1Only = studentInfo.grade === 1;
-  const taskQueue = buildTaskQueue(plan, isGrade1Only, studentInfo.isGraduate);
+  const taskQueue = buildTaskQueue(plan, studentInfo.isGraduate);
 
   const state: WaveState = {
     preprocessedTexts: texts,
@@ -1592,22 +1590,6 @@ export const executeTask = async (
       break;
     }
 
-    case "directionGuide":
-      section = await callGemini<ReportSection>(
-        buildDirectionGuidePrompt({
-          competencyExtraction: ser.compExtrText!,
-          academicAnalysis: ser.acadAnalText!,
-          recommendedCourseMatch: texts.recommendedCourseMatchText,
-          studentProfile: texts.studentProfileText,
-          studentGrade: studentInfo.grade,
-          currentDate: new Date().toISOString().slice(0, 10),
-          completedSubjectsByYear: texts.completedSubjectsByYearText,
-          // 이수 예정 과목을 미이수로 서술하지 않도록 함께 전달.
-          plannedSubjects: texts.plannedSubjectsText,
-        })
-      );
-      break;
-
     case "storyAnalysis":
       section = await callGemini<ReportSection>(
         buildStoryAnalysisPrompt(
@@ -1624,9 +1606,7 @@ export const executeTask = async (
 
     case "actionRoadmap": {
       const existingStrategy = sections.find(
-        (s) =>
-          s.sectionId === "admissionStrategy" ||
-          s.sectionId === "directionGuide"
+        (s) => s.sectionId === "admissionStrategy"
       );
       // 수강 예정 과목이 입력된 경우, 다른 과목 정보(이수 완료 과목)는 제외하고
       // 수강 예정 과목만 후보 풀로 사용하도록 한다. 미입력 시에는 기존처럼 동작.

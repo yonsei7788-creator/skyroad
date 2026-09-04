@@ -905,16 +905,6 @@ export const AdmissionStrategySectionSchema = z.object({
   nextSemesterStrategy: z.string().optional(),
 });
 
-// ─── 고1 전용: 방향 설정 가이드 ───
-
-export const DirectionGuideSectionSchema = z.object({
-  sectionId: z.literal("directionGuide"),
-  title: z.string().min(1),
-  recommendedTracks: z.array(z.string().min(1)).min(1),
-  subjectSelectionGuide: z.array(z.string().min(1)).min(1),
-  preparationAdvice: z.string().min(1),
-});
-
 // ─── 섹션 17: 생기부 스토리 구조 분석 ───
 
 const YearProgressionSchema = z.object({
@@ -1144,7 +1134,6 @@ export const ReportSectionSchema = z.discriminatedUnion("sectionId", [
   TopicRecommendationSectionSchema,
   InterviewPrepSectionSchema,
   AdmissionStrategySectionSchema,
-  DirectionGuideSectionSchema,
   StoryAnalysisSectionSchema,
   ActionRoadmapSectionSchema,
   CompetitiveProfilingSectionSchema,
@@ -1174,16 +1163,6 @@ export const validateByPlan = (content: ReportContent): string[] => {
   const actualSectionIds: string[] = content.sections.map((s) => s.sectionId);
 
   for (const expected of expectedSections) {
-    // admissionStrategy는 조건부이므로 directionGuide로 대체 가능
-    if (expected === "admissionStrategy") {
-      if (
-        !actualSectionIds.includes("admissionStrategy") &&
-        !actualSectionIds.includes("directionGuide")
-      ) {
-        errors.push("필수 섹션 누락: admissionStrategy 또는 directionGuide");
-      }
-      continue;
-    }
     if (!actualSectionIds.includes(expected)) {
       errors.push(`필수 섹션 누락: ${expected}`);
     }

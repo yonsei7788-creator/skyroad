@@ -59,6 +59,7 @@ const TASK_DEPS: Record<string, string[]> = {
   // studentProfile은 추천 전형(recommendedAdmissionType)을 admissionPrediction에서 주입받고,
   // Premium은 strategy bullet을 admissionStrategy 결과 기반으로 생성하므로 둘 다 의존.
   // Lite/Standard 큐에는 admissionStrategy가 없고 Lite 큐에는 admissionPrediction도 없어 buildWaves에서 자동 무시됨.
+  // (학년과 무관하게 admissionStrategy를 생성하므로 고1 대체 분기는 없다)
   studentProfile: [
     "phase2Classify",
     "admissionPrediction",
@@ -73,7 +74,6 @@ const TASK_DEPS: Record<string, string[]> = {
   behaviorAnalysis: [],
   weaknessAnalysis: [],
   majorExploration: [],
-  directionGuide: [],
   // topicRecommendation/interviewPrep은 subjectAnalysis 의존을 제거하여 Wave 2로 이동.
   // topicRecommendation은 majorExploration 결과를 aiRecommendedMajors로 참조하므로 의존 유지.
   topicRecommendation: ["majorExploration"],
@@ -89,7 +89,7 @@ const TASK_DEPS: Record<string, string[]> = {
     "majorExploration",
     "admissionPrediction",
   ],
-  actionRoadmap: ["weaknessAnalysis", "admissionStrategy", "directionGuide"],
+  actionRoadmap: ["weaknessAnalysis", "admissionStrategy"],
   consultantReview: [
     "competencyScore",
     "academicAnalysis",

@@ -47,7 +47,6 @@
 3. **300점 만점 정량 스코어** -- 학업100 + 진로100 + 공동체100, 발전가능성은 별도 등급
 4. **Premium만 문장 단위 세특 분석 제공**
 5. **교과 세특과 창체 분석 분리** -- subjectAnalysis(교과 전용) + activityAnalysis(창체 전용)
-6. **고1 전용 directionGuide** -- admissionStrategy 대체, 방향 설정 가이드 제공
 
 ---
 
@@ -134,7 +133,7 @@
 ### 3.2 플랜별 섹션 ID 목록
 
 **Lite (14섹션)**:
-`studentProfile`, `competencyScore`, `admissionPrediction`, `diagnostic`, `competencyEvaluation`, `academicAnalysis`, `courseAlignment`, `attendanceAnalysis`, `activityAnalysis`, `subjectAnalysis`, `weaknessAnalysis`, `topicRecommendation`, `admissionStrategy`(또는 `directionGuide`), `wordCloud`
+`studentProfile`, `competencyScore`, `admissionPrediction`, `diagnostic`, `competencyEvaluation`, `academicAnalysis`, `courseAlignment`, `attendanceAnalysis`, `activityAnalysis`, `subjectAnalysis`, `weaknessAnalysis`, `topicRecommendation`, `admissionStrategy`, `wordCloud`
 
 **Standard (19-21섹션)**:
 Lite 전체 + `behaviorAnalysis`, `overallAssessment`, `interviewPrep`, `storyAnalysis`, `actionRoadmap`, `bookRecommendation`, `majorExploration`
@@ -840,7 +839,7 @@ Standard의 모든 항목 + 추가:
 **파트**: Part 3 전략
 **목적**: 학생의 성적과 생기부를 기반으로 최적의 입시 전략과 대학 추천 제공.
 
-**제공 조건**: 고2 이상 생기부가 포함된 경우에만 제공. 고1 생기부만 있는 경우 `directionGuide`로 대체.
+**제공 조건**: 고1 이상 학기가 하나라도 포함된 모든 생기부에 제공. 학년에 따른 대체 섹션은 없다.
 
 ##### Lite: 기본 입시 전략
 
@@ -901,22 +900,6 @@ Standard의 모든 항목 + 추가:
 - 조치 유형(1~3호 vs 4~8호)에 따른 기록 유보/유지 여부도 안내
 
 **입력 데이터**: 교과학습발달상황, 학생 프로필 (목표 대학/학과, 학교 유형), 대학 등급 매핑 테이블
-
----
-
-#### 고1 전용: 방향 설정 가이드 (directionGuide)
-
-**조건**: 고1 생기부만 있는 경우 `admissionStrategy` 대체.
-
-**출력 구성**:
-
-| 항목                                     | 내용                                                         |
-| ---------------------------------------- | ------------------------------------------------------------ |
-| 추천 계열/트랙 (recommendedTracks)       | 생기부에서 드러나는 관심 분야 기반 추천                      |
-| 과목 선택 가이드 (subjectSelectionGuide) | 2학년 선택과목 추천 (2028학년도 계열별 권장과목 데이터 활용) |
-| 준비 조언 (preparationAdvice)            | 2학년 진입 전 준비할 사항                                    |
-
-**참조 데이터**: `libs/report/constants/recommended-courses.ts`의 `MAJOR_COURSE_RECOMMENDATIONS` + `MEDICAL_COURSE_REQUIREMENTS`
 
 ---
 
@@ -1251,13 +1234,13 @@ AI 추천 전공:
 
 ### 5.2 학생 프로필 활용
 
-| 프로필 항목                                  | 활용                                                                                       |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| 학년 (grade)                                 | 대학 추천 제공 조건 판단 (고1: directionGuide / 고2+: admissionStrategy), 로드맵 시점 결정 |
-| 학교 유형 (schoolType)                       | 고교 유형별 등급 환산, admissionStrategy 학교 유형 분석                                    |
-| 계열 (track)                                 | 성적 반영 교과 결정, courseAlignment 권장과목 매칭                                         |
-| 목표 대학/학과 (targetUniversity/Department) | admissionPrediction, admissionStrategy, courseAlignment, majorExploration                  |
-| 모의고사 데이터 여부 (hasMockExamData)       | 정시 전략 포함/제외 판단                                                                   |
+| 프로필 항목                                  | 활용                                                                      |
+| -------------------------------------------- | ------------------------------------------------------------------------- |
+| 학년 (grade)                                 | 로드맵 시점 결정 (대학 추천은 학년과 무관하게 항상 제공)                  |
+| 학교 유형 (schoolType)                       | 고교 유형별 등급 환산, admissionStrategy 학교 유형 분석                   |
+| 계열 (track)                                 | 성적 반영 교과 결정, courseAlignment 권장과목 매칭                        |
+| 목표 대학/학과 (targetUniversity/Department) | admissionPrediction, admissionStrategy, courseAlignment, majorExploration |
+| 모의고사 데이터 여부 (hasMockExamData)       | 정시 전략 포함/제외 판단                                                  |
 
 ---
 
@@ -1343,8 +1326,7 @@ AI 추천 전공:
 
 ### 7.1 대학 추천 (입시 전략 섹션)
 
-- **고2 이상 생기부 포함**: `admissionStrategy` 제공 (대학 추천 + 입시 전략 전체)
-- **고1 생기부만**: `admissionStrategy` 대신 `directionGuide` 제공 (어떤 계열/학과 방향이 맞는지, 2학년 때 어떤 과목을 선택하면 좋을지). **2028학년도 계열별 권장과목 데이터를 활용**하여 목표 계열에 따른 2학년 권장 선택과목을 구체적으로 안내하고, 메디컬 지망 시 대학별 필수 과목을 사전 안내 (참조: `libs/report/constants/recommended-courses.ts`)
+- **고1 이상 학기가 하나라도 포함**: `admissionStrategy` 제공 (대학 추천 + 입시 전략 전체). 학년에 따른 대체 섹션은 없으며, 고1 생기부만 있어도 추천 대학을 제공한다.
 
 ### 7.2 모의고사 데이터
 
@@ -1386,7 +1368,7 @@ Part 2: 분석
 Part 3: 전략
  11. weaknessAnalysis      (부족한 부분 + 보완 전략)
  12. topicRecommendation   (세특 주제 추천)
- 13. admissionStrategy     (입시 전략 + 대학 추천) *또는 directionGuide (고1)
+ 13. admissionStrategy     (입시 전략 + 대학 추천)
 
 부록
  14. wordCloud             (워드 클라우드)
@@ -1415,7 +1397,7 @@ Part 3: 전략
  13. weaknessAnalysis
  14. topicRecommendation
  15. interviewPrep          ← 추가
- 16. admissionStrategy      *또는 directionGuide (고1)
+ 16. admissionStrategy
  17. storyAnalysis          ← 추가
  18. actionRoadmap          ← 추가
 
@@ -1435,21 +1417,20 @@ Standard와 동일 순서 (각 섹션의 상세도 최대)
 
 ## 9. 용어 정의
 
-| 용어           | 정의                                                                              |
-| -------------- | --------------------------------------------------------------------------------- |
-| 세특           | 세부능력 및 특기사항. 과목별 교사의 서술형 평가                                   |
-| 창체           | 창의적 체험활동. 자율/자치, 동아리, 진로 활동 (2022 개정 기준)                    |
-| 학종           | 학생부종합전형. 생기부 기반 대입 전형                                             |
-| 교과           | 학생부교과전형. 내신 등급 기반 대입 전형                                          |
-| 정시           | 정시모집. 수능 성적 기반 대입 전형                                                |
-| 역량 태깅      | 세특/창체 서술에서 드러나는 평가 역량을 식별하여 태그 부여 (`CompetencyTag` 타입) |
-| 역량 스코어    | 학업(100) + 진로(100) + 공동체(100) = 300점 만점 정량 점수                        |
-| 꼬리물기 탐구  | A에서 출발 -> B에 대한 호기심 -> C로 심화하는 연쇄적 탐구 구조                    |
-| 나열식 서술    | 여러 활동을 깊이 없이 단순 나열하는 세특 서술 패턴                                |
-| 환산 등급      | 고교 유형(일반고/특목고/자사고/특성화고)에 따라 보정된 등급                       |
-| 소인수 과목    | 수강자 5명 이하(2022 개정) 또는 13명 이하(2015 개정) 과목. 석차등급 미부여        |
-| 레이더 차트    | 4대 역량(학업/진로/공동체/발전가능성)을 0~100 스케일로 시각화한 방사형 차트       |
-| 유형명         | 학생의 핵심 특성을 2~4단어로 요약한 분류명 (예: "탐구형 성장러")                  |
-| 캐치프레이즈   | 학생의 생기부 스토리를 한 문장으로 요약한 표현                                    |
-| directionGuide | 고1 전용 섹션. admissionStrategy 대체, 진로 방향 설정 가이드                      |
-| 활동 밀도      | 세특 분량(바이트) 대비 서술된 활동 수. 밀도가 높을수록 나열식 위험                |
+| 용어          | 정의                                                                              |
+| ------------- | --------------------------------------------------------------------------------- |
+| 세특          | 세부능력 및 특기사항. 과목별 교사의 서술형 평가                                   |
+| 창체          | 창의적 체험활동. 자율/자치, 동아리, 진로 활동 (2022 개정 기준)                    |
+| 학종          | 학생부종합전형. 생기부 기반 대입 전형                                             |
+| 교과          | 학생부교과전형. 내신 등급 기반 대입 전형                                          |
+| 정시          | 정시모집. 수능 성적 기반 대입 전형                                                |
+| 역량 태깅     | 세특/창체 서술에서 드러나는 평가 역량을 식별하여 태그 부여 (`CompetencyTag` 타입) |
+| 역량 스코어   | 학업(100) + 진로(100) + 공동체(100) = 300점 만점 정량 점수                        |
+| 꼬리물기 탐구 | A에서 출발 -> B에 대한 호기심 -> C로 심화하는 연쇄적 탐구 구조                    |
+| 나열식 서술   | 여러 활동을 깊이 없이 단순 나열하는 세특 서술 패턴                                |
+| 환산 등급     | 고교 유형(일반고/특목고/자사고/특성화고)에 따라 보정된 등급                       |
+| 소인수 과목   | 수강자 5명 이하(2022 개정) 또는 13명 이하(2015 개정) 과목. 석차등급 미부여        |
+| 레이더 차트   | 4대 역량(학업/진로/공동체/발전가능성)을 0~100 스케일로 시각화한 방사형 차트       |
+| 유형명        | 학생의 핵심 특성을 2~4단어로 요약한 분류명 (예: "탐구형 성장러")                  |
+| 캐치프레이즈  | 학생의 생기부 스토리를 한 문장으로 요약한 표현                                    |
+| 활동 밀도     | 세특 분량(바이트) 대비 서술된 활동 수. 밀도가 높을수록 나열식 위험                |

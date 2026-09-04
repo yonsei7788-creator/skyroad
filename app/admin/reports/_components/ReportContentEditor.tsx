@@ -256,7 +256,6 @@ const FIELD_LABELS: Record<string, string> = {
   interviewPrep: "면접 대비",
   storyAnalysis: "스토리 분석",
   actionRoadmap: "실행 로드맵",
-  directionGuide: "방향 가이드",
 
   // 약점
   weakPoints: "약점 항목",

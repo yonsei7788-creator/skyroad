@@ -14,8 +14,6 @@
 // Premium (16): + weaknessAnalysis, admissionStrategy,
 //   actionRoadmap (storyAnalysis 제외됨)
 //
-// + 조건부 directionGuide (고1 전용, admissionStrategy 대체)
-//
 // v4 변경: 벤치마크 비교, 원문 인용, 3단계 평가, 캐릭터 라벨 등 추가
 // ============================================================
 
@@ -1092,14 +1090,6 @@ export interface AdmissionStrategySection extends BaseSection {
   nextSemesterStrategy?: string;
 }
 
-/** 고1 전용: 방향 설정 가이드 (admissionStrategy 대체) */
-export interface DirectionGuideSection extends BaseSection {
-  sectionId: "directionGuide";
-  recommendedTracks: string[];
-  subjectSelectionGuide: string[];
-  preparationAdvice: string;
-}
-
 // ─── 섹션 17: 생기부 스토리 구조 분석 (storyAnalysis) ───
 
 interface YearProgression {
@@ -1323,7 +1313,6 @@ export type ReportSection =
   | TopicRecommendationSection
   | InterviewPrepSection
   | AdmissionStrategySection
-  | DirectionGuideSection
   | StoryAnalysisSection
   | ActionRoadmapSection
   // 비교과 경쟁력 정밀 분석

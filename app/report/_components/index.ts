@@ -34,7 +34,6 @@ export { WeaknessAnalysisRenderer } from "./WeaknessAnalysisRenderer";
 export { TopicRecommendationRenderer } from "./TopicRecommendationRenderer";
 export { InterviewPrepRenderer } from "./InterviewPrepRenderer";
 export { AdmissionStrategyRenderer } from "./AdmissionStrategyRenderer";
-export { DirectionGuideRenderer } from "./DirectionGuideRenderer";
 export { StoryAnalysisRenderer } from "./StoryAnalysisRenderer";
 export { ActionRoadmapRenderer } from "./ActionRoadmapRenderer";
 export { CompetitiveProfilingRenderer } from "./CompetitiveProfilingRenderer";
