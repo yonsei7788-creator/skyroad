@@ -120,6 +120,49 @@ const deriveGradeLevel = (
   return "high1";
 };
 
+/**
+ * 입시 정보(profiles.grade)를 생기부 학년으로 덮어써야 하는지 판단한다.
+ *
+ * 프로필 학년은 가입 시점 값이라 학년이 올라가도 갱신되지 않는 경우가 많은데,
+ * 리포트 파이프라인은 이 값으로 등급제(5등급제/9등급제)와 로드맵 시점을
+ * 판단한다. 실제 생기부에 기록된 학년을 사실로 보고 프로필을 맞춘다.
+ *
+ * 졸업생(graduate)은 생기부가 항상 3학년까지 존재해 매번 high3으로 덮이므로
+ * 동기화 대상에서 제외한다.
+ */
+export const shouldSyncProfileGrade = (
+  profileGrade: unknown,
+  recordGrade: "high1" | "high2" | "high3"
+): boolean => {
+  if (profileGrade === "graduate") return false;
+  return profileGrade !== recordGrade;
+};
+
+/** 입시 정보(profiles.grade)를 생기부에서 도출한 학년으로 동기화한다. */
+const syncProfileGrade = async (
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  profileGrade: unknown,
+  recordGrade: "high1" | "high2" | "high3"
+): Promise<void> => {
+  if (!shouldSyncProfileGrade(profileGrade, recordGrade)) return;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ grade: recordGrade })
+    .eq("id", userId);
+
+  if (error) {
+    // 생기부 저장 자체는 성공했으므로 요청을 실패시키지 않는다.
+    console.error("profiles.grade 동기화 실패:", error);
+    return;
+  }
+
+  console.log(
+    `[record:${userId}] 입시 정보 학년 동기화: ${String(profileGrade ?? "미설정")} → ${recordGrade}`
+  );
+};
+
 // camelCase row → snake_case keys for RPC JSONB parameter
 const toSnake = (
   row: Record<string, unknown>,
@@ -329,7 +372,7 @@ export async function POST(request: NextRequest) {
 
   const { data: profileRow } = await supabase
     .from("profiles")
-    .select("admission_year")
+    .select("admission_year, grade")
     .eq("id", user.id)
     .maybeSingle();
   const admissionYear =
@@ -405,6 +448,8 @@ export async function POST(request: NextRequest) {
         : "생기부 저장에 실패했습니다. 다시 시도해주세요.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
+
+  await syncProfileGrade(supabase, user.id, profileRow?.grade, gradeLevel);
 
   return NextResponse.json({ id: data });
 }
