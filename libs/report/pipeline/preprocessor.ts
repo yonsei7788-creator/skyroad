@@ -388,6 +388,21 @@ export interface PreprocessedTexts {
    * 성적 평가"로만 안내한다.
    */
   completedSubjectsByYearAcademicText: string;
+  /**
+   * 학년별 "학생이 실제로 이수한 전체 과목" 목록.
+   *
+   * completedSubjectsByYearText와의 차이:
+   *  - 비주요 과목(정보·제2외국어·기술가정·예체능 등)을 걸러내지 않는다.
+   *    completedSubjectsByYearText는 "AI가 비주요 과목을 평가 대상으로
+   *    거론하지 않게" 하려고 필터를 거치므로, 그 목록의 부재를 미이수
+   *    근거로 쓰면 실제 이수 과목이 미이수로 뒤집힌다.
+   *  - 성적 행이 없고 세특에만 존재하는 과목(공동교육과정 등)도 포함한다.
+   *
+   * 즉 "이 과목을 이수했는가"를 판정할 때 참조해야 하는 목록이며,
+   * PreprocessedData.allTakenSubjects와 같은 출처(generalSubjects +
+   * careerSubjects + artsPhysicalSubjects + subjectEvaluations)를 쓴다.
+   */
+  allTakenSubjectsByYearText: string;
   /** 수강 예정 과목 텍스트 (학생 직접 입력, 없으면 빈 문자열) */
   plannedSubjectsText: string;
   /** 실기 예체능 학과 여부 (커트라인 데이터 없는 예체능계열) */
@@ -1023,6 +1038,36 @@ export const preprocess = (
       ? "2022"
       : detectCurriculumVersion(creativeActs);
 
+  // 11-1. 학생이 이수한 과목 행(학년 포함). 프롬프트에 넘길 이수 사실 정답의
+  // 출처다. 반드시 withinScope를 통과한 데이터만 사용해야, 표·후처리와 같은
+  // 범위를 보고 "표는 미이수, 프롬프트는 이수" 같은 불일치가 생기지 않는다.
+  const artsPhysicalSubjects = (
+    (recordData.artsPhysicalSubjects ?? []) as Array<{
+      year?: number;
+      semester?: number;
+      subject?: string;
+    }>
+  ).filter((aps) => withinScope(aps?.year ?? 0, aps?.semester));
+
+  const takenSubjectRows = (() => {
+    const seen = new Set<string>();
+    const rows: { year: number; subject: string }[] = [];
+    const add = (year: number, subject?: string): void => {
+      const name = subject?.trim();
+      if (!name) return;
+      const key = `${year}|${name}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      rows.push({ year, subject: name });
+    };
+    for (const s of generalSubjects) add(s.year, s.subject);
+    for (const s of careerSubjects) add(s.year, s.subject);
+    for (const aps of artsPhysicalSubjects) add(aps?.year ?? 0, aps?.subject);
+    // 성적 행 없이 세특에만 존재하는 과목(공동교육과정 등)도 이수로 인정
+    for (const se of subjectEvals) add(se.year, se.subject);
+    return rows;
+  })();
+
   // 12. 권장과목 이수 매칭 (교육과정 버전 기반)
   const recommendedCourseMatch = matchRecommendedCourses(
     generalSubjects,
@@ -1184,7 +1229,8 @@ export const preprocess = (
     recordData,
     studentInfo,
     plan,
-    plannedSubjects
+    plannedSubjects,
+    takenSubjectRows
   );
 
   // 생기부 확정 여부를 여기서 한 번만 확정해 data에 싣는다. wave-executor는
@@ -1948,7 +1994,12 @@ const buildTexts = (
   recordData: RecordData,
   studentInfo: StudentInfo,
   plan: ReportPlan,
-  plannedSubjects?: string
+  plannedSubjects?: string,
+  /**
+   * withinScope를 통과한 이수 과목 행(학년 포함). 이수 사실 정답 텍스트는
+   * recordData를 직접 읽지 않고 이 목록만 사용해, 표·후처리와 같은 범위를 본다.
+   */
+  takenSubjectRows: { year: number; subject: string }[] = []
 ): PreprocessedTexts => {
   // 성적 데이터에서 현재 학기 판단 (등록된 성적의 최대 학년/학기 기반)
   const generalSubjects = recordData.generalSubjects ?? [];
@@ -2188,6 +2239,13 @@ const buildTexts = (
       plannedAsCompleted ? plannedSubjects : undefined,
       /* academicOnly */ true,
       plannedAsCompleted ? undefined : plannedSubjects
+    ),
+    // 이수 사실 판정 전용 목록 — 비주요 과목 필터·성적 행 유무와 무관하게
+    // 학생이 실제로 이수한 과목 전체를 담는다.
+    allTakenSubjectsByYearText: formatAllTakenSubjectsByYear(
+      takenSubjectRows,
+      plannedSubjects,
+      plannedAsCompleted
     ),
     plannedSubjectsText: plannedAsCompleted
       ? ""
@@ -3772,6 +3830,62 @@ const formatCompletedSubjectsByYear = (
   }
 
   return lines.join("\n");
+};
+
+/**
+ * 학년별 "실제 이수 과목 전체" 텍스트 생성.
+ *
+ * formatCompletedSubjectsByYear는 비주요 과목을 걸러낸 "평가 대상 과목" 목록이라
+ * 이수 사실 판정용으로 쓰면 실제 이수 과목이 미이수로 뒤집힌다. 이 함수는
+ * PreprocessedData.allTakenSubjects와 같은 출처를 학년 정보와 함께 그대로
+ * 나열해, 다른 과목을 거론하는 서술이 이수 여부를 추측하지 않도록 한다.
+ *
+ * 안내 문구는 붙이지 않는다. 모든 섹션이 공유하는 시스템 프롬프트 prefix가
+ * 한 번만 덧붙이므로, 여기서 같이 넣으면 같은 지시가 중복 주입된다.
+ */
+const formatAllTakenSubjectsByYear = (
+  takenSubjectRows: { year: number; subject: string }[],
+  plannedSubjects: string | undefined,
+  plannedAsCompleted: boolean
+): string => {
+  const byYear = new Map<number, Set<string>>();
+  // 학년이 비어 있는 행(연도 미기입 데이터)도 버리지 않는다. 이 목록의 부재는
+  // "이수하지 않았다"는 적극적 진술로 읽히므로, 누락이 곧 미이수 오판이 된다.
+  const unknownYear = new Set<string>();
+  for (const row of takenSubjectRows) {
+    const name = row.subject.trim();
+    if (!name) continue;
+    if (!(row.year > 0)) {
+      unknownYear.add(name);
+      continue;
+    }
+    const set = byYear.get(row.year) ?? new Set<string>();
+    set.add(name);
+    byYear.set(row.year, set);
+  }
+
+  const plannedList = (plannedSubjects ?? "")
+    .split(/[,、，\n]/)
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+
+  const lines: string[] = ["## 이 학생이 이수한 과목 (학년별 전체 목록)"];
+  for (const year of [...byYear.keys()].sort()) {
+    lines.push(`- ${year}학년: ${[...(byYear.get(year) ?? [])].join(", ")}`);
+  }
+  if (unknownYear.size > 0) {
+    lines.push(`- 학년 미상: ${[...unknownYear].join(", ")}`);
+  }
+
+  if (plannedList.length > 0) {
+    lines.push(
+      plannedAsCompleted
+        ? `- 추가 이수 완료 (학생 직접 입력): ${plannedList.join(", ")}`
+        : `- 이수 예정 (학생 직접 입력): ${plannedList.join(", ")}`
+    );
+  }
+
+  return lines.length > 1 ? lines.join("\n") : "";
 };
 
 /**

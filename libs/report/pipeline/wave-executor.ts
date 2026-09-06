@@ -189,6 +189,8 @@ export const executeTask = async (
   const systemPrefix = buildSystemPromptPrefix(plan, {
     isGyogwaOnly,
     isRecordFinalized,
+    // 이수 사실의 단일 정답 — 모든 섹션이 같은 목록을 보게 한다.
+    takenSubjects: texts.allTakenSubjectsByYearText,
   });
   const sections = [...(state.completedSections ?? [])];
   // 생기부 기반 메디컬 판별 (Phase 2 결과 기반, 희망학과 아님)
@@ -302,6 +304,7 @@ export const executeTask = async (
   // → 플랜별 "분석 깊이" 지시가 포함되지 않도록 premium 시스템 prefix 고정
   const phase2SystemPrefix = buildSystemPromptPrefix("premium", {
     isGyogwaOnly,
+    takenSubjects: texts.allTakenSubjectsByYearText,
   });
   const callGeminiPhase2 = async <T>(prompt: string): Promise<T> => {
     const result = await client.call<T>({
@@ -1681,6 +1684,7 @@ export const executeTask = async (
       const majorSystemPrefix = buildSystemPromptPrefix("premium", {
         isGyogwaOnly,
         isRecordFinalized,
+        takenSubjects: texts.allTakenSubjectsByYearText,
       });
       const majorResult = await client.call<ReportSection>({
         systemPrefix: majorSystemPrefix,

@@ -673,9 +673,43 @@ behaviorAnalysis, activityAnalysis, subjectAnalysis의 자유서술 텍스트 �
  */
 export const buildSystemPromptPrefix = (
   plan: ReportPlan,
-  options?: { isGyogwaOnly?: boolean; isRecordFinalized?: boolean }
+  options?: {
+    isGyogwaOnly?: boolean;
+    isRecordFinalized?: boolean;
+    /**
+     * 학생이 실제로 이수한 전체 과목 목록
+     * (PreprocessedTexts.allTakenSubjectsByYearText).
+     */
+    takenSubjects?: string;
+  }
 ): string => {
   const planInstructions = getPlanInstructions(plan);
+
+  // 이수 사실의 단일 정답. 섹션별 프롬프트에 각자 주입하면 빠지는 섹션이
+  // 생기고(subjectAnalysis·majorExploration·interviewPrep이 그랬다), 섹션마다
+  // 서로 다른 목록을 받아 같은 과목이 한쪽에서는 이수, 다른 쪽에서는 미이수로
+  // 서술되는 불일치가 생긴다. 모든 섹션이 공유하는 prefix에 한 번만 선언해
+  // 어느 섹션이 추가되어도 같은 정답을 보게 한다.
+  //
+  // 섹션 프롬프트가 받는 "이수 완료 과목 정보"는 비주요 과목을 걸러낸
+  // *평가 대상* 목록이다. 두 목록의 역할 차이를 여기서 명시해, 평가 대상
+  // 목록의 부재가 이수 사실 판정에 쓰이지 않게 한다.
+  //
+  // 서술은 모두 positive instruction으로 둔다. 금지 목록과 오답 예시 문구는
+  // 모델이 그 표현을 따라 쓰거나 정상 서술까지 피하게 만드는 원인이 된다.
+  const takenSubjectsContext = options?.takenSubjects
+    ? `
+
+${options.takenSubjects}
+
+### 위 목록을 읽는 방법 (모든 섹션 공통)
+- 위 목록은 성적표·진로선택·예체능·세특을 합친 전체 이수 기록입니다. 과목의 이수 여부는 위 목록으로 확인합니다.
+- "N학년" 줄과 "학년 미상" 줄, "추가 이수 완료" 줄의 과목은 이미 이수한 과목입니다. 이수했다는 사실을 전제로 그 경험의 평가·활용을 서술합니다.
+- "이수 예정" 줄의 과목은 학생이 앞으로 수강할 과목입니다. "이수 예정"으로 서술하고 교과 이수 노력에 포함해 평가합니다.
+- 위 목록에 없는 과목은 아직 이수하지 않은 과목입니다. 앞으로의 방향을 다루는 서술에서 거론합니다.
+- 섹션에 따라 "이수 완료 과목 정보" 블록이 함께 주어집니다. 그 블록은 평가 대상 주요 과목만 추린 목록이므로 무엇을 평가 대상으로 다룰지의 기준으로 쓰고, 이수 사실 확인은 위 전체 목록으로 합니다.
+`
+    : "";
 
   // 생기부가 확정된 학생(졸업생 / 3학년 1학기 마감)용 시점 규칙.
   // 섹션별 프롬프트마다 같은 규칙을 반복 주입하면 누락되는 섹션이 생기므로,
@@ -725,12 +759,12 @@ export const buildSystemPromptPrefix = (
 `
     : "";
 
-  return `${planInstructions}${gyogwaContext}${finalizedContext}`;
+  return `${planInstructions}${gyogwaContext}${finalizedContext}${takenSubjectsContext}`;
 };
 
 export const buildSystemPrompt = (
   plan: ReportPlan,
-  options?: { isGyogwaOnly?: boolean; isRecordFinalized?: boolean }
+  options?: Parameters<typeof buildSystemPromptPrefix>[1]
 ): string => {
   return `${COMMON_SYSTEM_PROMPT}\n\n${buildSystemPromptPrefix(plan, options)}`;
 };
