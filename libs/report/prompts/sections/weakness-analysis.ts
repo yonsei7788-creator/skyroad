@@ -23,6 +23,12 @@ export interface WeaknessAnalysisPromptInput {
    * 이 목록에는 포함되지 않음.
    */
   completedSubjectsByYear?: string;
+  /**
+   * 코드가 확정한 권장과목 이수 매칭 결과(RecommendedCourseMatch JSON).
+   * courseAlignment 표를 강제로 덮어쓰는 값과 동일한 데이터이므로, 이 값을
+   * 미이수 판정의 유일한 근거로 삼아야 표와 약점 서술이 엇갈리지 않는다.
+   */
+  recommendedCourseMatch?: string;
   studentGrade?: number;
   isGraduate?: boolean;
   /**
@@ -89,7 +95,7 @@ export const buildWeaknessAnalysisPrompt = (
 
 ### 의·치·한·약·수 특화 약점 체크리스트 (해당 시 반드시 포함)
 - **영어 2등급 이하**: 의·치·한·약·수에서 영어 1등급은 사실상 필수. 2등급 이하이면 priority "high"로 반드시 포함.
-- **수학·과학 핵심 과목 미이수 또는 저성적**: 미적분(2015)/미적분Ⅰ·Ⅱ(2022), 생명과학Ⅱ/화학Ⅱ(2015) 또는 대응 2022 과목 미이수 시 priority "high".
+- **수학·과학 핵심 과목 미이수 또는 저성적**: 미적분(2015)/미적분Ⅰ·Ⅱ(2022), 생명과학Ⅱ/화학Ⅱ(2015) 또는 대응 2022 과목 미이수 시 priority "high". 미이수 여부는 아래 "권장과목 이수 매칭 결과"의 missingCourses로 판정합니다.
 - **과학 세특의 탐구 깊이 부족**: 실험 기반 탐구(가설→실험→결과→한계인식)가 아닌 단순 조사 수준이면 약점으로 식별.
 - **영어 등급 미충족**: 의·치·한·약·수는 영어 1등급이 사실상 필수. 영어 등급이 부족하면 약점으로 식별.
 - **진로 변경 이력 미설명**: 의·치·한·약·수→비의·치·한·약·수 또는 비의·치·한·약·수→의·치·한·약·수 변경 시 학생부에 변경 계기 설명이 없으면 약점.
@@ -244,7 +250,7 @@ ${input.majorEvaluationContext}
 | 성적-세특 불일치 | 성적은 낮은데 세특은 우수하다고 서술되는 모순 |
 | 과목다운 세특 부재 | 과목 본질과 무관한 소재만 활용, 교과 특성이 드러나지 않음 |
 | 주제 반복(심화 없음) | 같은 주제가 여러 과목에서 반복되지만 깊이가 동일 수준에 머무름 |
-| 핵심 권장과목 미이수 | majorEvaluationContext의 핵심 권장과목 중 미이수 과목 존재 | priority: "high" |
+| 핵심 권장과목 미이수 | "권장과목 이수 매칭 결과"의 missingCourses에 핵심 권장과목이 존재 | priority: "high" |
 | 세특 표현 깊이 부족 | "~알게 됨", "~하고 싶다" 수준 표현이 과반 | priority: "medium" |
 | 스토리 단절 | 학년별 관심 분야나 탐구 방향이 일관되지 않고 매년 변경됨. 사정관은 "진로 미결정 학생"으로 판단 | priority: "high" |
 | 학업 태도 증거 부족 | 세특에서 수업 참여, 질문, 토론, 자기주도 학습 등 학업 태도 근거가 약함. 사정관이 중시하는 "학업 과정"이 보이지 않음 | priority: "medium" |
@@ -318,7 +324,8 @@ ${input.competencyStrengthAreas ? `### ⛔ 강점 영역 (만점근사 — 약�
 3. 키워드가 **단어 단위로 겹치면** evidence를 다른 활동/측면으로 교체합니다. 예: 강점 영역 comment에 "리튬 이온 전지 안정성"이 있으면, 약점 evidence는 리튬 이온 전지가 아닌 다른 활동(예: "AI 뉴스 비교 분석", "탄소중립 포스터")을 인용하거나, 같은 영역의 구조적 약점(예: "1학년 활동 간 연결 부재")을 evidence로 사용합니다.
 4. 교체할 evidence가 없는 경우, 그 area는 "약점"으로 부적합하므로 area 자체를 다른 영역으로 변경합니다 (강점 영역과 충돌 없는 차감 영역에서 area 도출).
 
-${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n→ 권장과목 미이수 판정 시 반드시 이 목록을 우선 참조합니다. 위 목록에 포함된 과목(특히 "추가 이수 완료 (학생 직접 입력)" 라인)은 이미 이수 완료 처리된 과목이므로, "권장과목 미이수" 약점 사유로 잡지 마세요.` : ""}
+${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n→ 위 목록은 평가 대상 주요 과목입니다. 약점 근거로 삼을 과목을 고를 때 사용합니다.` : ""}
+${input.recommendedCourseMatch ? `### 권장과목 이수 매칭 결과 (코드 확정값 — 미이수 판정 기준)\n${input.recommendedCourseMatch}\n→ "권장과목 미이수"를 약점으로 잡을 때는 위 JSON의 missingCourses 배열에 있는 과목을 사용합니다.\n→ takenCourses는 이수 완료, plannedCourses는 이수 예정으로 확정된 과목입니다.\n→ 이 값은 리포트의 교과 이수 현황 표(courseAlignment)와 같은 데이터이므로, 이 값을 기준으로 서술하면 표와 본문이 일치합니다.` : ""}
 ${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}` : ""}
 ${
   input.detectedMajorGroup
@@ -452,7 +459,8 @@ ${input.competencyStrengthAreas ? `### ⛔ 강점 영역 (만점근사 — 약�
 3. 키워드가 단어 단위로 겹치면 evidence를 다른 활동/측면으로 교체합니다.
 4. 교체할 evidence가 없는 경우, 그 area는 "약점"으로 부적합하므로 area 자체를 차감이 발생한 다른 영역으로 변경합니다.
 
-${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n→ 권장과목 미이수 판정 시 반드시 이 목록을 우선 참조합니다. "추가 이수 완료 (학생 직접 입력)" 라인의 과목은 이미 이수 완료된 것으로 간주하여 미이수 약점으로 잡지 마세요.` : ""}
+${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n→ 위 목록은 평가 대상 주요 과목입니다. 약점 근거로 삼을 과목을 고를 때 사용합니다.` : ""}
+${input.recommendedCourseMatch ? `### 권장과목 이수 매칭 결과 (코드 확정값 — 미이수 판정 기준)\n${input.recommendedCourseMatch}\n→ "권장과목 미이수"를 약점으로 잡을 때는 위 JSON의 missingCourses 배열에 있는 과목을 사용합니다.\n→ takenCourses는 이수 완료, plannedCourses는 이수 예정으로 확정된 과목입니다.\n→ 이 값은 리포트의 교과 이수 현황 표(courseAlignment)와 같은 데이터이므로, 이 값을 기준으로 서술하면 표와 본문이 일치합니다.` : ""}
 
 ${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}\n→ 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.` : ""}
 

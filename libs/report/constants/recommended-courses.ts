@@ -570,6 +570,23 @@ export const getMajorCourseRecommendations = (
     : MAJOR_COURSE_RECOMMENDATIONS_2022;
 };
 
+/**
+ * 두 교육과정 표에 등장하는 모든 과목명 (핵심 교과 + 권장과목).
+ *
+ * 후처리의 과목명 경계 판정에서 "짧은 이름이 긴 과목명의 꼬리인가"를 알아내는
+ * 어휘로 쓴다. 학생별 매칭 결과만으로는 그 학생의 계열에 해당하는 과목만 담겨
+ * "생활과 윤리" 같은 다른 계열의 과목을 알 수 없고, 그러면 "윤리"를 이수한
+ * 학생에게 "생활과 윤리를 이수하지 않았습니다"라는 참인 문장이 지워진다.
+ */
+export const ALL_RECOMMENDED_COURSE_NAMES: readonly string[] = [
+  ...new Set(
+    [
+      ...MAJOR_COURSE_RECOMMENDATIONS_2015,
+      ...MAJOR_COURSE_RECOMMENDATIONS_2022,
+    ].flatMap((entry) => [...entry.coreSubjects, ...entry.recommendedCourses])
+  ),
+];
+
 // ─── 하위 호환용 (deprecated) ───
 
 /** @deprecated getMajorCourseRecommendations(grade)를 사용하세요. */

@@ -38510,6 +38510,24 @@ const extractKeywords = (name: string): string[] => {
 };
 
 /** 학과명으로 MajorInfo 검색 (정확 매칭 → 키워드 매칭, 전문대 제외) */
+/**
+ * 커리어넷 학과 데이터에 등장하는 모든 교과명 (일반선택 + 진로선택).
+ *
+ * 후처리의 과목명 경계 판정에서 "짧은 이름이 긴 과목명의 꼬리인가"를 알아내는
+ * 어휘로 쓴다. 권장과목 표(recommended-courses.ts)는 계열별 핵심 과목만 담고
+ * 있어 "언어와 매체"·"화법과 작문" 같은 일반선택 과목이 빠져 있다.
+ */
+export const ALL_MAJOR_RELATED_SUBJECT_NAMES: readonly string[] = [
+  ...new Set(
+    MAJOR_INFO_DATA.flatMap((info) => [
+      ...info.electiveSubjects,
+      ...info.careerSubjects,
+    ])
+      .map((name) => name.trim())
+      .filter((name) => name.length > 0)
+  ),
+];
+
 export const findMajorInfo = (
   departmentName: string
 ): MajorInfo | undefined => {

@@ -86,16 +86,18 @@ export const CourseAlignmentRenderer = ({
           </tbody>
         </table>
 
-        <div
-          className={`${styles.callout} ${styles.calloutCaution} ${styles.mt20}`}
-        >
-          <div className={styles.calloutContent}>
-            <span className={`${styles.emphasis} ${styles.markerYellow}`}>
-              미이수 과목 영향:
-            </span>{" "}
-            {renderInsightMarkers(data.missingCourseImpact)}
+        {data.missingCourseImpact && (
+          <div
+            className={`${styles.callout} ${styles.calloutCaution} ${styles.mt20}`}
+          >
+            <div className={styles.calloutContent}>
+              <span className={`${styles.emphasis} ${styles.markerYellow}`}>
+                미이수 과목 영향:
+              </span>{" "}
+              {renderInsightMarkers(data.missingCourseImpact)}
+            </div>
           </div>
-        </div>
+        )}
 
         {data.recommendation && (
           <div className={`${styles.aiCommentary} ${styles.mt16}`}>

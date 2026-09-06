@@ -55,6 +55,12 @@ export interface CompetencyScorePromptInput {
   /** 학년별 이수 완료 과목 텍스트 (추가 이수 완료 라인 포함) */
   completedSubjectsByYear?: string;
   /**
+   * 코드가 확정한 권장과목 이수 매칭 결과(RecommendedCourseMatch JSON).
+   * weaknessAnalysis가 같은 값으로 미이수를 판정하므로, 두 섹션이 같은 근거를
+   * 봐야 "competencyScore는 감점, weaknessAnalysis는 미해당" 같은 어긋남이 없다.
+   */
+  recommendedCourseMatch?: string;
+  /**
    * 학생이 직접 입력한 수강 예정 과목 텍스트 (아직 이수 완료로 합쳐지지 않은 학생).
    * 이 과목은 생기부 이수 기록에 없으므로 교과이수노력 채점에서 미이수로
    * 오판되기 쉬워, 이수 예정임을 함께 전달한다.
@@ -184,7 +190,7 @@ ${
 
 ### 교과이수노력 채점 보정
 - 5등급제 환경에서는 등급 변별력이 약하므로, 전공 관련 심화 선택과목 이수 여부가 더 중요합니다.
-- 모집단위별 권장 이수 과목을 이수했는지 확인하고, 이수하지 않았으면 감점하세요.
+- 모집단위별 권장 이수 과목의 이수 여부는 "권장과목 이수 매칭 결과"의 missingCourses로 확인하고, 그 목록에 있는 과목을 감점 근거로 사용합니다.
 
 ### comment 출력 규칙 (5등급제 학생 전용)
 - 위 환산표는 **점수 산출용 내부 참조**입니다.
@@ -206,7 +212,7 @@ ${
 
 ### 진로역량 채점 시 추가 기준
 - **단순 직업 탐색 활동**: "의사라는 직업 조사", "의학계열 진출 방법 정리" 수준의 활동은 진로역량 점수에 긍정적 기여를 하지 않습니다. 실제 과학적 탐구(실험·분석·한계인식)가 있어야 진로역량으로 인정합니다.
-- **교과 이수 노력**: 의·치·한·약·수 핵심 권장과목(9등급제: 미적분, 생명과학Ⅱ/화학Ⅱ / 5등급제: 미적분Ⅰ·Ⅱ, 세포와 물질대사/화학 반응의 세계 등) 미이수 시 교과이수노력 하위항목에서 감점하세요.
+- **교과 이수 노력**: 의·치·한·약·수 핵심 권장과목(9등급제: 미적분, 생명과학Ⅱ/화학Ⅱ / 5등급제: 미적분Ⅰ·Ⅱ, 세포와 물질대사/화학 반응의 세계 등) 미이수 시 교과이수노력 하위항목에서 감점하세요. 미이수 여부는 "권장과목 이수 매칭 결과"의 missingCourses로 판정합니다.
 
 `
     : "";
@@ -315,12 +321,13 @@ ${input.studentProfile}
 
 ${input.majorEvaluationContext ? `### 학과 맞춤 평가 기준 (입학사정관 관점)\n${input.majorEvaluationContext}\n\n⚠️ 위 계열별 가중치를 참고하여 진로역량의 하위항목 점수를 배분하세요. 핵심 교과 성취도가 진로역량 "교과성취도" 점수에 직접 반영되어야 합니다.` : ""}
 
-${input.completedSubjectsByYear ? `### 이수 완료 과목 정보 (교과이수노력 채점 시 필수 참조)\n${input.completedSubjectsByYear}\n→ 교과이수노력 코멘트에서 "OO 미이수" 사유를 쓰기 전 반드시 위 목록을 확인합니다. 위 목록에 포함된 과목(특히 "추가 이수 완료 (학생 직접 입력)" 라인)은 이미 이수 완료 처리되었으므로 미이수 감점 사유로 사용하면 안 됩니다.` : ""}
+${input.completedSubjectsByYear ? `### 이수 완료 과목 정보 (평가 대상 주요 과목)\n${input.completedSubjectsByYear}\n\u2192 위 목록은 교과이수노력에서 다룰 평가 대상 과목입니다. 미이수 판정은 아래 "권장과목 이수 매칭 결과"로 합니다.` : ""}
+${input.recommendedCourseMatch ? `### 권장과목 이수 매칭 결과 (코드 확정값 — 미이수 판정 기준)\n${input.recommendedCourseMatch}\n\u2192 교과이수노력에서 "권장과목 미이수"를 감점 사유로 쓸 때는 위 JSON의 missingCourses 배열에 있는 과목을 사용합니다.\n\u2192 takenCourses는 이수 완료, plannedCourses는 이수 예정으로 확정된 과목입니다.\n\u2192 이 값은 교과 이수 현황 표(courseAlignment)\u00b7약점 분석(weaknessAnalysis)과 같은 데이터이므로, 이 값을 기준으로 서술하면 세 섹션이 일치합니다.` : ""}
 
-${input.plannedSubjects ? `### 수강 예정 과목 정보 (교과이수노력 채점 시 필수 참조)\n${input.plannedSubjects}\n→ 위 과목은 학생이 실제로 수강할 과목이므로 교과이수노력에서 "이수 예정"으로 인정하고, 미이수 감점 사유는 이 목록에 없는 과목으로 한정합니다.` : ""}
+${input.plannedSubjects ? `### 수강 예정 과목 정보 (교과이수노력 채점 시 필수 참조)\n${input.plannedSubjects}\n→ 위 과목은 학생이 실제로 수강할 과목이므로 교과이수노력에서 "이수 예정"으로 인정하고, 미이수 감점 사유는 "권장과목 이수 매칭 결과"의 missingCourses로 판정합니다.` : ""}
 ${
   input.isGraduate === true || input.studentGrade === 3
-    ? `\n✅ **이 학생은 ${input.isGraduate ? "졸업생" : "고3"} 입니다. preprocessedAcademicData.plannedSubjectsRaw 의 과목은 학생이 실제로 수강하는 과목이므로 교과이수노력에서 이수한 과목으로 인정합니다.** 권장과목 미이수 사유는 생기부 이수 기록과 plannedSubjectsRaw 어디에도 없는 과목에 한정해 작성합니다.\n`
+    ? `\n✅ **이 학생은 ${input.isGraduate ? "졸업생" : "고3"} 입니다. preprocessedAcademicData.plannedSubjectsRaw 의 과목은 학생이 실제로 수강하는 과목이므로 교과이수노력에서 이수한 과목으로 인정합니다.** 권장과목 미이수 사유는 "권장과목 이수 매칭 결과"의 missingCourses에 있는 과목으로 작성합니다.\n`
     : ""
 }
 
@@ -406,9 +413,9 @@ subcategories도 반드시 객체 배열이어야 합니다. comparison은 null�
 ${
   input.gradingSystem === "5등급제"
     ? `- 학업성취도(<실제 점수>/<만점>): "내신 평균 1.2등급, <이 학생이 실제로 전 학기 1등급을 유지한 과목만 나열(예: 국어·영어)> 1등급 유지. <이 학생이 실제 이수한 과목 중 상대적으로 낮은 과목명> 2등급 등 일부 과목 편차로 -2점."
-- 교과이수노력(<실제 점수>/<만점>): "<이 학생이 실제 이수한 핵심 권장과목들> 이수로 기본 요건 충족. <이 학생이 실제 미이수한 권장과목들> 미이수로 핵심 권장과목 50% 미달, -7점."`
+- 교과이수노력(<실제 점수>/<만점>): "<이 학생이 실제 이수한 핵심 권장과목들> 이수로 기본 요건 충족. <missingCourses에 있는 과목들> 미이수로 핵심 권장과목 50% 미달, -7점."`
     : `- 학업성취도(<실제 점수>/<만점>): "내신 평균 1.67등급, <이 학생이 실제로 1~2등급을 유지한 과목만 나열(예: 국어·영어)> 1~2등급 유지. <이 학생이 실제 이수한 과목 중 상대적으로 낮은 과목명 1~2개> 등급 등 일부 과목 편차로 -2점."
-- 교과이수노력(<실제 점수>/<만점>): "<이 학생이 실제 이수한 핵심 권장과목들> 이수로 기본 요건 충족. <이 학생이 실제 미이수한 권장과목들> 미이수로 핵심 권장과목 50% 미달, -7점."`
+- 교과이수노력(<실제 점수>/<만점>): "<이 학생이 실제 이수한 핵심 권장과목들> 이수로 기본 요건 충족. <missingCourses에 있는 과목들> 미이수로 핵심 권장과목 50% 미달, -7점."`
 }
 - 성실성(<실제 점수>/<만점>): "3년간 개근, 미인정 결석 0일, 학습부장·교과부장 등 맡은 역할 성실 이행. 감점 사유 없음."
 - 리더십(<실제 점수>/<만점>): "학급 부회장, 동아리 부장 역할 수행. 구체적 기여 에피소드가 '자판기 개선 건의' 1건에 그쳐 -7점."
@@ -830,9 +837,10 @@ ${input.studentProfile}
 
 ${input.majorEvaluationContext ? `### 학과 맞춤 평가 기준\n${input.majorEvaluationContext}` : ""}
 
-${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n→ "OO 미이수" 사유를 쓰기 전 반드시 위 목록을 확인합니다. "추가 이수 완료 (학생 직접 입력)" 라인의 과목은 이미 이수 완료 처리되어 미이수 감점 사유로 사용 금지.` : ""}
+${input.completedSubjectsByYear ? `### 이수 완료 과목 정보 (평가 대상 주요 과목)\n${input.completedSubjectsByYear}\n\u2192 위 목록은 교과이수노력에서 다룰 평가 대상 과목입니다. 미이수 판정은 아래 "권장과목 이수 매칭 결과"로 합니다.` : ""}
+${input.recommendedCourseMatch ? `### 권장과목 이수 매칭 결과 (코드 확정값 — 미이수 판정 기준)\n${input.recommendedCourseMatch}\n\u2192 교과이수노력에서 "권장과목 미이수"를 감점 사유로 쓸 때는 위 JSON의 missingCourses 배열에 있는 과목을 사용합니다.\n\u2192 takenCourses는 이수 완료, plannedCourses는 이수 예정으로 확정된 과목입니다.\n\u2192 이 값은 교과 이수 현황 표(courseAlignment)\u00b7약점 분석(weaknessAnalysis)과 같은 데이터이므로, 이 값을 기준으로 서술하면 세 섹션이 일치합니다.` : ""}
 
-${input.plannedSubjects ? `### 수강 예정 과목 정보 (교과이수노력 채점 시 필수 참조)\n${input.plannedSubjects}\n→ 위 과목은 학생이 실제로 수강할 과목이므로 교과이수노력에서 "이수 예정"으로 인정하고, 미이수 감점 사유는 이 목록에 없는 과목으로 한정합니다.` : ""}
+${input.plannedSubjects ? `### 수강 예정 과목 정보 (교과이수노력 채점 시 필수 참조)\n${input.plannedSubjects}\n→ 위 과목은 학생이 실제로 수강할 과목이므로 교과이수노력에서 "이수 예정"으로 인정하고, 미이수 감점 사유는 "권장과목 이수 매칭 결과"의 missingCourses로 판정합니다.` : ""}
 ${input.isGraduate === true || input.studentGrade === 3 ? `\n✅ 이 학생은 ${input.isGraduate ? "졸업생" : "고3"}이므로 plannedSubjectsRaw 과목은 실제로 수강하는 과목으로 이수 인정합니다. 미이수 사유는 생기부 이수 기록과 plannedSubjectsRaw 어디에도 없는 과목에 한정합니다.\n` : ""}
 
 ${PLAN_SPECIFIC[plan]}`;

@@ -672,6 +672,8 @@ export const executeTask = async (
           : texts.completedSubjectsByYearText,
         // 이수 예정 과목을 미이수 감점 사유로 잡지 않도록 함께 전달.
         plannedSubjects: texts.plannedSubjectsText,
+        // weaknessAnalysis·courseAlignment와 같은 미이수 판정 근거를 공유한다.
+        recommendedCourseMatch: texts.recommendedCourseMatchText,
       };
       section = await callGemini<ReportSection>(
         isGyogwaOnly
@@ -1088,6 +1090,9 @@ export const executeTask = async (
         // 3학년·졸업생은 학생 입력 수강예정 과목이 "추가 이수 완료" 라인으로
         // 합쳐져 있어, weakness AI가 "권장과목 미이수"로 오판하지 않도록 전달.
         completedSubjectsByYear: texts.completedSubjectsByYearText,
+        // 코드가 확정한 이수/이수 예정/미이수. courseAlignment 표를 덮어쓰는
+        // 값과 같은 데이터를 줘야 표와 약점 서술이 엇갈리지 않는다.
+        recommendedCourseMatch: texts.recommendedCourseMatchText,
         studentGrade: studentInfo.grade,
         isGraduate: studentInfo.isGraduate,
         isRecordFinalized,

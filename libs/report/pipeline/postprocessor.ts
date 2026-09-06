@@ -32,7 +32,11 @@ import {
   type PreprocessedData,
 } from "./preprocessor.ts";
 import { matchMajorEvaluationCriteria } from "../constants/major-evaluation-criteria.ts";
-import { getMajorCourseRecommendations } from "../constants/recommended-courses.ts";
+import {
+  ALL_RECOMMENDED_COURSE_NAMES,
+  getMajorCourseRecommendations,
+} from "../constants/recommended-courses.ts";
+import { ALL_MAJOR_RELATED_SUBJECT_NAMES } from "../constants/major-info-data.ts";
 import {
   findMajorInfo,
   getMajorRelatedSubjects,
@@ -1717,6 +1721,85 @@ export const postprocess = (
     }
   }
 
+  // 7-1. 이수 정합성 전역 보정 (모든 섹션 공통, 마지막 안전장치)
+  //
+  // 이수 사실의 정답은 preprocessed.allTakenSubjects(성적표 + 진로선택 +
+  // 예체능 + 세특 통합)와, 학생이 직접 입력한 수강 예정 과목이다. 권장과목
+  // 매칭 결과의 takenCourses·plannedCourses도 같은 판정에서 나온 값이므로
+  // 함께 합쳐 표기 누락을 줄인다.
+  //
+  // 프롬프트에 정답을 주입하는 것만으로는 모델이 지시를 놓치거나 새 섹션이
+  // 추가될 때 다시 새어 나가므로, 출력 단계에서 결정적으로 한 번 더 거른다.
+  {
+    const courseMatch = preprocessed.recommendedCourseMatch;
+    const plannedTokens = (preprocessed.plannedSubjectsRaw ?? "")
+      .split(/[,、，\n]/)
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+
+    // 두 목록이 같은 과목을 두고 엇갈리면(오래된 wave-state에서 발생 가능)
+    // 표(courseAlignment.courses)가 렌더링하는 값을 기준으로 삼는다. 그래야
+    // 본문 보정 결과가 화면의 표와 항상 같은 말을 한다. 이 우선순위가 없으면
+    // 후처리가 courseAlignment 폴백 문장("미적분 미이수는 …")을 스스로 지워
+    // 표에는 미이수, 본문에는 아무 말도 없는 상태가 된다.
+    const notTakenKeys = new Set(
+      (courseMatch?.missingCourses ?? []).flatMap((name) =>
+        expandSubjectNameVariants(name).map(normalizeCourseKey)
+      )
+    );
+    const completedCourses = [
+      ...new Set([
+        ...(preprocessed.allTakenSubjects ?? []),
+        ...plannedTokens,
+        ...(courseMatch?.takenCourses ?? []),
+        ...(courseMatch?.plannedCourses ?? []),
+      ]),
+    ].filter(
+      (name) =>
+        name.trim().length >= 2 &&
+        !expandSubjectNameVariants(name).some((variant) =>
+          notTakenKeys.has(normalizeCourseKey(variant))
+        )
+    );
+
+    // 코드가 "이수하지 않음"으로 확정한 과목.
+    const notTakenCourses = (courseMatch?.missingCourses ?? []).filter(
+      (name) => name.trim().length >= 2
+    );
+
+    const fixedCount = scrubCourseStatusStatements(
+      content.sections,
+      completedCourses,
+      notTakenCourses,
+      `[report:${reportId}]`
+    );
+    if (fixedCount > 0) {
+      console.log(
+        `[report:${reportId}] 이수 정합성 보정 ${fixedCount}건 (이수 확정 ${completedCourses.length}과목 / 미이수 확정 ${notTakenCourses.length}과목)`
+      );
+      // 이 단계는 문장·필드를 제거할 수 있고 1번 Zod 검증보다 뒤에 실행되므로,
+      // 검증 결과를 갱신하지 않으면 "검증 통과"로 기록된 섹션이 실제로는
+      // 스키마를 벗어난 상태가 된다. 수정된 섹션만 다시 검증해 결과를 맞춘다.
+      // validationResults는 rawSections 순서, content.sections는 SECTION_ORDER
+      // 순서에 합성 섹션까지 더해진 배열이라 인덱스가 서로 다른 섹션을 가리킨다.
+      // sectionId로 찾아야 갱신이 실제로 이뤄진다.
+      for (const section of content.sections) {
+        const index = validationResults.findIndex(
+          (result) => result.sectionId === section.sectionId
+        );
+        if (index === -1) continue;
+        const previous = validationResults[index];
+        const revalidated = validateSection(section);
+        validationResults[index] = revalidated;
+        if (!revalidated.valid && previous.valid) {
+          console.warn(
+            `[report:${reportId}] 이수 정합성 보정 후 스키마 이탈: ${revalidated.sectionId} — ${revalidated.errors.join("; ").substring(0, 300)}`
+          );
+        }
+      }
+    }
+  }
+
   // 8. 플랜별 검증
   const planValidationErrors = validateByPlan(content);
 
@@ -2561,12 +2644,411 @@ const buildCompetencyGradeComment = (
 const escapeRegExp = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** "미이수"를 뜻하는 서술 패턴 (사이 공백·조사 허용) */
+/**
+ * "미이수"를 뜻하는 서술 패턴 (사이 공백·조사 허용).
+ *
+ * `미\\s*이수` 앞의 부정 lookbehind가 필수다. 이것이 없으면 "이**미 이수**한"이
+ * 미이수 서술로 잡혀, 후처리가 스스로 만든 "이미 이수한 A·B·C …" 문장에서
+ * 과목명을 지워 버린다. 프롬프트도 "이미 이수한 과목입니다"라는 표현을
+ * 쓰도록 안내하므로 모델 출력에서도 같은 충돌이 생긴다.
+ */
 const MISSING_COURSE_PATTERN =
-  "(?:미\\s*이수|이수하지\\s*(?:않|못)|이수를\\s*하지\\s*(?:않|못)|이수 기회를 놓)";
+  "(?:(?<!이)미\\s*이수|이수하지\\s*(?:않|못)|이수를\\s*하지\\s*(?:않|못)|이수 기회를 놓)";
 
 /** 과목명 뒤에 다른 로마숫자·숫자가 붙는 과목(물리학 vs 물리학Ⅱ) 오인 방지 */
 const COURSE_NAME_BOUNDARY = "(?![Ⅰ-Ⅲ0-9])";
+
+/**
+ * "이미 이수했다"고 단정하는 서술 패턴.
+ *
+ * 여기서 어미 선별이 안전장치의 전부다. 미이수 과목에 대해 정상적으로 쓰이는
+ * 서술이 이 패턴에 걸리면 올바른 권고가 삭제된다. 실제로 확인한 사례:
+ *  - "미적분을 이수한다면 좋습니다" — 미래 가정 ("이수한" 접두 일치)
+ *  - "기하를 이수하여 기반을 다지기를 권합니다" — 목적 ("이수하여"는 시제 중립)
+ *  - "미적분을 이수함으로써 보완할 수 있습니다" — 수단 ("이수함" 접두 일치)
+ *  - "미적분 이수 기록이 없습니다" — 부정 서술 ("이수 기록"만 보면 긍정으로 오독)
+ *  - "기하를 이수했더라면 좋았을 것입니다" — 가정법
+ *  - "기하를 이수한 뒤 심화 탐구로 확장하기를 권합니다" — 관형형 + 미래
+ *  - "기하를 이수한 학생은 공학 계열에서 유리합니다" — 관형형 + 일반론
+ *
+ * 그래서 시제가 중립이거나 부정과 결합할 수 있는 어미(이수하여·이수함·이수 기록·
+ * 관형형 이수한/수강한)는 아예 빼고, 남은 종결형에만 가정형 lookahead를 붙인다.
+ * 판정을 놓치는 것보다 참인 문장을 지우는 쪽이 더 큰 손해이므로, 확실한
+ * 과거 단정형만 남긴다.
+ */
+const TAKEN_COURSE_PATTERN =
+  "(?:이수했(?!다면|더라면|더라도)|이수하였(?!다면|더라면|더라도)|수강했(?!다면|더라면|더라도)|이수\\s*완료" +
+  // 아래는 여러 토큰으로 이뤄진 확정 프레임이라 미래·가정 읽기가 성립하지 않는다.
+  // 단일 어미 "이수한"과 달리 "이수한다면"과 겹치지 않으므로 안전하게 넣는다.
+  // `확인되(?!지)`가 "이수 기록이 확인되지 않습니다"를, `것으로 (확인|나타…)`가
+  // "이수한 것으로 가정하면"을 각각 살려 둔다.
+  "|(?:이수|수강)한\\s*(?:것으로\\s*(?:확인|나타|파악|기록)|이력|내역)" +
+  "|이수\\s*(?:기록|이력|내역)이\\s*(?:있|확인되(?!지)|확인됩))";
+
+/**
+ * 과목명과 이수 서술 사이에 올 수 있는 연결 표현 (닫힌 목록).
+ *
+ * "물리학Ⅱ의 경우 이수하지 않은 것으로" 처럼 조사 하나가 아니라 짧은 연결구가
+ * 끼는 서술을 잡기 위한 것이다. 와일드카드(`.*`)를 쓰면 사이에 낀 다른 과목명까지
+ * 삼켜 정상 문장을 지우므로, 실제로 관찰되는 연결 표현만 나열한다.
+ */
+const COURSE_JOSA =
+  "(?:[은는이가을를도와과의]|조차|마저|까지는?|\\([^)]{0,24}\\)[은는이가을를]?" +
+  "|이라는\\s*과목[을를]?|의\\s*경우" +
+  "|에\\s*대해서?는?|에\\s*관해서?는?|에\\s*있어서?는?)?";
+
+/** 조사와 술어 사이에 흔히 끼는 부사 (닫힌 목록) */
+const COURSE_ADVERB =
+  "\\s*(?:등[은는이가을를]?|아직|여전히|역시|또한|끝내|결국|끝까지|전혀|아예)?\\s*";
+
+const COURSE_TO_PREDICATE = COURSE_JOSA + COURSE_ADVERB;
+
+/**
+ * 이수 서술이 과목명보다 앞에 오는 어순("미이수 과목은 물리학Ⅱ입니다")용 연결 표현.
+ * 같은 이유로 닫힌 목록만 허용한다.
+ */
+const PREDICATE_TO_COURSE =
+  "\\s*(?:과목(?:은|는|으로는|에는)?|과목으로(?:는)?|항목(?:은|는)?" +
+  "|영역(?:은|는)?|대상(?:은|는)?|[:：→])\\s*";
+
+/**
+ * 교과 영역 라벨. 1학년 공통과목 행이 실제로 "수학"·"과학"·"사회"로 기록되어
+ * allTakenSubjects에 그대로 들어오기 때문에, 이 이름들이 문장 삭제 판정에
+ * 참여하면 참인 서술이 지워진다. 실제로 확인한 두 가지:
+ *
+ *  - 어순 역전: "미이수 과목은 수학 교과에 집중되어 있습니다" — 특정 과목이
+ *    아니라 영역을 가리키는 요약인데 "수학"이 이수 과목이라 삭제됐다.
+ *  - 괄호 삽입구: "수학(미적분·기하)을 이수하지 않았습니다" — 바깥 이름이
+ *    교과 라벨이고 괄호 안이 실제 미이수 과목인 참인 문장인데, 괄호가
+ *    "수학"과 술어를 이어 주어 삭제됐다.
+ *
+ * 그래서 정방향·역방향 **문장 삭제 판정에서 모두** 제외한다. 이 이름들은
+ * 권장과목 목록에 특정 과목으로 등장하지 않으므로 탐지력 손실이 없다.
+ * 나열 제거(stripNamesFromAdjacentList)에서는 그대로 사용한다.
+ */
+const SUBJECT_AREA_LABELS: ReadonlySet<string> = new Set([
+  "국어",
+  "수학",
+  "영어",
+  "사회",
+  "과학",
+  "한국사",
+  "도덕",
+  "체육",
+  "음악",
+  "미술",
+  "정보",
+  "교양",
+  "한문",
+  "진로",
+  "예체능",
+  "예술",
+  "탐구",
+  "통합사회",
+  "통합과학",
+  "과학탐구실험",
+]);
+
+/** 영역 지시어가 뒤따르면 특정 과목이 아니라 교과 영역을 가리킨다 */
+const AREA_CONTINUATION = "(?!\\s*(?:교과|계열|영역|과목|전반|쪽|분야))";
+
+/**
+ * 좌측 경계 가드. `COURSE_NAME_BOUNDARY`는 이름 뒤만 막아서, 짧은 이수 과목명이
+ * 더 긴 미이수 과목명의 **꼬리**에 걸린다. 마스터 목록에 있는 쌍만 해도
+ * 생명과학⊃과학, 제2외국어⊃국어, 경제 수학·인공지능 수학⊃수학, 법과 사회⊃사회가
+ * 있어서 "생명과학을 이수하지 않았습니다" 같은 참인 문장이 지워진다.
+ *
+ * 지금은 교과 영역 라벨을 판정에서 빼 둔 덕에 위 쌍들이 가려져 있지만,
+ * plannedSubjectsRaw는 학생이 직접 입력하는 자유 문자열이라 어떤 짧은 이름도
+ * 들어올 수 있다. 라벨 목록에 기대지 말고 경계 자체를 막는다.
+ */
+/** 교육과정 어휘의 표기 변형 (정적이므로 최초 호출 때 한 번만 계산) */
+let curriculumVocabularyVariants: string[] | undefined;
+
+const getCurriculumVocabularyVariants = (): string[] => {
+  curriculumVocabularyVariants ??= [
+    ...new Set(
+      [
+        ...ALL_RECOMMENDED_COURSE_NAMES,
+        ...ALL_MAJOR_RELATED_SUBJECT_NAMES,
+      ].flatMap((name) => expandSubjectNameVariants(name))
+    ),
+  ];
+  return curriculumVocabularyVariants;
+};
+
+const buildLeftBoundary = (name: string, vocabulary: string[]): string => {
+  const nameVariants = expandSubjectNameVariants(name);
+  const prefixes = new Set<string>();
+  // 학생별 목록에는 그 계열의 권장과목만 담기므로, 교육과정 표 전체를 함께 본다.
+  for (const other of [...vocabulary, ...getCurriculumVocabularyVariants()]) {
+    if (other === name) continue;
+    for (const otherVariant of expandSubjectNameVariants(other)) {
+      for (const nameVariant of nameVariants) {
+        if (
+          otherVariant.length > nameVariant.length &&
+          otherVariant.endsWith(nameVariant)
+        ) {
+          prefixes.add(
+            otherVariant.slice(0, otherVariant.length - nameVariant.length)
+          );
+        }
+      }
+    }
+  }
+  const list = [...prefixes]
+    .filter((prefix) => prefix.length > 0)
+    .map(escapeRegExp);
+  return list.length > 0 ? `(?<!${list.join("|")})` : "";
+};
+
+/** 표 형태 서술("미적분: 미이수", "미적분 → 미이수")의 구분자 */
+const COURSE_TO_PREDICATE_TABLE = "\\s*[:：→]\\s*";
+
+/**
+ * 문장 분리. 종결부호 하나를 무조건 문장 끝으로 보는 단순 정규식을 쓰지 않는
+ * 이유는 리포트 본문에 소수점이("내신 평균 2.3등급", "45.2%", "1.2배"). 그 정규식은 "2."에서
+ * 문장을 끊어, 뒤 조각이 제거되면 "…평균은 2.다음 문장" 같은 깨진 본문이 남는다.
+ *
+ * 숫자 사이의 마침표는 종결 부호로 보지 않는다. 반환된 조각을 그대로 이어붙이면
+ * 원문이 복원되므로, 호출부는 남길 문장만 join하면 된다.
+ */
+const splitSentences = (text: string): string[] => {
+  const result: string[] = [];
+  let start = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch !== "." && ch !== "!" && ch !== "?") continue;
+    // 소수점·버전 표기(2.3, 45.2)는 문장 끝이 아니다
+    if (
+      ch === "." &&
+      /[0-9]/.test(text[i - 1] ?? "") &&
+      /[0-9]/.test(text[i + 1] ?? "")
+    ) {
+      continue;
+    }
+    let end = i;
+    while (end + 1 < text.length && ".!?".includes(text[end + 1])) end++;
+    while (end + 1 < text.length && /\s/.test(text[end + 1])) end++;
+    result.push(text.slice(start, end + 1));
+    start = end + 1;
+    i = end;
+  }
+  if (start < text.length) result.push(text.slice(start));
+  return result.length > 0 ? result : [text];
+};
+
+/**
+ * 같은 과목의 표기 변형 생성 (로마숫자 ↔ 아라비아 숫자, 중점·공백 유무).
+ *
+ * 생기부·프롬프트·AI 출력이 "물리학Ⅱ"/"물리학2"/"물리학 II"를 섞어 쓰므로,
+ * 정답 목록의 표기 하나만으로 정규식을 만들면 다른 표기로 서술된 오류를
+ * 놓친다. 이수 정합성 판정은 표기 차이에 걸리면 안 되는 판정이라 변형을
+ * 모두 만들어 매칭한다.
+ */
+// 표기 변형은 이름 하나당 결과가 고정이다. 좌측 경계 계산이 교육과정 어휘
+// 전체를 이름마다 훑으므로, 캐시가 없으면 같은 확장을 수만 번 반복한다.
+const subjectVariantCache = new Map<string, string[]>();
+
+const expandSubjectNameVariants = (name: string): string[] => {
+  const cached = subjectVariantCache.get(name);
+  if (cached) return cached;
+  const computed = computeSubjectNameVariants(name);
+  subjectVariantCache.set(name, computed);
+  return computed;
+};
+
+const computeSubjectNameVariants = (name: string): string[] => {
+  const base = name.trim();
+  if (!base) return [];
+  const variants = new Set<string>([base]);
+
+  const romanToArabic: Record<string, string> = { Ⅰ: "1", Ⅱ: "2", Ⅲ: "3" };
+  const arabicToRoman: Record<string, string> = {
+    "1": "Ⅰ",
+    "2": "Ⅱ",
+    "3": "Ⅲ",
+  };
+
+  const withArabic = base.replace(/[Ⅰ-Ⅲ]/g, (c) => romanToArabic[c] ?? c);
+  variants.add(withArabic);
+  variants.add(base.replace(/([1-3])\s*$/, (_, d) => arabicToRoman[d] ?? d));
+
+  for (const v of [...variants]) {
+    // "사회·문화" ↔ "사회문화" ↔ "사회 문화"
+    variants.add(v.replace(/[·\s]/g, ""));
+    variants.add(v.replace(/·/g, " "));
+  }
+
+  return [...variants].filter((v) => v.length >= 2);
+};
+
+/** 표기 차이를 지운 과목명 비교 키 */
+const normalizeCourseKey = (name: string): string =>
+  name.replace(/[·\s]/g, "").toLowerCase();
+
+/** 과목명(표기 변형 포함) 매칭용 정규식 조각 */
+const courseAlternationCache = new Map<string, string>();
+
+const courseNameAlternation = (name: string): string => {
+  const cached = courseAlternationCache.get(name);
+  if (cached !== undefined) return cached;
+  const computed = computeCourseNameAlternation(name);
+  courseAlternationCache.set(name, computed);
+  return computed;
+};
+
+const computeCourseNameAlternation = (name: string): string => {
+  const variants = expandSubjectNameVariants(name);
+  if (variants.length === 0) return "";
+  // 긴 표기부터 시도해야 "물리학"이 "물리학Ⅱ"를 먼저 먹지 않는다.
+  return `(?:${variants
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRegExp)
+    .join("|")})`;
+};
+
+/**
+ * 과목명 끝의 받침 유무. 로마숫자·아라비아 숫자로 끝나는 과목명은 읽는 소리를
+ * 기준으로 판정한다 (Ⅰ=일·Ⅲ=삼은 받침 있음, Ⅱ=이는 없음).
+ * 그렇지 않으면 "물리학Ⅰ는"처럼 조사가 어긋난다.
+ */
+const NUMERAL_JONGSEONG: Record<string, boolean> = {
+  Ⅰ: true,
+  "1": true,
+  Ⅱ: false,
+  "2": false,
+  Ⅲ: true,
+  "3": true,
+};
+
+const courseNameHasJongseong = (word: string): boolean => {
+  const last = word.charAt(word.length - 1);
+  return NUMERAL_JONGSEONG[last] ?? hasJongseong(word);
+};
+
+/** 받침에 따라 짝이 갈리는 조사 (앞: 받침 있음 / 뒤: 받침 없음) */
+const JOSA_PAIRS: readonly [string, string][] = [
+  ["은", "는"],
+  ["이", "가"],
+  ["을", "를"],
+  ["과", "와"],
+];
+
+/**
+ * 서술 앞부분의 조사를 주어진 단어의 받침에 맞춰 교정한다.
+ * 나열에서 마지막 항목을 덜어냈을 때 조사가 어긋나는 것을 막는다.
+ */
+const matchJosaToWord = (word: string, tail: string): string => {
+  if (!word) return tail;
+  // 조사 앞에 괄호 삽입구가 올 수 있다 ("기하(2단위)는"). 그 경우 조사는
+  // 괄호 뒤에 있으므로, 괄호를 건너뛴 위치에서 조사를 찾는다.
+  const parenthetical = /^\([^)]*\)/.exec(tail)?.[0] ?? "";
+  const rest = tail.slice(parenthetical.length);
+  const head = rest.charAt(0);
+  const pair = JOSA_PAIRS.find(
+    ([withJong, withoutJong]) => head === withJong || head === withoutJong
+  );
+  if (!pair) return tail;
+  const [withJong, withoutJong] = pair;
+  const josa = courseNameHasJongseong(word) ? withJong : withoutJong;
+  return `${parenthetical}${josa}${rest.slice(1)}`;
+};
+
+/**
+ * 이수/미이수 술어 바로 앞에 붙어 있는 과목 나열에서 지정한 과목만 덜어낸다.
+ *
+ * 문장 전체를 훑어 이름을 지우면 술어와 무관한 절까지 잘려 나간다.
+ * 실제로 "미적분·확률과 통계는 우수하나 기하는 미이수입니다"가
+ * "미적분는 우수하나 기하는 미이수입니다"로 망가졌다. 그래서 술어와
+ * 구분자로 이어져 있는 나열만 대상으로 삼는다.
+ *
+ * 양방향이 같은 규칙을 쓰도록 술어 패턴을 인자로 받는다. 한쪽만 고치면
+ * 반대 방향에서 같은 훼손이 그대로 재현된다.
+ */
+const stripNamesFromAdjacentList = (
+  sentence: string,
+  names: string[],
+  predicatePattern: string,
+  /**
+   * 나열을 인식하기 위한 보조 어휘. 제거 대상이 아니라 토큰 경계를 잡는 용도다.
+   * 일반 토큰(`[^\\s·,、/]+`)은 공백을 넘지 못해서, 나열의 다른 항목이
+   * "확률과 통계"처럼 공백을 품으면 나열 전체를 인식하지 못하고 건너뛴다.
+   * 그러면 같은 나열에 있는 오서술 과목이 그대로 남는다.
+   */
+  otherCourseNames: string[] = []
+): string => {
+  const nameAlt = names
+    .map(courseNameAlternation)
+    .filter((alt) => alt.length > 0)
+    .join("|");
+  if (!nameAlt) return sentence;
+
+  const vocabularyAlt = [...names, ...otherCourseNames]
+    .map(courseNameAlternation)
+    .filter((alt) => alt.length > 0)
+    .join("|");
+  const token = `(?:${vocabularyAlt}|[^\\s·,、/]+)${COURSE_NAME_BOUNDARY}`;
+  // 조사·부사를 술어와 분리해 캡처한다. 하나로 묶으면 조사 슬롯이 비었을 때
+  // 술어의 첫 글자를 조사로 오인해 "이수하지"를 "가수하지"로 고쳐 버린다.
+  const listPattern = new RegExp(
+    `(${token}(?:\\s*[·,、/]\\s*${token}){1,12})(${COURSE_JOSA}${COURSE_ADVERB})((?:${predicatePattern}))`,
+    "g"
+  );
+
+  const variantSet = new Set(
+    names.flatMap((name) =>
+      expandSubjectNameVariants(name).map(normalizeCourseKey)
+    )
+  );
+
+  return sentence.replace(
+    listPattern,
+    (full, list: string, connector: string, predicate: string) => {
+      const parts = list.split(/\s*[·,、/]\s*/).filter((p) => p.length > 0);
+      const kept = parts.filter(
+        (part) => !variantSet.has(normalizeCourseKey(part))
+      );
+      if (kept.length === 0 || kept.length === parts.length) return full;
+      // connector의 첫 조사는 나열의 *마지막* 항목에 붙어 있던 것이라,
+      // 마지막 항목을 덜어내면 받침이 다른 단어에 얹혀 "미적분를"이 된다.
+      const fixed = matchJosaToWord(kept[kept.length - 1], connector);
+      return `${kept.join("·")}${fixed}${predicate}`;
+    }
+  );
+};
+
+/**
+ * 과목명별 인접 판정 정규식을 미리 만들어 둔다.
+ *
+ * 좌측 경계는 어휘 전체(교육과정 표 + 커리어넷 교과)를 훑어 만들기 때문에
+ * 문장마다 다시 계산하면 비싸다. 이 값들은 문장에 의존하지 않으므로 문장
+ * 루프 밖에서 한 번만 만든다.
+ */
+const buildAdjacencyMatchers = (
+  names: string[],
+  otherCourseNames: string[],
+  predicatePattern: string
+): { forward: RegExp; reversed: RegExp }[] => {
+  const vocabulary = [...names, ...otherCourseNames];
+  const matchers: { forward: RegExp; reversed: RegExp }[] = [];
+  for (const name of names) {
+    // 교과 영역 라벨은 문장 삭제 판정에서 제외한다 (정방향·역방향 모두).
+    if (SUBJECT_AREA_LABELS.has(name.trim())) continue;
+    const alt = courseNameAlternation(name);
+    if (!alt) continue;
+    const left = buildLeftBoundary(name, vocabulary);
+    matchers.push({
+      forward: new RegExp(
+        `${left}${alt}${COURSE_NAME_BOUNDARY}(?:${COURSE_TO_PREDICATE}|${COURSE_TO_PREDICATE_TABLE})(?:${predicatePattern})`
+      ),
+      reversed: new RegExp(
+        `(?:${predicatePattern})${PREDICATE_TO_COURSE}${left}${alt}${COURSE_NAME_BOUNDARY}${AREA_CONTINUATION}`
+      ),
+    });
+  }
+  return matchers;
+};
 
 /**
  * 이수·이수 예정으로 확정된 과목을 "미이수"로 서술한 내용을 제거한다.
@@ -2578,14 +3060,23 @@ const COURSE_NAME_BOUNDARY = "(?![Ⅰ-Ⅲ0-9])";
  *
  * 1) 여러 과목을 나열한 문장이면 확정 이수 과목만 나열에서 제거한다.
  *    ("물리학Ⅰ·화학Ⅱ 미이수" → "화학Ⅱ 미이수")
- * 2) 그래도 확정 이수 과목이 미이수로 남아 있는 문장은 통째로 제거한다.
+ * 2) 확정 이수 과목과 미이수 서술이 닫힌 연결 표현으로 이어지면 문장을 제거한다.
+ *    ("물리학Ⅱ를 이수하지 않아", "물리학Ⅱ의 경우 이수하지 않은",
+ *     "미이수 과목은 물리학Ⅱ입니다" 등 어순이 뒤집힌 형태 포함)
+ *
+ * 문장 안에 다른 과목이 함께 등장하는지로 판단하지 않는다. 그렇게 하면
+ * "물리학Ⅱ 세특은 우수하지만 지구과학Ⅱ를 이수하지 않은 점은 아쉽습니다"처럼
+ * 참인 미이수 서술까지 지워진다. 판정은 언제나 "그 과목명과 그 서술이
+ * 직접 이어져 있는가"로만 한다.
  *
  * 모든 문장이 제거되면 빈 문자열을 반환하며, 호출부가 확정 데이터 기반
  * 문장으로 대체한다.
  */
 export const removeMisstatedMissingCourses = (
   text: string,
-  completedCourses: string[]
+  completedCourses: string[],
+  /** 나열 인식용 보조 어휘 (판정에는 쓰지 않는다) */
+  otherCourseNames: string[] = []
 ): string => {
   // 긴 이름부터 처리해야 "물리학"이 "물리학Ⅱ"를 잘라먹지 않는다.
   const names = [...completedCourses]
@@ -2593,8 +3084,24 @@ export const removeMisstatedMissingCourses = (
     .sort((a, b) => b.length - a.length);
   if (names.length === 0) return text;
 
-  const sentences = text.match(/[^.!?]+[.!?]*\s*/g) ?? [text];
+  // 이수/미이수 서술이 하나도 없는 필드가 대부분이므로, 판정기 생성은
+  // 실제로 필요한 문장을 만났을 때로 미룬다.
+  let adjacencyMatchers: { forward: RegExp; reversed: RegExp }[] | undefined;
+  const getAdjacencyMatchers = (): {
+    forward: RegExp;
+    reversed: RegExp;
+  }[] => {
+    adjacencyMatchers ??= buildAdjacencyMatchers(
+      names,
+      otherCourseNames,
+      MISSING_COURSE_PATTERN
+    );
+    return adjacencyMatchers;
+  };
+
+  const sentences = splitSentences(text);
   const kept: string[] = [];
+  let changed = false;
 
   for (const sentence of sentences) {
     if (!new RegExp(MISSING_COURSE_PATTERN).test(sentence)) {
@@ -2602,33 +3109,219 @@ export const removeMisstatedMissingCourses = (
       continue;
     }
 
-    // 1) 나열형에서 확정 이수 과목만 제거
-    let cleaned = sentence;
-    for (const name of names) {
-      const escaped = escapeRegExp(name);
-      cleaned = cleaned
-        .replace(
-          new RegExp(`${escaped}${COURSE_NAME_BOUNDARY}\\s*[·,、/]\\s*`, "g"),
-          ""
-        )
-        .replace(
-          new RegExp(`\\s*[·,、/]\\s*${escaped}${COURSE_NAME_BOUNDARY}`, "g"),
-          ""
-        );
-    }
-
-    // 2) 여전히 확정 이수 과목이 미이수로 서술되면 문장을 통째로 제거
-    const stillMisstated = names.some((name) =>
-      new RegExp(
-        `${escapeRegExp(name)}${COURSE_NAME_BOUNDARY}[은는이가을를도]?\\s*(?:${MISSING_COURSE_PATTERN})`
-      ).test(cleaned)
+    // 1) 미이수 술어에 붙은 나열에서 확정 이수 과목만 제거
+    const cleaned = stripNamesFromAdjacentList(
+      sentence,
+      names,
+      MISSING_COURSE_PATTERN,
+      otherCourseNames
     );
-    if (stillMisstated) continue;
+    if (cleaned !== sentence) changed = true;
+
+    // 2) 확정 이수 과목과 미이수 서술이 직접 이어진 문장은 통째로 제거
+    const stillMisstated = getAdjacencyMatchers().some(
+      ({ forward, reversed }) => forward.test(cleaned) || reversed.test(cleaned)
+    );
+    if (stillMisstated) {
+      changed = true;
+      continue;
+    }
 
     kept.push(cleaned);
   }
 
-  return kept.join("").trim();
+  // 아무것도 걷어내지 않았으면 원문을 그대로 돌려준다. join+trim을 무조건
+  // 적용하면 앞뒤 공백만 달라진 값이 "보정됨"으로 집계·로그된다.
+  return changed ? kept.join("").trim() : text;
+};
+
+/**
+ * 이수 정합성 전역 보정 — 리포트 전체 서술 필드를 훑는다.
+ *
+ * 설계상 받아들인 것 (놓치는 쪽이 지우는 쪽보다 낫다는 원칙):
+ *  - 문장 단위 삭제라, 거짓 절과 참인 절이 한 문장에 있으면 함께 사라진다.
+ *    ("기하 이수 기록이 있으나 미적분 이수 기록은 없습니다")
+ *  - 교과 영역 라벨(국어·수학·사회…)은 문장 삭제 판정에서 빠져 있어, 라벨
+ *    자체에 대한 오서술("수학은 이수하지 않았습니다")은 통과한다. 이 이름들은
+ *    1학년 공통과목 행으로 늘 이수 목록에 들어오는데, 판정에 넣으면
+ *    "미이수 과목은 수학 교과에 집중되어 있습니다" 같은 참인 요약이 지워진다.
+ *  - 접속 조사(와/과)로 이어진 나열은 분리하지 않는다. 짧은 이름이
+ *    "확률과 통계"를 잘라 없는 과목명을 만들어 내는 쪽이 더 큰 손해다.
+ *  - 시제가 중립이거나 부정과 결합할 수 있는 어미(이수하여·이수함·이수 기록·
+ *    관형형 이수한)는 과거 단정으로 보지 않는다.
+ *
+ *
+ * 이 문제가 반복된 구조적 이유는, 이수 사실의 정답이 섹션마다 따로 주입되고
+ * 검사도 courseAlignment 두 필드에만 걸려 있었기 때문이다. 프롬프트에 정답을
+ * 넣는 것만으로는 새 섹션이 추가되거나 모델이 지시를 놓치면 다시 새어 나가므로,
+ * 어떤 섹션이 무엇을 쓰든 마지막에 결정적으로 걸러내는 층을 둔다.
+ *
+ * 건드리지 않는 것:
+ *  - 문자열이 아닌 값(표의 status, 점수, 배열 구조 등)
+ *  - 이수 사실과 무관한 문장 (미이수/이수 단정 패턴이 없는 문장)
+ *
+ * 문장을 모두 지워 내용이 남지 않으면 빈 문자열을 남기지 않고 필드(또는 배열
+ * 원소)를 제거한다. 렌더러가 모두 `field &&` 로 감싸 출력하므로 필드가 없으면
+ * 그 자리는 그냥 렌더링되지 않지만, 빈 문자열이 남으면 빈 문단이 생기고 무엇보다
+ * 틀린 문장을 그대로 두는 것보다 낫다.
+ * (courseAlignment의 missingCourseImpact·recommendation은 전용 폴백 문장
+ *  생성기가 앞 단계에서 이미 확정 데이터로 채운다.)
+ */
+export const scrubCourseStatusStatements = (
+  sections: ReportSection[],
+  completedCourses: string[],
+  notTakenCourses: string[],
+  reportLabel: string
+): number => {
+  if (completedCourses.length === 0 && notTakenCourses.length === 0) return 0;
+
+  let fixedCount = 0;
+
+  const fixString = (value: string): string => {
+    // 과목명과 서술이 함께 들어갈 수 없는 아주 짧은 값만 건너뛴다.
+    // ("미적분 미이수"는 7자라 예전 기준(8자)에서는 그대로 통과했다)
+    if (value.length < 4) return value;
+    const withoutMissing = removeMisstatedMissingCourses(
+      value,
+      completedCourses,
+      notTakenCourses
+    );
+    if (withoutMissing.length === 0) return "";
+    return removeMisstatedTakenCourses(
+      withoutMissing,
+      notTakenCourses,
+      completedCourses
+    );
+  };
+
+  const walk = (node: unknown, path: string): void => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      // 뒤에서부터 순회해야 원소 제거가 남은 인덱스를 흔들지 않는다.
+      for (let i = node.length - 1; i >= 0; i--) {
+        const item = node[i];
+        if (typeof item !== "string") {
+          walk(item, `${path}[${i}]`);
+          continue;
+        }
+        const fixed = fixString(item);
+        if (fixed === item) continue;
+        fixedCount++;
+        if (fixed.length === 0) {
+          node.splice(i, 1);
+          console.log(`${reportLabel} 이수 오서술 원소 제거: ${path}[${i}]`);
+        } else {
+          node[i] = fixed;
+          console.log(`${reportLabel} 이수 서술 보정: ${path}[${i}]`);
+        }
+      }
+      return;
+    }
+    const record = node as Record<string, unknown>;
+    for (const [key, val] of Object.entries(record)) {
+      if (typeof val !== "string") {
+        walk(val, `${path}.${key}`);
+        continue;
+      }
+      const fixed = fixString(val);
+      if (fixed === val) continue;
+      fixedCount++;
+      if (fixed.length === 0) {
+        delete record[key];
+        console.log(`${reportLabel} 이수 오서술 필드 제거: ${path}.${key}`);
+      } else {
+        record[key] = fixed;
+        console.log(`${reportLabel} 이수 서술 보정: ${path}.${key}`);
+      }
+    }
+  };
+
+  for (const section of sections) {
+    walk(section, section.sectionId);
+  }
+
+  return fixedCount;
+};
+
+/**
+ * 실제로 이수하지 않은 과목을 "이수했다"고 단정한 문장을 제거한다.
+ *
+ * removeMisstatedMissingCourses의 반대 방향. 판정 대상을 코드가 확정한
+ * missingCourses(전처리 권장과목 매칭 결과)로 한정하는 이유:
+ *  - 이 목록은 "학생이 이수하지 않았음"이 코드로 확정된 과목만 담는다.
+ *  - 반면 "이 문장에 나온 과목명이 이수 목록에 없다"는 조건으로 넓히면
+ *    "사회탐구 과목을 다양하게 이수했습니다" 같은 교과 영역 서술까지
+ *    삭제되어 정상 문장을 잃는다.
+ *
+ * 미이수 서술이 함께 있는 문장("물리학Ⅱ는 이수했지만 기하는 이수하지 못했습니다")은
+ * 정상 서술이므로 건드리지 않는다.
+ */
+export const removeMisstatedTakenCourses = (
+  text: string,
+  notTakenCourses: string[],
+  /** 나열 인식용 보조 어휘 (판정에는 쓰지 않는다) */
+  otherCourseNames: string[] = []
+): string => {
+  const names = [...notTakenCourses]
+    .filter((c) => c.trim().length > 0)
+    .sort((a, b) => b.length - a.length);
+  if (names.length === 0) return text;
+
+  // 이수/미이수 서술이 하나도 없는 필드가 대부분이므로, 판정기 생성은
+  // 실제로 필요한 문장을 만났을 때로 미룬다.
+  let adjacencyMatchers: { forward: RegExp; reversed: RegExp }[] | undefined;
+  const getAdjacencyMatchers = (): {
+    forward: RegExp;
+    reversed: RegExp;
+  }[] => {
+    adjacencyMatchers ??= buildAdjacencyMatchers(
+      names,
+      otherCourseNames,
+      TAKEN_COURSE_PATTERN
+    );
+    return adjacencyMatchers;
+  };
+
+  const sentences = splitSentences(text);
+  const kept: string[] = [];
+  let changed = false;
+
+  for (const sentence of sentences) {
+    if (!new RegExp(TAKEN_COURSE_PATTERN).test(sentence)) {
+      kept.push(sentence);
+      continue;
+    }
+    // 미이수 서술이 섞인 문장은 정상 서술일 가능성이 높다.
+    if (new RegExp(MISSING_COURSE_PATTERN).test(sentence)) {
+      kept.push(sentence);
+      continue;
+    }
+
+    // 1) 이수 술어에 붙은 나열에서 미이수 과목만 제거해 참인 부분을 살린다.
+    //    ("미적분Ⅱ·기하를 이수했습니다" → "미적분Ⅱ를 이수했습니다")
+    //    미이수 방향과 같은 함수를 쓴다. 한쪽만 술어 기준으로 고치면 반대
+    //    방향에서 절 넘나듦과 조사 불일치가 그대로 재현된다.
+    const cleaned = stripNamesFromAdjacentList(
+      sentence,
+      names,
+      TAKEN_COURSE_PATTERN,
+      otherCourseNames
+    );
+    if (cleaned !== sentence) changed = true;
+
+    // 2) 미이수 과목과 이수 단정이 닫힌 연결 표현으로 이어진 문장은 제거
+    const misstated = getAdjacencyMatchers().some(
+      ({ forward, reversed }) => forward.test(cleaned) || reversed.test(cleaned)
+    );
+
+    if (misstated) {
+      changed = true;
+      continue;
+    }
+    kept.push(cleaned);
+  }
+
+  return changed ? kept.join("").trim() : text;
 };
 
 /** 서술 필드가 통째로 제거된 경우 확정 매칭 데이터로 문장을 재구성한다. */
@@ -3039,6 +3732,13 @@ const normalizeSection = (
     const takenSubjectSet = new Set<string>();
     for (const subj of pre.allTakenSubjects ?? []) {
       if (subj) takenSubjectSet.add(normSubject(subj));
+    }
+    // 학생이 직접 입력한 수강 예정 과목은 allTakenSubjects에 없지만 실제로
+    // 이수(예정)하는 과목이다. 이것을 빼면 그 과목의 분석 항목이 환각으로
+    // 오인되어 통째로 삭제된다.
+    for (const planned of (pre.plannedSubjectsRaw ?? "").split(/[,、，\n]/)) {
+      const name = planned.trim();
+      if (name) takenSubjectSet.add(normSubject(name));
     }
     // backward-safety: allTakenSubjects가 비어 있는 경우 기존 출처들로 fallback
     if (takenSubjectSet.size === 0) {

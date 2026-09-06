@@ -67,8 +67,13 @@ describe("preprocess — 이수 사실 정답 텍스트", () => {
     // Act
     const { texts } = preprocess(recordData, studentInfo, "standard");
 
-    // Assert: 두 목록의 역할이 다르다는 것이 이 변경의 전제
-    expect(texts.completedSubjectsByYearText).not.toContain("정보");
+    // Assert: 두 목록의 역할이 다르다는 것이 이 변경의 전제.
+    // 평가 대상 목록의 "N학년 이수 완료" 줄에는 비주요 과목이 들어가지 않는다.
+    const completedYearLines = texts.completedSubjectsByYearText
+      .split("\n")
+      .filter((line) => /^- \d학년 이수 완료:/.test(line))
+      .join("\n");
+    expect(completedYearLines).not.toContain("정보");
     expect(texts.allTakenSubjectsByYearText).toContain("정보");
   });
 

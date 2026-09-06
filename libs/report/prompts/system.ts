@@ -686,10 +686,10 @@ export const buildSystemPromptPrefix = (
   const planInstructions = getPlanInstructions(plan);
 
   // 이수 사실의 단일 정답. 섹션별 프롬프트에 각자 주입하면 빠지는 섹션이
-  // 생기고(subjectAnalysis·majorExploration·interviewPrep이 그랬다), 섹션마다
-  // 서로 다른 목록을 받아 같은 과목이 한쪽에서는 이수, 다른 쪽에서는 미이수로
-  // 서술되는 불일치가 생긴다. 모든 섹션이 공유하는 prefix에 한 번만 선언해
-  // 어느 섹션이 추가되어도 같은 정답을 보게 한다.
+  // 생기고(과거 subjectAnalysis·majorExploration·interviewPrep이 그랬다),
+  // 섹션마다 서로 다른 목록을 받아 같은 과목이 한쪽에서는 이수, 다른 쪽에서는
+  // 미이수로 서술되는 불일치가 생긴다. 모든 섹션이 공유하는 prefix에 한 번만
+  // 선언해 어느 섹션이 추가되어도 같은 정답을 보게 한다.
   //
   // 섹션 프롬프트가 받는 "이수 완료 과목 정보"는 비주요 과목을 걸러낸
   // *평가 대상* 목록이다. 두 목록의 역할 차이를 여기서 명시해, 평가 대상
