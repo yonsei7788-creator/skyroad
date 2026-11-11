@@ -1,37 +1,29 @@
-import {
-  formatCutDifference,
-  formatCutValue,
-  formatStudentCutValue,
-} from "@/libs/jeongsi/report/cut-format";
+import { Fragment } from "react";
+
 import type {
   CutComparison,
   JeongsiRecommendationSection,
   RecommendationItem,
 } from "@/libs/jeongsi/report-types";
-import type { AdmissionTier } from "@/libs/jeongsi/types";
+import type { ResultMetric } from "@/libs/jeongsi/types";
 
-import { SectionHeader } from "../../report/_components";
-import reportStyles from "../../report/_components/report.module.css";
-import {
-  JeongsiChanceBadge,
-  JeongsiGroupChip,
-  TIER_BG_VAR,
-  TIER_COLOR_VAR,
-  TIER_HINT,
-} from "./JeongsiBadge";
+import { TIER_ORDER, toneStyleOf } from "./JeongsiBadge";
+import type { RecommendableTier } from "./JeongsiBadge";
 import styles from "./jeongsi-report.module.css";
+import { JeongsiPartHeading } from "./JeongsiPartHeading";
 
 interface JeongsiRecommendationRendererProps {
   data: JeongsiRecommendationSection;
-  sectionNumber: number;
+  partNumber: string;
 }
 
-type RecommendableTier = Exclude<AdmissionTier, "지원불가">;
+/** 격차 막대 트랙 폭(px). .gapTrack 의 width 와 같아야 한다 */
+const GAP_TRACK_PX = 120;
 
-/** 상향 → 적정 → 안정 순서를 항상 고정한다 */
-const TIER_ORDER: RecommendableTier[] = ["상향", "적정", "안정"];
-
-const formatScore = (value: number): string => value.toFixed(1);
+const UNIT: Record<ResultMetric, string> = {
+  percentile: "백분위점",
+  convertedScore: "점",
+};
 
 /**
  * 컷 비교값. cutComparison 이 생기기 전에 저장된 리포트는 컷이 전부
@@ -52,62 +44,125 @@ const resolveComparison = (item: RecommendationItem): CutComparison | null => {
   };
 };
 
-const RecommendationMetrics = ({ item }: { item: RecommendationItem }) => {
-  const comparison = resolveComparison(item);
-  const diff =
-    comparison === null
-      ? null
-      : comparison.studentValue - comparison.referenceCut;
+const formatSigned = (value: number): string =>
+  `${value > 0 ? "+" : value < 0 ? "−" : "±"}${Math.abs(value).toFixed(1)}`;
+
+interface GapScale {
+  zeroX: number;
+  pxPerUnit: number;
+}
+
+/**
+ * 지표별 막대 축. 백분위점과 환산점수는 단위가 달라 한 축에 그릴 수
+ * 없으므로, 같은 지표끼리만 같은 축(최소 격차 ~ 최대 격차)을 쓴다.
+ */
+const buildGapScales = (
+  comparisons: CutComparison[]
+): Map<ResultMetric, GapScale> => {
+  const scales = new Map<ResultMetric, GapScale>();
+  const metrics: ResultMetric[] = ["percentile", "convertedScore"];
+
+  metrics.forEach((metric) => {
+    const gaps = comparisons
+      .filter((comparison) => comparison.metric === metric)
+      .map((comparison) => comparison.studentValue - comparison.referenceCut);
+    if (gaps.length === 0) return;
+
+    const negative = Math.max(0, -Math.min(...gaps));
+    const positive = Math.max(0, Math.max(...gaps));
+    const span = negative + positive || 1;
+    scales.set(metric, {
+      zeroX: (negative / span) * GAP_TRACK_PX,
+      pxPerUnit: GAP_TRACK_PX / span,
+    });
+  });
+
+  return scales;
+};
+
+interface GapCellProps {
+  comparison: CutComparison | null;
+  scale: GapScale | undefined;
+}
+
+const GapCell = ({ comparison, scale }: GapCellProps) => {
+  if (comparison === null || scale === undefined) {
+    return <span className={styles.muted}>비교 불가</span>;
+  }
+
+  const gap = comparison.studentValue - comparison.referenceCut;
+  const width = Math.abs(gap) * scale.pxPerUnit;
+  const left = gap >= 0 ? scale.zeroX : scale.zeroX - width;
 
   return (
-    <div className={styles.recMetrics}>
-      <div className={styles.recMetric}>
-        <span className={styles.recMetricLabel}>내 환산점수</span>
-        <span className={styles.recMetricValue}>
-          {formatScore(item.convertedScore)}
-        </span>
+    <div className={styles.gapCell}>
+      <div className={styles.gapTrack}>
+        <div className={styles.gapZero} style={{ left: `${scale.zeroX}px` }} />
+        <div
+          className={styles.gapBar}
+          style={{ left: `${left}px`, width: `${width}px` }}
+        />
       </div>
-      <div className={styles.recMetric}>
-        <span className={styles.recMetricLabel}>
-          {comparison?.previousYear
-            ? `${comparison.previousYear.year} 컷`
-            : "전년도 컷"}
-        </span>
-        {comparison?.previousYear ? (
-          <span className={styles.recMetricValue}>
-            {formatCutValue(comparison.metric, comparison.previousYear.cut)}
-          </span>
-        ) : (
-          <span className={styles.recMetricValueNull}>미공개</span>
-        )}
-      </div>
-      <div className={styles.recMetric}>
-        <span className={styles.recMetricLabel}>3개년 기준컷 대비</span>
-        {comparison === null || diff === null ? (
-          <span className={styles.recMetricValueNull}>비교 불가</span>
-        ) : (
-          <>
-            <span
-              className={`${styles.recMetricValue} ${
-                diff >= 0 ? styles.recMetricValueUp : styles.recMetricValueDown
-              }`}
-            >
-              {formatCutDifference(comparison)}
-            </span>
-            <span className={reportStyles.caption}>
-              {formatStudentCutValue(comparison)} · 기준컷{" "}
-              {formatCutValue(comparison.metric, comparison.referenceCut)}
-            </span>
-          </>
-        )}
-      </div>
+      <span className={styles.gapValue}>
+        {formatSigned(gap)}
+        <span className={styles.unit}>{UNIT[comparison.metric]}</span>
+      </span>
     </div>
   );
 };
 
+const formatReferenceCut = (comparison: CutComparison | null): string => {
+  if (comparison === null) return "—";
+  const value = comparison.referenceCut.toFixed(1);
+  return comparison.metric === "percentile" ? value : `${value}점`;
+};
+
+interface RecommendationRowProps {
+  item: RecommendationItem;
+  comparison: CutComparison | null;
+  scales: Map<ResultMetric, GapScale>;
+  className: string;
+  style: React.CSSProperties;
+}
+
+const RecommendationRow = ({
+  item,
+  comparison,
+  scales,
+  className,
+  style,
+}: RecommendationRowProps) => (
+  <div className={`${styles.recItem} ${className}`} style={style}>
+    <div className={styles.recRow}>
+      <span className={styles.recName}>
+        <b>{item.university}</b> <span>{item.department}</span>
+      </span>
+      <span className={styles.alignCenter}>{item.group}</span>
+      <span className={styles.alignRight}>{item.quota}</span>
+      <span className={styles.alignRight}>
+        {formatReferenceCut(comparison)}
+      </span>
+      <GapCell
+        comparison={comparison}
+        scale={comparison ? scales.get(comparison.metric) : undefined}
+      />
+      <span className={`${styles.alignRight} ${styles.toneText}`}>
+        {item.chance}
+      </span>
+    </div>
+    <p className={styles.recComment}>{item.comment}</p>
+    {item.suneungWeight !== undefined && (
+      <p className={styles.recNote}>
+        수능 {item.suneungWeight}% + 학생부 등 {100 - item.suneungWeight}%
+        전형입니다. 구분은 수능 성적만으로 본 위치입니다.
+      </p>
+    )}
+  </div>
+);
+
 export const JeongsiRecommendationRenderer = ({
   data,
-  sectionNumber,
+  partNumber,
 }: JeongsiRecommendationRendererProps) => {
   const { groups, notices, overallComment } = data;
 
@@ -115,129 +170,124 @@ export const JeongsiRecommendationRenderer = ({
     groups.find((group) => group.tier === tier)
   ).filter((group): group is (typeof groups)[number] => group !== undefined);
 
+  const comparisonOf = new Map<RecommendationItem, CutComparison | null>(
+    orderedGroups.flatMap((group) =>
+      group.items.map((item) => [item, resolveComparison(item)] as const)
+    )
+  );
+  const scales = buildGapScales(
+    [...comparisonOf.values()].filter(
+      (comparison): comparison is CutComparison => comparison !== null
+    )
+  );
+  const usedMetrics = new Set(
+    [...comparisonOf.values()]
+      .filter((comparison): comparison is CutComparison => comparison !== null)
+      .map((comparison) => comparison.metric)
+  );
+
+  const countOf = (tier: RecommendableTier): number =>
+    orderedGroups.find((group) => group.tier === tier)?.items.length ?? 0;
+
   return (
     <>
-      {/* Block 1: 헤더 + 척도 안내 */}
+      {/* Block 1: 제목 + 구분별 개수 */}
       <div>
-        <SectionHeader number={sectionNumber} title={data.title} />
-
-        <p className={styles.noteLine}>
-          환산점수는 대학마다 식이 달라 대학 간 직접 비교는 의미가 없습니다.
-          합격 가능성은 각 대학이 공개한 입결 지표(대부분{" "}
-          <strong>국·수·탐 평균 백분위</strong>, 일부 대학은{" "}
-          <strong>대학 환산점수</strong>)로, 같은 지표로 계산한 내 값과 비교해
-          판정했습니다.
-        </p>
+        <JeongsiPartHeading
+          partNumber={partNumber}
+          title={data.title}
+          lead={
+            <>
+              각 대학이 공개한 입결 지표(대부분 <b>국·수·탐 평균 백분위</b>,
+              일부 대학은 <b>대학 환산점수</b>)로 계산한 내 값을 3개년 기준컷과
+              비교해 상향·적정·안정으로 나눴습니다.
+            </>
+          }
+        />
+        <div className={`${styles.tierSummary} ${styles.tierSummaryGap}`}>
+          {TIER_ORDER.map((tier) => (
+            <div
+              key={tier}
+              className={styles.tierSummaryCell}
+              style={toneStyleOf(tier)}
+            >
+              <span className={styles.tierSummaryName}>{tier}</span>
+              <span className={styles.tierSummaryCount}>
+                <b>{countOf(tier)}</b>곳
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* 목록을 그대로 읽으면 오해할 수 있는 전제. 표보다 먼저 읽혀야 한다.
-
-          notices 는 AI 가 아니라 buildRecommendationNotices() 가 만든다.
-          출력은 짧은 라벨이 아니라 긴 문장이고, 개수도 0~2개로 변한다.
-          그래서 (1) 한 건이면 불릿 없이 문단으로 쓰고,
-          (2) 헤더와 한 덩어리로 묶지 않고 독립 블록으로 둔다 —
-          길어졌을 때 통째로 밀리면서 첫 구분 블록까지 끌고 가지 않도록
-          페이지 분할 지점을 엔진이 고르게 하기 위해서다. */}
+      {/* 목록을 그대로 읽으면 오해할 수 있는 전제. 표보다 먼저 읽혀야 한다 */}
       {notices.length > 0 && (
-        <div>
-          <div className={styles.noticeBox}>
-            <span className={styles.noticeLabel}>먼저 확인하세요</span>
-            {notices.length === 1 ? (
-              <p className={styles.noticeText}>{notices[0]}</p>
-            ) : (
-              <ul className={styles.noticeList}>
-                {notices.map((notice, idx) => (
-                  <li key={`notice-${idx}`} className={styles.noticeItem}>
-                    {notice}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+        <div className={styles.noticeBox}>
+          <span className={styles.noticeLabel}>먼저 확인하세요</span>
+          {notices.map((notice, index) => (
+            <p key={`notice-${index}`} className={styles.noticeText}>
+              {notice}
+            </p>
+          ))}
         </div>
       )}
 
-      {/* Block 2~4: 구분별 블록 */}
+      {/* Block 2~N: 구분별 표.
+          구분 머리(머리행·구분명)는 첫 대학과 한 블록으로 묶고, 나머지 대학은
+          한 곳씩 독립 블록으로 둔다. 그래야 표가 대학 단위로 쪽을 넘기고
+          구분 하나가 통째로 밀려 빈 공간이 생기지 않는다. */}
       {orderedGroups.map((group) => {
-        const tierStyle = {
-          "--tier-color": TIER_COLOR_VAR[group.tier],
-          "--tier-bg": TIER_BG_VAR[group.tier],
-        } as React.CSSProperties;
+        const [firstItem, ...restItems] = group.items;
+        const toneStyle = toneStyleOf(group.tier);
+        const renderRow = (item: RecommendationItem, extraClass = "") => (
+          <RecommendationRow
+            key={`${item.university}-${item.department}-${item.group}`}
+            item={item}
+            comparison={comparisonOf.get(item) ?? null}
+            scales={scales}
+            className={extraClass}
+            style={toneStyle}
+          />
+        );
 
         return (
-          <div key={group.tier}>
-            <div className={styles.tierBlock} style={tierStyle}>
-              <div className={styles.tierBlockHead}>
-                <div className={styles.tierHeadLeft}>
-                  <span className={styles.tierName}>{group.tier}</span>
-                  <span className={styles.tierHint}>
-                    {TIER_HINT[group.tier]}
+          <Fragment key={group.tier}>
+            <div className={styles.recTable} style={toneStyle}>
+              <div className={styles.recHeadRow}>
+                <span>대학 · 학과</span>
+                <span className={styles.alignCenter}>군</span>
+                <span className={styles.alignRight}>모집</span>
+                <span className={styles.alignRight}>기준컷</span>
+                <span>기준컷 대비 격차</span>
+                <span className={styles.alignRight}>합격 가능성</span>
+              </div>
+              <div className={styles.recTierLabel}>{group.tier}</div>
+              {firstItem === undefined ? (
+                <div className={styles.recItem}>
+                  <span className={styles.muted}>
+                    이 구분에 해당하는 대학이 산출되지 않았습니다.
                   </span>
                 </div>
-                <span className={styles.tierCount}>{group.items.length}개</span>
-              </div>
-
-              <div className={styles.tierItems}>
-                {group.items.length === 0 ? (
-                  <div className={styles.tierEmpty}>
-                    이 구분에 해당하는 대학이 산출되지 않았습니다.
-                  </div>
-                ) : (
-                  group.items.map((item) => (
-                    <div
-                      key={`${item.university}-${item.department}`}
-                      className={styles.recItem}
-                    >
-                      <div className={styles.recHead}>
-                        <div className={styles.recIdentity}>
-                          <div className={styles.recTitleRow}>
-                            <span className={styles.recUniversity}>
-                              {item.university}
-                            </span>
-                            <JeongsiGroupChip group={item.group} />
-                            <span className={reportStyles.caption}>
-                              모집 {item.quota}명
-                            </span>
-                          </div>
-                          <span className={styles.recDepartment}>
-                            {item.department}
-                          </span>
-                        </div>
-                        <JeongsiChanceBadge chance={item.chance} />
-                      </div>
-
-                      <RecommendationMetrics item={item} />
-
-                      <p className={styles.recComment}>{item.comment}</p>
-                      {item.suneungWeight !== undefined && (
-                        <p className={styles.recNote}>
-                          수능 {item.suneungWeight}% + 학생부 등{" "}
-                          {100 - item.suneungWeight}% 전형입니다. 구분은 수능
-                          성적만으로 본 위치입니다.
-                        </p>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
+              ) : (
+                renderRow(firstItem)
+              )}
             </div>
-          </div>
+            {restItems.map((item) => renderRow(item))}
+          </Fragment>
         );
       })}
 
-      {/* 최종 블록: 지원 전략 총평 */}
-      <div>
-        <div className={reportStyles.aiCommentary}>
-          <div className={reportStyles.aiCommentaryIcon}>✦</div>
-          <div className={reportStyles.aiCommentaryContent}>
-            <div className={reportStyles.aiCommentaryLabel}>
-              <span className={reportStyles.markerSky}>지원 전략 총평</span>
-            </div>
-            <div className={reportStyles.aiCommentaryText}>
-              {overallComment}
-            </div>
-          </div>
-        </div>
+      {usedMetrics.size > 1 && (
+        <p className={styles.axisNote}>
+          격차 막대는 같은 지표(백분위점 · 환산점수)끼리만 같은 축으로
+          그렸습니다.
+        </p>
+      )}
+
+      {/* 최종 블록: 지원 전략 */}
+      <div className={styles.insightBox}>
+        <span className={styles.insightLabel}>지원 전략</span>
+        <p className={styles.insightText}>{overallComment}</p>
       </div>
     </>
   );

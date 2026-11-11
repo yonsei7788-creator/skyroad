@@ -1,94 +1,75 @@
 import type { JeongsiUniversityMatchSection } from "@/libs/jeongsi/report-types";
 
-import { SectionHeader } from "../../report/_components";
-import reportStyles from "../../report/_components/report.module.css";
 import { JeongsiGroupChip } from "./JeongsiBadge";
 import styles from "./jeongsi-report.module.css";
+import { JeongsiPartHeading } from "./JeongsiPartHeading";
 
 interface JeongsiUniversityMatchRendererProps {
   data: JeongsiUniversityMatchSection;
-  sectionNumber: number;
+  partNumber: string;
 }
 
 export const JeongsiUniversityMatchRenderer = ({
   data,
-  sectionNumber,
+  partNumber,
 }: JeongsiUniversityMatchRendererProps) => {
   const { items, overallComment } = data;
 
   return (
     <>
-      {/* Block 1: 헤더 + 지표 설명 */}
-      <div>
-        <SectionHeader number={sectionNumber} title={data.title} />
-        <div className={reportStyles.callout}>
-          <div className={reportStyles.calloutContent}>
-            <p className={reportStyles.small}>
-              같은 성적이라도 대학마다 영역별 반영비율과 활용지표가 달라
-              환산점수가 달라집니다. 내 강점 영역을 크게 반영하는 대학을 유리한
-              순서대로 모았습니다.
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Block 1: 제목 */}
+      <JeongsiPartHeading
+        partNumber={partNumber}
+        title={data.title}
+        lead="합격 가능성과 별개로, 영역별 반영비율과 활용지표가 내 성적 구조에 유리한 순서입니다."
+      />
 
-      {/* Block 2~N: 대학별 반영방식 카드 */}
+      {/* Block 2~N: 순위 목록. 대학 한 곳이 쪽 나눔 단위 1개다.
+          첫 대학만 목록 머리선과 한 블록으로 묶는다. */}
       {items.length === 0 ? (
-        <div>
-          <div className={styles.nullNotice}>
-            희망 조건에 맞는 대학이 산출되지 않았습니다.
-          </div>
+        <div className={styles.emptyNotice}>
+          희망 조건에 맞는 대학이 산출되지 않았습니다.
         </div>
       ) : (
-        items.map((item, idx) => (
-          <div key={`${item.university}-${item.department}`}>
-            <div className={styles.matchCard}>
-              <div className={styles.matchHead}>
-                <span className={styles.matchRank}>{idx + 1}</span>
-
-                <div className={styles.matchIdentity}>
-                  <div className={styles.matchTitleRow}>
-                    <span className={styles.matchUniversity}>
-                      {item.university}
-                    </span>
-                    <JeongsiGroupChip group={item.group} />
-                  </div>
-                  <span className={styles.matchDepartment}>
-                    {item.department}
+        items.map((item, index) => {
+          const row = (
+            <div
+              key={`${item.university}-${item.department}-${item.group}`}
+              className={styles.rankItem}
+            >
+              <span className={styles.rankNumber}>{index + 1}</span>
+              <div className={styles.rankBody}>
+                <div className={styles.rankTitleRow}>
+                  <span className={styles.rankTitle}>
+                    {item.university}{" "}
+                    <span className={styles.rankDept}>{item.department}</span>
                   </span>
+                  <JeongsiGroupChip group={item.group} />
                 </div>
+                <div className={styles.chipRow}>
+                  <span className={styles.specChip}>
+                    반영 {item.ratioSummary}
+                  </span>
+                  <span className={styles.specChip}>{item.metricSummary}</span>
+                </div>
+                <p className={styles.rankReason}>{item.reason}</p>
               </div>
-
-              <div className={styles.metaGrid}>
-                <div className={styles.metaItem}>
-                  <span className={styles.metaLabel}>영역별 반영비율</span>
-                  <span className={styles.metaValue}>{item.ratioSummary}</span>
-                </div>
-                <div className={styles.metaItem}>
-                  <span className={styles.metaLabel}>활용지표</span>
-                  <span className={styles.metaValue}>{item.metricSummary}</span>
-                </div>
-              </div>
-
-              <p className={styles.reasonText}>{item.reason}</p>
             </div>
-          </div>
-        ))
+          );
+          return index === 0 ? (
+            <div key="rank-first" className={styles.rankList}>
+              {row}
+            </div>
+          ) : (
+            row
+          );
+        })
       )}
 
-      {/* 최종 블록: 총평 */}
-      <div>
-        <div className={reportStyles.aiCommentary}>
-          <div className={reportStyles.aiCommentaryIcon}>✦</div>
-          <div className={reportStyles.aiCommentaryContent}>
-            <div className={reportStyles.aiCommentaryLabel}>
-              <span className={reportStyles.markerSky}>반영방식 총평</span>
-            </div>
-            <div className={reportStyles.aiCommentaryText}>
-              {overallComment}
-            </div>
-          </div>
-        </div>
+      {/* Block 3: 총평 */}
+      <div className={styles.insightBox}>
+        <span className={styles.insightLabel}>반영방식 총평</span>
+        <p className={styles.insightText}>{overallComment}</p>
       </div>
     </>
   );

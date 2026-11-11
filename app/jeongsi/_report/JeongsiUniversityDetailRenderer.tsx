@@ -1,85 +1,46 @@
-import {
-  CUT_METRIC_LABEL,
-  STUDENT_CUT_VALUE_LABEL,
-  formatCutValue,
-  formatStudentCutValue,
-} from "@/libs/jeongsi/report/cut-format";
+import { CUT_METRIC_LABEL } from "@/libs/jeongsi/report/cut-format";
 import type {
   CutComparison,
   JeongsiUniversityDetailSection,
   UniversityDetailItem,
 } from "@/libs/jeongsi/report-types";
+import type { ResultMetric } from "@/libs/jeongsi/types";
 
-import {
-  ReportBarChart,
-  ReportComparisonBar,
-  SectionHeader,
-} from "../../report/_components";
-import reportStyles from "../../report/_components/report.module.css";
 import {
   JeongsiChanceBadge,
   JeongsiGroupChip,
   JeongsiTierBadge,
-  TIER_COLOR_VAR,
+  toneStyleOf,
 } from "./JeongsiBadge";
 import styles from "./jeongsi-report.module.css";
+import { JeongsiPartHeading } from "./JeongsiPartHeading";
 
 interface JeongsiUniversityDetailRendererProps {
   data: JeongsiUniversityDetailSection;
-  sectionNumber: number;
+  partNumber: string;
 }
 
-interface CutDomain {
-  min: number;
-  max: number;
-}
-
-/**
- * 3개년 컷 추이 차트의 Y축 범위.
- *
- * 컷 변화폭은 총점 1000점 기준 1~3점 수준이라 0부터 그리면 세 막대가
- * 구분되지 않는다. 변화폭이 보이도록 축을 좁히되, 캡션에 축 범위를
- * 반드시 명시해 절단된 축임을 숨기지 않는다.
- */
-const buildCutDomain = (cuts: number[]): CutDomain => {
-  const min = Math.min(...cuts);
-  const max = Math.max(...cuts);
-  const padding = Math.max(1, (max - min) * 0.8);
-  return {
-    min: Math.floor(min - padding),
-    max: Math.ceil(max + padding),
-  };
+const UNIT: Record<ResultMetric, string> = {
+  percentile: "백분위점",
+  convertedScore: "점",
 };
 
-/**
- * 환산점수 비교 바의 표시 구간.
- *
- * 0 ~ 총점 전체를 축으로 쓰면 내 점수와 기준컷이 모두 축 오른쪽 끝
- * 1~2% 안에 몰려 구분이 불가능하다. 두 값이 들어가는 구간만 잘라
- * 보여주고, 축 양 끝의 실제 점수를 함께 표기해 어디를 확대했는지
- * 숨기지 않는다.
- */
-const buildScoreWindow = (myScore: number, cut: number): CutDomain => {
-  const lo = Math.min(myScore, cut);
-  const hi = Math.max(myScore, cut);
-  const padding = Math.max(hi - lo, 1) * 1.2;
-  return { min: lo - padding, max: hi + padding };
+const STUDENT_LABEL: Record<ResultMetric, string> = {
+  percentile: "나",
+  convertedScore: "내 환산점수",
 };
 
-/**
- * 표시 구간 안에서의 위치를 0~100 으로 환산.
- *
- * totalScore 는 "가산점을 제외한 기준 만점"이라 수학 선택과목·과탐·한국사
- * 가산이 붙는 모집단위에서는 convertedScore 가 기준 만점을 최대 5% 넘는다.
- * 시각 요소는 100% 를 넘지 않게 자르고, 숫자 라벨에는 실제 값을 그대로
- * 쓴다 (가산점을 받은 것은 사실이므로 숨기지 않는다).
- */
-const toWindowPercent = (value: number, window: CutDomain): number => {
-  const percent = ((value - window.min) / (window.max - window.min)) * 100;
-  return Math.min(100, Math.max(0, percent));
-};
+/** 위치 축 라벨이 가장자리에서 잘리지 않도록 가운데 정렬 기준점을 안쪽에 둔다 */
+const LABEL_EDGE_PERCENT = 7;
 
-const formatScore = (value: number): string => value.toFixed(1);
+/** 두 라벨이 이 거리(%)보다 가까우면 위아래로 엇갈려 놓는다 */
+const LABEL_COLLISION_PERCENT = 14;
+
+const formatSigned = (value: number): string =>
+  `${value > 0 ? "+" : value < 0 ? "−" : "±"}${Math.abs(value).toFixed(1)}`;
+
+const clampLabel = (percent: number): number =>
+  Math.min(100 - LABEL_EDGE_PERCENT, Math.max(LABEL_EDGE_PERCENT, percent));
 
 /**
  * 컷 비교값. cutComparison 이 생기기 전에 저장된 리포트는 컷이 전부
@@ -108,225 +69,264 @@ const resolveComparison = (
   };
 };
 
-const DetailCard = ({ item }: { item: UniversityDetailItem }) => {
-  const tierStyle = {
-    "--tier-color": TIER_COLOR_VAR[item.tier],
-  } as React.CSSProperties;
+interface AxisWindow {
+  min: number;
+  max: number;
+}
 
-  const historyRows = item.cutHistory.filter(
-    (entry): entry is { year: number; cut: number } => entry.cut !== null
+/**
+ * 위치 축의 표시 구간. 0부터 그리면 내 값과 컷이 한쪽 끝에 몰려 구분이
+ * 안 되므로 값이 모인 구간만 보여주고, 축 양 끝 값을 함께 적는다.
+ */
+const buildAxisWindow = (values: number[]): AxisWindow => {
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const padding = Math.max((max - min) * 0.2, 1);
+  return { min: Math.floor(min - padding), max: Math.ceil(max + padding) };
+};
+
+const toPercent = (value: number, window: AxisWindow): number =>
+  ((value - window.min) / (window.max - window.min)) * 100;
+
+interface PositionAxisProps {
+  comparison: CutComparison;
+  cuts: { year: number; cut: number }[];
+}
+
+const PositionAxis = ({ comparison, cuts }: PositionAxisProps) => {
+  const { studentValue, referenceCut, metric } = comparison;
+  const window = buildAxisWindow([
+    studentValue,
+    referenceCut,
+    ...cuts.map((entry) => entry.cut),
+  ]);
+  const meX = toPercent(studentValue, window);
+  const cutX = toPercent(referenceCut, window);
+  const labelsCollide = Math.abs(meX - cutX) < LABEL_COLLISION_PERCENT;
+
+  return (
+    <>
+      <div className={`${styles.blockTitle} ${styles.positionTitle}`}>
+        내 위치{" "}
+        <span className={styles.blockTitleSub}>
+          · {CUT_METRIC_LABEL[metric]} 기준, 축 {window.min}–{window.max}
+        </span>
+      </div>
+      <div className={styles.positionAxis}>
+        <div className={styles.positionTrack} />
+        <div className={styles.positionPass} style={{ left: `${cutX}%` }} />
+        <div className={styles.positionCut} style={{ left: `${cutX}%` }} />
+        <span
+          className={styles.positionLabel}
+          style={{
+            left: `${clampLabel(cutX)}%`,
+            top: labelsCollide ? -38 : -20,
+            color: "var(--tone-fg)",
+          }}
+        >
+          기준컷 {referenceCut.toFixed(1)}
+        </span>
+
+        {/* 값이 가까운 연도 라벨끼리 겹치지 않도록 값 순서대로 두 줄에 번갈아 놓는다 */}
+        {[...cuts]
+          .sort((a, b) => a.cut - b.cut)
+          .map((entry, index) => {
+            const x = toPercent(entry.cut, window);
+            return (
+              <div key={entry.year}>
+                <div
+                  className={styles.positionTick}
+                  style={{ left: `${x}%` }}
+                />
+                <span
+                  className={styles.positionTickLabel}
+                  style={{
+                    left: `${clampLabel(x)}%`,
+                    top: 38 + (index % 2) * 14,
+                  }}
+                >
+                  {entry.year} 컷 {entry.cut}
+                </span>
+              </div>
+            );
+          })}
+
+        <div className={styles.positionMe} style={{ left: `${meX}%` }} />
+        <span
+          className={styles.positionLabel}
+          style={{ left: `${clampLabel(meX)}%`, top: -20 }}
+        >
+          {STUDENT_LABEL[metric]} {studentValue.toFixed(1)}
+        </span>
+
+        <span className={styles.positionEnd} style={{ left: 0 }}>
+          {window.min}
+        </span>
+        <span className={styles.positionEnd} style={{ right: 0 }}>
+          {window.max}
+        </span>
+      </div>
+    </>
   );
-  const missingYears = item.cutHistory.filter((entry) => entry.cut === null);
-  const domain =
-    historyRows.length > 0
-      ? buildCutDomain(historyRows.map((entry) => entry.cut))
-      : null;
+};
 
+interface DetailProfileProps {
+  item: UniversityDetailItem;
+  index: number;
+}
+
+const DetailProfile = ({ item, index }: DetailProfileProps) => {
   const comparison = resolveComparison(item);
-  const metric = comparison?.metric ?? "convertedScore";
-  const formatCut = (value: number): string => formatCutValue(metric, value);
-  const gapToCut =
+  const gap =
     comparison === null
       ? null
       : comparison.studentValue - comparison.referenceCut;
-
-  const scoreWindow =
-    comparison === null
-      ? null
-      : buildScoreWindow(comparison.studentValue, comparison.referenceCut);
+  const knownCuts = item.cutHistory.filter(
+    (entry): entry is { year: number; cut: number } => entry.cut !== null
+  );
 
   // totalScore 는 가산점을 뺀 기준 만점이라 가산이 붙으면 환산점수가
   // 이를 넘어선다. 오류가 아니라 가산점을 받았다는 신호이므로 명시한다.
   const exceedsBaseMax = item.convertedScore > item.totalScore;
 
+  const specRows: [string, string][] = [
+    ...(item.suneungWeight !== undefined
+      ? [
+          [
+            "전형 요소",
+            `수능 ${item.suneungWeight}% + 학생부 등 ${100 - item.suneungWeight}% (판정은 수능 성적 기준)`,
+          ] as [string, string],
+        ]
+      : []),
+    ["반영비율", item.ratioSummary],
+    ["활용지표", item.metricSummary],
+    ["영어·한국사", item.englishHistorySummary],
+    ["가산점", item.bonusSummary ?? "없음"],
+    ["응시 제한", item.restrictionSummary ?? "제한 없음"],
+  ];
+
   return (
-    <div className={styles.detailCard} style={tierStyle}>
-      <div className={styles.detailHead}>
-        <div className={styles.detailIdentity}>
-          <div className={styles.detailTitleRow}>
-            <span className={styles.detailUniversity}>{item.university}</span>
-            <JeongsiGroupChip group={item.group} />
-          </div>
-          <span className={styles.detailDepartment}>{item.department}</span>
+    <div style={toneStyleOf(item.tier)}>
+      <div className={styles.profileHead}>
+        <div className={styles.profileTitleBlock}>
+          <span className={styles.profileOverline}>
+            UNIVERSITY PROFILE {String(index + 1).padStart(2, "0")}
+          </span>
+          <h3 className={styles.profileTitle}>
+            {item.university}{" "}
+            <span className={styles.profileDept}>{item.department}</span>
+          </h3>
         </div>
-        <div className={styles.detailBadges}>
+        <div className={styles.profilePills}>
+          <JeongsiGroupChip group={item.group} />
           <JeongsiTierBadge tier={item.tier} />
-          <JeongsiChanceBadge chance={item.chance} />
+          <JeongsiChanceBadge chance={item.chance} tier={item.tier} />
         </div>
       </div>
 
-      <div className={styles.detailBody}>
-        {/* 핵심 수치 */}
-        <div className={styles.detailStats}>
-          <div className={styles.detailStat}>
-            <span className={styles.detailStatLabel}>모집인원</span>
-            <span className={styles.detailStatValue}>{item.quota}명</span>
-          </div>
-          <div className={styles.detailStat}>
-            <span className={styles.detailStatLabel}>전년 경쟁률</span>
-            <span className={styles.detailStatValue}>
-              {item.competitionRate === null
-                ? "—"
-                : `${item.competitionRate.toFixed(2)}:1`}
-            </span>
-          </div>
-          <div className={styles.detailStat}>
-            <span className={styles.detailStatLabel}>내 환산점수</span>
-            <span
-              className={`${styles.detailStatValue} ${styles.detailStatValueAccent}`}
-            >
-              {formatScore(item.convertedScore)}
-              <span className={reportStyles.caption}>
-                {` / ${item.totalScore}`}
-              </span>
-            </span>
-            {exceedsBaseMax && (
-              <span className={styles.bonusChip}>가산점 포함</span>
-            )}
-          </div>
-          <div className={styles.detailStat}>
-            <span className={styles.detailStatLabel}>
-              {comparison?.previousYear
-                ? `${comparison.previousYear.year} 컷`
-                : "전년도 컷"}
-            </span>
-            <span className={styles.detailStatValue}>
-              {comparison?.previousYear
-                ? formatCut(comparison.previousYear.cut)
-                : "미공개"}
-            </span>
-          </div>
-        </div>
-
-        {/* 같은 지표로 본 내 위치 vs 합격권 */}
-        <div>
-          <div className={styles.blockLabel}>
-            {STUDENT_CUT_VALUE_LABEL[metric]} vs 3개년 기준컷 (
-            {CUT_METRIC_LABEL[metric]} 기준)
-          </div>
-          {comparison === null || scoreWindow === null ? (
-            <div className={styles.nullNotice}>
-              전년도 입결이 공개되지 않아 기준컷과 비교할 수 없습니다.
-            </div>
-          ) : (
-            <>
-              <ReportComparisonBar
-                myValue={toWindowPercent(comparison.studentValue, scoreWindow)}
-                rangeStart={toWindowPercent(
-                  comparison.referenceCut,
-                  scoreWindow
-                )}
-                rangeEnd={100}
-                max={100}
-                myLabel="내 위치"
-                rangeLabel="기준컷 이상"
-              />
-              <div className={styles.barAxis}>
-                <span>{formatCut(scoreWindow.min)}</span>
-                <span>{formatCut(scoreWindow.max)}</span>
-              </div>
-              <p className={styles.noteLine}>
-                {formatStudentCutValue(comparison)} · 3개년 기준컷{" "}
-                {formatCut(comparison.referenceCut)} —{" "}
-                {gapToCut !== null && gapToCut >= 0
-                  ? `기준컷보다 ${formatScore(gapToCut)}${metric === "percentile" ? "백분위점" : "점"} 높습니다.`
-                  : `기준컷보다 ${formatScore(Math.abs(gapToCut ?? 0))}${metric === "percentile" ? "백분위점" : "점"} 낮습니다.`}
-                {exceedsBaseMax &&
-                  ` 환산점수에는 가산점이 더해져 기준 만점 ${item.totalScore}점을 넘습니다.`}
-              </p>
-            </>
+      <div className={styles.profileStats}>
+        <div className={styles.profileStat}>
+          <span className={styles.statLabel}>내 환산점수</span>
+          <span className={styles.profileStatValue}>
+            {item.convertedScore.toFixed(1)}
+            <span className={styles.profileStatUnit}> / {item.totalScore}</span>
+          </span>
+          {exceedsBaseMax && (
+            <span className={styles.bonusNote}>가산점 포함</span>
           )}
         </div>
-
-        {/* 컷 추이 + 반영방식 */}
-        <div className={styles.detailSplit}>
-          <div className={styles.detailSplitCol}>
-            <div className={styles.blockLabel}>
-              최근 3개년 70% 컷 추이 ({CUT_METRIC_LABEL[metric]})
-            </div>
-            {domain === null ? (
-              <div className={styles.nullNotice}>공개된 입결이 없습니다.</div>
+        <div className={styles.profileStat}>
+          <span className={styles.statLabel}>기준컷 대비</span>
+          {comparison === null || gap === null ? (
+            <span className={`${styles.profileStatValue} ${styles.muted}`}>
+              비교 불가
+            </span>
+          ) : (
+            <span className={`${styles.profileStatValue} ${styles.toneText}`}>
+              {formatSigned(gap)}
+              <span className={styles.profileStatUnit}>
+                {" "}
+                {UNIT[comparison.metric]}
+              </span>
+            </span>
+          )}
+        </div>
+        <div className={styles.profileStat}>
+          <span className={styles.statLabel}>모집인원</span>
+          <span className={styles.profileStatValue}>
+            {item.quota}
+            <span className={styles.profileStatUnit}> 명</span>
+          </span>
+        </div>
+        <div className={styles.profileStat}>
+          <span className={styles.statLabel}>전년 경쟁률</span>
+          <span className={styles.profileStatValue}>
+            {item.competitionRate === null ? (
+              "—"
             ) : (
               <>
-                <div className={styles.chartFix}>
-                  <ReportBarChart
-                    data={historyRows.map((entry) => ({
-                      name: `${entry.year}`,
-                      value: entry.cut,
-                    }))}
-                    height={150}
-                    yDomain={[domain.min, domain.max]}
-                    formatTooltip={(value) => formatCut(value)}
-                  />
-                </div>
-                <p className={styles.noteLine}>
-                  변화폭이 보이도록 축 범위를 {formatCut(domain.min)}~
-                  {formatCut(domain.max)}로 좁혔습니다.
-                  {missingYears.length > 0 &&
-                    ` ${missingYears.map((entry) => entry.year).join(" · ")}학년도는 미공개입니다.`}
-                </p>
+                {item.competitionRate.toFixed(2)}
+                <span className={styles.profileStatUnit}> : 1</span>
               </>
             )}
-          </div>
+          </span>
+        </div>
+      </div>
 
-          <div className={styles.detailSplitCol}>
-            <div className={styles.blockLabel}>전형 반영방식</div>
-            <div className={styles.specList}>
-              {item.suneungWeight !== undefined && (
-                <div className={styles.specRow}>
-                  <span className={styles.specLabel}>전형 요소</span>
-                  <span className={styles.specValue}>
-                    수능 {item.suneungWeight}% + 학생부 등{" "}
-                    {100 - item.suneungWeight}% (판정은 수능 성적 기준)
-                  </span>
-                </div>
-              )}
-              <div className={styles.specRow}>
-                <span className={styles.specLabel}>반영비율</span>
-                <span className={styles.specValue}>{item.ratioSummary}</span>
+      {comparison === null ? (
+        <div className={`${styles.emptyNotice} ${styles.positionTitle}`}>
+          전년도 입결이 공개되지 않아 기준컷과 비교할 수 없습니다.
+        </div>
+      ) : (
+        <PositionAxis comparison={comparison} cuts={knownCuts} />
+      )}
+
+      <div className={styles.profileColumns}>
+        <div className={styles.profileColumn}>
+          <span className={styles.blockTitle}>
+            3개년 70% 컷{" "}
+            {comparison && (
+              <span className={styles.blockTitleSub}>
+                · {CUT_METRIC_LABEL[comparison.metric]}
+              </span>
+            )}
+          </span>
+          <div className={styles.ruledList}>
+            {item.cutHistory.map((entry) => (
+              <div key={entry.year} className={styles.cutRow}>
+                <span>{entry.year}학년도</span>
+                {entry.cut === null ? (
+                  <span className={styles.muted}>미공개</span>
+                ) : (
+                  <b>{entry.cut}</b>
+                )}
               </div>
-              <div className={styles.specRow}>
-                <span className={styles.specLabel}>활용지표</span>
-                <span className={styles.specValue}>{item.metricSummary}</span>
+            ))}
+            {comparison && (
+              <div className={styles.cutRowReference}>
+                <span>3개년 기준컷</span>
+                <span>{comparison.referenceCut.toFixed(1)}</span>
               </div>
-              <div className={styles.specRow}>
-                <span className={styles.specLabel}>영어·한국사</span>
-                <span className={styles.specValue}>
-                  {item.englishHistorySummary}
-                </span>
-              </div>
-              <div className={styles.specRow}>
-                <span className={styles.specLabel}>가산점</span>
-                <span
-                  className={`${styles.specValue} ${
-                    item.bonusSummary === null ? styles.specValueMuted : ""
-                  }`}
-                >
-                  {item.bonusSummary ?? "없음"}
-                </span>
-              </div>
-              <div className={styles.specRow}>
-                <span className={styles.specLabel}>응시 제한</span>
-                <span
-                  className={`${styles.specValue} ${
-                    item.restrictionSummary === null
-                      ? styles.specValueMuted
-                      : ""
-                  }`}
-                >
-                  {item.restrictionSummary ?? "제한 없음"}
-                </span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* 판단 근거 — 카드가 9장 반복되므로 ✦ 코멘터리 박스 대신
-            카드 안에 눌러앉는 조용한 푸터로 둔다 */}
-        <div className={styles.detailReason}>
-          <span className={styles.detailReasonLabel}>판단 근거</span>
-          <p className={styles.detailReasonText}>{item.reason}</p>
+        <div className={styles.profileColumn}>
+          <span className={styles.blockTitle}>전형 반영방식</span>
+          <div className={styles.ruledList}>
+            {specRows.map(([label, value]) => (
+              <div key={label} className={styles.specRow}>
+                <span className={styles.specLabel}>{label}</span>
+                <span>{value}</span>
+              </div>
+            ))}
+          </div>
         </div>
+      </div>
+
+      <div className={`${styles.insightBox} ${styles.profileReason}`}>
+        <span className={styles.insightLabel}>추천 이유</span>
+        <p className={styles.insightText}>{item.reason}</p>
       </div>
     </div>
   );
@@ -334,38 +334,31 @@ const DetailCard = ({ item }: { item: UniversityDetailItem }) => {
 
 export const JeongsiUniversityDetailRenderer = ({
   data,
-  sectionNumber,
+  partNumber,
 }: JeongsiUniversityDetailRendererProps) => {
   const { items } = data;
 
   return (
     <>
-      {/* Block 1: 헤더 + 읽는 방법 */}
-      <div>
-        <SectionHeader number={sectionNumber} title={data.title} />
-        <div className={reportStyles.callout}>
-          <div className={reportStyles.calloutContent}>
-            <p className={reportStyles.small}>
-              대학마다 기준 만점과 환산식이 다르므로 환산점수의 절대값은 대학 간
-              비교에 쓸 수 없습니다. 각 대학의 합격권 비교 바와 3개년 컷 추이를
-              함께 보고 그 대학 안에서의 내 위치만 판단해 주세요.
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Block 1: 제목 */}
+      <JeongsiPartHeading
+        partNumber={partNumber}
+        title={data.title}
+        lead="대학마다 기준 만점과 환산식이 달라 환산점수는 대학 간 비교에 쓰지 않습니다. 대학마다 그 대학 안에서의 내 위치를 보세요."
+      />
 
-      {/* Block 2~N: 대학별 상세 — 1개 대학 = 1개 페이지 분할 단위 */}
+      {/* Block 2~N: 대학 1곳 = 페이지 분할 단위 1개 */}
       {items.length === 0 ? (
-        <div>
-          <div className={styles.nullNotice}>
-            상세 분석할 대학이 산출되지 않았습니다.
-          </div>
+        <div className={styles.emptyNotice}>
+          상세 분석할 대학이 산출되지 않았습니다.
         </div>
       ) : (
-        items.map((item) => (
-          <div key={`${item.university}-${item.department}-${item.group}`}>
-            <DetailCard item={item} />
-          </div>
+        items.map((item, index) => (
+          <DetailProfile
+            key={`${item.university}-${item.department}-${item.group}`}
+            item={item}
+            index={index}
+          />
         ))
       )}
     </>

@@ -1,40 +1,35 @@
-import type { JeongsiScoreAnalysisSection } from "@/libs/jeongsi/report-types";
+import type {
+  AreaScoreRow,
+  JeongsiScoreAnalysisSection,
+} from "@/libs/jeongsi/report-types";
 import type { ScoreArea } from "@/libs/jeongsi/types";
 
-import {
-  ReportBarChart,
-  ReportTable,
-  SectionHeader,
-} from "../../report/_components";
-import reportStyles from "../../report/_components/report.module.css";
 import styles from "./jeongsi-report.module.css";
+import { JeongsiPartHeading } from "./JeongsiPartHeading";
 
 interface JeongsiScoreAnalysisRendererProps {
   data: JeongsiScoreAnalysisSection;
-  sectionNumber: number;
+  partNumber: string;
 }
 
-/** 표·차트의 고정 표시 순서. 순위와 무관하게 항상 동일한 축을 유지한다 */
-const AREA_ORDER: ScoreArea[] = ["korean", "math", "english", "inquiry"];
-
-const AREA_LABEL: Record<ScoreArea, string> = {
-  korean: "국어",
-  math: "수학",
-  english: "영어",
-  inquiry: "탐구",
-};
+/** 표·차트의 고정 표시 순서. 순위와 무관하게 항상 같은 축을 유지한다 */
+const AREA_ORDER: ScoreArea[] = ["korean", "math", "inquiry", "english"];
 
 const EMPTY = "—";
 
-const formatNumber = (value: number | null): string =>
-  value === null ? EMPTY : String(value);
+const formatSigned = (value: number): string =>
+  `${value > 0 ? "+" : value < 0 ? "−" : "±"}${Math.abs(value).toFixed(1)}`;
 
-const formatDeviation = (value: number): string =>
-  `${value > 0 ? "+" : ""}${value.toFixed(1)}`;
+/** 분포 막대의 축 하한. 가장 낮은 백분위 아래 10점 단위로 끊는다 */
+const axisMinOf = (percentiles: number[]): number =>
+  Math.max(0, Math.floor((Math.min(...percentiles) - 5) / 10) * 10);
+
+const toAxisPercent = (value: number, min: number): number =>
+  Math.min(100, Math.max(0, ((value - min) / (100 - min)) * 100));
 
 export const JeongsiScoreAnalysisRenderer = ({
   data,
-  sectionNumber,
+  partNumber,
 }: JeongsiScoreAnalysisRendererProps) => {
   const {
     rows,
@@ -52,258 +47,201 @@ export const JeongsiScoreAnalysisRenderer = ({
 
   const orderedRows = AREA_ORDER.map((area) =>
     rows.find((row) => row.area === area)
-  ).filter((row): row is (typeof rows)[number] => row !== undefined);
+  ).filter((row): row is AreaScoreRow => row !== undefined);
 
-  const topArea = rows.find((row) => row.rank === 1);
+  const scoredRows = orderedRows.filter(
+    (row): row is AreaScoreRow & { percentile: number } =>
+      row.percentile !== null && row.area !== "english"
+  );
+  const englishRow = orderedRows.find((row) => row.area === "english");
+  const tableRows = orderedRows.filter((row) => row.area !== "english");
 
-  const chartRows = orderedRows.filter((row) => row.percentile !== null);
-  const missingChartRows = orderedRows.filter((row) => row.percentile === null);
+  const percentiles = scoredRows.map((row) => row.percentile);
+  const spread =
+    percentiles.length > 1
+      ? Math.max(...percentiles) - Math.min(...percentiles)
+      : null;
+  const axisMin = percentiles.length > 0 ? axisMinOf(percentiles) : 0;
+  const axisMid = Math.round((axisMin + 100) / 2);
 
-  const getBarColor = (area: ScoreArea): string => {
-    if (strengthSet.has(area)) return "var(--report-strength)";
-    if (weaknessSet.has(area)) return "var(--report-weakness)";
-    return "var(--report-accent)";
+  const fillColorOf = (area: ScoreArea): string => {
+    if (strengthSet.has(area)) return "#34d399";
+    if (weaknessSet.has(area)) return "#fca5a5";
+    return "#a5b4fc";
   };
 
-  const deviationClass = (value: number): string => {
-    if (value > 0) return `${styles.deviationChip} ${styles.deviationUp}`;
-    if (value < 0) return `${styles.deviationChip} ${styles.deviationDown}`;
-    return `${styles.deviationChip} ${styles.deviationFlat}`;
+  /** 강점·약점으로 판정된 영역만 색을 입힌다 */
+  const deviationClassOf = (area: ScoreArea): string => {
+    if (strengthSet.has(area)) return styles.cellUp;
+    if (weaknessSet.has(area)) return styles.cellDown;
+    return styles.cellFlat;
   };
+
+  const strengthRows = rows.filter((row) => strengthSet.has(row.area));
+  const weaknessRows = rows.filter((row) => weaknessSet.has(row.area));
+
+  const areaTitle = (prefix: string, items: AreaScoreRow[]): string =>
+    items.length === 0
+      ? `${prefix} · 해당 없음`
+      : `${prefix} · ${items
+          .map((row) =>
+            row.percentile === null
+              ? row.label
+              : `${row.label} 백분위 ${row.percentile}`
+          )
+          .join(", ")}`;
 
   return (
     <>
-      {/* Block 1: 헤더 + 요약 수치 */}
+      {/* Block 1: 제목 + 요약 수치 */}
       <div>
-        <SectionHeader number={sectionNumber} title={data.title} />
-
-        <div className={styles.statRow}>
-          <div className={styles.statCard}>
-            <span className={styles.statCardLabel}>평균 백분위</span>
-            <div className={styles.statCardValueRow}>
-              <span className={styles.statCardValue}>
-                {averagePercentile.toFixed(1)}
-              </span>
-              <span className={styles.statCardUnit}>%ile</span>
-            </div>
-            <span className={styles.statCardNote}>국어 · 수학 · 탐구 기준</span>
+        <JeongsiPartHeading
+          partNumber={partNumber}
+          title={data.title}
+          lead="영역별 위치와 강점·약점 구조를 진단합니다. 순위·편차는 백분위가 있는 국어·수학·탐구로 계산합니다."
+        />
+        <div className={styles.statGrid}>
+          <div className={styles.statCell}>
+            <span className={styles.statLabel}>국·수·탐 평균 백분위</span>
+            <span className={styles.statValue}>
+              {averagePercentile.toFixed(1)}
+            </span>
           </div>
-
-          <div className={styles.statCard}>
-            <span className={styles.statCardLabel}>표준점수 합</span>
-            <div className={styles.statCardValueRow}>
-              <span className={styles.statCardValue}>{totalStandardScore}</span>
-              <span className={styles.statCardUnit}>점</span>
-            </div>
-            <span className={styles.statCardNote}>국어 + 수학 + 탐구 합산</span>
+          <div className={styles.statCell}>
+            <span className={styles.statLabel}>표준점수 합 (국+수+탐)</span>
+            <span className={styles.statValue}>{totalStandardScore}</span>
           </div>
-
-          <div className={styles.statCard}>
-            <span className={styles.statCardLabel}>최강 영역</span>
-            <div className={styles.statCardValueRow}>
-              <span className={styles.statCardValue}>
-                {topArea ? topArea.label : EMPTY}
-              </span>
-              <span className={styles.statCardUnit}>1순위</span>
-            </div>
-            <span className={styles.statCardNote}>
-              {topArea?.subjectName ?? "국어·수학·탐구 중 상대 순위 기준"}
+          <div className={styles.statCell}>
+            <span className={styles.statLabel}>영역 간 백분위 차이</span>
+            <span className={styles.statValue}>
+              {spread === null ? EMPTY : spread.toFixed(1)}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Block 2: 영역별 상세 표 */}
+      {/* Block 2: 영역별 성적 표 */}
       <div>
-        <div className={styles.blockLabel}>영역별 성적 상세</div>
-        <ReportTable
-          data={orderedRows}
-          keyExtractor={(row) => row.area}
-          columns={[
-            {
-              key: "area",
-              header: "영역",
-              render: (row) => (
-                <span className={reportStyles.tableCellBold}>{row.label}</span>
-              ),
-            },
-            {
-              key: "subject",
-              header: "응시 과목",
-              render: (row) => (
-                <span className={reportStyles.small}>
-                  {row.subjectName ?? EMPTY}
-                </span>
-              ),
-            },
-            {
-              key: "standardScore",
-              header: "표준점수",
-              align: "center",
-              render: (row) => formatNumber(row.standardScore),
-            },
-            {
-              key: "percentile",
-              header: "백분위",
-              align: "center",
-              render: (row) => formatNumber(row.percentile),
-            },
-            {
-              key: "grade",
-              header: "등급",
-              align: "center",
-              render: (row) =>
-                row.grade === null ? EMPTY : `${row.grade}등급`,
-            },
-            {
-              key: "rank",
-              header: "순위",
-              align: "center",
-              render: (row) =>
-                row.rank === null ? (
-                  EMPTY
-                ) : (
-                  <span
-                    className={`${styles.rankMark} ${
-                      row.rank === 1 ? styles.rankMarkTop : ""
-                    }`}
-                  >
-                    {row.rank}
-                  </span>
-                ),
-            },
-            {
-              key: "deviation",
-              header: "평균 대비",
-              align: "center",
-              render: (row) =>
-                row.deviation === null ? (
-                  EMPTY
-                ) : (
-                  <span className={deviationClass(row.deviation)}>
-                    {formatDeviation(row.deviation)}
-                  </span>
-                ),
-            },
-          ]}
-        />
-        <p className={styles.noteLine}>
-          순위와 평균 대비는 국어·수학·탐구 평균 백분위{" "}
-          {averagePercentile.toFixed(1)}을 기준으로 합니다. 영어는 등급만
-          발표되므로 순위·편차에 넣지 않습니다.
-        </p>
-      </div>
-
-      {/* Block 3: 영역별 백분위 차트 */}
-      <div>
-        <div className={styles.blockLabel}>영역별 백분위 분포</div>
-
-        {chartRows.length === 0 ? (
-          <div className={styles.nullNotice}>
-            백분위가 입력된 영역이 없어 분포를 표시할 수 없습니다.
-          </div>
-        ) : (
-          <>
-            <div className={styles.chartFix}>
-              <ReportBarChart
-                data={chartRows.map((row) => ({
-                  name: row.label,
-                  value: row.percentile ?? 0,
-                  color: getBarColor(row.area),
-                }))}
-                height={180}
-                yDomain={[0, 100]}
-                formatTooltip={(value) => String(value)}
-              />
-            </div>
-            <div className={reportStyles.chartLegend}>
-              <span className={reportStyles.chartLegendItem}>
-                <span
-                  className={reportStyles.chartLegendDot}
-                  style={{ background: "var(--report-strength)" }}
-                />
-                강점 영역
-              </span>
-              <span className={reportStyles.chartLegendItem}>
-                <span
-                  className={reportStyles.chartLegendDot}
-                  style={{ background: "var(--report-accent)" }}
-                />
-                평균 수준
-              </span>
-              <span className={reportStyles.chartLegendItem}>
-                <span
-                  className={reportStyles.chartLegendDot}
-                  style={{ background: "var(--report-weakness)" }}
-                />
-                약점 영역
-              </span>
-            </div>
-            {missingChartRows.length > 0 && (
-              <p className={styles.noteLine}>
-                {missingChartRows.map((row) => row.label).join(" · ")} 영역은
-                백분위가 없어(등급만 발표) 차트에서 제외했습니다.
-              </p>
+        <div className={styles.blockTitle}>영역별 성적</div>
+        <table className={styles.dataTable}>
+          <thead>
+            <tr>
+              <th>영역</th>
+              <th className={styles.cellLeft}>응시 과목</th>
+              <th>표준점수</th>
+              <th>백분위</th>
+              <th>순위</th>
+              <th>평균 대비</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tableRows.map((row) => (
+              <tr key={row.area}>
+                <td className={styles.cellBold}>
+                  {row.label}
+                  {strengthSet.has(row.area) && (
+                    <span className={styles.strengthTag}>강점</span>
+                  )}
+                  {weaknessSet.has(row.area) && (
+                    <span className={styles.weaknessTag}>약점</span>
+                  )}
+                </td>
+                <td className={styles.cellLeft}>{row.subjectName ?? EMPTY}</td>
+                <td>{row.standardScore ?? EMPTY}</td>
+                <td className={styles.cellBold}>{row.percentile ?? EMPTY}</td>
+                <td>{row.rank ?? EMPTY}</td>
+                <td
+                  className={
+                    row.deviation === null
+                      ? undefined
+                      : deviationClassOf(row.area)
+                  }
+                >
+                  {row.deviation === null ? EMPTY : formatSigned(row.deviation)}
+                </td>
+              </tr>
+            ))}
+            {englishRow && (
+              <tr className={styles.rowMuted}>
+                <td>영어</td>
+                <td className={styles.cellLeft} colSpan={5}>
+                  {englishRow.grade === null
+                    ? "등급 미입력"
+                    : `${englishRow.grade}등급`}{" "}
+                  · 절대평가라 백분위·순위 비교에서 제외 (대학별 등급 점수로
+                  반영)
+                </td>
+              </tr>
             )}
-          </>
-        )}
+          </tbody>
+        </table>
       </div>
+
+      {/* Block 3: 백분위 분포 */}
+      {scoredRows.length > 0 && (
+        <div>
+          <div className={styles.blockTitle}>
+            백분위 분포{" "}
+            <span className={styles.blockTitleSub}>
+              · 축 {axisMin}–100, 점선은 국·수·탐 평균{" "}
+              {averagePercentile.toFixed(1)}
+            </span>
+          </div>
+          <div className={styles.distBars}>
+            {scoredRows.map((row) => (
+              <div key={row.area} className={styles.distRow}>
+                <span className={styles.distLabel}>{row.label}</span>
+                <div className={styles.distTrack}>
+                  <div
+                    className={styles.distFill}
+                    style={{
+                      width: `${toAxisPercent(row.percentile, axisMin)}%`,
+                      background: fillColorOf(row.area),
+                    }}
+                  />
+                  <div
+                    className={styles.distAverage}
+                    style={{
+                      left: `${toAxisPercent(averagePercentile, axisMin)}%`,
+                    }}
+                  />
+                </div>
+                <span className={styles.distValue}>{row.percentile}</span>
+              </div>
+            ))}
+            <div className={styles.distRow}>
+              <span />
+              <div className={styles.distAxis}>
+                <span>{axisMin}</span>
+                <span>{axisMid}</span>
+                <span>100</span>
+              </div>
+              <span />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Block 4: 강점 / 약점 */}
-      <div>
-        <div className={styles.blockLabel}>강점과 약점</div>
-        <div className={styles.areaSplit}>
-          <div className={`${styles.areaPanel} ${styles.areaPanelStrength}`}>
-            <div className={styles.areaPanelHead}>
-              <span className={styles.areaPanelLabel}>강점 영역</span>
-              <div className={styles.areaPanelTags}>
-                {strengthAreas.length === 0 ? (
-                  <span className={styles.nullValue}>해당 없음</span>
-                ) : (
-                  strengthAreas.map((area) => (
-                    <span key={area} className={styles.areaTagStrength}>
-                      {AREA_LABEL[area]}
-                    </span>
-                  ))
-                )}
-              </div>
-            </div>
-            <p className={styles.areaPanelText}>{strengthComment}</p>
-          </div>
-
-          <div className={`${styles.areaPanel} ${styles.areaPanelWeakness}`}>
-            <div className={styles.areaPanelHead}>
-              <span className={styles.areaPanelLabel}>약점 영역</span>
-              <div className={styles.areaPanelTags}>
-                {weaknessAreas.length === 0 ? (
-                  <span className={styles.nullValue}>해당 없음</span>
-                ) : (
-                  weaknessAreas.map((area) => (
-                    <span key={area} className={styles.areaTagWeakness}>
-                      {AREA_LABEL[area]}
-                    </span>
-                  ))
-                )}
-              </div>
-            </div>
-            <p className={styles.areaPanelText}>{weaknessComment}</p>
-          </div>
+      <div className={styles.areaCards}>
+        <div className={`${styles.areaCard} ${styles.areaCardStrength}`}>
+          <span className={styles.areaCardTitleStrength}>
+            {areaTitle("강점", strengthRows)}
+          </span>
+          <p className={styles.areaCardText}>{strengthComment}</p>
+        </div>
+        <div className={`${styles.areaCard} ${styles.areaCardWeakness}`}>
+          <span className={styles.areaCardTitleWeakness}>
+            {areaTitle("약점", weaknessRows)}
+          </span>
+          <p className={styles.areaCardText}>{weaknessComment}</p>
         </div>
       </div>
 
       {/* Block 5: 총평 */}
-      <div>
-        <div className={reportStyles.aiCommentary}>
-          <div className={reportStyles.aiCommentaryIcon}>✦</div>
-          <div className={reportStyles.aiCommentaryContent}>
-            <div className={reportStyles.aiCommentaryLabel}>
-              <span className={reportStyles.markerSky}>성적 총평</span>
-            </div>
-            <div className={reportStyles.aiCommentaryText}>
-              {overallComment}
-            </div>
-          </div>
-        </div>
+      <div className={styles.insightBox}>
+        <span className={styles.insightLabel}>컨설턴트 해석</span>
+        <p className={styles.insightText}>{overallComment}</p>
       </div>
     </>
   );
