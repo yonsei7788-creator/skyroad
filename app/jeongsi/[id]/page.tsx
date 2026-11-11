@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { createClient } from "@/libs/supabase/server";
 import type { JeongsiReportContent } from "@/libs/jeongsi/report-types";
+import { createAdminClient } from "@/libs/supabase/admin";
+import { createClient } from "@/libs/supabase/server";
 
 import { JeongsiReport } from "../_report";
 
@@ -10,6 +11,7 @@ import styles from "./page.module.css";
 
 interface JeongsiReportPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 interface JeongsiReportRow {
@@ -42,8 +44,41 @@ const StatusScreen = ({
   </div>
 );
 
-const JeongsiReportPage = async ({ params }: JeongsiReportPageProps) => {
+/**
+ * 서버사이드 PDF 생성(Puppeteer)이 로그인 세션 없이 여는 요청.
+ * _token 이 PDF_SECRET_TOKEN 과 같을 때만 service role 로 조회해 렌더링한다.
+ */
+const renderForInternalPdf = async (id: string) => {
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    notFound();
+  }
+
+  const { data: report, error } = await adminClient
+    .from("jeongsi_reports")
+    .select("content, ai_status")
+    .eq("id", id)
+    .maybeSingle<{ content: JeongsiReportContent | null; ai_status: string }>();
+
+  if (error || !report?.content || report.ai_status !== "completed") {
+    notFound();
+  }
+
+  return <JeongsiReport data={report.content} />;
+};
+
+const JeongsiReportPage = async ({
+  params,
+  searchParams,
+}: JeongsiReportPageProps) => {
   const { id } = await params;
+  const { _token } = await searchParams;
+
+  const pdfSecret = process.env.PDF_SECRET_TOKEN;
+  if (typeof _token === "string" && !!pdfSecret && _token === pdfSecret) {
+    return renderForInternalPdf(id);
+  }
+
   const supabase = await createClient();
 
   const {
