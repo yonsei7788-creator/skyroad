@@ -1,14 +1,16 @@
 "use client";
 
-import { JEONGSI_SECTION_ORDER } from "@/libs/jeongsi/report-types";
 import type {
+  ExtractJeongsiSection,
   JeongsiReportContent,
   JeongsiSection,
+  JeongsiSectionId,
 } from "@/libs/jeongsi/report-types";
 
-import { AutoPaginatedSection, PartPage } from "../../report/_components";
+import { AutoPaginatedSection } from "../../report/_components";
 import reportStyles from "../../report/_components/report.module.css";
 import { JeongsiCover } from "./JeongsiCover";
+import { JeongsiDivider } from "./JeongsiDivider";
 import styles from "./jeongsi-report.module.css";
 import { JeongsiSectionRenderer } from "./JeongsiSectionRenderer";
 import { JeongsiTableOfContents } from "./JeongsiTableOfContents";
@@ -21,12 +23,14 @@ interface JeongsiReportProps {
 /**
  * 정시 분석 리포트 최상위 템플릿.
  *
- * 커버 → 목차 → PART 1~5 순서로 A4 페이지를 쌓는다.
- * 플랜 분기는 없다 (단일 리포트).
+ * 표지 → 목차 → (PART 표지 → 본문) × 5 순서로 A4 페이지를 쌓는다.
  *
- * - 디자인 토큰은 report.module.css 의 .report 클래스에서 상속받는다.
- * - PART 별 accent 는 StandardReport 와 동일하게 인라인 CSS 변수로 덮는다.
- * - 페이지 번호는 CSS counter 가 그린다 (아래 주석 참고).
+ * - 페이지 셸(크기·머리말·꼬리말)은 수시와 같은 ReportPage 를 쓴다.
+ * - 본문은 AutoPaginatedSection 이 블록 단위로 A4 에 나눈다.
+ *   섹션 렌더러의 최상위 자식 하나가 페이지 분할의 기본 단위다.
+ * - PART 별 accent 는 --report-accent 를 인라인 style 로 덮는다.
+ * - 페이지 번호는 CSS counter 가 그린다. JS 로 textContent 를 쓰면
+ *   번호가 두 번 찍히므로 쓰지 않는다.
  */
 export const JeongsiReport = ({ data }: JeongsiReportProps) => {
   const { meta, sections } = data;
@@ -35,66 +39,56 @@ export const JeongsiReport = ({ data }: JeongsiReportProps) => {
     sections.map((section) => [section.sectionId, section])
   );
 
-  let globalSectionNum = 0;
+  const findSection = <T extends JeongsiSectionId>(
+    id: T
+  ): ExtractJeongsiSection<T> | undefined =>
+    sectionMap.get(id) as ExtractJeongsiSection<T> | undefined;
 
-  // 페이지 번호는 JS 로 채우지 않는다.
-  // .page 의 counter-increment 와 .pageNumber::after 의 counter() 가
-  // 이미 번호를 그리므로, 여기서 textContent 까지 쓰면 "1818" 처럼
-  // 두 번 찍힌다. (수시 템플릿의 numbering useEffect 는 비동기로 추가되는
-  // 페이지를 못 잡아 아무 값도 쓰지 못한 덕에 증상이 드러나지 않았다.)
+  const detail = findSection("jeongsiUniversityDetail");
+
+  const parts = JEONGSI_PART_CONFIG.map((part) => ({
+    part,
+    sections: part.sectionIds
+      .map((id) => sectionMap.get(id))
+      .filter((section): section is JeongsiSection => section !== undefined),
+  })).filter((entry) => entry.sections.length > 0);
 
   return (
     <div className={`${reportStyles.report} ${styles.jeongsiReport}`}>
       <div className={reportStyles.reportWrapper}>
-        <JeongsiCover meta={meta} />
-
-        <JeongsiTableOfContents
-          sections={JEONGSI_SECTION_ORDER.map((id) =>
-            sectionMap.get(id)
-          ).filter(
-            (section): section is JeongsiSection => section !== undefined
-          )}
+        <JeongsiCover
+          meta={meta}
+          score={findSection("jeongsiScoreAnalysis")}
+          recommendation={findSection("jeongsiRecommendation")}
+          combination={findSection("jeongsiCombination")}
         />
 
-        {JEONGSI_PART_CONFIG.map((part) => {
-          const partSections = part.sectionIds
-            .map((id) => sectionMap.get(id))
-            .filter(
-              (section): section is JeongsiSection => section !== undefined
-            );
+        <JeongsiTableOfContents
+          sections={sections}
+          detailItems={detail?.items ?? []}
+        />
 
-          if (partSections.length === 0) return null;
-
-          const partSectionList = partSections.map((section) => {
-            globalSectionNum++;
-            return { section, num: globalSectionNum };
-          });
-
+        {parts.map(({ part, sections: partSections }) => {
           const partStyle = {
             "--report-accent": part.color,
           } as React.CSSProperties;
 
           return (
             <div key={part.partNumber} style={partStyle}>
-              <PartPage
-                partNumber={part.partNumber}
-                title={part.title}
-                description={part.description}
-                sections={partSectionList.map((item) => ({
-                  number: String(item.num).padStart(2, "0"),
-                  title: item.section.title,
-                }))}
+              <JeongsiDivider
+                part={part}
+                index={JEONGSI_PART_CONFIG.indexOf(part)}
               />
 
-              {partSectionList.map((item) => (
+              {partSections.map((section) => (
                 <AutoPaginatedSection
-                  key={item.section.sectionId}
-                  sectionTitle={item.section.title}
+                  key={section.sectionId}
+                  sectionTitle={`${part.partNumber} ${part.title}`}
                   studentName=""
                 >
                   <JeongsiSectionRenderer
-                    section={item.section}
-                    sectionNumber={item.num}
+                    section={section}
+                    partNumber={part.partNumber}
                   />
                 </AutoPaginatedSection>
               ))}
