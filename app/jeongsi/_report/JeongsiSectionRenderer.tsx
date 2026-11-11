@@ -8,47 +8,38 @@ import { JeongsiUniversityMatchRenderer } from "./JeongsiUniversityMatchRenderer
 
 interface JeongsiSectionRendererProps {
   section: JeongsiSection;
-  sectionNumber: number;
+  partNumber: string;
 }
 
 export const JeongsiSectionRenderer = ({
   section,
-  sectionNumber,
+  partNumber,
 }: JeongsiSectionRendererProps) => {
   switch (section.sectionId) {
     case "jeongsiScoreAnalysis":
       return (
-        <JeongsiScoreAnalysisRenderer
-          data={section}
-          sectionNumber={sectionNumber}
-        />
+        <JeongsiScoreAnalysisRenderer data={section} partNumber={partNumber} />
       );
     case "jeongsiUniversityMatch":
       return (
         <JeongsiUniversityMatchRenderer
           data={section}
-          sectionNumber={sectionNumber}
+          partNumber={partNumber}
         />
       );
     case "jeongsiRecommendation":
       return (
-        <JeongsiRecommendationRenderer
-          data={section}
-          sectionNumber={sectionNumber}
-        />
+        <JeongsiRecommendationRenderer data={section} partNumber={partNumber} />
       );
     case "jeongsiCombination":
       return (
-        <JeongsiCombinationRenderer
-          data={section}
-          sectionNumber={sectionNumber}
-        />
+        <JeongsiCombinationRenderer data={section} partNumber={partNumber} />
       );
     case "jeongsiUniversityDetail":
       return (
         <JeongsiUniversityDetailRenderer
           data={section}
-          sectionNumber={sectionNumber}
+          partNumber={partNumber}
         />
       );
     default:
