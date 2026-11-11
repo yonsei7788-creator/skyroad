@@ -92,3 +92,69 @@
     justify-content: center;
   }
 }
+
+/* ============================================
+   상세 (수정 · PDF)
+   ============================================ */
+
+.editorHint {
+  margin: 0 0 4px 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.fieldError {
+  font-size: 0.75rem;
+  color: #dc2626;
+}
+
+.viewLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.viewLink:hover {
+  background: #f8fafc;
+}
+
+.statusPanel {
+  padding: 48px 24px;
+  text-align: center;
+  color: #475569;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+
+/* 미리보기 칸은 A4 폭(794px)을 그대로 쓴다.
+   축소(transform·zoom)하면 본문 쪽 나눔 측정이 어긋나므로 폭을 확보한다. */
+div.reviewLayout {
+  grid-template-columns: 220px minmax(360px, 1fr) minmax(0, 840px);
+}
+
+.previewPane {
+  background: #f1f5f9;
+  padding: 48px 16px 24px;
+}
+
+/* 칸이 A4 보다 좁아도 페이지를 줄이지 않고 가로로 스크롤한다 */
+.previewPane {
+  overflow-x: auto;
+}
+
+.previewPane [data-page] {
+  max-width: none;
+}

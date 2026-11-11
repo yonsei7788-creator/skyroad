@@ -67,3 +67,10 @@ export interface AdminJeongsiReport {
   progress: number;
   error: string | null;
 }
+
+/** 어드민 정시 리포트 상세 (수정·PDF 화면) */
+export interface AdminJeongsiReportDetail extends AdminJeongsiReport {
+  updatedAt: string;
+  /** libs/jeongsi/report-types.ts 의 JeongsiReportContent. 생성 전이면 null */
+  content: unknown;
+}

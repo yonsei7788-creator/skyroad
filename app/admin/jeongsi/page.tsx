@@ -52,9 +52,14 @@ const formatDateTime = (dateStr: string): string => {
 const formatPercentile = (value: number | null): string =>
   value === null ? "-" : value.toFixed(1);
 
-/** 리포트 화면. 생성 중·실패면 그 화면이 상태를 안내한다 */
+/**
+ * 생성이 끝난 리포트는 수정·PDF 화면으로, 그 밖에는 리포트 화면으로 보낸다.
+ * 리포트 화면은 생성 중·실패 상태를 안내한다.
+ */
 const reportPath = (report: AdminJeongsiReport): string =>
-  `/jeongsi/${report.id}`;
+  report.status === "completed"
+    ? `/admin/jeongsi/${report.id}`
+    : `/jeongsi/${report.id}`;
 
 const JeongsiReportsPage = () => {
   const router = useRouter();
@@ -214,7 +219,7 @@ const JeongsiReportsPage = () => {
               router.push(reportPath(row));
             }}
           >
-            {row.status === "completed" ? "리포트 보기" : "상태 보기"}
+            {row.status === "completed" ? "수정·PDF" : "상태 보기"}
           </button>
         ),
       },
@@ -339,7 +344,7 @@ const JeongsiReportsPage = () => {
                         }}
                       >
                         {report.status === "completed"
-                          ? "리포트 보기"
+                          ? "수정·PDF"
                           : "상태 보기"}
                       </button>
                     </div>

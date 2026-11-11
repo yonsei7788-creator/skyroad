@@ -15,7 +15,9 @@ const isInternalPdfRequest = (
   request: NextRequest,
   pathname: string
 ): boolean => {
-  if (!pathname.startsWith("/report/")) return false;
+  const isReportPage =
+    pathname.startsWith("/report/") || pathname.startsWith("/jeongsi/");
+  if (!isReportPage) return false;
   const pdfSecret = process.env.PDF_SECRET_TOKEN;
   if (!pdfSecret) return false;
   return request.nextUrl.searchParams.get("_token") === pdfSecret;

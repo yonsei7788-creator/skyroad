@@ -9,20 +9,15 @@ import type {
 import { createClient } from "@/libs/supabase/server";
 
 import { verifyAdmin } from "../reports/helpers";
+import {
+  JEONGSI_STATUSES,
+  UNDEFINED_TABLE_CODE,
+  summarizeInput,
+} from "./helpers";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
-
-const STATUSES: JeongsiReportStatus[] = [
-  "pending",
-  "processing",
-  "completed",
-  "failed",
-];
-
-/** Postgres "relation does not exist" — 마이그레이션 미적용 */
-const UNDEFINED_TABLE_CODE = "42P01";
 
 interface JeongsiReportRow {
   id: string;
@@ -33,52 +28,6 @@ interface JeongsiReportRow {
   ai_error: string | null;
   created_at: string;
 }
-
-interface InputSummary {
-  target: string;
-  region: string;
-  risk: string;
-  averagePercentile: number | null;
-}
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
-
-const numberAt = (value: unknown, key: string): number | null => {
-  if (!isRecord(value)) return null;
-  const found = value[key];
-  return typeof found === "number" ? found : null;
-};
-
-/** 저장된 JeongsiInput 에서 목록에 보여줄 값만 꺼낸다 */
-const summarizeInput = (input: unknown): InputSummary => {
-  const preference = isRecord(input) ? input.preference : null;
-  const score = isRecord(input) ? input.score : null;
-  const text = (key: string): string =>
-    isRecord(preference) && typeof preference[key] === "string"
-      ? (preference[key] as string)
-      : "-";
-
-  const korean = isRecord(score) ? numberAt(score.korean, "percentile") : null;
-  const math = isRecord(score) ? numberAt(score.math, "percentile") : null;
-  const inquiry1 = isRecord(score)
-    ? numberAt(score.inquiry1, "percentile")
-    : null;
-  const inquiry2 = isRecord(score)
-    ? numberAt(score.inquiry2, "percentile")
-    : null;
-  const averagePercentile =
-    korean !== null && math !== null && inquiry1 !== null && inquiry2 !== null
-      ? Math.round(((korean + math + (inquiry1 + inquiry2) / 2) / 3) * 10) / 10
-      : null;
-
-  return {
-    target: text("target"),
-    region: text("region"),
-    risk: text("risk"),
-    averagePercentile,
-  };
-};
 
 const emptyPage = (
   page: number,
@@ -130,7 +79,7 @@ export const GET = async (request: NextRequest) => {
     )
     .order("created_at", { ascending: false });
 
-  if (STATUSES.includes(status as JeongsiReportStatus)) {
+  if (JEONGSI_STATUSES.includes(status as JeongsiReportStatus)) {
     query = query.eq("ai_status", status);
   }
   if (search) {
