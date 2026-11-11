@@ -43,3 +43,27 @@ export interface PaginatedResponse<T> {
   limit: number;
   totalPages: number;
 }
+
+/** 정시 분석 리포트 생성 상태 (jeongsi_reports.ai_status) */
+export type JeongsiReportStatus =
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed";
+
+/** 어드민 정시 분석 목록의 한 행 */
+export interface AdminJeongsiReport {
+  id: string;
+  createdAt: string;
+  /** 생성한 관리자 이름 */
+  createdBy: string | null;
+  /** 희망 학과·계열 */
+  target: string;
+  region: string;
+  risk: string;
+  /** 국·수·탐(2과목 평균) 평균 백분위 */
+  averagePercentile: number | null;
+  status: JeongsiReportStatus;
+  progress: number;
+  error: string | null;
+}

@@ -1,0 +1,85 @@
+/* ============================================
+   정시 리포트 열람 페이지 — 비정상 상태 안내
+   (정상 렌더는 _report/JeongsiReport 가 담당)
+   ============================================ */
+
+.statusWrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-secondary);
+  padding: 20px;
+}
+
+.statusCard {
+  max-width: 480px;
+  width: 100%;
+  padding: 40px 32px;
+  border-radius: 20px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  box-shadow: 0 4px 20px rgb(0 0 0 / 0.04);
+  text-align: center;
+}
+
+.statusTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-fg);
+  letter-spacing: -0.02em;
+}
+
+.statusDesc {
+  margin-top: 10px;
+  font-size: 0.9375rem;
+  color: var(--color-fg-secondary);
+  line-height: 1.6;
+}
+
+.statusError {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgb(239 68 68 / 0.08);
+  color: var(--color-error-600);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: left;
+  word-break: break-word;
+}
+
+.statusAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 24px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  background: var(--color-bg-primary);
+  color: var(--color-fg-inverse);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+
+.statusAction:hover {
+  background: var(--color-bg-primary-hover);
+  box-shadow: var(--shadow-glow-sm);
+}
+
+.statusAction:focus-visible {
+  outline: 2px solid var(--color-border-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .statusCard {
+    padding: 32px 20px;
+  }
+
+  .statusTitle {
+    font-size: 1.125rem;
+  }
+}

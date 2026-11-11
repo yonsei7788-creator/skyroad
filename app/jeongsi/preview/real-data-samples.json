@@ -1,0 +1,1885 @@
+[
+  {
+    "label": "실데이터 · 상위권 이과",
+    "content": {
+      "meta": {
+        "reportId": "preview-real-1",
+        "input": {
+          "score": {
+            "examYear": 2026,
+            "korean": {
+              "elective": "언어와매체",
+              "standardScore": 131,
+              "percentile": 96
+            },
+            "math": {
+              "elective": "미적분",
+              "standardScore": 137,
+              "percentile": 98
+            },
+            "english": { "grade": 2 },
+            "inquiry1": {
+              "subject": "물리학I",
+              "standardScore": 68,
+              "percentile": 93
+            },
+            "inquiry2": {
+              "subject": "지구과학I",
+              "standardScore": 65,
+              "percentile": 88
+            },
+            "history": { "grade": 2 }
+          },
+          "preference": {
+            "target": "컴퓨터공학과",
+            "targetKind": "department",
+            "region": "서울",
+            "risk": "균형"
+          }
+        },
+        "createdAt": "2026-11-01T21:45:22.382Z",
+        "version": 1
+      },
+      "sections": [
+        {
+          "sectionId": "jeongsiScoreAnalysis",
+          "title": "성적 종합 분석",
+          "rows": [
+            {
+              "area": "korean",
+              "label": "국어",
+              "subjectName": "언어와매체",
+              "standardScore": 131,
+              "percentile": 96,
+              "grade": null,
+              "rank": 2,
+              "deviation": 1.75
+            },
+            {
+              "area": "math",
+              "label": "수학",
+              "subjectName": "미적분",
+              "standardScore": 137,
+              "percentile": 98,
+              "grade": null,
+              "rank": 1,
+              "deviation": 3.75
+            },
+            {
+              "area": "english",
+              "label": "영어",
+              "subjectName": null,
+              "standardScore": null,
+              "percentile": 92.5,
+              "grade": 2,
+              "rank": 3,
+              "deviation": -1.75
+            },
+            {
+              "area": "inquiry",
+              "label": "탐구",
+              "subjectName": "물리학I·지구과학I",
+              "standardScore": 66.5,
+              "percentile": 90.5,
+              "grade": null,
+              "rank": 4,
+              "deviation": -3.75
+            }
+          ],
+          "averagePercentile": 94.833,
+          "totalStandardScore": 401,
+          "strengthAreas": ["math"],
+          "weaknessAreas": ["inquiry"],
+          "overallComment": "성적 해설을 생성하지 못했습니다. 위 표의 표준점수·백분위와 평균 백분위가 분석의 기준값입니다.",
+          "strengthComment": "강점 해설을 생성하지 못했습니다. 영역 내 순위와 편차 수치로 강점 영역을 확인할 수 있습니다.",
+          "weaknessComment": "약점 해설을 생성하지 못했습니다. 영역 내 순위와 편차 수치로 보완이 필요한 영역을 확인할 수 있습니다."
+        },
+        {
+          "sectionId": "jeongsiUniversityMatch",
+          "title": "나에게 유리한 대학 분석",
+          "items": [
+            {
+              "university": "국민대학교",
+              "department": "소프트웨어학부",
+              "group": "다",
+              "ratioSummary": "국30·수40·영10·탐20",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 표준점수 2과목",
+              "advantageScore": 75,
+              "reason": "반영비율과 활용지표, 유리도 점수를 기준으로 선정된 대학입니다."
+            },
+            {
+              "university": "세종대학교",
+              "department": "자유전공학부",
+              "group": "다",
+              "ratioSummary": "국35·수35·영20·탐10",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "advantageScore": 66,
+              "reason": "반영비율과 활용지표, 유리도 점수를 기준으로 선정된 대학입니다."
+            },
+            {
+              "university": "건국대학교",
+              "department": "컴퓨터공학과",
+              "group": "가",
+              "ratioSummary": "국30·수40·영10·탐20",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "advantageScore": 65,
+              "reason": "반영비율과 활용지표, 유리도 점수를 기준으로 선정된 대학입니다."
+            },
+            {
+              "university": "동국대학교",
+              "department": "컴퓨터·AI학부(자연)",
+              "group": "나",
+              "ratioSummary": "국25·수35·영15·탐25",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "advantageScore": 65,
+              "reason": "반영비율과 활용지표, 유리도 점수를 기준으로 선정된 대학입니다."
+            },
+            {
+              "university": "서경대학교",
+              "department": "미래융합학부1",
+              "group": "나",
+              "ratioSummary": "영20 / 국·수·탐 중 상위순 40·40",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 2과목",
+              "advantageScore": 65,
+              "reason": "반영비율과 활용지표, 유리도 점수를 기준으로 선정된 대학입니다."
+            }
+          ],
+          "overallComment": "반영방식 해설을 생성하지 못했습니다. 각 대학의 반영비율과 유리도 점수가 비교 기준입니다."
+        },
+        {
+          "sectionId": "jeongsiRecommendation",
+          "title": "지원 가능 대학·학과",
+          "groups": [
+            {
+              "tier": "상향",
+              "items": [
+                {
+                  "university": "고려대학교",
+                  "department": "컴퓨터학과",
+                  "group": "가",
+                  "quota": 24,
+                  "convertedScore": 659.125,
+                  "referenceCut": 96.133,
+                  "gapRatio": -1.3,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 94.833,
+                    "referenceCut": 96.133,
+                    "previousYear": { "year": 2026, "cut": 96 }
+                  },
+                  "chance": "낮음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                }
+              ]
+            },
+            {
+              "tier": "적정",
+              "items": [
+                {
+                  "university": "서강대학교",
+                  "department": "컴퓨터공학과",
+                  "group": "나",
+                  "quota": 32,
+                  "convertedScore": 512.568,
+                  "referenceCut": 94.462,
+                  "gapRatio": 0.371,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 94.833,
+                    "referenceCut": 94.462,
+                    "previousYear": { "year": 2026, "cut": 95 }
+                  },
+                  "chance": "보통",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                },
+                {
+                  "university": "고려대학교",
+                  "department": "인공지능학과",
+                  "group": "가",
+                  "quota": 26,
+                  "convertedScore": 659.125,
+                  "referenceCut": 95.188,
+                  "gapRatio": -0.355,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 94.833,
+                    "referenceCut": 95.188,
+                    "previousYear": { "year": 2026, "cut": 95 }
+                  },
+                  "chance": "보통",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                },
+                {
+                  "university": "경희대학교",
+                  "department": "빅데이터응용학과",
+                  "group": "가",
+                  "quota": 12,
+                  "convertedScore": 396.942,
+                  "referenceCut": 91.763,
+                  "gapRatio": 3.07,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 94.833,
+                    "referenceCut": 91.763,
+                    "previousYear": { "year": 2026, "cut": 92 }
+                  },
+                  "chance": "높음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                }
+              ]
+            },
+            {
+              "tier": "안정",
+              "items": [
+                {
+                  "university": "건국대학교",
+                  "department": "컴퓨터공학과",
+                  "group": "가",
+                  "quota": 32,
+                  "convertedScore": 697.36,
+                  "referenceCut": 90.623,
+                  "gapRatio": 4.21,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 94.833,
+                    "referenceCut": 90.623,
+                    "previousYear": { "year": 2026, "cut": 90 }
+                  },
+                  "chance": "높음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                },
+                {
+                  "university": "광운대학교",
+                  "department": "컴퓨터정보공학부",
+                  "group": "가",
+                  "quota": 8,
+                  "convertedScore": 751.232,
+                  "referenceCut": 82.68,
+                  "gapRatio": 12.153,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 94.833,
+                    "referenceCut": 82.68,
+                    "previousYear": { "year": 2026, "cut": 83 }
+                  },
+                  "chance": "높음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                },
+                {
+                  "university": "숙명여자대학교",
+                  "department": "소프트웨어학부 컴퓨터과학전공",
+                  "group": "가",
+                  "quota": 13,
+                  "convertedScore": 962.149,
+                  "referenceCut": 87.08,
+                  "gapRatio": 7.753,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 94.833,
+                    "referenceCut": 87.08,
+                    "previousYear": { "year": 2026, "cut": 86 }
+                  },
+                  "chance": "높음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                }
+              ]
+            }
+          ],
+          "overallComment": "지원 전략 해설을 생성하지 못했습니다. 환산점수와 3개년 기준컷의 격차가 구분 기준입니다.",
+          "notices": [
+            "희망하신 컴퓨터공학과 외에 컴퓨터·IT 계열(소프트웨어·인공지능 등)까지 함께 비교했습니다. 희망 지역(서울)의 컴퓨터공학과만으로는 현재 성적에 맞는 지원처를 고루 찾기 어려워 비교 범위를 넓혔습니다.",
+            "현재 성적에 정확히 '적정'으로 분류되는 곳이 많지 않아, 가장 가까운 곳을 함께 담았습니다. 각 대학의 실제 분류는 목록의 구분 표시를 확인해 주세요."
+          ]
+        },
+        {
+          "sectionId": "jeongsiCombination",
+          "title": "가·나·다군 지원 조합",
+          "risk": "균형",
+          "combinations": [
+            {
+              "id": "jeongsi-combo-1",
+              "label": "희망 우선형",
+              "slots": [
+                {
+                  "group": "가",
+                  "university": "고려대학교",
+                  "department": "컴퓨터학과",
+                  "tier": "상향",
+                  "chance": "낮음"
+                },
+                {
+                  "group": "나",
+                  "university": "서강대학교",
+                  "department": "컴퓨터공학과",
+                  "tier": "적정",
+                  "chance": "보통"
+                },
+                {
+                  "group": "다",
+                  "university": "국민대학교",
+                  "department": "소프트웨어학부",
+                  "tier": "안정",
+                  "chance": "높음"
+                }
+              ],
+              "strategy": "군별 구분 배치로 성격이 결정된 조합입니다."
+            },
+            {
+              "id": "jeongsi-combo-2",
+              "label": "대학 우선형",
+              "slots": [
+                {
+                  "group": "가",
+                  "university": "고려대학교",
+                  "department": "컴퓨터학과",
+                  "tier": "상향",
+                  "chance": "낮음"
+                },
+                {
+                  "group": "나",
+                  "university": "서강대학교",
+                  "department": "컴퓨터공학과",
+                  "tier": "적정",
+                  "chance": "보통"
+                },
+                {
+                  "group": "다",
+                  "university": "이화여자대학교",
+                  "department": "인공지능데이터사이언스학부(인문)",
+                  "tier": "안정",
+                  "chance": "높음"
+                }
+              ],
+              "strategy": "군별 구분 배치로 성격이 결정된 조합입니다."
+            },
+            {
+              "id": "jeongsi-combo-3",
+              "label": "합격 여유형",
+              "slots": [
+                {
+                  "group": "가",
+                  "university": "고려대학교",
+                  "department": "데이터과학과",
+                  "tier": "상향",
+                  "chance": "낮음"
+                },
+                {
+                  "group": "나",
+                  "university": "서강대학교",
+                  "department": "인공지능학과",
+                  "tier": "적정",
+                  "chance": "높음"
+                },
+                {
+                  "group": "다",
+                  "university": "서경대학교",
+                  "department": "미래융합학부2",
+                  "tier": "안정",
+                  "chance": "높음"
+                }
+              ],
+              "strategy": "군별 구분 배치로 성격이 결정된 조합입니다."
+            }
+          ],
+          "overallComment": "조합 해설을 생성하지 못했습니다. 각 조합의 군별 구분 배치가 전략의 기준입니다."
+        },
+        {
+          "sectionId": "jeongsiUniversityDetail",
+          "title": "대학별 상세 분석",
+          "items": [
+            {
+              "university": "고려대학교",
+              "department": "컴퓨터학과",
+              "group": "가",
+              "quota": 24,
+              "competitionRate": 3.98,
+              "ratioSummary": "국100·수120·탐100(탐구 과목별 합) 가중합",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "englishHistorySummary": "영어 감산(1등급 0 · 2등급 3 · 3등급 6) / 한국사 감산(1등급 0 · 2등급 0 · 3등급 0)",
+              "bonusSummary": null,
+              "restrictionSummary": null,
+              "convertedScore": 659.125,
+              "totalScore": 1000,
+              "referenceCut": 96.133,
+              "cutHistory": [
+                { "year": 2024, "cut": 96.22 },
+                { "year": 2025, "cut": 94.88 },
+                { "year": 2026, "cut": 96 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 94.833,
+                "referenceCut": 96.133,
+                "previousYear": { "year": 2026, "cut": 96 }
+              },
+              "tier": "상향",
+              "chance": "낮음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "서강대학교",
+              "department": "컴퓨터공학과",
+              "group": "나",
+              "quota": 32,
+              "competitionRate": 5.39,
+              "ratioSummary": "영19.2·탐16.3 / 국·수 중 상위순 35·29.6",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "englishHistorySummary": "영어 가산(1등급 100 · 2등급 99.5 · 3등급 98.5) / 한국사 가산(1등급 10 · 2등급 10 · 3등급 10)",
+              "bonusSummary": null,
+              "restrictionSummary": null,
+              "convertedScore": 512.568,
+              "totalScore": 521,
+              "referenceCut": 94.462,
+              "cutHistory": [
+                { "year": 2024, "cut": 92.5 },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 95 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 94.833,
+                "referenceCut": 94.462,
+                "previousYear": { "year": 2026, "cut": 95 }
+              },
+              "totalScoreEstimated": true,
+              "tier": "적정",
+              "chance": "보통",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "고려대학교",
+              "department": "인공지능학과",
+              "group": "가",
+              "quota": 26,
+              "competitionRate": 4.54,
+              "ratioSummary": "국100·수120·탐100(탐구 과목별 합) 가중합",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "englishHistorySummary": "영어 감산(1등급 0 · 2등급 3 · 3등급 6) / 한국사 감산(1등급 0 · 2등급 0 · 3등급 0)",
+              "bonusSummary": null,
+              "restrictionSummary": null,
+              "convertedScore": 659.125,
+              "totalScore": 1000,
+              "referenceCut": 95.188,
+              "cutHistory": [
+                { "year": 2024, "cut": null },
+                { "year": 2025, "cut": 95.5 },
+                { "year": 2026, "cut": 95 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 94.833,
+                "referenceCut": 95.188,
+                "previousYear": { "year": 2026, "cut": 95 }
+              },
+              "tier": "적정",
+              "chance": "보통",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "경희대학교",
+              "department": "빅데이터응용학과",
+              "group": "가",
+              "quota": 12,
+              "competitionRate": 4.67,
+              "ratioSummary": "국35·수35·탐30",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "englishHistorySummary": "영어 감산(1등급 0 · 2등급 0 · 3등급 2) / 한국사 감산(1등급 0 · 2등급 0 · 3등급 0)",
+              "bonusSummary": null,
+              "restrictionSummary": null,
+              "convertedScore": 396.942,
+              "totalScore": 600,
+              "referenceCut": 91.763,
+              "cutHistory": [
+                { "year": 2024, "cut": 91.17 },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 92 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 94.833,
+                "referenceCut": 91.763,
+                "previousYear": { "year": 2026, "cut": 92 }
+              },
+              "tier": "적정",
+              "chance": "높음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "건국대학교",
+              "department": "컴퓨터공학과",
+              "group": "가",
+              "quota": 32,
+              "competitionRate": 7.08,
+              "ratioSummary": "국30·수40·영10·탐20",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 200 · 2등급 197 · 3등급 194) / 한국사 감산(1등급 0 · 2등급 0 · 3등급 0)",
+              "bonusSummary": null,
+              "restrictionSummary": null,
+              "convertedScore": 697.36,
+              "totalScore": 1000,
+              "referenceCut": 90.623,
+              "cutHistory": [
+                { "year": 2024, "cut": 90.5 },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 90 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 94.833,
+                "referenceCut": 90.623,
+                "previousYear": { "year": 2026, "cut": 90 }
+              },
+              "tier": "안정",
+              "chance": "높음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "광운대학교",
+              "department": "컴퓨터정보공학부",
+              "group": "가",
+              "quota": 8,
+              "competitionRate": 9.5,
+              "ratioSummary": "국20·수35·영20·탐25",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 200 · 2등급 198 · 3등급 195) / 한국사 가산(1등급 10 · 2등급 10 · 3등급 10)",
+              "bonusSummary": "수학 미적분 +3%, 기하 +3% / 과탐 과목별 +3%",
+              "restrictionSummary": null,
+              "convertedScore": 751.232,
+              "totalScore": 1000,
+              "referenceCut": 82.68,
+              "cutHistory": [
+                { "year": 2024, "cut": 80.2 },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 83 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 94.833,
+                "referenceCut": 82.68,
+                "previousYear": { "year": 2026, "cut": 83 }
+              },
+              "tier": "안정",
+              "chance": "높음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "숙명여자대학교",
+              "department": "소프트웨어학부 컴퓨터과학전공",
+              "group": "가",
+              "quota": 13,
+              "competitionRate": 6.7,
+              "ratioSummary": "국25·수35·영15·탐25",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 100 · 2등급 98 · 3등급 94) / 한국사 가산(1등급 3 · 2등급 3 · 3등급 3)",
+              "bonusSummary": "과탐 과목별 +3%",
+              "restrictionSummary": null,
+              "convertedScore": 962.149,
+              "totalScore": 1000,
+              "referenceCut": 87.08,
+              "cutHistory": [
+                { "year": 2024, "cut": 88.38 },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 86 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 94.833,
+                "referenceCut": 87.08,
+                "previousYear": { "year": 2026, "cut": 86 }
+              },
+              "tier": "안정",
+              "chance": "높음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "label": "실데이터 · 중위권 문과",
+    "content": {
+      "meta": {
+        "reportId": "preview-real-2",
+        "input": {
+          "score": {
+            "examYear": 2026,
+            "korean": {
+              "elective": "화법과작문",
+              "standardScore": 118,
+              "percentile": 82
+            },
+            "math": {
+              "elective": "확률과통계",
+              "standardScore": 120,
+              "percentile": 84
+            },
+            "english": { "grade": 3 },
+            "inquiry1": {
+              "subject": "사회문화",
+              "standardScore": 62,
+              "percentile": 85
+            },
+            "inquiry2": {
+              "subject": "생활과윤리",
+              "standardScore": 60,
+              "percentile": 80
+            },
+            "history": { "grade": 3 }
+          },
+          "preference": {
+            "target": "경영학과",
+            "targetKind": "department",
+            "region": "전국",
+            "risk": "안정"
+          }
+        },
+        "createdAt": "2026-11-01T21:45:22.411Z",
+        "version": 1
+      },
+      "sections": [
+        {
+          "sectionId": "jeongsiScoreAnalysis",
+          "title": "성적 종합 분석",
+          "rows": [
+            {
+              "area": "korean",
+              "label": "국어",
+              "subjectName": "화법과작문",
+              "standardScore": 118,
+              "percentile": 82,
+              "grade": null,
+              "rank": 4,
+              "deviation": -0.875
+            },
+            {
+              "area": "math",
+              "label": "수학",
+              "subjectName": "확률과통계",
+              "standardScore": 120,
+              "percentile": 84,
+              "grade": null,
+              "rank": 1,
+              "deviation": 1.125
+            },
+            {
+              "area": "english",
+              "label": "영어",
+              "subjectName": null,
+              "standardScore": null,
+              "percentile": 83,
+              "grade": 3,
+              "rank": 2,
+              "deviation": 0.125
+            },
+            {
+              "area": "inquiry",
+              "label": "탐구",
+              "subjectName": "사회문화·생활과윤리",
+              "standardScore": 61,
+              "percentile": 82.5,
+              "grade": null,
+              "rank": 3,
+              "deviation": -0.375
+            }
+          ],
+          "averagePercentile": 82.833,
+          "totalStandardScore": 360,
+          "strengthAreas": ["math"],
+          "weaknessAreas": ["korean"],
+          "overallComment": "성적 해설을 생성하지 못했습니다. 위 표의 표준점수·백분위와 평균 백분위가 분석의 기준값입니다.",
+          "strengthComment": "강점 해설을 생성하지 못했습니다. 영역 내 순위와 편차 수치로 강점 영역을 확인할 수 있습니다.",
+          "weaknessComment": "약점 해설을 생성하지 못했습니다. 영역 내 순위와 편차 수치로 보완이 필요한 영역을 확인할 수 있습니다."
+        },
+        {
+          "sectionId": "jeongsiUniversityMatch",
+          "title": "나에게 유리한 대학 분석",
+          "items": [
+            {
+              "university": "남서울대학교",
+              "department": "경영학과",
+              "group": "나",
+              "ratioSummary": "국·수·영·탐 중 상위순 50·50",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 1과목",
+              "advantageScore": 96,
+              "reason": "반영비율과 활용지표, 유리도 점수를 기준으로 선정된 대학입니다."
+            },
+            {
+              "university": "배재대학교",
+              "department": "경영학과",
+              "group": "나",
+              "ratioSummary": "국·수·영·탐 중 상위순 50·50",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 1과목",
+              "advantageScore": 96,
+              "reason": "반영비율과 활용지표, 유리도 점수를 기준으로 선정된 대학입니다."
+            },
+            {
+              "university": "건양대학교",
+              "department": "병원경영학과",
+              "group": "나",
+              "ratioSummary": "국·수·영·탐 중 상위순 33.3·33.3·33.3",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 1과목",
+              "advantageScore": 70,
+              "reason": "반영비율과 활용지표, 유리도 점수를 기준으로 선정된 대학입니다."
+            },
+            {
+              "university": "성공회대학교",
+              "department": "경영학부",
+              "group": "다",
+              "ratioSummary": "영33.3·탐33.3 / 국·수 중 상위순 33.4",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 1과목",
+              "advantageScore": 62,
+              "reason": "반영비율과 활용지표, 유리도 점수를 기준으로 선정된 대학입니다."
+            },
+            {
+              "university": "건국대학교",
+              "department": "경영학과",
+              "group": "나",
+              "ratioSummary": "국30·수40·영10·탐20",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "advantageScore": 61,
+              "reason": "반영비율과 활용지표, 유리도 점수를 기준으로 선정된 대학입니다."
+            }
+          ],
+          "overallComment": "반영방식 해설을 생성하지 못했습니다. 각 대학의 반영비율과 유리도 점수가 비교 기준입니다."
+        },
+        {
+          "sectionId": "jeongsiRecommendation",
+          "title": "지원 가능 대학·학과",
+          "groups": [
+            {
+              "tier": "상향",
+              "items": [
+                {
+                  "university": "건국대학교",
+                  "department": "경영학과",
+                  "group": "나",
+                  "quota": 65,
+                  "convertedScore": 636.43,
+                  "referenceCut": 87.571,
+                  "gapRatio": -4.738,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 82.833,
+                    "referenceCut": 87.571,
+                    "previousYear": { "year": 2026, "cut": 86 }
+                  },
+                  "chance": "낮음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                },
+                {
+                  "university": "단국대학교",
+                  "department": "국제경영학과",
+                  "group": "가",
+                  "quota": 22,
+                  "convertedScore": 857,
+                  "referenceCut": 83.55,
+                  "gapRatio": -0.717,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 82.833,
+                    "referenceCut": 83.55,
+                    "previousYear": { "year": 2026, "cut": 84 }
+                  },
+                  "chance": "낮음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                },
+                {
+                  "university": "아주대학교",
+                  "department": "경영인텔리전스학과",
+                  "group": "다",
+                  "quota": 10,
+                  "convertedScore": 872.186,
+                  "referenceCut": 85,
+                  "gapRatio": -2.167,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 82.833,
+                    "referenceCut": 85,
+                    "previousYear": { "year": 2026, "cut": 85 }
+                  },
+                  "chance": "낮음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                }
+              ]
+            },
+            {
+              "tier": "적정",
+              "items": [
+                {
+                  "university": "성신여자대학교",
+                  "department": "경영학과",
+                  "group": "나",
+                  "quota": 17,
+                  "convertedScore": 426.125,
+                  "referenceCut": 83,
+                  "gapRatio": -0.167,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 82.833,
+                    "referenceCut": 83,
+                    "previousYear": { "year": 2026, "cut": 83 }
+                  },
+                  "chance": "보통",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                },
+                {
+                  "university": "인천대학교",
+                  "department": "경영학부",
+                  "group": "가",
+                  "quota": 28,
+                  "convertedScore": 840.25,
+                  "referenceCut": 80,
+                  "gapRatio": 2.833,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 82.833,
+                    "referenceCut": 80,
+                    "previousYear": { "year": 2026, "cut": 82 }
+                  },
+                  "chance": "높음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                },
+                {
+                  "university": "광운대학교",
+                  "department": "경영학부 빅데이터경영전공",
+                  "group": "나",
+                  "quota": 14,
+                  "convertedScore": 684.44,
+                  "referenceCut": 80,
+                  "gapRatio": 2.833,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 82.833,
+                    "referenceCut": 80,
+                    "previousYear": { "year": 2026, "cut": 80 }
+                  },
+                  "chance": "높음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                }
+              ]
+            },
+            {
+              "tier": "안정",
+              "items": [
+                {
+                  "university": "국립군산대학교",
+                  "department": "경영학과",
+                  "group": "다",
+                  "quota": 1,
+                  "convertedScore": 853,
+                  "referenceCut": 50.431,
+                  "gapRatio": 32.402,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 82.833,
+                    "referenceCut": 50.431,
+                    "previousYear": { "year": 2026, "cut": 53 }
+                  },
+                  "chance": "높음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                },
+                {
+                  "university": "계명대학교",
+                  "department": "경영학과",
+                  "group": "다",
+                  "quota": 11,
+                  "convertedScore": 347,
+                  "referenceCut": 282.46,
+                  "gapRatio": 16.135,
+                  "cutComparison": {
+                    "metric": "convertedScore",
+                    "studentValue": 347,
+                    "referenceCut": 282.46,
+                    "previousYear": { "year": 2026, "cut": 281.5 }
+                  },
+                  "chance": "높음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                },
+                {
+                  "university": "배재대학교",
+                  "department": "경영학과",
+                  "group": "나",
+                  "quota": 2,
+                  "convertedScore": 855,
+                  "referenceCut": 679.8,
+                  "gapRatio": 17.52,
+                  "cutComparison": {
+                    "metric": "convertedScore",
+                    "studentValue": 855,
+                    "referenceCut": 679.8,
+                    "previousYear": { "year": 2025, "cut": 675 }
+                  },
+                  "chance": "높음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                }
+              ]
+            }
+          ],
+          "overallComment": "지원 전략 해설을 생성하지 못했습니다. 환산점수와 3개년 기준컷의 격차가 구분 기준입니다.",
+          "notices": []
+        },
+        {
+          "sectionId": "jeongsiCombination",
+          "title": "가·나·다군 지원 조합",
+          "risk": "안정",
+          "combinations": [
+            {
+              "id": "jeongsi-combo-1",
+              "label": "희망 우선형",
+              "slots": [
+                {
+                  "group": "가",
+                  "university": "국립한국교통대학교",
+                  "department": "경영학과",
+                  "tier": "안정",
+                  "chance": "높음"
+                },
+                {
+                  "group": "나",
+                  "university": "성신여자대학교",
+                  "department": "경영학과",
+                  "tier": "적정",
+                  "chance": "보통"
+                },
+                {
+                  "group": "다",
+                  "university": "성공회대학교",
+                  "department": "경영학부",
+                  "tier": "적정",
+                  "chance": "보통"
+                }
+              ],
+              "strategy": "군별 구분 배치로 성격이 결정된 조합입니다."
+            },
+            {
+              "id": "jeongsi-combo-2",
+              "label": "반영방식 우선형",
+              "slots": [
+                {
+                  "group": "가",
+                  "university": "국립한국교통대학교",
+                  "department": "경영학과",
+                  "tier": "안정",
+                  "chance": "높음"
+                },
+                {
+                  "group": "나",
+                  "university": "단국대학교",
+                  "department": "경영학부",
+                  "tier": "적정",
+                  "chance": "보통"
+                },
+                {
+                  "group": "다",
+                  "university": "성공회대학교",
+                  "department": "경영학부",
+                  "tier": "적정",
+                  "chance": "보통"
+                }
+              ],
+              "strategy": "군별 구분 배치로 성격이 결정된 조합입니다."
+            },
+            {
+              "id": "jeongsi-combo-3",
+              "label": "대학 우선형",
+              "slots": [
+                {
+                  "group": "가",
+                  "university": "서울여자대학교",
+                  "department": "경영학과",
+                  "tier": "안정",
+                  "chance": "높음"
+                },
+                {
+                  "group": "나",
+                  "university": "한양대학교",
+                  "department": "경영학부",
+                  "tier": "적정",
+                  "chance": "높음"
+                },
+                {
+                  "group": "다",
+                  "university": "성공회대학교",
+                  "department": "경영학부",
+                  "tier": "적정",
+                  "chance": "보통"
+                }
+              ],
+              "strategy": "군별 구분 배치로 성격이 결정된 조합입니다."
+            },
+            {
+              "id": "jeongsi-combo-4",
+              "label": "합격 여유형",
+              "slots": [
+                {
+                  "group": "가",
+                  "university": "인천대학교",
+                  "department": "경영학부",
+                  "tier": "적정",
+                  "chance": "높음"
+                },
+                {
+                  "group": "나",
+                  "university": "광운대학교",
+                  "department": "경영학부 빅데이터경영전공",
+                  "tier": "적정",
+                  "chance": "높음"
+                },
+                {
+                  "group": "다",
+                  "university": "국립군산대학교",
+                  "department": "경영학과",
+                  "tier": "안정",
+                  "chance": "높음"
+                }
+              ],
+              "strategy": "군별 구분 배치로 성격이 결정된 조합입니다."
+            }
+          ],
+          "overallComment": "조합 해설을 생성하지 못했습니다. 각 조합의 군별 구분 배치가 전략의 기준입니다."
+        },
+        {
+          "sectionId": "jeongsiUniversityDetail",
+          "title": "대학별 상세 분석",
+          "items": [
+            {
+              "university": "건국대학교",
+              "department": "경영학과",
+              "group": "나",
+              "quota": 65,
+              "competitionRate": 5.15,
+              "ratioSummary": "국30·수40·영10·탐20",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 200 · 2등급 197 · 3등급 194) / 한국사 감산(1등급 0 · 2등급 0 · 3등급 0)",
+              "bonusSummary": null,
+              "restrictionSummary": null,
+              "convertedScore": 636.43,
+              "totalScore": 1000,
+              "referenceCut": 87.571,
+              "cutHistory": [
+                { "year": 2024, "cut": 91.5 },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 86 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 82.833,
+                "referenceCut": 87.571,
+                "previousYear": { "year": 2026, "cut": 86 }
+              },
+              "tier": "상향",
+              "chance": "낮음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "단국대학교",
+              "department": "국제경영학과",
+              "group": "가",
+              "quota": 22,
+              "competitionRate": 6.38,
+              "ratioSummary": "국25·수35·영20·탐20",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 2과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 100 · 2등급 98 · 3등급 95) / 한국사 가산(1등급 5 · 2등급 4 · 3등급 3)",
+              "bonusSummary": null,
+              "restrictionSummary": null,
+              "convertedScore": 857,
+              "totalScore": 1000,
+              "referenceCut": 83.55,
+              "cutHistory": [
+                { "year": 2024, "cut": null },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 84 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 82.833,
+                "referenceCut": 83.55,
+                "previousYear": { "year": 2026, "cut": 84 }
+              },
+              "tier": "상향",
+              "chance": "낮음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "아주대학교",
+              "department": "경영인텔리전스학과",
+              "group": "다",
+              "quota": 10,
+              "competitionRate": 9.2,
+              "ratioSummary": "국25·수40·영15·탐20",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 150 · 2등급 147 · 3등급 144) / 한국사 감산(1등급 0 · 2등급 0 · 3등급 0)",
+              "bonusSummary": null,
+              "restrictionSummary": null,
+              "convertedScore": 872.186,
+              "totalScore": 1000,
+              "referenceCut": 85,
+              "cutHistory": [
+                { "year": 2024, "cut": null },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 85 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 82.833,
+                "referenceCut": 85,
+                "previousYear": { "year": 2026, "cut": 85 }
+              },
+              "tier": "상향",
+              "chance": "낮음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "성신여자대학교",
+              "department": "경영학과",
+              "group": "나",
+              "quota": 17,
+              "competitionRate": 5.18,
+              "ratioSummary": "국30·수25·영20·탐25",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 2과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 100 · 2등급 97 · 3등급 94) / 한국사 가산(1등급 2 · 2등급 1.5 · 3등급 1)",
+              "bonusSummary": null,
+              "restrictionSummary": null,
+              "convertedScore": 426.125,
+              "totalScore": 500,
+              "referenceCut": 83,
+              "cutHistory": [
+                { "year": 2024, "cut": null },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 83 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 82.833,
+                "referenceCut": 83,
+                "previousYear": { "year": 2026, "cut": 83 }
+              },
+              "tier": "적정",
+              "chance": "보통",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "인천대학교",
+              "department": "경영학부",
+              "group": "가",
+              "quota": 28,
+              "competitionRate": 4.27,
+              "ratioSummary": "국35·수30·영10·탐25",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 2과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 100 · 2등급 98 · 3등급 95) / 한국사 가산(1등급 0 · 2등급 0 · 3등급 0)",
+              "bonusSummary": null,
+              "restrictionSummary": null,
+              "convertedScore": 840.25,
+              "totalScore": 1000,
+              "referenceCut": 80,
+              "cutHistory": [
+                { "year": 2024, "cut": 75 },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 82 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 82.833,
+                "referenceCut": 80,
+                "previousYear": { "year": 2026, "cut": 82 }
+              },
+              "tier": "적정",
+              "chance": "높음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "광운대학교",
+              "department": "경영학부 빅데이터경영전공",
+              "group": "나",
+              "quota": 14,
+              "competitionRate": 5.73,
+              "ratioSummary": "국30·수30·영20·탐20",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 200 · 2등급 198 · 3등급 195) / 한국사 가산(1등급 10 · 2등급 10 · 3등급 10)",
+              "bonusSummary": null,
+              "restrictionSummary": null,
+              "convertedScore": 684.44,
+              "totalScore": 1000,
+              "referenceCut": 80,
+              "cutHistory": [
+                { "year": 2024, "cut": null },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 80 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 82.833,
+                "referenceCut": 80,
+                "previousYear": { "year": 2026, "cut": 80 }
+              },
+              "tier": "적정",
+              "chance": "높음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "국립군산대학교",
+              "department": "경영학과",
+              "group": "다",
+              "quota": 1,
+              "competitionRate": 6,
+              "ratioSummary": "국30·수20·영30·탐20",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 2과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 100 · 2등급 95 · 3등급 90) / 한국사 가산(1등급 5 · 2등급 4.5 · 3등급 4)",
+              "bonusSummary": null,
+              "restrictionSummary": null,
+              "convertedScore": 853,
+              "totalScore": 1000,
+              "referenceCut": 50.431,
+              "cutHistory": [
+                { "year": 2024, "cut": 42.33 },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 53 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 82.833,
+                "referenceCut": 50.431,
+                "previousYear": { "year": 2026, "cut": 53 }
+              },
+              "tier": "안정",
+              "chance": "높음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "계명대학교",
+              "department": "경영학과",
+              "group": "다",
+              "quota": 11,
+              "competitionRate": 8,
+              "ratioSummary": "국25·수25·영25·탐25",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 2과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 100 · 2등급 98 · 3등급 94) / 한국사 가산(1등급 5 · 2등급 5 · 3등급 4.5)",
+              "bonusSummary": null,
+              "restrictionSummary": null,
+              "convertedScore": 347,
+              "totalScore": 400,
+              "referenceCut": 282.46,
+              "cutHistory": [
+                { "year": 2024, "cut": null },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 281.5 }
+              ],
+              "cutComparison": {
+                "metric": "convertedScore",
+                "studentValue": 347,
+                "referenceCut": 282.46,
+                "previousYear": { "year": 2026, "cut": 281.5 }
+              },
+              "tier": "안정",
+              "chance": "높음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "배재대학교",
+              "department": "경영학과",
+              "group": "나",
+              "quota": 2,
+              "competitionRate": 13.22,
+              "ratioSummary": "국·수·영·탐 중 상위순 50·50",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 1과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 100 · 2등급 90 · 3등급 80) / 한국사 가산(1등급 10 · 2등급 10 · 3등급 10)",
+              "bonusSummary": null,
+              "restrictionSummary": null,
+              "convertedScore": 855,
+              "totalScore": 1000,
+              "referenceCut": 679.8,
+              "cutHistory": [
+                { "year": 2024, "cut": null },
+                { "year": 2025, "cut": 675 },
+                { "year": 2026, "cut": null }
+              ],
+              "cutComparison": {
+                "metric": "convertedScore",
+                "studentValue": 855,
+                "referenceCut": 679.8,
+                "previousYear": { "year": 2025, "cut": 675 }
+              },
+              "tier": "안정",
+              "chance": "높음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "label": "실데이터 · 의약 최상위",
+    "content": {
+      "meta": {
+        "reportId": "preview-real-3",
+        "input": {
+          "score": {
+            "examYear": 2026,
+            "korean": {
+              "elective": "언어와매체",
+              "standardScore": 139,
+              "percentile": 99
+            },
+            "math": {
+              "elective": "미적분",
+              "standardScore": 145,
+              "percentile": 100
+            },
+            "english": { "grade": 1 },
+            "inquiry1": {
+              "subject": "화학I",
+              "standardScore": 72,
+              "percentile": 99
+            },
+            "inquiry2": {
+              "subject": "생명과학I",
+              "standardScore": 71,
+              "percentile": 98
+            },
+            "history": { "grade": 1 }
+          },
+          "preference": {
+            "target": "의예과",
+            "targetKind": "department",
+            "region": "전국",
+            "risk": "공격"
+          }
+        },
+        "createdAt": "2026-11-01T21:45:22.427Z",
+        "version": 1
+      },
+      "sections": [
+        {
+          "sectionId": "jeongsiScoreAnalysis",
+          "title": "성적 종합 분석",
+          "rows": [
+            {
+              "area": "korean",
+              "label": "국어",
+              "subjectName": "언어와매체",
+              "standardScore": 139,
+              "percentile": 99,
+              "grade": null,
+              "rank": 2,
+              "deviation": 0.125
+            },
+            {
+              "area": "math",
+              "label": "수학",
+              "subjectName": "미적분",
+              "standardScore": 145,
+              "percentile": 100,
+              "grade": null,
+              "rank": 1,
+              "deviation": 1.125
+            },
+            {
+              "area": "english",
+              "label": "영어",
+              "subjectName": null,
+              "standardScore": null,
+              "percentile": 98,
+              "grade": 1,
+              "rank": 4,
+              "deviation": -0.875
+            },
+            {
+              "area": "inquiry",
+              "label": "탐구",
+              "subjectName": "화학I·생명과학I",
+              "standardScore": 71.5,
+              "percentile": 98.5,
+              "grade": null,
+              "rank": 3,
+              "deviation": -0.375
+            }
+          ],
+          "averagePercentile": 99.167,
+          "totalStandardScore": 427,
+          "strengthAreas": ["math"],
+          "weaknessAreas": ["english"],
+          "overallComment": "성적 해설을 생성하지 못했습니다. 위 표의 표준점수·백분위와 평균 백분위가 분석의 기준값입니다.",
+          "strengthComment": "강점 해설을 생성하지 못했습니다. 영역 내 순위와 편차 수치로 강점 영역을 확인할 수 있습니다.",
+          "weaknessComment": "약점 해설을 생성하지 못했습니다. 영역 내 순위와 편차 수치로 보완이 필요한 영역을 확인할 수 있습니다."
+        },
+        {
+          "sectionId": "jeongsiUniversityMatch",
+          "title": "나에게 유리한 대학 분석",
+          "items": [
+            {
+              "university": "아주대학교",
+              "department": "의학과",
+              "group": "나",
+              "ratioSummary": "국20·수40·영10·탐30",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "advantageScore": 72,
+              "reason": "반영비율과 활용지표, 유리도 점수를 기준으로 선정된 대학입니다."
+            },
+            {
+              "university": "전북대학교",
+              "department": "의예과",
+              "group": "나",
+              "ratioSummary": "국30·수40·탐30",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "advantageScore": 70,
+              "reason": "반영비율과 활용지표, 유리도 점수를 기준으로 선정된 대학입니다."
+            },
+            {
+              "university": "인하대학교",
+              "department": "첨단바이오의약학과",
+              "group": "나",
+              "ratioSummary": "국25·수35·영10·탐30",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "advantageScore": 70,
+              "reason": "반영비율과 활용지표, 유리도 점수를 기준으로 선정된 대학입니다."
+            },
+            {
+              "university": "충남대학교",
+              "department": "의예과",
+              "group": "가",
+              "ratioSummary": "국25·수45·탐30",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 표준점수 2과목",
+              "advantageScore": 69,
+              "reason": "반영비율과 활용지표, 유리도 점수를 기준으로 선정된 대학입니다."
+            },
+            {
+              "university": "고려대학교",
+              "department": "의예과",
+              "group": "가",
+              "ratioSummary": "국100·수120·탐100(탐구 과목별 합) 가중합",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "advantageScore": 68,
+              "reason": "반영비율과 활용지표, 유리도 점수를 기준으로 선정된 대학입니다."
+            }
+          ],
+          "overallComment": "반영방식 해설을 생성하지 못했습니다. 각 대학의 반영비율과 유리도 점수가 비교 기준입니다."
+        },
+        {
+          "sectionId": "jeongsiRecommendation",
+          "title": "지원 가능 대학·학과",
+          "groups": [
+            { "tier": "상향", "items": [] },
+            {
+              "tier": "적정",
+              "items": [
+                {
+                  "university": "계명대학교",
+                  "department": "의예과",
+                  "group": "다",
+                  "quota": 12,
+                  "convertedScore": 402.5,
+                  "referenceCut": 96.24,
+                  "gapRatio": 2.927,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 99.167,
+                    "referenceCut": 96.24,
+                    "previousYear": { "year": 2026, "cut": 96 }
+                  },
+                  "chance": "높음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                },
+                {
+                  "university": "전북대학교",
+                  "department": "의예과",
+                  "group": "나",
+                  "quota": 24,
+                  "convertedScore": 387.141,
+                  "referenceCut": 97.207,
+                  "gapRatio": 1.96,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 99.167,
+                    "referenceCut": 97.207,
+                    "previousYear": { "year": 2026, "cut": 97 }
+                  },
+                  "chance": "높음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                },
+                {
+                  "university": "제주대학교",
+                  "department": "의예과",
+                  "group": "나",
+                  "quota": 8,
+                  "convertedScore": 1003.5,
+                  "referenceCut": 97.327,
+                  "gapRatio": 1.84,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 99.167,
+                    "referenceCut": 97.327,
+                    "previousYear": { "year": 2026, "cut": 97 }
+                  },
+                  "chance": "높음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                }
+              ]
+            },
+            {
+              "tier": "안정",
+              "items": [
+                {
+                  "university": "충남대학교",
+                  "department": "의예과",
+                  "group": "가",
+                  "quota": 12,
+                  "convertedScore": 214.35,
+                  "referenceCut": 94,
+                  "gapRatio": 5.167,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 99.167,
+                    "referenceCut": 94,
+                    "previousYear": { "year": 2026, "cut": 94 }
+                  },
+                  "chance": "높음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                },
+                {
+                  "university": "상지대학교",
+                  "department": "한의예과(A형)",
+                  "group": "다",
+                  "quota": 15,
+                  "convertedScore": 998,
+                  "referenceCut": 75.2,
+                  "gapRatio": 23.967,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 99.167,
+                    "referenceCut": 75.2,
+                    "previousYear": { "year": 2026, "cut": 66 }
+                  },
+                  "chance": "높음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                },
+                {
+                  "university": "전남대학교",
+                  "department": "수의예과",
+                  "group": "나",
+                  "quota": 16,
+                  "convertedScore": 1018.048,
+                  "referenceCut": 94.429,
+                  "gapRatio": 4.738,
+                  "cutComparison": {
+                    "metric": "percentile",
+                    "studentValue": 99.167,
+                    "referenceCut": 94.429,
+                    "previousYear": { "year": 2026, "cut": 94 }
+                  },
+                  "chance": "높음",
+                  "comment": "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다."
+                }
+              ]
+            }
+          ],
+          "overallComment": "지원 전략 해설을 생성하지 못했습니다. 환산점수와 3개년 기준컷의 격차가 구분 기준입니다.",
+          "notices": [
+            "희망하신 의예과 외에 의약계열(치의학·한의학·약학 등)까지 함께 비교했습니다. 희망 지역(전국)의 의예과만으로는 현재 성적에 맞는 지원처를 고루 찾기 어려워 비교 범위를 넓혔습니다."
+          ]
+        },
+        {
+          "sectionId": "jeongsiCombination",
+          "title": "가·나·다군 지원 조합",
+          "risk": "공격",
+          "combinations": [
+            {
+              "id": "jeongsi-combo-1",
+              "label": "희망 우선형",
+              "slots": [
+                {
+                  "group": "가",
+                  "university": "조선대학교",
+                  "department": "의예과",
+                  "tier": "적정",
+                  "chance": "높음"
+                },
+                {
+                  "group": "나",
+                  "university": "전북대학교",
+                  "department": "의예과",
+                  "tier": "적정",
+                  "chance": "높음"
+                },
+                {
+                  "group": "다",
+                  "university": "계명대학교",
+                  "department": "의예과",
+                  "tier": "적정",
+                  "chance": "높음"
+                }
+              ],
+              "strategy": "군별 구분 배치로 성격이 결정된 조합입니다."
+            },
+            {
+              "id": "jeongsi-combo-2",
+              "label": "반영방식 우선형",
+              "slots": [
+                {
+                  "group": "가",
+                  "university": "경북대학교",
+                  "department": "약학과",
+                  "tier": "적정",
+                  "chance": "높음"
+                },
+                {
+                  "group": "나",
+                  "university": "전북대학교",
+                  "department": "의예과",
+                  "tier": "적정",
+                  "chance": "높음"
+                },
+                {
+                  "group": "다",
+                  "university": "상지대학교",
+                  "department": "한의예과(B형)",
+                  "tier": "적정",
+                  "chance": "높음"
+                }
+              ],
+              "strategy": "군별 구분 배치로 성격이 결정된 조합입니다."
+            },
+            {
+              "id": "jeongsi-combo-3",
+              "label": "대학 우선형",
+              "slots": [
+                {
+                  "group": "가",
+                  "university": "조선대학교",
+                  "department": "의예과",
+                  "tier": "적정",
+                  "chance": "높음"
+                },
+                {
+                  "group": "나",
+                  "university": "한림대학교",
+                  "department": "의학과",
+                  "tier": "적정",
+                  "chance": "높음"
+                },
+                {
+                  "group": "다",
+                  "university": "상지대학교",
+                  "department": "한의예과(B형)",
+                  "tier": "적정",
+                  "chance": "높음"
+                }
+              ],
+              "strategy": "군별 구분 배치로 성격이 결정된 조합입니다."
+            },
+            {
+              "id": "jeongsi-combo-4",
+              "label": "합격 여유형",
+              "slots": [
+                {
+                  "group": "가",
+                  "university": "경북대학교",
+                  "department": "약학과",
+                  "tier": "적정",
+                  "chance": "높음"
+                },
+                {
+                  "group": "나",
+                  "university": "전북대학교",
+                  "department": "약학과",
+                  "tier": "적정",
+                  "chance": "높음"
+                },
+                {
+                  "group": "다",
+                  "university": "계명대학교",
+                  "department": "의예과",
+                  "tier": "적정",
+                  "chance": "높음"
+                }
+              ],
+              "strategy": "군별 구분 배치로 성격이 결정된 조합입니다."
+            }
+          ],
+          "overallComment": "조합 해설을 생성하지 못했습니다. 각 조합의 군별 구분 배치가 전략의 기준입니다."
+        },
+        {
+          "sectionId": "jeongsiUniversityDetail",
+          "title": "대학별 상세 분석",
+          "items": [
+            {
+              "university": "계명대학교",
+              "department": "의예과",
+              "group": "다",
+              "quota": 12,
+              "competitionRate": 14.87,
+              "ratioSummary": "국25·수30·영20·탐25",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 2과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 100 · 2등급 98 · 3등급 94) / 한국사 가산(1등급 5 · 2등급 5 · 3등급 4.5)",
+              "bonusSummary": null,
+              "restrictionSummary": "수학 미적분·기하 중 응시 필수 / 탐구 과탐필수",
+              "convertedScore": 402.5,
+              "totalScore": 400,
+              "referenceCut": 96.24,
+              "cutHistory": [
+                { "year": 2024, "cut": null },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 96 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 99.167,
+                "referenceCut": 96.24,
+                "previousYear": { "year": 2026, "cut": 96 }
+              },
+              "tier": "적정",
+              "chance": "높음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "전북대학교",
+              "department": "의예과",
+              "group": "나",
+              "quota": 24,
+              "competitionRate": 3.76,
+              "ratioSummary": "국30·수40·탐30",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
+              "englishHistorySummary": "영어 가산(1등급 30 · 2등급 27 · 3등급 24) / 한국사 가산(1등급 5 · 2등급 5 · 3등급 5)",
+              "bonusSummary": null,
+              "restrictionSummary": "수학 미적분·기하 중 응시 필수 / 탐구 과탐필수",
+              "convertedScore": 387.141,
+              "totalScore": 500,
+              "referenceCut": 97.207,
+              "cutHistory": [
+                { "year": 2024, "cut": null },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 97 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 99.167,
+                "referenceCut": 97.207,
+                "previousYear": { "year": 2026, "cut": 97 }
+              },
+              "tier": "적정",
+              "chance": "높음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "제주대학교",
+              "department": "의예과",
+              "group": "나",
+              "quota": 8,
+              "competitionRate": 5.45,
+              "ratioSummary": "국20·수30·영20·탐30",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 2과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 100 · 2등급 95 · 3등급 90) / 한국사 가산(1등급 10 · 2등급 10 · 3등급 10)",
+              "bonusSummary": null,
+              "restrictionSummary": "수학 미적분·기하 중 응시 필수 / 탐구 과탐필수",
+              "convertedScore": 1003.5,
+              "totalScore": 1000,
+              "referenceCut": 97.327,
+              "cutHistory": [
+                { "year": 2024, "cut": null },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 97 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 99.167,
+                "referenceCut": 97.327,
+                "previousYear": { "year": 2026, "cut": 97 }
+              },
+              "tier": "적정",
+              "chance": "높음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "충남대학교",
+              "department": "의예과",
+              "group": "가",
+              "quota": 12,
+              "competitionRate": 4.5,
+              "ratioSummary": "국25·수45·탐30",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 표준점수 2과목",
+              "englishHistorySummary": "영어 감산(1등급 0 · 2등급 2 · 3등급 5) / 한국사 감산(1등급 0 · 2등급 0 · 3등급 0)",
+              "bonusSummary": null,
+              "restrictionSummary": "수학 미적분·기하 중 응시 필수",
+              "convertedScore": 214.35,
+              "totalScore": 300,
+              "referenceCut": 94,
+              "cutHistory": [
+                { "year": 2024, "cut": null },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 94 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 99.167,
+                "referenceCut": 94,
+                "previousYear": { "year": 2026, "cut": 94 }
+              },
+              "tier": "안정",
+              "chance": "높음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "상지대학교",
+              "department": "한의예과(A형)",
+              "group": "다",
+              "quota": 15,
+              "competitionRate": null,
+              "ratioSummary": "국20·수40·영20·탐20",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 2과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 100 · 2등급 90 · 3등급 75) / 한국사 가산(1등급 3 · 2등급 2 · 3등급 1)",
+              "bonusSummary": null,
+              "restrictionSummary": "수학 미적분·기하 중 응시 필수 / 탐구 과탐필수",
+              "convertedScore": 998,
+              "totalScore": 1000,
+              "referenceCut": 75.2,
+              "cutHistory": [
+                { "year": 2024, "cut": 97.5 },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 66 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 99.167,
+                "referenceCut": 75.2,
+                "previousYear": { "year": 2026, "cut": 66 }
+              },
+              "tier": "안정",
+              "chance": "높음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            },
+            {
+              "university": "전남대학교",
+              "department": "수의예과",
+              "group": "나",
+              "quota": 16,
+              "competitionRate": 6,
+              "ratioSummary": "국24·수32·영20·탐24",
+              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 표준점수 2과목",
+              "englishHistorySummary": "영어 가산(1등급 200 · 2등급 190 · 3등급 180) / 한국사 가산(1등급 10 · 2등급 10 · 3등급 10)",
+              "bonusSummary": null,
+              "restrictionSummary": "수학 미적분·기하 중 응시 필수 / 탐구 과탐필수",
+              "convertedScore": 1018.048,
+              "totalScore": 1000,
+              "referenceCut": 94.429,
+              "cutHistory": [
+                { "year": 2024, "cut": 95.5 },
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 94 }
+              ],
+              "cutComparison": {
+                "metric": "percentile",
+                "studentValue": 99.167,
+                "referenceCut": 94.429,
+                "previousYear": { "year": 2026, "cut": 94 }
+              },
+              "tier": "안정",
+              "chance": "높음",
+              "reason": "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다."
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

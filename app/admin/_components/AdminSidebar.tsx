@@ -9,6 +9,7 @@ import {
   ClipboardCheck,
   Gift,
   CreditCard,
+  LineChart,
 } from "lucide-react";
 
 import { useSidebar } from "./AdminLayoutClient";
@@ -34,6 +35,11 @@ const MENU_ITEMS = [
     label: "리포트 관리",
     href: "/admin/reports",
     icon: ClipboardCheck,
+  },
+  {
+    label: "정시 분석",
+    href: "/admin/jeongsi",
+    icon: LineChart,
   },
   {
     label: "결제 관리",
