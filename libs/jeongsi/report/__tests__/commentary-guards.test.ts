@@ -13,6 +13,7 @@ import {
   sanitizeJeongsiTone,
   stripLeadingSubject,
   stripTopicLabel,
+  findOverclaims,
 } from "../commentary-guards";
 
 describe("formatCardAllocation", () => {
@@ -218,13 +219,24 @@ describe("normalizeTierCounts", () => {
 });
 
 describe("normalizeGapDirection", () => {
+  const percentileGap = (points: number) => ({
+    ratio: points,
+    points,
+    metric: "percentile" as const,
+  });
+  const convertedGap = (points: number) => ({
+    ratio: points / 10,
+    points,
+    metric: "convertedScore" as const,
+  });
+
   it("기준컷에 못 미친 항목을 넘었다고 쓰면 방향을 고친다", () => {
     // Arrange
     const text = "기준컷을 1.3백분위점 넘겨, 소신 지원으로 걸어 볼 만합니다.";
 
     // Act & Assert
-    expect(normalizeGapDirection(text, -1.3)).toBe(
-      "기준컷에 1.3백분위점 모자라, 소신 지원으로 걸어 볼 만합니다."
+    expect(normalizeGapDirection(text, percentileGap(-1.3))).toBe(
+      "기준컷에 평균 백분위 1.3점 모자라, 소신 지원으로 걸어 볼 만합니다."
     );
   });
 
@@ -233,19 +245,29 @@ describe("normalizeGapDirection", () => {
     const text = "기준컷에 0.5백분위점 모자라 주력 지원처입니다.";
 
     // Act & Assert
-    expect(normalizeGapDirection(text, 0.4)).toBe(
-      "기준컷을 0.4백분위점 넘겨 주력 지원처입니다."
+    expect(normalizeGapDirection(text, percentileGap(0.4))).toBe(
+      "기준컷을 평균 백분위 0.4점 넘겨 주력 지원처입니다."
     );
   });
 
-  it("방향이 맞는 표현은 그대로 둔다", () => {
+  it("환산점수로 비교한 대학은 환산점수 단위로 고친다", () => {
     // Arrange
-    const above = "기준컷을 12.2백분위점 상회하며, 여유가 많습니다.";
-    const below = "기준컷 대비 1.3백분위점 낮아 소신 지원에 가깝습니다.";
+    const text = "기준컷을 1.2백분위점 넘겨 여유가 있습니다.";
 
     // Act & Assert
-    expect(normalizeGapDirection(above, 12.2)).toBe(above);
-    expect(normalizeGapDirection(below, -1.3)).toBe(below);
+    expect(normalizeGapDirection(text, convertedGap(12.3))).toBe(
+      "기준컷을 환산점수 12.3점 넘겨 여유가 있습니다."
+    );
+  });
+
+  it("방향·크기·단위가 맞는 표현은 그대로 둔다", () => {
+    // Arrange
+    const above = "기준컷을 환산점수 12.2점 상회하며, 여유가 많습니다.";
+    const below = "기준컷 대비 평균 백분위 1.3점 낮아 소신 지원에 가깝습니다.";
+
+    // Act & Assert
+    expect(normalizeGapDirection(above, convertedGap(12.2))).toBe(above);
+    expect(normalizeGapDirection(below, percentileGap(-1.3))).toBe(below);
   });
 });
 
@@ -402,5 +424,58 @@ describe("정시 해설 보정 — 뜻이 뒤집히는 표현과 학과명 주�
         "고려대학교"
       )
     ).toBe("강점인 수학의 표준점수가 그대로 들어갑니다.");
+  });
+});
+
+describe("countByTier·normalizeTierCounts - 스나이핑", () => {
+  it("스나이핑 곳 수도 세어 문장의 곳 수를 실제 값으로 둔다", () => {
+    // Arrange
+    const counts = countByTier([
+      { tier: "상향" },
+      { tier: "적정" },
+      { tier: "스나이핑" },
+    ]);
+
+    // Act
+    const text = normalizeTierCounts(
+      "상향 1곳, 적정 1곳, 스나이핑 0곳으로 구성됩니다.",
+      counts,
+      "균형"
+    );
+
+    // Assert
+    expect(counts.get("스나이핑")).toBe(1);
+    expect(text).toBe("상향 1곳, 적정 1곳, 스나이핑 1곳으로 구성됩니다.");
+  });
+});
+
+describe("findOverclaims", () => {
+  it("합격을 보장하는 듯한 단정 문장을 찾는다 (실측 문장)", () => {
+    // Arrange
+    const claims = [
+      "네 가지 조합 모두 기본 배분과 같아, 어떤 조합을 선택하든 원서 배치 자체의 안정성은 확보됩니다.",
+      "가군 적정 원서에 국립한국교통대학교 철도전기정보공학과를 두어, 대학 선호도를 우선하며 합격 가능성을 확보합니다.",
+      "이 대학은 합격이 보장됩니다.",
+      "안정적인 지원이 가능합니다.",
+    ];
+
+    // Act & Assert
+    for (const claim of claims) {
+      expect(findOverclaims(claim)).toHaveLength(1);
+    }
+  });
+
+  it("선택 기준이나 라벨 정의 강도의 문장은 그대로 둔다", () => {
+    // Arrange
+    const sentences = [
+      "희망 학과, 대학 선호, 합격 안정성 확보 중 무엇을 우선할지에 따라 조합을 고릅니다.",
+      "기준컷을 환산점수 18.2점 넘겨, 비교적 높은 확률로 결과를 기대할 수 있는 라인입니다.",
+      "다군 안정 원서가 결과를 받쳐 주는 구성입니다.",
+    ];
+
+    // Act & Assert
+    for (const sentence of sentences) {
+      expect(findOverclaims(sentence)).toEqual([]);
+    }
   });
 });

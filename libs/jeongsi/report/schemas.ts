@@ -18,7 +18,7 @@ import type { RepairedTexts } from "./commentary-validation.ts";
 /** 해설 생성이 실패했을 때 섹션에 들어가는 문구 */
 export const JEONGSI_COMMENTARY_FALLBACK = {
   scoreOverall:
-    "성적 해설을 생성하지 못했습니다. 위 표의 표준점수·백분위와 평균 백분위가 분석의 기준값입니다.",
+    "성적 해설을 생성하지 못했습니다. 위 표의 표준점수, 백분위와 평균 백분위가 분석의 기준값입니다.",
   scoreStrength:
     "강점 해설을 생성하지 못했습니다. 영역 내 순위와 편차 수치로 강점 영역을 확인할 수 있습니다.",
   scoreWeakness:
@@ -28,13 +28,13 @@ export const JEONGSI_COMMENTARY_FALLBACK = {
   matchReason:
     "반영비율과 활용지표가 내 강점 영역에 유리하게 맞물려 선정된 대학입니다.",
   recommendationOverall:
-    "지원 전략 해설을 생성하지 못했습니다. 환산점수와 3개년 기준컷의 격차가 구분 기준입니다.",
-  recommendationComment: "환산점수와 3개년 기준컷의 격차로 산출된 구분입니다.",
+    "지원 전략 해설을 생성하지 못했습니다. 기준컷 대비 격차가 구분 기준입니다.",
+  recommendationComment: "기준컷 대비 격차로 산출된 구분입니다.",
   combinationOverall:
     "조합 해설을 생성하지 못했습니다. 각 조합의 군별 구분 배치가 전략의 기준입니다.",
   combinationStrategy: "군별 구분 배치로 성격이 결정된 조합입니다.",
   detailReason:
-    "반영방식과 환산점수, 3개년 기준컷을 기준으로 추천된 전형입니다.",
+    "반영방식과 환산점수, 기준컷 대비 격차를 기준으로 추천된 전형입니다.",
 } as const;
 
 /**

@@ -7,16 +7,20 @@ import {
   findUnsupportedSoleClaim,
   buildJeongsiReport,
   buildRecommendationNotices,
+  composeSnipingNotice,
+  findWrongSlotTier,
   formatRatioSummary,
   withTopicParticle,
   type JeongsiBuildProgress,
   type JeongsiGeminiClient,
 } from "../build";
 import { splitSentences } from "../commentary-validation";
+import { SINGLE_COMBINATION_SENTENCE } from "../prompts";
 import type { RecommendationPromptEntry } from "../prompts";
 import { JEONGSI_COMMENTARY_FALLBACK } from "../schemas";
 import { JEONGSI_SECTION_ORDER } from "../../report-types";
 import type {
+  JeongsiCombinationSection,
   JeongsiRecommendationSection,
   JeongsiScoreAnalysisSection,
   JeongsiUniversityDetailSection,
@@ -97,11 +101,20 @@ const createEvaluation = (
   referenceCut: { metric: "convertedScore", value: cut },
   competitionRate,
   cutHistory: history,
-  // gapRatio 는 화면 표시용. 분류와 해설이 쓰는 척도는 percentileGap 이다.
-  gapRatio: -0.84,
-  percentileGap,
+  // 판정 격차 (환산점수 입결이라 만점 대비 %). 지표 단위 차이는 환산점수 점이다.
+  gapRatio: percentileGap,
+  gapPoints: Math.round((convertedScore - cut) * 1000) / 1000,
+  resultYears: history.length > 0 ? history.map((entry) => entry.year) : [2026],
+  quotaChange: null,
+  additionalPass: null,
+  safeCapped: false,
+  safeCapReasons: [],
+  pastGroups: [],
+  finalQuotaChange: null,
+  withinRecommendRange: true,
+  historicalPassRate: null,
+  latestAdmitCuts: null,
   sensitivity: 9.1,
-  cutVolatility: 0.6,
   tier,
   chance,
   advantageScore,
@@ -211,6 +224,7 @@ const analysis: JeongsiAnalysis = {
     적정: [적정Eval],
     안정: [안정Eval],
   },
+  sniping: [],
   combinations: [
     {
       id: "combo-balanced",
@@ -218,6 +232,8 @@ const analysis: JeongsiAnalysis = {
       가: 상향Eval,
       나: 적정Eval,
       다: 안정Eval,
+      recommended: true,
+      matchesRiskAllocation: true,
     },
   ],
 };
@@ -259,7 +275,7 @@ describe("buildJeongsiReport — AI 호출 전면 실패", () => {
       reportId: "report-1",
       input: analysis.input,
       createdAt: "2026-10-12T00:00:00.000Z",
-      version: 1,
+      version: 2,
     });
   });
 
@@ -280,11 +296,11 @@ describe("buildJeongsiReport — AI 호출 전면 실패", () => {
     );
     // 총평 폴백도 코드가 판정한 해석 문장으로 채운다
     expect(score.overallComment).toContain(
-      "국·수·탐 평균 백분위 93.7점, 표준점수 합 403점으로, 국어·수학·탐구 모두 응시자 상위 약 9% 안"
+      "국어, 수학, 탐구 평균 백분위 93.7점, 표준점수 합 403점으로, 국어, 수학, 탐구 모두 응시자 상위 약 9% 안"
     );
     // 강점·약점 폴백도 그 영역의 실제 성적으로 쓴다(안내문 대신)
     expect(score.strengthComment).toBe(
-      "수학 백분위 97점(상위 약 3%)은 국어·수학·탐구 중 1순위로, 평균 대비 +3.3점 앞선 강점입니다. 수학 반영비율이 높은 대학에서 환산점수가 유리하게 잡히므로, 수학 비중이 큰 대학을 원서 후보로 먼저 살피는 편이 합리적입니다."
+      "수학 백분위 97점(상위 약 3%)은 국어, 수학, 탐구 중 1순위로, 평균 대비 +3.3점 앞선 강점입니다. 수학 반영비율이 높은 대학에서 환산점수가 유리하게 잡히므로, 수학 비중이 큰 대학을 원서 후보로 먼저 살피는 편이 합리적입니다."
     );
     expect(score.weaknessComment).not.toBe(
       JEONGSI_COMMENTARY_FALLBACK.scoreWeakness
@@ -310,7 +326,7 @@ describe("buildJeongsiReport — AI 호출 전면 실패", () => {
       deviation: 3.3,
     });
     expect(score.rows[2].grade).toBe(2);
-    expect(score.rows[3].subjectName).toBe("물리학I·지구과학I");
+    expect(score.rows[3].subjectName).toBe("물리학I, 지구과학I");
 
     const recommendation = findSection<JeongsiRecommendationSection>(
       content.sections,
@@ -321,7 +337,7 @@ describe("buildJeongsiReport — AI 호출 전면 실패", () => {
       "적정",
       "안정",
     ]);
-    expect(recommendation.groups[0].items[0]).toEqual({
+    expect(recommendation.groups[0].items[0]).toMatchObject({
       university: "가대학교",
       department: "컴퓨터공학부",
       group: "가",
@@ -339,14 +355,23 @@ describe("buildJeongsiReport — AI 호출 전면 실패", () => {
       chance: "낮음",
       // 코멘트는 코드가 첫머리 구절·격차·정해진 해석 문구로 잇는다
       comment:
-        "컷 흐름이 상승(2024 915.2 → 2026 920.1)인 곳으로 기준컷에 0.8백분위점 모자라, 단순 지원만으로는 결과를 기대하기 쉽지 않은 수준입니다.",
+        "컷 흐름이 상승(2024 915.2 → 2026 920.1)인 곳으로 기준컷에 환산점수 7.7점 모자라, 단순 지원만으로는 결과를 기대하기 쉽지 않은 수준입니다.",
+    });
+    // 판정 근거는 PART 5 와 같은 값을 싣는다
+    expect(recommendation.groups[0].items[0].judgement).toMatchObject({
+      unitKey: 상향Plan.id,
+      tier: "상향",
+      chance: "낮음",
+      metric: "convertedScore",
+      referenceCut: 920.1,
+      gapPoints: -7.7,
     });
   });
 });
 
 describe("buildJeongsiReport — AI 응답 반영", () => {
   const respondBySection = (prompt: string): Record<string, unknown> | null => {
-    if (prompt.includes("해설 3개(총평·강점·약점)")) {
+    if (prompt.includes("해설 3개(총평, 강점, 약점)")) {
       return {
         overallComment: ["총평 1입니다.", "총평 2입니다.", "총평 3입니다."],
         strengthComment: ["강점 1입니다.", "강점 2입니다."],
@@ -410,14 +435,14 @@ describe("buildJeongsiReport — AI 응답 반영", () => {
       content.sections,
       "jeongsiUniversityMatch"
     );
-    expect(match.overallComment).toBe(
-      "반영방식 1입니다. 반영방식 2입니다. 반영방식 3입니다."
-    );
-    // 근거 두 문장 뒤에 코드가 컨설턴트 판단 문장을 붙인다
-    expect(match.items.map((item) => item.reason)).toEqual([
-      "첫 번째 대학 해설입니다. 수학 비율이 높습니다. 반영방식에서 생기는 유불리는 크지 않아, 기준컷과의 격차를 보고 판단할 대학입니다.",
-      "두 번째 대학 해설입니다. 탐구 부담이 작습니다. 반영 구조의 차이가 작아, 합격 가능성을 기준으로 원서 여부를 정하는 편이 합리적입니다.",
-    ]);
+    // PART 2 총평은 모델 응답이 아니라 코드가 실제 점수로 쓴다
+    expect(match.overallComment).toMatch(/^목록 2곳은/);
+    // 대학별 설명은 실제 점수로 코드가 쓰고, 끝에 컨설턴트 판단 문장을 붙인다
+    const reasons = match.items.map((item) => item.reason);
+    expect(reasons[0]).toMatch(/^이 대학 환산식으로 내 점수는 912\.4점/);
+    expect(reasons[1]).toMatch(/^이 대학 환산식으로 내 점수는 905\.2점/);
+    // 판단 문장도 영역 서술이 아니라 반영비율 득실의 목록 안 비교로 쓴다
+    expect(reasons.join(" ")).toContain("반영비율로");
   });
 
   it("PART 3 코멘트는 AI 응답과 관계없이 코드가 잇는다", async () => {
@@ -441,13 +466,13 @@ describe("buildJeongsiReport — AI 응답 반영", () => {
       (group) => group.items[0].comment
     );
     expect(comments).toEqual([
-      "컷 흐름이 상승(2024 915.2 → 2026 920.1)인 곳으로 기준컷에 0.8백분위점 모자라, 단순 지원만으로는 결과를 기대하기 쉽지 않은 수준입니다.",
-      "나군 적정 원서로 기준컷을 0.4백분위점 넘겨, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다.",
-      "24명을 뽑는 모집단위로 기준컷을 2.1백분위점 넘겨, 비교적 높은 확률로 결과를 기대할 수 있는 라인입니다.",
+      "컷 흐름이 상승(2024 915.2 → 2026 920.1)인 곳으로 기준컷에 환산점수 7.7점 모자라, 단순 지원만으로는 결과를 기대하기 쉽지 않은 수준입니다.",
+      "나군 적정 원서로 기준컷을 환산점수 3.9점 넘겨, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다.",
+      "24명을 뽑는 모집단위로 기준컷을 환산점수 18.2점 넘겨, 비교적 높은 확률로 결과를 기대할 수 있는 라인입니다.",
     ]);
   });
 
-  it("PART 1~4 해설을 병렬로 호출하고 PART 5 는 호출하지 않는다", async () => {
+  it("PART 1·3·4 해설을 병렬로 호출하고 PART 2·5 는 호출하지 않는다", async () => {
     // Arrange
     let active = 0;
     let maxActive = 0;
@@ -467,8 +492,8 @@ describe("buildJeongsiReport — AI 응답 반영", () => {
       reportId: "report-5",
     });
 
-    // Assert: PART 5 는 코드 판정 문장만 쓴다
-    expect(maxActive).toBe(JEONGSI_SECTION_ORDER.length - 1);
+    // Assert: PART 2·5 는 코드가 실제 점수·판정 문장으로 쓰고 모델을 부르지 않는다
+    expect(maxActive).toBe(JEONGSI_SECTION_ORDER.length - 2);
   });
 
   it("진행률 콜백을 파트마다 한 번씩 호출한다", async () => {
@@ -516,34 +541,25 @@ describe("buildJeongsiReport — AI 응답 반영", () => {
 });
 
 describe("buildJeongsiReport — 해설 검증과 다시 쓰기", () => {
-  const VALID_MATCH_ITEMS = [
-    {
-      index: 0,
-      reason: ["수학 비율이 높아 유리합니다.", "탐구 부담도 작습니다."],
-    },
-    {
-      index: 1,
-      reason: ["탐구 비율이 낮아 부담이 적습니다.", "수학 반영도 넉넉합니다."],
-    },
-  ];
-
   it("규칙을 어긴 칸만 고칠 점과 함께 다시 요청해 고친 문장을 쓴다", async () => {
-    // Arrange: PART 2 총평이 1문장으로 와 규칙(3문장)을 어긴다
+    // Arrange: PART 3 총평이 1문장으로 와 규칙(3문장)을 어긴다
+    // (PART 2 총평은 모델을 부르지 않고 코드가 실제 점수로 쓴다 — specs/014 D1)
     const repairPrompts: string[] = [];
     const client = createClient((prompt) => {
-      if (!prompt.includes("반영방식이 유리한 대학")) {
+      if (!prompt.includes("지원 가능 대학")) {
         return Promise.resolve(null);
       }
       if (prompt.includes("## 다시 쓰기")) {
         repairPrompts.push(prompt);
         return Promise.resolve({
-          overallComment: ["고친 1입니다.", "고친 2입니다.", "고친 3입니다."],
+          overallComment: [
+            "고친 1입니다.",
+            "고친 2입니다.",
+            "가대학교는 신중히 봅니다.",
+          ],
         });
       }
-      return Promise.resolve({
-        overallComment: "짧은 총평입니다.",
-        items: VALID_MATCH_ITEMS,
-      });
+      return Promise.resolve({ overallComment: "짧은 총평입니다." });
     });
 
     // Act
@@ -553,20 +569,23 @@ describe("buildJeongsiReport — 해설 검증과 다시 쓰기", () => {
     });
 
     // Assert
+    const recommendation = findSection<JeongsiRecommendationSection>(
+      content.sections,
+      "jeongsiRecommendation"
+    );
+    expect(recommendation.overallComment).toBe(
+      "고친 1입니다. 고친 2입니다. 가대학교는 신중히 봅니다."
+    );
     const match = findSection<JeongsiUniversityMatchSection>(
       content.sections,
       "jeongsiUniversityMatch"
     );
-    expect(match.overallComment).toBe(
-      "고친 1입니다. 고친 2입니다. 고친 3입니다."
-    );
-    expect(match.items[0].reason).toBe(
-      "수학 비율이 높아 유리합니다. 탐구 부담도 작습니다. 반영방식에서 생기는 유불리는 크지 않아, 기준컷과의 격차를 보고 판단할 대학입니다."
+    expect(match.items[0].reason).toMatch(
+      // PART 2 대학별 설명은 AI 문장이 아니라 환산식 실제 점수로 코드가 쓴다(specs/014 D1)
+      /^이 대학 환산식으로 내 점수는 912\.4점\(만점 1000점\)입니다\. 기준컷과 비교하면 환산점수 −7\.7점으로 상향에 해당합니다\./
     );
     expect(repairPrompts).toHaveLength(1);
     expect(repairPrompts[0]).toContain("  - 문장 3개로 씁니다");
-    // 규칙을 지킨 항목은 다시 요청하지 않는다
-    expect(repairPrompts[0]).not.toContain("items index 0");
   });
 
   it("PART 3 은 AI 총평만 쓰고 AI 코멘트는 코드 문장으로 둔다", async () => {
@@ -602,7 +621,7 @@ describe("buildJeongsiReport — 해설 검증과 다시 쓰기", () => {
       "jeongsiRecommendation"
     );
     expect(recommendation.groups[2].items[0].comment).toBe(
-      "24명을 뽑는 모집단위로 기준컷을 2.1백분위점 넘겨, 비교적 높은 확률로 결과를 기대할 수 있는 라인입니다."
+      "24명을 뽑는 모집단위로 기준컷을 환산점수 18.2점 넘겨, 비교적 높은 확률로 결과를 기대할 수 있는 라인입니다."
     );
     expect(recommendation.overallComment).toBe(
       "전략 1입니다. 전략 2입니다. 가대학교는 신중히 봅니다."
@@ -613,15 +632,14 @@ describe("buildJeongsiReport — 해설 검증과 다시 쓰기", () => {
     // Arrange: 두 번 모두 4문장
     const client = createClient((prompt) =>
       Promise.resolve(
-        prompt.includes("반영방식이 유리한 대학")
+        prompt.includes("지원 가능 대학")
           ? {
               overallComment: [
                 "하나입니다.",
                 "둘입니다.",
                 "셋입니다.",
-                "넷입니다.",
+                "가대학교는 신중히 봅니다.",
               ],
-              items: VALID_MATCH_ITEMS,
             }
           : null
       )
@@ -634,11 +652,13 @@ describe("buildJeongsiReport — 해설 검증과 다시 쓰기", () => {
     });
 
     // Assert
-    const match = findSection<JeongsiUniversityMatchSection>(
+    const recommendation = findSection<JeongsiRecommendationSection>(
       content.sections,
-      "jeongsiUniversityMatch"
+      "jeongsiRecommendation"
     );
-    expect(match.overallComment).toBe("하나입니다. 둘입니다. 넷입니다.");
+    expect(recommendation.overallComment).toBe(
+      "하나입니다. 둘입니다. 가대학교는 신중히 봅니다."
+    );
   });
 
   it("PART 5 추천 이유는 AI 응답과 관계없이 코드 판정 문장과 격차 문장으로 쓴다", async () => {
@@ -670,7 +690,7 @@ describe("buildJeongsiReport — 해설 검증과 다시 쓰기", () => {
     // 판정 + 격차·합격 가능성 + 원서 운용 조언
     expect(splitSentences(detail.items[0].reason)).toHaveLength(3);
     expect(detail.items[0].reason).toMatch(
-      / 기준컷에 0\.8백분위점 모자라, 단순 지원만으로는 결과를 기대하기 쉽지 않은 수준입니다\. 가군 상향 원서로 둔다면, 나머지 나·다군에는 적정·안정 원서를 두어 결과를 받쳐야 합니다\.$/
+      / 기준컷에 환산점수 7\.7점 모자라, 단순 지원만으로는 결과를 기대하기 쉽지 않은 수준입니다\. 가군 상향 원서로 둔다면, 나머지 나군과 다군에는 적정이나 안정 원서를 두어 결과를 받쳐야 합니다\.$/
     );
   });
 
@@ -712,10 +732,8 @@ describe("buildJeongsiReport — 해설 검증과 다시 쓰기", () => {
     const sentences = match.items.flatMap((item) =>
       splitSentences(item.reason)
     );
-    expect(match.items[0].reason).toBe(
-      `${sameReason.join(" ")} 반영방식에서 생기는 유불리는 크지 않아, 기준컷과의 격차를 보고 판단할 대학입니다.`
-    );
-    expect(splitSentences(match.items[1].reason)).toHaveLength(3);
+    // PART 2 설명은 코드가 실제 점수로 쓰고, 대학 사이에 같은 문장을 두지 않는다
+    expect(match.items[0].reason).not.toContain(sameReason[0]);
     expect(new Set(sentences).size).toBe(sentences.length);
   });
 
@@ -750,6 +768,75 @@ describe("buildJeongsiReport — 해설 검증과 다시 쓰기", () => {
     expect(detail.items[0].reason).not.toContain("151");
     // 판정 + 격차·합격 가능성 + 원서 운용 조언
     expect(splitSentences(detail.items[0].reason)).toHaveLength(3);
+  });
+});
+
+describe("buildJeongsiReport — PART 4 조합 문장", () => {
+  it("조합이 하나뿐이면 다른 조합과 겹치지 않는다고 쓰지 않는다", async () => {
+    // Arrange: 픽스처 조합은 1개다
+    const client = createClient(() => Promise.resolve(null));
+
+    // Act
+    const content = await buildJeongsiReport(analysis, {
+      geminiClient: client,
+      reportId: "report-single-combo",
+    });
+
+    // Assert
+    const combination = findSection<JeongsiCombinationSection>(
+      content.sections,
+      "jeongsiCombination"
+    );
+    expect(combination.combinations[0].strategy).toContain(
+      SINGLE_COMBINATION_SENTENCE
+    );
+    expect(combination.combinations[0].strategy).not.toContain("겹치지 않아");
+  });
+
+  it("기본 배분과 같은 조합이 없으면 성향에 맞춘 조합이라는 총평을 쓰지 않는다", async () => {
+    // Arrange: 균형 성향인데 조합이 상향·적정 두 장뿐(안정 없음)
+    const unmatched: JeongsiAnalysis = {
+      ...analysis,
+      combinations: [
+        {
+          id: "combo-unmatched",
+          label: "희망 우선형 (다군 지원처 없음)",
+          가: 상향Eval,
+          나: 적정Eval,
+          다: null,
+          recommended: true,
+          matchesRiskAllocation: false,
+        },
+      ],
+    };
+    const client = createClient((prompt) =>
+      Promise.resolve(
+        prompt.includes("지원 조합")
+          ? {
+              overallComment: [
+                "정시 원서 구조를 전제로 조합을 고릅니다.",
+                "균형 지원 성향에 맞춰 상향과 적정으로 구성한 조합입니다.",
+                "희망 학과를 먼저 따지는 편이 좋습니다.",
+              ],
+              items: [],
+            }
+          : null
+      )
+    );
+
+    // Act
+    const content = await buildJeongsiReport(unmatched, {
+      geminiClient: client,
+      reportId: "report-risk-fit",
+    });
+
+    // Assert
+    const combination = findSection<JeongsiCombinationSection>(
+      content.sections,
+      "jeongsiCombination"
+    );
+    expect(combination.overallComment).not.toMatch(/성향에\s*맞/);
+    expect(combination.overallComment).toContain("기본 배분");
   });
 });
 
@@ -798,8 +885,9 @@ describe("buildJeongsiReport — 코드 계산값 보호", () => {
       "jeongsiUniversityMatch"
     );
     expect(match.items[0].advantageScore).toBe(88);
-    expect(match.items[0].reason).toBe(
-      "수학 비율이 높아 유리합니다. 탐구 부담도 작습니다. 반영방식에서 생기는 유불리는 크지 않아, 기준컷과의 격차를 보고 판단할 대학입니다."
+    expect(match.items[0].reason).toMatch(
+      // PART 2 대학별 설명은 AI 문장이 아니라 환산식 실제 점수로 코드가 쓴다(specs/014 D1)
+      /^이 대학 환산식으로 내 점수는 912\.4점\(만점 1000점\)입니다\. 기준컷과 비교하면 환산점수 −7\.7점으로 상향에 해당합니다\./
     );
 
     const detail = findSection<JeongsiUniversityDetailSection>(
@@ -832,10 +920,10 @@ describe("buildJeongsiReport — 코드 계산값 보호", () => {
       { year: 2026, cut: 920.1 },
     ]);
     expect(detail.items[0].totalScore).toBe(1000);
-    expect(detail.items[0].ratioSummary).toBe("국30·수35·영10·탐25");
+    expect(detail.items[0].ratioSummary).toBe("국30, 수35, 영10, 탐25");
     expect(detail.items[0].bonusSummary).toBe("수학 미적분 +5%");
     expect(detail.items[0].restrictionSummary).toBe(
-      "수학 미적분·기하 중 응시 필수 / 탐구 과탐1과목이상"
+      "수학 미적분, 기하 중 응시 필수 / 탐구 과탐1과목이상"
     );
 
     // 입결이 없는 전형은 null 로 남는다
@@ -864,7 +952,7 @@ describe("buildJeongsiReport — geminiClient 미주입", () => {
     );
     // 총평 폴백도 코드가 판정한 해석 문장으로 채운다
     expect(score.overallComment).toContain(
-      "국·수·탐 평균 백분위 93.7점, 표준점수 합 403점으로, 국어·수학·탐구 모두 응시자 상위 약 9% 안"
+      "국어, 수학, 탐구 평균 백분위 93.7점, 표준점수 합 403점으로, 국어, 수학, 탐구 모두 응시자 상위 약 9% 안"
     );
     expect(score.averagePercentile).toBe(93.7);
 
@@ -878,7 +966,7 @@ describe("buildJeongsiReport — geminiClient 미주입", () => {
       JEONGSI_COMMENTARY_FALLBACK.detailReason
     );
     expect(detail.items[0].reason).toMatch(
-      / 기준컷에 0\.8백분위점 모자라, 단순 지원만으로는 결과를 기대하기 쉽지 않은 수준입니다\. 가군 상향 원서로 둔다면, 나머지 나·다군에는 적정·안정 원서를 두어 결과를 받쳐야 합니다\.$/
+      / 기준컷에 환산점수 7\.7점 모자라, 단순 지원만으로는 결과를 기대하기 쉽지 않은 수준입니다\. 가군 상향 원서로 둔다면, 나머지 나군과 다군에는 적정이나 안정 원서를 두어 결과를 받쳐야 합니다\.$/
     );
     expect(detail.items[0].convertedScore).toBe(912.4);
   });
@@ -906,7 +994,7 @@ describe("buildJeongsiReport — geminiClient 미주입", () => {
     expect(events.at(-1)?.percent).toBe(100);
     expect(
       events.find((event) => event.sectionId === "jeongsiCombination")?.title
-    ).toBe("가·나·다군 지원 조합");
+    ).toBe("군별 지원 조합");
   });
 });
 
@@ -968,6 +1056,7 @@ describe("buildRecommendationNotices", () => {
     ],
     advantageousPlans: [],
     recommendations: { 상향: [], 적정: [], 안정: [] },
+    sniping: [],
     combinations: [],
   });
 
@@ -988,7 +1077,7 @@ describe("buildRecommendationNotices", () => {
 
     // Assert: 사유 문장을 이어 붙이지 않고 요건으로 집계한다
     expect(notices).toEqual([
-      "희망하신 의예과는 정시에서 수능 응시 과목 조건이 있어, 현재 응시 과목(수학 확률과통계, 탐구 생활과윤리·사회문화)으로는 지원할 수 있는 곳이 없습니다. 이 계열은 미적분 또는 기하와 과학탐구 1~2과목을 요구합니다. 희망 계열을 바꿔 다시 분석해 보세요.",
+      "희망하신 의예과는 정시에서 수능 응시 과목 조건이 있어, 현재 응시 과목(수학 확률과통계, 탐구 생활과윤리, 사회문화)으로는 지원할 수 있는 곳이 없습니다. 이 계열은 미적분 또는 기하와 과학탐구 1~2과목을 요구합니다. 희망 계열을 바꿔 다시 분석해 보세요.",
     ]);
   });
 
@@ -1064,14 +1153,14 @@ describe("buildRecommendationNotices", () => {
 
     // Assert: 내부 용어 없이 계열명과 예시로 설명한다
     expect(notices).toEqual([
-      "희망하신 철학 외에 인문계열(국어국문·영어영문·사학 등)까지 함께 비교했습니다. 희망 지역(서울)의 철학만으로는 현재 성적에 맞는 지원처를 고루 찾기 어려워 비교 범위를 넓혔습니다.",
+      "희망하신 철학 외에 인문계열(국어국문, 영어영문, 사학 등)까지 함께 비교했습니다. 희망 지역(서울)의 철학만으로는 현재 성적에 맞는 지원처를 고루 찾기 어려워 비교 범위를 넓혔습니다.",
       "현재 성적에 정확히 '적정'으로 분류되는 곳이 많지 않아, 기준컷과의 격차가 적정에 가장 가까운 곳을 함께 담았습니다. 함께 담은 대학의 실제 구분은 코멘트와 대학별 상세 분석에 적었습니다.",
     ]);
     expect(notices.join(" ")).not.toContain("계열그룹");
     expect(notices.join(" ")).not.toContain("부족해");
   });
 
-  it("추천 목록이 비면 확대·대체 안내를 내보내지 않는다", () => {
+  it("추천 목록이 비면 확대·대체 안내 대신 비어 있는 이유를 밝힌다", () => {
     // Arrange: 설명할 목록 자체가 없는 상태
     const empty: JeongsiAnalysis = {
       ...analysis,
@@ -1087,7 +1176,9 @@ describe("buildRecommendationNotices", () => {
     const notices = buildRecommendationNotices(empty);
 
     // Assert
-    expect(notices).toEqual([]);
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toContain("추천 범위");
+    expect(notices[0]).not.toContain("넓혀 비교");
   });
 });
 
@@ -1108,6 +1199,7 @@ describe("buildJeongsiReport — 지원 가능 목록이 비었을 때", () => {
     ],
     advantageousPlans: [],
     recommendations: { 상향: [], 적정: [], 안정: [] },
+    sniping: [],
     combinations: [],
   };
 
@@ -1135,7 +1227,7 @@ describe("buildJeongsiReport — 지원 가능 목록이 비었을 때", () => {
     ).toBe(true);
     expect(recommendation.notices).toHaveLength(1);
     expect(recommendation.notices[0]).toContain(
-      "현재 응시 과목(수학 미적분, 탐구 물리학I·지구과학I)으로는 지원할 수 있는 곳이 없습니다"
+      "현재 응시 과목(수학 미적분, 탐구 물리학I, 지구과학I)으로는 지원할 수 있는 곳이 없습니다"
     );
 
     const detail = findSection<JeongsiUniversityDetailSection>(
@@ -1161,7 +1253,7 @@ describe("buildJeongsiReport — 지원 가능 목록이 비었을 때", () => {
 
     // Assert: 성적 분석(PART 1)만 호출된다
     expect(prompts).toHaveLength(1);
-    expect(prompts[0]).toContain("해설 3개(총평·강점·약점)");
+    expect(prompts[0]).toContain("해설 3개(총평, 강점, 약점)");
   });
 
   it("목록이 빈 파트의 총평은 비어 있는 이유와 같은 말로 코드가 쓴다", async () => {
@@ -1224,7 +1316,7 @@ describe("formatRatioSummary", () => {
     const result = formatRatioSummary(ratios);
 
     // Assert
-    expect(result).toBe("국30·수35·영10·탐25");
+    expect(result).toBe("국30, 수35, 영10, 탐25");
   });
 
   it("상위 영역 선택 대학은 고정 영역과 순위 규칙을 적는다", () => {
@@ -1239,7 +1331,7 @@ describe("formatRatioSummary", () => {
     });
 
     // Assert
-    expect(result).toBe("영10·탐15 / 국·수 중 상위순 45·30");
+    expect(result).toBe("영10, 탐15 / 국, 수 중 상위순 45, 30");
   });
 });
 
@@ -1362,7 +1454,121 @@ describe("findWrongAverageScope", () => {
       findWrongAverageScope("국·수·탐 평균 백분위 대비 +1.2점 높습니다.")
     ).toEqual([]);
     expect(
-      findWrongAverageScope("국어·수학·탐구 평균 대비 1.2점 높습니다.")
+      findWrongAverageScope("국어, 수학, 탐구 평균 대비 1.2점 높습니다.")
     ).toEqual([]);
+  });
+});
+
+describe("composeSnipingNotice", () => {
+  const snipingEvaluation = (
+    finalQuotaChange: PlanEvaluation["finalQuotaChange"]
+  ): PlanEvaluation => ({
+    ...createEvaluation(
+      createPlan("스나대학교", "컴퓨터공학과", "가"),
+      890,
+      900,
+      -1,
+      "스나이핑",
+      "매우낮음",
+      40
+    ),
+    finalQuotaChange,
+  });
+
+  it("최종 모집인원이 발표 전이면 그 사실과 발표 후 우선 기준을 밝힌다", () => {
+    // Arrange
+    const sniping = [snipingEvaluation(null)];
+
+    // Act
+    const notice = composeSnipingNotice(sniping);
+
+    // Assert
+    expect(notice).toContain("기준컷 대비 −2.0 ~ −0.4");
+    expect(notice).toContain("4~10%");
+    expect(notice).toContain("아직 발표되지 않아");
+    expect(notice).toContain("20% 이상");
+  });
+
+  it("최종 모집인원이 20% 이상 늘어난 곳은 이름과 실측 근거를 밝힌다", () => {
+    // Arrange
+    const sniping = [
+      snipingEvaluation({
+        previousYear: 2026,
+        previousQuota: 20,
+        finalQuota: 26,
+        ratio: 0.3,
+      }),
+    ];
+
+    // Act
+    const notice = composeSnipingNotice(sniping);
+
+    // Assert
+    expect(notice).toContain("스나대학교 컴퓨터공학과는");
+    expect(notice).toContain("23%");
+  });
+});
+
+describe("findWrongSlotTier", () => {
+  const item = {
+    slots: [
+      {
+        group: "가" as const,
+        university: "가대학교",
+        department: "가학과",
+        tier: "상향" as const,
+        chance: "낮음" as const,
+      },
+      {
+        group: "다" as const,
+        university: "다대학교",
+        department: "다학과",
+        tier: "적정" as const,
+        chance: "보통" as const,
+      },
+    ],
+  };
+
+  it("군과 구분을 실제 칸과 다르게 쓰면 잡는다", () => {
+    // Arrange & Act
+    const problems = findWrongSlotTier(
+      item,
+      "다군 안정 원서에 다대학교를 배치합니다."
+    );
+
+    // Assert
+    expect(problems).toEqual(["칸 구분은 실제 구분대로 씁니다: 다군 적정"]);
+  });
+
+  it("실제 칸과 같으면 통과한다", () => {
+    // Arrange & Act & Assert
+    expect(
+      findWrongSlotTier(item, "가군 상향 원서로 가대학교를 둡니다.")
+    ).toEqual([]);
+  });
+});
+
+describe("composeAreaCommentFallback - 영역 간 차이가 작을 때", () => {
+  it("반영비율로 먼저 고르라 하지 않고 기준컷 대비 차이가 비슷한 곳 사이의 기준으로 쓴다", () => {
+    // Arrange
+    const row = {
+      area: "korean" as const,
+      label: "국어",
+      percentile: 97,
+      deviation: 1,
+      rank: 1,
+    };
+
+    // Act
+    const text = composeAreaCommentFallback(
+      row as Parameters<typeof composeAreaCommentFallback>[0],
+      "강점",
+      undefined,
+      2
+    );
+
+    // Assert
+    expect(text).toContain("영역 간 백분위 차이가 2점으로 작아");
+    expect(text).not.toContain("먼저 살피는");
   });
 });

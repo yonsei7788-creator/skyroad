@@ -93,8 +93,8 @@ describe("buildScoreAnalysisPrompt", () => {
     // 응시자 중 위치는 백분위 정의로 정해진 값을 그대로 싣는다
     expect(prompt).toContain("상위 약 4%");
     expect(prompt).toContain("| 영어 | - | - | 89 | - | 2 | 4순위 | -4.7 |");
-    expect(prompt).toContain("국·수·탐 평균 백분위: 93.7");
-    expect(prompt).toContain("국·수·탐 표준점수 합: 403");
+    expect(prompt).toContain("국어, 수학, 탐구 평균 백분위: 93.7");
+    expect(prompt).toContain("국어, 수학, 탐구 표준점수 합: 403");
     expect(prompt).toContain("코드가 판정한 강점 영역: 수학");
     expect(prompt).toContain("코드가 판정한 약점 영역: 영어");
     // 총평은 문장마다 코드가 판정한 재료로 쓴다
@@ -137,7 +137,9 @@ describe("buildScoreAnalysisPrompt", () => {
 
     // Assert
     expect(prompt).toContain("## 서술 관점: 입시 컨설턴트");
-    expect(prompt).toContain("합격 가능성과 기준컷 격차는 PART 3·5가 다룹니다");
+    expect(prompt).toContain(
+      "합격 가능성과 기준컷 격차는 PART 3과 PART 5가 다룹니다"
+    );
     expect(prompt).toContain("반영방식은 반영비율 기준으로 말합니다");
   });
 });
@@ -149,7 +151,7 @@ describe("buildAreaSummaryLine", () => {
 
     // Assert
     expect(summary).toBe(
-      "국어 표준점수 131·백분위 93 / 수학 표준점수 138·백분위 97 / 영어 2등급 / 탐구 표준점수 134·백분위 92.5"
+      "국어 표준점수 131, 백분위 93 / 수학 표준점수 138, 백분위 97 / 영어 2등급 / 탐구 표준점수 134, 백분위 92.5"
     );
   });
 });
@@ -159,7 +161,7 @@ describe("buildUniversityMatchPrompt", () => {
     university: "가대학교",
     department: "컴퓨터공학부",
     group: "가" as const,
-    ratioSummary: "국30·수35·영10·탐25",
+    ratioSummary: "국30, 수35, 영10, 탐25",
     metricSummary: "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
     advantageScore: 88,
   };
@@ -230,7 +232,7 @@ describe("buildRecommendationPrompt", () => {
           referenceCut: 77.1,
           gapRatio: 10.866,
           cutComparison: null,
-          percentileGap: 10.866,
+          gap: { ratio: 10.866, points: 10.866, metric: "percentile" },
           chance: "보통",
         },
         {
@@ -249,7 +251,7 @@ describe("buildRecommendationPrompt", () => {
             previousYear: { year: 2026, cut: 96 },
           },
           suneungWeight: 80,
-          percentileGap: -1.167,
+          gap: { ratio: -1.167, points: -1.167, metric: "percentile" },
           chance: "낮음",
         },
       ],
@@ -257,10 +259,10 @@ describe("buildRecommendationPrompt", () => {
 
     // Assert: 격차는 코드가 쓴 문구로 담는다
     expect(prompt).toContain(
-      "| 0 | 안정 | 나군 | 기준컷을 10.9백분위점 넘겨 |"
+      "| 0 | 안정 | 나군 | 기준컷을 평균 백분위 10.9점 넘겨 |"
     );
     expect(prompt).toContain(
-      "| 1 | 상향 | 나군 | 기준컷에 1.2백분위점 모자라 |"
+      "| 1 | 상향 | 나군 | 기준컷에 평균 백분위 1.2점 모자라 |"
     );
     expect(prompt).not.toContain("세종대학교");
     expect(prompt).not.toContain("751.2");
@@ -284,10 +286,14 @@ describe("buildRecommendationPrompt", () => {
       {
         ...base,
         university: "가대학교",
-        percentileGap: 4.2,
+        gap: { ratio: 4.2, points: 4.2, metric: "percentile" },
         cutTrend: "2025 89 → 2026 90, 상승",
       },
-      { ...base, university: "나대학교", percentileGap: 12.2 },
+      {
+        ...base,
+        university: "나대학교",
+        gap: { ratio: 12.2, points: 12.2, metric: "percentile" },
+      },
     ]);
 
     // Assert
@@ -309,7 +315,7 @@ describe("buildRecommendationPrompt", () => {
       convertedScore: 700,
       referenceCut: 90,
       gapRatio: 1.8,
-      percentileGap: 1.8,
+      gap: { ratio: 1.8, points: 1.8, metric: "percentile" as const },
       chance: "높음" as const,
     };
 
@@ -335,8 +341,16 @@ describe("buildRecommendationPrompt", () => {
 
     // Act
     const openings = assignRecommendationOpenings([
-      { ...base, university: "가대학교", percentileGap: -0.3 },
-      { ...base, university: "나대학교", percentileGap: -1.4 },
+      {
+        ...base,
+        university: "가대학교",
+        gap: { ratio: -0.3, points: -0.3, metric: "percentile" },
+      },
+      {
+        ...base,
+        university: "나대학교",
+        gap: { ratio: -1.4, points: -1.4, metric: "percentile" },
+      },
     ]);
 
     // Assert
@@ -348,13 +362,13 @@ describe("buildRecommendationPrompt", () => {
     // Arrange / Act
     const comment = composeRecommendationComment(
       "안정 3곳 중 여유가 가장 작은 곳으로",
-      11.04,
+      { ratio: 1.104, points: 11.04, metric: "convertedScore" },
       "결과를 비교적 높은 확률로 기대할 수 있는 위치입니다"
     );
 
     // Assert
     expect(comment).toBe(
-      "안정 3곳 중 여유가 가장 작은 곳으로 기준컷을 11.0백분위점 넘겨, 결과를 비교적 높은 확률로 기대할 수 있는 위치입니다."
+      "안정 3곳 중 여유가 가장 작은 곳으로 기준컷을 환산점수 11.0점 넘겨, 결과를 비교적 높은 확률로 기대할 수 있는 위치입니다."
     );
   });
 
@@ -383,7 +397,7 @@ describe("buildRecommendationPrompt", () => {
           convertedScore: 912.4,
           referenceCut: 920.1,
           gapRatio: -0.84,
-          percentileGap: -1.3,
+          gap: { ratio: -1.3, points: -1.3, metric: "percentile" },
           chance: "낮음",
         },
         {
@@ -395,7 +409,7 @@ describe("buildRecommendationPrompt", () => {
           convertedScore: 898.7,
           referenceCut: null,
           gapRatio: null,
-          percentileGap: null,
+          gap: null,
           chance: "높음",
         },
       ],
@@ -403,10 +417,10 @@ describe("buildRecommendationPrompt", () => {
 
     // Assert
     expect(prompt).toContain(
-      "| 0 | 상향 | 가군 | 기준컷에 1.3백분위점 모자라 |"
+      "| 0 | 상향 | 가군 | 기준컷에 평균 백분위 1.3점 모자라 |"
     );
     expect(prompt).toContain(
-      "| 1 | 안정 | 다군 | 공개 기준컷이 없어 반영방식과 모집 규모로 판단한 구분으로 |"
+      "| 1 | 안정 | 다군 | 공개 기준컷이 없어 비교하지 못한 곳으로 |"
     );
     expect(prompt).toContain(
       "- 3문장 — 인용할 값: 수학 비중이 높은 대학 / 판단: 판단 셋입니다."
@@ -561,7 +575,7 @@ describe("buildJeongsiSystemPrefix", () => {
     expect(prefix).toContain("희망 학과: 컴퓨터공학과");
     expect(prefix).toContain("희망 지역: 서울");
     expect(prefix).toContain("지원 성향: 안정");
-    expect(prefix).toContain("적정 2장·안정 1장의 배분");
+    expect(prefix).toContain("적정 2장, 안정 1장의 배분");
   });
 
   it("계열 단위 희망은 계열로 표기한다", () => {
@@ -575,12 +589,12 @@ describe("buildJeongsiSystemPrefix", () => {
 
     // Assert
     expect(prefix).toContain("희망 계열: 공학계열");
-    expect(prefix).toContain("상향 2장·적정 1장의 배분");
+    expect(prefix).toContain("상향 2장, 적정 1장의 배분");
   });
 });
 
 describe("합격 난이도 해석 가드", () => {
-  it("PART 3 은 격차를 코드가 쓴 문구로 주고 환산 총점 대비 %는 싣지 않는다", () => {
+  it("PART 3 은 격차를 판정 지표 단위의 코드 문구로 주고 만점 대비 %는 싣지 않는다", () => {
     // Arrange / Act
     const prompt = buildRecommendationPrompt({
       areaSummary: buildAreaSummaryLine(rows),
@@ -597,7 +611,7 @@ describe("합격 난이도 해석 가드", () => {
           convertedScore: 905.2,
           referenceCut: 901.3,
           gapRatio: 0.43,
-          percentileGap: 0.7,
+          gap: { ratio: 0.43, points: 3.9, metric: "convertedScore" },
           chance: "보통",
         },
       ],
@@ -605,7 +619,7 @@ describe("합격 난이도 해석 가드", () => {
 
     // Assert
     expect(prompt).toContain("격차 문구");
-    expect(prompt).toContain("기준컷을 0.7백분위점 넘겨");
+    expect(prompt).toContain("기준컷을 환산점수 3.9점 넘겨");
     expect(prompt).not.toContain("0.43%");
   });
 });
@@ -765,7 +779,7 @@ describe("composeCombinationStrategy", () => {
 
     // Assert
     expect(strategy).toBe(
-      "기준컷 대비 여유가 큰 곳을 먼저 고른 조합입니다. 다군 안정 원서에 서경대학교 미래융합학부를 두어 결과를 받쳐 줍니다. 합격 안정성을 얻는 대신, 대학·학과 선호는 덜 따지는 선택입니다."
+      "기준컷 대비 여유가 큰 곳을 먼저 고른 조합입니다. 다군 안정 원서에 서경대학교 미래융합학부를 두어 결과를 받쳐 줍니다. 합격 안정성을 얻는 대신, 대학과 학과 선호는 덜 따지는 선택입니다."
     );
   });
 
@@ -778,7 +792,7 @@ describe("composeCombinationStrategy", () => {
 
     // Assert
     expect(strategy).toBe(
-      "기준컷 대비 여유가 큰 곳을 먼저 고른 조합입니다. 해석입니다. 합격 안정성을 얻는 대신, 대학·학과 선호는 덜 따지는 선택입니다."
+      "기준컷 대비 여유가 큰 곳을 먼저 고른 조합입니다. 해석입니다. 합격 안정성을 얻는 대신, 대학과 학과 선호는 덜 따지는 선택입니다."
     );
   });
 

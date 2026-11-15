@@ -28,10 +28,14 @@ import type {
 } from "../types.ts";
 
 import { formatCardAllocation, parseSimpleRatio } from "./commentary-guards.ts";
+import { formatSignedGap, roundGapForDisplay } from "./cut-format.ts";
+import type { GapValue } from "./cut-format.ts";
 import {
   composeChanceSentence,
   composeGapClause,
+  composeMeasuredChanceSentence,
 } from "./commentary-validation.ts";
+import type { ChanceBasis } from "./commentary-validation.ts";
 import type { JudgedFact } from "./judged-facts.ts";
 import { JEONGSI_CHANCE_PHRASES } from "./system-prompt.ts";
 
@@ -56,21 +60,6 @@ const formatSigned = (value: number | null): string => {
   return value > 0 ? `+${value}` : String(value);
 };
 
-/**
- * 기준컷 대비 격차는 백분위점으로만 말한다.
- * 환산 총점 대비 비율(gapRatio)은 대학마다 민감도가 2배 이상 차이나
- * 학생이 대학 간 비교를 할 때 오해한다. 해설이 인용할 척도는 이 값이다.
- */
-const formatPercentileGap = (value: number | null): string => {
-  if (value === null) {
-    return NO_DATA;
-  }
-  // 화면과 같은 소수 첫째 자리. 해설은 받은 자릿수 그대로 인용한다.
-  const rounded = Math.round(value * 10) / 10;
-  const sign = rounded > 0 ? "+" : "";
-  return `${sign}${rounded.toFixed(1)}백분위점`;
-};
-
 /** 화면과 같은 소수 첫째 자리. 해설은 받은 자릿수 그대로 인용한다 */
 const roundForDisplay = (value: number): number => Math.round(value * 10) / 10;
 
@@ -81,12 +70,12 @@ const formatChance = (chance: RecommendationItem["chance"]): string =>
 const formatAreaList = (areas: ScoreArea[]): string =>
   areas.length === 0
     ? "지정된 영역 없음"
-    : areas.map((area) => JEONGSI_AREA_LABEL[area]).join("·");
+    : areas.map((area) => JEONGSI_AREA_LABEL[area]).join(", ");
 
 /** 확정값 전제를 각 프롬프트 선두에 동일한 문장으로 선언한다. */
 const FIXED_VALUE_NOTICE = `## 아래 수치는 이미 확정된 값입니다
 
-아래 표와 목록의 모든 숫자·라벨은 코드가 대학별 환산식으로 계산을 마친 확정값입니다. 표에 적힌 값을 그대로 인용해 해설을 작성하고, 계산이 필요한 값은 표 안에서 찾아 씁니다.`;
+아래 표와 목록의 모든 숫자, 라벨은 코드가 대학별 환산식으로 계산을 마친 확정값입니다. 표에 적힌 값을 그대로 인용해 해설을 작성하고, 계산이 필요한 값은 표 안에서 찾아 씁니다.`;
 
 /**
  * 문장 재료 안내. 수시 admissionPrediction 처럼 코드가 판정을 확정하고,
@@ -97,7 +86,7 @@ const FACT_GUIDE = `## 문장 재료를 쓰는 방법
 
 문장마다 코드가 확정한 재료 두 가지가 적혀 있습니다.
 - 인용할 값: 문장에서 근거로 드는 수치입니다. 적힌 표기 그대로 옮깁니다.
-- 판단: 그 값이 이 학생에게 갖는 의미로, 컨설턴트가 확정한 결론입니다. 판단의 방향(유리함·부담)과 내용을 그대로 담아 컨설턴트의 말로 풀어 씁니다.
+- 판단: 그 값이 이 학생에게 갖는 의미로, 컨설턴트가 확정한 결론입니다. 판단의 방향(유리함이나 부담)과 내용을 그대로 담아 컨설턴트의 말로 풀어 씁니다.
 
 한 문장은 "인용할 값"을 근거로 먼저 두고 "판단"으로 맺습니다.`;
 
@@ -187,30 +176,30 @@ const PART_PERSPECTIVES = {
   score: {
     role: "입시 컨설턴트",
     focus:
-      "이 학생의 현재 성적 수준(백분위가 뜻하는 응시자 중 위치)은 어디이고, 영역별 강점·약점이 정시 지원에서 어떤 의미를 갖는가",
+      "이 학생의 현재 성적 수준(백분위가 뜻하는 응시자 중 위치)은 어디이고, 영역별 강점과 약점이 정시 지원에서 어떤 의미를 갖는가",
     elsewhere:
-      "개별 대학의 이름·반영비율은 PART 2·5, 합격 가능성과 기준컷 격차는 PART 3·5가 다룹니다. 이 파트는 반영방식의 유형(수학 비율이 높은 대학, 표준점수를 쓰는 대학 등)으로 말합니다.",
+      "개별 대학의 이름, 반영비율은 PART 2와 PART 5, 합격 가능성과 기준컷 격차는 PART 3과 PART 5가 다룹니다. 이 파트는 반영방식의 유형(수학 비율이 높은 대학, 표준점수를 쓰는 대학 등)으로 말합니다.",
   },
   match: {
     role: "입시 컨설턴트",
     focus:
-      "이 학생에게 실제로 적용되는 반영 구조가 강점·약점과 어떻게 맞물려, 같은 성적이 왜 이 대학에서 더 유리하게 환산되는가",
+      "이 학생에게 실제로 적용되는 반영 구조가 강점과 약점과 어떻게 맞물려, 같은 성적이 왜 이 대학에서 더 유리하게 환산되는가",
     elsewhere:
-      "합격 가능성과 기준컷 격차는 PART 3·5가 다룹니다. 이 파트는 반영비율·활용지표가 학생의 강약 구조와 맞물리는 방식에 집중합니다.",
+      "합격 가능성과 기준컷 격차는 PART 3과 PART 5가 다룹니다. 이 파트는 반영비율과 활용지표가 학생의 강약 구조와 맞물리는 방식에 집중합니다.",
   },
   recommendation: {
     role: "지원 라인 설계자",
     focus:
-      "각 대학이 왜 그 구분(상향·적정·안정)에 놓였고, 원서 3장 안에서 어떤 쓰임인가",
+      "각 대학이 왜 그 구분(상향, 적정, 안정)에 놓였고, 원서 3장 안에서 어떤 쓰임인가",
     elsewhere:
-      "반영비율·활용지표의 상세 해석은 PART 2·5가 다룹니다. 이 파트는 기준컷 대비 격차와 구분의 의미에 집중합니다.",
+      "반영비율과 활용지표의 상세 해석은 PART 2와 PART 5가 다룹니다. 이 파트는 기준컷 대비 격차와 구분의 의미에 집중합니다.",
   },
   combination: {
     role: "원서 설계사",
     focus:
-      "가·나·다군 세 장을 이렇게 놓으면 무엇을 얻고 무엇을 덜 따지게 되는가",
+      "가군, 나군, 다군 세 장을 이렇게 놓으면 무엇을 얻고 무엇을 덜 따지게 되는가",
     elsewhere:
-      "대학별 격차와 반영방식은 PART 3·5가 다룹니다. 이 파트는 칸마다 구분과 원서의 역할로 부르고, 조합 사이의 맞바꿈에 집중합니다.",
+      "대학별 격차와 반영방식은 PART 3과 PART 5가 다룹니다. 이 파트는 칸마다 구분과 원서의 역할로 부르고, 조합 사이의 맞바꿈에 집중합니다.",
   },
 } satisfies Record<string, PartPerspective>;
 
@@ -251,7 +240,7 @@ export const buildAreaSummaryLine = (rows: AreaScoreRow[]): string =>
     .map((row) => {
       const metric =
         row.standardScore !== null
-          ? `표준점수 ${row.standardScore}·백분위 ${formatNumber(row.percentile)}`
+          ? `표준점수 ${row.standardScore}, 백분위 ${formatNumber(row.percentile)}`
           : `${formatNumber(row.grade)}등급`;
       return `${row.label} ${metric}`;
     })
@@ -287,7 +276,7 @@ const buildAreaTable = (
   levels: Partial<Record<ScoreArea, string>>
 ): string => {
   const header =
-    "| 영역 | 과목 | 표준점수 | 백분위 | 응시자 중 위치 | 등급 | 국·수·탐 중 순위 | 국·수·탐 평균 백분위 대비 편차 |\n| --- | --- | --- | --- | --- | --- | --- | --- |";
+    "| 영역 | 과목 | 표준점수 | 백분위 | 응시자 중 위치 | 등급 | 국어, 수학, 탐구 중 순위 | 국어, 수학, 탐구 평균 백분위 대비 편차 |\n| --- | --- | --- | --- | --- | --- | --- | --- |";
   const body = rows
     .map((row) =>
       [
@@ -313,7 +302,7 @@ export const buildScoreAnalysisPrompt = (
   input: ScoreAnalysisPromptInput
 ): string => `## 작업
 
-학생의 수능 성적 진단 결과에 해설 3개(총평·강점·약점)를 붙입니다.
+학생의 수능 성적 진단 결과에 해설 3개(총평, 강점, 약점)를 붙입니다.
 
 ${buildPartPerspective(PART_PERSPECTIVES.score)}
 
@@ -323,11 +312,11 @@ ${FACT_GUIDE}
 
 ### 영역별 성적
 ${buildAreaTable(input.rows, input.areaLevels)}
-"응시자 중 위치"는 백분위의 정의(그 점수보다 낮은 응시자의 비율)로 정해지는 값입니다. 영어는 등급만 있어 위치를 적지 않습니다.
+"응시자 중 위치"는 백분위의 정의(그 점수보다 낮은 응시자의 비율)로 정해지는 값입니다. 위치는 백분위가 있는 국어, 수학, 탐구에 적습니다(영어는 등급으로 봅니다).
 
 ### 종합 지표
-- 국·수·탐 평균 백분위: ${roundForDisplay(input.averagePercentile)}
-- 국·수·탐 표준점수 합: ${input.totalStandardScore}
+- 국어, 수학, 탐구 평균 백분위: ${roundForDisplay(input.averagePercentile)}
+- 국어, 수학, 탐구 표준점수 합: ${input.totalStandardScore}
 - 코드가 판정한 강점 영역: ${formatAreaList(input.strengthAreas)}
 - 코드가 판정한 약점 영역: ${formatAreaList(input.weaknessAreas)}
 
@@ -350,11 +339,11 @@ ${formatFactLines(input.overallFacts)}
 - 권장 작성 형태: 인용할 값 "<값>", 판단 "<판단>" → "<값>의 성적은 <판단의 내용을 컨설턴트의 말로 푼 문장>" (<> 자리는 그 문장 재료로 채웁니다. 판단의 방향은 재료에 적힌 그대로 씁니다.)
 
 ### strengthComment — 문장 2개, 합계 200자 이내
-1문장: 강점 영역의 수준을 진단합니다. 백분위와 표의 "응시자 중 위치", 국·수·탐 평균 백분위 대비 편차를 인용해 이 영역이 어느 수준이고 다른 영역보다 얼마나 앞서 있는지 씁니다.
+1문장: 강점 영역의 수준을 진단합니다. 백분위와 표의 "응시자 중 위치", 국어, 수학, 탐구 평균 백분위 대비 편차를 인용해 이 영역이 어느 수준이고 다른 영역보다 얼마나 앞서 있는지 씁니다.
 2문장: 컨설턴트로서 이 강점을 원서 선택에 어떻게 쓰면 되는지 조언합니다(해당 영역 비율이 높은 대학, 표준점수 활용 대학을 먼저 살피는 등).
 
 ### weaknessComment — 문장 2개, 합계 200자 이내
-1문장: 약점 영역의 수준을 진단합니다. 백분위와 표의 "응시자 중 위치", 국·수·탐 평균 백분위 대비 편차를 인용해 이 영역이 어느 수준이고 다른 영역보다 얼마나 뒤처져 있는지 씁니다.
+1문장: 약점 영역의 수준을 진단합니다. 백분위와 표의 "응시자 중 위치", 국어, 수학, 탐구 평균 백분위 대비 편차를 인용해 이 영역이 어느 수준이고 다른 영역보다 얼마나 뒤처져 있는지 씁니다.
 2문장: 컨설턴트로서 이 약점이 어떤 반영비율의 대학에서 환산 손실로 이어지는지, 원서 선택에서 어떻게 피하거나 줄이면 되는지 조언합니다. 이 파트의 입력에는 대학별 활용지표가 없으므로, 반영방식은 반영비율 기준으로 말합니다.
 
 세 필드 모두 위에 지정된 개수의 문장으로 배열을 채웁니다.`;
@@ -500,7 +489,7 @@ ${itemBlock}
 3문장: 목록 대학을 고를 때 학생이 함께 살필 점(약점 영역 비율이 높은 대학 등)을 짚고, 반영방식을 먼저 확인하는 선택이 어떤 이득으로 이어지는지 한 방향의 결론으로 맺습니다.
 
 ### items[].reason — 문장 2개, 항목마다 합계 120자 이내
-컨설턴트가 학생에게 "이 대학의 반영방식이 왜 당신에게 유리한지"를 설명하는 근거 두 문장입니다. 항목에 적힌 1문장·2문장 재료로 한 문장씩 쓰고, 문장은 재료의 값으로 시작합니다(대학명은 화면 카드 제목에 표시됩니다). 이 대학이 어떤 후보인지의 판단 문장은 코드가 근거 뒤에 붙이므로, 두 문장은 근거에 집중합니다.
+컨설턴트가 학생에게 "이 대학의 반영방식이 왜 당신에게 유리한지"를 설명하는 근거 두 문장입니다. 항목에 적힌 1문장, 2문장 재료로 한 문장씩 쓰고, 문장은 재료의 값으로 시작합니다(대학명은 화면 카드 제목에 표시됩니다). 이 대학이 어떤 후보인지의 판단 문장은 코드가 근거 뒤에 붙이므로, 두 문장은 근거에 집중합니다.
 - 권장 작성 형태 (<> 자리는 재료의 값으로 채웁니다):
   - 인용할 값 "<영역> <비율>%", 판단 "목록 대학 중 <영역> 비중이 가장 커, 강점 영역의 백분위 <값>점이 환산점수를 가장 크게 끌어올립니다" → "<영역>을 <비율>% 반영해 목록 대학 중 비중이 가장 크므로, 강점인 <영역> 백분위 <값>점이 환산점수를 가장 크게 끌어올립니다."
   - 인용할 값 "<영역> <비율>%", 판단 "목록 대학 중 <영역> 비중이 가장 작아, 약점 영역의 환산 손실이 가장 적습니다" → "약점인 <영역>은 <비율>%만 반영되어 목록 대학 중 비중이 가장 작고, 그만큼 환산 손실도 가장 적습니다."
@@ -509,7 +498,7 @@ ${itemBlock}
 ## 출력 규칙
 
 ${buildItemCountRule(input.items.length, "overallComment")}
-- 대학명·학과명·모집군은 위 목록의 표기를 그대로 사용합니다.`;
+- 대학명, 학과명, 모집군은 위 목록의 표기를 그대로 사용합니다.`;
 };
 
 // ─── PART 3. 지원 가능 대학·학과 ───
@@ -521,8 +510,8 @@ export interface RecommendationPromptEntry extends Omit<
   "comment"
 > {
   tier: RecommendationTier;
-  /** 분류의 실제 척도. 해설이 인용할 격차 값 */
-  percentileGap: number | null;
+  /** 판정 격차 (구간 판정 단위 + 지표 단위 차이) */
+  gap: GapValue | null;
   /** 연도별 공개 컷 요약. 코멘트가 대학마다 다른 근거를 쓰게 한다 */
   cutTrend?: string;
   /** 적정이 비어 다른 구분에서 끌어온 항목의 실제 구분 */
@@ -546,10 +535,11 @@ const describeTierPosition = (
   item: RecommendationPromptEntry,
   items: RecommendationPromptEntry[]
 ): string | null => {
-  if (item.percentileGap === null) return null;
+  if (item.gap === null) return null;
+  const ownRatio = item.gap.ratio;
   const gaps = items
-    .flatMap(({ tier, percentileGap }) =>
-      tier === item.tier && percentileGap !== null ? [percentileGap] : []
+    .flatMap(({ tier, gap }) =>
+      tier === item.tier && gap !== null ? [gap.ratio] : []
     )
     .sort((a, b) => b - a);
   if (gaps.length < 2) return null;
@@ -557,10 +547,10 @@ const describeTierPosition = (
   // 0.3백분위점 모자라"). 못 미친 곳끼리 컷과의 거리로 말한다.
   // 격차 문구와 같은 기준(소수 한 자리 반올림)으로 판단한다. -0.04 를 "기준컷
   // 아래"라 하고 격차 문구는 "기준컷과 같은 수준"이라 쓰면 어긋난다(실측).
-  const roundGap = (gap: number) => Math.round(gap * 10) / 10;
-  if (roundGap(item.percentileGap) < 0) {
-    const below = gaps.filter((gap) => roundGap(gap) < 0);
-    const rank = below.indexOf(item.percentileGap) + 1;
+  const isBelowCut = roundGapForDisplay(item.gap.points) < 0;
+  if (isBelowCut) {
+    const below = gaps.filter((gap) => gap < 0);
+    const rank = below.indexOf(ownRatio) + 1;
     const near =
       rank === 1
         ? "기준컷에 가장 가까운"
@@ -575,7 +565,7 @@ const describeTierPosition = (
           : `기준컷 아래 ${below.length}곳 중 ${near.replace("기준컷", "컷")}`;
     return `${item.tier} ${gaps.length}곳 중 ${position} 곳으로`;
   }
-  const rank = gaps.indexOf(item.percentileGap) + 1;
+  const rank = gaps.indexOf(ownRatio) + 1;
   const position =
     rank === 1
       ? "여유가 가장 큰"
@@ -600,21 +590,27 @@ export const composeTrendLead = (
     : `컷 흐름(${series})을 보인 곳으로`;
 };
 
-/** 구간별 격차 범위. 예) "상향 -1.3백분위점, 적정 -0.4~+3.1백분위점" */
+/**
+ * 구간별 격차 범위. 예) "상향 환산점수 −8.0~−3.1점, 적정 평균 백분위 −0.4~+1.2점"
+ * 한 구분 안에 판정 지표가 섞이면 단위가 달라 범위를 만들 수 없으므로 곳 수만 쓴다.
+ */
 export const formatTierGapRanges = (
   items: RecommendationPromptEntry[]
 ): string =>
-  (["상향", "적정", "안정"] as const)
+  (["상향", "적정", "안정", "스나이핑"] as const)
     .flatMap((tier) => {
       const gaps = items.flatMap((item) =>
-        item.tier === tier && item.percentileGap !== null
-          ? [item.percentileGap]
-          : []
+        item.tier === tier && item.gap !== null ? [item.gap] : []
       );
       if (gaps.length === 0) return [];
-      const min = formatPercentileGap(Math.min(...gaps));
-      const max = formatPercentileGap(Math.max(...gaps));
-      return [`${tier} ${min === max ? min : `${min}~${max}`}`];
+      const metrics = new Set(gaps.map((gap) => gap.metric));
+      if (metrics.size > 1) return [`${tier} ${gaps.length}곳`];
+      const sorted = [...gaps].sort((a, b) => a.points - b.points);
+      const min = formatSignedGap(sorted[0]);
+      const max = formatSignedGap(sorted[sorted.length - 1]);
+      return [
+        `${tier} ${min === max ? min : `${min}~${max.replace(/^(환산점수|평균 백분위) /, "")}`}`,
+      ];
     })
     .join(", ");
 
@@ -629,12 +625,13 @@ export const collectCautionItems = (
   // 격차 하나만 짧게 싣는다.
   items.flatMap((item) => {
     const isLow = item.chance === "낮음" || item.chance === "매우낮음";
-    const isBelow = item.percentileGap !== null && item.percentileGap < 0;
+    const isBelow =
+      item.gap !== null && roundGapForDisplay(item.gap.points) < 0;
     if (!isLow && !isBelow) return [];
     return [
-      item.percentileGap === null
+      item.gap === null
         ? `${item.university} ${item.department}`
-        : `${item.university} ${item.department}(${formatPercentileGap(item.percentileGap)})`,
+        : `${item.university} ${item.department}(${formatSignedGap(item.gap)})`,
     ];
   });
 
@@ -666,9 +663,12 @@ export const assignRecommendationOpenings = (
  */
 export const composeRecommendationComment = (
   opening: string,
-  gap: number | null,
-  meaning: string
-): string => `${opening} ${composeChanceSentence(gap, meaning)}`;
+  gap: GapValue | null,
+  meaning: string,
+  passRate?: number | null,
+  basis?: ChanceBasis
+): string =>
+  `${opening} ${composeMeasuredChanceSentence(gap, passRate, meaning, basis)}`;
 
 export const buildRecommendationPrompt = (
   input: RecommendationPromptInput
@@ -686,7 +686,7 @@ export const buildRecommendationPrompt = (
         String(index),
         item.tier,
         `${item.group}군`,
-        composeGapClause(item.percentileGap),
+        composeGapClause(item.gap),
       ].join(" | ")
     )
     .map((line) => `| ${line} |`)
@@ -695,7 +695,7 @@ export const buildRecommendationPrompt = (
   const task =
     input.items.length === 0
       ? "지원 가능 대학 목록이 비어 있습니다. 아래 사실을 근거로 지원 전략 총평 1개만 작성합니다."
-      : `코드가 상향·적정·안정으로 분류한 지원 가능 대학 ${input.items.length}곳의 지원 전략 총평 1개를 작성합니다. 대학별 한 줄 코멘트는 코드가 씁니다.`;
+      : `코드가 상향, 적정, 안정으로 분류한 지원 가능 대학 ${input.items.length}곳의 지원 전략 총평 1개를 작성합니다. 대학별 한 줄 코멘트는 코드가 씁니다.`;
 
   return `## 작업
 
@@ -709,7 +709,7 @@ ${FACT_GUIDE}
 
 ## 기준컷 대비 격차
 
-- 구분(상향·적정·안정)과 합격 가능성은 기준컷 대비 백분위점 격차로 코드가 확정한 결과입니다.
+- 구분(상향, 적정, 안정)과 합격 가능성은 기준컷 대비 격차로 코드가 확정한 결과입니다. 환산점수 입결이 있는 대학은 환산점수로, 없는 대학은 국어, 수학, 탐구 평균 백분위로 비교했습니다.
 - 표의 "격차 문구"는 코드가 격차의 방향과 크기를 확정해 쓴 문구입니다.
 ${buildSelectionNotes(input.selection)}
 ### 지원 가능 대학 (코드 분류 결과)
@@ -759,7 +759,7 @@ export const COMBINATION_LABEL_SENTENCES: Record<
   { criterion: string; tradeoff: string }
 > = {
   "희망 우선형": {
-    criterion: "희망 학과·계열과 가장 가까운 학과를 먼저 고른 조합입니다.",
+    criterion: "희망 학과나 계열에 가장 가까운 학과를 먼저 고른 조합입니다.",
     tradeoff:
       "원하는 전공으로 진학할 가능성을 얻는 대신, 대학 선호도나 합격 여유는 덜 따지는 선택입니다.",
   },
@@ -775,7 +775,8 @@ export const COMBINATION_LABEL_SENTENCES: Record<
   },
   "합격 여유형": {
     criterion: "기준컷 대비 여유가 큰 곳을 먼저 고른 조합입니다.",
-    tradeoff: "합격 안정성을 얻는 대신, 대학·학과 선호는 덜 따지는 선택입니다.",
+    tradeoff:
+      "합격 안정성을 얻는 대신, 대학과 학과 선호는 덜 따지는 선택입니다.",
   },
 };
 
@@ -879,7 +880,7 @@ export const composeOverlapSentence = (
   const label = stripLabelNote(nearest.other.label);
   const cells = differing
     .map((slot) => `${slot.group}군(${slot.university} ${slot.department})`)
-    .join("·");
+    .join(", ");
   return `${label}과 비교하면 ${cells} 칸만 다르고, 나머지 칸은 같습니다.`;
 };
 
@@ -910,12 +911,22 @@ export const composeFullyDistinctSentence = (
 ): string =>
   `${describeSlotCount(slotCount)} 모두 다른 조합과 겹치지 않아, ${stripLabelNote(label)} 기준만으로 고른 별도의 선택지입니다.`;
 
+/**
+ * 조합이 하나뿐일 때의 해석 문장. 견줄 조합이 없는데 "다른 조합과 겹치지 않아"라고
+ * 쓰면 사실과 다르다(2026-11-15 3차 생성 실측: 컴공 학생 조합 1개).
+ */
+export const SINGLE_COMBINATION_SENTENCE =
+  "추천 목록으로 만들 수 있는 조합이 이것 하나라, 견줄 다른 조합이 없습니다.";
+
 const formatDistinctSlots = (
   combination: CombinationDraft,
   combinations: CombinationDraft[]
 ): string => {
   const distinct = findDistinctSlots(combination, combinations);
   if (distinct.length === 0) return "없음 (다른 조합과 칸 구성이 같음)";
+  if (combinations.length === 1) {
+    return "견줄 다른 조합 없음 — 이 조합의 해석 문장은 코드가 쓰므로 difference는 빈 문자열로 둡니다";
+  }
   if (isFullyDistinct(combination, combinations)) {
     return `${describeSlotCount(combination.slots.length)} 모두 — 이 조합의 해석 문장은 코드가 쓰므로 difference는 빈 문자열로 둡니다`;
   }
@@ -955,7 +966,7 @@ export const buildCombinationPrompt = (
   const task =
     input.combinations.length === 0
       ? "구성 가능한 지원 조합이 없습니다. 아래 사실을 근거로 조합 선택 가이드 1개만 작성합니다."
-      : `코드가 구성한 가·나·다군 지원 조합 ${input.combinations.length}개에 각각 해석 문장 1개를 붙이고, 조합 선택 가이드 1개를 작성합니다.`;
+      : `코드가 구성한 가군, 나군, 다군 지원 조합 ${input.combinations.length}개에 각각 해석 문장 1개를 붙이고, 조합 선택 가이드 1개를 작성합니다.`;
 
   return `## 작업
 
@@ -965,7 +976,7 @@ ${buildPartPerspective(PART_PERSPECTIVES.combination)}
 
 ${FIXED_VALUE_NOTICE}
 
-조합의 구성(어느 군에 어느 대학을 넣을지)과 각 칸의 구분·합격 가능성은 코드가 확정한 결과입니다. 각 조합의 선정 기준과 맞바꿈(얻는 것과 덜 따지는 것)은 정해진 문장으로 화면에 표시되므로, 해설은 이 학생의 조합에서만 나오는 해석을 맡습니다.
+조합의 구성(어느 군에 어느 대학을 넣을지)과 각 칸의 구분과 합격 가능성은 코드가 확정한 결과입니다. 각 조합의 선정 기준과 맞바꿈(얻는 것과 덜 따지는 것)은 정해진 문장으로 화면에 표시되므로, 해설은 이 학생의 조합에서만 나오는 해석을 맡습니다.
 ${buildSelectionNotes(input.selection)}
 ### 학생 지원 성향
 ${input.risk}
@@ -991,20 +1002,20 @@ overallComment는 문장 하나를 배열 원소 하나로 씁니다.
 ## 필드별 작성 지침
 
 ### overallComment — 문장 3개, 합계 250자 이내
-1문장: 가·나·다군에서 각 1장씩 쓰는 정시 구조를 전제로, 조합을 고를 때의 기준을 서술합니다.
+1문장: 가군, 나군, 다군에서 각 1장씩 쓰는 정시 구조를 전제로, 조합을 고를 때의 기준을 서술합니다.
 2문장: 아래 재료로 씁니다. 기본 배분과 같은 조합은 코드가 칸을 세어 확정한 결과이므로, 판단에 적힌 조합을 그대로 씁니다.
   - 인용할 값: ${input.allocationFact.value} / 판단: ${input.allocationFact.meaning}
-3문장: 조합 사이에서 고민할 때 먼저 따질 한 가지(희망 학과·대학 선호·합격 안정성 중 무엇을 앞세울지)를 짚는 데 집중합니다. 조합마다 얻는 것과 덜 따지는 것은 각 조합 카드의 정해진 문장이 보여 줍니다.
+3문장: 조합 사이에서 고민할 때 먼저 따질 한 가지(희망 학과, 대학 선호, 합격 안정성 중 무엇을 앞세울지)를 짚는 데 집중합니다. 조합마다 얻는 것과 덜 따지는 것은 각 조합 카드의 정해진 문장이 보여 줍니다.
 
 ### items[].difference — 각 1문장, 항목마다 90자 이내
 항목의 "다른 조합과 달라지는 칸" 줄에 적힌 칸을 짚고, 그 칸이 이 조합에서 맡는 역할을 컨설턴트의 판단으로 씁니다. 이 문장은 정해진 두 문장 사이에 놓입니다.
-- 칸은 "다군 안정 원서"처럼 군과 구분으로 부르고, 대학·학과명은 그 칸 하나만 적습니다. 나머지 칸은 화면 카드에 표시됩니다.
+- 칸은 "다군 안정 원서"처럼 군과 구분으로 부르고, 대학, 학과명은 그 칸 하나만 적습니다. 나머지 칸은 화면 카드에 표시됩니다.
 - 좋은 예시 (<> 자리는 목록의 값으로 채웁니다): "<군> <구분> 원서에 <대학명> <학과명>을 두어, <그 칸이 이 조합에서 맡는 역할과 그 의미>."
 
 ## 출력 규칙
 
 ${buildItemCountRule(input.combinations.length, "overallComment")}
-- 대학명·학과명·모집군·구분·합격 가능성·조합 라벨은 위 목록의 표기를 그대로 사용합니다.
+- 대학명, 학과명, 모집군, 구분, 합격 가능성, 조합 라벨은 위 목록의 표기를 그대로 사용합니다.
 
 ## 출력 전 자가 점검
 1. 각 difference가 "다른 조합과 달라지는 칸" 줄의 칸만 짚는가?
@@ -1018,8 +1029,8 @@ export interface UniversityDetailPromptItem extends Omit<
   UniversityDetailItem,
   "reason"
 > {
-  /** 분류의 실제 척도. 해설이 인용할 격차 값 */
-  percentileGap: number | null;
+  /** 판정 격차 (구간 판정 단위 + 지표 단위 차이) */
+  gap: GapValue | null;
 }
 
 /** PART 5 추천 이유 1문장(코드 판정 문장)의 상한. 2문장은 격차·합격 가능성 문장이다 */
