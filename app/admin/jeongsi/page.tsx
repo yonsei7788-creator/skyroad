@@ -313,8 +313,7 @@ const JeongsiReportsPage = () => {
                       <Badge variant={variant}>{label}</Badge>
                     </div>
                     <div className={listStyles.cardSub}>
-                      평균 백분위 {formatPercentile(report.averagePercentile)} ·{" "}
-                      {report.risk}
+                      평균 백분위 {formatPercentile(report.averagePercentile)}
                     </div>
                     <div className={listStyles.cardDivider} />
                     <div className={listStyles.cardBottom}>
