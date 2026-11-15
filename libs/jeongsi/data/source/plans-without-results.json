@@ -982,6 +982,7 @@
     "group": "나",
     "quota": 11,
     "suneungWeight": 95,
+    "selectionNote": "학생부 5% · 학생부(교과) 5%, 출결 감점",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -5782,6 +5783,7 @@
     "group": "다",
     "quota": 11,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 학생부평가(정성 종합평가: 학업역량·진로탐구역량) 10%(100점)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -5945,6 +5947,7 @@
     "group": "다",
     "quota": 11,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 학생부평가(정성 종합평가: 학업역량·진로탐구역량) 10%(100점)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -6108,6 +6111,7 @@
     "group": "다",
     "quota": 11,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 학생부평가(정성 종합평가: 학업역량·진로탐구역량) 10%(100점)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -6271,6 +6275,7 @@
     "group": "다",
     "quota": 11,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 학생부평가(정성 종합평가: 학업역량·진로탐구역량) 10%(100점)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -6451,6 +6456,7 @@
     "group": "다",
     "quota": 11,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 학생부평가(정성 종합평가: 학업역량·진로탐구역량) 10%(100점)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -11174,6 +11180,7 @@
     "group": "가",
     "quota": 70,
     "suneungWeight": 95,
+    "selectionNote": "학생부 5% · 학교생활기록부 50점(교과 등급·성취도 점수, 출결 감점)",
     "statedRatios": "국100·수100·영100·탐50(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -11339,6 +11346,7 @@
     "group": "가",
     "quota": 10,
     "suneungWeight": 95,
+    "selectionNote": "학생부 5% · 학교생활기록부 50점(교과 등급·성취도 점수, 출결 감점)",
     "statedRatios": "국100·수150·영100·탐150(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -11511,6 +11519,7 @@
     "group": "가",
     "quota": 36,
     "suneungWeight": 95,
+    "selectionNote": "학생부 5% · 학교생활기록부 50점(교과 등급·성취도 점수, 출결 감점)",
     "statedRatios": "국100·수150·영100·탐150(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -11683,6 +11692,7 @@
     "group": "가",
     "quota": 20,
     "suneungWeight": 95,
+    "selectionNote": "학생부 5% · 학교생활기록부 50점(교과 등급·성취도 점수, 출결 감점)",
     "statedRatios": "국100·수150·영100·탐150(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -11855,6 +11865,7 @@
     "group": "가",
     "quota": 23,
     "suneungWeight": 95,
+    "selectionNote": "학생부 5% · 학교생활기록부 50점(교과 등급·성취도 점수, 출결 감점)",
     "statedRatios": "국100·수150·영100·탐150(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -12027,6 +12038,7 @@
     "group": "가",
     "quota": 9,
     "suneungWeight": 95,
+    "selectionNote": "학생부 5% · 학교생활기록부 50점(교과 등급·성취도 점수, 출결 감점)",
     "statedRatios": "국100·수100·영100·탐50(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -12192,6 +12204,7 @@
     "group": "가",
     "quota": 9,
     "suneungWeight": 95,
+    "selectionNote": "학생부 5% · 학교생활기록부 50점(교과 등급·성취도 점수, 출결 감점)",
     "statedRatios": "국100·수100·영100·탐50(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -12357,6 +12370,7 @@
     "group": "가",
     "quota": 9,
     "suneungWeight": 95,
+    "selectionNote": "학생부 5% · 학교생활기록부 50점(교과 등급·성취도 점수, 출결 감점)",
     "statedRatios": "국100·수100·영100·탐50(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -12522,6 +12536,7 @@
     "group": "가",
     "quota": 27,
     "suneungWeight": 85,
+    "selectionNote": "기타 15% · 실기(기본 운동능력) 100 + 면접 50",
     "statedRatios": "국100·수100·영100·탐50(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -12687,6 +12702,7 @@
     "group": "가",
     "quota": 18,
     "suneungWeight": 90,
+    "selectionNote": "학생부 5% · 기타 5% · 1단계(수능900+학생부50, 3배수) → 2단계 면접 50 추가",
     "statedRatios": "국100·수100·영100·탐50(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -12852,6 +12868,7 @@
     "group": "가",
     "quota": 19,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -13015,6 +13032,7 @@
     "group": "나",
     "quota": 19,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -13178,6 +13196,7 @@
     "group": "나",
     "quota": 54,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -13341,6 +13360,7 @@
     "group": "다",
     "quota": 211,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -13504,6 +13524,7 @@
     "group": "나",
     "quota": 22,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -13674,6 +13695,7 @@
     "group": "가",
     "quota": 33,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -13844,6 +13866,7 @@
     "group": "다",
     "quota": 86,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -14013,6 +14036,7 @@
     "region": "서울",
     "group": "다",
     "quota": 33,
+    "selectionNote": "학교폭력 조치사항 감점(4~7호 100~400점, 8~9호 불합격)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -14084,6 +14108,7 @@
     "region": "서울",
     "group": "다",
     "quota": 45,
+    "selectionNote": "학교폭력 조치사항 감점(4~7호 100~400점, 8~9호 불합격)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -14156,6 +14181,7 @@
     "region": "수도권",
     "group": "나",
     "quota": 120,
+    "selectionNote": "학교폭력 8·9호 10% 감점",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -14227,6 +14253,7 @@
     "region": "수도권",
     "group": "나",
     "quota": 46,
+    "selectionNote": "학교폭력 8·9호 10% 감점",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -14581,6 +14608,7 @@
     "group": "나",
     "quota": 20,
     "suneungWeight": 95,
+    "selectionNote": "학생부 5% · 학생부(교과) 5%, 출결 감점",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -17062,6 +17090,7 @@
     "group": "가",
     "quota": 22,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -17233,6 +17262,7 @@
     "group": "가",
     "quota": 20,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -17404,6 +17434,7 @@
     "group": "나",
     "quota": 55,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -26900,6 +26931,7 @@
     "group": "가",
     "quota": 15,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10%",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 360,
@@ -26967,6 +26999,7 @@
     "group": "나",
     "quota": 2,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10%",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 360,
@@ -27048,6 +27081,7 @@
     "group": "가",
     "quota": 2,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10%",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 360,
@@ -27129,6 +27163,7 @@
     "group": "다",
     "quota": 3,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10%",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 360,
@@ -27210,6 +27245,7 @@
     "group": "가",
     "quota": 5,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10%",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 900,
@@ -27280,6 +27316,7 @@
     "group": "가",
     "quota": 10,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10%",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 900,
@@ -28612,6 +28649,7 @@
     "group": "가",
     "quota": 3,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 학생부 출결 10%",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 900,
@@ -28679,6 +28717,7 @@
     "group": "나",
     "quota": 1,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 학생부 출결 10%",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 900,
@@ -28746,6 +28785,7 @@
     "group": "나",
     "quota": 15,
     "suneungWeight": 90,
+    "selectionNote": "학생부 10% · 학생부 출결 10%",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 900,
@@ -39631,6 +39671,7 @@
     "group": "나",
     "quota": 79,
     "suneungWeight": 90,
+    "selectionNote": "기타 10% · 1단계 수능 100%(모집인원 200%) → 2단계 수능 900점 + 면접 100점",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 900,
@@ -42112,6 +42153,7 @@
     "group": "가",
     "quota": 5,
     "suneungWeight": 80,
+    "selectionNote": "학생부 20% · 학생부 교과 20%(200점)",
     "formula": {
       "formulaVersion": 1,
       "totalScore": 800,

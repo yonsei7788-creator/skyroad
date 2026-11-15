@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-11-08",
+  "generatedAt": "2026-11-15",
   "summary": {
     "sourceUnits": 15160,
     "plans": 1143,
     "plansWithResults": 1143,
     "plansWithoutResults": 0,
-    "results": 1362,
+    "results": 1520,
     "excluded": 14017
   },
   "plansByGroup": {
@@ -32,8 +32,8 @@
     "exact": 1143
   },
   "resultsByMetric": {
-    "percentile": 925,
-    "convertedScore": 437
+    "convertedScore": 1202,
+    "percentile": 318
   },
   "universities": 63,
   "excludedByReason": {
