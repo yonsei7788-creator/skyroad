@@ -15,6 +15,7 @@ import {
   MapPin,
   Sigma,
   Target,
+  UserRound,
 } from "lucide-react";
 
 import { SearchableSelect } from "@/app/_components/SearchableSelect";
@@ -26,6 +27,7 @@ import type {
   MathElective,
   PreferredRegion,
   RiskAppetite,
+  StudentGender,
   SuneungGrade,
 } from "@/libs/jeongsi/types";
 
@@ -43,6 +45,8 @@ import {
   PREFERRED_REGION_OPTIONS,
   RISK_APPETITE_DESCRIPTION,
   RISK_APPETITE_OPTIONS,
+  STUDENT_GENDER_LABEL,
+  STUDENT_GENDER_OPTIONS,
   SUNEUNG_GRADE_OPTIONS,
 } from "../_lib/options";
 import { checkScoreConsistency } from "../_lib/score-consistency";
@@ -71,6 +75,7 @@ interface FormState {
   inquiry2StandardScore: string;
   inquiry2Percentile: string;
   historyGrade: string;
+  gender: string;
   target: string;
   region: string;
   risk: string;
@@ -141,6 +146,7 @@ const INITIAL_STATE: FormState = {
   inquiry2StandardScore: "",
   inquiry2Percentile: "",
   historyGrade: "",
+  gender: "",
   target: "",
   region: "",
   risk: "",
@@ -370,6 +376,10 @@ export const JeongsiForm = ({ categoryOptions }: JeongsiFormProps) => {
       next.target = "희망 학과·계열은 50자 이내로 입력해주세요.";
     }
 
+    if (!form.gender) {
+      next.gender = "학생 성별을 선택해주세요.";
+    }
+
     if (!form.region) {
       next.region = "희망 지역을 선택해주세요.";
     }
@@ -427,6 +437,7 @@ export const JeongsiForm = ({ categoryOptions }: JeongsiFormProps) => {
         region: form.region as PreferredRegion,
         risk: form.risk as RiskAppetite,
       },
+      gender: form.gender as StudentGender,
     };
   };
 
@@ -833,6 +844,29 @@ export const JeongsiForm = ({ categoryOptions }: JeongsiFormProps) => {
           <span className={styles.blockDesc}>
             추천 대학과 지원 조합을 고르는 기준이 됩니다.
           </span>
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>
+            <UserRound size={14} className={styles.labelIcon} />
+            학생 성별 <span className={styles.required}>*</span>
+          </label>
+          <div className={styles.selectButtonRow}>
+            {STUDENT_GENDER_OPTIONS.map((gender) => (
+              <button
+                key={gender}
+                type="button"
+                className={`${styles.selectButton} ${form.gender === gender ? styles.selectButtonActive : ""}`}
+                onClick={() => handleChange("gender", gender)}
+              >
+                {STUDENT_GENDER_LABEL[gender]}
+              </button>
+            ))}
+          </div>
+          <span className={styles.fieldHint}>
+            남학생이면 지원할 수 없는 여자대학교를 추천에서 뺍니다.
+          </span>
+          {renderFieldError("gender")}
         </div>
 
         <div className={styles.field}>

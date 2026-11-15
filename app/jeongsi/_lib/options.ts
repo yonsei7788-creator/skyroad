@@ -14,6 +14,7 @@ import type {
   RiskAppetite,
   ScienceInquirySubject,
   SocialInquirySubject,
+  StudentGender,
   SuneungGrade,
 } from "@/libs/jeongsi/types";
 
@@ -66,6 +67,17 @@ export const PREFERRED_REGION_OPTIONS = [
   "수도권",
   "전국",
 ] as const satisfies readonly PreferredRegion[];
+
+/** 학생 성별 선택지 (값 → 화면 라벨) */
+export const STUDENT_GENDER_OPTIONS = [
+  "male",
+  "female",
+] as const satisfies readonly StudentGender[];
+
+export const STUDENT_GENDER_LABEL: Record<StudentGender, string> = {
+  male: "남학생",
+  female: "여학생",
+};
 
 export const RISK_APPETITE_OPTIONS = [
   "안정",
