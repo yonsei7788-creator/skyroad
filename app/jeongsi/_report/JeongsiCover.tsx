@@ -78,9 +78,9 @@ export const JeongsiCover = ({
     count:
       recommendation?.groups.find((group) => group.tier === tier)?.items
         .length ?? 0,
-  })).filter(({ tier, count }) => tier !== "스나이핑" || count > 0);
+  })).filter(({ tier, count }) => tier !== "소신" || count > 0);
   const totalCount = tierCounts
-    .filter(({ tier }) => tier !== "스나이핑")
+    .filter(({ tier }) => tier !== "소신")
     .reduce((sum, item) => sum + item.count, 0);
 
   const strengthRows =
@@ -142,10 +142,6 @@ export const JeongsiCover = ({
             <b>희망</b>
             {preference.target}
             {preference.targetKind === "field" ? " (계열)" : ""}
-          </span>
-          <span>
-            <b>지역</b>
-            {preference.region}
           </span>
           <span>
             <b>성향</b>

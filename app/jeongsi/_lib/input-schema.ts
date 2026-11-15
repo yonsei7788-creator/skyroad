@@ -19,7 +19,6 @@ import {
   MAX_MAIN_STANDARD_SCORE,
   MAX_PERCENTILE,
   MIN_GRADE,
-  PREFERRED_REGION_OPTIONS,
   RISK_APPETITE_OPTIONS,
   STUDENT_GENDER_OPTIONS,
   SUNEUNG_GRADE_OPTIONS,
@@ -92,9 +91,6 @@ const JeongsiPreferenceSchema = z.object({
     .max(50, "희망 학과·계열은 50자 이내로 입력해주세요."),
   targetKind: z.enum(["department", "field"], {
     error: "희망 학과 또는 계열 구분이 올바르지 않습니다.",
-  }),
-  region: z.enum(PREFERRED_REGION_OPTIONS, {
-    error: "희망 지역을 선택해주세요.",
   }),
   risk: z.enum(RISK_APPETITE_OPTIONS, {
     error: "지원 성향을 선택해주세요.",

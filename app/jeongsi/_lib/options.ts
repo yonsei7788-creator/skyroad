@@ -10,7 +10,6 @@ import type {
   InquirySubject,
   KoreanElective,
   MathElective,
-  PreferredRegion,
   RiskAppetite,
   ScienceInquirySubject,
   SocialInquirySubject,
@@ -61,12 +60,6 @@ export const INQUIRY_SUBJECT_OPTIONS = [
   ...SOCIAL_INQUIRY_OPTIONS,
   ...SCIENCE_INQUIRY_OPTIONS,
 ] as const satisfies readonly InquirySubject[];
-
-export const PREFERRED_REGION_OPTIONS = [
-  "서울",
-  "수도권",
-  "전국",
-] as const satisfies readonly PreferredRegion[];
 
 /** 학생 성별 선택지 (값 → 화면 라벨) */
 export const STUDENT_GENDER_OPTIONS = [

@@ -597,7 +597,7 @@ export const composeTrendLead = (
 export const formatTierGapRanges = (
   items: RecommendationPromptEntry[]
 ): string =>
-  (["상향", "적정", "안정", "스나이핑"] as const)
+  (["상향", "적정", "안정", "소신"] as const)
     .flatMap((tier) => {
       const gaps = items.flatMap((item) =>
         item.tier === tier && item.gap !== null ? [item.gap] : []
@@ -709,7 +709,7 @@ ${FACT_GUIDE}
 
 ## 기준컷 대비 격차
 
-- 구분(상향, 적정, 안정)과 합격 가능성은 기준컷 대비 격차로 코드가 확정한 결과입니다. 환산점수 입결이 있는 대학은 환산점수로, 없는 대학은 국어, 수학, 탐구 평균 백분위로 비교했습니다.
+- 구분(상향, 적정, 안정)과 합격 가능성은 기준컷 대비 격차로 코드가 확정한 결과입니다. 모든 대학을 학생의 대학별 환산점수와 그 대학의 환산점수 입결로 비교했습니다.
 - 표의 "격차 문구"는 코드가 격차의 방향과 크기를 확정해 쓴 문구입니다.
 ${buildSelectionNotes(input.selection)}
 ### 지원 가능 대학 (코드 분류 결과)

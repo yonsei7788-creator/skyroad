@@ -368,7 +368,7 @@ const JeongsiReportAdminPage = () => {
           activeSectionIndex={activeSectionIndex}
           onSectionSelect={handleSectionSelect}
           checkedSections={checkedSections}
-          title={`${report.target} · ${report.region} · ${report.risk}`}
+          title={`${report.target} · ${report.risk}`}
           subtitle={`생성 ${report.createdBy ?? "-"} · 평균 백분위 ${
             report.averagePercentile?.toFixed(1) ?? "-"
           }`}

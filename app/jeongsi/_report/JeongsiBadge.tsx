@@ -12,7 +12,7 @@ const TIER_TOKEN: Record<RecommendableTier, string> = {
   상향: "reach",
   적정: "match",
   안정: "safety",
-  스나이핑: "snipe",
+  소신: "snipe",
 };
 
 /**
@@ -30,12 +30,7 @@ export const toneStyleOf = (tier: RecommendableTier): React.CSSProperties => {
 };
 
 /** 상향 → 적정 → 안정 → 스나이핑 순서를 항상 고정한다 */
-export const TIER_ORDER: RecommendableTier[] = [
-  "상향",
-  "적정",
-  "안정",
-  "스나이핑",
-];
+export const TIER_ORDER: RecommendableTier[] = ["상향", "적정", "안정", "소신"];
 
 interface JeongsiTierBadgeProps {
   tier: RecommendableTier;

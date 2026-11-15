@@ -84,7 +84,7 @@ export interface SuneungScore {
   history: { grade: SuneungGrade };
 }
 
-/** 희망 지역 */
+/** 희망 지역 (예전 입력에만 있다. 2026-11-15 입력에서 뺐고 분석에 쓰지 않는다) */
 export type PreferredRegion = "서울" | "수도권" | "전국";
 
 /** 지원 성향 */
@@ -96,7 +96,8 @@ export interface JeongsiPreference {
   target: string;
   /** target 이 개별 학과인지 계열 단위인지 */
   targetKind: "department" | "field";
-  region: PreferredRegion;
+  /** 예전 입력에만 있다. 분석에 쓰지 않는다(사용자 결정 2026-11-15) */
+  region?: PreferredRegion;
   risk: RiskAppetite;
 }
 
@@ -112,6 +113,14 @@ export interface JeongsiInput {
 }
 
 // ─── 대학 전형 시행계획 ───
+
+/** 한 입결 학년도의 경쟁률과 충원율 (원문 값) */
+export interface RecentCompetition {
+  year: 2025 | 2026;
+  competitionRate?: number;
+  /** 충원율(%) = 충원합격 인원 ÷ 모집인원 × 100, 원문에 적힌 값 */
+  additionalPassRate?: number;
+}
 
 /** 모집군 */
 export type AdmissionGroup = "가" | "나" | "다";
@@ -275,6 +284,11 @@ export interface JeongsiAdmissionPlan {
    */
   finalQuota?: number;
   /**
+   * 최근 입결 학년도(2025, 2026)의 경쟁률과 충원율(%) (원문 40_입결_경쟁충원).
+   * 원문에 없는 해와 값은 싣지 않는다. 스나이핑 우선순위 신호에만 쓴다.
+   */
+  recentCompetitions?: RecentCompetition[];
+  /**
    * 전형 총점 중 수능 비율(%). 100 이면 생략한다.
    * 나머지(학생부 교과 등)는 엔진이 계산하지 않으므로, 이 값이 있는
    * 모집단위는 수능 성적만으로 본 위치다.
@@ -370,7 +384,7 @@ export type SafeCapReason = "1개년 입결" | "모집군 변경" | "백분위 �
  * 지원 가능성 분류. 스나이핑은 추천 범위(상향하한) 바로 아래로, 합격 가능성은
  * 낮지만 시도해 볼 곳이다(specs/014 마지막 피드백). 그 아래는 지원불가.
  */
-export type AdmissionTier = "안정" | "적정" | "상향" | "스나이핑" | "지원불가";
+export type AdmissionTier = "안정" | "적정" | "상향" | "소신" | "지원불가";
 
 /** 합격 가능성 라벨 */
 export type PassChance = "높음" | "보통" | "낮음" | "매우낮음";

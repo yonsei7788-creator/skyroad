@@ -22,7 +22,7 @@ import type {
 
 /** 추천 가능한 분류 (지원불가 제외) */
 /** 추천 목록(PART 3)의 세 구분. 스나이핑은 별도 목록이다 */
-export type RecommendableTier = Exclude<AdmissionTier, "지원불가" | "스나이핑">;
+export type RecommendableTier = Exclude<AdmissionTier, "지원불가" | "소신">;
 
 /**
  * 생성 조합 수. 정시 리포트 템플릿(입시_분석_기능_정보/report_template.png)
@@ -501,7 +501,7 @@ export const markRecommendedCombination = (
 };
 
 /** 공격 성향에서 상향 한 칸을 스나이핑으로 바꾼 조합의 라벨 */
-export const SNIPING_COMBINATION_LABEL = "스나이핑 포함형";
+export const SNIPING_COMBINATION_LABEL = "소신 포함형";
 
 /**
  * 공격 성향이면 대표 조합(없으면 첫 조합)의 상향 칸 하나를 스나이핑 후보로 바꾼

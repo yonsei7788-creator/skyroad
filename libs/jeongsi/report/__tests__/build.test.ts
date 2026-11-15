@@ -7,7 +7,6 @@ import {
   findUnsupportedSoleClaim,
   buildJeongsiReport,
   buildRecommendationNotices,
-  composeSnipingNotice,
   findWrongSlotTier,
   formatRatioSummary,
   withTopicParticle,
@@ -840,6 +839,43 @@ describe("buildJeongsiReport — PART 4 조합 문장", () => {
   });
 });
 
+describe("buildJeongsiReport — 소신", () => {
+  it("소신 대학은 보이고, 선정 방법 안내문과 내부 기법 이름은 나오지 않는다", async () => {
+    // Arrange
+    const 소신Eval: PlanEvaluation = {
+      ...createEvaluation(
+        createPlan("라대학교", "컴퓨터공학과", "가"),
+        900,
+        910,
+        -1.0,
+        "소신",
+        "매우낮음",
+        70
+      ),
+      historicalPassRate: 0.08,
+      withinRecommendRange: false,
+    };
+
+    // Act
+    const content = await buildJeongsiReport(
+      { ...analysis, sniping: [소신Eval] },
+      { reportId: "report-sosin" }
+    );
+
+    // Assert
+    const text = JSON.stringify(content.sections);
+    expect(text).toContain("라대학교");
+    expect(text).not.toContain("스나이핑");
+    const recommendation = findSection<JeongsiRecommendationSection>(
+      content.sections,
+      "jeongsiRecommendation"
+    );
+    expect(recommendation.notices?.join(" ") ?? "").not.toMatch(
+      /골랐습니다|최종 모집인원|우선합니다/
+    );
+  });
+});
+
 describe("buildJeongsiReport — 코드 계산값 보호", () => {
   it("AI 응답에 수치 필드가 섞여 와도 섹션 수치는 엔진 값을 유지한다", async () => {
     // Arrange: AI 가 환산점수·평균 백분위·행 데이터를 함께 돌려준 상황
@@ -1131,33 +1167,6 @@ describe("buildRecommendationNotices", () => {
 
     // Assert: 후보의 표준 카테고리로 대체되고 조사도 받침에 맞는다
     expect(notice.startsWith("희망하신 의학은 정시에서")).toBe(true);
-  });
-
-  it("후보를 계열그룹까지 넓히면 계열명과 예시 학과를 밝힌다", () => {
-    // Arrange: 철학 지망생의 목록에 사학과가 섞인 상황
-    const widened: JeongsiAnalysis = {
-      ...analysis,
-      input: {
-        ...analysis.input,
-        preference: { ...analysis.input.preference, target: "철학" },
-      },
-      selection: {
-        poolStage: 2,
-        moderateBandSubstituted: true,
-        blockedByRestrictions: false,
-      },
-    };
-
-    // Act
-    const notices = buildRecommendationNotices(widened);
-
-    // Assert: 내부 용어 없이 계열명과 예시로 설명한다
-    expect(notices).toEqual([
-      "희망하신 철학 외에 인문계열(국어국문, 영어영문, 사학 등)까지 함께 비교했습니다. 희망 지역(서울)의 철학만으로는 현재 성적에 맞는 지원처를 고루 찾기 어려워 비교 범위를 넓혔습니다.",
-      "현재 성적에 정확히 '적정'으로 분류되는 곳이 많지 않아, 기준컷과의 격차가 적정에 가장 가까운 곳을 함께 담았습니다. 함께 담은 대학의 실제 구분은 코멘트와 대학별 상세 분석에 적었습니다.",
-    ]);
-    expect(notices.join(" ")).not.toContain("계열그룹");
-    expect(notices.join(" ")).not.toContain("부족해");
   });
 
   it("추천 목록이 비면 확대·대체 안내 대신 비어 있는 이유를 밝힌다", () => {
@@ -1456,56 +1465,6 @@ describe("findWrongAverageScope", () => {
     expect(
       findWrongAverageScope("국어, 수학, 탐구 평균 대비 1.2점 높습니다.")
     ).toEqual([]);
-  });
-});
-
-describe("composeSnipingNotice", () => {
-  const snipingEvaluation = (
-    finalQuotaChange: PlanEvaluation["finalQuotaChange"]
-  ): PlanEvaluation => ({
-    ...createEvaluation(
-      createPlan("스나대학교", "컴퓨터공학과", "가"),
-      890,
-      900,
-      -1,
-      "스나이핑",
-      "매우낮음",
-      40
-    ),
-    finalQuotaChange,
-  });
-
-  it("최종 모집인원이 발표 전이면 그 사실과 발표 후 우선 기준을 밝힌다", () => {
-    // Arrange
-    const sniping = [snipingEvaluation(null)];
-
-    // Act
-    const notice = composeSnipingNotice(sniping);
-
-    // Assert
-    expect(notice).toContain("기준컷 대비 −2.0 ~ −0.4");
-    expect(notice).toContain("4~10%");
-    expect(notice).toContain("아직 발표되지 않아");
-    expect(notice).toContain("20% 이상");
-  });
-
-  it("최종 모집인원이 20% 이상 늘어난 곳은 이름과 실측 근거를 밝힌다", () => {
-    // Arrange
-    const sniping = [
-      snipingEvaluation({
-        previousYear: 2026,
-        previousQuota: 20,
-        finalQuota: 26,
-        ratio: 0.3,
-      }),
-    ];
-
-    // Act
-    const notice = composeSnipingNotice(sniping);
-
-    // Assert
-    expect(notice).toContain("스나대학교 컴퓨터공학과는");
-    expect(notice).toContain("23%");
   });
 });
 

@@ -25,7 +25,7 @@ export const formatCardAllocation = (risk: RiskAppetite): string =>
     .join(", ");
 
 const CARD_RUN =
-  /(?:상향|적정|안정|스나이핑)\s*\d장(?:\s*(?:,|·|과|와|및)?\s*(?:상향|적정|안정|스나이핑)\s*\d장)*/g;
+  /(?:상향|적정|안정|소신)\s*\d장(?:\s*(?:,|·|과|와|및)?\s*(?:상향|적정|안정|소신)\s*\d장)*/g;
 
 /** 합이 3장이 아닌 원서 배분 표현을 성향의 배분으로 바꾼다 */
 export const normalizeCardAllocation = (
@@ -41,7 +41,7 @@ export const normalizeCardAllocation = (
   });
 
 /** 목록 곳 수를 세는 구분. 스나이핑은 원서 배분에는 없지만 목록에는 있다 */
-const COUNT_TIER_ORDER = ["상향", "적정", "안정", "스나이핑"] as const;
+const COUNT_TIER_ORDER = ["상향", "적정", "안정", "소신"] as const;
 
 type DisplayTier = (typeof COUNT_TIER_ORDER)[number];
 
@@ -64,7 +64,7 @@ export const formatTierCounts = (counts: Map<DisplayTier, number>): string =>
     .join(", ");
 
 const LIST_RUN =
-  /(?:상향|적정|안정|스나이핑)\s*\d+곳(?:\s*(?:,|·|과|와|및)?\s*(?:상향|적정|안정|스나이핑)\s*\d+곳)*/g;
+  /(?:상향|적정|안정|소신)\s*\d+곳(?:\s*(?:,|·|과|와|및)?\s*(?:상향|적정|안정|소신)\s*\d+곳)*/g;
 
 /** 대학 수 표현 바로 뒤 이 글자 수 안에 "원서" 가 오면 원서 배분을 말한 것으로 본다 */
 const CARD_CONTEXT_WINDOW = 15;
@@ -87,7 +87,7 @@ export const normalizeTierCounts = (
     return following.includes("원서")
       ? formatCardAllocation(risk)
       : run.replace(
-          /(상향|적정|안정|스나이핑)(\s*)\d+곳/g,
+          /(상향|적정|안정|소신)(\s*)\d+곳/g,
           (_match, tier: DisplayTier, space: string) =>
             `${tier}${space}${counts.get(tier) ?? 0}곳`
         );
@@ -500,6 +500,9 @@ export const stripLeadingSubject = (
  * "합격 안정성 확보 중 무엇을 우선할지"처럼 선택 기준을 말하는 명사형은 잡지 않는다.
  */
 const OVERCLAIM_PATTERNS: RegExp[] = [
+  // "선택지를 먼저 확보합니다"처럼 결과를 손에 넣는다는 서술(2026-11-15 실측). "확보 중"처럼
+  // 선택 기준을 말하는 명사형은 잡지 않는다.
+  /확보(합니다|됩니다|할\s*수\s*있|된다|돼|되어|해\s*줍|해\s*둡)/,
   /(안정성|안정권|가능성|합격|결과|여유)\s*(은|는|이|가|을|를)?\s*(충분히\s*|모두\s*)?(확보|보장|담보|확정)(됩|합니|할\s*수\s*있|된다|돼|되어|해\s*줍)/,
   /보장(됩|합니|된다)/,
   /(확실히|무조건|반드시|틀림없이)\s*(합격|붙|결과를)/,
@@ -537,4 +540,15 @@ const YEAR_COUNT_PATTERN =
 export const findYearCountMentions = (text: string): string[] =>
   YEAR_COUNT_PATTERN.test(text)
     ? ['입결은 "기준컷"과 "기준컷 대비 격차"로 부릅니다']
+    : [];
+
+// ─── 내부 기법 이름 ───
+
+/**
+ * "스나이핑"은 소신 후보를 고르는 내부 기법 이름이라 리포트에 쓰지 않는다
+ * (사용자 결정 2026-11-15). 추천 범위 바로 아래 구분은 "소신"으로 부른다.
+ */
+export const findInternalTerms = (text: string): string[] =>
+  text.includes("스나이핑")
+    ? ['추천 범위 바로 아래 구분은 "소신"으로 부릅니다']
     : [];

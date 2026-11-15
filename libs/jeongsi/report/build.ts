@@ -16,15 +16,7 @@ import type {
   GeminiCallOptions,
   GeminiCallResult,
 } from "../../report/pipeline/gemini-client.ts";
-import { findFieldGroup, type FieldGroupName } from "../engine/field-groups.ts";
-import {
-  FINAL_QUOTA_SIGNAL_PASS_RATES,
-  FINAL_QUOTA_SIGNAL_RATIO,
-  GAP_BANDS,
-  GAP_BAND_PASS_RATES,
-  SNIPING_MIN_GAP,
-  SNIPING_PASS_RATE_MIN,
-} from "../engine/classify.ts";
+import { GAP_BANDS } from "../engine/classify.ts";
 import {
   calcEnglishLoss,
   convertScore,
@@ -66,7 +58,6 @@ import type {
   MetricByArea,
   PassChance,
   PlanEvaluation,
-  PreferredRegion,
   RiskAppetite,
   ScoreArea,
   ScoreMetric,
@@ -104,6 +95,7 @@ import {
 } from "./prompts.ts";
 import {
   countByTier,
+  findInternalTerms,
   findOverclaims,
   findYearCountMentions,
   formatCardAllocation,
@@ -170,6 +162,7 @@ import {
   JEONGSI_COMMON_SYSTEM_PROMPT,
   buildJeongsiSystemPrefix,
 } from "./system-prompt.ts";
+import { findFieldGroup, type FieldGroupName } from "../engine/field-groups.ts";
 import { findReportInconsistencies } from "./consistency.ts";
 import { removeInterpunctsFromContent } from "./interpunct.ts";
 import {
@@ -200,7 +193,7 @@ const RECOMMENDATION_TIER_ORDER: RecommendationTier[] = [
   "상향",
   "적정",
   "안정",
-  "스나이핑",
+  "소신",
 ];
 
 /** 표 표시용 영역 순서 */
@@ -483,7 +476,7 @@ export const flattenRecommendations = (
   analysis: JeongsiAnalysis
 ): { tier: RecommendationTier; evaluation: PlanEvaluation }[] =>
   RECOMMENDATION_TIER_ORDER.flatMap((tier) =>
-    (tier === "스나이핑"
+    (tier === "소신"
       ? (analysis.sniping ?? [])
       : (analysis.recommendations[tier] ?? [])
     ).map((evaluation) => ({
@@ -969,7 +962,7 @@ const FIELD_GROUP_DISPLAY: Partial<
     label: "수리와 자연 계열",
     examples: ["수학", "물리학", "통계학"],
   },
-  의약: { label: "의약계열", examples: ["치의학", "한의학", "약학"] },
+  // 의약은 학과마다 따로 봐 넓히지 않으므로 계열 안내가 없다(사용자 결정 2026-11-15)
   보건: { label: "보건계열", examples: ["간호학", "재활학", "보건학"] },
   "예체능·디자인": {
     label: "예체능과 디자인 계열",
@@ -991,10 +984,10 @@ const EXAMPLE_COUNT = 3;
  */
 const buildPoolStageNotice = (
   targetLabel: string,
-  targetCategory: string,
-  region: PreferredRegion
+  targetCategory: string
 ): string => {
-  const reason = `희망 지역(${region})의 ${targetLabel}만으로는 현재 성적에 맞는 지원처를 고루 찾기 어려워 비교 범위를 넓혔습니다.`;
+  const reason =
+    "희망 학과와 같은 분류만으로는 현재 성적에 맞는 지원처를 고루 찾기 어려워 비교 범위를 넓혔습니다.";
 
   const group = findFieldGroup(targetCategory);
   const display = group === null ? undefined : FIELD_GROUP_DISPLAY[group];
@@ -1028,41 +1021,8 @@ const COMPOSITION_TIERS: RecommendationTier[] = [
   "상향",
   "적정",
   "안정",
-  "스나이핑",
+  "소신",
 ];
-
-/**
- * 스나이핑 안내. 구간·실측 통과율·고른 순서를 엔진 상수 그대로 쓴다.
- * 최종 모집인원 신호는 원문에 2027 최종 인원이 있을 때만 쓰였다고 밝힌다.
- */
-export const composeSnipingNotice = (sniping: PlanEvaluation[]): string => {
-  const band = `기준컷 대비 ${formatBand(SNIPING_MIN_GAP)} ~ ${formatBand(GAP_BANDS.상향하한)}`;
-  const rate = `${Math.round(SNIPING_PASS_RATE_MIN * 100)}~${Math.round(GAP_BAND_PASS_RATES.상향하한 * 100)}%`;
-  const signaled = sniping.filter(
-    (evaluation) =>
-      evaluation.finalQuotaChange !== null &&
-      evaluation.finalQuotaChange.ratio >= FINAL_QUOTA_SIGNAL_RATIO
-  );
-  const signalGap = Math.abs(FINAL_QUOTA_SIGNAL_PASS_RATES.gap).toFixed(1);
-  const signalRate = `${Math.round(FINAL_QUOTA_SIGNAL_PASS_RATES.withSignal * 100)}%`;
-  const otherRate = `${Math.round(FINAL_QUOTA_SIGNAL_PASS_RATES.withoutSignal * 100)}%`;
-  const announced = sniping.some(
-    (evaluation) => evaluation.finalQuotaChange !== null
-  );
-  const signalSentence = signaled.length
-    ? `${withTopicParticle(
-        signaled
-          .map(
-            (evaluation) =>
-              `${evaluation.plan.university} ${evaluation.plan.department}`
-          )
-          .join(", ")
-      )} 2027 최종 모집인원이 직전 입결 학년도보다 ${Math.round(FINAL_QUOTA_SIGNAL_RATIO * 100)}% 이상 늘어 먼저 골랐습니다(2025→2026 실측에서 최종 모집인원이 그만큼 는 곳은 기준컷보다 ${signalGap} 낮은 학생도 ${signalRate}가 다음 해 컷을 넘었습니다).`
-    : announced
-      ? `최종 모집인원이 ${Math.round(FINAL_QUOTA_SIGNAL_RATIO * 100)}% 이상 늘어난 곳은 없어, 희망 학과에 가깝고 기준컷에 가까운 곳부터 골랐습니다.`
-      : `2027 최종 모집인원(수시 이월 반영)이 아직 발표되지 않아, 희망 학과에 가깝고 기준컷에 가까운 곳부터 골랐습니다. 최종 모집인원이 발표되면 인원이 ${Math.round(FINAL_QUOTA_SIGNAL_RATIO * 100)}% 이상 늘어난 곳을 우선합니다(2025→2026 실측에서 그런 곳은 기준컷보다 ${signalGap} 낮은 학생도 ${signalRate}가 다음 해 컷을 넘었고, 나머지는 ${otherRate}였습니다).`;
-  return `스나이핑은 추천 범위 바로 아래(${band})라 합격 가능성은 매우 낮지만(같은 여유였던 곳이 다음 해 컷을 넘은 비율 ${rate}), 원서 한 장을 걸고 예상외 합격을 노려 볼 수 있는 곳입니다. ${signalSentence}`;
-};
 
 /**
  * "다군 안정 원서에 세종대학교"처럼 군과 구분을 함께 말한 표현이 그 조합의 실제
@@ -1073,7 +1033,7 @@ export const findWrongSlotTier = (
   text: string
 ): string[] => {
   const wrong = [
-    ...text.matchAll(/([가나다])군\s*(상향|적정|안정|스나이핑)\s*원서/g),
+    ...text.matchAll(/([가나다])군\s*(상향|적정|안정|소신)\s*원서/g),
   ].flatMap(([, group, tier]) => {
     const slot = item.slots.find((candidate) => candidate.group === group);
     return slot && slot.tier !== tier ? [`${group}군 ${slot.tier}`] : [];
@@ -1149,11 +1109,11 @@ export const buildRecommendationNotices = (
       tooLow > 0 ? `합격선이 성적보다 크게 낮은 곳 ${tooLow}곳` : null,
     ].filter((part): part is string => part !== null);
     return [
-      `희망 조건(${targetLabel}, ${analysis.input.preference.region})에서 기준컷 대비 추천 범위(기준컷 대비 ${formatBand(GAP_BANDS.상향하한)} ~ ${formatBand(GAP_BANDS.안정상한)}) 안에 드는 모집단위가 없습니다.${
+      `희망 조건(${targetLabel})에서 기준컷 대비 추천 범위(기준컷 대비 ${formatBand(GAP_BANDS.상향하한)} ~ ${formatBand(GAP_BANDS.안정상한)}) 안에 드는 모집단위가 없습니다.${
         parts.length > 0
           ? ` 같은 조건에서 ${parts.join(", ")}은 추천 범위를 벗어나 넣지 않았습니다.`
           : ""
-      } 희망 지역이나 계열을 넓혀 다시 분석해 보세요.`,
+      } 희망 학과를 바꾸거나 계열 단위로 넓혀 다시 분석해 보세요.`,
     ];
   }
 
@@ -1174,11 +1134,6 @@ export const buildRecommendationNotices = (
     );
   }
 
-  // 스나이핑 칸이 무엇이고 어떤 근거로 골랐는지 밝힌다(specs/014 마지막 피드백)
-  if ((analysis.sniping ?? []).length > 0) {
-    notices.push(composeSnipingNotice(analysis.sniping));
-  }
-
   // 모집군이 바뀐 곳은 구분과 관계없이 원문 군을 밝힌다(specs/014 A3)
   const regrouped = flattened.filter(
     ({ evaluation }) =>
@@ -1196,14 +1151,9 @@ export const buildRecommendationNotices = (
     );
   }
 
+  // 같은 분류만으로 밴드가 안 차 같은 계열로 넓혔으면 그 사실과 계열명을 밝힌다
   if (selection.poolStage !== 1) {
-    notices.push(
-      buildPoolStageNotice(
-        targetLabel,
-        targetCategory,
-        analysis.input.preference.region
-      )
-    );
+    notices.push(buildPoolStageNotice(targetLabel, targetCategory));
   }
 
   // 문구를 고르는 1차 기준은 플래그가 아니라 **적정 버킷의 항목 수**다.
@@ -1413,6 +1363,7 @@ const createSlot = ({
       ...checkNumbers(text),
       ...findOverclaims(text),
       ...findYearCountMentions(text),
+      ...findInternalTerms(text),
       ...(extraCheck?.(text) ?? []),
     ],
   };
@@ -1460,6 +1411,7 @@ const createFieldSlot = (
         ...checkNumbers(kept),
         ...findOverclaims(kept),
         ...findYearCountMentions(kept),
+        ...findInternalTerms(kept),
         ...(extraCheck?.(kept) ?? []),
       ];
       return problems.length === 0 ? kept : fallback;
@@ -1825,7 +1777,7 @@ export const buildJeongsiReport = async (
    */
   const ALL_COMBINATIONS =
     /모든\s*조합|조합\s*모두|조합은\s*모두|(?:두|세|네|다섯)\s*조합\s*모두/;
-  const TIER_CARD = /(상향|적정|안정|스나이핑)\s*(\d)\s*장/g;
+  const TIER_CARD = /(상향|적정|안정|소신)\s*(\d)\s*장/g;
   const tierCountsOf = (tiers: RecommendationTier[]) =>
     COMPOSITION_TIERS.map(
       (tier) => tiers.filter((item) => item === tier).length
@@ -1894,17 +1846,14 @@ export const buildJeongsiReport = async (
   // 목록이 빈 파트의 총평은 코드가 쓴다. 비어 있는 목록을 모델에 맡기자
   // "목록 대학들은 모두 영어 반영 비율이 높아", "모든 대학이 기준컷 이상"처럼
   // 없는 대학을 설명했다(실측). 호출도 하지 않는다.
-  const widenAdvice =
-    preference.region === "전국"
-      ? "희망 계열을 넓혀"
-      : "희망 지역이나 계열을 넓혀";
+  const widenAdvice = "희망 계열을 넓혀";
   const strengthLabel =
     JEONGSI_AREA_LABEL[analysis.diagnosis.strengths[0]] ?? null;
   // 응시 과목 제한으로 비었으면 안내 문구와 같은 이유로 말한다
   const blocked = analysis.selection.blockedByRestrictions;
   const reasonLabel = blocked
     ? "현재 응시 과목 조건"
-    : `현재 조건(희망 지역 ${preference.region}, 희망 학과 ${preference.target})`;
+    : `현재 조건(희망 학과 ${preference.target})`;
   const retryAdvice = blocked ? "응시 과목 조건이 맞는 대학으로" : widenAdvice;
   // PART 2 총평은 대학별 실제 점수로 코드가 쓴다(모델 호출 없음, specs/014 D1)
   const scoreReasonInputsForOverall = advantageItems.map((item) =>
@@ -2515,7 +2464,7 @@ export const buildJeongsiReport = async (
       items: recommendationItems.filter(
         (_item, index) => recommendationEntries[index].tier === tier
       ),
-    })).filter((group) => group.tier !== "스나이핑" || group.items.length > 0),
+    })).filter((group) => group.tier !== "소신" || group.items.length > 0),
     overallComment: uniqueRecommendationOverall,
     notices,
   };

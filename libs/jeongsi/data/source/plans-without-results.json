@@ -494,6 +494,12 @@
     "region": "서울",
     "group": "다",
     "quota": 68,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 11.67
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -1043,6 +1049,18 @@
     "region": "서울",
     "group": "다",
     "quota": 11,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 11.81,
+        "additionalPassRate": 145.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 9.18,
+        "additionalPassRate": 236.4
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -1103,6 +1121,18 @@
     "region": "서울",
     "group": "다",
     "quota": 24,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.16,
+        "additionalPassRate": 170.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.96,
+        "additionalPassRate": 104
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -1163,6 +1193,18 @@
     "region": "서울",
     "group": "다",
     "quota": 11,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9.16,
+        "additionalPassRate": 125
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.45,
+        "additionalPassRate": 118.2
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -1223,6 +1265,18 @@
     "region": "서울",
     "group": "다",
     "quota": 21,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.8,
+        "additionalPassRate": 109.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.24,
+        "additionalPassRate": 161.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -1282,6 +1336,18 @@
     "region": "서울",
     "group": "가",
     "quota": 16,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.1,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.81,
+        "additionalPassRate": 68.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 600,
@@ -1444,6 +1510,18 @@
     "region": "서울",
     "group": "가",
     "quota": 44,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.4,
+        "additionalPassRate": 46.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.66,
+        "additionalPassRate": 56.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 600,
@@ -1606,6 +1684,18 @@
     "region": "서울",
     "group": "가",
     "quota": 16,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 2.9,
+        "additionalPassRate": 0
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.5,
+        "additionalPassRate": 12.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 600,
@@ -1768,6 +1858,18 @@
     "region": "서울",
     "group": "가",
     "quota": 13,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.7,
+        "additionalPassRate": 41.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.77,
+        "additionalPassRate": 15.4
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 600,
@@ -1930,6 +2032,18 @@
     "region": "서울",
     "group": "나",
     "quota": 39,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.2,
+        "additionalPassRate": 40.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.3,
+        "additionalPassRate": 20.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 600,
@@ -2099,6 +2213,18 @@
     "region": "서울",
     "group": "나",
     "quota": 40,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.6,
+        "additionalPassRate": 63.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.35,
+        "additionalPassRate": 55
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 600,
@@ -2596,6 +2722,13 @@
     "region": "서울",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 6.56,
+        "additionalPassRate": 120
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -2775,6 +2908,13 @@
     "region": "서울",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 6.9,
+        "additionalPassRate": 70
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -2954,6 +3094,13 @@
     "region": "서울",
     "group": "가",
     "quota": 20,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 5.45,
+        "additionalPassRate": 113.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -3133,6 +3280,13 @@
     "region": "서울",
     "group": "가",
     "quota": 8,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 9.5,
+        "additionalPassRate": 91.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -3312,6 +3466,13 @@
     "region": "서울",
     "group": "가",
     "quota": 6,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 8.75,
+        "additionalPassRate": 87.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -3491,6 +3652,13 @@
     "region": "서울",
     "group": "가",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 6.18,
+        "additionalPassRate": 90.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -3670,6 +3838,13 @@
     "region": "서울",
     "group": "가",
     "quota": 6,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 9,
+        "additionalPassRate": 50
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -3849,6 +4024,13 @@
     "region": "서울",
     "group": "가",
     "quota": 8,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 7.25,
+        "additionalPassRate": 75
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -4028,6 +4210,13 @@
     "region": "서울",
     "group": "다",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.83,
+        "additionalPassRate": 66.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -4087,6 +4276,17 @@
     "region": "서울",
     "group": "다",
     "quota": 6,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 12,
+        "additionalPassRate": 0
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10.33
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -4146,6 +4346,18 @@
     "region": "서울",
     "group": "다",
     "quota": 10,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.12,
+        "additionalPassRate": 162.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 15.7,
+        "additionalPassRate": 140
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -4205,6 +4417,17 @@
     "region": "서울",
     "group": "다",
     "quota": 8,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 10.67,
+        "additionalPassRate": 200
+      },
+      {
+        "year": 2026,
+        "competitionRate": 16.33
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -4357,6 +4580,13 @@
     "region": "서울",
     "group": "다",
     "quota": 8,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.71,
+        "additionalPassRate": 85.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -4433,6 +4663,17 @@
     "region": "서울",
     "group": "다",
     "quota": 2,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 12.5,
+        "additionalPassRate": 150
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -4568,6 +4809,18 @@
     "region": "서울",
     "group": "다",
     "quota": 14,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.19,
+        "additionalPassRate": 137.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.4,
+        "additionalPassRate": 140
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -4644,6 +4897,18 @@
     "region": "서울",
     "group": "다",
     "quota": 11,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6,
+        "additionalPassRate": 169.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.54,
+        "additionalPassRate": 209.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -4721,6 +4986,18 @@
     "region": "수도권",
     "group": "가",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.75,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.5,
+        "additionalPassRate": 237.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -4891,6 +5168,18 @@
     "region": "수도권",
     "group": "나",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.78,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.44,
+        "additionalPassRate": 66.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -5071,6 +5360,18 @@
     "region": "수도권",
     "group": "나",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.5,
+        "additionalPassRate": 50
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.1,
+        "additionalPassRate": 40
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -5250,6 +5551,18 @@
     "region": "서울",
     "group": "가",
     "quota": 67,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.9,
+        "additionalPassRate": 68.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.3,
+        "additionalPassRate": 71.2
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -5429,6 +5742,18 @@
     "region": "서울",
     "group": "나",
     "quota": 31,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.34,
+        "additionalPassRate": 96.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.9,
+        "additionalPassRate": 81.2
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -5608,6 +5933,18 @@
     "region": "서울",
     "group": "가",
     "quota": 27,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.07,
+        "additionalPassRate": 77.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.41,
+        "additionalPassRate": 100
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -5782,6 +6119,18 @@
     "region": "서울",
     "group": "다",
     "quota": 11,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.31,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.82,
+        "additionalPassRate": 91.7
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 학생부평가(정성 종합평가: 학업역량·진로탐구역량) 10%(100점)",
     "formula": {
@@ -5946,6 +6295,18 @@
     "region": "서울",
     "group": "다",
     "quota": 11,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.08,
+        "additionalPassRate": 66.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.5,
+        "additionalPassRate": 40
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 학생부평가(정성 종합평가: 학업역량·진로탐구역량) 10%(100점)",
     "formula": {
@@ -6110,6 +6471,18 @@
     "region": "서울",
     "group": "다",
     "quota": 11,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.15,
+        "additionalPassRate": 15.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.8,
+        "additionalPassRate": 30
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 학생부평가(정성 종합평가: 학업역량·진로탐구역량) 10%(100점)",
     "formula": {
@@ -6274,6 +6647,18 @@
     "region": "서울",
     "group": "다",
     "quota": 11,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.67,
+        "additionalPassRate": 58.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.64,
+        "additionalPassRate": 66.7
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 학생부평가(정성 종합평가: 학업역량·진로탐구역량) 10%(100점)",
     "formula": {
@@ -6455,6 +6840,18 @@
     "region": "서울",
     "group": "다",
     "quota": 11,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.31,
+        "additionalPassRate": 46.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.45,
+        "additionalPassRate": 90.9
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 학생부평가(정성 종합평가: 학업역량·진로탐구역량) 10%(100점)",
     "formula": {
@@ -6626,6 +7023,18 @@
     "region": "서울",
     "group": "가",
     "quota": 150,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.72,
+        "additionalPassRate": 82.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.99,
+        "additionalPassRate": 55.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -6685,6 +7094,18 @@
     "region": "서울",
     "group": "나",
     "quota": 85,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.54,
+        "additionalPassRate": 81.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.06,
+        "additionalPassRate": 36.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -6744,6 +7165,18 @@
     "region": "서울",
     "group": "나",
     "quota": 88,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.01,
+        "additionalPassRate": 82.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.47,
+        "additionalPassRate": 47.2
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -6803,6 +7236,18 @@
     "region": "서울",
     "group": "나",
     "quota": 23,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.17,
+        "additionalPassRate": 78.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.74,
+        "additionalPassRate": 52.2
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -6862,6 +7307,18 @@
     "region": "서울",
     "group": "다",
     "quota": 57,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.72,
+        "additionalPassRate": 119
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.97,
+        "additionalPassRate": 106.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -6921,6 +7378,18 @@
     "region": "서울",
     "group": "다",
     "quota": 25,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9.64,
+        "additionalPassRate": 96
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.19,
+        "additionalPassRate": 134.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -6987,6 +7456,18 @@
     "region": "서울",
     "group": "나",
     "quota": 54,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.09,
+        "additionalPassRate": 117.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.98,
+        "additionalPassRate": 187.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -7063,6 +7544,18 @@
     "region": "서울",
     "group": "나",
     "quota": 15,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.6,
+        "additionalPassRate": 46.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 2.71,
+        "additionalPassRate": 158.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -7139,6 +7632,18 @@
     "region": "서울",
     "group": "나",
     "quota": 21,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.62,
+        "additionalPassRate": 66.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.64,
+        "additionalPassRate": 190.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -7215,6 +7720,18 @@
     "region": "서울",
     "group": "나",
     "quota": 30,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.16,
+        "additionalPassRate": 115.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.52,
+        "additionalPassRate": 171
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -7291,6 +7808,18 @@
     "region": "서울",
     "group": "나",
     "quota": 10,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.11,
+        "additionalPassRate": 88.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.44,
+        "additionalPassRate": 155.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -7367,6 +7896,18 @@
     "region": "서울",
     "group": "나",
     "quota": 8,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.13,
+        "additionalPassRate": 50
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3,
+        "additionalPassRate": 155.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -7443,6 +7984,18 @@
     "region": "서울",
     "group": "나",
     "quota": 11,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.82,
+        "additionalPassRate": 83.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.75,
+        "additionalPassRate": 200
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -7519,6 +8072,18 @@
     "region": "서울",
     "group": "나",
     "quota": 11,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.27,
+        "additionalPassRate": 90.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.55,
+        "additionalPassRate": 190.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -7595,6 +8160,18 @@
     "region": "서울",
     "group": "나",
     "quota": 10,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.9,
+        "additionalPassRate": 140
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.09,
+        "additionalPassRate": 127.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -7671,6 +8248,18 @@
     "region": "서울",
     "group": "나",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.29,
+        "additionalPassRate": 125
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.57,
+        "additionalPassRate": 142.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -7747,6 +8336,18 @@
     "region": "서울",
     "group": "나",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.71,
+        "additionalPassRate": 28.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.57,
+        "additionalPassRate": 128.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -7897,6 +8498,13 @@
     "region": "서울",
     "group": "나",
     "quota": 14,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 13.5,
+        "additionalPassRate": 300
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -8059,6 +8667,13 @@
     "region": "서울",
     "group": "가",
     "quota": 4,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 12,
+        "additionalPassRate": 150
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -8221,6 +8836,13 @@
     "region": "서울",
     "group": "가",
     "quota": 4,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 12,
+        "additionalPassRate": 150
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -8383,6 +9005,12 @@
     "region": "서울",
     "group": "가",
     "quota": 3,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 15
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -8545,6 +9173,13 @@
     "region": "서울",
     "group": "다",
     "quota": 20,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9,
+        "additionalPassRate": 233.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -8707,6 +9342,12 @@
     "region": "서울",
     "group": "나",
     "quota": 4,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 12.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -8869,6 +9510,13 @@
     "region": "서울",
     "group": "나",
     "quota": 21,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.67,
+        "additionalPassRate": 75
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -9031,6 +9679,13 @@
     "region": "서울",
     "group": "가",
     "quota": 4,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9,
+        "additionalPassRate": 100
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -9210,6 +9865,12 @@
     "region": "서울",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 19
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -9389,6 +10050,13 @@
     "region": "서울",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.5,
+        "additionalPassRate": 150
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -9568,6 +10236,12 @@
     "region": "서울",
     "group": "가",
     "quota": 18,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 11
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -9747,6 +10421,13 @@
     "region": "서울",
     "group": "나",
     "quota": 17,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 10.5,
+        "additionalPassRate": 125
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -9926,6 +10607,18 @@
     "region": "서울",
     "group": "나",
     "quota": 26,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.39,
+        "additionalPassRate": 62.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7,
+        "additionalPassRate": 83.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -10105,6 +10798,18 @@
     "region": "서울",
     "group": "가",
     "quota": 38,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.85,
+        "additionalPassRate": 54.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.91,
+        "additionalPassRate": 118.2
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -10284,6 +10989,12 @@
     "region": "서울",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 13
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -10463,6 +11174,12 @@
     "region": "서울",
     "group": "나",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 10.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -10642,6 +11359,13 @@
     "region": "서울",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 10.5,
+        "additionalPassRate": 200
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -10821,6 +11545,12 @@
     "region": "서울",
     "group": "가",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 14
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -11000,6 +11730,12 @@
     "region": "서울",
     "group": "나",
     "quota": 11,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 11.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -11179,6 +11915,18 @@
     "region": "서울",
     "group": "가",
     "quota": 70,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.83,
+        "additionalPassRate": 24.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.9,
+        "additionalPassRate": 22.9
+      }
+    ],
     "suneungWeight": 95,
     "selectionNote": "학생부 5% · 학교생활기록부 50점(교과 등급·성취도 점수, 출결 감점)",
     "statedRatios": "국100·수100·영100·탐50(탐구 과목별 합)",
@@ -11345,6 +12093,18 @@
     "region": "서울",
     "group": "가",
     "quota": 10,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.57,
+        "additionalPassRate": 57.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.77,
+        "additionalPassRate": 15.4
+      }
+    ],
     "suneungWeight": 95,
     "selectionNote": "학생부 5% · 학교생활기록부 50점(교과 등급·성취도 점수, 출결 감점)",
     "statedRatios": "국100·수150·영100·탐150(탐구 과목별 합)",
@@ -11518,6 +12278,18 @@
     "region": "서울",
     "group": "가",
     "quota": 36,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.42,
+        "additionalPassRate": 60.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 2.95,
+        "additionalPassRate": 50
+      }
+    ],
     "suneungWeight": 95,
     "selectionNote": "학생부 5% · 학교생활기록부 50점(교과 등급·성취도 점수, 출결 감점)",
     "statedRatios": "국100·수150·영100·탐150(탐구 과목별 합)",
@@ -12037,6 +12809,18 @@
     "region": "서울",
     "group": "가",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.09,
+        "additionalPassRate": 0
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3,
+        "additionalPassRate": 8.3
+      }
+    ],
     "suneungWeight": 95,
     "selectionNote": "학생부 5% · 학교생활기록부 50점(교과 등급·성취도 점수, 출결 감점)",
     "statedRatios": "국100·수100·영100·탐50(탐구 과목별 합)",
@@ -12203,6 +12987,18 @@
     "region": "서울",
     "group": "가",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.6,
+        "additionalPassRate": 50
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.36,
+        "additionalPassRate": 27.3
+      }
+    ],
     "suneungWeight": 95,
     "selectionNote": "학생부 5% · 학교생활기록부 50점(교과 등급·성취도 점수, 출결 감점)",
     "statedRatios": "국100·수100·영100·탐50(탐구 과목별 합)",
@@ -12369,6 +13165,18 @@
     "region": "서울",
     "group": "가",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.3,
+        "additionalPassRate": 10
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.11,
+        "additionalPassRate": 33.3
+      }
+    ],
     "suneungWeight": 95,
     "selectionNote": "학생부 5% · 학교생활기록부 50점(교과 등급·성취도 점수, 출결 감점)",
     "statedRatios": "국100·수100·영100·탐50(탐구 과목별 합)",
@@ -12535,6 +13343,18 @@
     "region": "서울",
     "group": "가",
     "quota": 27,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.04,
+        "additionalPassRate": 11.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.61,
+        "additionalPassRate": 14.3
+      }
+    ],
     "suneungWeight": 85,
     "selectionNote": "기타 15% · 실기(기본 운동능력) 100 + 면접 50",
     "statedRatios": "국100·수100·영100·탐50(탐구 과목별 합)",
@@ -12701,6 +13521,18 @@
     "region": "서울",
     "group": "가",
     "quota": 18,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 2.95,
+        "additionalPassRate": 10.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.31,
+        "additionalPassRate": 6.9
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 5% · 기타 5% · 1단계(수능900+학생부50, 3배수) → 2단계 면접 50 추가",
     "statedRatios": "국100·수100·영100·탐50(탐구 과목별 합)",
@@ -12867,6 +13699,18 @@
     "region": "서울",
     "group": "가",
     "quota": 19,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.5,
+        "additionalPassRate": 204.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.05,
+        "additionalPassRate": 147.6
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
@@ -13031,6 +13875,18 @@
     "region": "서울",
     "group": "나",
     "quota": 19,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.7,
+        "additionalPassRate": 170
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.52,
+        "additionalPassRate": 95.2
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
@@ -13195,6 +14051,18 @@
     "region": "서울",
     "group": "나",
     "quota": 54,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.7,
+        "additionalPassRate": 168
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.35,
+        "additionalPassRate": 109.6
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
@@ -13359,6 +14227,18 @@
     "region": "서울",
     "group": "다",
     "quota": 211,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 14.6,
+        "additionalPassRate": 473.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 12.41,
+        "additionalPassRate": 438
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
@@ -13523,6 +14403,18 @@
     "region": "서울",
     "group": "나",
     "quota": 22,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.1,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.58,
+        "additionalPassRate": 121.1
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
@@ -13694,6 +14586,18 @@
     "region": "서울",
     "group": "가",
     "quota": 33,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.3,
+        "additionalPassRate": 131.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.91,
+        "additionalPassRate": 88.6
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
@@ -13865,6 +14769,18 @@
     "region": "서울",
     "group": "다",
     "quota": 86,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 15.1,
+        "additionalPassRate": 332.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 12.04,
+        "additionalPassRate": 356.1
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
@@ -14036,6 +14952,18 @@
     "region": "서울",
     "group": "다",
     "quota": 33,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.1,
+        "additionalPassRate": 57.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.1,
+        "additionalPassRate": 138.2
+      }
+    ],
     "selectionNote": "학교폭력 조치사항 감점(4~7호 100~400점, 8~9호 불합격)",
     "formula": {
       "formulaVersion": 1,
@@ -14108,6 +15036,13 @@
     "region": "서울",
     "group": "다",
     "quota": 45,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5,
+        "additionalPassRate": 54.3
+      }
+    ],
     "selectionNote": "학교폭력 조치사항 감점(4~7호 100~400점, 8~9호 불합격)",
     "formula": {
       "formulaVersion": 1,
@@ -14181,6 +15116,18 @@
     "region": "수도권",
     "group": "나",
     "quota": 120,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.73,
+        "additionalPassRate": 104.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.71,
+        "additionalPassRate": 53
+      }
+    ],
     "selectionNote": "학교폭력 8·9호 10% 감점",
     "formula": {
       "formulaVersion": 1,
@@ -14253,6 +15200,18 @@
     "region": "수도권",
     "group": "나",
     "quota": 46,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.3,
+        "additionalPassRate": 45.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.63,
+        "additionalPassRate": 36.84
+      }
+    ],
     "selectionNote": "학교폭력 8·9호 10% 감점",
     "formula": {
       "formulaVersion": 1,
@@ -14323,6 +15282,18 @@
     "region": "수도권",
     "group": "가",
     "quota": 47,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.5,
+        "additionalPassRate": 121.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.3,
+        "additionalPassRate": 138.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -14394,6 +15365,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 42,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.38,
+        "additionalPassRate": 164.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.7,
+        "additionalPassRate": 111.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -14465,6 +15448,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 40,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.43,
+        "additionalPassRate": 94.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.8,
+        "additionalPassRate": 104.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -14536,6 +15531,18 @@
     "region": "수도권",
     "group": "나",
     "quota": 48,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.4,
+        "additionalPassRate": 61.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5,
+        "additionalPassRate": 52.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -14668,6 +15675,18 @@
     "region": "수도권",
     "group": "나",
     "quota": 36,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.64,
+        "additionalPassRate": 145.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.89,
+        "additionalPassRate": 111.4
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -14727,6 +15746,17 @@
     "region": "수도권",
     "group": "다",
     "quota": 16,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.93
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.06,
+        "additionalPassRate": 68.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -14786,6 +15816,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 21,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.66,
+        "additionalPassRate": 142.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.81,
+        "additionalPassRate": 109.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -14845,6 +15887,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 10,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9.2,
+        "additionalPassRate": 230
+      },
+      {
+        "year": 2026,
+        "competitionRate": 13.3,
+        "additionalPassRate": 90
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -14904,6 +15958,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 11.8,
+        "additionalPassRate": 140
+      },
+      {
+        "year": 2026,
+        "competitionRate": 14.6,
+        "additionalPassRate": 80
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -14963,6 +16029,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 17,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 11.42,
+        "additionalPassRate": 61.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 9.65,
+        "additionalPassRate": 130
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15022,6 +16100,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.9,
+        "additionalPassRate": 80
+      },
+      {
+        "year": 2026,
+        "competitionRate": 11,
+        "additionalPassRate": 170
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15081,6 +16171,18 @@
     "region": "수도권",
     "group": "가",
     "quota": 52,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 10.16,
+        "additionalPassRate": 120.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.92,
+        "additionalPassRate": 86.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15140,6 +16242,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 14,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.53,
+        "additionalPassRate": 60
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.5,
+        "additionalPassRate": 42.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15199,6 +16313,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 27,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9.25,
+        "additionalPassRate": 51.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.5,
+        "additionalPassRate": 73.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15258,6 +16384,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 15,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.85,
+        "additionalPassRate": 114.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.8,
+        "additionalPassRate": 60
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15317,6 +16455,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 28,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.82,
+        "additionalPassRate": 106.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.29,
+        "additionalPassRate": 103.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15376,6 +16526,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 32,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.52,
+        "additionalPassRate": 111.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.65,
+        "additionalPassRate": 70.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15435,6 +16597,17 @@
     "region": "수도권",
     "group": "다",
     "quota": 82,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.65
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.68,
+        "additionalPassRate": 98.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15494,6 +16667,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 20,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.14,
+        "additionalPassRate": 90.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.64,
+        "additionalPassRate": 81.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15553,6 +16738,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 76,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.28,
+        "additionalPassRate": 131.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.28,
+        "additionalPassRate": 77.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15612,6 +16809,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 10,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.8,
+        "additionalPassRate": 60
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.6,
+        "additionalPassRate": 140
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15671,6 +16880,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 20,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9.8,
+        "additionalPassRate": 55
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.7,
+        "additionalPassRate": 85
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15730,6 +16951,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 4,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.4,
+        "additionalPassRate": 80
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.5,
+        "additionalPassRate": 125
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15789,6 +17022,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 8,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.33,
+        "additionalPassRate": 55.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.63,
+        "additionalPassRate": 125
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15848,6 +17093,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 17,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.53,
+        "additionalPassRate": 166.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.11,
+        "additionalPassRate": 88.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15907,6 +17164,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9.14,
+        "additionalPassRate": 71.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 9.63,
+        "additionalPassRate": 87.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -15966,6 +17235,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 28,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.03,
+        "additionalPassRate": 120
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.79,
+        "additionalPassRate": 51.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -16025,6 +17306,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 11,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.72,
+        "additionalPassRate": 118.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.73,
+        "additionalPassRate": 136.4
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -16084,6 +17377,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 31,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.75,
+        "additionalPassRate": 168.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.44,
+        "additionalPassRate": 137.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -16143,6 +17448,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 28,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.22,
+        "additionalPassRate": 137
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.64,
+        "additionalPassRate": 64.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -16202,6 +17519,17 @@
     "region": "수도권",
     "group": "다",
     "quota": 12,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.57
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7,
+        "additionalPassRate": 92.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -16261,6 +17589,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 18,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.61,
+        "additionalPassRate": 88.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.12,
+        "additionalPassRate": 135.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -16337,6 +17677,18 @@
     "region": "수도권",
     "group": "가",
     "quota": 21,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.71,
+        "additionalPassRate": 111.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.88,
+        "additionalPassRate": 123.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -16413,6 +17765,18 @@
     "region": "수도권",
     "group": "가",
     "quota": 18,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6,
+        "additionalPassRate": 83.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.54,
+        "additionalPassRate": 161.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -16489,6 +17853,18 @@
     "region": "수도권",
     "group": "가",
     "quota": 14,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.08,
+        "additionalPassRate": 176.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.83,
+        "additionalPassRate": 83.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -16565,6 +17941,18 @@
     "region": "수도권",
     "group": "가",
     "quota": 27,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.71,
+        "additionalPassRate": 117.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.41,
+        "additionalPassRate": 109.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -16641,6 +18029,18 @@
     "region": "수도권",
     "group": "나",
     "quota": 13,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.18,
+        "additionalPassRate": 176.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.9,
+        "additionalPassRate": 70
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -16717,6 +18117,18 @@
     "region": "수도권",
     "group": "나",
     "quota": 16,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.58,
+        "additionalPassRate": 66.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.6,
+        "additionalPassRate": 60
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -16793,6 +18205,13 @@
     "region": "수도권",
     "group": "나",
     "quota": 19,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 5.79,
+        "additionalPassRate": 94.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -16869,6 +18288,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 10,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.63,
+        "additionalPassRate": 162.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.44,
+        "additionalPassRate": 122.2
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -16945,6 +18376,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 14,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.5,
+        "additionalPassRate": 150
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.5,
+        "additionalPassRate": 208.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -17022,6 +18465,18 @@
     "region": "수도권",
     "group": "다",
     "quota": 74,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.01,
+        "additionalPassRate": 124.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.95,
+        "additionalPassRate": 106.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -17089,6 +18544,18 @@
     "region": "수도권",
     "group": "가",
     "quota": 22,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.8,
+        "additionalPassRate": 109.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.61,
+        "additionalPassRate": 100
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
@@ -17261,6 +18728,13 @@
     "region": "수도권",
     "group": "가",
     "quota": 20,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 4.33,
+        "additionalPassRate": 85.7
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
@@ -17433,6 +18907,18 @@
     "region": "수도권",
     "group": "나",
     "quota": 55,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.1,
+        "additionalPassRate": 76.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 2.84,
+        "additionalPassRate": 76.4
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 비교과(출결) 10%(미인정 결석 일수 환산)",
     "formula": {
@@ -17748,6 +19234,17 @@
     "region": "수도권",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 12.38,
+        "additionalPassRate": 137.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -17819,6 +19316,17 @@
     "region": "수도권",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.67,
+        "additionalPassRate": 55.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -17890,6 +19398,17 @@
     "region": "수도권",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.91,
+        "additionalPassRate": 172.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 14.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -17961,6 +19480,17 @@
     "region": "수도권",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.75,
+        "additionalPassRate": 25
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -18032,6 +19562,17 @@
     "region": "수도권",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.89,
+        "additionalPassRate": 200
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.2
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -18103,6 +19644,17 @@
     "region": "수도권",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.3,
+        "additionalPassRate": 20
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -18174,6 +19726,17 @@
     "region": "수도권",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.14,
+        "additionalPassRate": 114.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -18245,6 +19808,17 @@
     "region": "수도권",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 12,
+        "additionalPassRate": 28.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -18316,6 +19890,12 @@
     "region": "수도권",
     "group": "가",
     "quota": 10,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 10.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -18387,6 +19967,18 @@
     "region": "수도권",
     "group": "나",
     "quota": 19,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.15,
+        "additionalPassRate": 50
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.75,
+        "additionalPassRate": 50
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -18555,6 +20147,13 @@
     "region": "수도권",
     "group": "나",
     "quota": 14,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 6,
+        "additionalPassRate": 60
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -18639,6 +20238,18 @@
     "region": "수도권",
     "group": "나",
     "quota": 37,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.61,
+        "additionalPassRate": 117.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.08,
+        "additionalPassRate": 58.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -18723,6 +20334,18 @@
     "region": "수도권",
     "group": "나",
     "quota": 35,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.79,
+        "additionalPassRate": 94.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.34,
+        "additionalPassRate": 43.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -18807,6 +20430,18 @@
     "region": "수도권",
     "group": "나",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.4,
+        "additionalPassRate": 0
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.2,
+        "additionalPassRate": 40
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -18972,6 +20607,13 @@
     "region": "수도권",
     "group": "가",
     "quota": 10,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 5.58,
+        "additionalPassRate": 91.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -19043,6 +20685,18 @@
     "region": "수도권",
     "group": "나",
     "quota": 17,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.1,
+        "additionalPassRate": 177.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.63,
+        "additionalPassRate": 93.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -19114,6 +20768,13 @@
     "region": "수도권",
     "group": "다",
     "quota": 14,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 6.63,
+        "additionalPassRate": 100
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -19185,6 +20846,13 @@
     "region": "수도권",
     "group": "가",
     "quota": 20,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 6.81,
+        "additionalPassRate": 57.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -19551,6 +21219,13 @@
     "region": "지방",
     "group": "가",
     "quota": 16,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.07,
+        "additionalPassRate": 150.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -19622,6 +21297,12 @@
     "region": "지방",
     "group": "가",
     "quota": 3,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -19910,6 +21591,18 @@
     "region": "지방",
     "group": "가",
     "quota": 12,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7,
+        "additionalPassRate": 184.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.42,
+        "additionalPassRate": 58.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -19982,6 +21675,18 @@
     "region": "지방",
     "group": "나",
     "quota": 13,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.62,
+        "additionalPassRate": 76.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.92,
+        "additionalPassRate": 84.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -20054,6 +21759,18 @@
     "region": "지방",
     "group": "나",
     "quota": 13,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.07,
+        "additionalPassRate": 50
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.69,
+        "additionalPassRate": 53.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -20126,6 +21843,18 @@
     "region": "지방",
     "group": "가",
     "quota": 18,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.57,
+        "additionalPassRate": 171.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.26,
+        "additionalPassRate": 94.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -20198,6 +21927,18 @@
     "region": "지방",
     "group": "가",
     "quota": 14,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.69,
+        "additionalPassRate": 184.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.73,
+        "additionalPassRate": 40
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -20270,6 +22011,18 @@
     "region": "지방",
     "group": "가",
     "quota": 13,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.15,
+        "additionalPassRate": 138.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.14,
+        "additionalPassRate": 21.4
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -20342,6 +22095,18 @@
     "region": "지방",
     "group": "가",
     "quota": 17,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.94,
+        "additionalPassRate": 106.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.26,
+        "additionalPassRate": 15.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -20414,6 +22179,18 @@
     "region": "지방",
     "group": "나",
     "quota": 11,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.23,
+        "additionalPassRate": 115.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.62,
+        "additionalPassRate": 38.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -20486,6 +22263,18 @@
     "region": "지방",
     "group": "가",
     "quota": 8,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9.25,
+        "additionalPassRate": 150
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.5,
+        "additionalPassRate": 25
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -20558,6 +22347,18 @@
     "region": "지방",
     "group": "가",
     "quota": 19,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.79,
+        "additionalPassRate": 78.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.25,
+        "additionalPassRate": 50
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -20630,6 +22431,18 @@
     "region": "지방",
     "group": "나",
     "quota": 19,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.12,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.37,
+        "additionalPassRate": 63.2
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -20701,6 +22514,18 @@
     "region": "지방",
     "group": "가",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 11.4,
+        "additionalPassRate": 211.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 12.43,
+        "additionalPassRate": 137.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -20920,6 +22745,18 @@
     "region": "지방",
     "group": "나",
     "quota": 23,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.87,
+        "additionalPassRate": 56.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3,
+        "additionalPassRate": 30.4
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -20997,6 +22834,18 @@
     "region": "지방",
     "group": "나",
     "quota": 14,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.73,
+        "additionalPassRate": 46.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.93,
+        "additionalPassRate": 57.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -21074,6 +22923,18 @@
     "region": "지방",
     "group": "나",
     "quota": 16,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.19,
+        "additionalPassRate": 31.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.24,
+        "additionalPassRate": 88.2
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -21151,6 +23012,18 @@
     "region": "지방",
     "group": "나",
     "quota": 12,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3,
+        "additionalPassRate": 83.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.5,
+        "additionalPassRate": 58.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -21228,6 +23101,18 @@
     "region": "지방",
     "group": "나",
     "quota": 12,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.5,
+        "additionalPassRate": 41.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.08,
+        "additionalPassRate": 33.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -21305,6 +23190,18 @@
     "region": "지방",
     "group": "나",
     "quota": 19,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.11,
+        "additionalPassRate": 73.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.29,
+        "additionalPassRate": 42.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -21382,6 +23279,18 @@
     "region": "지방",
     "group": "나",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.22,
+        "additionalPassRate": 66.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.33,
+        "additionalPassRate": 33.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -21459,6 +23368,18 @@
     "region": "지방",
     "group": "나",
     "quota": 14,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.86,
+        "additionalPassRate": 92.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.36,
+        "additionalPassRate": 28.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -21536,6 +23457,18 @@
     "region": "지방",
     "group": "나",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.11,
+        "additionalPassRate": 44.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.22,
+        "additionalPassRate": 11.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -21613,6 +23546,18 @@
     "region": "지방",
     "group": "나",
     "quota": 12,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.75,
+        "additionalPassRate": 50
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.23,
+        "additionalPassRate": 30.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -21690,6 +23635,18 @@
     "region": "지방",
     "group": "나",
     "quota": 14,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.36,
+        "additionalPassRate": 50
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.86,
+        "additionalPassRate": 42.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -21767,6 +23724,18 @@
     "region": "지방",
     "group": "나",
     "quota": 12,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.83,
+        "additionalPassRate": 91.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.92,
+        "additionalPassRate": 41.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -21844,6 +23813,18 @@
     "region": "지방",
     "group": "나",
     "quota": 51,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.26,
+        "additionalPassRate": 108
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.65,
+        "additionalPassRate": 57.4
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -21920,6 +23901,18 @@
     "region": "지방",
     "group": "나",
     "quota": 6,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9.17,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 9.29,
+        "additionalPassRate": 142.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 400,
@@ -21991,6 +23984,17 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 14,
+        "additionalPassRate": 0
+      },
+      {
+        "year": 2026,
+        "competitionRate": 14
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 200,
@@ -22063,6 +24067,17 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.33,
+        "additionalPassRate": 0
+      },
+      {
+        "year": 2026,
+        "competitionRate": 19.67
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 200,
@@ -22135,6 +24150,17 @@
     "region": "지방",
     "group": "나",
     "quota": 3,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6,
+        "additionalPassRate": 183.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10.67
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 200,
@@ -22207,6 +24233,17 @@
     "region": "지방",
     "group": "나",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 10,
+        "additionalPassRate": 300
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 200,
@@ -22279,6 +24316,18 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.6,
+        "additionalPassRate": 61.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 1.44,
+        "additionalPassRate": 144.4
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -22351,6 +24400,18 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.1,
+        "additionalPassRate": 7.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 1.44,
+        "additionalPassRate": 143.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -22423,6 +24484,18 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.7,
+        "additionalPassRate": 71.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 1.89,
+        "additionalPassRate": 188.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -22495,6 +24568,18 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.4,
+        "additionalPassRate": 36.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 2.24,
+        "additionalPassRate": 223.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -22567,6 +24652,18 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.3,
+        "additionalPassRate": 33.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 2.83,
+        "additionalPassRate": 283.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -22639,6 +24736,18 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.5,
+        "additionalPassRate": 52.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.83,
+        "additionalPassRate": 433.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -22711,6 +24820,17 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 0.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 2.2,
+        "additionalPassRate": 220
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -22783,6 +24903,17 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 1.42,
+        "additionalPassRate": 141.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -22855,6 +24986,17 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 0.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 1.24,
+        "additionalPassRate": 123.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -22927,6 +25069,18 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.7,
+        "additionalPassRate": 69.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 1.36,
+        "additionalPassRate": 135.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -23000,6 +25154,18 @@
     "region": "지방",
     "group": "가",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.7,
+        "additionalPassRate": 63.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.47,
+        "additionalPassRate": 193.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -23073,6 +25239,18 @@
     "region": "지방",
     "group": "가",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.3,
+        "additionalPassRate": 37.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 2.17,
+        "additionalPassRate": 208.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -23146,6 +25324,18 @@
     "region": "지방",
     "group": "가",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.1,
+        "additionalPassRate": 17.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 1.17,
+        "additionalPassRate": 117.4
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -23219,6 +25409,18 @@
     "region": "지방",
     "group": "가",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.2,
+        "additionalPassRate": 16.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 1.26,
+        "additionalPassRate": 126.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -23292,6 +25494,18 @@
     "region": "지방",
     "group": "가",
     "quota": 15,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.3,
+        "additionalPassRate": 230.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.48,
+        "additionalPassRate": 258.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -23364,6 +25578,18 @@
     "region": "지방",
     "group": "가",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 2,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 1.88,
+        "additionalPassRate": 187.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -23437,6 +25663,18 @@
     "region": "지방",
     "group": "가",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5,
+        "additionalPassRate": 375
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6,
+        "additionalPassRate": 233.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -23509,6 +25747,18 @@
     "region": "지방",
     "group": "가",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.4,
+        "additionalPassRate": 25
+      },
+      {
+        "year": 2026,
+        "competitionRate": 1.64,
+        "additionalPassRate": 163.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -23582,6 +25832,18 @@
     "region": "지방",
     "group": "가",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.4,
+        "additionalPassRate": 38.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 1.27,
+        "additionalPassRate": 127.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -23655,6 +25917,18 @@
     "region": "지방",
     "group": "가",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.3,
+        "additionalPassRate": 25
+      },
+      {
+        "year": 2026,
+        "competitionRate": 1.53,
+        "additionalPassRate": 151.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -23727,6 +26001,18 @@
     "region": "지방",
     "group": "가",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.22,
+        "additionalPassRate": 66.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.8,
+        "additionalPassRate": 107.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 300,
@@ -23796,6 +26082,18 @@
     "region": "지방",
     "group": "가",
     "quota": 12,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.86,
+        "additionalPassRate": 135.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8,
+        "additionalPassRate": 93.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 300,
@@ -23865,6 +26163,18 @@
     "region": "지방",
     "group": "나",
     "quota": 10,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5,
+        "additionalPassRate": 114.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.1,
+        "additionalPassRate": 25
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 300,
@@ -23934,6 +26244,18 @@
     "region": "지방",
     "group": "나",
     "quota": 11,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4,
+        "additionalPassRate": 9.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.6,
+        "additionalPassRate": 58.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 300,
@@ -24003,6 +26325,18 @@
     "region": "지방",
     "group": "나",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.43,
+        "additionalPassRate": 57.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5,
+        "additionalPassRate": 112.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 300,
@@ -24072,6 +26406,18 @@
     "region": "지방",
     "group": "나",
     "quota": 11,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.75,
+        "additionalPassRate": 93.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.5,
+        "additionalPassRate": 71.4
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 300,
@@ -24141,6 +26487,18 @@
     "region": "지방",
     "group": "나",
     "quota": 14,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4,
+        "additionalPassRate": 28.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.6,
+        "additionalPassRate": 47.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 300,
@@ -24210,6 +26568,18 @@
     "region": "지방",
     "group": "나",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.14,
+        "additionalPassRate": 71.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.5,
+        "additionalPassRate": 50
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 300,
@@ -24683,6 +27053,18 @@
     "region": "지방",
     "group": "나",
     "quota": 12,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.08,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.6,
+        "additionalPassRate": 16.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 300,
@@ -24752,6 +27134,18 @@
     "region": "지방",
     "group": "나",
     "quota": 12,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.86,
+        "additionalPassRate": 21.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4,
+        "additionalPassRate": 21.4
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 300,
@@ -24821,6 +27215,18 @@
     "region": "지방",
     "group": "가",
     "quota": 17,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.56,
+        "additionalPassRate": 61.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.8,
+        "additionalPassRate": 57.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 300,
@@ -24890,6 +27296,18 @@
     "region": "지방",
     "group": "나",
     "quota": 6,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5,
+        "additionalPassRate": 150
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.7,
+        "additionalPassRate": 28.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 300,
@@ -25540,6 +27958,17 @@
     "region": "지방",
     "group": "가",
     "quota": 2,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10,
+        "additionalPassRate": 150
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 400,
@@ -25658,6 +28087,17 @@
     "region": "지방",
     "group": "가",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 14.5,
+        "additionalPassRate": 0
+      },
+      {
+        "year": 2026,
+        "competitionRate": 9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -25729,6 +28169,17 @@
     "region": "지방",
     "group": "나",
     "quota": 3,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9.67,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 17.67
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -25800,6 +28251,18 @@
     "region": "지방",
     "group": "나",
     "quota": 4,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.67,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 9.33,
+        "additionalPassRate": 33.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -25859,6 +28322,16 @@
     "region": "지방",
     "group": "나",
     "quota": 4,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 9.67
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -26088,6 +28561,13 @@
     "region": "지방",
     "group": "나",
     "quota": 102,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 4.07,
+        "additionalPassRate": 20.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 800,
@@ -26147,6 +28627,18 @@
     "region": "지방",
     "group": "가",
     "quota": 27,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3,
+        "additionalPassRate": 10.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 2.75,
+        "additionalPassRate": 28.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 800,
@@ -26273,6 +28765,18 @@
     "region": "지방",
     "group": "가",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.63,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.14,
+        "additionalPassRate": 71.4
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 800,
@@ -26346,6 +28850,18 @@
     "region": "지방",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9.29,
+        "additionalPassRate": 157.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.33,
+        "additionalPassRate": 83.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 800,
@@ -26419,6 +28935,18 @@
     "region": "지방",
     "group": "다",
     "quota": 8,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.09,
+        "additionalPassRate": 263.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10.78,
+        "additionalPassRate": 111.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 800,
@@ -26492,6 +29020,18 @@
     "region": "지방",
     "group": "다",
     "quota": 6,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.43,
+        "additionalPassRate": 385.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8,
+        "additionalPassRate": 150
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 800,
@@ -26565,6 +29105,18 @@
     "region": "지방",
     "group": "다",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.8,
+        "additionalPassRate": 180
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.4,
+        "additionalPassRate": 120
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 800,
@@ -26638,6 +29190,18 @@
     "region": "지방",
     "group": "다",
     "quota": 6,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.5,
+        "additionalPassRate": 133.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 14.14,
+        "additionalPassRate": 57.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 800,
@@ -26711,6 +29275,18 @@
     "region": "지방",
     "group": "가",
     "quota": 6,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.14,
+        "additionalPassRate": 200
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.83,
+        "additionalPassRate": 150
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 800,
@@ -26857,6 +29433,16 @@
     "region": "지방",
     "group": "나",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 2.44
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 600,
@@ -26930,6 +29516,17 @@
     "region": "지방",
     "group": "가",
     "quota": 15,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.1,
+        "additionalPassRate": 161.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.58
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10%",
     "formula": {
@@ -26998,6 +29595,17 @@
     "region": "지방",
     "group": "나",
     "quota": 2,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.25,
+        "additionalPassRate": 38.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 9
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10%",
     "formula": {
@@ -27080,6 +29688,17 @@
     "region": "지방",
     "group": "가",
     "quota": 2,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9.33,
+        "additionalPassRate": 400
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.67
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10%",
     "formula": {
@@ -27162,6 +29781,17 @@
     "region": "지방",
     "group": "다",
     "quota": 3,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.93,
+        "additionalPassRate": 93.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.75
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10%",
     "formula": {
@@ -27244,6 +29874,17 @@
     "region": "지방",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.03
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.8,
+        "additionalPassRate": 48.3
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10%",
     "formula": {
@@ -27315,6 +29956,17 @@
     "region": "지방",
     "group": "가",
     "quota": 10,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 1.21,
+        "additionalPassRate": 16.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 1.05
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10%",
     "formula": {
@@ -27386,6 +30038,18 @@
     "region": "지방",
     "group": "가",
     "quota": 21,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.93,
+        "additionalPassRate": 93.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.63,
+        "additionalPassRate": 96
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -27471,6 +30135,18 @@
     "region": "지방",
     "group": "나",
     "quota": 10,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.76,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.18,
+        "additionalPassRate": 45.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -27556,6 +30232,18 @@
     "region": "지방",
     "group": "나",
     "quota": 24,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.38,
+        "additionalPassRate": 78.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.52,
+        "additionalPassRate": 66.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -27641,6 +30329,18 @@
     "region": "지방",
     "group": "나",
     "quota": 15,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.19,
+        "additionalPassRate": 125
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.89,
+        "additionalPassRate": 50
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -27981,6 +30681,18 @@
     "region": "지방",
     "group": "가",
     "quota": 10,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.77,
+        "additionalPassRate": 95.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.21,
+        "additionalPassRate": 78.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -28066,6 +30778,18 @@
     "region": "지방",
     "group": "가",
     "quota": 20,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.45,
+        "additionalPassRate": 90.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.41,
+        "additionalPassRate": 72.2
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -28151,6 +30875,18 @@
     "region": "지방",
     "group": "가",
     "quota": 13,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.11,
+        "additionalPassRate": 72.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.5,
+        "additionalPassRate": 63.2
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -28236,6 +30972,18 @@
     "region": "지방",
     "group": "나",
     "quota": 4,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.59,
+        "additionalPassRate": 138.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 13.11,
+        "additionalPassRate": 66.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -28491,6 +31239,18 @@
     "region": "지방",
     "group": "다",
     "quota": 19,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.38,
+        "additionalPassRate": 91.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.65,
+        "additionalPassRate": 77.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 100,
@@ -28648,6 +31408,17 @@
     "region": "지방",
     "group": "가",
     "quota": 3,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6,
+        "additionalPassRate": 33.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 학생부 출결 10%",
     "formula": {
@@ -28716,6 +31487,13 @@
     "region": "지방",
     "group": "나",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 6,
+        "additionalPassRate": 300
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 학생부 출결 10%",
     "formula": {
@@ -28784,6 +31562,18 @@
     "region": "지방",
     "group": "나",
     "quota": 15,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.6,
+        "additionalPassRate": 86.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.71,
+        "additionalPassRate": 28.6
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "학생부 10% · 학생부 출결 10%",
     "formula": {
@@ -28911,6 +31701,18 @@
     "region": "지방",
     "group": "가",
     "quota": 4,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.8,
+        "additionalPassRate": 81.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10.8,
+        "additionalPassRate": 20
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 400,
@@ -28977,6 +31779,18 @@
     "region": "지방",
     "group": "가",
     "quota": 6,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.8,
+        "additionalPassRate": 81.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10.83,
+        "additionalPassRate": 33.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 400,
@@ -29043,6 +31857,18 @@
     "region": "지방",
     "group": "다",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.1,
+        "additionalPassRate": 128.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10.2,
+        "additionalPassRate": 60
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 400,
@@ -29109,6 +31935,18 @@
     "region": "지방",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.6,
+        "additionalPassRate": 320
+      },
+      {
+        "year": 2026,
+        "competitionRate": 9.4,
+        "additionalPassRate": 200
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 400,
@@ -29175,6 +32013,18 @@
     "region": "지방",
     "group": "다",
     "quota": 4,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4,
+        "additionalPassRate": 66.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 13.25,
+        "additionalPassRate": 50
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 400,
@@ -29241,6 +32091,18 @@
     "region": "지방",
     "group": "다",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.4,
+        "additionalPassRate": 127.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 11.25,
+        "additionalPassRate": 75
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 400,
@@ -29307,6 +32169,18 @@
     "region": "지방",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.6,
+        "additionalPassRate": 114.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 16.25,
+        "additionalPassRate": 180
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 400,
@@ -29373,6 +32247,18 @@
     "region": "지방",
     "group": "다",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.6,
+        "additionalPassRate": 222.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 12.25,
+        "additionalPassRate": 175
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 400,
@@ -29439,6 +32325,18 @@
     "region": "지방",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9,
+        "additionalPassRate": 175
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10.5,
+        "additionalPassRate": 75
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 400,
@@ -29505,6 +32403,18 @@
     "region": "지방",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.2,
+        "additionalPassRate": 133.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10.6,
+        "additionalPassRate": 85.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 400,
@@ -29571,6 +32481,18 @@
     "region": "지방",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9.3,
+        "additionalPassRate": 0
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10,
+        "additionalPassRate": 20
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 400,
@@ -29637,6 +32559,18 @@
     "region": "지방",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9.3,
+        "additionalPassRate": 242.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 15.5,
+        "additionalPassRate": 175
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 400,
@@ -29703,6 +32637,18 @@
     "region": "지방",
     "group": "가",
     "quota": 4,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5,
+        "additionalPassRate": 25
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.2,
+        "additionalPassRate": 100
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 400,
@@ -29769,6 +32715,12 @@
     "region": "지방",
     "group": "나",
     "quota": 3,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 8.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 800,
@@ -29905,6 +32857,17 @@
     "region": "지방",
     "group": "나",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5,
+        "additionalPassRate": 0
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 800,
@@ -29978,6 +32941,17 @@
     "region": "지방",
     "group": "가",
     "quota": 3,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 11.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 9.7,
+        "additionalPassRate": 100
+      }
+    ],
     "statedRatios": "국150·수100·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -30142,6 +33116,17 @@
     "region": "지방",
     "group": "가",
     "quota": 3,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.7,
+        "additionalPassRate": 66.7
+      }
+    ],
     "statedRatios": "국150·수100·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -30306,6 +33291,17 @@
     "region": "지방",
     "group": "가",
     "quota": 3,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10.7,
+        "additionalPassRate": 66.7
+      }
+    ],
     "statedRatios": "국150·수100·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -30470,6 +33466,17 @@
     "region": "지방",
     "group": "나",
     "quota": 12,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.5,
+        "additionalPassRate": 61.5
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -30641,6 +33648,17 @@
     "region": "지방",
     "group": "나",
     "quota": 8,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.9,
+        "additionalPassRate": 25
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -30812,6 +33830,17 @@
     "region": "지방",
     "group": "나",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 11.4,
+        "additionalPassRate": 37.5
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -30983,6 +34012,17 @@
     "region": "지방",
     "group": "가",
     "quota": 13,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.2,
+        "additionalPassRate": 150
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -31154,6 +34194,17 @@
     "region": "지방",
     "group": "나",
     "quota": 4,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 16.8,
+        "additionalPassRate": 50
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -31325,6 +34376,17 @@
     "region": "지방",
     "group": "가",
     "quota": 10,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8,
+        "additionalPassRate": 27.3
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -31496,6 +34558,17 @@
     "region": "지방",
     "group": "나",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.3,
+        "additionalPassRate": 14.3
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -31667,6 +34740,17 @@
     "region": "지방",
     "group": "나",
     "quota": 8,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.7,
+        "additionalPassRate": 50
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -31838,6 +34922,17 @@
     "region": "지방",
     "group": "나",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.5,
+        "additionalPassRate": 41.7
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -32009,6 +35104,17 @@
     "region": "지방",
     "group": "가",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.1,
+        "additionalPassRate": 25
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -32180,6 +35286,17 @@
     "region": "지방",
     "group": "나",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.3,
+        "additionalPassRate": 100
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -32351,6 +35468,17 @@
     "region": "지방",
     "group": "가",
     "quota": 12,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.8,
+        "additionalPassRate": 71.4
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -32522,6 +35650,13 @@
     "region": "지방",
     "group": "나",
     "quota": 14,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 5.9,
+        "additionalPassRate": 57.1
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -32693,6 +35828,17 @@
     "region": "지방",
     "group": "가",
     "quota": 6,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.9,
+        "additionalPassRate": 57.1
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -32864,6 +36010,17 @@
     "region": "지방",
     "group": "가",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8,
+        "additionalPassRate": 100
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -33035,6 +36192,17 @@
     "region": "지방",
     "group": "나",
     "quota": 8,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10.6,
+        "additionalPassRate": 75
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -33206,6 +36374,17 @@
     "region": "지방",
     "group": "가",
     "quota": 15,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.3,
+        "additionalPassRate": 66.7
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -33377,6 +36556,17 @@
     "region": "지방",
     "group": "나",
     "quota": 16,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8,
+        "additionalPassRate": 68.8
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -33548,6 +36738,17 @@
     "region": "지방",
     "group": "나",
     "quota": 13,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.3,
+        "additionalPassRate": 100
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -33890,6 +37091,17 @@
     "region": "지방",
     "group": "가",
     "quota": 21,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6,
+        "additionalPassRate": 81
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -34061,6 +37273,17 @@
     "region": "지방",
     "group": "가",
     "quota": 13,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.7,
+        "additionalPassRate": 42.9
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -34232,6 +37455,17 @@
     "region": "지방",
     "group": "나",
     "quota": 6,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10.7,
+        "additionalPassRate": 83.3
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -34403,6 +37637,17 @@
     "region": "지방",
     "group": "나",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7,
+        "additionalPassRate": 25
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -34574,6 +37819,17 @@
     "region": "지방",
     "group": "나",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.6,
+        "additionalPassRate": 55.6
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -34745,6 +38001,17 @@
     "region": "지방",
     "group": "나",
     "quota": 3,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8,
+        "additionalPassRate": 66.7
+      }
+    ],
     "statedRatios": "국150·수100·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -34909,6 +38176,16 @@
     "region": "지방",
     "group": "가",
     "quota": 2,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 11.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10.5
+      }
+    ],
     "statedRatios": "국150·수100·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -35073,6 +38350,17 @@
     "region": "지방",
     "group": "나",
     "quota": 6,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.1,
+        "additionalPassRate": 75
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -35244,6 +38532,16 @@
     "region": "지방",
     "group": "가",
     "quota": 3,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 12.3
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -35415,6 +38713,16 @@
     "region": "지방",
     "group": "가",
     "quota": 2,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 9
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -35586,6 +38894,17 @@
     "region": "지방",
     "group": "나",
     "quota": 23,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.1,
+        "additionalPassRate": 48.1
+      }
+    ],
     "statedRatios": "국100·수150·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -35758,6 +39077,17 @@
     "region": "지방",
     "group": "가",
     "quota": 4,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10.4,
+        "additionalPassRate": 160
+      }
+    ],
     "statedRatios": "국125·수125·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -35930,6 +39260,17 @@
     "region": "지방",
     "group": "나",
     "quota": 6,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 8.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.6,
+        "additionalPassRate": 118.2
+      }
+    ],
     "statedRatios": "국125·수125·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -36102,6 +39443,17 @@
     "region": "지방",
     "group": "가",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.1,
+        "additionalPassRate": 140
+      }
+    ],
     "statedRatios": "국125·수125·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -36274,6 +39626,17 @@
     "region": "지방",
     "group": "나",
     "quota": 4,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.5,
+        "additionalPassRate": 66.7
+      }
+    ],
     "statedRatios": "국125·수125·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -36446,6 +39809,17 @@
     "region": "지방",
     "group": "가",
     "quota": 4,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.5,
+        "additionalPassRate": 50
+      }
+    ],
     "statedRatios": "국125·수125·영100·탐100(탐구 과목별 합)",
     "areaSharesEstimated": true,
     "formula": {
@@ -36735,6 +40109,18 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4,
+        "additionalPassRate": 0
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6,
+        "additionalPassRate": 150
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -36804,6 +40190,18 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 2,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 10,
+        "additionalPassRate": 50
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -36873,6 +40271,18 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 7.5,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3,
+        "additionalPassRate": 200
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -36942,6 +40352,18 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 2,
+        "additionalPassRate": 50
+      },
+      {
+        "year": 2026,
+        "competitionRate": 13,
+        "additionalPassRate": 150
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -37011,6 +40433,18 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9,
+        "additionalPassRate": 300
+      },
+      {
+        "year": 2026,
+        "competitionRate": 13,
+        "additionalPassRate": 200
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -37080,6 +40514,18 @@
     "region": "지방",
     "group": "가",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4,
+        "additionalPassRate": 250
+      },
+      {
+        "year": 2026,
+        "competitionRate": 11,
+        "additionalPassRate": 100
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -37149,6 +40595,17 @@
     "region": "지방",
     "group": "가",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 11
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -37230,6 +40687,18 @@
     "region": "지방",
     "group": "다",
     "quota": 1,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.25,
+        "additionalPassRate": 125
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7,
+        "additionalPassRate": 66.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -37311,6 +40780,18 @@
     "region": "지방",
     "group": "가",
     "quota": 8,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 12.42,
+        "additionalPassRate": 75
+      },
+      {
+        "year": 2026,
+        "competitionRate": 14.75,
+        "additionalPassRate": 112.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -37485,6 +40966,18 @@
     "region": "지방",
     "group": "나",
     "quota": 29,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.3,
+        "additionalPassRate": 51.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.37,
+        "additionalPassRate": 68.4
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -37759,6 +41252,18 @@
     "region": "지방",
     "group": "나",
     "quota": 198,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.5,
+        "additionalPassRate": 59.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.86,
+        "additionalPassRate": 52.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -38033,6 +41538,18 @@
     "region": "지방",
     "group": "나",
     "quota": 111,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.7,
+        "additionalPassRate": 47.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.73,
+        "additionalPassRate": 50.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -38307,6 +41824,18 @@
     "region": "지방",
     "group": "가",
     "quota": 92,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.9,
+        "additionalPassRate": 74.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.54,
+        "additionalPassRate": 42.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -38581,6 +42110,18 @@
     "region": "지방",
     "group": "가",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5,
+        "additionalPassRate": 70
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.9,
+        "additionalPassRate": 55.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -38855,6 +42396,17 @@
     "region": "지방",
     "group": "가",
     "quota": 2,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 9,
+        "additionalPassRate": 33.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -39122,6 +42674,18 @@
     "region": "지방",
     "group": "가",
     "quota": 41,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.7,
+        "additionalPassRate": 118.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.02,
+        "additionalPassRate": 84.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -39396,6 +42960,18 @@
     "region": "지방",
     "group": "가",
     "quota": 37,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.9,
+        "additionalPassRate": 146.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.72,
+        "additionalPassRate": 95.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -39670,6 +43246,18 @@
     "region": "지방",
     "group": "나",
     "quota": 79,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 2.86,
+        "additionalPassRate": 12.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.74,
+        "additionalPassRate": 18.9
+      }
+    ],
     "suneungWeight": 90,
     "selectionNote": "기타 10% · 1단계 수능 100%(모집인원 200%) → 2단계 수능 900점 + 면접 100점",
     "formula": {
@@ -39731,6 +43319,12 @@
     "region": "지방",
     "group": "나",
     "quota": 3,
+    "recentCompetitions": [
+      {
+        "year": 2026,
+        "competitionRate": 7.67
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -39807,6 +43401,18 @@
     "region": "지방",
     "group": "나",
     "quota": 3,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6,
+        "additionalPassRate": 33.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4,
+        "additionalPassRate": 100
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -39881,6 +43487,17 @@
     "region": "지방",
     "group": "나",
     "quota": 3,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3,
+        "additionalPassRate": 20
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.33
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 500,
@@ -40018,6 +43635,18 @@
     "region": "지방",
     "group": "다",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.14,
+        "additionalPassRate": 142.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.29,
+        "additionalPassRate": 85.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -40091,6 +43720,18 @@
     "region": "지방",
     "group": "나",
     "quota": 6,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.33,
+        "additionalPassRate": 50
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.83,
+        "additionalPassRate": 183.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -40168,6 +43809,18 @@
     "region": "지방",
     "group": "다",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.14,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.25,
+        "additionalPassRate": 50
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -40245,6 +43898,18 @@
     "region": "지방",
     "group": "다",
     "quota": 17,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.86,
+        "additionalPassRate": 142.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.96,
+        "additionalPassRate": 128
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -40322,6 +43987,18 @@
     "region": "지방",
     "group": "나",
     "quota": 8,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.22,
+        "additionalPassRate": 111.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.13,
+        "additionalPassRate": 62.5
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -40399,6 +44076,18 @@
     "region": "지방",
     "group": "다",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.6,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 8.43,
+        "additionalPassRate": 42.9
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -40476,6 +44165,18 @@
     "region": "지방",
     "group": "다",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.33,
+        "additionalPassRate": 91.7
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.64,
+        "additionalPassRate": 63.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -40553,6 +44254,18 @@
     "region": "지방",
     "group": "나",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.44,
+        "additionalPassRate": 88.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.22,
+        "additionalPassRate": 77.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -40630,6 +44343,18 @@
     "region": "지방",
     "group": "나",
     "quota": 8,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.56,
+        "additionalPassRate": 177.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.31,
+        "additionalPassRate": 84.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -40707,6 +44432,18 @@
     "region": "지방",
     "group": "다",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.89,
+        "additionalPassRate": 44.4
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.56,
+        "additionalPassRate": 66.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -40784,6 +44521,18 @@
     "region": "지방",
     "group": "나",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.45,
+        "additionalPassRate": 27.3
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.45,
+        "additionalPassRate": 9.1
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -40861,6 +44610,18 @@
     "region": "지방",
     "group": "나",
     "quota": 12,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.92,
+        "additionalPassRate": 146.2
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5,
+        "additionalPassRate": 35.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -40938,6 +44699,18 @@
     "region": "지방",
     "group": "나",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.6,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.64,
+        "additionalPassRate": 27.3
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -41015,6 +44788,18 @@
     "region": "지방",
     "group": "다",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.5,
+        "additionalPassRate": 200
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.25,
+        "additionalPassRate": 100
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -41092,6 +44877,18 @@
     "region": "지방",
     "group": "나",
     "quota": 17,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.9,
+        "additionalPassRate": 75
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.28,
+        "additionalPassRate": 55.6
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -41169,6 +44966,18 @@
     "region": "지방",
     "group": "나",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 2.86,
+        "additionalPassRate": 42.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.17,
+        "additionalPassRate": 41.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -41246,6 +45055,18 @@
     "region": "지방",
     "group": "다",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.7,
+        "additionalPassRate": 130
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.4,
+        "additionalPassRate": 170
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -41323,6 +45144,18 @@
     "region": "지방",
     "group": "다",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.55,
+        "additionalPassRate": 154.5
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.08,
+        "additionalPassRate": 115.4
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -41400,6 +45233,18 @@
     "region": "지방",
     "group": "다",
     "quota": 10,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.5,
+        "additionalPassRate": 57.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.73,
+        "additionalPassRate": 81.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -41477,6 +45322,18 @@
     "region": "지방",
     "group": "나",
     "quota": 10,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.38,
+        "additionalPassRate": 125
+      },
+      {
+        "year": 2026,
+        "competitionRate": 3.83,
+        "additionalPassRate": 75
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -41554,6 +45411,18 @@
     "region": "지방",
     "group": "다",
     "quota": 5,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6,
+        "additionalPassRate": 200
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.5,
+        "additionalPassRate": 66.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -41631,6 +45500,18 @@
     "region": "지방",
     "group": "나",
     "quota": 6,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.71,
+        "additionalPassRate": 100
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.67,
+        "additionalPassRate": 16.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -41708,6 +45589,18 @@
     "region": "지방",
     "group": "다",
     "quota": 9,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.71,
+        "additionalPassRate": 50
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.58,
+        "additionalPassRate": 75
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -41785,6 +45678,18 @@
     "region": "지방",
     "group": "나",
     "quota": 30,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 3.54,
+        "additionalPassRate": 51.8
+      },
+      {
+        "year": 2026,
+        "competitionRate": 4.41,
+        "additionalPassRate": 31.8
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -41862,6 +45767,18 @@
     "region": "지방",
     "group": "다",
     "quota": 19,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.81,
+        "additionalPassRate": 134.6
+      },
+      {
+        "year": 2026,
+        "competitionRate": 5.92,
+        "additionalPassRate": 88
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -41939,6 +45856,18 @@
     "region": "지방",
     "group": "다",
     "quota": 20,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 4.9,
+        "additionalPassRate": 142.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 7.9,
+        "additionalPassRate": 155
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -42006,6 +45935,18 @@
     "region": "지방",
     "group": "다",
     "quota": 7,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 6.3,
+        "additionalPassRate": 57.1
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.1,
+        "additionalPassRate": 185.7
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,
@@ -42079,6 +46020,18 @@
     "region": "지방",
     "group": "다",
     "quota": 4,
+    "recentCompetitions": [
+      {
+        "year": 2025,
+        "competitionRate": 5.1,
+        "additionalPassRate": 242.9
+      },
+      {
+        "year": 2026,
+        "competitionRate": 6.5,
+        "additionalPassRate": 325
+      }
+    ],
     "formula": {
       "formulaVersion": 1,
       "totalScore": 1000,

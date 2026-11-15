@@ -12,7 +12,6 @@ export const JEONGSI_STATUSES: JeongsiReportStatus[] = [
 
 export interface InputSummary {
   target: string;
-  region: string;
   risk: string;
   averagePercentile: number | null;
 }
@@ -50,7 +49,6 @@ export const summarizeInput = (input: unknown): InputSummary => {
 
   return {
     target: text("target"),
-    region: text("region"),
     risk: text("risk"),
     averagePercentile,
   };

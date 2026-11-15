@@ -396,21 +396,21 @@ export const checkSniping = (analysis: JeongsiAnalysis): Violation[] => {
   );
   if (analysis.sniping.length > SNIPING_SIZE) {
     violations.push(
-      `[S] 스나이핑 ${analysis.sniping.length}곳 (최대 ${SNIPING_SIZE})`
+      `[S] 소신 ${analysis.sniping.length}곳 (최대 ${SNIPING_SIZE})`
     );
   }
   const universities = analysis.sniping.map((item) => item.plan.university);
   if (new Set(universities).size !== universities.length) {
-    violations.push("[S] 스나이핑에 같은 대학이 두 번");
+    violations.push("[S] 소신에 같은 대학이 두 번");
   }
   for (const evaluation of analysis.sniping) {
     const label = describe(evaluation);
     const gap = evaluation.gapRatio;
     if (gap === null || gap < SNIPING_MIN_GAP || gap >= GAP_BANDS.상향하한) {
-      violations.push(`[S] ${label}: 스나이핑 구간 밖 격차 ${gap}`);
+      violations.push(`[S] ${label}: 소신 구간 밖 격차 ${gap}`);
     }
-    if (evaluation.tier !== "스나이핑" || evaluation.chance !== "매우낮음") {
-      violations.push(`[S] ${label}: 구분·가능성이 스나이핑이 아님`);
+    if (evaluation.tier !== "소신" || evaluation.chance !== "매우낮음") {
+      violations.push(`[S] ${label}: 구분·가능성이 소신이 아님`);
     }
     if (evaluation.referenceCut?.metric !== "convertedScore") {
       violations.push(`[S] ${label}: 환산점수 입결이 아님`);
@@ -441,15 +441,15 @@ export const checkSniping = (analysis: JeongsiAnalysis): Violation[] => {
   }
   const snipingCombinations = analysis.combinations.filter((combination) =>
     (["가", "나", "다"] as const).some(
-      (group) => combination[group]?.tier === "스나이핑"
+      (group) => combination[group]?.tier === "소신"
     )
   );
   const { risk } = analysis.input.preference;
   if (risk !== "공격" && snipingCombinations.length > 0) {
-    violations.push(`[S] ${risk} 성향인데 스나이핑 조합이 있음`);
+    violations.push(`[S] ${risk} 성향인데 소신 조합이 있음`);
   }
   if (snipingCombinations.length > 1) {
-    violations.push("[S] 스나이핑 조합이 둘 이상");
+    violations.push("[S] 소신 조합이 둘 이상");
   }
   for (const combination of snipingCombinations) {
     if (
@@ -457,7 +457,7 @@ export const checkSniping = (analysis: JeongsiAnalysis): Violation[] => {
       combination.recommended
     ) {
       violations.push(
-        `[S] 「${combination.label}」: 스나이핑 칸이 있는 조합의 라벨·추천 표시`
+        `[S] 「${combination.label}」: 소신 칸이 있는 조합의 라벨·추천 표시`
       );
     }
   }
@@ -480,6 +480,10 @@ const checkAnalysis = (analysis: JeongsiAnalysis): Violation[] => {
     }
     if (!evaluation.withinRecommendRange) {
       violations.push(`[C1] ${label}: 추천 범위 밖 격차 ${gap}`);
+    }
+    // [B1] 모든 추천은 학생의 대학별 환산점수 vs 그 대학 환산점수 입결로 판정한다
+    if (evaluation.referenceCut?.metric !== "convertedScore") {
+      violations.push(`[B1] ${label}: 환산점수 입결이 아닌 기준으로 판정`);
     }
     const bandTier = tierForGap(gap);
     // 안정 제한 사유를 엔진 플래그가 아니라 입결 학년도·지표·원문 군에서 다시 구한다
@@ -594,6 +598,8 @@ const BANNED_ANYWHERE = [
   /\d\s*개년/,
   /[한두세]\s*해(뿐|만|치)/,
   /최근\s*\d\s*년/,
+  // 소신 후보를 고르는 내부 기법 이름은 리포트에 쓰지 않는다
+  /스나이핑/,
   /백분위점 (넘겨|모자라)/,
 ];
 const AREA_ROLE_OUTSIDE_PART1 = /(강점|약점)(인|이|은|영역|의)/;

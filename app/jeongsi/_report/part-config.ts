@@ -74,7 +74,7 @@ export const JEONGSI_PART_CONFIG: JeongsiPartConfig[] = [
       },
       {
         head: "합격 가능성",
-        body: "안정 높음, 적정 보통, 상향 낮음, 스나이핑 매우낮음",
+        body: "안정 높음, 적정 보통, 상향 낮음, 소신 매우낮음",
       },
     ],
   },

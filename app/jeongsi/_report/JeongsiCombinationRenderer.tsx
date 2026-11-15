@@ -18,7 +18,7 @@ interface JeongsiCombinationRendererProps {
 const GROUP_ORDER: AdmissionGroup[] = ["가", "나", "다"];
 
 const RISK_NOTE: Record<RiskAppetite, string> = {
-  안정: "합격 확보를 우선하는 성향으로, 안정과 적정 비중이 높은 조합을 위에 두었습니다.",
+  안정: "합격 여유를 우선하는 성향으로, 안정과 적정 비중이 높은 조합을 위에 두었습니다.",
   균형: "상향 한 장과 안전망 한 장을 함께 두는 성향으로, 세 군의 구분이 서로 다른 조합을 위에 두었습니다.",
   공격: "상단 대학 도전을 우선하는 성향으로, 상향 비중이 높은 조합을 위에 두었습니다.",
 };
