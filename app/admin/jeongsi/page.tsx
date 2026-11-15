@@ -170,13 +170,11 @@ const JeongsiReportsPage = () => {
         ),
       },
       {
-        key: "region",
-        header: "지역 · 성향",
+        key: "risk",
+        header: "성향",
         width: "110px",
         render: (row) => (
-          <span className={listStyles.cellText}>
-            {row.region} · {row.risk}
-          </span>
+          <span className={listStyles.cellText}>{row.risk}</span>
         ),
       },
       {
@@ -324,7 +322,7 @@ const JeongsiReportsPage = () => {
                     </div>
                     <div className={listStyles.cardSub}>
                       평균 백분위 {formatPercentile(report.averagePercentile)} ·{" "}
-                      {report.region} · {report.risk}
+                      {report.risk}
                     </div>
                     <div className={listStyles.cardDivider} />
                     <div className={listStyles.cardBottom}>

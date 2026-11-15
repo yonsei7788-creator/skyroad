@@ -59,7 +59,6 @@ export interface AdminJeongsiReport {
   createdBy: string | null;
   /** 희망 학과·계열 */
   target: string;
-  region: string;
   risk: string;
   /** 국·수·탐(2과목 평균) 평균 백분위 */
   averagePercentile: number | null;

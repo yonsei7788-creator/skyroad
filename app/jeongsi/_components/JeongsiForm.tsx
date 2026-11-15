@@ -12,7 +12,6 @@ import {
   Languages,
   LineChart,
   Loader2,
-  MapPin,
   Sigma,
   Target,
   UserRound,
@@ -25,7 +24,6 @@ import type {
   JeongsiInput,
   KoreanElective,
   MathElective,
-  PreferredRegion,
   RiskAppetite,
   StudentGender,
   SuneungGrade,
@@ -42,7 +40,6 @@ import {
   MAX_MAIN_STANDARD_SCORE,
   MAX_PERCENTILE,
   MIN_GRADE,
-  PREFERRED_REGION_OPTIONS,
   RISK_APPETITE_DESCRIPTION,
   RISK_APPETITE_OPTIONS,
   STUDENT_GENDER_LABEL,
@@ -77,7 +74,6 @@ interface FormState {
   historyGrade: string;
   gender: string;
   target: string;
-  region: string;
   risk: string;
 }
 
@@ -148,7 +144,6 @@ const INITIAL_STATE: FormState = {
   historyGrade: "",
   gender: "",
   target: "",
-  region: "",
   risk: "",
 };
 
@@ -380,10 +375,6 @@ export const JeongsiForm = ({ categoryOptions }: JeongsiFormProps) => {
       next.gender = "학생 성별을 선택해주세요.";
     }
 
-    if (!form.region) {
-      next.region = "희망 지역을 선택해주세요.";
-    }
-
     if (!form.risk) {
       next.risk = "지원 성향을 선택해주세요.";
     }
@@ -434,7 +425,6 @@ export const JeongsiForm = ({ categoryOptions }: JeongsiFormProps) => {
         target,
         // 표준 계열 목록에 있으면 계열 단위, 직접 입력이면 개별 학과로 본다
         targetKind: categoryOptions.includes(target) ? "field" : "department",
-        region: form.region as PreferredRegion,
         risk: form.risk as RiskAppetite,
       },
       gender: form.gender as StudentGender,
@@ -887,26 +877,6 @@ export const JeongsiForm = ({ categoryOptions }: JeongsiFormProps) => {
             매칭되는 모집단위가 없으면 제출 전에 알려드립니다.
           </span>
           {renderFieldError("target")}
-        </div>
-
-        <div className={styles.field}>
-          <label className={styles.label}>
-            <MapPin size={14} className={styles.labelIcon} />
-            희망 지역 <span className={styles.required}>*</span>
-          </label>
-          <div className={styles.selectButtonRow}>
-            {PREFERRED_REGION_OPTIONS.map((region) => (
-              <button
-                key={region}
-                type="button"
-                className={`${styles.selectButton} ${form.region === region ? styles.selectButtonActive : ""}`}
-                onClick={() => handleChange("region", region)}
-              >
-                {region}
-              </button>
-            ))}
-          </div>
-          {renderFieldError("region")}
         </div>
 
         <div className={styles.field}>
