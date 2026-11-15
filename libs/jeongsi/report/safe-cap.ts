@@ -35,7 +35,7 @@ const describeReason = (
   source: SafeCapSource
 ): string => {
   if (reason === "1개년 입결") {
-    return `입결이 ${source.resultYears.join(", ")} 한 해뿐`;
+    return "공개 입결이 적은 곳";
   }
   if (reason === "모집군 변경") {
     return describePastGroups(source.pastGroups ?? []) ?? "모집군이 바뀐 곳";
@@ -51,6 +51,7 @@ export const describeSafeCapReasons = (
   if (reasons.length === 0) {
     return null;
   }
-  // 사유를 "~이고, ~" 로 잇는다. 끝말은 "뿐·값·곳" 이라 뒤에 "이라"가 붙는다.
+  // 사유를 "~이고, ~" 로 잇는다. 끝말은 "값·곳" 이라 뒤에 "이라"가 붙는다.
+  // 입결 연도 수("1개년", "한 해뿐")는 리포트에 쓰지 않는다(사용자 결정 2026-11-15).
   return reasons.map((reason) => describeReason(reason, source)).join("이고, ");
 };

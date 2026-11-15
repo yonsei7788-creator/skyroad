@@ -589,7 +589,13 @@ const checkAnalysis = (analysis: JeongsiAnalysis): Violation[] => {
 };
 
 /** 리포트 문장 감사 (F1·D1): 사실과 다른 표현, 영역 서술 반복, 섹션 안 중복 문장 */
-const BANNED_ANYWHERE = [/3개년/, /최근 3년/, /백분위점 (넘겨|모자라)/];
+// 입결 연도 수("3개년", "1개년", "한 해뿐")는 리포트 어디에도 쓰지 않는다
+const BANNED_ANYWHERE = [
+  /\d\s*개년/,
+  /[한두세]\s*해(뿐|만|치)/,
+  /최근\s*\d\s*년/,
+  /백분위점 (넘겨|모자라)/,
+];
 const AREA_ROLE_OUTSIDE_PART1 = /(강점|약점)(인|이|은|영역|의)/;
 
 export const auditText = (content: JeongsiReportContent): Violation[] => {

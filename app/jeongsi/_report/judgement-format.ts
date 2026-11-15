@@ -47,18 +47,15 @@ export const formatGapRatio = (gapRatio: number): string => {
  * 예) "2025·2026 입결", "2026 입결 1개년 · 2026 입결은 다군 모집 때 값"
  */
 export const formatResultYears = (judgement: UnitJudgement): string => {
-  const years =
-    judgement.resultYears.length === 1
-      ? `${judgement.resultYears[0]} 입결 1개년`
-      : `${judgement.resultYears.join(", ")} 입결`;
+  // 입결 연도 수("1개년")는 쓰지 않고 학년도만 적는다(사용자 결정 2026-11-15)
+  const years = `${judgement.resultYears.join(", ")} 입결`;
   const regrouped = describePastGroups(judgement.pastGroups ?? []);
   return regrouped ? `${years}, ${regrouped}` : years;
 };
 
 /** 안정 대신 적정으로 둔 사유. 이전 버전 리포트(사유 없음)는 1개년 입결이었다 */
 export const formatSafeCapReason = (judgement: UnitJudgement): string =>
-  describeSafeCapReasons(judgement) ??
-  `입결이 ${judgement.resultYears.join(", ")} 한 해뿐`;
+  describeSafeCapReasons(judgement) ?? "공개 입결이 적은 곳";
 
 /** 격차 위치 막대의 축 (모든 대학 공통 고정 구간) */
 export const GAP_AXIS = {
