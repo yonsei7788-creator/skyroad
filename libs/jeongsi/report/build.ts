@@ -105,6 +105,7 @@ import {
 import {
   countByTier,
   findOverclaims,
+  findYearCountMentions,
   formatCardAllocation,
   formatTierCounts,
   normalizeCardAllocation,
@@ -1411,6 +1412,7 @@ const createSlot = ({
     extraCheck: (text) => [
       ...checkNumbers(text),
       ...findOverclaims(text),
+      ...findYearCountMentions(text),
       ...(extraCheck?.(text) ?? []),
     ],
   };
@@ -1457,6 +1459,7 @@ const createFieldSlot = (
         ...findTextViolations(kept, rule),
         ...checkNumbers(kept),
         ...findOverclaims(kept),
+        ...findYearCountMentions(kept),
         ...(extraCheck?.(kept) ?? []),
       ];
       return problems.length === 0 ? kept : fallback;

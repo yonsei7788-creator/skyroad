@@ -14,6 +14,7 @@ import {
   stripLeadingSubject,
   stripTopicLabel,
   findOverclaims,
+  findYearCountMentions,
 } from "../commentary-guards";
 
 describe("formatCardAllocation", () => {
@@ -476,6 +477,36 @@ describe("findOverclaims", () => {
     // Act & Assert
     for (const sentence of sentences) {
       expect(findOverclaims(sentence)).toEqual([]);
+    }
+  });
+});
+
+describe("findYearCountMentions", () => {
+  it("입결 연도 수를 세는 표현을 찾는다", () => {
+    // Arrange
+    const sentences = [
+      "최근 3개년 입결을 분석했습니다.",
+      "2026 입결 1개년이라 근거가 약합니다.",
+      "입결이 2026 한 해뿐이라 적정으로 판단했습니다.",
+      "최근 3년 기준컷이 오르고 있습니다.",
+    ];
+
+    // Act & Assert
+    for (const sentence of sentences) {
+      expect(findYearCountMentions(sentence)).toHaveLength(1);
+    }
+  });
+
+  it("기준컷과 격차, 다음 해 실측 비율 문장은 그대로 둔다", () => {
+    // Arrange
+    const sentences = [
+      "기준컷보다 환산점수 12.5점 높고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 61%입니다.",
+      "공개 입결이 적은 곳이라 안정 대신 적정으로 판단했습니다.",
+    ];
+
+    // Act & Assert
+    for (const sentence of sentences) {
+      expect(findYearCountMentions(sentence)).toEqual([]);
     }
   });
 });

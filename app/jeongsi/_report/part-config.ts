@@ -66,7 +66,7 @@ export const JEONGSI_PART_CONFIG: JeongsiPartConfig[] = [
     points: [
       {
         head: "기준컷",
-        body: "공개된 2025년, 2026년 70% 컷(있는 학년도만)으로 만든 비교 기준",
+        body: "공개된 2025년, 2026년 70% 컷으로 만든 비교 기준",
       },
       {
         head: "격차",
@@ -104,7 +104,7 @@ export const JEONGSI_PART_CONFIG: JeongsiPartConfig[] = [
       },
       {
         head: "학년도별 컷",
-        body: "공개된 학년도만 쓰고, 없는 학년도는 그대로 표시",
+        body: "공개된 학년도의 컷을 그대로 표시",
       },
       { head: "반영방식", body: "반영비율, 활용지표, 영어, 한국사, 가산점" },
     ],
