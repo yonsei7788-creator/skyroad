@@ -1,4 +1,5 @@
 import { CUT_METRIC_LABEL } from "@/libs/jeongsi/report/cut-format";
+import type { UnitJudgement } from "@/libs/jeongsi/report-types";
 import type {
   CutComparison,
   JeongsiUniversityDetailSection,
@@ -14,6 +15,17 @@ import {
 } from "./JeongsiBadge";
 import styles from "./jeongsi-report.module.css";
 import { JeongsiPartHeading } from "./JeongsiPartHeading";
+import {
+  GAP_UNIT_NAME,
+  METRIC_NAME,
+  describeAdmitPosition,
+  formatGapPoints,
+  formatGapRatio,
+  formatJudgementValue,
+  formatPassRate,
+  formatResultYears,
+  formatSafeCapReason,
+} from "./judgement-format";
 
 interface JeongsiUniversityDetailRendererProps {
   data: JeongsiUniversityDetailSection;
@@ -109,7 +121,7 @@ const PositionAxis = ({ comparison, cuts }: PositionAxisProps) => {
       <div className={`${styles.blockTitle} ${styles.positionTitle}`}>
         내 위치{" "}
         <span className={styles.blockTitleSub}>
-          · {CUT_METRIC_LABEL[metric]} 기준, 축 {window.min}–{window.max}
+          / {CUT_METRIC_LABEL[metric]} 기준, 축 {window.min}–{window.max}
         </span>
       </div>
       <div className={styles.positionAxis}>
@@ -175,6 +187,102 @@ interface DetailProfileProps {
   index: number;
 }
 
+/** 부호 있는 비율. 예) "+25%" */
+const formatSignedPercent = (ratio: number): string => {
+  const percent = Math.round(ratio * 100);
+  return `${percent > 0 ? "+" : percent < 0 ? "−" : "±"}${Math.abs(percent)}%`;
+};
+
+/**
+ * 판정 근거 — 계산으로 확인된 값과 그 값에 기준을 적용한 판단을 나눠 보인다
+ * (specs/014 F2). 모집인원·충원 인원은 원문 값이며, 충원은 판정에 쓰지 않는다.
+ */
+const JudgementBlock = ({ judgement }: { judgement: UnitJudgement }) => {
+  const unit = GAP_UNIT_NAME[judgement.metric];
+  const quota = judgement.quotaChange;
+  const pass = judgement.additionalPass;
+  const facts: [string, string][] = [
+    ["비교 지표", METRIC_NAME[judgement.metric]],
+    [
+      "내 값 / 기준컷",
+      `${formatJudgementValue(judgement.studentValue)} / ${formatJudgementValue(judgement.referenceCut)}`,
+    ],
+    [
+      "차이",
+      `${formatGapPoints(judgement.gapPoints)}${
+        judgement.metric === "convertedScore"
+          ? ` (만점 ${judgement.totalScore}점의 ${formatGapRatio(judgement.gapRatio)}%)`
+          : ""
+      }`,
+    ],
+    ["입결", formatResultYears(judgement)],
+    ...(() => {
+      const position = describeAdmitPosition(judgement);
+      return position
+        ? [["합격자 대비", position.long] as [string, string]]
+        : [];
+    })(),
+    ...(quota
+      ? [
+          [
+            "모집인원",
+            `2027 ${quota.currentQuota}명, 입결 학년도 평균 ${formatJudgementValue(quota.pastAverageQuota)}명${
+              quota.cutAdjustment === 0
+                ? " (변화가 작아 기준컷 보정 없음)"
+                : ` → 기준컷 ${formatGapPoints(quota.cutAdjustment)} 보정`
+            }`,
+          ] as [string, string],
+        ]
+      : []),
+    ...(judgement.tier === "스나이핑"
+      ? [
+          [
+            "최종 모집인원",
+            judgement.finalQuotaChange
+              ? `2027 ${judgement.finalQuotaChange.finalQuota}명 (수시 이월 반영), ${judgement.finalQuotaChange.previousYear} ${judgement.finalQuotaChange.previousQuota}명 대비 ${formatSignedPercent(judgement.finalQuotaChange.ratio)}`
+              : "2027 발표 전 (수시 이월 반영 인원이 발표되면 다시 확인)",
+          ] as [string, string],
+        ]
+      : []),
+    ...(pass
+      ? [
+          [
+            "충원",
+            `${pass.year} 모집 ${pass.quota}명, 추가합격 ${pass.count}명 (참고, 판정에 쓰지 않음)`,
+          ] as [string, string],
+        ]
+      : []),
+  ];
+  const decision = `격차 ${formatGapRatio(judgement.gapRatio)}(${unit}) → ${
+    judgement.safeCapped
+      ? `안정 구간이지만 ${formatSafeCapReason(judgement)}이라 적정`
+      : judgement.tier
+  }, 합격 가능성 ${judgement.chance}`;
+  const passRateNote =
+    judgement.historicalPassRate == null
+      ? null
+      : `같은 여유였던 모집단위 중 다음 해 컷을 넘은 비율 ${formatPassRate(judgement.historicalPassRate)} (2025→2026 실측)`;
+
+  return (
+    <div className={styles.judgementBlock}>
+      <div className={styles.judgementFacts}>
+        <span className={styles.judgementLabel}>계산값</span>
+        {facts.map(([label, value]) => (
+          <div key={label} className={styles.judgementRow}>
+            <span className={styles.specLabel}>{label}</span>
+            <span>{value}</span>
+          </div>
+        ))}
+      </div>
+      <div className={styles.judgementDecision}>
+        <span className={styles.judgementLabel}>판단 (판정 기준 적용)</span>
+        <p className={styles.judgementText}>{decision}</p>
+        {passRateNote && <p className={styles.judgementSub}>{passRateNote}</p>}
+      </div>
+    </div>
+  );
+};
+
 const DetailProfile = ({ item, index }: DetailProfileProps) => {
   const comparison = resolveComparison(item);
   const gap =
@@ -190,17 +298,19 @@ const DetailProfile = ({ item, index }: DetailProfileProps) => {
   const exceedsBaseMax = item.convertedScore > item.totalScore;
 
   const specRows: [string, string][] = [
-    ...(item.suneungWeight !== undefined
+    ...(item.suneungWeight !== undefined || item.selectionNote
       ? [
           [
             "전형 요소",
-            `수능 ${item.suneungWeight}% + 학생부 등 ${100 - item.suneungWeight}% (판정은 수능 성적 기준)`,
+            `수능 ${item.suneungWeight ?? 100}%${
+              item.selectionNote ? `, ${item.selectionNote}` : ""
+            } (판정은 수능 성적 기준)`,
           ] as [string, string],
         ]
       : []),
     ["반영비율", item.ratioSummary],
     ["활용지표", item.metricSummary],
-    ["영어·한국사", item.englishHistorySummary],
+    ["영어와 한국사", item.englishHistorySummary],
     ["가산점", item.bonusSummary ?? "없음"],
     ["응시 제한", item.restrictionSummary ?? "제한 없음"],
   ];
@@ -281,13 +391,15 @@ const DetailProfile = ({ item, index }: DetailProfileProps) => {
         <PositionAxis comparison={comparison} cuts={knownCuts} />
       )}
 
+      {item.judgement && <JudgementBlock judgement={item.judgement} />}
+
       <div className={styles.profileColumns}>
         <div className={styles.profileColumn}>
           <span className={styles.blockTitle}>
-            3개년 70% 컷{" "}
+            학년도별 70% 컷{" "}
             {comparison && (
               <span className={styles.blockTitleSub}>
-                · {CUT_METRIC_LABEL[comparison.metric]}
+                / {CUT_METRIC_LABEL[comparison.metric]}
               </span>
             )}
           </span>
@@ -304,7 +416,7 @@ const DetailProfile = ({ item, index }: DetailProfileProps) => {
             ))}
             {comparison && (
               <div className={styles.cutRowReference}>
-                <span>3개년 기준컷</span>
+                <span>판정 기준컷</span>
                 <span>{comparison.referenceCut.toFixed(1)}</span>
               </div>
             )}

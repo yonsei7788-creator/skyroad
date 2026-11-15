@@ -82,8 +82,8 @@ export const JeongsiScoreAnalysisRenderer = ({
 
   const areaTitle = (prefix: string, items: AreaScoreRow[]): string =>
     items.length === 0
-      ? `${prefix} · 해당 없음`
-      : `${prefix} · ${items
+      ? `${prefix}: 해당 없음`
+      : `${prefix}: ${items
           .map((row) =>
             row.percentile === null
               ? row.label
@@ -98,11 +98,13 @@ export const JeongsiScoreAnalysisRenderer = ({
         <JeongsiPartHeading
           partNumber={partNumber}
           title={data.title}
-          lead="영역별 위치와 강점·약점 구조를 진단합니다. 순위·편차는 백분위가 있는 국어·수학·탐구로 계산합니다."
+          lead="영역별 위치와 강점, 약점 구조를 진단합니다. 순위와 편차는 백분위가 있는 국어, 수학, 탐구로 계산합니다."
         />
         <div className={styles.statGrid}>
           <div className={styles.statCell}>
-            <span className={styles.statLabel}>국·수·탐 평균 백분위</span>
+            <span className={styles.statLabel}>
+              국어, 수학, 탐구 평균 백분위
+            </span>
             <span className={styles.statValue}>
               {averagePercentile.toFixed(1)}
             </span>
@@ -168,7 +170,7 @@ export const JeongsiScoreAnalysisRenderer = ({
                   {englishRow.grade === null
                     ? "등급 미입력"
                     : `${englishRow.grade}등급`}{" "}
-                  · 절대평가라 백분위·순위 비교에서 제외 (대학별 등급 점수로
+                  / 절대평가라 백분위와 순위 비교에서 제외 (대학별 등급 점수로
                   반영)
                 </td>
               </tr>
@@ -183,7 +185,7 @@ export const JeongsiScoreAnalysisRenderer = ({
           <div className={styles.blockTitle}>
             백분위 분포{" "}
             <span className={styles.blockTitleSub}>
-              · 축 {axisMin}–100, 점선은 국·수·탐 평균{" "}
+              / 축 {axisMin}–100, 점선은 국어, 수학, 탐구 평균{" "}
               {averagePercentile.toFixed(1)}
             </span>
           </div>

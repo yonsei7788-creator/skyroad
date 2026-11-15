@@ -4,30 +4,33 @@ import type {
   CutComparison,
   JeongsiRecommendationSection,
   RecommendationItem,
+  UnitJudgement,
 } from "@/libs/jeongsi/report-types";
-import type { ResultMetric } from "@/libs/jeongsi/types";
 
 import { TIER_ORDER, toneStyleOf } from "./JeongsiBadge";
 import type { RecommendableTier } from "./JeongsiBadge";
 import styles from "./jeongsi-report.module.css";
+import { JeongsiCriteriaTable } from "./JeongsiCriteriaTable";
 import { JeongsiPartHeading } from "./JeongsiPartHeading";
+import {
+  BAND_EDGES,
+  METRIC_NAME,
+  describeAdmitPosition,
+  formatGapPoints,
+  formatJudgementValue,
+  formatPassRate,
+  formatResultYears,
+  toAxisPercent,
+} from "./judgement-format";
 
 interface JeongsiRecommendationRendererProps {
   data: JeongsiRecommendationSection;
   partNumber: string;
 }
 
-/** 격차 막대 트랙 폭(px). .gapTrack 의 width 와 같아야 한다 */
-const GAP_TRACK_PX = 120;
-
-const UNIT: Record<ResultMetric, string> = {
-  percentile: "백분위점",
-  convertedScore: "점",
-};
-
 /**
- * 컷 비교값. cutComparison 이 생기기 전에 저장된 리포트는 컷이 전부
- * 환산점수 기준이었으므로 그 기준으로 복원한다.
+ * 판정 근거가 생기기 전(2026-11-14)에 저장된 리포트용 비교값.
+ * cutComparison 도 없으면 컷이 전부 환산점수 기준이던 시절의 값으로 복원한다.
  */
 const resolveComparison = (item: RecommendationItem): CutComparison | null => {
   if (item.cutComparison !== undefined) {
@@ -44,121 +47,112 @@ const resolveComparison = (item: RecommendationItem): CutComparison | null => {
   };
 };
 
-const formatSigned = (value: number): string =>
-  `${value > 0 ? "+" : value < 0 ? "−" : "±"}${Math.abs(value).toFixed(1)}`;
-
-interface GapScale {
-  zeroX: number;
-  pxPerUnit: number;
-}
-
-/**
- * 지표별 막대 축. 백분위점과 환산점수는 단위가 달라 한 축에 그릴 수
- * 없으므로, 같은 지표끼리만 같은 축(최소 격차 ~ 최대 격차)을 쓴다.
- */
-const buildGapScales = (
-  comparisons: CutComparison[]
-): Map<ResultMetric, GapScale> => {
-  const scales = new Map<ResultMetric, GapScale>();
-  const metrics: ResultMetric[] = ["percentile", "convertedScore"];
-
-  metrics.forEach((metric) => {
-    const gaps = comparisons
-      .filter((comparison) => comparison.metric === metric)
-      .map((comparison) => comparison.studentValue - comparison.referenceCut);
-    if (gaps.length === 0) return;
-
-    const negative = Math.max(0, -Math.min(...gaps));
-    const positive = Math.max(0, Math.max(...gaps));
-    const span = negative + positive || 1;
-    scales.set(metric, {
-      zeroX: (negative / span) * GAP_TRACK_PX,
-      pxPerUnit: GAP_TRACK_PX / span,
-    });
-  });
-
-  return scales;
-};
-
-interface GapCellProps {
-  comparison: CutComparison | null;
-  scale: GapScale | undefined;
-}
-
-const GapCell = ({ comparison, scale }: GapCellProps) => {
-  if (comparison === null || scale === undefined) {
-    return <span className={styles.muted}>비교 불가</span>;
-  }
-
-  const gap = comparison.studentValue - comparison.referenceCut;
-  const width = Math.abs(gap) * scale.pxPerUnit;
-  const left = gap >= 0 ? scale.zeroX : scale.zeroX - width;
-
-  return (
-    <div className={styles.gapCell}>
-      <div className={styles.gapTrack}>
-        <div className={styles.gapZero} style={{ left: `${scale.zeroX}px` }} />
-        <div
-          className={styles.gapBar}
-          style={{ left: `${left}px`, width: `${width}px` }}
-        />
-      </div>
-      <span className={styles.gapValue}>
-        {formatSigned(gap)}
-        <span className={styles.unit}>{UNIT[comparison.metric]}</span>
-      </span>
-    </div>
-  );
-};
-
-const formatReferenceCut = (comparison: CutComparison | null): string => {
-  if (comparison === null) return "—";
-  const value = comparison.referenceCut.toFixed(1);
-  return comparison.metric === "percentile" ? value : `${value}점`;
-};
+/** 모든 대학 공통 축(스나이핑 하한 ~ 안정 상한) 위의 내 위치 */
+const PositionBar = ({ judgement }: { judgement: UnitJudgement }) => (
+  <div className={styles.bandTrack}>
+    <div
+      className={`${styles.bandZone} ${styles.bandSnipe}`}
+      style={{ left: 0, width: `${BAND_EDGES.상향}%` }}
+    />
+    <div
+      className={`${styles.bandZone} ${styles.bandReach}`}
+      style={{
+        left: `${BAND_EDGES.상향}%`,
+        width: `${BAND_EDGES.적정 - BAND_EDGES.상향}%`,
+      }}
+    />
+    <div
+      className={`${styles.bandZone} ${styles.bandMatch}`}
+      style={{
+        left: `${BAND_EDGES.적정}%`,
+        width: `${BAND_EDGES.안정 - BAND_EDGES.적정}%`,
+      }}
+    />
+    <div
+      className={`${styles.bandZone} ${styles.bandSafety}`}
+      style={{ left: `${BAND_EDGES.안정}%`, right: 0 }}
+    />
+    <div
+      className={styles.bandMarker}
+      style={{ left: `${toAxisPercent(judgement.gapRatio)}%` }}
+    />
+  </div>
+);
 
 interface RecommendationRowProps {
   item: RecommendationItem;
-  comparison: CutComparison | null;
-  scales: Map<ResultMetric, GapScale>;
-  className: string;
   style: React.CSSProperties;
 }
 
-const RecommendationRow = ({
-  item,
-  comparison,
-  scales,
-  className,
-  style,
-}: RecommendationRowProps) => (
-  <div className={`${styles.recItem} ${className}`} style={style}>
-    <div className={styles.recRow}>
-      <span className={styles.recName}>
-        <b>{item.university}</b> <span>{item.department}</span>
-      </span>
-      <span className={styles.alignCenter}>{item.group}</span>
-      <span className={styles.alignRight}>{item.quota}</span>
-      <span className={styles.alignRight}>
-        {formatReferenceCut(comparison)}
-      </span>
-      <GapCell
-        comparison={comparison}
-        scale={comparison ? scales.get(comparison.metric) : undefined}
-      />
-      <span className={`${styles.alignRight} ${styles.toneText}`}>
-        {item.chance}
-      </span>
+const RecommendationRow = ({ item, style }: RecommendationRowProps) => {
+  const { judgement } = item;
+  const legacy = judgement ? null : resolveComparison(item);
+
+  return (
+    <div className={styles.recItem} style={style}>
+      <div className={styles.recRow}>
+        <span className={styles.recName}>
+          <b>{item.university}</b> <span>{item.department}</span>
+          {judgement && (
+            <span className={styles.recBasis}>
+              {METRIC_NAME[judgement.metric]} 비교 /{" "}
+              {formatResultYears(judgement)}
+              {describeAdmitPosition(judgement) &&
+                ` / ${describeAdmitPosition(judgement)?.short}`}
+            </span>
+          )}
+        </span>
+        <span className={styles.alignCenter}>{item.group}</span>
+        <span className={styles.alignRight}>
+          {judgement
+            ? formatJudgementValue(judgement.studentValue)
+            : legacy
+              ? formatJudgementValue(legacy.studentValue)
+              : "—"}
+        </span>
+        <span className={styles.alignRight}>
+          {judgement
+            ? formatJudgementValue(judgement.referenceCut)
+            : legacy
+              ? formatJudgementValue(legacy.referenceCut)
+              : "—"}
+        </span>
+        <div className={styles.gapCell}>
+          {judgement ? (
+            <>
+              <PositionBar judgement={judgement} />
+              <span className={styles.gapValue}>
+                {formatGapPoints(judgement.gapPoints)}
+              </span>
+            </>
+          ) : legacy ? (
+            <span className={styles.gapValue}>
+              {formatGapPoints(legacy.studentValue - legacy.referenceCut)}
+            </span>
+          ) : (
+            <span className={styles.muted}>비교 불가</span>
+          )}
+        </div>
+        <span className={`${styles.alignRight} ${styles.toneText}`}>
+          {item.chance}
+          {judgement?.historicalPassRate != null && (
+            <span className={styles.passRate}>
+              실측 {formatPassRate(judgement.historicalPassRate)}
+            </span>
+          )}
+        </span>
+      </div>
+      <p className={styles.recComment}>{item.comment}</p>
+      {(item.suneungWeight !== undefined || item.selectionNote) && (
+        <p className={styles.recNote}>
+          수능 {item.suneungWeight ?? 100}% 전형
+          {item.selectionNote ? `, 수능 외 요소: ${item.selectionNote}` : ""}.
+          구분은 수능 성적만으로 본 위치입니다.
+        </p>
+      )}
     </div>
-    <p className={styles.recComment}>{item.comment}</p>
-    {item.suneungWeight !== undefined && (
-      <p className={styles.recNote}>
-        수능 {item.suneungWeight}% + 학생부 등 {100 - item.suneungWeight}%
-        전형입니다. 구분은 수능 성적만으로 본 위치입니다.
-      </p>
-    )}
-  </div>
-);
+  );
+};
 
 export const JeongsiRecommendationRenderer = ({
   data,
@@ -170,24 +164,16 @@ export const JeongsiRecommendationRenderer = ({
     groups.find((group) => group.tier === tier)
   ).filter((group): group is (typeof groups)[number] => group !== undefined);
 
-  const comparisonOf = new Map<RecommendationItem, CutComparison | null>(
-    orderedGroups.flatMap((group) =>
-      group.items.map((item) => [item, resolveComparison(item)] as const)
-    )
-  );
-  const scales = buildGapScales(
-    [...comparisonOf.values()].filter(
-      (comparison): comparison is CutComparison => comparison !== null
-    )
-  );
-  const usedMetrics = new Set(
-    [...comparisonOf.values()]
-      .filter((comparison): comparison is CutComparison => comparison !== null)
-      .map((comparison) => comparison.metric)
-  );
-
   const countOf = (tier: RecommendableTier): number =>
     orderedGroups.find((group) => group.tier === tier)?.items.length ?? 0;
+  // 스나이핑 칸은 고른 곳이 있을 때만 요약에 보인다
+  const summaryTiers = TIER_ORDER.filter(
+    (tier) => tier !== "스나이핑" || countOf(tier) > 0
+  );
+
+  const hasJudgement = orderedGroups.some((group) =>
+    group.items.some((item) => item.judgement)
+  );
 
   return (
     <>
@@ -198,14 +184,19 @@ export const JeongsiRecommendationRenderer = ({
           title={data.title}
           lead={
             <>
-              각 대학이 공개한 입결 지표(대부분 <b>국·수·탐 평균 백분위</b>,
-              일부 대학은 <b>대학 환산점수</b>)로 계산한 내 값을 3개년 기준컷과
-              비교해 상향·적정·안정으로 나눴습니다.
+              대학 환산점수 입결이 있는 대학은 <b>내 환산점수</b>로, 없는 대학은{" "}
+              <b>국어, 수학, 탐구 평균 백분위</b>로 기준컷과 비교해 모든 대학에
+              같은 기준으로 상향, 적정, 안정을 나눴습니다.
             </>
           }
         />
-        <div className={`${styles.tierSummary} ${styles.tierSummaryGap}`}>
-          {TIER_ORDER.map((tier) => (
+        <div
+          className={`${styles.tierSummary} ${styles.tierSummaryGap}`}
+          style={{
+            gridTemplateColumns: `repeat(${summaryTiers.length}, minmax(0, 1fr))`,
+          }}
+        >
+          {summaryTiers.map((tier) => (
             <div
               key={tier}
               className={styles.tierSummaryCell}
@@ -219,6 +210,9 @@ export const JeongsiRecommendationRenderer = ({
           ))}
         </div>
       </div>
+
+      {/* 판정 기준. 학생이 어느 대학의 구분을 물어도 이 표로 설명된다 */}
+      {hasJudgement && <JeongsiCriteriaTable />}
 
       {/* 목록을 그대로 읽으면 오해할 수 있는 전제. 표보다 먼저 읽혀야 한다 */}
       {notices.length > 0 && (
@@ -234,19 +228,19 @@ export const JeongsiRecommendationRenderer = ({
 
       {/* Block 2~N: 구분별 표.
           구분 머리(머리행·구분명)는 첫 대학과 한 블록으로 묶고, 나머지 대학은
-          한 곳씩 독립 블록으로 둔다. 그래야 표가 대학 단위로 쪽을 넘기고
-          구분 하나가 통째로 밀려 빈 공간이 생기지 않는다. */}
+          한 곳씩 독립 블록으로 둔다. 그래야 표가 대학 단위로 쪽을 넘긴다. */}
       {orderedGroups.map((group) => {
         const [firstItem, ...restItems] = group.items;
         const toneStyle = toneStyleOf(group.tier);
-        const renderRow = (item: RecommendationItem, extraClass = "") => (
+        const renderRow = (item: RecommendationItem) => (
           <RecommendationRow
             key={`${item.university}-${item.department}-${item.group}`}
             item={item}
-            comparison={comparisonOf.get(item) ?? null}
-            scales={scales}
-            className={extraClass}
-            style={toneStyle}
+            style={
+              item.judgement && item.judgement.tier !== group.tier
+                ? toneStyleOf(item.judgement.tier)
+                : toneStyle
+            }
           />
         );
 
@@ -254,18 +248,18 @@ export const JeongsiRecommendationRenderer = ({
           <Fragment key={group.tier}>
             <div className={styles.recTable} style={toneStyle}>
               <div className={styles.recHeadRow}>
-                <span>대학 · 학과</span>
+                <span>대학 / 학과</span>
                 <span className={styles.alignCenter}>군</span>
-                <span className={styles.alignRight}>모집</span>
+                <span className={styles.alignRight}>내 값</span>
                 <span className={styles.alignRight}>기준컷</span>
-                <span>기준컷 대비 격차</span>
+                <span>기준컷 대비 (스나이핑, 상향, 적정, 안정)</span>
                 <span className={styles.alignRight}>합격 가능성</span>
               </div>
               <div className={styles.recTierLabel}>{group.tier}</div>
               {firstItem === undefined ? (
                 <div className={styles.recItem}>
                   <span className={styles.muted}>
-                    이 구분에 해당하는 대학이 산출되지 않았습니다.
+                    이 구분에 해당하는 대학이 없습니다.
                   </span>
                 </div>
               ) : (
@@ -276,13 +270,6 @@ export const JeongsiRecommendationRenderer = ({
           </Fragment>
         );
       })}
-
-      {usedMetrics.size > 1 && (
-        <p className={styles.axisNote}>
-          격차 막대는 같은 지표(백분위점 · 환산점수)끼리만 같은 축으로
-          그렸습니다.
-        </p>
-      )}
 
       {/* 최종 블록: 지원 전략 */}
       <div className={styles.insightBox}>
