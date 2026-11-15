@@ -4,13 +4,14 @@ import type { User } from "@supabase/supabase-js";
 export interface AuthState {
   user: User | null;
   role: string | null;
+  isProfileLoaded: boolean;
   onboardingCompleted: boolean;
-  isAuthModalOpen: boolean;
+  hasRecord: boolean;
   setUser: (user: User | null) => void;
   setRole: (role: string | null) => void;
+  setIsProfileLoaded: (loaded: boolean) => void;
   setOnboardingCompleted: (completed: boolean) => void;
-  openAuthModal: () => void;
-  closeAuthModal: () => void;
+  setHasRecord: (hasRecord: boolean) => void;
 }
 
 export type AuthStore = ReturnType<typeof createAuthStore>;
@@ -19,12 +20,13 @@ export const createAuthStore = () =>
   createStore<AuthState>((set) => ({
     user: null,
     role: null,
+    isProfileLoaded: false,
     onboardingCompleted: false,
-    isAuthModalOpen: false,
+    hasRecord: false,
     setUser: (user) => set({ user }),
     setRole: (role) => set({ role }),
+    setIsProfileLoaded: (loaded) => set({ isProfileLoaded: loaded }),
     setOnboardingCompleted: (completed) =>
       set({ onboardingCompleted: completed }),
-    openAuthModal: () => set({ isAuthModalOpen: true }),
-    closeAuthModal: () => set({ isAuthModalOpen: false }),
+    setHasRecord: (hasRecord) => set({ hasRecord }),
   }));

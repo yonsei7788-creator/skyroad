@@ -27,13 +27,12 @@ export const EvaluationImpactSchema = z.enum([
   "very_low",
 ]);
 export const AdmissionChanceSchema = z.enum([
-  "very_high",
   "high",
   "medium",
   "low",
   "very_low",
 ]);
-export const AdmissionTierSchema = z.enum(["상향", "적정", "안정", "하향"]);
+export const CardRiskLevelSchema = z.enum(["위험", "안정"]);
 export const PrioritySchema = z.enum(["high", "medium", "low"]);
 export const CompetencyCategorySchema = z.enum([
   "academic",
@@ -45,12 +44,12 @@ export const CompetencyCategorySchema = z.enum([
 export const CompetencyTagSchema = z.object({
   category: CompetencyCategorySchema,
   subcategory: z.string().min(1),
-  assessment: z.enum(["우수", "양호", "미흡", "부족"]).optional(),
+  assessment: z.enum(["우수", "보통", "미흡", "부족"]).optional(),
 });
 
 // ─── v4 공통 스키마 ───
 
-export const ThreeTierRatingSchema = z.enum(["우수", "양호", "보완필요"]);
+export const ThreeTierRatingSchema = z.enum(["우수", "보통", "미흡"]);
 export const AdmissionRiskBandSchema = z.enum([
   "안정",
   "적정",
@@ -114,6 +113,8 @@ export const StudentProfileSectionSchema = z.object({
   percentileLabel: z.string().optional(),
   typeStrengths: z.array(z.string().min(1)).optional(),
   typeWeaknesses: z.array(z.string().min(1)).optional(),
+  recommendedAdmissionType: z.string().min(1).optional(),
+  strategy: z.array(z.string().min(1)).min(2).max(4).optional(),
 });
 
 // ─── 섹션 2: 역량 정량 스코어 ───
@@ -141,10 +142,19 @@ const ComparisonDataSchema = z.object({
   overallAvg: z.number().min(0).optional(),
 });
 
+const CompetencyHighlightItemSchema = z.object({
+  name: z.string().min(1),
+  categoryLabel: z.string().min(1),
+  score: z.number(),
+  maxScore: z.number(),
+  gap: z.number(),
+  reason: z.string(),
+});
+
 export const CompetencyScoreSectionSchema = z.object({
   sectionId: z.literal("competencyScore"),
   title: z.string().min(1),
-  totalScore: z.number().min(0).max(300),
+  totalScore: z.number().min(0).max(400),
   growthGrade: CompetencyGradeSchema,
   growthScore: z.number().min(0).max(100).optional(),
   growthComment: z.string().min(1),
@@ -157,6 +167,31 @@ export const CompetencyScoreSectionSchema = z.object({
   percentileLabel: z.string().optional(),
   comparison: ComparisonDataSchema.optional(),
   interpretation: z.string().min(1),
+  // v5: 5축 세분화 레이더 (신규 리포트 전용, postprocessor 결정적 주입)
+  competencyAxes: z
+    .array(
+      z.object({
+        key: z.enum([
+          "naesin",
+          "setuk",
+          "majorFit",
+          "extracurricular",
+          "growth",
+        ]),
+        label: z.string().min(1),
+        score: z.number().min(0).max(100),
+        isStrength: z.boolean().optional(),
+        isWeakness: z.boolean().optional(),
+      })
+    )
+    .optional(),
+  // v5: 데이터 기반 강점·보완 항목 (postprocessor 결정적 주입)
+  competencyHighlights: z
+    .object({
+      strengths: z.array(CompetencyHighlightItemSchema),
+      improvements: z.array(CompetencyHighlightItemSchema),
+    })
+    .optional(),
   // v4
   scoreComparisons: z
     .tuple([
@@ -190,17 +225,18 @@ export const CompetencyScoreSectionSchema = z.object({
 const UniversityPredictionSchema = z.object({
   university: z.string().min(1),
   department: z.string().min(1),
-  chance: AdmissionChanceSchema,
-  rationale: z.string().min(1),
+  chance: AdmissionChanceSchema.optional(),
+  rationale: z.string().optional(),
+  recommendedAdmissionType: z.enum(["학종", "교과"]).optional(),
+  tier: z.enum(["reach", "ambitious", "fit", "safety"]).optional(),
 });
 
 const AdmissionPredictionItemSchema = z.object({
-  admissionType: z.enum(["학종", "교과", "정시"]),
-  passRateLabel: z.string().min(1),
-  passRateRange: z.tuple([
-    z.number().min(0).max(100),
-    z.number().min(0).max(100),
-  ]),
+  admissionType: z.enum(["학종", "교과", "논술", "실기/실적"]),
+  passRateLabel: z.string().optional(),
+  passRateRange: z
+    .tuple([z.number().min(0).max(100), z.number().min(0).max(100)])
+    .optional(),
   analysis: z.string().min(1),
   universityPredictions: z.array(UniversityPredictionSchema).optional(),
 });
@@ -208,7 +244,7 @@ const AdmissionPredictionItemSchema = z.object({
 export const AdmissionPredictionSectionSchema = z.object({
   sectionId: z.literal("admissionPrediction"),
   title: z.string().min(1),
-  recommendedType: z.enum(["학종", "교과", "정시"]),
+  recommendedType: z.enum(["학종", "교과", "논술"]),
   recommendedTypeReason: z.string().min(1),
   predictions: z.array(AdmissionPredictionItemSchema).min(1),
   overallComment: z.string().min(1),
@@ -216,7 +252,7 @@ export const AdmissionPredictionSectionSchema = z.object({
   riskBands: z
     .array(
       z.object({
-        admissionType: z.enum(["학종", "교과", "정시"]),
+        admissionType: z.enum(["학종", "교과", "논술", "실기/실적"]),
         band: AdmissionRiskBandSchema,
         rationale: z.string().min(1),
       })
@@ -254,119 +290,11 @@ export const AdmissionPredictionSectionSchema = z.object({
     .optional(),
 });
 
-// ─── 섹션 4: 종합 진단 ───
-
-const DiagnosticKeywordSchema = z.object({
-  label: z.string().min(1),
-  description: z.string().min(1),
-});
-
-const CompetencySummaryItemSchema = z.object({
-  category: CompetencyCategorySchema,
-  label: z.string().min(1),
-  summary: z.string().min(1),
-});
-
-export const DiagnosticSectionSchema = z.object({
-  sectionId: z.literal("diagnostic"),
-  title: z.string().min(1),
-  oneLiner: z.string().min(10),
-  keywords: z.tuple([
-    DiagnosticKeywordSchema,
-    DiagnosticKeywordSchema,
-    DiagnosticKeywordSchema,
-  ]),
-  competencySummary: z.tuple([
-    CompetencySummaryItemSchema,
-    CompetencySummaryItemSchema,
-    CompetencySummaryItemSchema,
-    CompetencySummaryItemSchema,
-  ]),
-  admissionPositioning: z.string().optional(),
-  strategyOverview: z.string().optional(),
-  // v4
-  dashboardMetrics: z
-    .object({
-      totalScore: z.number(),
-      percentileLabel: z.string().min(1),
-      gradeTrend: z.enum(["상승", "유지", "하락"]),
-      recordFillRate: z.number().min(0).max(100),
-      recommendedType: z.string().min(1),
-    })
-    .optional(),
-  competencyBars: z
-    .array(
-      z.object({
-        category: z.string().min(1),
-        label: z.string().min(1),
-        score: z.number(),
-        maxScore: z.number(),
-        assessment: ThreeTierRatingSchema,
-      })
-    )
-    .optional(),
-  topStrengths: z.array(z.string().min(1)).optional(),
-  topWeaknesses: z.array(z.string().min(1)).optional(),
-  characterLabel: CharacterLabelSchema.optional(),
-});
-
 // ============================================================
 // Part 2: 분석 스키마
 // ============================================================
 
-// ─── 섹션 5: 역량별 종합 평가 ───
-
-const StrengthWeaknessItemSchema = z.object({
-  competencyTag: CompetencyTagSchema,
-  label: z.string().min(1),
-  evidence: z.string().min(1),
-  // v4
-  tier: ThreeTierRatingSchema.optional(),
-  originalQuotes: z.array(OriginalTextCitationSchema).optional(),
-});
-
-const SubcategoryRatingSchema = z.object({
-  name: z.string().min(1),
-  grade: CompetencyGradeSchema,
-  comment: z.string().min(1),
-});
-
-const CompetencyRatingSchema = z.object({
-  category: CompetencyCategorySchema,
-  label: z.string().min(1),
-  grade: CompetencyGradeSchema,
-  comment: z.string().min(1),
-  subcategories: z.array(SubcategoryRatingSchema).optional(),
-});
-
-export const CompetencyEvaluationSectionSchema = z.object({
-  sectionId: z.literal("competencyEvaluation"),
-  title: z.string().min(1),
-  strengths: z.array(StrengthWeaknessItemSchema).min(3),
-  weaknesses: z.array(StrengthWeaknessItemSchema).min(3),
-  overallComment: z.string().min(20),
-  competencyRatings: z.array(CompetencyRatingSchema).min(1),
-  // v4
-  competencyCharacters: z
-    .array(
-      z.object({
-        category: CompetencyCategorySchema,
-        characterLabel: CharacterLabelSchema,
-      })
-    )
-    .optional(),
-  citationAnalysis: z.array(OriginalTextCitationSchema).optional(),
-  competencyBenchmarks: z
-    .array(
-      z.object({
-        category: CompetencyCategorySchema,
-        comparison: BenchmarkComparisonSchema,
-      })
-    )
-    .optional(),
-});
-
-// ─── 섹션 6: 성적 분석 ───
+// ─── 성적 분석 ───
 
 const GradeSummaryByYearSchema = z.object({
   year: z.number().int().min(1).max(3),
@@ -394,8 +322,8 @@ const SubjectStatAnalysisSchema = z.object({
   subject: z.string().min(1),
   year: z.number().int().min(1).max(3),
   semester: z.number().int().min(1).max(2),
-  zScore: z.number(),
-  percentileEstimate: z.number().min(0).max(100),
+  zScore: z.number().optional().default(0),
+  percentileEstimate: z.number().min(0).max(100).optional().default(50),
   interpretation: z.string().min(1),
 });
 
@@ -434,14 +362,6 @@ const FiveGradeSimulationSchema = z.object({
   percentileCumulative: z.number().optional(),
 });
 
-const UniversityGradeSimulationSchema = z.object({
-  university: z.string().min(1),
-  department: z.string().min(1),
-  reflectionMethod: z.string().min(1),
-  calculatedScore: z.number(),
-  interpretation: z.string().min(1),
-});
-
 const SmallClassSubjectAnalysisSchema = z.object({
   subject: z.string().min(1),
   enrollmentSize: z.number().int(),
@@ -470,9 +390,6 @@ export const AcademicAnalysisSectionSchema = z.object({
     .optional(),
   gradeInflationContext: z.string().optional(),
   fiveGradeSimulation: z.array(FiveGradeSimulationSchema).optional(),
-  universityGradeSimulations: z
-    .array(UniversityGradeSimulationSchema)
-    .optional(),
   improvementPriority: z.array(z.string().min(1)).optional(),
   // v4
   detailedGradeTable: z
@@ -539,7 +456,7 @@ export const AcademicAnalysisSectionSchema = z.object({
 
 const CourseMatchDetailSchema = z.object({
   course: z.string().min(1),
-  status: z.enum(["이수", "미이수"]),
+  status: z.enum(["이수", "이수 예정", "미이수"]),
   importance: z.enum(["필수", "권장"]),
 });
 
@@ -592,7 +509,7 @@ export const AttendanceAnalysisSectionSchema = z.object({
   sectionId: z.literal("attendanceAnalysis"),
   title: z.string().min(1),
   summaryByYear: z.array(AttendanceSummarySchema).min(1),
-  overallRating: z.enum(["우수", "양호", "주의", "경고"]),
+  overallRating: z.enum(["우수", "보통", "주의", "경고"]),
   impactAnalysis: z.string().min(1),
   integrityContribution: z.string().min(1),
   improvementAdvice: z.string().optional(),
@@ -794,47 +711,6 @@ export const BehaviorAnalysisSectionSchema = z.object({
 
 // ─── 섹션 12: 기록 충실도 종합 ───
 
-const RecordVolumeItemSchema = z.object({
-  category: z.string().min(1),
-  maxCapacity: z.string().min(1),
-  actualVolume: z.string().min(1),
-  fillRate: z.number().min(0).max(100),
-  assessment: z.string().min(1),
-});
-
-export const OverallAssessmentSectionSchema = z.object({
-  sectionId: z.literal("overallAssessment"),
-  title: z.string().min(1),
-  volumeAnalysis: z.array(RecordVolumeItemSchema).min(1),
-  overallFillRate: z.number().min(0).max(100),
-  qualityAssessment: z.string().min(1),
-  competitivenessSum: z.string().min(1),
-  finalComment: z.string().min(1),
-  // v4
-  fillRateComparison: BenchmarkComparisonSchema.optional(),
-  competencyProgressBars: z
-    .array(
-      z.object({
-        category: z.string().min(1),
-        label: z.string().min(1),
-        score: z.number(),
-        maxScore: z.number(),
-        assessment: ThreeTierRatingSchema,
-      })
-    )
-    .optional(),
-  overallCompetitivenessScore: z.number().min(0).max(100).optional(),
-  areaGrades: z
-    .array(
-      z.object({
-        area: z.string().min(1),
-        grade: CompetencyGradeSchema,
-        summary: z.string().min(1),
-      })
-    )
-    .optional(),
-});
-
 // ============================================================
 // Part 3: 전략 스키마
 // ============================================================
@@ -894,7 +770,7 @@ export const WeaknessAnalysisSectionSchema = z.object({
 
 const ActivityDesignSchema = z.object({
   steps: z.array(z.string().min(1)).min(1),
-  duration: z.string().min(1),
+  duration: z.string().optional().default(""),
   expectedResult: z.string().min(1),
 });
 
@@ -972,26 +848,29 @@ export const InterviewPrepSectionSchema = z.object({
 
 // ─── 섹션 16: 입시 전략 + 대학 추천 ───
 
-const AdmissionDataSchema = z.object({
-  cutoff50: z.number().optional(),
-  cutoff70: z.number().optional(),
-  competitionRate: z.number().optional(),
-  enrollment: z.number().int().optional(),
-});
-
-const UniversityRecommendationSchema = z.object({
-  university: z.string().min(1),
-  department: z.string().min(1),
+const CardAdmissionInfoSchema = z.object({
   admissionType: z.string().min(1),
-  tier: AdmissionTierSchema,
-  chance: AdmissionChanceSchema.optional(),
-  chanceRationale: z.string().optional(),
-  admissionData: AdmissionDataSchema.optional(),
+  chance: AdmissionChanceSchema,
+  chanceRationale: z.string().min(1),
   chancePercentLabel: z.string().optional(),
 });
 
+const UniversityCardSchema = z.object({
+  university: z.string().min(1),
+  department: z.string().min(1),
+  riskLevel: z.enum(["위험", "안정"]).optional(),
+  comprehensive: CardAdmissionInfoSchema,
+  subject: CardAdmissionInfoSchema.optional(),
+});
+
+const SimulationGroupSchema = z.object({
+  type: z.enum(["위험형", "안정형"]).optional(),
+  description: z.string().min(1),
+  cards: z.array(UniversityCardSchema).min(1).max(6),
+});
+
 const AdmissionTypeStrategySchema = z.object({
-  type: z.enum(["학종", "교과", "정시"]),
+  type: z.enum(["학종", "교과", "논술", "실기/실적"]),
   analysis: z.string().min(1),
   suitability: z.enum(["적합", "보통", "부적합"]),
   reason: z.string().min(1),
@@ -1003,89 +882,27 @@ const SchoolTypeAnalysisSchema = z.object({
   rationale: z.string(),
 });
 
-const ApplicationSimulationDetailSchema = z.object({
-  admissionType: z.string().min(1),
-  count: z.number().int().min(1),
-  targetUniversities: z.array(z.string().min(1)),
-});
-
-const ApplicationSimulationSchema = z.object({
-  description: z.string().min(1),
-  details: z.array(ApplicationSimulationDetailSchema).min(1),
-});
-
 const UniversityGuideMatchingSchema = z.object({
   university: z.string().min(1),
-  emphasisKeywords: z.array(z.string().min(1)),
-  studentStrengthMatch: z.array(z.string().min(1)),
-  studentWeaknessMatch: z.array(z.string().min(1)),
+  emphasisKeywords: z.array(z.string().min(1)).optional().default([]),
+  studentStrengthMatch: z.array(z.string().min(1)).optional().default([]),
+  studentWeaknessMatch: z.array(z.string().min(1)).optional().default([]),
 });
 
 export const AdmissionStrategySectionSchema = z.object({
   sectionId: z.literal("admissionStrategy"),
   title: z.string().min(1),
+  recommendedAdmissionType: z.string().min(1).optional(),
   recommendedPath: z.string().min(1),
-  recommendations: z.array(UniversityRecommendationSchema).min(1),
+  simulations: z.union([
+    z.tuple([SimulationGroupSchema]),
+    z.tuple([SimulationGroupSchema, SimulationGroupSchema]),
+    z.array(SimulationGroupSchema).min(1).max(2),
+  ]),
   typeStrategies: z.array(AdmissionTypeStrategySchema).optional(),
   schoolTypeAnalysis: SchoolTypeAnalysisSchema.optional(),
-  csatMinimumStrategy: z.string().optional(),
-  applicationSimulation: ApplicationSimulationSchema.optional(),
   universityGuideMatching: z.array(UniversityGuideMatchingSchema).optional(),
-  // v4
-  universityRiskBands: z
-    .array(
-      z.object({
-        university: z.string().min(1),
-        department: z.string().min(1),
-        band: AdmissionRiskBandSchema,
-        rationale: z.string().min(1),
-      })
-    )
-    .optional(),
-  typeSuitabilityChart: z
-    .array(
-      z.object({
-        type: z.string().min(1),
-        score: z.number().min(0).max(100),
-        keyStrengths: z.array(z.string().min(1)),
-        keyRisks: z.array(z.string().min(1)),
-      })
-    )
-    .optional(),
-  strategyMatrix: z
-    .array(
-      z.object({
-        tier: AdmissionTierSchema,
-        recommendations: z.array(
-          z.object({
-            university: z.string().min(1),
-            department: z.string().min(1),
-            type: z.string().min(1),
-            band: AdmissionRiskBandSchema,
-          })
-        ),
-      })
-    )
-    .optional(),
-  tierGroupedRecommendations: z
-    .array(
-      z.object({
-        tierGroup: z.enum(["상향 위주", "안정 위주", "하향 위주"]),
-        recommendations: z.array(UniversityRecommendationSchema),
-      })
-    )
-    .optional(),
   nextSemesterStrategy: z.string().optional(),
-});
-
-// ─── 고1 전용: 방향 설정 가이드 ───
-
-export const DirectionGuideSectionSchema = z.object({
-  sectionId: z.literal("directionGuide"),
-  title: z.string().min(1),
-  recommendedTracks: z.array(z.string().min(1)).min(1),
-  subjectSelectionGuide: z.array(z.string().min(1)).min(1),
-  preparationAdvice: z.string().min(1),
 });
 
 // ─── 섹션 17: 생기부 스토리 구조 분석 ───
@@ -1144,13 +961,6 @@ export const StoryAnalysisSectionSchema = z.object({
 
 // ─── 섹션 18: 실행 로드맵 ───
 
-const RoadmapPhaseSchema = z.object({
-  phase: z.string().min(1),
-  period: z.string().min(1),
-  goals: z.array(z.string().min(1)).min(1),
-  tasks: z.array(z.string().min(1)).min(1),
-});
-
 const EvaluationWritingGuideSchema = z.object({
   structure: z.array(z.string().min(1)).min(1),
   goodExample: z.string().min(1),
@@ -1161,7 +971,6 @@ export const ActionRoadmapSectionSchema = z.object({
   sectionId: z.literal("actionRoadmap"),
   title: z.string().min(1),
   completionStrategy: z.string().min(1),
-  phases: z.array(RoadmapPhaseSchema).min(1),
   prewriteProposals: z.array(z.string().min(1)).optional(),
   evaluationWritingGuide: EvaluationWritingGuideSchema.optional(),
   interviewTimeline: z.string().optional(),
@@ -1205,21 +1014,7 @@ export const ActionRoadmapSectionSchema = z.object({
 
 // ─── 섹션 19: 추천 도서 ───
 
-const BookItemSchema = z.object({
-  title: z.string().min(1),
-  author: z.string().min(1),
-  reason: z.string().min(1),
-  connectionToRecord: z.string().min(1),
-  relatedSubject: z.string().optional(),
-});
-
-export const BookRecommendationSectionSchema = z.object({
-  sectionId: z.literal("bookRecommendation"),
-  title: z.string().min(1),
-  books: z.array(BookItemSchema).min(3),
-});
-
-// ─── 섹션 20: AI 전공 추천 ───
+// ─── AI 전공 추천 ───
 
 const MajorSuggestionSchema = z.object({
   major: z.string().min(1),
@@ -1248,18 +1043,46 @@ export const MajorExplorationSectionSchema = z.object({
   suggestions: z.array(MajorSuggestionSchema).min(3),
 });
 
-// ─── 섹션 21: 워드 클라우드 ───
+// ─── 전임 컨설턴트 총평 ───
 
-const WordCloudItemSchema = z.object({
-  text: z.string().min(1),
-  frequency: z.number().int().min(1),
-  category: CompetencyCategorySchema.optional(),
+const EvaluationGuideSchema = z.object({
+  majorFit: z.string().min(1),
+  academicAbility: z.string().min(1),
+  inquiryAbility: z.string().min(1),
+  growthPotential: z.string().min(1),
+  keyInsights: z.string().min(1),
 });
 
-export const WordCloudSectionSchema = z.object({
-  sectionId: z.literal("wordCloud"),
+export const ConsultantReviewSectionSchema = z.object({
+  sectionId: z.literal("consultantReview"),
   title: z.string().min(1),
-  words: z.array(WordCloudItemSchema).min(20).max(50),
+  gradeAnalysis: z.string().min(1),
+  courseEffort: z.string().min(1),
+  admissionStrategy: z.string().min(1),
+  completionDirection: z.string().optional(),
+  finalAdvice: z.string().min(1),
+  evaluationGuide: EvaluationGuideSchema.optional(),
+});
+
+// ─── 비교과 경쟁력 정밀 분석 ───
+
+const NonAcademicLevelSchema = z.enum([
+  "상위권",
+  "중상위권",
+  "중위권",
+  "중하위권",
+  "하위권",
+]);
+const ActivityConnectivitySchema = z.enum(["있음", "보통", "없음"]);
+
+export const CompetitiveProfilingSectionSchema = z.object({
+  sectionId: z.literal("competitiveProfiling"),
+  title: z.string().min(1),
+  level: NonAcademicLevelSchema,
+  majorDirection: z.string().min(1),
+  keywords: z.array(z.string().min(1)).min(1).max(5),
+  connectivity: ActivityConnectivitySchema,
+  score: z.number().int().min(0).max(100),
 });
 
 // ============================================================
@@ -1283,6 +1106,7 @@ const StudentInfoSchema = z.object({
     "체육고",
     "마이스터고",
   ]),
+  schoolName: z.string().optional(),
   targetUniversity: z.string().optional(),
   targetDepartment: z.string().optional(),
   hasMockExamData: z.boolean(),
@@ -1300,25 +1124,21 @@ export const ReportSectionSchema = z.discriminatedUnion("sectionId", [
   StudentProfileSectionSchema,
   CompetencyScoreSectionSchema,
   AdmissionPredictionSectionSchema,
-  DiagnosticSectionSchema,
-  CompetencyEvaluationSectionSchema,
   AcademicAnalysisSectionSchema,
   CourseAlignmentSectionSchema,
   AttendanceAnalysisSectionSchema,
   ActivityAnalysisSectionSchema,
   SubjectAnalysisSectionSchema,
   BehaviorAnalysisSectionSchema,
-  OverallAssessmentSectionSchema,
   WeaknessAnalysisSectionSchema,
   TopicRecommendationSectionSchema,
   InterviewPrepSectionSchema,
   AdmissionStrategySectionSchema,
-  DirectionGuideSectionSchema,
   StoryAnalysisSectionSchema,
   ActionRoadmapSectionSchema,
-  BookRecommendationSectionSchema,
+  CompetitiveProfilingSectionSchema,
   MajorExplorationSectionSchema,
-  WordCloudSectionSchema,
+  ConsultantReviewSectionSchema,
 ]);
 
 export const ReportContentSchema = z.object({
@@ -1343,16 +1163,6 @@ export const validateByPlan = (content: ReportContent): string[] => {
   const actualSectionIds: string[] = content.sections.map((s) => s.sectionId);
 
   for (const expected of expectedSections) {
-    // admissionStrategy는 조건부이므로 directionGuide로 대체 가능
-    if (expected === "admissionStrategy") {
-      if (
-        !actualSectionIds.includes("admissionStrategy") &&
-        !actualSectionIds.includes("directionGuide")
-      ) {
-        errors.push("필수 섹션 누락: admissionStrategy 또는 directionGuide");
-      }
-      continue;
-    }
     if (!actualSectionIds.includes(expected)) {
       errors.push(`필수 섹션 누락: ${expected}`);
     }
@@ -1379,9 +1189,7 @@ export const validateByPlan = (content: ReportContent): string[] => {
     if (!actualSectionIds.includes("admissionPrediction")) {
       errors.push("Standard 이상: admissionPrediction 섹션 필수");
     }
-    if (!actualSectionIds.includes("storyAnalysis")) {
-      errors.push("Standard 이상: storyAnalysis 섹션 필수");
-    }
+    // storyAnalysis 제외됨 (피드백 반영)
     if (!actualSectionIds.includes("actionRoadmap")) {
       errors.push("Standard 이상: actionRoadmap 섹션 필수");
     }

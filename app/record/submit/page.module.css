@@ -167,7 +167,7 @@
    ============================================ */
 .methodGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
 }
 
@@ -220,6 +220,7 @@
   font-size: 0.8125rem;
   color: var(--color-fg-secondary);
   line-height: 1.5;
+  white-space: pre-line;
 }
 
 @media (max-width: 640px) {
@@ -332,6 +333,62 @@
   gap: 20px;
 }
 
+.pdfGuideCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border-primary);
+  background: var(--color-bg-primary-subtle);
+}
+
+.pdfGuideCardIcon {
+  flex-shrink: 0;
+  color: var(--color-fg-secondary);
+  margin-top: 1px;
+}
+
+.pdfGuideCardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pdfGuideCardText {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--color-fg);
+}
+
+.methodGuideHint {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+  font-size: 0.875rem;
+  color: var(--color-fg-secondary);
+}
+
+.methodGuideLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-primary-600);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.methodGuideLink:hover {
+  color: var(--color-primary-700);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .extractingState {
   display: flex;
   flex-direction: column;
@@ -404,6 +461,12 @@
 
 .pdfReupload:hover {
   text-decoration: underline;
+}
+
+.pdfSizeError {
+  margin-top: 8px;
+  font-size: 0.875rem;
+  color: var(--color-fg-negative);
 }
 
 .pdfTextarea {
@@ -1164,6 +1227,100 @@
   color: var(--color-fg);
 }
 
+/* ============================================
+   Notice Modal (확인 버튼으로만 닫힘)
+   ============================================ */
+.noticeOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(2px);
+  animation: noticeFadeIn 0.18s ease-out;
+}
+
+.noticeDialog {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 28px 24px 24px;
+  background: var(--color-bg);
+  border-radius: 16px;
+  box-shadow:
+    0 24px 60px rgb(0 0 0 / 0.25),
+    0 4px 12px rgb(0 0 0 / 0.08);
+  animation: noticePop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.noticeIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-bg-primary-subtle);
+  color: var(--color-fg-primary);
+}
+
+.noticeTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-fg);
+  line-height: 1.4;
+}
+
+.noticeText {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-fg-secondary);
+  line-height: 1.6;
+}
+
+.noticeConfirmBtn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 12px 20px;
+  border-radius: 10px;
+  background: var(--color-bg-primary);
+  color: var(--color-fg-inverse);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+
+.noticeConfirmBtn:hover {
+  background: var(--color-bg-primary-hover);
+}
+
+@keyframes noticeFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes noticePop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* ---- Draft Restore Card (Step 1 inline) ---- */
 .draftRestoreCard {
   display: flex;
@@ -1800,4 +1957,145 @@
   .accordionTitle {
     font-size: 0.9375rem;
   }
+}
+
+/* ---- Planned Subjects Section ---- */
+.plannedSubjectsSection {
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.plannedSubjectsHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plannedSubjectsTitle {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-fg);
+}
+
+.plannedSubjectsOptionalBadge {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--color-fg-tertiary);
+  background: var(--color-bg-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.plannedSubjectsDesc {
+  font-size: 0.8125rem;
+  color: var(--color-fg-secondary);
+  line-height: 1.5;
+}
+
+.plannedSubjectsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plannedSubjectItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plannedSubjectIndex {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-bg-secondary);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-fg-tertiary);
+  user-select: none;
+}
+
+.plannedSubjectInput {
+  flex: 1;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--color-fg);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+  min-width: 0;
+}
+
+.plannedSubjectInput:focus {
+  outline: none;
+  border-color: var(--color-border-primary);
+  box-shadow: 0 0 0 3px rgb(79 70 229 / 0.1);
+}
+
+.plannedSubjectInput::placeholder {
+  color: var(--color-fg-tertiary);
+}
+
+.plannedSubjectRemoveBtn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-fg-tertiary);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
+}
+
+.plannedSubjectRemoveBtn:hover {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.plannedSubjectAddBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px dashed var(--color-border);
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-fg-secondary);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.plannedSubjectAddBtn:hover {
+  border-color: var(--color-border-primary);
+  color: var(--color-fg-primary);
+  background: var(--color-bg-primary-subtle);
 }

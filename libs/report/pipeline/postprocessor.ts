@@ -1,7 +1,7 @@
 /**
  * Phase 4: 후처리
  *
- * Zod 스키마 검증, wordCloud 섹션 주입, ReportContent 조합.
+ * Zod 스키마 검증, ReportContent 조합.
  * 검증 실패 시 섹션별 fallback 전략을 적용한다.
  */
 
@@ -9,14 +9,43 @@ import { z } from "zod/v4";
 
 import { ReportSectionSchema, validateByPlan } from "../schemas.ts";
 import { SECTION_ORDER } from "../types.ts";
+import {
+  buildCompetencyAxes,
+  buildCompetencyHighlights,
+} from "./competency-axes.ts";
 import type {
   ReportPlan,
   ReportContent,
   ReportMeta,
   ReportSection,
   StudentInfo,
+  NonAcademicLevel,
+  ActivityConnectivity,
+  CompetitiveProfilingSection,
 } from "../types.ts";
-import type { PreprocessedData } from "./preprocessor.ts";
+import {
+  computeRecordClosed,
+  convertGradeBySchoolType,
+  fiveToNineGrade,
+  isArtSportDepartment,
+  normalizeSubjectName,
+  type PreprocessedData,
+} from "./preprocessor.ts";
+import { matchMajorEvaluationCriteria } from "../constants/major-evaluation-criteria.ts";
+import {
+  ALL_RECOMMENDED_COURSE_NAMES,
+  getMajorCourseRecommendations,
+} from "../constants/recommended-courses.ts";
+import { ALL_MAJOR_RELATED_SUBJECT_NAMES } from "../constants/major-info-data.ts";
+import {
+  findMajorInfo,
+  getMajorRelatedSubjects,
+  MAJOR_INFO_DATA,
+} from "../constants/major-info-data.ts";
+import { findCutoffData } from "../constants/admission-cutoff-data.ts";
+import { correctSubjectNamesInText } from "../constants/subject-name-corrections.ts";
+import { collectNonMainSubjects } from "../constants/non-main-subjects.ts";
+import { getSubjectCategory } from "../constants/subject-category.ts";
 
 // ─── 검증 결과 타입 ───
 
@@ -32,6 +61,22 @@ export interface PostprocessResult {
   planValidationErrors: string[];
 }
 
+/**
+ * Gemini가 string[] 대신 object[]를 반환하는 경우 string[]으로 정규화.
+ * 예: [{item: "전략1", note: "참고"}] → ["전략1"]
+ */
+const normalizeStringArray = (arr: unknown[]): string[] =>
+  arr.map((item) => {
+    if (typeof item === "string") return item;
+    if (item && typeof item === "object") {
+      const obj = item as Record<string, unknown>;
+      if (typeof obj.item === "string") return obj.item;
+      const first = Object.values(obj).find((v) => typeof v === "string");
+      return typeof first === "string" ? first : JSON.stringify(item);
+    }
+    return String(item);
+  });
+
 // ─── 메인 후처리 함수 ───
 
 export const postprocess = (
@@ -39,7 +84,14 @@ export const postprocess = (
   preprocessed: PreprocessedData,
   studentInfo: StudentInfo,
   plan: ReportPlan,
-  reportId: string
+  reportId: string,
+  universityCandidatesText?: string,
+  /** Phase 2에서 감지된 생기부 기반 강점 계열 (예: "예체능교육") */
+  detectedMajorGroup?: string,
+  /** admissionStrategy에서 majorExploration 기반으로 재생성된 후보군 */
+  strategyUniversityCandidatesText?: string,
+  /** 창체 원문 텍스트 — activityAnalysis 환각 keyActivities 검증에 사용 */
+  creativeActivitiesText?: string
 ): PostprocessResult => {
   const validationResults: SectionValidationResult[] = [];
 
@@ -47,7 +99,13 @@ export const postprocess = (
   const validatedSections: ReportSection[] = [];
 
   for (let section of rawSections) {
-    section = normalizeSection(section, preprocessed, plan, studentInfo);
+    section = normalizeSection(
+      section,
+      preprocessed,
+      plan,
+      studentInfo,
+      creativeActivitiesText
+    );
     const result = validateSection(section);
     validationResults.push(result);
 
@@ -74,19 +132,118 @@ export const postprocess = (
       if (sc.category === "career") profile.radarChart.career = sc.score;
       if (sc.category === "community") profile.radarChart.community = sc.score;
     }
-    if (compScore.growthGrade) {
-      const growthMap: Record<string, number> = {
-        S: 95,
-        A: 80,
-        B: 65,
-        C: 50,
-        D: 35,
-      };
-      const growthNumeric =
-        growthMap[compScore.growthGrade] ?? profile.radarChart.growth;
-      profile.radarChart.growth = growthNumeric;
-      // 발전가능성 숫자 점수를 competencyScore 섹션에 주입
-      compScore.growthScore = growthNumeric;
+    // growthScore는 normalizeSection의 Pass B에서 preprocessor sti.growthScore로
+    // 결정적으로 설정된 후이므로, 여기서는 그 값을 그대로 radarChart에 동기화한다.
+    // 과거: growthGrade를 grade map으로 score로 환산해 덮어쓰는 로직이 있었으나,
+    // Pass B 이후 실행되어 totalScore와 growthScore가 어긋나는 모순을 만들어 제거함.
+    if (typeof compScore.growthScore === "number") {
+      profile.radarChart.growth = compScore.growthScore;
+    }
+  }
+
+  // 2-0. 크로스 섹션 동기화: admissionPrediction.recommendedType → studentProfile.recommendedAdmissionType
+  // Standard/Premium에서는 admissionPrediction의 추천 전형을 studentProfile에도 노출(중복 출력 일관성).
+  // Lite는 admissionPrediction이 없으므로 AI가 직접 생성한 값을 그대로 사용.
+  const RECOMMEND_TYPE_LABEL: Record<string, string> = {
+    학종: "학생부종합",
+    교과: "학생부교과",
+    논술: "논술",
+    정시: "정시",
+    실기: "실기",
+  };
+  const admPredForProfile = validatedSections.find(
+    (s) => s.sectionId === "admissionPrediction"
+  ) as any;
+  if (admPredForProfile?.recommendedType && profile) {
+    const raw = String(admPredForProfile.recommendedType).trim();
+    profile.recommendedAdmissionType = RECOMMEND_TYPE_LABEL[raw] ?? raw;
+  }
+
+  // 2-0-b. admissionStrategy.recommendedAdmissionType 강제 주입
+  // admissionPrediction.recommendedType을 매핑하여 admissionStrategy의 신규 필드에도 동일 주입.
+  // → AI 본문(recommendedPath)이 다른 전형을 언급해도, 렌더러는 이 필드를 우선 노출하므로
+  //   학생/학부모가 가장 먼저 보는 추천 전형은 항상 admissionPrediction과 100% 일치.
+  const admStratForAlign = validatedSections.find(
+    (s) => s.sectionId === "admissionStrategy"
+  ) as any;
+  if (admPredForProfile?.recommendedType && admStratForAlign) {
+    const expectedRaw = String(admPredForProfile.recommendedType).trim();
+    admStratForAlign.recommendedAdmissionType =
+      RECOMMEND_TYPE_LABEL[expectedRaw] ?? expectedRaw;
+  }
+
+  // 2-1. admissionPrediction: chance 값 정규화 (한글 → 영문)
+  const CHANCE_NORMALIZE: Record<string, string> = {
+    "매우 높음": "high",
+    매우높음: "high",
+    높음: "high",
+    보통: "medium",
+    "다소 낮음": "low",
+    낮음: "low",
+    "매우 낮음": "very_low",
+    매우낮음: "very_low",
+  };
+  const normalizeChance = (v: unknown): string => {
+    if (typeof v !== "string") return "medium";
+    const lower = v.trim().toLowerCase();
+    // very_high → high로 통합
+    if (lower === "very_high") return "high";
+    if (["high", "medium", "low", "very_low"].includes(lower)) return lower;
+    return CHANCE_NORMALIZE[v.trim()] ?? "medium";
+  };
+
+  for (const s of validatedSections) {
+    if (s.sectionId !== "admissionPrediction") continue;
+    const ap = s as any;
+    if (!Array.isArray(ap.predictions)) continue;
+    for (const pred of ap.predictions) {
+      if (!Array.isArray(pred.universityPredictions)) continue;
+      for (const up of pred.universityPredictions) {
+        up.chance = normalizeChance(up.chance);
+      }
+    }
+  }
+
+  // 2-2. 학종 chance > 교과 chance 강제 (같은 대학)
+  // 교과/학종이 별도 AI 호출로 생성되므로 코드에서 일관성 보장
+  const admPredForChance = validatedSections.find(
+    (s) => s.sectionId === "admissionPrediction"
+  ) as any;
+  if (admPredForChance && Array.isArray(admPredForChance.predictions)) {
+    const CHANCE_ORDER = ["very_low", "low", "medium", "high", "very_high"];
+    const chanceIndex = (c: string): number => CHANCE_ORDER.indexOf(c);
+    const downgrade = (c: string): string => {
+      const idx = chanceIndex(c);
+      return idx > 0 ? CHANCE_ORDER[idx - 1] : c;
+    };
+
+    const hakjongPred = admPredForChance.predictions.find(
+      (p: any) => p.admissionType === "학종"
+    );
+    const gyogwaPred = admPredForChance.predictions.find(
+      (p: any) => p.admissionType === "교과"
+    );
+
+    if (
+      hakjongPred?.universityPredictions &&
+      gyogwaPred?.universityPredictions
+    ) {
+      const hakjongMap = new Map<string, any>();
+      for (const up of hakjongPred.universityPredictions) {
+        hakjongMap.set(up.university, up);
+      }
+
+      for (const gUp of gyogwaPred.universityPredictions) {
+        const hUp = hakjongMap.get(gUp.university);
+        if (!hUp) continue;
+        // 교과 chance >= 학종 chance → 교과를 한 단계 하향
+        while (
+          chanceIndex(gUp.chance) >= chanceIndex(hUp.chance) &&
+          chanceIndex(gUp.chance) > 0
+        ) {
+          gUp.chance = downgrade(gUp.chance);
+        }
+      }
     }
   }
 
@@ -97,82 +254,1414 @@ export const postprocess = (
   const admStrat = validatedSections.find(
     (s) => s.sectionId === "admissionStrategy"
   ) as any;
-  if (admPred && admStrat) {
-    // admissionStrategy의 대학별 chance를 기준으로 admissionPrediction 동기화
+  // 새 구조(recommendedAdmissionType 기반) 여부 판별 — 새 구조면 chance 관련 처리 전체 건너뛰기
+  const isNewAdmissionFormat =
+    admStrat &&
+    Array.isArray(admStrat.simulations) &&
+    admStrat.simulations.some(
+      (sim: any) =>
+        Array.isArray(sim.cards) &&
+        sim.cards.some((c: any) => c.recommendedAdmissionType)
+    );
+  if (admPred && admStrat && !isNewAdmissionFormat) {
+    // admissionStrategy의 simulations에서 대학별 chance 수집
     const strategyChanceMap = new Map<string, string>();
-    if (Array.isArray(admStrat.universities)) {
-      for (const uni of admStrat.universities) {
-        const key = `${uni.university}|${uni.department}`;
-        strategyChanceMap.set(key, uni.chance);
-        // 대학명만으로도 매핑 (학과가 다를 수 있으므로)
-        strategyChanceMap.set(uni.university, uni.chance);
-      }
-    }
-
-    if (Array.isArray(admPred.predictions)) {
-      for (const pred of admPred.predictions) {
-        if (!Array.isArray(pred.universityPredictions)) continue;
-        for (const uniPred of pred.universityPredictions) {
-          const exactKey = `${uniPred.university}|${uniPred.department}`;
-          const stratChance =
-            strategyChanceMap.get(exactKey) ||
-            strategyChanceMap.get(uniPred.university);
-          if (stratChance && stratChance !== uniPred.chance) {
-            uniPred.chance = stratChance;
+    if (Array.isArray(admStrat.simulations)) {
+      for (const sim of admStrat.simulations) {
+        if (!Array.isArray(sim.cards)) continue;
+        for (const card of sim.cards) {
+          // chance 정규화 (한글 → 영문)
+          if (card.comprehensive?.chance) {
+            card.comprehensive.chance = normalizeChance(
+              card.comprehensive.chance
+            );
           }
-        }
-      }
-    }
-
-    // basePassRates 기반 tier-chance 일관성 강제 보정
-    if (Array.isArray(admPred.predictions)) {
-      // preprocessed basePassRates에서 대학별 tier 정보 수집
-      const tierMap = new Map<string, string>();
-      for (const bp of preprocessed.basePassRates) {
-        tierMap.set(bp.university, bp.tier);
-      }
-      // admissionStrategy에서도 보충
-      if (Array.isArray(admStrat.universities)) {
-        for (const uni of admStrat.universities) {
-          if (!tierMap.has(uni.university)) {
-            tierMap.set(uni.university, uni.tier);
+          if (card.subject?.chance) {
+            card.subject.chance = normalizeChance(card.subject.chance);
           }
-        }
-      }
-
-      for (const pred of admPred.predictions) {
-        if (!Array.isArray(pred.universityPredictions)) continue;
-        for (const uniPred of pred.universityPredictions) {
-          const tier = tierMap.get(uniPred.university);
-          if (!tier) continue;
-
-          // 티어-chance 일관성 강제 보정
-          const { chance } = uniPred;
-          if (tier === "하향") {
-            // 하향 대학은 반드시 high 이상
-            if (
-              chance === "low" ||
-              chance === "very_low" ||
-              chance === "medium"
-            ) {
-              uniPred.chance = "high";
-            }
-          } else if (tier === "안정") {
-            // 안정 대학은 반드시 medium 이상
-            if (chance === "low" || chance === "very_low") {
-              uniPred.chance = "medium";
-            }
-          } else if (tier === "적정") {
-            // 적정 대학은 very_low 불가
-            if (chance === "very_low") {
-              uniPred.chance = "low";
-            }
+          const key = `${card.university}|${card.department}`;
+          if (card.comprehensive?.chance) {
+            strategyChanceMap.set(key, card.comprehensive.chance);
+            strategyChanceMap.set(card.university, card.comprehensive.chance);
           }
-          // 상향 대학은 low/very_low 허용 (도전 지원)
+          // riskLevel 제거 (v5: 더 이상 사용하지 않음)
+          delete card.riskLevel;
         }
       }
     }
   }
+
+  // 3-1. AI 생성 대학-학과가 실제 존재하는지 검증
+  // 커리어넷 데이터 기반 대학 후보군 + 유저 희망대학 허용
+  const candidateSet = new Set<string>();
+  const candidateUniversities = new Set<string>();
+
+  // 커리어넷 데이터에서 목표 학과 관련 대학 후보군 구축
+  const targetDept = studentInfo.targetDepartment ?? "";
+  if (targetDept) {
+    const majorInfo = findMajorInfo(targetDept);
+    if (majorInfo) {
+      for (const university of Object.keys(majorInfo.departmentsByUniversity)) {
+        candidateSet.add(`${university}|${majorInfo.majorName}`);
+        candidateUniversities.add(university);
+      }
+    }
+  }
+
+  // 유저 설정 희망대학도 허용 목록에 추가
+  if (studentInfo.targetUniversities) {
+    for (const tu of studentInfo.targetUniversities) {
+      candidateSet.add(`${tu.universityName}|${tu.department}`);
+      candidateUniversities.add(tu.universityName);
+    }
+  }
+
+  // 커리어넷 + admission-cutoff 기반: 대학에 실제 존재하는 학과인지 검증
+  const normalizeDept = (s: string): string => s.replace(/[과부]$/, "");
+  const isRealDepartment = (
+    university: string,
+    department: string
+  ): boolean => {
+    const deptNorm = normalizeDept(department);
+    for (const m of MAJOR_INFO_DATA) {
+      const univDepts = m.departmentsByUniversity[university];
+      if (!univDepts) continue;
+      if (m.majorName === department) return true;
+      if (
+        univDepts.some((d) => d === department || normalizeDept(d) === deptNorm)
+      )
+        return true;
+    }
+    return false;
+  };
+
+  // admissionPrediction: 존재하지 않는 대학-학과 조합 제거
+  if (admPred && Array.isArray(admPred.predictions)) {
+    for (const pred of admPred.predictions) {
+      if (!Array.isArray(pred.universityPredictions)) continue;
+      pred.universityPredictions = pred.universityPredictions.filter(
+        (up: any) => {
+          const exactKey = `${up.university}|${up.department}`;
+          // 후보군 정확 매칭
+          if (candidateSet.has(exactKey)) return true;
+          // 유저 희망대학
+          if (
+            studentInfo.targetUniversities?.some(
+              (tu) => tu.universityName === up.university
+            )
+          )
+            return true;
+          // 대학-학과 존재 검증
+          if (isRealDepartment(up.university, up.department)) return true;
+          console.warn(
+            `[report:${reportId}] 존재하지 않는 대학-학과 제거: ${up.university} ${up.department}`
+          );
+          return false;
+        }
+      );
+    }
+  }
+
+  // admissionStrategy: simulations 내 존재하지 않는 대학-학과 조합 제거
+  // 새 구조(recommendedAdmissionType 기반)일 때는 코드에서 확정한 대학이므로 건너뛰기
+  if (
+    admStrat &&
+    Array.isArray(admStrat.simulations) &&
+    !isNewAdmissionFormat
+  ) {
+    for (const sim of admStrat.simulations) {
+      if (!Array.isArray(sim.cards)) continue;
+      sim.cards = sim.cards.filter((card: any) => {
+        const exactKey = `${card.university}|${card.department}`;
+        if (candidateSet.has(exactKey)) return true;
+        if (
+          studentInfo.targetUniversities?.some(
+            (tu) => tu.universityName === card.university
+          )
+        )
+          return true;
+        if (isRealDepartment(card.university, card.department)) return true;
+        console.warn(
+          `[report:${reportId}] 존재하지 않는 추천 대학-학과 제거: ${card.university} ${card.department}`
+        );
+        return false;
+      });
+    }
+  }
+
+  // 3-1b. 예체능 학과 → chance를 "unavailable"로 변경 (판단 불가 표시)
+  if (admPred && Array.isArray(admPred.predictions)) {
+    for (const pred of admPred.predictions) {
+      if (!Array.isArray(pred.universityPredictions)) continue;
+      for (const up of pred.universityPredictions) {
+        if (isArtSportDepartment(up.department)) {
+          up.chance = "unavailable";
+          up.rationale =
+            "실기 전형이 포함될 수 있는 예체능계열 학과로, 실기 성적에 따라 합격 여부가 크게 달라지므로 합격 예측을 제공하지 않습니다.";
+          console.log(
+            `[report:${reportId}] 예체능 학과 판단 불가 처리: ${up.university} ${up.department}`
+          );
+        }
+      }
+    }
+  }
+
+  // 3-2. 전처리 후보군 외 대학 제거 (AI가 후보군 밖 대학을 임의 추가한 경우 필터링)
+  if (universityCandidatesText) {
+    const allowedUniversities = new Set<string>();
+    try {
+      const candidates = JSON.parse(universityCandidatesText) as {
+        university: string;
+      }[];
+      for (const c of candidates) {
+        allowedUniversities.add(c.university);
+      }
+    } catch {
+      // 파싱 실패 시 필터링 건너뜀
+    }
+
+    // 유저 희망대학도 허용
+    if (studentInfo.targetUniversities) {
+      for (const tu of studentInfo.targetUniversities) {
+        allowedUniversities.add(tu.universityName);
+      }
+    }
+
+    if (allowedUniversities.size > 0) {
+      // admissionPrediction: 후보군 외 대학 제거
+      if (admPred && Array.isArray(admPred.predictions)) {
+        for (const pred of admPred.predictions) {
+          if (!Array.isArray(pred.universityPredictions)) continue;
+          const before = pred.universityPredictions.length;
+          pred.universityPredictions = pred.universityPredictions.filter(
+            (up: any) => {
+              if (allowedUniversities.has(up.university)) return true;
+              console.log(
+                `[report:${reportId}] 후보군 외 대학 제거 (admissionPrediction): ${up.university} ${up.department}`
+              );
+              return false;
+            }
+          );
+          if (pred.universityPredictions.length < before) {
+            console.log(
+              `[report:${reportId}] admissionPrediction ${pred.admissionType}: 후보군 외 ${before - pred.universityPredictions.length}개 대학 제거`
+            );
+          }
+        }
+      }
+
+      // admissionPrediction: overallComment에서 후보군 외 대학명 포함 문장 제거
+      if (admPred && typeof admPred.overallComment === "string") {
+        // universityPredictions에 남은 대학도 허용
+        const commentAllowed = new Set(allowedUniversities);
+        for (const pred of admPred.predictions ?? []) {
+          for (const up of pred.universityPredictions ?? []) {
+            if (up.university) commentAllowed.add(up.university);
+          }
+        }
+        // 한국어 문장 단위 분할 (마침표 + 공백/끝)
+        const sentences = admPred.overallComment.split(/(?<=다\.)\s*/);
+        const filtered = sentences.filter((sentence: string) => {
+          const univMentions = sentence.match(/[가-힣]{2,10}대학교/g) ?? [];
+          if (univMentions.length === 0) return true;
+          return univMentions.every((name: string) => {
+            if (commentAllowed.has(name)) return true;
+            // "연세대학교" 축약형 "연세대" 등 역매칭
+            for (const allowed of commentAllowed) {
+              if (allowed.startsWith(name.replace(/대학교$/, ""))) return true;
+            }
+            return false;
+          });
+        });
+        if (filtered.length > 0 && filtered.length < sentences.length) {
+          const newComment = filtered.join(" ").trim();
+          console.log(
+            `[report:${reportId}] admissionPrediction overallComment: 후보군 외 대학 포함 문장 ${sentences.length - filtered.length}개 제거`
+          );
+          admPred.overallComment = newComment;
+        }
+      }
+
+      // admissionStrategy: 카드를 코드에서 직접 생성 (AI 생성 카드 제거)
+      // 학교명, 학과명, 전형, 합격가능성만 렌더링하므로 AI를 거칠 필요 없음
+      // 카드를 코드에서 직접 생성 (후보군 데이터 + 커트라인 기반)
+      // strategyUniversityCandidatesText가 없으면 원본 후보군으로 fallback
+      const cardCandidatesText =
+        strategyUniversityCandidatesText ?? universityCandidatesText;
+      if (admStrat && cardCandidatesText) {
+        // 학생 등급을 일반고 9등급제로 환산
+        // 흐름: 5등급제면 9등급으로 → 특목/특성화면 일반고 환산 (preprocessor와 동일)
+        const gs = preprocessed.gradingSystem;
+        const avg = preprocessed.overallAverage;
+        const asNine =
+          gs === "5등급제" && avg != null ? fiveToNineGrade(avg) : (avg ?? 0);
+        const studentGrade9 = studentInfo.schoolType
+          ? convertGradeBySchoolType(
+              studentInfo.schoolType,
+              asNine,
+              studentInfo.schoolName
+            )
+          : asNine;
+
+        const gapToChance = (gap: number): string => {
+          if (gap >= 0.3) return "very_low";
+          if (gap > 0.1) return "low";
+          if (gap >= -0.1) return "medium";
+          return "high";
+        };
+
+        try {
+          const candidates = JSON.parse(cardCandidatesText) as {
+            university: string;
+            department: string;
+            cutoffData?: string;
+            recommendedAdmissionType?: "학종" | "교과";
+          }[];
+
+          // 새 구조(recommendedAdmissionType 포함)면 chance 기반 카드 생성 건너뛰기
+          // wave-executor에서 이미 코드 확정 추천대학으로 대체됨
+          if (candidates.some((c) => c.recommendedAdmissionType)) {
+            // skip — 새 구조에서는 postprocessor가 cards를 덮어쓰지 않음
+          } else {
+            // 학생과 가장 가까운 cutoff를 대표값으로 선택하는 헬퍼
+            const closestCutoff = (
+              cuts: number[],
+              studentGrade: number
+            ): number | null => {
+              if (cuts.length === 0) return null;
+              return cuts.reduce((best, g) =>
+                Math.abs(g - studentGrade) < Math.abs(best - studentGrade)
+                  ? g
+                  : best
+              );
+            };
+
+            // 특수전형 키워드 (preprocessor와 동일)
+            const SPECIAL_KEYWORDS = [
+              "기회균형",
+              "고른기회",
+              "기회균등",
+              "농어촌",
+              "사회배려",
+              "국가보훈",
+              "특성화고",
+              "계열적합",
+            ];
+
+            const cards = candidates.map((cand) => {
+              const rawCutoffs = findCutoffData(
+                cand.university,
+                cand.department
+              );
+              // 특수전형 제외 (preprocessor와 동일 기준)
+              const cutoffs = rawCutoffs.filter(
+                (c: any) =>
+                  !SPECIAL_KEYWORDS.some((kw) => c.admissionName.includes(kw))
+              );
+
+              // 교과 chance — 학생과 가장 가까운 cutoff 기준
+              const gyogwaCuts = cutoffs
+                .filter(
+                  (c: any) =>
+                    c.admissionType === "교과" && c.cutoff50Grade != null
+                )
+                .map((c: any) => c.cutoff50Grade as number);
+              const gyogwaRep = closestCutoff(gyogwaCuts, studentGrade9);
+              const gyogwaChance = gyogwaRep
+                ? gapToChance(
+                    Math.round((studentGrade9 - gyogwaRep) * 1000) / 1000
+                  )
+                : "medium";
+              const gyogwaType =
+                cutoffs.find((c: any) => c.admissionType === "교과")
+                  ?.admissionName ?? "학생부교과";
+
+              // 학종 chance — 학생과 가장 가까운 cutoff 기준
+              const hakjongCuts = cutoffs
+                .filter(
+                  (c: any) =>
+                    c.admissionType === "학종" && c.cutoff50Grade != null
+                )
+                .map((c: any) => c.cutoff50Grade as number);
+              const hakjongRep = closestCutoff(hakjongCuts, studentGrade9);
+              const hakjongChance = hakjongRep
+                ? gapToChance(
+                    Math.round((studentGrade9 - hakjongRep) * 1000) / 1000
+                  )
+                : "medium";
+              const hakjongType =
+                cutoffs.find((c: any) => c.admissionType === "학종")
+                  ?.admissionName ?? "학생부종합";
+
+              return {
+                university: cand.university,
+                department: cand.department,
+                comprehensive: {
+                  admissionType: hakjongType,
+                  chance: hakjongChance,
+                },
+                subject: {
+                  admissionType: gyogwaType,
+                  chance: gyogwaChance,
+                },
+              };
+            });
+
+            // 교과와 학종 chance가 동일하면 교과를 한 단계 내림 (같은 값 방지)
+            const CHANCE_LEVELS = ["very_low", "low", "medium", "high"];
+            for (const card of cards) {
+              const compIdx = CHANCE_LEVELS.indexOf(card.comprehensive.chance);
+              const subjIdx = CHANCE_LEVELS.indexOf(card.subject.chance);
+              if (compIdx === subjIdx && subjIdx > 0) {
+                card.subject.chance = CHANCE_LEVELS[subjIdx - 1];
+              }
+            }
+
+            // simulations 구조에 코드 생성 카드 주입
+            // 교과 커트라인(50%cut) 낮은 순(합격선 높은 순)으로 정렬
+            cards.sort((a, b) => {
+              const aCut = findCutoffData(a.university, a.department)
+                .filter(
+                  (c: any) =>
+                    c.admissionType === "교과" && c.cutoff50Grade != null
+                )
+                .map((c: any) => c.cutoff50Grade as number);
+              const bCut = findCutoffData(b.university, b.department)
+                .filter(
+                  (c: any) =>
+                    c.admissionType === "교과" && c.cutoff50Grade != null
+                )
+                .map((c: any) => c.cutoff50Grade as number);
+              const aMin = aCut.length > 0 ? Math.min(...aCut) : 9;
+              const bMin = bCut.length > 0 ? Math.min(...bCut) : 9;
+              return aMin - bMin;
+            });
+
+            admStrat.simulations = [{ description: "", cards }];
+
+            console.log(
+              `[report:${reportId}] admissionStrategy 카드 코드 생성: ${cards.length}개 (${cards.map((c: any) => c.university).join(", ")})`
+            );
+          } // else 닫기 (새 구조가 아닌 경우만 실행)
+        } catch {
+          // 파싱 실패 시 AI 생성 카드 유지
+        }
+      }
+    }
+  }
+
+  // 3-2b. 교과전형 텍스트에서 교과전형과 무관한 표현 강제 제거
+  // 프롬프트 규칙만으로는 AI가 반복 위반하므로 코드에서 강제 정화
+  // 1) 성적 추이/편차/서류평가 표현
+  // ※ \.(?=\d) — 소수점(예: 3.5등급)을 마침표로 오인하여 문장이 잘리는 문제 방지
+  const GYOGWA_BANNED_PATTERN =
+    /(?:[^.!?]|\.(?=\d))*(?:하락|상승|추세|추이|변화|편차가 불리|반영 과목|강점 과목|이수 여부|서류 평가|서류종합평가|입학사정관)(?:[^.!?]|\.(?=\d))*[.!?]/g;
+  // 2) 개별 과목 성적 관련 문장 제거 (교과전형은 최종 평균만 사용)
+  // 과목명 뒤에 성적/등급/약점/반영 관련 키워드가 있는 문장 전체 제거
+  // ※ "전자바이오물리학과" 같은 학과명 오매칭 방지를 위해 과목명 앞에 공백/문장부호 경계 필요
+  const SUBJECT_GRADE_PATTERN =
+    /(?:[^.!?]|\.(?=\d))*(?:(?:^|[\s,])(?:물리학|화학Ⅰ|화학Ⅱ|생명과학|지구과학|수학Ⅰ|수학Ⅱ|미적분|기하|영어Ⅰ|영어Ⅱ))(?:[^.!?]|\.(?=\d))*(?:\d등급|약점|부진|불리|낮[은아]|성적|반영)(?:[^.!?]|\.(?=\d))*[.!?]/g;
+
+  const sanitizeGyogwaText = (text: string): string => {
+    const cleaned = text
+      .replace(GYOGWA_BANNED_PATTERN, "")
+      .replace(SUBJECT_GRADE_PATTERN, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+    // 제거 후 텍스트가 너무 짧아지면 원본 유지 (안전장치)
+    return cleaned.length >= 20 ? cleaned : text;
+  };
+
+  // admissionStrategy typeStrategies 교과 type
+  if (admStrat && Array.isArray(admStrat.typeStrategies)) {
+    for (const ts of admStrat.typeStrategies) {
+      if (ts.type !== "교과") continue;
+      if (ts.analysis) ts.analysis = sanitizeGyogwaText(ts.analysis);
+      if (ts.reason) ts.reason = sanitizeGyogwaText(ts.reason);
+    }
+  }
+  // admissionPrediction 교과 predictions
+  if (admPred && Array.isArray(admPred.predictions)) {
+    for (const pred of admPred.predictions) {
+      if (pred.admissionType !== "교과") continue;
+      if (pred.analysis) pred.analysis = sanitizeGyogwaText(pred.analysis);
+      if (Array.isArray(pred.universityPredictions)) {
+        for (const up of pred.universityPredictions) {
+          if (up.rationale) up.rationale = sanitizeGyogwaText(up.rationale);
+        }
+      }
+    }
+  }
+
+  // 3-3. admissionPrediction: 정시 predictions 제거 (정시 전형 미지원)
+  if (admPred && Array.isArray(admPred.predictions)) {
+    admPred.predictions = admPred.predictions.filter(
+      (pred: any) => pred.admissionType !== "정시"
+    );
+  }
+
+  // 3-4. admissionPrediction: 교과전형에서 서울대 제거 (교과전형 미운영)
+  if (admPred && Array.isArray(admPred.predictions)) {
+    for (const pred of admPred.predictions) {
+      if (pred.admissionType !== "교과") continue;
+      if (!Array.isArray(pred.universityPredictions)) continue;
+      pred.universityPredictions = pred.universityPredictions.filter(
+        (up: any) => up.university !== "서울대학교"
+      );
+    }
+  }
+
+  // 3-5. admissionPrediction: 누락된 희망대학 강제 주입
+  // AI가 간헐적으로 희망대학을 universityPredictions에서 누락하므로 코드에서 보장
+  if (
+    admPred &&
+    studentInfo.targetUniversities &&
+    studentInfo.targetUniversities.length > 0 &&
+    Array.isArray(admPred.predictions)
+  ) {
+    for (const tu of studentInfo.targetUniversities) {
+      // 이 희망대학이 어떤 전형 타입에 속하는지 결정
+      const admType =
+        tu.admissionType === "학생부교과"
+          ? "교과"
+          : tu.admissionType === "학생부종합"
+            ? "학종"
+            : tu.admissionType === "고른기회"
+              ? "고른기회"
+              : null;
+      if (!admType) continue;
+
+      // 해당 전형의 prediction 찾기
+      const pred = admPred.predictions.find(
+        (p: any) => p.admissionType === admType
+      );
+      if (!pred) continue;
+      if (!Array.isArray(pred.universityPredictions)) {
+        pred.universityPredictions = [];
+      }
+
+      // 이미 포함되어 있는지 확인 (대학명+학과명)
+      const exists = pred.universityPredictions.some(
+        (up: any) =>
+          up.university === tu.universityName && up.department === tu.department
+      );
+      if (exists) continue;
+
+      // 대학명만 일치하는 항목이 있는지 (학과명이 다른 경우)
+      const sameUni = pred.universityPredictions.some(
+        (up: any) => up.university === tu.universityName
+      );
+      if (sameUni) continue;
+
+      // 누락된 희망대학 강제 주입
+      console.log(
+        `[report:${reportId}] 누락된 희망대학 강제 주입: ${tu.universityName} ${tu.department} (${admType})`
+      );
+      pred.universityPredictions.push({
+        university: tu.universityName,
+        department: tu.department,
+        chance: "medium",
+        rationale: `${tu.universityName} ${tu.department}에 대한 합격 가능성은 최종 등급과 합격선을 기준으로 판단이 필요합니다.`,
+      });
+    }
+  }
+
+  // 3-6. admissionPrediction: 유저 희망대학 학과가 데이터에 없으면 "(판단 불가)" 처리
+  if (
+    admPred &&
+    studentInfo.targetUniversities &&
+    studentInfo.targetUniversities.length > 0 &&
+    Array.isArray(admPred.predictions)
+  ) {
+    // 데이터에 존재하지 않는 학과를 가진 희망대학 식별
+    const unavailableDepts = new Set<string>();
+    for (const tu of studentInfo.targetUniversities) {
+      const majorInfo = findMajorInfo(tu.department);
+      const hasCutoff =
+        findCutoffData(tu.universityName, tu.department).length > 0;
+      if (!majorInfo && !hasCutoff) {
+        unavailableDepts.add(`${tu.universityName}|${tu.department}`);
+      }
+    }
+
+    if (unavailableDepts.size > 0) {
+      for (const pred of admPred.predictions) {
+        if (!Array.isArray(pred.universityPredictions)) continue;
+        for (const up of pred.universityPredictions) {
+          const key = `${up.university}|${up.department}`;
+          if (unavailableDepts.has(key)) {
+            up.chance = "medium";
+            up.rationale =
+              "(판단 불가) 해당 학과의 입시 데이터가 확보되지 않아 합격 가능성을 판단할 수 없습니다. 유사 학과의 커트라인을 참고하시기 바랍니다.";
+            console.log(
+              `[report:${reportId}] admissionPrediction: 데이터 미확보 학과 "(판단 불가)" 처리: ${up.university} ${up.department}`
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // 3-7. admissionStrategy: 학과별 실제 커트라인 기반 검증
+  // chance 일관성 보정 + 비현실적/너무 쉬운 대학 제거
+  {
+    const avg = preprocessed.overallAverage;
+    const gs = preprocessed.gradingSystem;
+    if (avg != null && gs) {
+      // 학생 등급을 일반고 9등급제로 환산 (preprocessor와 동일 흐름)
+      const asNine = gs === "5등급제" ? fiveToNineGrade(avg) : avg;
+      const studentGrade9 = studentInfo.schoolType
+        ? convertGradeBySchoolType(
+            studentInfo.schoolType,
+            asNine,
+            studentInfo.schoolName
+          )
+        : asNine;
+
+      // 대학별 커트라인 조회: 학과별 실제 데이터 → 하드코딩 fallback
+      const targetDept = studentInfo.targetDepartment ?? "";
+
+      // 모든 희망대학이 교과전형인지 판별
+      const isGyogwaOnly =
+        (studentInfo.targetUniversities?.length ?? 0) > 0 &&
+        studentInfo.targetUniversities!.every(
+          (t) => t.admissionType === "학생부교과"
+        );
+
+      const getRepCutoff9 = (
+        university: string,
+        department?: string
+      ): number | null => {
+        // 교과 50%cut 우선 — 대학 수준을 가장 정확하게 반영하는 지표
+        // 학종 cutoff는 전형별 편차가 커서(계열적합 3.29 vs 학업우수 1.86) 대표값으로 부적절
+        const dept = department || targetDept;
+        if (dept) {
+          const cutoffs = findCutoffData(university, dept);
+          if (cutoffs.length > 0) {
+            // 교과 50%cut 우선
+            const gyogwa = cutoffs.find((c) => c.admissionType === "교과");
+            if (gyogwa?.cutoff50Grade != null) return gyogwa.cutoff50Grade;
+            // 교과 없으면 학종 fallback
+            const hakjong = cutoffs.find((c) => c.admissionType === "학종");
+            if (hakjong?.cutoff50Grade != null) return hakjong.cutoff50Grade;
+            for (const c of cutoffs) {
+              if (c.cutoff50Grade != null) return c.cutoff50Grade;
+            }
+          }
+        }
+        // 2) fallback: 대학 전체 하드코딩 맵
+        return null;
+      };
+
+      // 하드코딩 fallback (9등급 기준 통일)
+      const universityFallback9: Record<string, number> = {
+        서울대학교: 1.5,
+        KAIST: 1.5,
+        연세대학교: 1.5,
+        고려대학교: 1.5,
+        포항공과대학교: 1.5,
+        서강대학교: 2.0,
+        성균관대학교: 2.0,
+        한양대학교: 2.0,
+        중앙대학교: 2.5,
+        경희대학교: 2.5,
+        한국외국어대학교: 2.5,
+        서울시립대학교: 2.5,
+        건국대학교: 3.0,
+        동국대학교: 3.0,
+        홍익대학교: 3.0,
+        아주대학교: 3.5,
+        인하대학교: 3.5,
+        경북대학교: 3.5,
+        부산대학교: 3.5,
+        국민대학교: 4.0,
+        숭실대학교: 4.0,
+        세종대학교: 4.0,
+        단국대학교: 4.0,
+        서울과학기술대학교: 4.0,
+        "한양대학교(ERICA)": 4.5,
+        한국항공대학교: 4.5,
+        광운대학교: 4.5,
+        명지대학교: 4.5,
+        인천대학교: 5.0,
+        가천대학교: 5.0,
+        경기대학교: 5.0,
+        충북대학교: 5.0,
+        충남대학교: 5.0,
+      };
+
+      // 대학+학과의 9등급 커트라인 조회
+      const getCutoff9 = (
+        university: string,
+        department?: string
+      ): number | null => {
+        const real = getRepCutoff9(university, department);
+        if (real != null) return real;
+        // ERICA 변형 대응
+        if (university.includes("ERICA"))
+          return universityFallback9["한양대학교(ERICA)"] ?? null;
+        return universityFallback9[university] ?? null;
+      };
+
+      // 거리 기준 (9등급 통일): ±1.5
+      const unreachableGap9 = 1.5;
+      const tooEasyGap9 = 1.5;
+
+      // 유저 희망대학 Set (비현실적 제거에서 예외 — 유저가 직접 선택한 대학은 솔직한 분석과 함께 유지)
+      const userTargetUniSet = new Set<string>();
+      if (studentInfo.targetUniversities) {
+        for (const tu of studentInfo.targetUniversities) {
+          userTargetUniSet.add(tu.universityName);
+        }
+      }
+
+      // admissionPrediction: 비현실적 대학 제거 (유저 희망대학 예외)
+      if (admPred && Array.isArray(admPred.predictions)) {
+        for (const pred of admPred.predictions) {
+          if (!Array.isArray(pred.universityPredictions)) continue;
+          pred.universityPredictions = pred.universityPredictions.filter(
+            (up: any) => {
+              // 유저 희망대학은 등급이 맞지 않더라도 유지
+              if (userTargetUniSet.has(up.university)) return true;
+              const cutoff9 = getCutoff9(up.university, up.department);
+              if (cutoff9 == null) return true;
+              if (studentGrade9 - cutoff9 > unreachableGap9) {
+                console.log(
+                  `[report:${reportId}] 비현실적 대학 제거: ${up.university} (cutoff9=${cutoff9.toFixed(2)}, student9=${studentGrade9.toFixed(2)}, gap=${(studentGrade9 - cutoff9).toFixed(2)})`
+                );
+                return false;
+              }
+              return true;
+            }
+          );
+        }
+      }
+
+      // [삭제됨] admissionStrategy 카드 보정 — 카드를 코드에서 직접 생성하므로 불필요
+      if (false as boolean) {
+        for (const sim of admStrat.simulations) {
+          if (!Array.isArray(sim.cards)) continue;
+
+          // 1단계: 비현실적/너무 쉬운 대학 제거
+          sim.cards = sim.cards.filter((card: any) => {
+            const cutoff9 = getCutoff9(card.university, card.department);
+            if (cutoff9 == null) return true;
+            const gap = studentGrade9 - cutoff9;
+            if (gap > unreachableGap9) {
+              console.log(
+                `[report:${reportId}] 비현실적 추천 제거: ${card.university} (cutoff9=${cutoff9.toFixed(2)}, gap=${gap.toFixed(2)})`
+              );
+              return false;
+            }
+            if (gap < -tooEasyGap9) {
+              console.log(
+                `[report:${reportId}] 하향 과다 추천 제거: ${card.university} (cutoff9=${cutoff9.toFixed(2)}, gap=${gap.toFixed(2)})`
+              );
+              return false;
+            }
+            return true;
+          });
+
+          // 2단계: riskLevel 제거 (v5: 더 이상 사용하지 않음)
+          for (const card of sim.cards) {
+            delete card.riskLevel;
+          }
+
+          // 3단계: cutoff 기반 chance 강제 보정 (AI가 숫자 비교를 안 하므로 코드에서 처리)
+          // 기준: 교과 50%cut vs 학생 등급 (9등급 통일)
+          //   gap = studentGrade9 - cutoff9 (양수=미달, 음수=초과)
+          //   |gap| <= 0.2 → medium (적정)
+          //   gap > 0.2 → low (상향, 미달)  /  gap > 0.5 → very_low
+          //   gap < -0.2 → high (안정, 초과)  /  gap < -0.5 → very_high
+          {
+            const CHANCE_LEVELS = [
+              "very_low",
+              "low",
+              "medium",
+              "high",
+            ] as const;
+            const gapToChance = (gap: number): string => {
+              if (gap >= 0.3) return "very_low";
+              if (gap > 0.1) return "low";
+              if (gap >= -0.1) return "medium";
+              return "high";
+            };
+
+            for (const card of sim.cards) {
+              const dept = card.department ?? "";
+              const cutoffs = findCutoffData(card.university, dept);
+              if (cutoffs.length === 0) continue;
+
+              // 교과 50%cut 기준 chance 보정
+              if (card.subject?.chance) {
+                const gyogwaCutoffs = cutoffs.filter(
+                  (c: any) =>
+                    c.admissionType === "교과" && c.cutoff50Grade != null
+                );
+                if (gyogwaCutoffs.length > 0) {
+                  // 가장 유리한 교과전형의 50%cut 사용
+                  const bestCutoff = Math.min(
+                    ...gyogwaCutoffs.map((c: any) => c.cutoff50Grade)
+                  );
+                  const gap = studentGrade9 - bestCutoff;
+                  const correctChance = gapToChance(gap);
+                  if (card.subject.chance !== correctChance) {
+                    console.log(
+                      `[report:${reportId}] 교과 chance 보정: ${card.university} ${card.subject.chance}→${correctChance} (student=${studentGrade9.toFixed(2)}, cutoff50=${bestCutoff.toFixed(2)}, gap=${gap.toFixed(2)})`
+                    );
+                    card.subject.chance = correctChance;
+                  }
+                }
+              }
+
+              // 학종 50%cut 기준 chance 보정
+              if (card.comprehensive?.chance) {
+                const hakjongCutoffs = cutoffs.filter(
+                  (c: any) =>
+                    c.admissionType === "학종" && c.cutoff50Grade != null
+                );
+                if (hakjongCutoffs.length > 0) {
+                  // 가장 유리한 학종전형의 50%cut 사용
+                  const bestCutoff = Math.min(
+                    ...hakjongCutoffs.map((c: any) => c.cutoff50Grade)
+                  );
+                  const gap = studentGrade9 - bestCutoff;
+                  const correctChance = gapToChance(gap);
+                  if (card.comprehensive.chance !== correctChance) {
+                    console.log(
+                      `[report:${reportId}] 학종 chance 보정: ${card.university} ${card.comprehensive.chance}→${correctChance} (student=${studentGrade9.toFixed(2)}, cutoff50=${bestCutoff.toFixed(2)}, gap=${gap.toFixed(2)})`
+                    );
+                    card.comprehensive.chance = correctChance;
+                  }
+                }
+              }
+            }
+          }
+
+          // 4단계: 5등급제 교과전형 현실성 보정
+          // 5등급제 2등급 초반 학생에게 인서울 중위권 교과전형 chance "high" 이상은 비현실적
+          // 인서울 중위권 교과 합격선은 5등급제 기준 1.4~1.6등급
+          if (gs === "5등급제" && avg != null) {
+            for (const card of sim.cards) {
+              if (!card.subject?.chance) continue;
+              const cutoff9 = getCutoff9(card.university, card.department);
+              if (cutoff9 == null) continue;
+
+              // 인서울/수도권 중위권 이상 대학 (9등급 기준 커트라인 3.5 이하)
+              // 이 대학들의 교과전형 합격선은 5등급제 1.4~1.6 수준
+              // 5등급제 2.0 이상 학생에게는 교과 chance를 "medium" 이하로 제한
+              if (cutoff9 <= 3.5 && avg >= 2.0) {
+                const CHANCE_RANK: Record<string, number> = {
+                  very_low: 0,
+                  low: 1,
+                  medium: 2,
+                  high: 3,
+                  very_high: 4,
+                };
+                const currentRank = CHANCE_RANK[card.subject.chance] ?? 2;
+
+                // 교과 합격선(9등급)과 학생 등급(9등급 환산) 격차에 따라 제한
+                const gap = studentGrade9 - cutoff9;
+                let maxChance: string;
+                if (gap > 1.0) {
+                  maxChance = "very_low";
+                } else if (gap > 0.5) {
+                  maxChance = "low";
+                } else {
+                  maxChance = "medium";
+                }
+
+                const maxRank = CHANCE_RANK[maxChance] ?? 2;
+                if (currentRank > maxRank) {
+                  console.warn(
+                    `[report:${reportId}] 5등급제 교과전형 현실성 보정: ${card.university} 교과 ${card.subject.chance}→${maxChance} (5등급 avg=${avg.toFixed(2)}, cutoff9=${cutoff9.toFixed(2)}, gap=${gap.toFixed(2)})`
+                  );
+                  card.subject.chance = maxChance;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // [삭제됨] 3-8. 학종/교과 chance 강제 분리 — 카드를 코드에서 직접 생성하므로 불필요
+  if (false as boolean) {
+    const CHANCE_ORDER_FINAL = [
+      "very_low",
+      "low",
+      "medium",
+      "high",
+      "very_high",
+    ] as const;
+    const chanceIdxF = (c: string): number =>
+      CHANCE_ORDER_FINAL.indexOf(c as (typeof CHANCE_ORDER_FINAL)[number]);
+    const chanceUpF = (c: string): string => {
+      const i = chanceIdxF(c);
+      return i < CHANCE_ORDER_FINAL.length - 1 ? CHANCE_ORDER_FINAL[i + 1] : c;
+    };
+    const chanceDownF = (c: string): string => {
+      const i = chanceIdxF(c);
+      return i > 0 ? CHANCE_ORDER_FINAL[i - 1] : c;
+    };
+    const bumpPercent = (label: string, delta: number): string => {
+      const m = label.match(/^(\d+)~(\d+)%$/);
+      if (!m) return label;
+      const lo = Math.max(0, Math.min(100, parseInt(m[1]) + delta));
+      const hi = Math.max(0, Math.min(100, parseInt(m[2]) + delta));
+      return `${lo}~${hi}%`;
+    };
+
+    for (const sim of admStrat.simulations) {
+      if (!Array.isArray(sim.cards)) continue;
+      for (const card of sim.cards) {
+        const comp = card.comprehensive;
+        const subj = card.subject;
+        if (!comp || !subj) continue;
+
+        // chance가 동일하면 → 교과를 한 단계 내림
+        if (comp.chance === subj.chance) {
+          subj.chance = chanceDownF(subj.chance);
+          console.warn(
+            `[report:${reportId}] 학종/교과 chance 동일 보정: ${card.university} → 학종=${comp.chance}, 교과=${subj.chance}`
+          );
+        }
+
+        // 학종 chance가 교과보다 낮으면 → 교과를 학종보다 한 단계 아래로
+        if (chanceIdxF(comp.chance) < chanceIdxF(subj.chance)) {
+          subj.chance =
+            chanceIdxF(comp.chance) > 0
+              ? CHANCE_ORDER_FINAL[chanceIdxF(comp.chance) - 1]
+              : comp.chance;
+          console.warn(
+            `[report:${reportId}] 학종<교과 역전 보정: ${card.university} → 학종=${comp.chance}, 교과=${subj.chance}`
+          );
+        }
+
+        // chancePercentLabel이 동일하면 → 교과 -10%p (학종은 유지)
+        if (
+          comp.chancePercentLabel &&
+          subj.chancePercentLabel &&
+          comp.chancePercentLabel === subj.chancePercentLabel
+        ) {
+          subj.chancePercentLabel = bumpPercent(subj.chancePercentLabel, -10);
+          console.warn(
+            `[report:${reportId}] 학종/교과 퍼센트 동일 보정: ${card.university} → 학종=${comp.chancePercentLabel}, 교과=${subj.chancePercentLabel}`
+          );
+        }
+      }
+    }
+  }
+
+  // 3-4. subjectAnalysis: evaluationImpact 코드 기반 강제 설정
+  const subjectSection = validatedSections.find(
+    (s) => s.sectionId === "subjectAnalysis"
+  );
+  const subjectData = subjectSection as any;
+  if (subjectData?.subjects) {
+    const { track } = studentInfo; // "문과" | "이과"
+    const grade = studentInfo.grade ?? 3;
+    const recommendations = getMajorCourseRecommendations(
+      grade,
+      preprocessed.curriculumVersion
+    );
+
+    // detectedMajorGroup 우선 사용, 없으면 희망학과 폴백
+    const targetDept = detectedMajorGroup || studentInfo.targetDepartment || "";
+    const matchedMajor = recommendations.find((r) => {
+      const majorLower = r.major.toLowerCase();
+      const deptLower = targetDept.toLowerCase();
+      // 학과명에 계열 키워드 포함 여부
+      if (
+        deptLower.includes("컴퓨터") ||
+        deptLower.includes("소프트웨어") ||
+        deptLower.includes("ai") ||
+        deptLower.includes("인공지능")
+      )
+        return majorLower.includes("컴퓨터") || majorLower.includes("ai");
+      if (
+        deptLower.includes("의") ||
+        deptLower.includes("치의") ||
+        deptLower.includes("한의")
+      )
+        return majorLower === "의학";
+      if (deptLower.includes("약")) return majorLower === "약학";
+      if (deptLower.includes("간호") || deptLower.includes("보건"))
+        return majorLower.includes("간호");
+      if (
+        deptLower.includes("생명") ||
+        deptLower.includes("바이오") ||
+        deptLower.includes("생화학") ||
+        deptLower.includes("미생물")
+      )
+        return majorLower.includes("생명");
+      if (
+        deptLower.includes("화학") ||
+        deptLower.includes("재료") ||
+        deptLower.includes("신소재") ||
+        deptLower.includes("화공") ||
+        deptLower.includes("에너지")
+      )
+        return majorLower.includes("화학");
+      if (
+        deptLower.includes("기계") ||
+        deptLower.includes("항공") ||
+        deptLower.includes("조선")
+      )
+        return majorLower === "공학";
+      if (
+        deptLower.includes("전기") ||
+        deptLower.includes("전자") ||
+        deptLower.includes("반도체")
+      )
+        return majorLower === "공학";
+      if (
+        deptLower.includes("건축") ||
+        deptLower.includes("건설") ||
+        deptLower.includes("도시") ||
+        deptLower.includes("토목")
+      )
+        return majorLower === "공학";
+      if (
+        deptLower.includes("지구") ||
+        deptLower.includes("천문") ||
+        deptLower.includes("대기") ||
+        deptLower.includes("해양") ||
+        deptLower.includes("환경")
+      )
+        return majorLower.includes("지구");
+      if (deptLower.includes("수학") || deptLower.includes("통계"))
+        return majorLower === "자연과학";
+      if (deptLower.includes("물리"))
+        return majorLower === "자연과학" || majorLower === "공학";
+      if (
+        deptLower.includes("경영") ||
+        deptLower.includes("경제") ||
+        deptLower.includes("무역") ||
+        deptLower.includes("금융")
+      )
+        return majorLower.includes("경영") || majorLower.includes("경제");
+      if (
+        deptLower.includes("정치") ||
+        deptLower.includes("행정") ||
+        deptLower.includes("사회") ||
+        deptLower.includes("심리") ||
+        deptLower.includes("미디어")
+      )
+        return majorLower.includes("사회");
+      return false;
+    });
+
+    // 핵심 과목 셋 구성 (기존 recommended-courses + 커리어넷 API 데이터)
+    const coreSubjectsSet = new Set(matchedMajor?.coreSubjects ?? []);
+    const recommendedSet = new Set(matchedMajor?.recommendedCourses ?? []);
+
+    // 커리어넷 API 기반 학과별 관련 교과 (더 정확한 데이터)
+    // 커리어넷 원본은 "수학ⅠㆍⅡ", "과학교과 : 물리학Ⅰ" 등 복합 형태이므로 분해 필요
+    const expandCareerNetSubjects = (subjects: string[]): string[] => {
+      const result: string[] = [];
+      for (const raw of subjects) {
+        // "과학교과 : 물리학Ⅰ" → "물리학Ⅰ"
+        const cleaned = raw.replace(/^[^:]+:\s*/, "").trim();
+        // "수학ⅠㆍⅡ" → ["수학Ⅰ", "수학Ⅱ"]
+        const combined = cleaned.match(/^(.+?)([ⅠⅡⅢ])ㆍ([ⅠⅡⅢ])$/);
+        if (combined) {
+          result.push(`${combined[1]}${combined[2]}`);
+          result.push(`${combined[1]}${combined[3]}`);
+        } else {
+          result.push(cleaned);
+        }
+      }
+      return result;
+    };
+
+    // 커리어넷 API 검색: detectedMajorGroup은 계열명("예체능교육")이므로
+    // 학과명(targetDepartment)으로도 검색하여 합산
+    const majorInfoByDept = findMajorInfo(targetDept);
+    const majorInfoByTarget = studentInfo.targetDepartment
+      ? findMajorInfo(studentInfo.targetDepartment)
+      : undefined;
+    const mergedElective = [
+      ...expandCareerNetSubjects(majorInfoByDept?.electiveSubjects ?? []),
+      ...expandCareerNetSubjects(majorInfoByTarget?.electiveSubjects ?? []),
+    ];
+    const mergedCareer = [
+      ...expandCareerNetSubjects(majorInfoByDept?.careerSubjects ?? []),
+      ...expandCareerNetSubjects(majorInfoByTarget?.careerSubjects ?? []),
+    ];
+    const careerNetElective = new Set(mergedElective);
+    const careerNetCareer = new Set(mergedCareer);
+    const careerNetSubjects = new Set([...mergedElective, ...mergedCareer]);
+
+    // 예체능 과목 목록
+    const ARTS_PHYSICAL_SUBJECTS = new Set([
+      "체육",
+      "체육1",
+      "체육2",
+      "운동과 건강",
+      "스포츠 생활",
+      "스포츠 문화",
+      "체육 탐구",
+      "음악",
+      "음악1",
+      "음악2",
+      "미술",
+      "미술1",
+      "미술2",
+      "음악 감상과 비평",
+      "미술 감상과 비평",
+      "음악 연주와 창작",
+      "미술 창작",
+    ]);
+
+    // 예체능/예체능교육 계열이면 예체능 과목을 비핵심에서 제외
+    const isArtsPhysicalMajor =
+      targetDept === "예체능" ||
+      targetDept === "예체능교육" ||
+      (studentInfo.targetDepartment ?? "")
+        .toLowerCase()
+        .match(/체육|음악|미술|무용|디자인/) !== null;
+
+    // 비핵심 과목 (evaluationImpact: very_low)
+    // ⚠️ "정보"는 컴공/AI 계열에서 핵심이므로 여기서 제외 — 커리어넷 매칭으로 판정
+    const NON_CORE_SUBJECTS = new Set([
+      "기술·가정",
+      "기술가정",
+      "한문",
+      "한문Ⅰ",
+      "한문Ⅱ",
+      "일본어Ⅰ",
+      "일본어Ⅱ",
+      "중국어Ⅰ",
+      "중국어Ⅱ",
+      "독일어Ⅰ",
+      "프랑스어Ⅰ",
+      "스페인어Ⅰ",
+      "러시아어Ⅰ",
+      "아랍어Ⅰ",
+      "베트남어Ⅰ",
+      "독서",
+      "교양",
+      "보건",
+      "환경",
+      "논리학",
+      // 예체능 과목: 예체능/예체능교육 계열이 아닌 경우에만 비핵심
+      ...(!isArtsPhysicalMajor
+        ? [
+            "체육",
+            "체육1",
+            "체육2",
+            "운동과 건강",
+            "스포츠 생활",
+            "음악",
+            "음악1",
+            "음악2",
+            "미술",
+            "미술1",
+            "미술2",
+            "음악 감상과 비평",
+            "미술 감상과 비평",
+          ]
+        : []),
+    ]);
+
+    // 공통 기초 과목 (최소 medium)
+    const COMMON_BASE = new Set([
+      "국어",
+      "문학",
+      "화법과 작문",
+      "언어와 매체",
+      "독서",
+      "영어",
+      "영어Ⅰ",
+      "영어Ⅱ",
+      "영어 회화",
+      "영어 독해와 작문",
+      "화법과 언어",
+      "독서와 작문",
+      "문학과 매체",
+    ]);
+
+    // 수학 과목
+    const MATH_SUBJECTS = new Set([
+      "수학",
+      "수학Ⅰ",
+      "수학Ⅱ",
+      "미적분",
+      "기하",
+      "확률과 통계",
+      "인공지능 수학",
+      "경제 수학",
+      "실용 수학",
+      "대수",
+      "미적분Ⅰ",
+      "미적분Ⅱ",
+    ]);
+
+    // 과학 과목
+    const SCIENCE_SUBJECTS = new Set([
+      "통합과학",
+      "과학탐구실험",
+      "물리학Ⅰ",
+      "물리학Ⅱ",
+      "화학Ⅰ",
+      "화학Ⅱ",
+      "생명과학Ⅰ",
+      "생명과학Ⅱ",
+      "지구과학Ⅰ",
+      "지구과학Ⅱ",
+      "물리학",
+      "화학",
+      "생명과학",
+      "지구과학",
+      "역학과 에너지",
+      "전자기와 양자",
+      "물질과 에너지",
+      "화학 반응의 세계",
+      "세포와 물질대사",
+      "생물의 유전",
+      "지구시스템과학",
+      "행성우주과학",
+    ]);
+
+    // 사회 과목
+    const SOCIAL_SUBJECTS = new Set([
+      "한국사",
+      "세계사",
+      "동아시아사",
+      "한국지리",
+      "세계지리",
+      "여행지리",
+      "경제",
+      "정치와 법",
+      "사회·문화",
+      "사회문화",
+      "사회문제 탐구",
+      "생활과 윤리",
+      "윤리와 사상",
+      "철학",
+      "세계시민과 지리",
+    ]);
+
+    type EvalImpact = "very_high" | "high" | "medium" | "low" | "very_low";
+
+    const determineImpact = (subjectName: string): EvalImpact => {
+      // "2학년 수학 Ⅱ" → "수학Ⅱ", "1학년 국어" → "국어"
+      // 1) 학년 접두사 제거  2) 과목명과 로마숫자 사이 공백 제거
+      const name = subjectName
+        .trim()
+        .replace(/^\d학년\s+/, "")
+        .replace(/\s+([ⅠⅡⅢ])/g, "$1");
+
+      // 1. 커리어넷 API 데이터 기반 — 학과별 관련 교과 (최우선)
+      if (careerNetElective.has(name)) return "very_high";
+      if (careerNetCareer.has(name)) return "high";
+
+      // 2. 기존 recommended-courses 데이터 보완
+      if (recommendedSet.has(name)) return "high";
+
+      // 2-1. 예체능/예체능교육 계열: 예체능 과목 최소 medium 보장
+      if (isArtsPhysicalMajor && ARTS_PHYSICAL_SUBJECTS.has(name)) {
+        return "medium";
+      }
+
+      // 3. 비핵심 과목 → very_low (커리어넷/추천과목에 없는 경우에만)
+      if (NON_CORE_SUBJECTS.has(name)) return "very_low";
+
+      // 4. 계열 기반 기본 판정
+      // "통합" 계열이면 목표학과 기반으로 이과/문과 추정
+      const targetDeptLower = (
+        studentInfo.targetDepartment ?? ""
+      ).toLowerCase();
+      const scienceDeptKeywords = [
+        "공학",
+        "컴퓨터",
+        "소프트웨어",
+        "전자",
+        "기계",
+        "화학",
+        "물리",
+        "수학",
+        "생명",
+        "바이오",
+        "의학",
+        "약학",
+        "간호",
+        "AI",
+        "인공지능",
+        "데이터",
+        "정보",
+        "건축",
+        "토목",
+        "환경",
+        "에너지",
+        "재료",
+        "산업",
+        "시스템",
+      ];
+      const isScience =
+        track === "이과" ||
+        (track === "통합" &&
+          scienceDeptKeywords.some((kw) => targetDeptLower.includes(kw)));
+
+      if (isScience) {
+        if (MATH_SUBJECTS.has(name)) return "very_high";
+        if (SCIENCE_SUBJECTS.has(name)) return "high";
+        if (COMMON_BASE.has(name)) return "medium";
+        if (SOCIAL_SUBJECTS.has(name)) return "low";
+      } else {
+        if (COMMON_BASE.has(name)) return "high";
+        if (SOCIAL_SUBJECTS.has(name)) {
+          return recommendedSet.has(name) ? "very_high" : "high";
+        }
+        if (MATH_SUBJECTS.has(name)) {
+          return coreSubjectsSet.has("수학") ? "high" : "medium";
+        }
+        if (SCIENCE_SUBJECTS.has(name)) return "low";
+      }
+
+      // 5. 커리어넷에 어떤 형태로든 관련 과목이면 medium
+      if (careerNetSubjects.size > 0) return "low";
+
+      return "low";
+    };
+
+    for (const subject of subjectData.subjects as {
+      subjectName: string;
+      evaluationImpact?: string;
+      importancePercent?: number;
+    }[]) {
+      subject.evaluationImpact = determineImpact(subject.subjectName);
+      delete subject.importancePercent;
+    }
+  }
+
+  // 3-x. competitiveProfiling 산출 (코드 기반, AI 태스크 아님)
+  {
+    const calculateLevel = (): NonAcademicLevel => {
+      if (!compScore?.scores) return "중위권";
+      const careerScore =
+        compScore.scores.find((sc: any) => sc.category === "career")?.score ??
+        0;
+      const communityScore =
+        compScore.scores.find((sc: any) => sc.category === "community")
+          ?.score ?? 0;
+      const combined = careerScore + communityScore;
+      if (combined >= 160) return "상위권";
+      if (combined >= 130) return "중상위권";
+      if (combined >= 100) return "중위권";
+      if (combined >= 70) return "중하위권";
+      return "하위권";
+    };
+
+    const calculateScore = (level: NonAcademicLevel): number => {
+      const ranges: Record<NonAcademicLevel, [number, number]> = {
+        상위권: [80, 95],
+        중상위권: [65, 80],
+        중위권: [50, 65],
+        중하위권: [35, 50],
+        하위권: [20, 35],
+      };
+      const [min, max] = ranges[level];
+      // 동일 학생이면 플랜과 무관하게 같은 점수가 나오도록 결정적 계산
+      const combined =
+        (compScore?.scores?.find((sc: any) => sc.category === "career")
+          ?.score ?? 0) +
+        (compScore?.scores?.find((sc: any) => sc.category === "community")
+          ?.score ?? 0);
+      const offset = combined % (max - min + 1);
+      return min + offset;
+    };
+
+    const extractConnectivity = (): ActivityConnectivity => {
+      const story = validatedSections.find(
+        (s) => s.sectionId === "storyAnalysis"
+      ) as any;
+      if (story?.careerConsistencyGrade) {
+        const grade = story.careerConsistencyGrade;
+        if (grade === "S" || grade === "A") return "있음";
+        if (grade === "B" || grade === "C") return "보통";
+        return "없음";
+      }
+
+      const activity = validatedSections.find(
+        (s) => s.sectionId === "activityAnalysis"
+      ) as any;
+      if (activity?.activities) {
+        const ratings = activity.activities.flatMap(
+          (a: any) =>
+            a.yearlyAnalysis?.map((y: any) => y.rating).filter(Boolean) ?? []
+        );
+        const goodCount = ratings.filter(
+          (r: string) => r === "excellent" || r === "good"
+        ).length;
+        if (goodCount >= 3) return "있음";
+        if (goodCount >= 1) return "보통";
+      }
+
+      return "보통";
+    };
+
+    // 전공 방향: 학생 1지망 학과를 우선 사용. AI 추천(majorExploration)은 1지망이
+    // 없을 때만 fallback. 학생이 명시한 1지망을 AI 추천이 덮어쓰면 컨설턴트 검수와
+    // 비교과 경쟁력 분석이 학생 1지망과 어긋나는 분석 프레임으로 흐름.
+    const majorExplSection = validatedSections.find(
+      (s) => s.sectionId === "majorExploration"
+    ) as Record<string, unknown> | undefined;
+    const majorExplSuggestions = majorExplSection?.suggestions as
+      | { major: string }[]
+      | undefined;
+    const majorDirection =
+      studentInfo.targetDepartment ??
+      studentInfo.targetUniversities?.[0]?.department ??
+      majorExplSuggestions?.[0]?.major ??
+      (profile as any)?.catchPhrase?.split(" ")[0] ??
+      "미정";
+
+    const keywords: string[] = [];
+    if (profile?.tags && Array.isArray(profile.tags)) {
+      keywords.push(...(profile.tags as string[]).slice(0, 3));
+    }
+    if (keywords.length === 0) {
+      keywords.push(majorDirection);
+    }
+
+    const level = calculateLevel();
+    const score = calculateScore(level);
+    const connectivity = extractConnectivity();
+
+    const competitiveProfilingSection: CompetitiveProfilingSection = {
+      sectionId: "competitiveProfiling",
+      title: "비교과 경쟁력 정밀 분석",
+      level,
+      majorDirection,
+      keywords,
+      connectivity,
+      score,
+    };
+
+    validatedSections.push(competitiveProfilingSection as ReportSection);
+  }
+
+  // 3-9. majorExploration: 플랜별 필드 트리밍
+  // AI는 항상 Premium 수준(풀 필드)으로 생성하므로, Standard/Lite에서는 불필요 필드 제거
+  if (plan !== "premium") {
+    const majorSection = validatedSections.find(
+      (s) => s.sectionId === "majorExploration"
+    ) as Record<string, unknown> | undefined;
+    if (majorSection && Array.isArray(majorSection.suggestions)) {
+      for (const sug of majorSection.suggestions as Record<string, unknown>[]) {
+        delete sug.university;
+        delete sug.gapAnalysis;
+      }
+    }
+  }
+
+  // 3-10. [삭제됨] majorExploration: 성적 기준 미달 시 의·치·한·약·수 학과 제거
+  // → wave-executor의 majorExploration 보정 단계로 통합 (중복 제거).
+  //   보정 단계에서 미리 제외해야, 같은 계열의 비제한 학과(제약학과 등)로 폴백 보충이 가능.
+  //   여기서 후행 제거하면 3개 보충 보장이 무력화됨.
 
   // 4. 섹션 정렬 (플랜별 순서)
   const sectionOrder = SECTION_ORDER[plan];
@@ -189,6 +1678,7 @@ export const postprocess = (
     studentInfo: {
       name: studentInfo.name,
       grade: studentInfo.grade,
+      isGraduate: studentInfo.isGraduate,
       track: studentInfo.track,
       schoolType: studentInfo.schoolType,
       targetUniversity: studentInfo.targetUniversity,
@@ -196,7 +1686,7 @@ export const postprocess = (
       hasMockExamData: studentInfo.hasMockExamData,
     },
     createdAt: new Date().toISOString(),
-    version: 4,
+    version: 5,
   };
 
   // 6. ReportContent 조합
@@ -205,7 +1695,112 @@ export const postprocess = (
     sections: validatedSections,
   };
 
-  // 7. 플랜별 검증
+  // 7. 5등급제(2022 교육과정) 학생: AI 텍스트 내 과목명 보정
+  if (preprocessed.curriculumVersion === "2022") {
+    const fixText = (obj: unknown): void => {
+      if (!obj || typeof obj !== "object") return;
+      for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {
+        if (typeof val === "string" && val.length > 0) {
+          (obj as Record<string, unknown>)[key] =
+            correctSubjectNamesInText(val);
+        } else if (Array.isArray(val)) {
+          for (let i = 0; i < val.length; i++) {
+            if (typeof val[i] === "string") {
+              val[i] = correctSubjectNamesInText(val[i] as string);
+            } else if (typeof val[i] === "object") {
+              fixText(val[i]);
+            }
+          }
+        } else if (typeof val === "object") {
+          fixText(val);
+        }
+      }
+    };
+    for (const section of content.sections) {
+      fixText(section);
+    }
+  }
+
+  // 7-1. 이수 정합성 전역 보정 (모든 섹션 공통, 마지막 안전장치)
+  //
+  // 이수 사실의 정답은 preprocessed.allTakenSubjects(성적표 + 진로선택 +
+  // 예체능 + 세특 통합)와, 학생이 직접 입력한 수강 예정 과목이다. 권장과목
+  // 매칭 결과의 takenCourses·plannedCourses도 같은 판정에서 나온 값이므로
+  // 함께 합쳐 표기 누락을 줄인다.
+  //
+  // 프롬프트에 정답을 주입하는 것만으로는 모델이 지시를 놓치거나 새 섹션이
+  // 추가될 때 다시 새어 나가므로, 출력 단계에서 결정적으로 한 번 더 거른다.
+  {
+    const courseMatch = preprocessed.recommendedCourseMatch;
+    const plannedTokens = (preprocessed.plannedSubjectsRaw ?? "")
+      .split(/[,、，\n]/)
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+
+    // 두 목록이 같은 과목을 두고 엇갈리면(오래된 wave-state에서 발생 가능)
+    // 표(courseAlignment.courses)가 렌더링하는 값을 기준으로 삼는다. 그래야
+    // 본문 보정 결과가 화면의 표와 항상 같은 말을 한다. 이 우선순위가 없으면
+    // 후처리가 courseAlignment 폴백 문장("미적분 미이수는 …")을 스스로 지워
+    // 표에는 미이수, 본문에는 아무 말도 없는 상태가 된다.
+    const notTakenKeys = new Set(
+      (courseMatch?.missingCourses ?? []).flatMap((name) =>
+        expandSubjectNameVariants(name).map(normalizeCourseKey)
+      )
+    );
+    const completedCourses = [
+      ...new Set([
+        ...(preprocessed.allTakenSubjects ?? []),
+        ...plannedTokens,
+        ...(courseMatch?.takenCourses ?? []),
+        ...(courseMatch?.plannedCourses ?? []),
+      ]),
+    ].filter(
+      (name) =>
+        name.trim().length >= 2 &&
+        !expandSubjectNameVariants(name).some((variant) =>
+          notTakenKeys.has(normalizeCourseKey(variant))
+        )
+    );
+
+    // 코드가 "이수하지 않음"으로 확정한 과목.
+    const notTakenCourses = (courseMatch?.missingCourses ?? []).filter(
+      (name) => name.trim().length >= 2
+    );
+
+    const fixedCount = scrubCourseStatusStatements(
+      content.sections,
+      completedCourses,
+      notTakenCourses,
+      `[report:${reportId}]`
+    );
+    if (fixedCount > 0) {
+      console.log(
+        `[report:${reportId}] 이수 정합성 보정 ${fixedCount}건 (이수 확정 ${completedCourses.length}과목 / 미이수 확정 ${notTakenCourses.length}과목)`
+      );
+      // 이 단계는 문장·필드를 제거할 수 있고 1번 Zod 검증보다 뒤에 실행되므로,
+      // 검증 결과를 갱신하지 않으면 "검증 통과"로 기록된 섹션이 실제로는
+      // 스키마를 벗어난 상태가 된다. 수정된 섹션만 다시 검증해 결과를 맞춘다.
+      // validationResults는 rawSections 순서, content.sections는 SECTION_ORDER
+      // 순서에 합성 섹션까지 더해진 배열이라 인덱스가 서로 다른 섹션을 가리킨다.
+      // sectionId로 찾아야 갱신이 실제로 이뤄진다.
+      for (const section of content.sections) {
+        const index = validationResults.findIndex(
+          (result) => result.sectionId === section.sectionId
+        );
+        if (index === -1) continue;
+        const previous = validationResults[index];
+        const revalidated = validateSection(section);
+        validationResults[index] = revalidated;
+        if (!revalidated.valid && previous.valid) {
+          console.warn(
+            `[report:${reportId}] 이수 정합성 보정 후 스키마 이탈: ${revalidated.sectionId} — ${revalidated.errors.join("; ").substring(0, 300)}`
+          );
+        }
+      }
+    }
+  }
+
+  // 8. 플랜별 검증
   const planValidationErrors = validateByPlan(content);
 
   return {
@@ -219,6 +1814,11 @@ export const postprocess = (
 
 // 안전한 치환만 수행 (앞뒤 문맥과 무관하게 1:1 대응되는 표현만)
 const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
+  // ── ThreeTierRating/assessment 구값 → 신값 변환 ──
+  // ⚠️ 독립 명사 "양호"→"보통" 변환은 sanitizeDeep에서 처리
+  [/보완필요/g, "미흡"],
+  [/보완 필요/g, "미흡"],
+
   // ── 단독으로 쓰이는 AI식 형용사/부사 → 자연스러운 대체 ──
   [/돋보입니다/g, "강점입니다"],
   [/돋보인다/g, "강점이다"],
@@ -245,6 +1845,27 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/돋보임\./g, "강점입니다."],
   [/돋보임$/gm, "강점입니다"],
 
+  // ── 3년 개근 → 2년 개근 (현행 교육과정 기준) ──
+  [/3년간\s*개근/g, "재학 기간 동안 개근"],
+  [/3년간\s*무결석/g, "재학 기간 동안 무결석"],
+  [/3년간\s*무단결석/g, "재학 기간 동안 무단결석"],
+  [/3년\s*연속\s*개근/g, "재학 기간 동안 개근"],
+
+  // ── 존재하지 않는 학년 데이터 언급 제거 ──
+  [/3학년\s*생기부\s*기록이\s*부재[했하][^\\.]*\./g, ""],
+  [/3학년\s*(생기부\s*)?기록이\s*없[어다는][^\\.]*\./g, ""],
+  [/3학년\s*데이터가\s*없[어다는][^\\.]*\./g, ""],
+  [/3학년(?:[^.]|\.(?=\d))*기록이\s*부재(?:[^.]|\.(?=\d))*\./g, ""],
+  [
+    /3학년(?:[^.]|\.(?=\d))*부재(?:[^.]|\.(?=\d))*아쉽(?:[^.]|\.(?=\d))*\./g,
+    "",
+  ],
+  [
+    /3학년(?:[^.]|\.(?=\d))*없어(?:[^.]|\.(?=\d))*아쉽(?:[^.]|\.(?=\d))*\./g,
+    "",
+  ],
+  [/3학년[^,]*부재[^,]*,\s*/g, ""],
+
   // ── 명령형 어미 → 권유형 전환 ──
   [/작성하세요/g, "작성하는 것이 좋습니다"],
   [/설명하세요/g, "설명하는 것이 효과적입니다"],
@@ -253,18 +1874,55 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/준비하세요/g, "준비하는 것이 좋습니다"],
   [/활용하세요/g, "활용하는 것이 효과적입니다"],
 
+  // ── "희망하는" 패턴 → 대체어로 치환 (구절 삭제 시 조사 고립 방지) ──
+  [/희망하는\s*[가-힣]+\s*계열\s*학과에/g, "해당 학과에"],
+  [/희망하는\s*[가-힣]+\s*계열\s*학과의/g, "해당 학과의"],
+  [/희망하는\s*[가-힣]+\s*계열\s*학과를/g, "해당 학과를"],
+  [/희망하는\s*[가-힣]+\s*계열\s*학과/g, "해당 학과"],
+  [/희망하는\s*[가-힣]+\s*학과에/g, "해당 학과에"],
+  [/희망하는\s*[가-힣]+\s*학과의/g, "해당 학과의"],
+  [/희망하는\s*[가-힣]+\s*학과를/g, "해당 학과를"],
+  [/희망하는\s*[가-힣]+\s*학과/g, "해당 학과"],
+  [/희망하는\s*학과에/g, "해당 학과에"],
+  [/희망하는\s*학과의/g, "해당 학과의"],
+  [/희망하는\s*학과를/g, "해당 학과를"],
+  [/희망하는\s*학과/g, "해당 학과"],
+  [/희망\s*학과에/g, "해당 학과에"],
+  [/희망\s*학과의/g, "해당 학과의"],
+  [/희망\s*학과를/g, "해당 학과를"],
+  [/희망\s*학과/g, "해당 학과"],
+  [/희망학과에/g, "해당 학과에"],
+  [/희망학과의/g, "해당 학과의"],
+  [/희망학과를/g, "해당 학과를"],
+  [/희망학과/g, "해당 학과"],
+
   // ── 교외 활동 표현 → 교내 활동으로 치환 ──
   [/온라인 강의[를을\s]*활용/g, "교내 수업 활동을 활용"],
   [/온라인 강좌/g, "교내 심화 학습"],
+
+  // ── AI식 칭찬/경쟁력 표현 ──
+  [/높은 경쟁력을 가집니다/g, "강점 요소입니다"],
+  [/높은 경쟁력이 있습니다/g, "강점 요소입니다"],
+  [/경쟁력이 있습니다/g, "강점 요소입니다"],
+  [/경쟁력을 가집니다/g, "강점 요소입니다"],
+  [/매우 유리합니다/g, "유리한 편입니다"],
+  [/매우 적합합니다/g, "적합한 편입니다"],
+  [/매우 긍정적입니다/g, "긍정적 요소입니다"],
+  [/매우 뛰어나며/g, "뛰어나며"],
+  [/매우 뛰어난/g, "뛰어난"],
+  [/매우 우수한 수준입니다/g, "우수한 수준입니다"],
 
   // ── 기타 AI식 표현 ──
   [/발전시켰/g, "보여주었"],
   [/충분히 합격할 겁니다/g, "합격 가능성이 높습니다"],
   [/충분히 합격/g, "합격 가능성이 높은"],
+  // ── 중복 표현 제거 ──
+  [/가능성이 높은 가능성이 높습니다/g, "가능성이 높습니다"],
   [/다른 요소로 충분히 커버 가능합니다/g, "다른 요소로 보완 가능합니다"],
   [/충분히 커버 가능합니다/g, "보완 가능합니다"],
   [/충분히 커버/g, "보완"],
   [/충분히 경쟁력/g, "경쟁력"],
+  [/충분히 어필/g, "어필"],
   [/충분히 가능/g, "가능"],
 
   // ── 무의미한 추상 평가 표현 → 제거/대체 ──
@@ -272,7 +1930,7 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/비판적 사고력을\s*입증합니다/g, "다각적 분석 역량을 보여줍니다"],
   [/비판적 사고력을\s*보여주었습니다/g, "다각적 분석 역량을 보여주었습니다"],
   [/비판적 사고력을\s*보여줍니다/g, "다각적 분석 역량을 보여줍니다"],
-  [/비판적 사고력을\s*드러냅니다/g, "다각적 분석 역량이 확인됩니다"],
+  [/비판적 사고력을\s*드러냅니다/g, "다각적 분석 역량이 나타납니다"],
   [/비판적 사고력을\s*발휘합니다/g, "다각적 분석 역량을 보여줍니다"],
   [/비판적 사고력을\s*드러냈/g, "다각적 분석 역량을 보여주었"],
   [/비판적 사고력을\s*발휘했/g, "다각적 분석 역량을 보여주었"],
@@ -282,27 +1940,229 @@ const AI_TONE_REPLACEMENTS: [RegExp, string][] = [
   [/창의적 사고를 발휘했습니다/g, "독자적 접근 방식을 시도했습니다"],
   [/리더십을 발휘했습니다/g, "리더 역할을 수행했습니다"],
 
-  // ── "드러납니다" 계열 (금지 표현) ──
-  [/잘 드러납니다/g, "잘 확인됩니다"],
-  [/잘 드러나며/g, "확인되며"],
-  [/잘 드러나고/g, "확인되고"],
-  [/드러납니다/g, "확인됩니다"],
-  [/드러나며/g, "확인되며"],
+  // ── "보여줍니다" 계열 → 자연스러운 표현 ──
+  [/을 보여줍니다/g, "이 나타납니다"],
+  [/를 보여줍니다/g, "가 나타납니다"],
+  [/보여줍니다/g, "나타납니다"],
+  [/을 보여주며/g, "을 나타내며"],
+  [/을 보여주고/g, "을 나타내고"],
+
+  // ── "드러냅니다" 계열 → 자연스러운 표현 ──
+  [/드러냅니다/g, "나타납니다"],
+  [/드러내며/g, "보이며"],
+  [/드러내고/g, "보이고"],
+
+  // ── "드러납니다" 계열 → 자연스러운 표현 ──
+  [/잘 드러납니다/g, "잘 나타납니다"],
+  [/잘 드러나며/g, "나타나며"],
+  [/잘 드러나고/g, "나타나고"],
+  [/드러납니다/g, "나타납니다"],
+  [/드러나며/g, "나타나며"],
+
+  // ── "확인됩니다" 계열 → 자연스러운 표현 (Gemini 직접 생성 대응) ──
+  [/이 확인됩니다/g, "이 나타납니다"],
+  [/가 확인됩니다/g, "가 나타납니다"],
+  [/잘 확인됩니다/g, "잘 나타납니다"],
+  [/확인됩니다/g, "나타납니다"],
+  [/확인되며/g, "나타나며"],
+  [/확인되고/g, "나타나고"],
 
   // ── "매우 우수합니다" → 톤 다운 ──
   [/매우 우수합니다/g, "우수한 편입니다"],
+  [/매우 우수하여/g, "우수하여"],
+  [/매우 높은 수준/g, "높은 수준"],
+  [/강력한 강점/g, "주요 강점"],
 
   // ── "~할 수 있습니다" → "~할 겁니다" (평가 맥락) ──
+  [/높은 평가를 받을 수 있습니다/g, "긍정적 요소로 작용할 겁니다"],
+  [/매우 높은 평가를 받을 겁니다/g, "긍정적 요소로 작용할 겁니다"],
+  [/높은 평가를 받을 겁니다/g, "긍정적 요소로 작용할 겁니다"],
   [/평가할 수 있습니다/g, "평가할 겁니다"],
   [/평가될 수 있습니다/g, "평가될 겁니다"],
   [/작용할 수 있습니다/g, "작용할 겁니다"],
 
+  // ── STEP 8: 문법 오류 교정 (조사 불일치) ──
+  [/가능성을 나타납니다/g, "가능성이 나타납니다"],
+  [/발전가능성을 나타납니다/g, "발전가능성이 나타납니다"],
+  // 부사가 끼어있는 경우도 처리 ("을 잘 나타납니다" → "이 잘 나타납니다")
+  [/을 잘 나타납니다/g, "이 잘 나타납니다"],
+  [/를 잘 나타납니다/g, "가 잘 나타납니다"],
+  [/을 명확히 나타납니다/g, "이 명확히 나타납니다"],
+  [/를 명확히 나타납니다/g, "가 명확히 나타납니다"],
+  [/을 충분히 나타납니다/g, "이 충분히 나타납니다"],
+  [/를 충분히 나타납니다/g, "가 충분히 나타납니다"],
+  [/을 나타납니다/g, "이 나타납니다"],
+  [/를 나타납니다/g, "가 나타납니다"],
+  [/되어지고 있습니다/g, "되고 있습니다"],
+  [/되어집니다/g, "됩니다"],
+  [/되어지는/g, "되는"],
+  // "보여집니다", "것으로 보여집니다" 등은 활동 사실 서술 관찰형 종결로 사용자가 선호 (a.md #3).
+  // 이중피동(보이다+지다)이지만 자연스러운 어감을 위해 보존.
+  // 따라서 보여지고 있습니다/보여집니다/보여지는 → 보이다 변환 규칙은 적용하지 않음.
+
+  // ── STEP 9: 가운뎃점(·) 오용 수정 — 문장 중간 부적절 삽입 제거 ──
+  [/([가-힣])\·([가-힣]{4,})/g, "$1 $2"], // "활동·보고서를 작성" → "활동 보고서를 작성" (4글자 이상 연결 시)
+
+  // ── STEP 10: 전형 명칭 풀네임 ──
+  [/(?<![가-힣])학종(?![가-힣])/g, "학생부종합전형"],
+  [/(?<![가-힣])교과전형(?![가-힣])/g, "학생부교과전형"],
+
   // ── 온점 3개(줄임표) → (중략) ──
   [/\.{3,}/g, "(중략)"],
   [/…/g, "(중략)"],
+
+  // ── AI가 날조한 합격선 수치 제거 ──
+  [
+    /합격자\s*평균\s*등급[은이가]?\s*\d+\.\d+~?\d*\.?\d*등급\s*(내외|수준|정도)?[에서]*\s*형성/g,
+    "합격선 데이터 기준으로 형성",
+  ],
+  [
+    /합격자\s*평균[은이가]?\s*\d+\.\d+~?\d*\.?\d*등급\s*(내외|수준|정도)?/g,
+    "합격선 데이터 참조",
+  ],
+  [
+    /합격선[은이가]?\s*\d+\.\d+~?\d*\.?\d*등급\s*(내외|수준|정도)?[으로에서]?/g,
+    "합격선 데이터 기준",
+  ],
+  [
+    /\d+\.\d+~\d+\.\d+등급\s*(내외|수준|정도)[에의]?\s*(합격선|커트라인)/g,
+    "합격선 데이터 기준",
+  ],
+  // "합격선 데이터 참조으로" → 어색한 표현 수정
+  [/합격선 데이터 참조으로/g, "합격선 데이터 기준으로"],
+  [/합격선 데이터 기준으로\s*매우\s*높습니다/g, "매우 높은 수준입니다"],
+
+  // ── STEP 11: AI스러운 간접 표현 → 직접 표현 ──
+  [/파악하기 어렵게 합니다/g, "파악하기 어렵습니다"],
+  [/파악하기 어렵게 만듭니다/g, "파악이 어렵습니다"],
+  [/판단하기 어렵게 합니다/g, "판단하기 어렵습니다"],
+  [/판단하기 어렵게 만듭니다/g, "판단이 어렵습니다"],
+  [/이해하기 어렵게 합니다/g, "이해하기 어렵습니다"],
+  [/분석하기 어렵게 합니다/g, "분석하기 어렵습니다"],
+  [/평가하기 어렵게 합니다/g, "평가하기 어렵습니다"],
+  [/([가-힣]+)하기 어렵게 ([가-힣]*합니다)/g, "$1하기 어렵습니다"],
+  [/([가-힣]+)하기 어렵게 ([가-힣]*만듭니다)/g, "$1이 어렵습니다"],
+  // "~하게 만듭니다" → "~합니다" (AI식 간접 사역 표현)
+  [/불리하게 만듭니다/g, "불리합니다"],
+  [/유리하게 만듭니다/g, "유리합니다"],
+  [/어렵게 만듭니다/g, "어렵습니다"],
+  [/약화시킵니다/g, "약화됩니다"],
+  [/강화시킵니다/g, "강화됩니다"],
+  // "~라고 할 수 있습니다" → 직접 서술
+  [/라고 할 수 있습니다/g, "입니다"],
+  [/라고 볼 수 있습니다/g, "로 봅니다"],
+  // "~의 가능성이 존재합니다" → 간결하게
+  [/의 가능성이 존재합니다/g, "할 수 있습니다"],
+  [/의 여지가 존재합니다/g, "할 여지가 있습니다"],
+  // "~것으로 예상됩니다" → "~겁니다"
+  [/할 것으로 예상됩니다/g, "할 겁니다"],
+  [/될 것으로 예상됩니다/g, "될 겁니다"],
+  [/할 것으로 예측됩니다/g, "할 겁니다"],
+  [/될 것으로 예측됩니다/g, "될 겁니다"],
+  [/것으로 예상됩니다/g, "겁니다"],
+  [/것으로 예측됩니다/g, "겁니다"],
+
+  // ── STEP 12: 토큰 오류 비정상 단어 교정 ──
+  // Gemini가 간헐적으로 생성하는 비정상 한국어 단어
+  [/파체했습니다/g, "파악했습니다"],
+  [/파체합니다/g, "파악합니다"],
+  [/파체하고/g, "파악하고"],
+  [/파체된/g, "파악된"],
+  [/파체할/g, "파악할"],
+  [/파명하/g, "파악하"],
+
+  // ── STEP 13: 조사 누락 교정 (Gemini 토큰 스킵 대응) ──
+  // AI가 명사를 생략하고 조사만 남기는 현상 — 조사 제거로 문장 정상화
+  // 예: "다만, 가 경영경제" → "다만, 경영경제"
+  // 예: "그러나 가 '체육교육과'" → "그러나 '체육교육과'"
+  // 예: "있지만, 의 괴리가" → "있지만, 괴리가"
+  // 구두점 뒤 고립 조사 (가/은/는/을/를/인/과/와/의)
+  [/([,;.!?])\s+(?:가|은|는|을|를|인|과|와|의)\s+(?=[가-힣''""])/g, "$1 "],
+  // 줄 시작 고립 조사
+  [/^(?:가|은|는|을|를|인|과|와|의)\s+(?=[가-힣''""])/gm, ""],
+  // 접속사/접속부사 뒤 고립 조사만 제거 (일반 한글 뒤는 오탐 위험으로 제외)
+  // 예: "그러나 가 '체육교육과'" → "그러나 '체육교육과'"
+  [
+    /(다만|그러나|또한|하지만|그리고|즉|반면|따라서|그래서|아울러|특히|단)[,]?\s+(?:인|가|의)\s+(?=[가-힣''""])/g,
+    "$1 ",
+  ],
+
+  // ── 계열 명칭 통일 (AI가 축약하는 패턴 → 정규 명칭으로 복원) ──
+  // "의생명 계열" → "의학 계열"
+  [/의생명 계열/g, "의학 계열"],
+  // "메디컬 계열" → "의학 계열"
+  [/메디컬 계열/g, "의학 계열"],
+
+  // ── AI 클리셰 동사 자동 치환 (사용자 피드백 4번) ──
+  // "기여하다", "강화하다" 동사 활용형은 학생/학부모가 인공지능 클리셰로 인지함.
+  // 명사형 ("기여도", "기여 의지", "강화 전략" 등)은 보존하기 위해 동사 어미만 매칭.
+  [/기여한다/g, "도움이 됩니다"],
+  [/기여합니다/g, "도움이 됩니다"],
+  [/기여하는지/g, "도움이 되는지"],
+  [/기여하는/g, "도움이 되는"],
+  [/기여하여/g, "도움이 되어"],
+  [/기여하고/g, "도움이 되고"],
+  [/기여하며/g, "도움이 되며"],
+  [/기여하지/g, "도움이 되지"],
+  [/기여할/g, "도움이 될"],
+  [/기여해서/g, "도움이 돼서"],
+  [/기여했습니다/g, "도움이 됐습니다"],
+  [/기여했고/g, "도움이 됐고"],
+  [/기여함을/g, "도움이 됨을"],
+  [/기여함이/g, "도움이 됨이"],
+
+  // 평서형 어미는 평서형으로 치환한다. "보완해주세요"(명령형)로 바꾸면
+  // "이 활동은 진로역량을 강화합니다" 같은 서술 문장이 "~를 보완해주세요"라는
+  // 지시문으로 뒤집혀, 생기부가 확정된 학생에게 실행 불가능한 조언이 된다.
+  [/강화한다/g, "탄탄하게 만든다"],
+  [/강화합니다/g, "탄탄하게 만듭니다"],
+  [/강화하는/g, "보완하는"],
+  [/강화하여/g, "보완하여"],
+  [/강화하고/g, "보완하고"],
+  [/강화하며/g, "보완하며"],
+  [/강화할/g, "보완할"],
+  [/강화해서/g, "보완해서"],
+  [/강화했습니다/g, "보완했습니다"],
+  [/강화했고/g, "보완했고"],
+  [/강화됩니다/g, "탄탄해집니다"],
+  [/강화되어/g, "탄탄해져"],
+  [/강화되었/g, "탄탄해졌"],
+  [/강화되는/g, "탄탄해지는"],
+  [/강화시키/g, "보완하"],
+
+  // "시사하다" — AI가 분석적 표현으로 과용 (사용자 피드백 a.md #2).
+  // 동사 어미만 매칭 → 명사 "시사점"(활동 구조 라벨), "시사회", "도시사회학" 등 보존.
+  // 더 긴 패턴 우선 (시사했음을 → 시사함을 → 시사함 순서로 매칭되도록).
+  [/시사했습니다/g, "보여줬습니다"],
+  [/시사했음을/g, "보여줬음을"],
+  [/시사했음이/g, "보여줬음이"],
+  [/시사했고/g, "보여줬고"],
+  [/시사했던/g, "보여줬던"],
+  [/시사했다/g, "보여줬다"],
+  [/시사한다고/g, "보여준다고"],
+  [/시사한다는/g, "보여준다는"],
+  [/시사한다/g, "보여준다"],
+  [/시사합니다/g, "보여줍니다"],
+  [/시사하는/g, "보여주는"],
+  [/시사하여/g, "보여주어"],
+  [/시사하고/g, "보여주고"],
+  [/시사하며/g, "보여주며"],
+  [/시사하면/g, "보여주면"],
+  [/시사하지만/g, "보여주지만"],
+  [/시사하지/g, "보여주지"],
+  [/시사하기/g, "보여주기"],
+  [/시사할/g, "보여줄"],
+  [/시사함에도/g, "보여줌에도"],
+  [/시사함에/g, "보여줌에"],
+  [/시사함을/g, "보여줌을"],
+  [/시사함이/g, "보여줌이"],
+  [/시사함/g, "보여줌"],
+  [/시사해서/g, "보여줘서"],
+  [/시사해\b/g, "보여줘"],
 ];
 
-const sanitizeAiTone = (text: string): string => {
+// 검증 스크립트(scripts/verify-*.ts)에서 직접 호출하기 위해 노출.
+export const sanitizeAiTone = (text: string): string => {
   let result = text;
   for (const [pattern, replacement] of AI_TONE_REPLACEMENTS) {
     result = result.replace(pattern, replacement);
@@ -310,18 +2170,1268 @@ const sanitizeAiTone = (text: string): string => {
   return result;
 };
 
-/** 객체의 모든 문자열 필드를 재귀적으로 AI 톤 치환 */
-const sanitizeDeep = (obj: unknown): unknown => {
-  if (typeof obj === "string") return sanitizeAiTone(obj);
-  if (Array.isArray(obj)) return obj.map(sanitizeDeep);
+// ─── 한글 서술문 내 영단어 치환 ───
+
+const ENGLISH_WORD_REPLACEMENTS: [RegExp, string][] = [
+  // 본문에 노출되는 영단어 → 한글 대체 (JSON enum 값은 제외)
+  [/\bhigh\b/gi, "높음"],
+  [/\bmedium\b/gi, "보통"],
+  [/\blow\b/gi, "낮음"],
+  [/\bpriority\b/gi, "우선순위"],
+  [/\bimpact\b/gi, "영향"],
+];
+
+// JSON enum 값으로 사용되는 필드는 영단어 치환 제외
+const ENUM_FIELDS = new Set([
+  "sectionId",
+  "category",
+  "chance",
+  "suitability",
+  "rating",
+  "tier",
+  "tierGroup",
+  "highlight",
+  "connectionType",
+  "depth",
+  "type",
+  "admissionType",
+  "achievement",
+  "grade",
+  "growthGrade",
+  "overallRating",
+  "gradeTrend",
+  "currentTrend",
+  "status",
+  "importance",
+  "evaluationImpact",
+  "questionType",
+  "assessment",
+]);
+
+const sanitizeEnglishWords = (text: string): string => {
+  let result = text;
+  for (const [pattern, replacement] of ENGLISH_WORD_REPLACEMENTS) {
+    result = result.replace(pattern, replacement);
+  }
+  return result;
+};
+
+/**
+ * AI가 자유서술 평가 필드에 삽입하는 사정관 평가 마커 정리.
+ * - 매칭된 `[[insight]]...[[/insight]]` 쌍은 보존 (렌더러가 형광펜으로 변환).
+ * - 닫힘 누락 등 단일 태그는 제거 (텍스트에 마커 문법이 노출되지 않게).
+ */
+const INSIGHT_MARKER_PAIR = /\[\[insight\]\]([\s\S]*?)\[\[\/insight\]\]/g;
+const cleanInsightMarkers = (text: string): string => {
+  if (!text.includes("[[insight]]") && !text.includes("[[/insight]]"))
+    return text;
+  // 매칭 쌍을 placeholder로 보호 → 남은 단일 태그 제거 → 복원
+  const placeholders: string[] = [];
+  let result = text.replace(INSIGHT_MARKER_PAIR, (match) => {
+    placeholders.push(match);
+    return `__INSIGHT_PH_${placeholders.length - 1}__`;
+  });
+  result = result.replace(/\[\[insight\]\]|\[\[\/insight\]\]/g, "");
+  result = result.replace(
+    /__INSIGHT_PH_(\d+)__/g,
+    (_, idx) => placeholders[Number(idx)] ?? ""
+  );
+  return result;
+};
+
+/**
+ * 미완성 문장 절단 — AI가 분량 가이드를 어기거나 maxOutputTokens 한도에 걸려
+ * JSON 출력이 도중에 잘리면 마지막 문자열 필드가 종결 부호 없이 끝남.
+ * 끝이 정상 종결 부호(. ! ? … 닫는 따옴표/괄호)가 아니면, 마지막 종결 부호
+ * 위치까지 잘라내 사용자에게는 완결된 문장만 노출되도록 한다.
+ *
+ * 보수적 휴리스틱:
+ * - 길이 20자 미만이면 짧은 절일 가능성이 높아 그대로 둠 (false positive 방지)
+ * - 종결 부호로 끝나면 그대로
+ * - 종결 부호가 텍스트 안에 1개라도 있으면 마지막 종결 부호 다음 잘린 절 제거
+ * - 종결 부호가 아예 없으면 그대로 (단일 절·요약일 수 있음)
+ */
+const SENTENCE_ENDING_RE = /[.!?…」"')\]]\s*$/u;
+const truncateIncompleteSentence = (text: string): string => {
+  if (!text) return text;
+  const trimmed = text.trimEnd();
+  if (trimmed.length < 20) return text;
+  if (SENTENCE_ENDING_RE.test(trimmed)) return text;
+
+  const lastEnding = Math.max(
+    trimmed.lastIndexOf("."),
+    trimmed.lastIndexOf("?"),
+    trimmed.lastIndexOf("!"),
+    trimmed.lastIndexOf("…")
+  );
+  if (lastEnding > 0) {
+    return trimmed.slice(0, lastEnding + 1);
+  }
+  return text;
+};
+
+/** 객체의 모든 문자열 필드를 재귀적으로 AI 톤 치환 + 영단어 치환 + 마커 정리 */
+const sanitizeDeep = (obj: unknown, fieldName?: string): unknown => {
+  if (typeof obj === "string") {
+    // enum 필드: 구값→신값 변환만 수행 (톤/영단어 치환은 건너뜀)
+    if (fieldName && ENUM_FIELDS.has(fieldName)) {
+      if (obj === "양호") return "보통";
+      if (obj === "보완필요" || obj === "보완 필요") return "미흡";
+      return obj;
+    }
+    let result = sanitizeAiTone(obj);
+    result = sanitizeEnglishWords(result);
+    // 미완결 접속사로 끝나는 텍스트 정리 ("다만,", "그러나", "하지만" 등)
+    result = result.replace(/\s*(?:다만,?|그러나,?|하지만,?|반면,?)\s*$/g, "");
+    // 연속 공백 정리
+    result = result.replace(/\s{2,}/g, " ");
+    // 사정관 평가 마커 정리 (단일 태그 제거, 매칭 쌍 보존)
+    result = cleanInsightMarkers(result);
+    // 미완성 문장 절단 (AI 분량 위반/토큰 한도 절단 안전망)
+    result = truncateIncompleteSentence(result);
+    return result;
+  }
+  if (Array.isArray(obj)) return obj.map((item) => sanitizeDeep(item));
   if (obj && typeof obj === "object") {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
-      result[key] = sanitizeDeep(value);
+      result[key] = sanitizeDeep(value, key);
     }
     return result;
   }
   return obj;
+};
+
+// ─── competencyScore: gradeComment 결정적 재생성 ───
+//
+// AI가 작성한 gradeComment는 자체 추정 subcategory 점수 기반이므로,
+// 후처리 단계의 점수 force-overwrite·scaling·cap 적용 후에는 약점 claim이
+// stale 상태가 될 수 있다 (예: "성취도에서 다소 아쉬움" 이라고 적혔는데 해당
+// 항목이 만점이 된 경우). 최종 점수에서 감점이 가장 큰 하위항목을 기준으로
+// 결정적 템플릿으로 다시 작성한다.
+//
+// 피드백은 단순 점수 요약이 아니라 학생이 "왜 이 점수가 나왔는지 + 무엇을
+// 보완해야 하는지"를 이해할 수 있도록 3단 구조로 작성한다:
+//   1) 강점 항목 인정 — 감점이 적은 하위항목을 명시
+//   2) 약점 하위항목의 구체적 원인 — 감점이 가장 큰 항목의 질적 한계
+//   3) 개선 방향 제안 — 해당 약점을 보완할 수 있는 구체적 활동
+// 원인·개선 문구는 하위항목 이름을 키로 하는 SUB_META에서 가져오며, 약점
+// 항목은 최종 점수의 감점 폭으로 결정되므로 점수와 항상 정합한다.
+//
+// 톤 규칙:
+//   ✅ 차별화 요소·평가 근거·구체성·깊이 등 입학사정관 평가 어휘를 유지하되,
+//      "~한다면 ~을 더욱 높일 수 있을 것으로 판단됩니다" 형태의 질적 개선
+//      방향 제안은 허용한다 (학생이 실행 가능한 보완점을 알 수 있도록).
+//   ❌ "보완 시 S등급 진입 가능", "보강 시 상위 진입" 등 특정 등급 상승을
+//      약속하는 표현은 금지. 개선 효과는 "경쟁력/완성도를 높일 수 있다"
+//      수준의 질적 서술로만 표현한다.
+//
+// 생기부 확정 학생(졸업생 / 3학년 1학기 마감)의 3단계:
+//   이 학생들은 성적·세특·활동을 더 이상 추가하거나 수정할 수 없으므로,
+//   3단계의 "생기부를 이렇게 보강하라"는 제안이 성립하지 않는다. 같은 약점
+//   항목에 대해 지금 실행 가능한 대응(면접·서류에서 직접 설명)으로 문장을
+//   바꿔 쓴다(SUB_META.finalizedFocus). 약점을 지적하고 끝내는 대신 실행
+//   가능한 방향으로 이어지는 3단 구조 자체는 그대로 유지된다.
+
+// 한글 받침(종성) 유무 판정 — 조사 선택용
+const hasJongseong = (word: string): boolean => {
+  if (!word) return false;
+  const code = word.charCodeAt(word.length - 1);
+  if (code < 0xac00 || code > 0xd7a3) return false; // 한글 음절이 아니면 false
+  return (code - 0xac00) % 28 !== 0;
+};
+
+const eunNeun = (word: string): string =>
+  `${word}${hasJongseong(word) ? "은" : "는"}`;
+
+const eulReul = (word: string): string =>
+  `${word}${hasJongseong(word) ? "을" : "를"}`;
+
+// 강점 항목 나열 — 2개는 와/과, 3개 이상은 ·로 결합
+const joinStrengths = (words: string[]): string => {
+  if (words.length <= 1) return words[0] ?? "";
+  if (words.length === 2) {
+    const [a, b] = words;
+    return `${a}${hasJongseong(a) ? "과" : "와"} ${b}`;
+  }
+  return words.join("·");
+};
+
+// 하위항목별 강점 라벨·약점 원인·개선 방향 문구
+//  - strengthLabel: 강점으로 인정할 때 사용하는 자연스러운 표현
+//  - cause: 감점 항목으로 지목될 때의 질적 한계 (종속절, "~어/아/않아"로 종결)
+//  - improveIf: 개선 방향 (조건절, "~한다면"으로 종결)
+//  - finalizedFocus: 생기부 확정 학생용 대응 방향 (완결 문장). 기록을 바꾸는
+//    제안 대신, 확정된 기록을 면접·서류에서 어떻게 설명할지를 제시한다.
+// 키는 공백을 제거한 하위항목 이름. AI 출력 표기 흔들림(공백 유무, 축약형)을
+// 흡수하기 위해 별칭도 함께 등록한다.
+type CompetencySubMeta = {
+  strengthLabel: string;
+  cause: string;
+  improveIf: string;
+  finalizedFocus: string;
+};
+
+const COMPETENCY_SUB_META: Record<string, CompetencySubMeta> = {
+  // 학업역량
+  학업성취도: {
+    strengthLabel: "학업성취도",
+    cause: "내신 성취도가 안정적인 상위권으로 자리 잡지 못해",
+    improveIf: "주요 과목의 성취도를 끌어올리고 성적 추이를 개선해 간다면",
+    finalizedFocus:
+      "성적이 확정된 지금은 면접에서 성취도의 흐름과 그 배경을 설명할 근거를 정리해두는 것이 이 항목에 대한 대응입니다.",
+  },
+  학업태도: {
+    strengthLabel: "학업태도",
+    cause: "수업 참여와 자기주도 학습의 능동성이 충분히 드러나지 않아",
+    improveIf:
+      "수업 중 주도적 참여와 자기주도 학습 과정을 세특에 구체적으로 남긴다면",
+    finalizedFocus:
+      "면접에서 스스로 학습 방향을 정하고 수업에 참여했던 경험을 사례로 준비하면, 기록에 압축된 학업태도를 직접 설명할 수 있습니다.",
+  },
+  탐구력: {
+    strengthLabel: "탐구활동",
+    cause: "탐구활동이 수업 내용의 이해 수준에 머물러 있어",
+    improveIf:
+      "세특 내 탐구 주제를 심화하거나 교과 간 연계 탐구 사례를 추가한다면",
+    finalizedFocus:
+      "면접에서 탐구의 문제의식과 한계 인식까지 설명할 수 있도록 준비하면, 세특 문장에 담기지 않은 탐구 과정을 직접 보여줄 수 있습니다.",
+  },
+  // 진로역량
+  교과이수노력: {
+    strengthLabel: "교과 이수의 충실성",
+    cause: "전공 관련 권장·심화 과목의 이수가 충분히 채워지지 않아",
+    improveIf: "전공 관련 권장과목과 진로선택과목을 적극적으로 이수한다면",
+    finalizedFocus:
+      "이수가 마무리된 지금은 선택한 과목과 진로의 연결 고리를 면접에서 설명할 수 있도록 정리해두는 것이 이 항목에 대한 대응입니다.",
+  },
+  교과성취도: {
+    strengthLabel: "전공 관련 교과 성취도",
+    cause: "전공 관련 교과의 성취 수준이 상위권으로 뚜렷하게 드러나지 않아",
+    improveIf: "전공 관련 교과의 성취도를 끌어올린다면",
+    finalizedFocus:
+      "성적이 확정된 지금은 면접에서 전공 관련 과목의 학습 과정과 성취 배경을 설명할 준비를 하는 것이 이 항목에 대한 대응입니다.",
+  },
+  진로탐색활동: {
+    strengthLabel: "진로 활동의 방향성",
+    cause: "진로 선택의 이유와 탐색 과정이 구체적으로 드러나지 않아",
+    improveIf: "전공 관련 독서·탐구·프로젝트 경험을 추가적으로 연결한다면",
+    finalizedFocus:
+      "면접과 자기소개서에서 진로를 구체화해 온 계기와 탐색 과정을 시간 순으로 설명하면, 기록만으로는 드러나지 않는 진로 탐색의 맥락을 전달할 수 있습니다.",
+  },
+  // 공동체역량
+  나눔과배려: {
+    strengthLabel: "나눔·배려",
+    cause: "타인을 돕거나 배려한 구체적 사례가 충분히 드러나지 않아",
+    improveIf: "나눔과 배려가 드러나는 구체적 활동 사례를 남긴다면",
+    finalizedFocus:
+      "면접에서 타인을 도왔던 구체적 상황과 그때의 판단을 사례로 준비하면, 기록에 담기지 않은 부분을 직접 설명할 수 있습니다.",
+  },
+  소통및협업: {
+    strengthLabel: "소통·협업",
+    cause: "모둠·토론 등 협업 과정에서의 기여가 구체적으로 드러나지 않아",
+    improveIf: "모둠·토론 활동에서 맡은 역할과 기여를 구체적으로 기록한다면",
+    finalizedFocus:
+      "면접에서 협업 과정에서 맡은 역할과 의견을 조율했던 경험을 사례로 준비하면, 기록에 압축된 협업 기여를 직접 설명할 수 있습니다.",
+  },
+  리더십: {
+    strengthLabel: "리더십",
+    cause: "주도적으로 이끈 역할과 그 영향이 구체적으로 드러나지 않아",
+    improveIf: "주도적으로 이끈 역할과 그 성과를 구체적으로 남긴다면",
+    finalizedFocus:
+      "면접에서 주도적으로 이끌었던 상황과 그 결과를 사례로 준비하면, 역할명만 남은 기록의 빈틈을 직접 채울 수 있습니다.",
+  },
+  성실성: {
+    strengthLabel: "성실성",
+    cause: "출결·역할 이행 등 성실성을 뒷받침하는 근거가 충분히 드러나지 않아",
+    improveIf: "출결을 안정적으로 관리하고 맡은 역할을 꾸준히 이행한다면",
+    finalizedFocus:
+      "면접에서 맡은 역할을 끝까지 이행했던 경험을 사례로 준비하면, 출결 기록만으로는 드러나지 않는 성실성을 설명할 수 있습니다.",
+  },
+};
+
+// 표기 흔들림 흡수용 별칭 → 정규 키
+const COMPETENCY_SUB_ALIAS: Record<string, string> = {
+  교과이수: "교과이수노력",
+  교과이수노력도: "교과이수노력",
+  진로탐색: "진로탐색활동",
+  진로탐색활동도: "진로탐색활동",
+  진로활동: "진로탐색활동",
+  소통협업: "소통및협업",
+  협업및소통: "소통및협업",
+  소통과협업: "소통및협업",
+  나눔배려: "나눔과배려",
+  나눔및배려: "나눔과배려",
+};
+
+const getCompetencySubMeta = (name: string): CompetencySubMeta => {
+  const key = name.replace(/\s+/g, "");
+  const meta =
+    COMPETENCY_SUB_META[key] ?? COMPETENCY_SUB_META[COMPETENCY_SUB_ALIAS[key]];
+  if (meta) return meta;
+  // 미등록 항목도 재발 없이 처리 — 항목 이름 기반 일반 문구로 폴백
+  return {
+    strengthLabel: name,
+    cause: `${name} 항목의 평가 근거가 구체적으로 드러나지 않아`,
+    improveIf: `${name} 관련 활동의 구체적 근거를 보강한다면`,
+    finalizedFocus: `면접에서 ${name} 관련 경험을 구체적 사례로 준비하면, 기록에 담기지 않은 부분을 직접 설명할 수 있습니다.`,
+  };
+};
+
+// 역량별 약점 해석 프레임·개선 명사구·마무리 명사
+type CompetencyFrame = {
+  frame: string; // 약점 → 평가상 의미 (종속절, "~기에는"으로 종결)
+  improveNoun: string; // C·D 등급에서 보강 대상 (명사구)
+  closing: string; // 개선 시 높아지는 대상 (경쟁력/완성도)
+};
+
+const COMPETENCY_FRAME: Record<string, CompetencyFrame> = {
+  academic: {
+    frame: "상위권 대학 평가에서 강한 차별화 요소로 작용하기에는",
+    improveNoun: "교과 세특의 탐구 과정과 학업 태도를 뒷받침하는 근거",
+    closing: "경쟁력",
+  },
+  career: {
+    frame: "깊이 있는 진로 탐색으로 해석되기에는",
+    improveNoun: "전공 관련 과목 이수와 진로 탐색 활동의 기록",
+    closing: "완성도",
+  },
+  community: {
+    frame: "공동체 역량의 뚜렷한 강점으로 평가되기에는",
+    improveNoun: "협업·리더십·나눔 등 공동체 활동의 구체적 사례",
+    closing: "완성도",
+  },
+};
+
+const COMPETENCY_LABEL_TO_CATEGORY: Record<string, string> = {
+  학업역량: "academic",
+  진로역량: "career",
+  공동체역량: "community",
+};
+const buildCompetencyGradeComment = (
+  sc: unknown,
+  /** 생기부 확정 학생이면 true — 3단계를 "지금 실행 가능한 대응"으로 바꿔 쓴다. */
+  isRecordClosed: boolean
+): string | undefined => {
+  if (
+    !sc ||
+    typeof sc !== "object" ||
+    !("subcategories" in sc) ||
+    !Array.isArray((sc as any).subcategories)
+  ) {
+    return (sc as any)?.gradeComment;
+  }
+  const detail = sc as {
+    category?: string;
+    label?: string;
+    grade?: string;
+    score?: number;
+    gradeComment?: string;
+    subcategories: Array<{ name?: string; score?: number; maxScore?: number }>;
+  };
+
+  const label = detail.label ?? "역량";
+  const { grade } = detail;
+  const category =
+    detail.category ?? COMPETENCY_LABEL_TO_CATEGORY[label] ?? "academic";
+  const comp = COMPETENCY_FRAME[category] ?? COMPETENCY_FRAME.academic;
+
+  type Sub = {
+    name: string;
+    score: number;
+    maxScore: number;
+    deduction: number;
+  };
+  const subs: Sub[] = [];
+  for (const sub of detail.subcategories) {
+    if (
+      typeof sub?.name === "string" &&
+      typeof sub?.score === "number" &&
+      typeof sub?.maxScore === "number"
+    ) {
+      subs.push({
+        name: sub.name,
+        score: sub.score,
+        maxScore: sub.maxScore,
+        deduction: sub.maxScore - sub.score,
+      });
+    }
+  }
+  if (subs.length === 0) return detail.gradeComment;
+
+  const totalScore =
+    typeof detail.score === "number"
+      ? detail.score
+      : subs.reduce((sum, s) => sum + s.score, 0);
+  const totalDeduction = subs.reduce((sum, s) => sum + s.deduction, 0);
+
+  if (totalDeduction === 0) {
+    return grade === "S"
+      ? `${label} 전 항목에서 평가 가능한 모든 영역의 우수성이 확인되는 최상위권 수행입니다.`
+      : `${label} 전 항목에서 감점 없이 안정적인 수행이 확인됩니다.`;
+  }
+
+  // 약점 항목: 최종 점수의 감점 폭이 가장 큰 하위항목 (점수와 정합)
+  const withDeduction = subs
+    .filter((s) => s.deduction > 0)
+    .sort((a, b) => b.deduction - a.deduction);
+  const [weak] = withDeduction;
+  const weakMeta = getCompetencySubMeta(weak.name);
+
+  // 강점 항목: 약점 항목을 제외하고 감점이 적은 순으로 최대 2개
+  const strengthLabels = subs
+    .filter((s) => s.name !== weak.name)
+    .sort((a, b) => a.deduction - b.deduction)
+    .slice(0, 2)
+    .map((s) => getCompetencySubMeta(s.name).strengthLabel);
+  const strengthClause = joinStrengths(strengthLabels);
+
+  // 개선 방향 제안 (3단 구조의 마지막 문장).
+  // 생기부가 확정된 학생은 기록 자체를 보강할 수 없으므로, 같은 약점에 대해
+  // 지금 실행 가능한 대응(면접·서류에서의 설명)으로 문장을 바꿔 쓴다.
+  const improveSentence = isRecordClosed
+    ? weakMeta.finalizedFocus
+    : `${weakMeta.improveIf} ${label}의 ${eulReul(
+        comp.closing
+      )} 더욱 높일 수 있을 것으로 판단됩니다.`;
+
+  if (grade === "S") {
+    // 96~100: 만점 근접 — 강점 인정 위주, 미세 보강 여지만 언급.
+    // 생기부가 확정된 학생에게는 "보강 여지"가 실행 불가능한 서술이므로,
+    // 확정된 평가 결과를 그대로 읽어주는 문장으로 바꾼다.
+    if (totalScore >= 96) {
+      return isRecordClosed
+        ? `${label} 전 항목에서 균형 잡힌 최상위권 수행이 확인됩니다. ${weakMeta.strengthLabel}에서만 미세한 차이가 관찰될 뿐, 확정된 기록 기준으로 학종 평가에서 두드러진 강점으로 작용할 수 있는 수준입니다.`
+        : `${label} 전 항목에서 균형 잡힌 최상위권 수행이 확인됩니다. ${weakMeta.strengthLabel}에서만 미세한 보강 여지가 관찰될 뿐, 학종 평가에서 두드러진 강점으로 작용할 수 있는 수준입니다.`;
+    }
+    // 90~95: 우수성 인정 + 약점 원인 + 개선 방향 (3단 구조).
+    return `${eunNeun(
+      strengthClause
+    )} 우수한 수준으로 평가됩니다. 다만 ${weakMeta.cause} ${comp.frame} 다소 아쉬움이 있습니다. ${improveSentence}`;
+  }
+  if (grade === "A") {
+    // 강점 인정 + 약점 원인 + 개선 방향 (3단 구조).
+    return `${eunNeun(
+      strengthClause
+    )} 안정적으로 확인되나, ${weakMeta.cause} ${comp.frame} 다소 아쉽습니다. ${improveSentence}`;
+  }
+  if (grade === "B") {
+    // 평이한 수준 — 거짓 강점 주장 없이 약점 원인 + 개선 방향.
+    return `${label}은 평이한 수준으로, ${weakMeta.cause} ${comp.frame} 변별력이 제한적입니다. ${improveSentence}`;
+  }
+  if (grade === "C") {
+    const weakNames = withDeduction
+      .slice(0, 2)
+      .map((s) => getCompetencySubMeta(s.name).strengthLabel)
+      .join("·");
+    const closing = isRecordClosed
+      ? `기록이 확정된 지금은 ${eulReul(
+          comp.improveNoun
+        )} 면접과 자기소개서에서 직접 설명할 수 있도록 준비하는 것이 우선입니다.`
+      : `${eulReul(comp.improveNoun)} 우선적으로 보강할 필요가 있습니다.`;
+    return `${label}은 ${weakNames} 등 다수 항목에서 평가 가능한 구체적 증거가 부족하여 변별력이 매우 제한적입니다. ${closing}`;
+  }
+  const dClosing = isRecordClosed
+    ? `기록이 확정된 지금은 ${eulReul(
+        comp.improveNoun
+      )} 면접·자기소개서에서 직접 설명하는 준비와 함께, 수능·정시 비중을 높인 지원 전략을 병행 검토하는 것이 현실적입니다.`
+    : `${comp.improveNoun}부터 단계적으로 보완할 필요가 있습니다.`;
+  return `${label}은 전 항목에서 평가 가능한 증거가 매우 부족하여 평가에 큰 제약이 있습니다. ${dClosing}`;
+};
+
+// ─── courseAlignment 서술 정합성 보정 ───
+
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * "미이수"를 뜻하는 서술 패턴 (사이 공백·조사 허용).
+ *
+ * `미\\s*이수` 앞의 부정 lookbehind가 필수다. 이것이 없으면 "이**미 이수**한"이
+ * 미이수 서술로 잡혀, 후처리가 스스로 만든 "이미 이수한 A·B·C …" 문장에서
+ * 과목명을 지워 버린다. 프롬프트도 "이미 이수한 과목입니다"라는 표현을
+ * 쓰도록 안내하므로 모델 출력에서도 같은 충돌이 생긴다.
+ */
+const MISSING_COURSE_PATTERN =
+  "(?:(?<!이)미\\s*이수|이수하지\\s*(?:않|못)|이수를\\s*하지\\s*(?:않|못)|이수 기회를 놓)";
+
+/** 과목명 뒤에 다른 로마숫자·숫자가 붙는 과목(물리학 vs 물리학Ⅱ) 오인 방지 */
+const COURSE_NAME_BOUNDARY = "(?![Ⅰ-Ⅲ0-9])";
+
+/**
+ * "이미 이수했다"고 단정하는 서술 패턴.
+ *
+ * 여기서 어미 선별이 안전장치의 전부다. 미이수 과목에 대해 정상적으로 쓰이는
+ * 서술이 이 패턴에 걸리면 올바른 권고가 삭제된다. 실제로 확인한 사례:
+ *  - "미적분을 이수한다면 좋습니다" — 미래 가정 ("이수한" 접두 일치)
+ *  - "기하를 이수하여 기반을 다지기를 권합니다" — 목적 ("이수하여"는 시제 중립)
+ *  - "미적분을 이수함으로써 보완할 수 있습니다" — 수단 ("이수함" 접두 일치)
+ *  - "미적분 이수 기록이 없습니다" — 부정 서술 ("이수 기록"만 보면 긍정으로 오독)
+ *  - "기하를 이수했더라면 좋았을 것입니다" — 가정법
+ *  - "기하를 이수한 뒤 심화 탐구로 확장하기를 권합니다" — 관형형 + 미래
+ *  - "기하를 이수한 학생은 공학 계열에서 유리합니다" — 관형형 + 일반론
+ *
+ * 그래서 시제가 중립이거나 부정과 결합할 수 있는 어미(이수하여·이수함·이수 기록·
+ * 관형형 이수한/수강한)는 아예 빼고, 남은 종결형에만 가정형 lookahead를 붙인다.
+ * 판정을 놓치는 것보다 참인 문장을 지우는 쪽이 더 큰 손해이므로, 확실한
+ * 과거 단정형만 남긴다.
+ */
+const TAKEN_COURSE_PATTERN =
+  "(?:이수했(?!다면|더라면|더라도)|이수하였(?!다면|더라면|더라도)|수강했(?!다면|더라면|더라도)|이수\\s*완료" +
+  // 아래는 여러 토큰으로 이뤄진 확정 프레임이라 미래·가정 읽기가 성립하지 않는다.
+  // 단일 어미 "이수한"과 달리 "이수한다면"과 겹치지 않으므로 안전하게 넣는다.
+  // `확인되(?!지)`가 "이수 기록이 확인되지 않습니다"를, `것으로 (확인|나타…)`가
+  // "이수한 것으로 가정하면"을 각각 살려 둔다.
+  "|(?:이수|수강)한\\s*(?:것으로\\s*(?:확인|나타|파악|기록)|이력|내역)" +
+  "|이수\\s*(?:기록|이력|내역)이\\s*(?:있|확인되(?!지)|확인됩))";
+
+/**
+ * 과목명과 이수 서술 사이에 올 수 있는 연결 표현 (닫힌 목록).
+ *
+ * "물리학Ⅱ의 경우 이수하지 않은 것으로" 처럼 조사 하나가 아니라 짧은 연결구가
+ * 끼는 서술을 잡기 위한 것이다. 와일드카드(`.*`)를 쓰면 사이에 낀 다른 과목명까지
+ * 삼켜 정상 문장을 지우므로, 실제로 관찰되는 연결 표현만 나열한다.
+ */
+const COURSE_JOSA =
+  "(?:[은는이가을를도와과의]|조차|마저|까지는?|\\([^)]{0,24}\\)[은는이가을를]?" +
+  "|이라는\\s*과목[을를]?|의\\s*경우" +
+  "|에\\s*대해서?는?|에\\s*관해서?는?|에\\s*있어서?는?)?";
+
+/** 조사와 술어 사이에 흔히 끼는 부사 (닫힌 목록) */
+const COURSE_ADVERB =
+  "\\s*(?:등[은는이가을를]?|아직|여전히|역시|또한|끝내|결국|끝까지|전혀|아예)?\\s*";
+
+const COURSE_TO_PREDICATE = COURSE_JOSA + COURSE_ADVERB;
+
+/**
+ * 이수 서술이 과목명보다 앞에 오는 어순("미이수 과목은 물리학Ⅱ입니다")용 연결 표현.
+ * 같은 이유로 닫힌 목록만 허용한다.
+ */
+const PREDICATE_TO_COURSE =
+  "\\s*(?:과목(?:은|는|으로는|에는)?|과목으로(?:는)?|항목(?:은|는)?" +
+  "|영역(?:은|는)?|대상(?:은|는)?|[:：→])\\s*";
+
+/**
+ * 교과 영역 라벨. 1학년 공통과목 행이 실제로 "수학"·"과학"·"사회"로 기록되어
+ * allTakenSubjects에 그대로 들어오기 때문에, 이 이름들이 문장 삭제 판정에
+ * 참여하면 참인 서술이 지워진다. 실제로 확인한 두 가지:
+ *
+ *  - 어순 역전: "미이수 과목은 수학 교과에 집중되어 있습니다" — 특정 과목이
+ *    아니라 영역을 가리키는 요약인데 "수학"이 이수 과목이라 삭제됐다.
+ *  - 괄호 삽입구: "수학(미적분·기하)을 이수하지 않았습니다" — 바깥 이름이
+ *    교과 라벨이고 괄호 안이 실제 미이수 과목인 참인 문장인데, 괄호가
+ *    "수학"과 술어를 이어 주어 삭제됐다.
+ *
+ * 그래서 정방향·역방향 **문장 삭제 판정에서 모두** 제외한다. 이 이름들은
+ * 권장과목 목록에 특정 과목으로 등장하지 않으므로 탐지력 손실이 없다.
+ * 나열 제거(stripNamesFromAdjacentList)에서는 그대로 사용한다.
+ */
+const SUBJECT_AREA_LABELS: ReadonlySet<string> = new Set([
+  "국어",
+  "수학",
+  "영어",
+  "사회",
+  "과학",
+  "한국사",
+  "도덕",
+  "체육",
+  "음악",
+  "미술",
+  "정보",
+  "교양",
+  "한문",
+  "진로",
+  "예체능",
+  "예술",
+  "탐구",
+  "통합사회",
+  "통합과학",
+  "과학탐구실험",
+]);
+
+/** 영역 지시어가 뒤따르면 특정 과목이 아니라 교과 영역을 가리킨다 */
+const AREA_CONTINUATION = "(?!\\s*(?:교과|계열|영역|과목|전반|쪽|분야))";
+
+/**
+ * 좌측 경계 가드. `COURSE_NAME_BOUNDARY`는 이름 뒤만 막아서, 짧은 이수 과목명이
+ * 더 긴 미이수 과목명의 **꼬리**에 걸린다. 마스터 목록에 있는 쌍만 해도
+ * 생명과학⊃과학, 제2외국어⊃국어, 경제 수학·인공지능 수학⊃수학, 법과 사회⊃사회가
+ * 있어서 "생명과학을 이수하지 않았습니다" 같은 참인 문장이 지워진다.
+ *
+ * 지금은 교과 영역 라벨을 판정에서 빼 둔 덕에 위 쌍들이 가려져 있지만,
+ * plannedSubjectsRaw는 학생이 직접 입력하는 자유 문자열이라 어떤 짧은 이름도
+ * 들어올 수 있다. 라벨 목록에 기대지 말고 경계 자체를 막는다.
+ */
+/** 교육과정 어휘의 표기 변형 (정적이므로 최초 호출 때 한 번만 계산) */
+let curriculumVocabularyVariants: string[] | undefined;
+
+const getCurriculumVocabularyVariants = (): string[] => {
+  curriculumVocabularyVariants ??= [
+    ...new Set(
+      [
+        ...ALL_RECOMMENDED_COURSE_NAMES,
+        ...ALL_MAJOR_RELATED_SUBJECT_NAMES,
+      ].flatMap((name) => expandSubjectNameVariants(name))
+    ),
+  ];
+  return curriculumVocabularyVariants;
+};
+
+const buildLeftBoundary = (name: string, vocabulary: string[]): string => {
+  const nameVariants = expandSubjectNameVariants(name);
+  const prefixes = new Set<string>();
+  // 학생별 목록에는 그 계열의 권장과목만 담기므로, 교육과정 표 전체를 함께 본다.
+  for (const other of [...vocabulary, ...getCurriculumVocabularyVariants()]) {
+    if (other === name) continue;
+    for (const otherVariant of expandSubjectNameVariants(other)) {
+      for (const nameVariant of nameVariants) {
+        if (
+          otherVariant.length > nameVariant.length &&
+          otherVariant.endsWith(nameVariant)
+        ) {
+          prefixes.add(
+            otherVariant.slice(0, otherVariant.length - nameVariant.length)
+          );
+        }
+      }
+    }
+  }
+  const list = [...prefixes]
+    .filter((prefix) => prefix.length > 0)
+    .map(escapeRegExp);
+  return list.length > 0 ? `(?<!${list.join("|")})` : "";
+};
+
+/** 표 형태 서술("미적분: 미이수", "미적분 → 미이수")의 구분자 */
+const COURSE_TO_PREDICATE_TABLE = "\\s*[:：→]\\s*";
+
+/**
+ * 문장 분리. 종결부호 하나를 무조건 문장 끝으로 보는 단순 정규식을 쓰지 않는
+ * 이유는 리포트 본문에 소수점이("내신 평균 2.3등급", "45.2%", "1.2배"). 그 정규식은 "2."에서
+ * 문장을 끊어, 뒤 조각이 제거되면 "…평균은 2.다음 문장" 같은 깨진 본문이 남는다.
+ *
+ * 숫자 사이의 마침표는 종결 부호로 보지 않는다. 반환된 조각을 그대로 이어붙이면
+ * 원문이 복원되므로, 호출부는 남길 문장만 join하면 된다.
+ */
+const splitSentences = (text: string): string[] => {
+  const result: string[] = [];
+  let start = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch !== "." && ch !== "!" && ch !== "?") continue;
+    // 소수점·버전 표기(2.3, 45.2)는 문장 끝이 아니다
+    if (
+      ch === "." &&
+      /[0-9]/.test(text[i - 1] ?? "") &&
+      /[0-9]/.test(text[i + 1] ?? "")
+    ) {
+      continue;
+    }
+    let end = i;
+    while (end + 1 < text.length && ".!?".includes(text[end + 1])) end++;
+    while (end + 1 < text.length && /\s/.test(text[end + 1])) end++;
+    result.push(text.slice(start, end + 1));
+    start = end + 1;
+    i = end;
+  }
+  if (start < text.length) result.push(text.slice(start));
+  return result.length > 0 ? result : [text];
+};
+
+/**
+ * 같은 과목의 표기 변형 생성 (로마숫자 ↔ 아라비아 숫자, 중점·공백 유무).
+ *
+ * 생기부·프롬프트·AI 출력이 "물리학Ⅱ"/"물리학2"/"물리학 II"를 섞어 쓰므로,
+ * 정답 목록의 표기 하나만으로 정규식을 만들면 다른 표기로 서술된 오류를
+ * 놓친다. 이수 정합성 판정은 표기 차이에 걸리면 안 되는 판정이라 변형을
+ * 모두 만들어 매칭한다.
+ */
+// 표기 변형은 이름 하나당 결과가 고정이다. 좌측 경계 계산이 교육과정 어휘
+// 전체를 이름마다 훑으므로, 캐시가 없으면 같은 확장을 수만 번 반복한다.
+const subjectVariantCache = new Map<string, string[]>();
+
+const expandSubjectNameVariants = (name: string): string[] => {
+  const cached = subjectVariantCache.get(name);
+  if (cached) return cached;
+  const computed = computeSubjectNameVariants(name);
+  subjectVariantCache.set(name, computed);
+  return computed;
+};
+
+const computeSubjectNameVariants = (name: string): string[] => {
+  const base = name.trim();
+  if (!base) return [];
+  const variants = new Set<string>([base]);
+
+  const romanToArabic: Record<string, string> = { Ⅰ: "1", Ⅱ: "2", Ⅲ: "3" };
+  const arabicToRoman: Record<string, string> = {
+    "1": "Ⅰ",
+    "2": "Ⅱ",
+    "3": "Ⅲ",
+  };
+
+  const withArabic = base.replace(/[Ⅰ-Ⅲ]/g, (c) => romanToArabic[c] ?? c);
+  variants.add(withArabic);
+  variants.add(base.replace(/([1-3])\s*$/, (_, d) => arabicToRoman[d] ?? d));
+
+  for (const v of [...variants]) {
+    // "사회·문화" ↔ "사회문화" ↔ "사회 문화"
+    variants.add(v.replace(/[·\s]/g, ""));
+    variants.add(v.replace(/·/g, " "));
+  }
+
+  return [...variants].filter((v) => v.length >= 2);
+};
+
+/** 표기 차이를 지운 과목명 비교 키 */
+const normalizeCourseKey = (name: string): string =>
+  name.replace(/[·\s]/g, "").toLowerCase();
+
+/** 과목명(표기 변형 포함) 매칭용 정규식 조각 */
+const courseAlternationCache = new Map<string, string>();
+
+const courseNameAlternation = (name: string): string => {
+  const cached = courseAlternationCache.get(name);
+  if (cached !== undefined) return cached;
+  const computed = computeCourseNameAlternation(name);
+  courseAlternationCache.set(name, computed);
+  return computed;
+};
+
+const computeCourseNameAlternation = (name: string): string => {
+  const variants = expandSubjectNameVariants(name);
+  if (variants.length === 0) return "";
+  // 긴 표기부터 시도해야 "물리학"이 "물리학Ⅱ"를 먼저 먹지 않는다.
+  return `(?:${variants
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRegExp)
+    .join("|")})`;
+};
+
+/**
+ * 과목명 끝의 받침 유무. 로마숫자·아라비아 숫자로 끝나는 과목명은 읽는 소리를
+ * 기준으로 판정한다 (Ⅰ=일·Ⅲ=삼은 받침 있음, Ⅱ=이는 없음).
+ * 그렇지 않으면 "물리학Ⅰ는"처럼 조사가 어긋난다.
+ */
+const NUMERAL_JONGSEONG: Record<string, boolean> = {
+  Ⅰ: true,
+  "1": true,
+  Ⅱ: false,
+  "2": false,
+  Ⅲ: true,
+  "3": true,
+};
+
+const courseNameHasJongseong = (word: string): boolean => {
+  const last = word.charAt(word.length - 1);
+  return NUMERAL_JONGSEONG[last] ?? hasJongseong(word);
+};
+
+/** 받침에 따라 짝이 갈리는 조사 (앞: 받침 있음 / 뒤: 받침 없음) */
+const JOSA_PAIRS: readonly [string, string][] = [
+  ["은", "는"],
+  ["이", "가"],
+  ["을", "를"],
+  ["과", "와"],
+];
+
+/**
+ * 서술 앞부분의 조사를 주어진 단어의 받침에 맞춰 교정한다.
+ * 나열에서 마지막 항목을 덜어냈을 때 조사가 어긋나는 것을 막는다.
+ */
+const matchJosaToWord = (word: string, tail: string): string => {
+  if (!word) return tail;
+  // 조사 앞에 괄호 삽입구가 올 수 있다 ("기하(2단위)는"). 그 경우 조사는
+  // 괄호 뒤에 있으므로, 괄호를 건너뛴 위치에서 조사를 찾는다.
+  const parenthetical = /^\([^)]*\)/.exec(tail)?.[0] ?? "";
+  const rest = tail.slice(parenthetical.length);
+  const head = rest.charAt(0);
+  const pair = JOSA_PAIRS.find(
+    ([withJong, withoutJong]) => head === withJong || head === withoutJong
+  );
+  if (!pair) return tail;
+  const [withJong, withoutJong] = pair;
+  const josa = courseNameHasJongseong(word) ? withJong : withoutJong;
+  return `${parenthetical}${josa}${rest.slice(1)}`;
+};
+
+/**
+ * 이수/미이수 술어 바로 앞에 붙어 있는 과목 나열에서 지정한 과목만 덜어낸다.
+ *
+ * 문장 전체를 훑어 이름을 지우면 술어와 무관한 절까지 잘려 나간다.
+ * 실제로 "미적분·확률과 통계는 우수하나 기하는 미이수입니다"가
+ * "미적분는 우수하나 기하는 미이수입니다"로 망가졌다. 그래서 술어와
+ * 구분자로 이어져 있는 나열만 대상으로 삼는다.
+ *
+ * 양방향이 같은 규칙을 쓰도록 술어 패턴을 인자로 받는다. 한쪽만 고치면
+ * 반대 방향에서 같은 훼손이 그대로 재현된다.
+ */
+const stripNamesFromAdjacentList = (
+  sentence: string,
+  names: string[],
+  predicatePattern: string,
+  /**
+   * 나열을 인식하기 위한 보조 어휘. 제거 대상이 아니라 토큰 경계를 잡는 용도다.
+   * 일반 토큰(`[^\\s·,、/]+`)은 공백을 넘지 못해서, 나열의 다른 항목이
+   * "확률과 통계"처럼 공백을 품으면 나열 전체를 인식하지 못하고 건너뛴다.
+   * 그러면 같은 나열에 있는 오서술 과목이 그대로 남는다.
+   */
+  otherCourseNames: string[] = []
+): string => {
+  const nameAlt = names
+    .map(courseNameAlternation)
+    .filter((alt) => alt.length > 0)
+    .join("|");
+  if (!nameAlt) return sentence;
+
+  const vocabularyAlt = [...names, ...otherCourseNames]
+    .map(courseNameAlternation)
+    .filter((alt) => alt.length > 0)
+    .join("|");
+  const token = `(?:${vocabularyAlt}|[^\\s·,、/]+)${COURSE_NAME_BOUNDARY}`;
+  // 조사·부사를 술어와 분리해 캡처한다. 하나로 묶으면 조사 슬롯이 비었을 때
+  // 술어의 첫 글자를 조사로 오인해 "이수하지"를 "가수하지"로 고쳐 버린다.
+  const listPattern = new RegExp(
+    `(${token}(?:\\s*[·,、/]\\s*${token}){1,12})(${COURSE_JOSA}${COURSE_ADVERB})((?:${predicatePattern}))`,
+    "g"
+  );
+
+  const variantSet = new Set(
+    names.flatMap((name) =>
+      expandSubjectNameVariants(name).map(normalizeCourseKey)
+    )
+  );
+
+  return sentence.replace(
+    listPattern,
+    (full, list: string, connector: string, predicate: string) => {
+      const parts = list.split(/\s*[·,、/]\s*/).filter((p) => p.length > 0);
+      const kept = parts.filter(
+        (part) => !variantSet.has(normalizeCourseKey(part))
+      );
+      if (kept.length === 0 || kept.length === parts.length) return full;
+      // connector의 첫 조사는 나열의 *마지막* 항목에 붙어 있던 것이라,
+      // 마지막 항목을 덜어내면 받침이 다른 단어에 얹혀 "미적분를"이 된다.
+      const fixed = matchJosaToWord(kept[kept.length - 1], connector);
+      return `${kept.join("·")}${fixed}${predicate}`;
+    }
+  );
+};
+
+/**
+ * 과목명별 인접 판정 정규식을 미리 만들어 둔다.
+ *
+ * 좌측 경계는 어휘 전체(교육과정 표 + 커리어넷 교과)를 훑어 만들기 때문에
+ * 문장마다 다시 계산하면 비싸다. 이 값들은 문장에 의존하지 않으므로 문장
+ * 루프 밖에서 한 번만 만든다.
+ */
+const buildAdjacencyMatchers = (
+  names: string[],
+  otherCourseNames: string[],
+  predicatePattern: string
+): { forward: RegExp; reversed: RegExp }[] => {
+  const vocabulary = [...names, ...otherCourseNames];
+  const matchers: { forward: RegExp; reversed: RegExp }[] = [];
+  for (const name of names) {
+    // 교과 영역 라벨은 문장 삭제 판정에서 제외한다 (정방향·역방향 모두).
+    if (SUBJECT_AREA_LABELS.has(name.trim())) continue;
+    const alt = courseNameAlternation(name);
+    if (!alt) continue;
+    const left = buildLeftBoundary(name, vocabulary);
+    matchers.push({
+      forward: new RegExp(
+        `${left}${alt}${COURSE_NAME_BOUNDARY}(?:${COURSE_TO_PREDICATE}|${COURSE_TO_PREDICATE_TABLE})(?:${predicatePattern})`
+      ),
+      reversed: new RegExp(
+        `(?:${predicatePattern})${PREDICATE_TO_COURSE}${left}${alt}${COURSE_NAME_BOUNDARY}${AREA_CONTINUATION}`
+      ),
+    });
+  }
+  return matchers;
+};
+
+/**
+ * 이수·이수 예정으로 확정된 과목을 "미이수"로 서술한 내용을 제거한다.
+ *
+ * courses 배열은 전처리 매칭 데이터로 강제 대체되지만 missingCourseImpact ·
+ * recommendation 같은 서술 필드는 AI 출력이 그대로 남는다. 그 결과 표에는
+ * "이수 예정"인 과목이 본문에서는 "미이수"로 서술되는 불일치가 생길 수 있어,
+ * 아래 두 단계로 정리한다.
+ *
+ * 1) 여러 과목을 나열한 문장이면 확정 이수 과목만 나열에서 제거한다.
+ *    ("물리학Ⅰ·화학Ⅱ 미이수" → "화학Ⅱ 미이수")
+ * 2) 확정 이수 과목과 미이수 서술이 닫힌 연결 표현으로 이어지면 문장을 제거한다.
+ *    ("물리학Ⅱ를 이수하지 않아", "물리학Ⅱ의 경우 이수하지 않은",
+ *     "미이수 과목은 물리학Ⅱ입니다" 등 어순이 뒤집힌 형태 포함)
+ *
+ * 문장 안에 다른 과목이 함께 등장하는지로 판단하지 않는다. 그렇게 하면
+ * "물리학Ⅱ 세특은 우수하지만 지구과학Ⅱ를 이수하지 않은 점은 아쉽습니다"처럼
+ * 참인 미이수 서술까지 지워진다. 판정은 언제나 "그 과목명과 그 서술이
+ * 직접 이어져 있는가"로만 한다.
+ *
+ * 모든 문장이 제거되면 빈 문자열을 반환하며, 호출부가 확정 데이터 기반
+ * 문장으로 대체한다.
+ */
+export const removeMisstatedMissingCourses = (
+  text: string,
+  completedCourses: string[],
+  /** 나열 인식용 보조 어휘 (판정에는 쓰지 않는다) */
+  otherCourseNames: string[] = []
+): string => {
+  // 긴 이름부터 처리해야 "물리학"이 "물리학Ⅱ"를 잘라먹지 않는다.
+  const names = [...completedCourses]
+    .filter((c) => c.trim().length > 0)
+    .sort((a, b) => b.length - a.length);
+  if (names.length === 0) return text;
+
+  // 이수/미이수 서술이 하나도 없는 필드가 대부분이므로, 판정기 생성은
+  // 실제로 필요한 문장을 만났을 때로 미룬다.
+  let adjacencyMatchers: { forward: RegExp; reversed: RegExp }[] | undefined;
+  const getAdjacencyMatchers = (): {
+    forward: RegExp;
+    reversed: RegExp;
+  }[] => {
+    adjacencyMatchers ??= buildAdjacencyMatchers(
+      names,
+      otherCourseNames,
+      MISSING_COURSE_PATTERN
+    );
+    return adjacencyMatchers;
+  };
+
+  const sentences = splitSentences(text);
+  const kept: string[] = [];
+  let changed = false;
+
+  for (const sentence of sentences) {
+    if (!new RegExp(MISSING_COURSE_PATTERN).test(sentence)) {
+      kept.push(sentence);
+      continue;
+    }
+
+    // 1) 미이수 술어에 붙은 나열에서 확정 이수 과목만 제거
+    const cleaned = stripNamesFromAdjacentList(
+      sentence,
+      names,
+      MISSING_COURSE_PATTERN,
+      otherCourseNames
+    );
+    if (cleaned !== sentence) changed = true;
+
+    // 2) 확정 이수 과목과 미이수 서술이 직접 이어진 문장은 통째로 제거
+    const stillMisstated = getAdjacencyMatchers().some(
+      ({ forward, reversed }) => forward.test(cleaned) || reversed.test(cleaned)
+    );
+    if (stillMisstated) {
+      changed = true;
+      continue;
+    }
+
+    kept.push(cleaned);
+  }
+
+  // 아무것도 걷어내지 않았으면 원문을 그대로 돌려준다. join+trim을 무조건
+  // 적용하면 앞뒤 공백만 달라진 값이 "보정됨"으로 집계·로그된다.
+  return changed ? kept.join("").trim() : text;
+};
+
+/**
+ * 이수 정합성 전역 보정 — 리포트 전체 서술 필드를 훑는다.
+ *
+ * 설계상 받아들인 것 (놓치는 쪽이 지우는 쪽보다 낫다는 원칙):
+ *  - 문장 단위 삭제라, 거짓 절과 참인 절이 한 문장에 있으면 함께 사라진다.
+ *    ("기하 이수 기록이 있으나 미적분 이수 기록은 없습니다")
+ *  - 교과 영역 라벨(국어·수학·사회…)은 문장 삭제 판정에서 빠져 있어, 라벨
+ *    자체에 대한 오서술("수학은 이수하지 않았습니다")은 통과한다. 이 이름들은
+ *    1학년 공통과목 행으로 늘 이수 목록에 들어오는데, 판정에 넣으면
+ *    "미이수 과목은 수학 교과에 집중되어 있습니다" 같은 참인 요약이 지워진다.
+ *  - 접속 조사(와/과)로 이어진 나열은 분리하지 않는다. 짧은 이름이
+ *    "확률과 통계"를 잘라 없는 과목명을 만들어 내는 쪽이 더 큰 손해다.
+ *  - 시제가 중립이거나 부정과 결합할 수 있는 어미(이수하여·이수함·이수 기록·
+ *    관형형 이수한)는 과거 단정으로 보지 않는다.
+ *
+ *
+ * 이 문제가 반복된 구조적 이유는, 이수 사실의 정답이 섹션마다 따로 주입되고
+ * 검사도 courseAlignment 두 필드에만 걸려 있었기 때문이다. 프롬프트에 정답을
+ * 넣는 것만으로는 새 섹션이 추가되거나 모델이 지시를 놓치면 다시 새어 나가므로,
+ * 어떤 섹션이 무엇을 쓰든 마지막에 결정적으로 걸러내는 층을 둔다.
+ *
+ * 건드리지 않는 것:
+ *  - 문자열이 아닌 값(표의 status, 점수, 배열 구조 등)
+ *  - 이수 사실과 무관한 문장 (미이수/이수 단정 패턴이 없는 문장)
+ *
+ * 문장을 모두 지워 내용이 남지 않으면 빈 문자열을 남기지 않고 필드(또는 배열
+ * 원소)를 제거한다. 렌더러가 모두 `field &&` 로 감싸 출력하므로 필드가 없으면
+ * 그 자리는 그냥 렌더링되지 않지만, 빈 문자열이 남으면 빈 문단이 생기고 무엇보다
+ * 틀린 문장을 그대로 두는 것보다 낫다.
+ * (courseAlignment의 missingCourseImpact·recommendation은 전용 폴백 문장
+ *  생성기가 앞 단계에서 이미 확정 데이터로 채운다.)
+ */
+export const scrubCourseStatusStatements = (
+  sections: ReportSection[],
+  completedCourses: string[],
+  notTakenCourses: string[],
+  reportLabel: string
+): number => {
+  if (completedCourses.length === 0 && notTakenCourses.length === 0) return 0;
+
+  let fixedCount = 0;
+
+  const fixString = (value: string): string => {
+    // 과목명과 서술이 함께 들어갈 수 없는 아주 짧은 값만 건너뛴다.
+    // ("미적분 미이수"는 7자라 예전 기준(8자)에서는 그대로 통과했다)
+    if (value.length < 4) return value;
+    const withoutMissing = removeMisstatedMissingCourses(
+      value,
+      completedCourses,
+      notTakenCourses
+    );
+    if (withoutMissing.length === 0) return "";
+    return removeMisstatedTakenCourses(
+      withoutMissing,
+      notTakenCourses,
+      completedCourses
+    );
+  };
+
+  const walk = (node: unknown, path: string): void => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      // 뒤에서부터 순회해야 원소 제거가 남은 인덱스를 흔들지 않는다.
+      for (let i = node.length - 1; i >= 0; i--) {
+        const item = node[i];
+        if (typeof item !== "string") {
+          walk(item, `${path}[${i}]`);
+          continue;
+        }
+        const fixed = fixString(item);
+        if (fixed === item) continue;
+        fixedCount++;
+        if (fixed.length === 0) {
+          node.splice(i, 1);
+          console.log(`${reportLabel} 이수 오서술 원소 제거: ${path}[${i}]`);
+        } else {
+          node[i] = fixed;
+          console.log(`${reportLabel} 이수 서술 보정: ${path}[${i}]`);
+        }
+      }
+      return;
+    }
+    const record = node as Record<string, unknown>;
+    for (const [key, val] of Object.entries(record)) {
+      if (typeof val !== "string") {
+        walk(val, `${path}.${key}`);
+        continue;
+      }
+      const fixed = fixString(val);
+      if (fixed === val) continue;
+      fixedCount++;
+      if (fixed.length === 0) {
+        delete record[key];
+        console.log(`${reportLabel} 이수 오서술 필드 제거: ${path}.${key}`);
+      } else {
+        record[key] = fixed;
+        console.log(`${reportLabel} 이수 서술 보정: ${path}.${key}`);
+      }
+    }
+  };
+
+  for (const section of sections) {
+    walk(section, section.sectionId);
+  }
+
+  return fixedCount;
+};
+
+/**
+ * 실제로 이수하지 않은 과목을 "이수했다"고 단정한 문장을 제거한다.
+ *
+ * removeMisstatedMissingCourses의 반대 방향. 판정 대상을 코드가 확정한
+ * missingCourses(전처리 권장과목 매칭 결과)로 한정하는 이유:
+ *  - 이 목록은 "학생이 이수하지 않았음"이 코드로 확정된 과목만 담는다.
+ *  - 반면 "이 문장에 나온 과목명이 이수 목록에 없다"는 조건으로 넓히면
+ *    "사회탐구 과목을 다양하게 이수했습니다" 같은 교과 영역 서술까지
+ *    삭제되어 정상 문장을 잃는다.
+ *
+ * 미이수 서술이 함께 있는 문장("물리학Ⅱ는 이수했지만 기하는 이수하지 못했습니다")은
+ * 정상 서술이므로 건드리지 않는다.
+ */
+export const removeMisstatedTakenCourses = (
+  text: string,
+  notTakenCourses: string[],
+  /** 나열 인식용 보조 어휘 (판정에는 쓰지 않는다) */
+  otherCourseNames: string[] = []
+): string => {
+  const names = [...notTakenCourses]
+    .filter((c) => c.trim().length > 0)
+    .sort((a, b) => b.length - a.length);
+  if (names.length === 0) return text;
+
+  // 이수/미이수 서술이 하나도 없는 필드가 대부분이므로, 판정기 생성은
+  // 실제로 필요한 문장을 만났을 때로 미룬다.
+  let adjacencyMatchers: { forward: RegExp; reversed: RegExp }[] | undefined;
+  const getAdjacencyMatchers = (): {
+    forward: RegExp;
+    reversed: RegExp;
+  }[] => {
+    adjacencyMatchers ??= buildAdjacencyMatchers(
+      names,
+      otherCourseNames,
+      TAKEN_COURSE_PATTERN
+    );
+    return adjacencyMatchers;
+  };
+
+  const sentences = splitSentences(text);
+  const kept: string[] = [];
+  let changed = false;
+
+  for (const sentence of sentences) {
+    if (!new RegExp(TAKEN_COURSE_PATTERN).test(sentence)) {
+      kept.push(sentence);
+      continue;
+    }
+    // 미이수 서술이 섞인 문장은 정상 서술일 가능성이 높다.
+    if (new RegExp(MISSING_COURSE_PATTERN).test(sentence)) {
+      kept.push(sentence);
+      continue;
+    }
+
+    // 1) 이수 술어에 붙은 나열에서 미이수 과목만 제거해 참인 부분을 살린다.
+    //    ("미적분Ⅱ·기하를 이수했습니다" → "미적분Ⅱ를 이수했습니다")
+    //    미이수 방향과 같은 함수를 쓴다. 한쪽만 술어 기준으로 고치면 반대
+    //    방향에서 절 넘나듦과 조사 불일치가 그대로 재현된다.
+    const cleaned = stripNamesFromAdjacentList(
+      sentence,
+      names,
+      TAKEN_COURSE_PATTERN,
+      otherCourseNames
+    );
+    if (cleaned !== sentence) changed = true;
+
+    // 2) 미이수 과목과 이수 단정이 닫힌 연결 표현으로 이어진 문장은 제거
+    const misstated = getAdjacencyMatchers().some(
+      ({ forward, reversed }) => forward.test(cleaned) || reversed.test(cleaned)
+    );
+
+    if (misstated) {
+      changed = true;
+      continue;
+    }
+    kept.push(cleaned);
+  }
+
+  return changed ? kept.join("").trim() : text;
+};
+
+/** 서술 필드가 통째로 제거된 경우 확정 매칭 데이터로 문장을 재구성한다. */
+const buildCourseAlignmentFallbackText = (
+  field: "missingCourseImpact" | "recommendation",
+  takenCourses: string[],
+  plannedCourses: string[],
+  missingCourses: string[]
+): string => {
+  const completed = [...takenCourses, ...plannedCourses];
+  const completedLabel = completed.join("·");
+  const missingLabel = missingCourses.join("·");
+
+  if (field === "missingCourseImpact") {
+    if (missingCourses.length === 0) {
+      return `${completedLabel} 등 권장과목을 모두 이수하여 교과 이수 노력이 충실하게 갖춰져 있습니다.`;
+    }
+    return completed.length > 0
+      ? `${completedLabel}을(를) 이수하여 권장과목 요건을 상당 부분 충족했습니다. ${missingLabel} 미이수는 학종 교과 이수 노력 평가에서 보완이 필요한 영역입니다.`
+      : `${missingLabel} 미이수는 학종 교과 이수 노력 평가에서 보완이 필요한 영역입니다.`;
+  }
+
+  if (missingCourses.length === 0) {
+    return `이미 이수한 ${completedLabel} 세특에서 전공 관련 탐구를 어떻게 풀어냈는지 정리해 면접과 서류에서 설명할 수 있도록 준비하세요.`;
+  }
+  return `이미 이수한 ${completedLabel || "교과"} 세특·동아리·독서 활동에서 ${missingLabel}의 핵심 주제를 다룬 경험을 정리해, 면접에서 교과 이수 노력을 설명할 근거로 활용하세요.`;
+};
+
+// ─── 생기부 확정 학생의 실행 불가능한 조언 제거 ───
+
+/**
+ * 생기부가 확정된 학생에게 성립하지 않는 조언 패턴.
+ * 성적을 바꾸거나 세특·활동을 새로 만드는 것을 전제한 서술만 골라낸다.
+ * ("면접에서 보완 설명", "수능 최저 충족" 등 지금 실행 가능한 조언은 제외)
+ */
+const UNACTIONABLE_ADVICE_PATTERNS: RegExp[] = [
+  /성적[^.]{0,15}(향상|개선|올리|끌어올|유지하기|관리하기)/,
+  /(취약|약점|부족)[^.]{0,12}보완[^.]{0,15}(학습|계획|공부)/,
+  /학습\s*계획을?\s*(수립|세우)/,
+  /내신[^.]{0,10}(향상|개선|올리|끌어올|관리)/,
+  /세특[^.]{0,12}(보완|추가|심화|작성 방향)/,
+  /(새로운|추가로?)\s*(탐구|활동|보고서|프로젝트)/,
+  /(동아리|활동)[^.]{0,10}(추가|새로 시작)/,
+  /이수[^.]{0,10}(추가|권장|하세요)/,
+];
+
+const isUnactionableForFinalizedRecord = (text: string): boolean =>
+  UNACTIONABLE_ADVICE_PATTERNS.some((pattern) => pattern.test(text));
+
+/** 생기부 확정 학생에게 completionStrategy가 통째로 지워졌을 때 쓰는 확정 문장 */
+const FINALIZED_COMPLETION_STRATEGY =
+  "생기부가 최종 확정되었으므로, 남은 기간은 면접 준비와 자기소개서·서류 정리, 수능 마무리, 지원 전략 수립에 집중하는 것이 효과적입니다. 확정된 기록 중 전공과 연결되는 활동을 골라 면접에서 설명할 수 있도록 정리해주세요.";
+
+/**
+ * 생기부가 확정된 학생의 actionRoadmap에서 실행 불가능한 조언을 제거한다.
+ *
+ * 프롬프트에서 이미 확정 학생용으로 분기하지만, 모델이 일반 규칙을 따라
+ * "성적 보완 학습 계획"이나 "세특 서술 가이드"를 출력하는 경우가 있어
+ * 결정적 안전장치를 둔다.
+ * - evaluationWritingGuide: 앞으로 작성될 세특이 없으므로 제거
+ * - prewriteProposals: 성적·세특·새 활동 전제 항목 제거 (비면 필드 자체 제거)
+ * - completionStrategy: 해당 문장 제거, 전부 지워지면 확정 학생용 문장으로 대체
+ */
+export const stripUnactionableRoadmapAdvice = (
+  s: any,
+  reportLabel: string
+): void => {
+  if (s.evaluationWritingGuide) {
+    delete s.evaluationWritingGuide;
+    console.log(
+      `${reportLabel} actionRoadmap: 생기부 확정 학생 — evaluationWritingGuide 제거`
+    );
+  }
+
+  if (Array.isArray(s.prewriteProposals)) {
+    const kept = s.prewriteProposals.filter(
+      (proposal: unknown) =>
+        typeof proposal === "string" &&
+        !isUnactionableForFinalizedRecord(proposal)
+    );
+    if (kept.length !== s.prewriteProposals.length) {
+      console.log(
+        `${reportLabel} actionRoadmap: 실행 불가능한 prewriteProposals ${
+          s.prewriteProposals.length - kept.length
+        }건 제거`
+      );
+    }
+    if (kept.length > 0) {
+      s.prewriteProposals = kept;
+    } else {
+      delete s.prewriteProposals;
+    }
+  }
+
+  if (typeof s.completionStrategy === "string") {
+    const sentences = s.completionStrategy.match(/[^.!?]+[.!?]*\s*/g) ?? [
+      s.completionStrategy,
+    ];
+    const kept = sentences.filter(
+      (sentence: string) => !isUnactionableForFinalizedRecord(sentence)
+    );
+    if (kept.length !== sentences.length) {
+      const rewritten = kept.join("").trim();
+      s.completionStrategy =
+        rewritten.length > 0 ? rewritten : FINALIZED_COMPLETION_STRATEGY;
+      console.log(
+        `${reportLabel} actionRoadmap: completionStrategy에서 실행 불가능한 서술 제거`
+      );
+    }
+  }
 };
 
 // ─── AI 출력 필드명 정규화 + 전처리 데이터 보강 ───
@@ -330,15 +3440,91 @@ const normalizeSection = (
   section: ReportSection,
   pre: PreprocessedData,
   plan: ReportPlan,
-  studentInfo: StudentInfo
+  studentInfo: StudentInfo,
+  creativeActivitiesText?: string
 ): ReportSection => {
   let s = section as any;
+
+  // 생기부가 확정되어 성적·세특·활동을 더 이상 바꿀 수 없는 학생인지.
+  // 후처리가 결정적으로 만들어내는 문장(gradeComment, 추이 예측, 편차 위험
+  // 평가 등)은 이 값에 따라 "생기부를 보강하라"가 아니라 "지금 실행 가능한
+  // 대응"으로 서술해야 한다. isRecordClosed 도입 이전에 시작된 리포트는
+  // 전처리 데이터에 이 필드가 없으므로 동일 기준으로 다시 판정한다.
+  const isRecordClosed =
+    pre.isRecordClosed ??
+    computeRecordClosed(
+      studentInfo,
+      (pre.allSubjectGrades ?? []).map((g) => ({
+        year: g.year,
+        semester: g.semester,
+      }))
+    );
 
   // ── AI 금지 표현 치환 (모든 섹션 공통) ──
   s = sanitizeDeep(s) as any;
 
+  // ── admissionPrediction: recommendedType enum 정규화 ──
+  // 스키마 enum: "학종" | "교과" | "논술".
+  // AI가 풀어쓴 표현(학생부종합전형, 학생부교과전형 등)을 출력하면 Zod 검증이 실패하므로
+  // 검증 직전에 약식 라벨로 정규화한다.
+  if (s.sectionId === "admissionPrediction" && s.recommendedType) {
+    const raw = String(s.recommendedType).trim();
+    const RECOMMEND_TYPE_NORMALIZE: Record<string, string> = {
+      학생부종합전형: "학종",
+      학생부종합: "학종",
+      종합전형: "학종",
+      학생부교과전형: "교과",
+      학생부교과: "교과",
+      교과전형: "교과",
+      논술전형: "논술",
+    };
+    const normalized = RECOMMEND_TYPE_NORMALIZE[raw];
+    if (normalized) {
+      s.recommendedType = normalized;
+    }
+  }
+
   // ── subjectAnalysis: evaluationImpact 정규화 + 플랜별 과목 수 제한 ──
   if (s.sectionId === "subjectAnalysis" && Array.isArray(s.subjects)) {
+    // [DEBUG-SUBJ] postprocessor 진입 시점 subjects 개수
+    console.log(
+      `[DEBUG-SUBJ:postproc] postprocessor 진입 subjects=${s.subjects.length}개 [${(
+        s.subjects as Array<{ subjectName?: string }>
+      )
+        .map((subj) => subj.subjectName ?? "?")
+        .join(", ")}]`
+    );
+
+    // ── subjectName 표기 통일 + 같은 (year, 정규화된 이름) 중복 제거 ──
+    // AI가 입력 라벨을 그대로 복사하라는 룰을 어기고 "물리학Ⅰ"을 "물리학1"처럼
+    // 변형해 같은 과목을 두 번 출력하는 경우가 있어 후처리에서 결정적으로 정리.
+    // 정규화된 이름으로 subjectName을 통일하고, 중복은 첫 번째 항목만 유지한다.
+    const subjectsArr = s.subjects as Array<{
+      subjectName?: string;
+      year?: number;
+    }>;
+    const dedupedSubjects: typeof subjectsArr = [];
+    const seenKeys = new Set<string>();
+    let duplicatesRemoved = 0;
+    for (const subj of subjectsArr) {
+      const rawName = subj.subjectName ?? "";
+      const normalizedName = rawName ? normalizeSubjectName(rawName) : rawName;
+      const key = `${subj.year ?? ""}|${normalizedName}`;
+      if (seenKeys.has(key)) {
+        duplicatesRemoved += 1;
+        continue;
+      }
+      seenKeys.add(key);
+      // 표기 통일: AI가 만든 변형 표기를 정규화된 이름으로 강제
+      if (normalizedName) subj.subjectName = normalizedName;
+      dedupedSubjects.push(subj);
+    }
+    if (duplicatesRemoved > 0) {
+      console.log(
+        `[DEBUG-SUBJ:postproc] 표기 변형 중복 ${duplicatesRemoved}개 제거 후 subjects=${dedupedSubjects.length}개 [${dedupedSubjects.map((subj) => subj.subjectName ?? "?").join(", ")}]`
+      );
+    }
+    s.subjects = dedupedSubjects;
     const impactMap: Record<string, string> = {
       "very high": "very_high",
       "매우 높음": "very_high",
@@ -354,28 +3540,80 @@ const normalizeSection = (
       }
     }
 
-    // ── 과목 중요도 강제 보정 (전공 계열 기반) ──
-    const targetDept = (studentInfo.targetDepartment ?? "").toLowerCase();
-    const isScienceTrack =
-      /공학|컴퓨터|전자|기계|물리|화학|생명|의학|의예|약학|간호|수학|통계|IT|소프트웨어|AI|로봇|건축|환경|에너지|재료|항공|반도체/.test(
-        targetDept
-      );
-    const isHumanitiesTrack =
-      /인문|사회|경영|경제|법|정치|행정|국어|영어|교육|심리|철학|역사|문학|미디어|언론|광고|외교|국제/.test(
-        targetDept
-      );
+    // ── rating 안전 규칙: weak는 자기주도 시그널이 0개일 때만 사용 ──
+    // 프롬프트의 시그널 카운트 가이드를 LLM이 무시하는 경우가 있어 후처리에서 결정적으로 보정.
+    // evaluationComment에 명시적 산출물·자기주도 시그널이 1개 이상이면 weak → average로 승격하고,
+    // 본문의 weak 단정 톤("약점으로 작용할 겁니다" 등)도 보정된 등급에 맞게 부드럽게 정리.
+    const SELF_DIRECTED_SIGNALS = [
+      "신문 제작",
+      "포스터 제작",
+      "포스터로 제작",
+      "보고서 작성",
+      "보고서를 작성",
+      "발표 자료 제작",
+      "발표 자료를 제작",
+      "프로젝트",
+      "실험 설계",
+      "실험을 설계",
+      "직접 작성",
+      "직접 제작",
+      "스스로 탐구",
+      "스스로 조사",
+      "비판적 질문",
+      "추가 자료를 찾",
+      "융합 탐구",
+      "심화 탐구",
+      "확장하여",
+      "주제를 선택하고",
+      "자기주도",
+      "자체 학습지",
+    ];
+    // 단정 부정 톤 → 부드러운 보완 톤 매핑
+    const SOFTEN_REPLACEMENTS: Array<[RegExp, string]> = [
+      [/약점으로\s*작용할\s*겁니다/g, "보완이 필요한 부분입니다"],
+      [/약점으로\s*작용할\s*것입니다/g, "보완이 필요한 부분입니다"],
+      [/약점으로\s*작용할\s*수\s*있습니다/g, "보완이 필요할 수 있습니다"],
+      [/약점으로\s*판단될\s*수\s*있습니다/g, "보완이 필요할 수 있습니다"],
+      [
+        /변별력이\s*부족하다고\s*판단할\s*수\s*있습니다/g,
+        "변별력 강화 여지가 있다고 판단할 수 있습니다",
+      ],
+      [
+        /변별력을\s*갖기에는\s*한계가\s*있습니다/g,
+        "변별력 강화 여지가 있습니다",
+      ],
+      [/한계가\s*있다고\s*판단/g, "보완 여지가 있다고 판단"],
+    ];
+    for (const subj of s.subjects) {
+      if (subj.rating !== "weak") continue;
+      const text =
+        typeof subj.evaluationComment === "string"
+          ? subj.evaluationComment
+          : "";
+      if (!text) continue;
+      const hasSignal = SELF_DIRECTED_SIGNALS.some((kw) => text.includes(kw));
+      if (hasSignal) {
+        subj.rating = "average";
+        // rating 등급 변경에 맞춰 본문의 단정 부정 톤도 함께 정리
+        let updated = subj.evaluationComment as string;
+        for (const [pattern, replacement] of SOFTEN_REPLACEMENTS) {
+          updated = updated.replace(pattern, replacement);
+        }
+        subj.evaluationComment = updated;
+      }
+    }
 
-    // CS 관련 학과 여부 (정보 과목 예외 처리용)
-    // ⚠️ "정보"를 단독으로 넣으면 "경영정보", "문헌정보" 등 비CS 학과도 매칭됨
-    const isCSTrack =
-      /컴퓨터|소프트웨어|사이버보안|정보보안|정보보호|정보통신|게임공학|게임개발|게임프로그래밍/.test(
-        targetDept
-      );
+    // ── 과목 중요도 강제 보정 (계열별 세분화 기준) ──
+    const targetDept = studentInfo.targetDepartment ?? "";
+    const criteria = matchMajorEvaluationCriteria(targetDept);
 
-    // 비핵심 과목 패턴 (학종 평가에서 거의 무의미한 과목)
-    // ⚠️ CS 관련 학과 지망 시 "정보"는 핵심 과목이므로 제외
+    // 비핵심 과목 패턴 (학종 평가에서 변별력 없는 과목)
+    // "정보" 과목: 어떤 학과든(컴공 포함) 비핵심. 고교 정보는 1학년 1~2단위
+    // 기초 수준으로, 입학사정관은 수학·물리학 세특으로 전공 적합성을 판단함.
     // 과목명은 정규화 후 매칭 (공백/숫자/로마숫자 제거됨)
     const NON_CORE_SUBJECTS = [
+      "정보",
+      "정보과학",
       "기술[·]?가정",
       "제2외국어",
       "일본어",
@@ -402,20 +3640,13 @@ const normalizeSection = (
       "심화영어",
       "직업",
       "로봇",
-      "정보과학",
     ];
-    // CS 관련 학과가 아닐 때만 "정보"를 비핵심에 포함
-    if (!isCSTrack) {
-      NON_CORE_SUBJECTS.unshift("정보");
-    }
     const NON_CORE_PATTERN = new RegExp(`^(${NON_CORE_SUBJECTS.join("|")})`);
-    // 정규화 후 공백 없으므로 \s* 불필요
-    const SOCIAL_PATTERN =
-      /^(사회[·]?문화|정치와법|경제|세계지리|한국지리|세계사|동아시아사|윤리와사상|생활과윤리|통합사회)/;
-    const SCIENCE_PATTERN =
-      /^(물리학|화학|생명과학|지구과학|과학탐구실험|통합과학)/;
-    const MATH_PATTERN = /^(수학|미적분|확률과통계|기하)/;
     const CORE_LANG_PATTERN = /^(국어|영어|문학|언어와매체|화법과작문)/;
+
+    // 핵심/권장과목 매칭용 정규화 함수
+    const normalizeCourseForMatch = (course: string): string =>
+      course.replace(/[ⅠⅡⅢ\s·]/g, "");
 
     for (const subj of s.subjects) {
       // 과목명 정규화: "2학년 정보", "제2 외국어", "일본어Ⅰ" 등 변형 처리
@@ -430,86 +3661,40 @@ const normalizeSection = (
         subj.importancePercent = 2;
         subj.evaluationImpact = "very_low";
         matched = true;
-      } else if (isCSTrack && /^정보/.test(name)) {
-        // CS 관련 학과 지망: 정보 과목은 전공 핵심
-        subj.importancePercent = Math.max(subj.importancePercent ?? 0, 30);
-        subj.evaluationImpact = "very_high";
-        matched = true;
-      } else if (isScienceTrack) {
-        // 이공계 전공 특화: 수학/물리/기하 최우선
-        if (MATH_PATTERN.test(name) || /물리학|기하/.test(name)) {
+      }
+
+      // 핵심 권장과목 매칭 (계열별 세분화)
+      if (!matched) {
+        const isCoreSubject = criteria.coreSubjects.some((core) =>
+          name.includes(normalizeCourseForMatch(core))
+        );
+        if (isCoreSubject) {
           subj.importancePercent = Math.max(subj.importancePercent ?? 0, 35);
           subj.evaluationImpact = "very_high";
           matched = true;
-        } else if (
-          SCIENCE_PATTERN.test(name) &&
-          !/과학탐구실험|통합과학/.test(name)
-        ) {
-          // 화학, 생명과학, 지구과학
+        }
+      }
+
+      // 권장과목 매칭
+      if (!matched) {
+        const isRecommended = criteria.recommendedSubjects.some((rec) =>
+          name.includes(normalizeCourseForMatch(rec))
+        );
+        if (isRecommended) {
           subj.importancePercent = Math.max(subj.importancePercent ?? 0, 20);
           subj.evaluationImpact = "high";
           matched = true;
-        } else if (/과학탐구실험/.test(name)) {
-          subj.importancePercent = Math.min(subj.importancePercent ?? 10, 8);
-          subj.evaluationImpact = "low";
-          matched = true;
-        } else if (/통합과학/.test(name)) {
-          subj.importancePercent = Math.min(subj.importancePercent ?? 12, 12);
-          subj.evaluationImpact = "medium";
-          matched = true;
-        } else if (CORE_LANG_PATTERN.test(name)) {
-          // 국영: 중간 수준
-          subj.importancePercent = Math.min(
-            Math.max(subj.importancePercent ?? 10, 10),
-            15
-          );
-          subj.evaluationImpact = "medium";
-          matched = true;
-        } else if (SOCIAL_PATTERN.test(name)) {
-          // 이공계한테 사회탐구는 비중요
-          subj.importancePercent = Math.min(subj.importancePercent ?? 5, 5);
-          subj.evaluationImpact = "low";
-          matched = true;
         }
-      } else if (isHumanitiesTrack) {
-        // 인문사회 전공 특화: 사회탐구 최우선
-        if (SOCIAL_PATTERN.test(name) && !/통합사회|생활과\s*윤리/.test(name)) {
-          subj.importancePercent = Math.max(subj.importancePercent ?? 0, 30);
-          subj.evaluationImpact = "very_high";
-          matched = true;
-        } else if (/통합사회/.test(name)) {
-          subj.importancePercent = Math.min(subj.importancePercent ?? 12, 12);
-          subj.evaluationImpact = "medium";
-          matched = true;
-        } else if (CORE_LANG_PATTERN.test(name)) {
-          // 국영: 중간~높음
-          subj.importancePercent = Math.min(
-            Math.max(subj.importancePercent ?? 12, 12),
-            18
-          );
-          subj.evaluationImpact = "medium";
-          matched = true;
-        } else if (MATH_PATTERN.test(name)) {
-          // 문과한테 수학: 중간
-          subj.importancePercent = Math.min(
-            Math.max(subj.importancePercent ?? 10, 10),
-            15
-          );
-          subj.evaluationImpact = "medium";
-          matched = true;
-        } else if (SCIENCE_PATTERN.test(name)) {
-          // 인문계한테 과학탐구는 비중요
-          subj.importancePercent = Math.min(subj.importancePercent ?? 5, 5);
-          subj.evaluationImpact = "low";
-          matched = true;
-        }
-      } else {
-        // 전공 미지정: 국영수 중간, 나머지 기본
-        if (CORE_LANG_PATTERN.test(name) || MATH_PATTERN.test(name)) {
-          subj.importancePercent = Math.max(subj.importancePercent ?? 0, 15);
-          subj.evaluationImpact = "medium";
-          matched = true;
-        }
+      }
+
+      // 국어/영어: 공통 기초 과목
+      if (!matched && CORE_LANG_PATTERN.test(name)) {
+        subj.importancePercent = Math.min(
+          Math.max(subj.importancePercent ?? 10, 10),
+          15
+        );
+        subj.evaluationImpact = "medium";
+        matched = true;
       }
 
       // 안전장치: 어떤 핵심 패턴에도 매칭되지 않은 과목은 중요도 상한 10%
@@ -519,12 +3704,123 @@ const normalizeSection = (
       }
     }
 
+    // ── 과목 다양성 강제: 같은 교과 카테고리에서 최대 2개 ──
+    //
+    // 결합 과목명 처리: AI가 "공통국어1·공통국어2"처럼 1·2학기를 결합한 형태로 출력하므로
+    // 분할 후 첫 부분만 카테고리 매칭에 사용한다.
+
+    // ── 환각 과목 제거: 학생이 실제 이수하지 않은 과목명 필터 ──
+    // AI가 입력 [N학년 과목명] 라벨 대신 본문 내용을 보고 다른 과목명으로 라벨링
+    // (예: 1학년 「과학탐구실험」 세특 본문을 보고 "물리학1"로 잘못 라벨)하는 환각을 차단.
+    //
+    // 정답 출처: pre.allTakenSubjects (generalSubjects + careerSubjects +
+    // artsPhysicalSubjects + subjectEvaluations 통합). 예체능(체육·음악·미술) 및
+    // 세특에만 등장하는 과목까지 인정.
+    //
+    // 매칭 규칙:
+    //  1) 정규화된 단일 이름이 takenSet에 직접 존재하면 통과
+    //  2) AI가 "공통국어1·공통국어2"처럼 "같은 과목 통합 분석" 가이드에 따라
+    //     여러 학년을 결합한 형태도 분할 후 모든 부분이 takenSet에 있으면 통과
+    const normSubject = (n: string): string =>
+      (n ?? "")
+        .replace(/Ⅰ/g, "1")
+        .replace(/Ⅱ/g, "2")
+        .replace(/Ⅲ/g, "3")
+        .replace(/Ⅳ/g, "4")
+        .replace(/[·\s]/g, "")
+        .toLowerCase();
+    const takenSubjectSet = new Set<string>();
+    for (const subj of pre.allTakenSubjects ?? []) {
+      if (subj) takenSubjectSet.add(normSubject(subj));
+    }
+    // 학생이 직접 입력한 수강 예정 과목은 allTakenSubjects에 없지만 실제로
+    // 이수(예정)하는 과목이다. 이것을 빼면 그 과목의 분석 항목이 환각으로
+    // 오인되어 통째로 삭제된다.
+    for (const planned of (pre.plannedSubjectsRaw ?? "").split(/[,、，\n]/)) {
+      const name = planned.trim();
+      if (name) takenSubjectSet.add(normSubject(name));
+    }
+    // backward-safety: allTakenSubjects가 비어 있는 경우 기존 출처들로 fallback
+    if (takenSubjectSet.size === 0) {
+      for (const g of pre.allSubjectGrades ?? []) {
+        if (g?.subject) takenSubjectSet.add(normSubject(g.subject));
+      }
+      for (const cs of pre.careerSubjects ?? []) {
+        if (cs?.subject) takenSubjectSet.add(normSubject(cs.subject));
+      }
+    }
+    const SUBJECT_SEPARATOR = /[·∙・/／]/;
+    const subjectMatchesTaken = (rawName: string): boolean => {
+      const direct = normSubject(rawName);
+      if (!direct) return false;
+      if (takenSubjectSet.has(direct)) return true;
+      // "공통국어1·공통국어2" 같은 결합 이름: 모든 분할 부분이 학생 이수 과목이면 통과
+      const parts = (rawName ?? "")
+        .split(SUBJECT_SEPARATOR)
+        .map((p) => normSubject(p))
+        .filter((p) => p);
+      return parts.length >= 2 && parts.every((p) => takenSubjectSet.has(p));
+    };
+    if (takenSubjectSet.size > 0) {
+      s.subjects = s.subjects.filter((subj: any) => {
+        const rawName = subj.subjectName ?? "";
+        if (!rawName) return false;
+        if (!subjectMatchesTaken(rawName)) {
+          console.warn(
+            `[postprocessor] subjectAnalysis 환각 과목 제거: ${subj.subjectName}`
+          );
+          return false;
+        }
+        return true;
+      });
+    }
+    // [DEBUG-SUBJ] 환각 제거 후
+    console.log(
+      `[DEBUG-SUBJ:postproc] 환각 제거 후 subjects=${s.subjects.length}개 [${(
+        s.subjects as Array<{ subjectName?: string }>
+      )
+        .map((subj) => subj.subjectName ?? "?")
+        .join(", ")}]`
+    );
+
+    // 같은 과목명 중복 제거 (학년이 다르더라도 최초 1개만 유지)
+    const seenSubjectNames = new Set<string>();
+    s.subjects = s.subjects.filter((subj: any) => {
+      const name = (subj.subjectName ?? "").trim();
+      if (seenSubjectNames.has(name)) return false;
+      seenSubjectNames.add(name);
+      return true;
+    });
+    // [DEBUG-SUBJ] 중복 제거 후
+    console.log(
+      `[DEBUG-SUBJ:postproc] 중복 제거 후 subjects=${s.subjects.length}개`
+    );
+
+    // 중요도 높은 순 정렬 후, 같은 카테고리에서 최대 2개만 유지
+    s.subjects.sort(
+      (a: any, b: any) =>
+        (b.importancePercent ?? 0) - (a.importancePercent ?? 0)
+    );
+    const categoryCounts = new Map<string, number>();
+    const MAX_PER_CATEGORY = 2;
+    s.subjects = s.subjects.filter((subj: any) => {
+      const cat = getSubjectCategory(subj.subjectName ?? "");
+      const count = categoryCounts.get(cat) ?? 0;
+      if (count >= MAX_PER_CATEGORY) return false;
+      categoryCounts.set(cat, count + 1);
+      return true;
+    });
+
     // 플랜별 과목 수 강제 제한 — 중요도 높은 순으로 선별
     const maxSubjects: Record<ReportPlan, number> = {
       lite: 5,
       standard: 7,
       premium: 10,
     };
+    // [DEBUG-SUBJ] 카테고리 제한 후 (플랜 limit 적용 직전)
+    console.log(
+      `[DEBUG-SUBJ:postproc] 카테고리 제한 후 subjects=${s.subjects.length}개`
+    );
     const limit = maxSubjects[plan];
     if (s.subjects.length > limit) {
       // 중요도 높은 순 정렬 후 상위 N개만 유지
@@ -534,6 +3830,14 @@ const normalizeSection = (
       );
       s.subjects = s.subjects.slice(0, limit);
     }
+    // [DEBUG-SUBJ] postprocessor 종료 시점 subjects 개수 (모든 필터/제한 적용 후)
+    console.log(
+      `[DEBUG-SUBJ:postproc] postprocessor 종료 subjects=${s.subjects.length}개 [${(
+        s.subjects as Array<{ subjectName?: string }>
+      )
+        .map((subj) => subj.subjectName ?? "?")
+        .join(", ")}]`
+    );
   }
 
   if (s.sectionId === "academicAnalysis") {
@@ -558,20 +3862,126 @@ const normalizeSection = (
     };
     s.gradeTrend = trendMap[pre.gradeTrend.direction] || "유지";
 
+    // ── subjectGrades: 전처리 데이터로 강제 주입 ──
+    //   AI prompt에서는 allSubjectGrades를 빼서 비주요 과목 등급이 leak되어
+    //   majorRelevanceAnalysis 등에서 거론되는 경로를 차단했다. 표는 단일
+    //   정답 소스(전처리)에서 항상 덮어쓴다.
+    if (
+      Array.isArray(pre.allSubjectGrades) &&
+      pre.allSubjectGrades.length > 0
+    ) {
+      s.subjectGrades = pre.allSubjectGrades.map((sg) => ({
+        subject: sg.subject,
+        year: sg.year,
+        semester: sg.semester,
+        grade: sg.gradeRank,
+        rawScore: sg.rawScore,
+        classAverage: sg.average,
+        studentCount: sg.studentCount,
+      }));
+    }
+
+    // ── subjectGrades: DB 데이터로 null/오류 보정 (등급, 원점수, 평균, 수강자수) ──
+    if (Array.isArray(s.subjectGrades)) {
+      const dbMap = new Map<
+        string,
+        {
+          gradeRank: number | null;
+          rawScore: number | null;
+          average: number | null;
+          studentCount: number | null;
+        }
+      >();
+      for (const sg of pre.allSubjectGrades ?? []) {
+        const key = `${sg.subject}-${sg.year}-${sg.semester}`;
+        dbMap.set(key, sg);
+      }
+
+      s.subjectGrades = (s.subjectGrades as any[]).map((sg: any) => {
+        const key = `${sg.subject}-${sg.year}-${sg.semester}`;
+        const db = dbMap.get(key);
+
+        let { grade } = sg;
+        let { rawScore } = sg;
+        let { classAverage } = sg;
+        let { studentCount } = sg;
+
+        if (db) {
+          const {
+            gradeRank: dbGrade,
+            rawScore: dbRaw,
+            average: dbAvg,
+            studentCount: dbCount,
+          } = db;
+          if (grade == null && dbGrade != null) grade = dbGrade;
+          if (rawScore == null && dbRaw != null) rawScore = dbRaw;
+          if (classAverage == null && dbAvg != null) classAverage = dbAvg;
+          if (studentCount == null && dbCount != null) studentCount = dbCount;
+        }
+
+        // 5등급제: grade > 5이면 clamp
+        if (
+          pre.gradingSystem === "5등급제" &&
+          typeof grade === "number" &&
+          grade > 5
+        ) {
+          grade = Math.min(5, Math.ceil(grade / 2));
+        }
+
+        return { ...sg, grade, rawScore, classAverage, studentCount };
+      });
+    }
+
     // ── gradeDeviationAnalysis: 전처리 gradeVariance에서 확정값 주입 ──
     const gv = pre.gradeVariance;
     const aiDev = s.gradeDeviationAnalysis ?? {};
     const riskText =
       aiDev.riskAssessment || aiDev.analysis || aiDev.recommendation || "";
+
+    // fallback: AI가 riskAssessment를 생성하지 않은 경우
+    const isGO =
+      (studentInfo.targetUniversities?.length ?? 0) > 0 &&
+      studentInfo.targetUniversities!.every(
+        (t) => t.admissionType === "학생부교과"
+      );
+    let fallbackRisk = "";
+    if (gv.spread > 0) {
+      if (isGO) {
+        // 교과전형 전용: 사정관/학종 개념 없이 평균 등급 관점
+        if (gv.spread <= 1) {
+          fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 차이로, 편차가 크지 않아 교과전형에서 과목별 불이익은 적습니다.`;
+        } else if (gv.spread <= 2) {
+          fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 편차가 있습니다. 교과전형은 최종 평균 등급이 핵심이므로, 최저 과목이 평균을 낮추는 정도를 확인하고 이 과목을 반영 비중이 낮은 대학을 탐색하는 것이 유효합니다.`;
+        } else {
+          fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급의 큰 편차가 있습니다. 최저 과목이 전체 평균을 낮추는 주요 원인이므로, 이 과목의 반영 비중이 낮거나 제외되는 대학의 교과전형을 탐색하는 것이 유효합니다.`;
+        }
+      } else {
+        // 학종 포함: 사정관 관점 해석
+        if (gv.spread <= 1) {
+          fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 차이로, 과목 간 편차가 크지 않아 입학사정관이 학업 균형성을 긍정적으로 평가할 수 있는 구조입니다. 다만 전체 등급대에서의 경쟁력은 별도로 판단해야 합니다.`;
+        } else if (gv.spread <= 2) {
+          fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 편차가 있습니다. 입학사정관은 이 정도 편차를 '특정 교과 편중 학습'으로 해석할 수 있으며, 학종에서 학업역량의 균형성 평가에서 약점이 될 수 있습니다. ${
+            isRecordClosed
+              ? `성적이 확정된 지금은 ${gv.lowest} 과목의 학습 상황을 면접에서 설명할 준비를 하고, 이 과목의 반영 비중이 낮은 대학을 함께 검토하는 것이 유효합니다.`
+              : "교과전형에서는 평균 등급에 직접 영향을 주므로 최저 과목 보완이 필요합니다."
+          }`;
+        } else {
+          fallbackRisk = `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급의 큰 편차가 있습니다. 입학사정관은 이를 학업 관리 능력의 부족 또는 특정 교과 회피로 판단할 가능성이 높으며, 학종과 교과 모두에서 불리하게 작용합니다. ${
+            isRecordClosed
+              ? `최저 과목이 전공 핵심 과목인 경우 영향이 더 크므로, ${gv.lowest} 과목의 학습 상황을 면접에서 설명할 준비와 함께 이 과목의 반영 비중이 낮은 대학을 우선 탐색하는 것이 현실적입니다.`
+              : "최저 과목이 전공 핵심 과목인 경우 영향이 더 크므로 즉각적인 보완이 필요합니다."
+          }`;
+        }
+      }
+    } else {
+      fallbackRisk = "과목별 성적 데이터가 부족하여 편차 분석이 어렵습니다.";
+    }
+
     s.gradeDeviationAnalysis = {
       highestSubject: gv.highest || "-",
       lowestSubject: gv.lowest || "-",
       deviationRange: gv.spread ?? 0,
-      riskAssessment:
-        riskText ||
-        (gv.spread > 0
-          ? `최고 과목(${gv.highest})과 최저 과목(${gv.lowest}) 간 ${gv.spread}등급 차이가 있습니다.`
-          : "과목별 성적 데이터가 부족하여 편차 분석이 어렵습니다."),
+      riskAssessment: riskText || fallbackRisk,
     };
 
     // ── majorRelevanceAnalysis: AI 필드명 매핑 ──
@@ -580,106 +3990,138 @@ const normalizeSection = (
       s.majorRelevanceAnalysis = {
         enrollmentEffort: m.enrollmentEffort || m.comparison || "",
         achievement: m.achievement || m.recommendation || "",
-        recommendedSubjects:
-          m.recommendedSubjects || m.weaknesses || m.strengths || [],
+        recommendedSubjects: Array.isArray(m.recommendedSubjects)
+          ? m.recommendedSubjects
+          : Array.isArray(m.weaknesses)
+            ? m.weaknesses
+            : Array.isArray(m.strengths)
+              ? m.strengths
+              : [],
       };
     }
 
     // ── gradeChangeAnalysis: AI 필드명 매핑 + 코드값 강제 ──
     if (s.gradeChangeAnalysis) {
       const g = s.gradeChangeAnalysis;
+      const trend = trendMap[pre.gradeTrend.direction] || "유지";
+      let prediction = g.prediction || g.analysis || "";
+      // prediction 빈 문자열 방지 (Zod 검증 실패 방지)
+      if (!prediction || prediction.trim().length === 0) {
+        // 성적이 아직 바뀔 수 있는 학생(고1·고2, 3학년 1학기 이전)용 —
+        // 남은 학기의 학습 전략까지 포함한 서술.
+        const trendPredictions: Record<string, string> = {
+          상승: "현재 성적이 상승 추세에 있습니다(현재 상태). 강점 과목의 학습 방식이 자리를 잡아가는 흐름으로, 상승 추세는 사정관이 발전가능성과 학업 태도를 긍정적으로 판단하는 핵심 근거입니다(개선 이유). 이 학습 방식을 약점 과목에도 적용해 상승세를 유지하면 최종 평균이 개선되어 상위 학과 지원 시 학업역량 신뢰도를 높일 수 있습니다(기대 효과).",
+          유지: "성적이 안정적으로 유지되고 있어 학업 성실성 측면에서는 긍정적입니다(현재 상태). 다만 정체 구간은 변별력 측면에서 강점으로 부각되기 어려운 구조이므로(원인), 핵심 과목에서 한 단계 상승을 만들면 사정관이 학업역량을 더 뚜렷하게 평가하는 근거가 됩니다(개선 이유). 정체를 만든 과목의 학습 전략을 보완하면 학종 서류에서 학업역량 경쟁력을 높일 수 있습니다(기대 효과).",
+          하락: "현재 성적이 하락 추세에 있습니다(현재 상태). 하락 추세는 사정관이 학업 태도와 성실성에 의문을 가질 수 있는 신호이므로(개선 이유), 하락을 만든 과목·학기의 원인을 파악해 학습 전략을 재정비하는 것이 시급합니다(문제 원인). 남은 학기에 반등을 만들면 만회 서사를 통해 오히려 발전가능성을 강점으로 전환할 수 있습니다(기대 효과).",
+        };
+        // 생기부가 확정된 학생용 — 추세는 이미 최종 결과이므로 "앞으로의
+        // 학습 전략"이 아니라 확정된 추세의 입시적 의미와 지금 실행 가능한
+        // 대응(면접에서의 설명, 지원 라인 조정)으로 서술한다.
+        const finalizedTrendPredictions: Record<string, string> = {
+          상승: "성적이 상승 추세로 마무리되었습니다(확정 결과). 상승 추세는 사정관이 발전가능성과 학업 태도를 긍정적으로 판단하는 핵심 근거이므로(평가 의미), 어떤 학습 방식의 변화가 이 상승을 만들었는지 면접과 자기소개서에서 설명할 수 있도록 정리해두는 것이 유효합니다(실행 방향).",
+          유지: "성적이 전 학년에 걸쳐 안정적으로 유지된 상태로 확정되었습니다(확정 결과). 꾸준함은 학업 성실성 측면에서 긍정적이지만, 정체 구간은 변별력 측면에서 강점으로 부각되기는 어려운 구조입니다(평가 의미). 확정된 평균에 맞춰 지원 라인을 조정하고, 꾸준함을 뒷받침하는 근거를 면접에서 설명하는 것이 지금 실행 가능한 방향입니다(실행 방향).",
+          하락: "성적이 하락 추세로 마무리되었습니다(확정 결과). 하락 추세는 사정관이 학업 태도와 성실성에 의문을 가질 수 있는 신호입니다(평가 의미). 하락이 나타난 과목·학기의 사유를 면접에서 설명할 수 있도록 정리하고, 확정된 평균을 기준으로 지원 대학 라인을 재조정하는 것이 지금의 핵심 과제입니다(실행 방향).",
+        };
+        const trendSource = isRecordClosed
+          ? finalizedTrendPredictions
+          : trendPredictions;
+        prediction = trendSource[trend] ?? trendSource["유지"];
+      }
       s.gradeChangeAnalysis = {
-        currentTrend: trendMap[pre.gradeTrend.direction] || "유지",
-        prediction: g.prediction || g.analysis || "",
-        actionItems: g.actionItems || g.recommendations || [],
+        currentTrend: trend,
+        prediction,
+        actionItems: normalizeStringArray(
+          g.actionItems || g.recommendations || []
+        ),
         actionItemPriorities: g.actionItemPriorities || [],
       };
     }
 
-    // ── careerSubjectAnalyses: AI 필드명 정규화 + 전처리 데이터 주입 ──
-    if (Array.isArray(s.careerSubjectAnalyses)) {
-      const careerMap = new Map(
-        pre.careerSubjects.map((cs) => [cs.subject, cs])
-      );
-      s.careerSubjectAnalyses = s.careerSubjectAnalyses.map((cs: any) => {
-        const preData = careerMap.get(cs.subject);
-        return {
-          subject: cs.subject ?? "",
-          achievement: cs.achievement || preData?.achievement || "",
-          achievementDistribution:
-            cs.achievementDistribution ||
-            preData?.achievementDistribution ||
-            "",
-          interpretation: cs.interpretation || cs.analysis || cs.comment || "",
-        };
-      });
-    }
+    // ── careerSubjectAnalyses: 강제 빈 배열 ──
+    // 진로선택과목은 학업 평가 영역이 아닌 성실도·진로 탐색 영역에서만 다룬다.
+    // 입력 단계에서 진로선택과목 데이터를 academicAnalysis에 전달하지 않으므로
+    // AI가 만들 수 없지만, 우회로 생성됐을 경우를 대비해 후처리에서도 강제 차단.
+    s.careerSubjectAnalyses = [];
 
-    // ── fiveGradeSimulation: 전처리 데이터 기반 강제 주입 (과목별 최종 등급 기준) ──
-    if (
-      Array.isArray(pre.fiveGradeConversion) &&
-      pre.fiveGradeConversion.length > 0
-    ) {
-      // 과목별 최종(가장 최근) 등급만 사용
-      const latestBySubject = new Map<
-        string,
-        { original: number; converted: number }
-      >();
-      for (const fc of pre.fiveGradeConversion) {
-        latestBySubject.set(fc.subject, {
-          original: fc.original,
-          converted: fc.converted,
-        });
+    // ── fiveGradeSimulation: 등급제에 따라 처리 분기 ──
+    if (pre.gradingSystem === "5등급제") {
+      // 고1·고2 (5등급제): currentGrade = simulatedGrade = 실제 DB 등급값
+      // AI가 9등급제로 잘못 계산하는 것을 방지하기 위해 전처리 데이터로 강제 덮어쓰기
+      const subjectGradeMap = new Map<string, number>();
+      const gradesWithRank = (pre as any).subjectStats ?? [];
+      // subjectStats가 없으면 overallAverage에서 fallback
+      if (Array.isArray(s.subjectGrades)) {
+        for (const sg of s.subjectGrades as any[]) {
+          if (sg.subject && typeof sg.grade === "number") {
+            subjectGradeMap.set(sg.subject, sg.grade);
+          }
+        }
       }
-      // AI가 선택한 주요 5과목의 interpretation은 유지하되, 수치는 코드값으로 대체
-      const aiSimMap = new Map<string, string>(
-        (Array.isArray(s.fiveGradeSimulation) ? s.fiveGradeSimulation : []).map(
-          (sim: any): [string, string] => [
-            sim.subject ?? "",
-            sim.interpretation ?? "",
-          ]
-        )
-      );
-      // 주요 5과목 선정: AI가 선택한 과목이 있으면 그대로, 없으면 전처리에서 상위 5개
-      const targetSubjects: string[] =
-        aiSimMap.size > 0
-          ? [...aiSimMap.keys()].slice(0, 5)
-          : [...latestBySubject.keys()].slice(0, 5);
-      s.fiveGradeSimulation = targetSubjects
-        .filter((subj: string) => latestBySubject.has(subj))
-        .map((subj) => {
-          const data = latestBySubject.get(subj)!;
+
+      if (Array.isArray(s.fiveGradeSimulation)) {
+        s.fiveGradeSimulation = s.fiveGradeSimulation.map((sim: any) => {
+          const subj = sim.subject ?? "";
+          // DB 기반 실제 등급 사용, fallback으로 AI값 사용 (단, 1~5 범위 강제)
+          let grade =
+            subjectGradeMap.get(subj) ?? sim.currentGrade ?? sim.original ?? 3;
+          // 5등급제인데 6 이상이면 잘못된 값 → 5로 clamp
+          if (typeof grade === "number" && grade > 5)
+            grade = Math.min(5, Math.ceil(grade / 2));
+          // interpretation에서 "9등급제" 언급 제거
+          let interp = sim.interpretation ?? "";
+          if (interp.includes("9등급제")) {
+            interp = interp
+              .replace(
+                /9등급제\s*\d+등급은\s*5등급제\s*기준\s*\d+등급으로\s*변환[됩되]니다\.?\s*/g,
+                ""
+              )
+              .replace(/9등급제/g, "5등급제")
+              .trim();
+            if (!interp) {
+              interp = `5등급제 ${grade}등급으로, 동일 등급 내 변별을 위해 원점수와 세특 차별화가 중요합니다.`;
+            }
+          }
           return {
             subject: subj,
-            currentGrade: data.original,
-            simulatedGrade: data.converted,
-            interpretation: aiSimMap.get(subj) || "",
+            currentGrade: grade,
+            simulatedGrade: grade, // 5등급제는 전환 불필요 → 동일
+            interpretation: interp,
           };
         });
-    } else if (Array.isArray(s.fiveGradeSimulation)) {
-      s.fiveGradeSimulation = s.fiveGradeSimulation.map((sim: any) => ({
-        subject: sim.subject ?? "",
-        currentGrade: sim.currentGrade ?? sim.original ?? null,
-        simulatedGrade: sim.simulatedGrade ?? sim.converted ?? null,
-        percentileCumulative: sim.percentileCumulative,
-        interpretation: sim.interpretation ?? "",
-      }));
+      }
+    } else {
+      // 9등급제 학생 (고3/졸업생): fiveGradeSimulation 비활성화.
+      // 9등급제 학생은 9등급제 입시 환경에서 평가받으므로 5등급제 환산값이 의사결정에 무관.
+      // frontend 렌더링도 같은 이유로 이미 제거됨. 데이터도 비활성화하여 admin 검수 혼란 제거.
+      s.fiveGradeSimulation = [];
     }
 
-    // ── universityGradeSimulations: 빈값 행 제거 ──
-    if (Array.isArray(s.universityGradeSimulations)) {
-      s.universityGradeSimulations = s.universityGradeSimulations
-        .map((sim: any) => ({
-          university: sim.university ?? "",
-          department: sim.department ?? "",
-          reflectionMethod: sim.reflectionMethod || sim.method || "",
-          calculatedScore: sim.calculatedScore || sim.score || "",
-          interpretation: sim.interpretation ?? "",
-        }))
-        .filter(
-          (sim: any) =>
-            sim.department && sim.reflectionMethod && sim.calculatedScore
-        );
+    // ── 비주요(비핵심) 과목 안내: interpretation 끝에 정적 텍스트 append ──
+    // 학생의 실제 비주요과목명을 나열하여 "이 과목 등급은 합불에 결정적 영향이 아님"을 안내.
+    // 예체능 학과 지원자는 체육/음악/미술이 핵심 과목이므로 제외.
+    // ⚠️ 데이터 소스는 학업 분석에 표시된 과목(s.subjectGrades)만 사용.
+    //   학업 분석 화면에 안 보이는 과목까지 안내하면 사용자에게 혼란스러움.
+    const isArtSportApplicant = isArtSportDepartment(
+      studentInfo.targetDepartment ?? ""
+    );
+    const allSubjectNames: string[] = Array.isArray(s.subjectGrades)
+      ? s.subjectGrades
+          .map((sg: any) => (typeof sg?.subject === "string" ? sg.subject : ""))
+          .filter((n: string) => n.length > 0)
+      : [];
+    const nonMainSubjects = collectNonMainSubjects(
+      allSubjectNames,
+      isArtSportApplicant
+    );
+    if (nonMainSubjects.length > 0) {
+      const subjectListText = nonMainSubjects.join(", ");
+      const note = `참고로 ${subjectListText} 같은 과목은 성실도 측면에서 입학사정관이 의문을 제기할 수 있을 뿐, 해당 등급으로 학생의 합불 여부가 크게 결정되지는 않습니다.`;
+      const existing =
+        typeof s.interpretation === "string" ? s.interpretation : "";
+      // 중복 추가 방지 (재후처리 시)
+      if (!existing.includes("성실도 측면에서 입학사정관이 의문")) {
+        s.interpretation = existing ? `${existing}\n\n${note}` : note;
+      }
     }
   }
 
@@ -728,6 +4170,42 @@ const normalizeSection = (
       }
     }
 
+    // ── 성실성 최소 점수 보장: 개근/우수 출결 시 ──
+    if (Array.isArray(s.scores) && attendance.length > 0) {
+      const totalUnauthorized = attendance.reduce(
+        (sum, a) => sum + a.unauthorized,
+        0
+      );
+      const totalAbsence = attendance.reduce(
+        (sum, a) => sum + a.totalAbsence,
+        0
+      );
+      const isPerfectAttendance = totalUnauthorized === 0 && totalAbsence === 0;
+      const isGoodAttendance = totalUnauthorized === 0 && totalAbsence <= 3;
+
+      // 개근: 최소 20/25, 우수 출결(질병결석 3일 이하): 최소 18/25
+      const minIntegrity = isPerfectAttendance ? 20 : isGoodAttendance ? 18 : 0;
+
+      if (minIntegrity > 0) {
+        const communityScore = s.scores.find(
+          (sc: any) => sc.category === "community"
+        );
+        if (communityScore && Array.isArray(communityScore.subcategories)) {
+          const integrity = communityScore.subcategories.find(
+            (sub: any) => sub.name === "성실성"
+          );
+          if (integrity && integrity.score < minIntegrity) {
+            integrity.score = Math.min(minIntegrity, integrity.maxScore ?? 25);
+            // 공동체역량 소계 재계산
+            communityScore.score = communityScore.subcategories.reduce(
+              (sum: number, sub: any) => sum + (sub.score ?? 0),
+              0
+            );
+          }
+        }
+      }
+    }
+
     // ── 진로역량 점수: 생기부-학과 괴리 감지 시 상한 적용 ──
     if (Array.isArray(s.scores) && studentInfo.targetDepartment) {
       const targetDept = (studentInfo.targetDepartment ?? "").toLowerCase();
@@ -756,22 +4234,419 @@ const normalizeSection = (
           if (Array.isArray(careerScore.subcategories)) {
             const ratio = 60 / originalScore;
             for (const sub of careerScore.subcategories) {
-              sub.score = Math.round(sub.score * ratio);
+              sub.score = Math.min(
+                Math.round(sub.score * ratio),
+                sub.maxScore ?? 40
+              );
             }
           }
         }
       }
     }
 
-    // ── totalScore: 하위 영역 합산으로 강제 재계산 ──
+    // ── 균등 배점 감지 및 자동 보정 ──
     if (Array.isArray(s.scores)) {
-      const recalculated = s.scores.reduce(
-        (sum: number, sc: any) => sum + (sc.score ?? 0),
-        0
+      for (const sc of s.scores) {
+        if (Array.isArray(sc.subcategories) && sc.subcategories.length >= 3) {
+          const scores = sc.subcategories.map((sub: any) => sub.score ?? 0);
+          const allEqual = scores.every((v: number) => v === scores[0]);
+          if (allEqual && scores[0] > 0) {
+            // AI가 균등 배점한 경우 — 증거 기반 차등화가 안 된 것
+            // 약간의 변동을 주어 균등 배점을 깨뜨림
+            console.warn(
+              `[postprocessor] ${sc.category} 하위항목 균등 배점 감지: ${scores.join("/")}. 자동 보정 적용.`
+            );
+            const total = scores.reduce((a: number, b: number) => a + b, 0);
+            const count = scores.length;
+            // 첫 번째 항목 +2, 마지막 항목 -2 (총합 유지)
+            sc.subcategories[0].score = Math.min(
+              sc.subcategories[0].score + 2,
+              sc.subcategories[0].maxScore ?? 25
+            );
+            sc.subcategories[count - 1].score = Math.max(
+              sc.subcategories[count - 1].score - 2,
+              0
+            );
+          }
+        }
+      }
+    }
+
+    // ── 역량별 점수를 전처리 기반 결정적 값으로 강제 고정 ──
+    // AI 비결정성으로 플랜별 점수가 달라지는 문제 방지
+    // studentTypeInput은 preprocessor에서 결정적으로 계산된 값
+    const sti = pre.studentTypeInput;
+    if (Array.isArray(s.scores) && sti) {
+      const targetMap: Record<string, number> = {
+        academic: sti.academicScore,
+        career: sti.careerScore,
+        community: sti.communityScore,
+      };
+      for (const sc of s.scores) {
+        const target = targetMap[sc.category];
+        if (target == null) continue;
+        // 하위항목 점수를 target에 맞게 비례 조정
+        if (Array.isArray(sc.subcategories)) {
+          const currentTotal = sc.subcategories.reduce(
+            (sum: number, sub: any) => sum + (sub.score ?? 0),
+            0
+          );
+          if (currentTotal > 0 && currentTotal !== target) {
+            const ratio = target / currentTotal;
+            for (const sub of sc.subcategories) {
+              sub.score = Math.min(
+                Math.round((sub.score ?? 0) * ratio),
+                sub.maxScore ?? 40
+              );
+            }
+            // 반올림 오차 보정: maxScore를 초과하지 않는 항목에서 차이 조정
+            const newTotal = sc.subcategories.reduce(
+              (sum: number, sub: any) => sum + (sub.score ?? 0),
+              0
+            );
+            if (newTotal !== target && sc.subcategories.length > 0) {
+              const diff = target - newTotal;
+              // 여유가 있는 항목을 찾아서 차이를 배분
+              for (const sub of sc.subcategories) {
+                const max = sub.maxScore ?? 40;
+                const room = max - sub.score;
+                if (diff > 0 && room > 0) {
+                  const add = Math.min(diff, room);
+                  sub.score += add;
+                  break;
+                } else if (diff < 0 && sub.score > 0) {
+                  const remove = Math.min(-diff, sub.score);
+                  sub.score -= remove;
+                  break;
+                }
+              }
+            }
+          }
+        }
+        sc.score = target;
+        // 등급 강제 보정
+        if (target >= 90) sc.grade = "S";
+        else if (target >= 75) sc.grade = "A";
+        else if (target >= 60) sc.grade = "B";
+        else if (target >= 40) sc.grade = "C";
+        else sc.grade = "D";
+      }
+    }
+
+    // ── 하위항목 합산 → 역량 점수 강제 재계산 (sti 없을 때 폴백) ──
+    if (Array.isArray(s.scores) && !sti) {
+      for (const sc of s.scores) {
+        if (Array.isArray(sc.subcategories)) {
+          const subTotal = sc.subcategories.reduce(
+            (sum: number, sub: any) => sum + (sub.score ?? 0),
+            0
+          );
+          sc.score = subTotal;
+        }
+        const score = sc.score ?? 0;
+        if (score >= 90) sc.grade = "S";
+        else if (score >= 75) sc.grade = "A";
+        else if (score >= 60) sc.grade = "B";
+        else if (score >= 40) sc.grade = "C";
+        else sc.grade = "D";
+      }
+    }
+
+    // ── 학업성취도 ↔ 교과성취도 maxScore 정합성 (강제 점수 동기화는 제거) ──
+    // 학업성취도는 전체 평균, 교과성취도는 전공 관련 과목 평균 기반으로 측정 대상이 다르므로
+    // 두 점수를 강제로 동기화하면 majorRelevanceFact에 기반한 AI 코멘트와 의미가 충돌함.
+    // (전공 평균이 전체 평균보다 낮은 학생이 두 점수 모두 만점으로 표시되어
+    //  "전공 평균이 다소 낮음"이라는 코멘트와 어긋나는 문제가 발생.)
+    // 점수는 AI 산정값(scaling 후) 그대로 사용하고, maxScore만 일관성 보정.
+    if (Array.isArray(s.scores)) {
+      const academicScore = s.scores.find(
+        (sc: any) => sc.category === "academic"
       );
+      const careerScore = s.scores.find((sc: any) => sc.category === "career");
+      if (academicScore?.subcategories && careerScore?.subcategories) {
+        const academicAchievement = academicScore.subcategories.find(
+          (sub: any) => sub.name === "학업성취도"
+        );
+        const courseAchievement = careerScore.subcategories.find(
+          (sub: any) => sub.name === "교과성취도"
+        );
+        if (academicAchievement) academicAchievement.maxScore = 35;
+        if (courseAchievement) courseAchievement.maxScore = 35;
+      }
+    }
+
+    // ── 교과이수노력 ↔ matchRate 연동: 권장과목 이수율 기반 상한 캡 ──
+    if (Array.isArray(s.scores)) {
+      const careerCat = s.scores.find((sc: any) => sc.category === "career");
+      if (careerCat?.subcategories) {
+        const courseEffort = careerCat.subcategories.find(
+          (sub: any) => sub.name === "교과이수노력"
+        );
+        if (courseEffort) {
+          const matchRate = pre.recommendedCourseMatch?.matchRate ?? undefined;
+          let cap: number | null = null;
+          if (matchRate == null || matchRate === 0) {
+            cap = 5;
+          } else if (matchRate < 30) {
+            cap = 10;
+          } else if (matchRate < 50) {
+            cap = 12;
+          } else if (matchRate < 70) {
+            cap = 18;
+          }
+          // matchRate >= 70 → no cap
+          if (cap !== null && typeof courseEffort.score === "number") {
+            courseEffort.score = Math.min(courseEffort.score, cap);
+          }
+          // 진로역량 소계 재계산
+          careerCat.score = careerCat.subcategories.reduce(
+            (sum: number, sub: any) => sum + (sub.score ?? 0),
+            0
+          );
+        }
+      }
+    }
+
+    // ── growthScore/growthGrade 강제 보정 ──
+    if (sti) {
+      s.growthScore = sti.growthScore;
+    }
+    if (typeof s.growthScore === "number") {
+      const gs = s.growthScore;
+      if (gs >= 90) s.growthGrade = "S";
+      else if (gs >= 75) s.growthGrade = "A";
+      else if (gs >= 60) s.growthGrade = "B";
+      else if (gs >= 40) s.growthGrade = "C";
+      else s.growthGrade = "D";
+    }
+
+    // ── 최종 안전장치: 모든 하위항목 점수가 maxScore를 초과하지 않도록 클램핑 ──
+    if (Array.isArray(s.scores)) {
+      for (const sc of s.scores) {
+        if (Array.isArray(sc.subcategories)) {
+          for (const sub of sc.subcategories) {
+            const max = sub.maxScore ?? 40;
+            if (typeof sub.score === "number" && sub.score > max) {
+              sub.score = max;
+            }
+          }
+          // 하위항목 합산으로 카테고리 점수 재계산
+          sc.score = sc.subcategories.reduce(
+            (sum: number, sub: any) => sum + (sub.score ?? 0),
+            0
+          );
+        }
+      }
+    }
+
+    // ── totalScore: 하위 영역 합산 + growthScore 로 강제 재계산 (0~400) ──
+    if (Array.isArray(s.scores)) {
+      const recalculated =
+        s.scores.reduce((sum: number, sc: any) => sum + (sc.score ?? 0), 0) +
+        (s.growthScore ?? 0);
       s.totalScore = recalculated;
       if (s.comparison) {
         s.comparison.myScore = recalculated;
+      }
+    }
+
+    // ── comparison.targetRangeAvg / overallAvg: myScore 기반 결정적 보정 ──
+    // AI가 추정값을 사용자 점수와 무관하게 ~240점대로 일률 산정하여
+    // 상위권 학생의 경우 적정·전체 평균이 비현실적으로 낮게 표시되는 문제 보정.
+    // 산정 기준:
+    //   - targetRangeAvg(지원적정 평균): 사용자와 비슷한 수준의 합격생 평균 → myScore - 10
+    //   - overallAvg(학종 지원자 전체 평균): myScore - 30, 단 [180, 250] 범위 안
+    if (s.comparison && typeof s.comparison.myScore === "number") {
+      const { myScore } = s.comparison;
+      const targetRangeAvg = Math.max(myScore - 10, 200);
+      const overallAvg = Math.max(180, Math.min(myScore - 30, 250));
+      s.comparison.targetRangeAvg = targetRangeAvg;
+      s.comparison.overallAvg = overallAvg;
+    }
+
+    // ── interpretation: 점수 텍스트를 실제 계산값으로 동기화 ──
+    if (s.interpretation && Array.isArray(s.scores)) {
+      const total = s.totalScore ?? 0;
+      // interpretation 내 "총점 NNN점" 패턴을 실제 totalScore로 교정
+      s.interpretation = s.interpretation.replace(
+        /총점\s*\d+점/g,
+        `총점 ${total}점`
+      );
+      // "(NNN점 만점)" 만점 표기를 실제 만점(400)으로 교정
+      // AI가 "300점 만점"으로 잘못 적는 케이스 다수 발견 (실제는 academic+career+community+growth = 400)
+      s.interpretation = s.interpretation.replace(
+        /\(\s*\d+\s*점\s*만점\s*\)/g,
+        "(400점 만점)"
+      );
+      // 역량별 점수 교정: "학업역량(NN점)" 등
+      for (const sc of s.scores) {
+        const label = sc.label ?? "";
+        if (label) {
+          const scoreRegex = new RegExp(`${label}\\(\\d+점\\)`, "g");
+          s.interpretation = s.interpretation.replace(
+            scoreRegex,
+            `${label}(${sc.score}점)`
+          );
+          // "학업역량(NN점)" 형태도 매칭
+          const scoreRegex2 = new RegExp(
+            `${label}\\s*\\(\\s*\\d+\\s*점\\s*\\)`,
+            "g"
+          );
+          s.interpretation = s.interpretation.replace(
+            scoreRegex2,
+            `${label}(${sc.score}점)`
+          );
+        }
+      }
+    }
+
+    // ── growthComment: "X등급" 표기를 실제 growthGrade와 동기화 ──
+    // AI가 grade를 결정한 후 코멘트 작성하지만, postprocessor가 sti.growthScore
+    // 기반으로 grade를 재산정하면 본문 텍스트와 어긋날 수 있음.
+    if (typeof s.growthComment === "string" && s.growthGrade) {
+      s.growthComment = s.growthComment.replace(
+        /([SABCD])등급으로\s*평가/g,
+        `${s.growthGrade}등급으로 평가`
+      );
+    }
+
+    // ── 3학년 데이터 부재 시 growthComment의 3학년 단정 phrase 치환 ──
+    // 큰 단위 phrase만 안전한 표현으로 치환. sentence-level 제거는 한국어 분리 모호하여
+    // 의도치 않게 문장 전체를 삼킬 위험이 있으므로 프롬프트 가드에 의존.
+    if (
+      typeof s.growthComment === "string" &&
+      pre.dataYearsPresent &&
+      !pre.dataYearsPresent.year3
+    ) {
+      s.growthComment = s.growthComment
+        .replace(/1학년부터\s*3학년까지/g, "1학년부터 2학년까지")
+        .replace(/1\s*[~∼\-–]\s*3학년/g, "1·2학년")
+        .replace(/1[·\s,]+2[·\s,]+3학년/g, "1·2학년")
+        .replace(/2학년에서\s*3학년으로\s*넘어가[는며]?\s*시점/g, "2학년 후반")
+        .trim();
+    }
+
+    // ── subcategory: 점수↔코멘트 양방향 정합성 보정 ──
+    // (1) score < maxScore + 코멘트에 -N점 있음 → N을 실제 감점치로 동기화
+    //     + 모순적인 "감점 사유 없음" 류 표현이 함께 있으면 제거
+    // (2) score < maxScore + 코멘트에 "감점 사유 없음" 변형 → "(-N점)"으로 교체
+    // (3) score < maxScore + 둘 다 없음 → 끝에 "(-N점)" 추가
+    // (4) score = maxScore + 코멘트에 -N점 → -N점 표기 + 주변 orphan phrase 제거,
+    //     문장이 끝나지 않은 잘림 패턴을 자연스럽게 마감
+    if (Array.isArray(s.scores)) {
+      const DEDUCTION_RE = /-\s*\d+\s*점/g;
+      // "감점 사유 없음", "감점 사유는 없음", "감점 없음", "감점은 없음",
+      // "감점이 없음" 등 조사·구문 변형까지 매칭. 끝 점은 옵션.
+      const NO_DEDUCTION_RE =
+        /감점\s*(?:사유)?\s*(?:은|는|이|가)?\s*없(?:음|다)[.。]?/;
+      const NO_DEDUCTION_RE_GLOBAL = new RegExp(NO_DEDUCTION_RE.source, "g");
+      // "(-N점)" — 괄호를 포함한 감점 표기 전체
+      const PAREN_DEDUCTION_RE = /\s*\(\s*-?\s*\d+\s*점\s*\)\s*\.?/g;
+      // orphan 패턴: "감점은 .", "감점이 ." 같이 값이 사라진 후 남는 잔해
+      const ORPHAN_GAMJEOM_RE = /감점\s*(?:은|이)\s*\.?\s*(?=\s|$)/g;
+      // orphan 패턴: 마지막 마침표(또는 콤마) 이후 사유 절이 감점값 없이 끝난
+      // 문장 전체 제거. 예) "...우수. 다만, 일부 과목 편차로 ." → 첫 마침표까지만 남김.
+      const ORPHAN_TAIL_AFTER_BOUNDARY_RE =
+        /([.。,，])\s*[^.。]*?(?:으로|로|하여|있어|인해|있으나|편차로|차이로)\s*[.。]\s*$/;
+      // 위 패턴이 못 잡는 단독 케이스: 코멘트 시작부터 사유 절로만 구성된 경우
+      const ORPHAN_REASON_TAIL_RE =
+        /\s*([가-힣]+(?:으로|로|하여|있어|있으나|있고|편차로|차이로))\s*[.。]\s*$/;
+      // 이중 괄호 잔해: AI가 "(N점 ...)" 형태의 불완전한 괄호 조각을 남긴 뒤
+      // 그 안에 실제 "(-M점)."이 다시 중첩되어 "(N점 (-M점).)." 형태로 남는
+      // 사례가 관찰됨. 중첩된 실제 감점 표기만 남기고 바깥 괄호를 제거한다.
+      const NESTED_DEDUCTION_PAREN_RE =
+        /\(\s*\d+\s*점\s*(\(-\s*\d+\s*점\)\.?)\)\.?/g;
+
+      for (const sc of s.scores) {
+        if (!Array.isArray(sc.subcategories)) continue;
+        for (const sub of sc.subcategories) {
+          if (
+            typeof sub.score !== "number" ||
+            typeof sub.maxScore !== "number" ||
+            typeof sub.comment !== "string"
+          ) {
+            continue;
+          }
+          const actualDeduction = sub.maxScore - sub.score;
+          const hasDeductionMarker = /-\s*\d+\s*점/.test(sub.comment);
+
+          if (actualDeduction > 0) {
+            if (hasDeductionMarker) {
+              // 감점치만 동기화. 동시에 모순적인 "감점 없음" 표현이 함께
+              // 있으면 제거 (예: "감점 사유는 없음 (-7점)" 같은 케이스).
+              sub.comment = sub.comment
+                .replace(DEDUCTION_RE, `-${actualDeduction}점`)
+                .replace(NO_DEDUCTION_RE_GLOBAL, "")
+                // 이중 괄호 잔해 정리 (예: "(2점 (-5점).)." → "(-5점).")
+                .replace(NESTED_DEDUCTION_PAREN_RE, "$1")
+                // 문장이 끝나지 않은 잘림 패턴 정리 — 기존에는 감점=0 분기에만
+                // 적용되어 있었으나, 감점>0 분기에서도 동일한 잘림이 관찰됨.
+                .replace(ORPHAN_TAIL_AFTER_BOUNDARY_RE, "$1")
+                .replace(ORPHAN_REASON_TAIL_RE, "")
+                .replace(/\s{2,}/g, " ")
+                .replace(/\s+([.,;])/g, "$1")
+                .trim();
+            } else if (NO_DEDUCTION_RE.test(sub.comment)) {
+              sub.comment = sub.comment.replace(
+                NO_DEDUCTION_RE,
+                `(-${actualDeduction}점).`
+              );
+            } else {
+              const trimmed = sub.comment.replace(/[.。]?\s*$/, "");
+              sub.comment = `${trimmed} (-${actualDeduction}점).`;
+            }
+          } else if (actualDeduction === 0 && hasDeductionMarker) {
+            // -N점 표기 제거 + 주변 orphan phrase 정리.
+            // AI가 "...로 -N점.", "감점은 -N점.", "(-N점)." 등 다양한 형태로
+            // 작성하기 때문에 각 패턴을 자연스러운 마감으로 치환.
+            let cleaned = sub.comment
+              // "(-N점)" 또는 "(- N 점)" 통째 제거
+              .replace(PAREN_DEDUCTION_RE, "")
+              // "감점은 -N점" / "감점이 -N점" → "감점 사유 없음"
+              .replace(/감점\s*(?:은|이|는)?\s*-\s*\d+\s*점/g, "감점 사유 없음")
+              // 남아있는 평문 "-N점" 제거 ("...로 -N점" 같은 형태)
+              .replace(DEDUCTION_RE, "")
+              // 위에서 "감점은" 만 남는 orphan ("감점은 .") 정리
+              .replace(ORPHAN_GAMJEOM_RE, "감점 사유 없음")
+              // 마지막 마침표·콤마 이후 사유 절만 잘림으로 남은 경우
+              // 그 절 통째 제거 (앞 마침표는 유지).
+              .replace(ORPHAN_TAIL_AFTER_BOUNDARY_RE, "$1")
+              // 코멘트 전체가 사유 절뿐이라 위 패턴이 못 잡는 경우 안전망
+              .replace(ORPHAN_REASON_TAIL_RE, "")
+              // 공백·구두점 정리
+              .replace(/\s+([.,;])/g, "$1")
+              .replace(/\s{2,}/g, " ")
+              .trim();
+
+            // 끝 문장이 "감점 사유 없음." 으로 마감되지 않으면 추가.
+            // "[근거]. 감점 사유 없음." 형태로 자연스럽게 마감.
+            if (!/감점\s*사유\s*없음[.。]?$/.test(cleaned)) {
+              cleaned = cleaned.replace(/[.。]\s*$/, "");
+              cleaned =
+                cleaned.length > 0
+                  ? `${cleaned}. 감점 사유 없음.`
+                  : "감점 사유 없음.";
+            } else if (!/[.。]$/.test(cleaned)) {
+              cleaned = `${cleaned}.`;
+            }
+
+            sub.comment = cleaned;
+          }
+        }
+      }
+    }
+
+    // ── gradeComment: 최종 subcategory 점수 기반 재생성 ──
+    // AI가 작성한 gradeComment는 자체 추정 점수에 기반하므로, 점수가 force-overwrite
+    // 되거나 sync 로직으로 조정된 후에는 약점 claim이 stale 해질 수 있음
+    // (예: "성취도에서 다소 아쉬움" 이라고 적혔는데 해당 항목이 만점인 경우).
+    // 최종 점수에서 감점이 가장 큰 하위항목을 기준으로 결정적 템플릿 사용.
+    if (Array.isArray(s.scores)) {
+      for (const sc of s.scores) {
+        if (!Array.isArray(sc.subcategories) || sc.subcategories.length === 0) {
+          continue;
+        }
+        sc.gradeComment = buildCompetencyGradeComment(sc, isRecordClosed);
       }
     }
 
@@ -787,13 +4662,125 @@ const normalizeSection = (
           sc.score < (worst?.score ?? 999) ? sc : worst,
         s.scores[0]
       );
-      s.interpretation = `총점 ${total}점(300점 만점)으로 ${strongest?.label ?? ""}이 가장 우수하며, ${weakest?.label ?? ""}은 상대적으로 보완이 필요합니다.`;
+      s.interpretation = isRecordClosed
+        ? `총점 ${total}점(300점 만점)으로 ${strongest?.label ?? ""}이 가장 우수하며, ${weakest?.label ?? ""}은 상대적으로 낮게 평가됩니다.`
+        : `총점 ${total}점(300점 만점)으로 ${strongest?.label ?? ""}이 가장 우수하며, ${weakest?.label ?? ""}은 상대적으로 보완이 필요합니다.`;
+    }
+
+    // ── 신규 리포트(v5+): 5축 세분화 레이더 결정적 재집계 ──
+    // 학생별 강·약점을 직관적으로 드러내기 위해, 기존 4대 역량 하위항목 점수를
+    // 5개 축(내신/세특/전공적합성/비교과/성장성)으로 결정적 재집계한다.
+    // 추가 AI 추정 없이 이미 확정된 점수만 사용하므로 사실 정합성이 보장된다.
+    if (Array.isArray(s.scores)) {
+      const growthScore = typeof s.growthScore === "number" ? s.growthScore : 0;
+      s.competencyAxes = buildCompetencyAxes(s.scores, growthScore);
+      // 데이터 기반 강점·보완 항목 (어떤 부분을 보완하면 +N점 향상되는지 실제 사유 포함)
+      s.competencyHighlights = buildCompetencyHighlights(s.scores);
+
+      // 가짜 평균(지원적정/전체) 제거 — 신규 리포트는 본인 프로필형 레이더로 대체.
+      // myScore - 10/30 으로 결정적 고정되던 비현실적 비교 기준을 표시하지 않는다.
+      if (s.comparison) {
+        delete s.comparison.targetRangeAvg;
+        delete s.comparison.overallAvg;
+      }
+    }
+
+    // ── lite 플랜: percentile/comparison 필드 제거 ──
+    if (plan === "lite") {
+      delete s.percentile;
+      delete s.percentileLabel;
+      delete s.comparison;
+    }
+  }
+
+  // ── attendanceAnalysis: 전처리 출결 데이터 강제 주입 + 합격 가능성 단정 톤 정리 ──
+  if (s.sectionId === "attendanceAnalysis") {
+    const attendance = pre.attendanceSummary;
+    if (Array.isArray(s.summaryByYear) && attendance.length > 0) {
+      // 전처리 데이터로 summaryByYear를 강제 대체 (totalDays, note 포함)
+      s.summaryByYear = attendance.map((a) => ({
+        year: a.year,
+        totalDays: a.totalDays,
+        note: a.note,
+        totalAbsence: a.totalAbsence,
+        illness: a.illness,
+        unauthorized: a.unauthorized,
+        etc: a.etc,
+        lateness: a.lateness,
+        earlyLeave: a.earlyLeave,
+      }));
+    }
+    // 합격 가능성 단정 표현 → 부합도/감점 여부 톤으로 정리.
+    // 출결만으로는 합격 안정성을 결론지을 수 없으므로 "안정적 지원 가능" 류 표현은 부적절.
+    const ATTENDANCE_TONE_REPLACEMENTS: Array<[RegExp, string]> = [
+      [
+        /안정적인?\s*지원이?\s*가능합니다/g,
+        "교과전형 출결 감점 요인이 없습니다",
+      ],
+      [/안정적으로\s*지원이?\s*가능합니다/g, "출결 감점 요인이 없습니다"],
+      [
+        /다른\s*지원자(?:들)?와의?\s*차별화\s*포인트로\s*작용할\s*겁니다/g,
+        "성실성 평가에서 긍정적 근거가 됩니다",
+      ],
+      [
+        /다른\s*지원자(?:들)?와의?\s*차별화\s*포인트로\s*작용할\s*것입니다/g,
+        "성실성 평가에서 긍정적 근거가 됩니다",
+      ],
+      [
+        /차별화\s*포인트로\s*작용할\s*겁니다/g,
+        "성실성 평가의 긍정적 근거가 됩니다",
+      ],
+      [
+        /합격선\s*대비\s*여유가?\s*있습니다/g,
+        "정량 기준 측면에서 안정적입니다",
+      ],
+    ];
+    for (const field of ["impactAnalysis", "integrityContribution"] as const) {
+      const value = (s as Record<string, unknown>)[field];
+      if (typeof value !== "string") continue;
+      let updated = value;
+      for (const [pattern, replacement] of ATTENDANCE_TONE_REPLACEMENTS) {
+        updated = updated.replace(pattern, replacement);
+      }
+      (s as Record<string, unknown>)[field] = updated;
     }
   }
 
   if (s.sectionId === "weaknessAnalysis") {
-    // ── areas 배열: priority 기준 내림차순 정렬 (high → medium → low) ──
+    // ── areas 배열: priority/urgency/effectiveness 값 정규화 ──
     if (Array.isArray(s.areas)) {
+      const VALID_PRIORITIES = new Set(["high", "medium", "low"]);
+      const PRIORITY_NORMALIZE: Record<string, string> = {
+        높음: "high",
+        보통: "medium",
+        낮음: "low",
+        상: "high",
+        중: "medium",
+        하: "low",
+      };
+
+      for (const area of s.areas) {
+        // priority 정규화
+        if (area.priority && !VALID_PRIORITIES.has(area.priority)) {
+          area.priority = PRIORITY_NORMALIZE[area.priority] ?? "medium";
+        }
+        if (!area.priority) area.priority = "medium";
+
+        // urgency 정규화
+        if (area.urgency && !VALID_PRIORITIES.has(area.urgency)) {
+          area.urgency = PRIORITY_NORMALIZE[area.urgency] ?? "medium";
+        }
+        if (!area.urgency) area.urgency = "medium";
+
+        // effectiveness 정규화
+        if (area.effectiveness && !VALID_PRIORITIES.has(area.effectiveness)) {
+          area.effectiveness =
+            PRIORITY_NORMALIZE[area.effectiveness] ?? "medium";
+        }
+        if (!area.effectiveness) area.effectiveness = "medium";
+      }
+
+      // priority 기준 내림차순 정렬 (high → medium → low)
       const priorityOrder: Record<string, number> = {
         high: 0,
         medium: 1,
@@ -803,6 +4790,233 @@ const normalizeSection = (
         (a: any, b: any) =>
           (priorityOrder[a.priority] ?? 1) - (priorityOrder[b.priority] ?? 1)
       );
+
+      // ── STEP 11: 내부 데이터(raw 값) 노출 제거 ──
+      const CAMEL_CASE_VARS =
+        /\b(?:overallAverage|fillRate|gradeRank|rawScore|competencyScore|studentCount|achievementLevel|subjectCombinations|gradeTrend|gradeVariance|majorRelated|convertedGrade|fiveGradeConversion|smallClassSubjects|careerSubjects|attendanceSummary|recordVolume|detectedMajorGroup|evaluationImpact|passRateLabel|passRateRange|basePassRate|admissionType|yearlyAnalysis|volumeAssessment|improvementDirection|keyActivities|competencyTags|overallComment)\b/i;
+      const stripRawData = (text: string): string => {
+        if (typeof text !== "string") return text;
+        return (
+          text
+            // JSON 객체/배열 리터럴 제거
+            .replace(/\{[^}]*"?\w+"?\s*:\s*[^}]*\}/g, "")
+            // 배열 리터럴 제거
+            .replace(/\[[^\]]*,\s*[^\]]*\]/g, "")
+            // camelCase 변수명이 포함된 문장 전체 제거 (변수명만 삭제 시 조사 고립 방지)
+            .replace(/[^.!?]+[.!?]/g, (sentence) =>
+              CAMEL_CASE_VARS.test(sentence) ? "" : sentence
+            )
+            // "바이트" 단위 수치 제거 (기술적 표현)
+            .replace(/\d+바이트/g, "")
+            // 연속 공백 정리
+            .replace(/\s{2,}/g, " ")
+            .trim()
+        );
+      };
+
+      for (const area of s.areas) {
+        if (typeof area.description === "string")
+          area.description = stripRawData(area.description);
+        if (typeof area.evidence === "string")
+          area.evidence = stripRawData(area.evidence);
+        if (Array.isArray(area.suggestedActivities)) {
+          area.suggestedActivities = area.suggestedActivities.map(
+            (a: string) => (typeof a === "string" ? stripRawData(a) : a)
+          );
+        }
+        if (typeof area.executionStrategy === "string")
+          area.executionStrategy = stripRawData(area.executionStrategy);
+      }
+    }
+  }
+
+  // ── activityAnalysis: 데이터 없는 영역/학년 정리 ──
+  if (s.sectionId === "activityAnalysis" && Array.isArray(s.activities)) {
+    const NO_DATA_MSG = "기록이 없어 평가할 수 없습니다.";
+    const slots = pre.existingCreativeSlots ?? [];
+
+    const hasSlot = (actType: string, year: number): boolean => {
+      // 영역명 매칭: "동아리활동" ↔ "동아리활동", "자율·자치활동" ↔ "자율활동" 등
+      const normalize = (s: string) =>
+        s.replace(/[·\s]/g, "").replace("자치", "");
+      const norm = normalize(actType);
+      return slots.some(
+        (sl) => normalize(sl.area) === norm && sl.year === year
+      );
+    };
+
+    for (const activity of s.activities) {
+      if (!Array.isArray(activity.yearlyAnalysis)) continue;
+
+      let allYearsEmpty = true;
+      for (const ya of activity.yearlyAnalysis) {
+        if (!hasSlot(activity.type, ya.year)) {
+          // 데이터 없는 학년: 분석 텍스트 제거, 기본 메시지만 남김
+          ya.summary = NO_DATA_MSG;
+          ya.competencyTags = [];
+          ya.ratingRationale = undefined;
+        } else {
+          allYearsEmpty = false;
+        }
+      }
+
+      if (allYearsEmpty) {
+        // 전체 학년에 데이터가 없는 영역: 부가 필드 모두 정리
+        activity.overallComment = NO_DATA_MSG;
+        activity.volumeAssessment = undefined;
+        activity.keyActivities = [];
+        activity.improvementDirection = undefined;
+      }
+    }
+
+    // ── 환각 활동 제거: keyActivities[].activity가 입력 원문에 없는 경우 ──
+    // AI가 입력 원문(자율활동 본문)에 등장하지 않은 활동명을 자체 생성
+    // (예: 본문에 "학급 규칙 제정" 어휘가 없는데 "학급 규칙 제정 프로젝트"로 라벨)하는 환각을 차단.
+    // 검증 방식: activity 문자열에서 한글 2자 이상 토큰을 추출 후, 입력 원문에 등장하는
+    // 토큰 비율이 50% 미만이면 환각으로 판단하여 제거.
+    const creativeText = creativeActivitiesText ?? "";
+    if (creativeText.length > 0) {
+      for (const activity of s.activities) {
+        if (!Array.isArray(activity.keyActivities)) continue;
+        activity.keyActivities = activity.keyActivities.filter((ka: any) => {
+          const activityName = (ka?.activity ?? "").trim();
+          if (!activityName) return false;
+          const tokens = activityName
+            .replace(/[(\)（）·,]/g, " ")
+            .split(/\s+/)
+            .map((t: string) => t.replace(/[^가-힣a-zA-Z0-9]/g, ""))
+            .filter((t: string) => t.length >= 2);
+          if (tokens.length === 0) return true;
+          const matchedCount = tokens.filter((t: string) =>
+            creativeText.includes(t)
+          ).length;
+          const matchRate = matchedCount / tokens.length;
+          if (matchRate < 0.5) {
+            console.warn(
+              `[postprocessor] activityAnalysis 환각 활동 제거: "${activityName}" (매칭률 ${Math.round(matchRate * 100)}%)`
+            );
+            return false;
+          }
+          return true;
+        });
+      }
+    }
+  }
+
+  // ── behaviorAnalysis: 데이터 없는 학년 정리 ──
+  if (s.sectionId === "behaviorAnalysis" && Array.isArray(s.yearlyAnalysis)) {
+    const NO_DATA_MSG = "기록이 없어 평가할 수 없습니다.";
+    const existingYears = pre.existingBehaviorYears ?? [];
+
+    for (const ya of s.yearlyAnalysis) {
+      if (!existingYears.includes(ya.year)) {
+        ya.summary = NO_DATA_MSG;
+        ya.competencyTags = [];
+        ya.keyQuotes = [];
+      }
+    }
+  }
+
+  // ── 기록 부재 부정 언급 제거 (activityAnalysis + behaviorAnalysis 공통) ──
+  if (
+    s.sectionId === "activityAnalysis" ||
+    s.sectionId === "behaviorAnalysis"
+  ) {
+    // "N학년 기록이 부재하여 아쉽습니다" 류의 문장 제거
+    const ABSENCE_PATTERN =
+      /[^.]*\d학년[^.]*(?:기록|데이터)[^.]*(?:부재|없[어으]|부족|미비)[^.]*(?:아쉽|제한|한계|불가)[^.]*\.\s*/g;
+    const ABSENCE_PATTERN2 =
+      /[^.]*(?:기록|데이터)[^.]*(?:부재|없[어으]|부족|미비)[^.]*(?:아쉽|제한|한계|불가)[^.]*\.\s*/g;
+
+    const stripAbsence = (text: string): string => {
+      if (typeof text !== "string") return text;
+      return text
+        .replace(ABSENCE_PATTERN, "")
+        .replace(ABSENCE_PATTERN2, "")
+        .trim();
+    };
+
+    if (s.sectionId === "behaviorAnalysis") {
+      if (typeof s.overallComment === "string")
+        s.overallComment = stripAbsence(s.overallComment);
+      if (typeof s.admissionRelevance === "string")
+        s.admissionRelevance = stripAbsence(s.admissionRelevance);
+    }
+
+    if (s.sectionId === "activityAnalysis" && Array.isArray(s.activities)) {
+      for (const activity of s.activities) {
+        if (typeof activity.overallComment === "string")
+          activity.overallComment = stripAbsence(activity.overallComment);
+        if (typeof activity.improvementDirection === "string")
+          activity.improvementDirection = stripAbsence(
+            activity.improvementDirection
+          );
+      }
+      if (typeof s.overallComment === "string")
+        s.overallComment = stripAbsence(s.overallComment);
+    }
+  }
+
+  // ── activityAnalysis: rating-tone 일관성 보정 (6번 fix 스코프 확장) ──
+  // rating이 "good" 이상인 카드(또는 rating 정보 없는 영역)의 단정 부정 톤
+  // ("약점으로 작용할 겁니다" 등)을 보완 톤으로 정리.
+  // subjectAnalysis와 동일 정책. weak rating에서는 단정 부정 톤 허용.
+  if (s.sectionId === "activityAnalysis" && Array.isArray(s.activities)) {
+    const ACTIVITY_SOFTEN_REPLACEMENTS: Array<[RegExp, string]> = [
+      [/약점으로\s*작용할\s*겁니다/g, "보완이 필요한 부분입니다"],
+      [/약점으로\s*작용할\s*것입니다/g, "보완이 필요한 부분입니다"],
+      [/약점으로\s*작용할\s*수\s*있습니다/g, "보완이 필요할 수 있습니다"],
+      [/약점으로\s*판단될\s*수\s*있습니다/g, "보완이 필요할 수 있습니다"],
+      [/변별력이\s*부족하다고\s*판단/g, "변별력 강화 여지가 있다고 판단"],
+      [
+        /변별력을\s*갖기에는\s*한계가\s*있습니다/g,
+        "변별력 강화 여지가 있습니다",
+      ],
+      [/변별력은\s*낮습니다/g, "변별력 강화 여지가 있습니다"],
+      [/한계가\s*있다고\s*판단/g, "보완 여지가 있다고 판단"],
+      [/근거로\s*작용하기는\s*어렵습니다/g, "근거 강화에 보완이 필요합니다"],
+      [
+        /평가에\s*큰\s*영향을\s*주기\s*어렵습니다/g,
+        "평가에서 더 강한 영향을 위해 보완이 필요합니다",
+      ],
+      [
+        /평가\s*영향은\s*제한적입니다/g,
+        "평가에서 더 강한 영향을 위해 보완 여지가 있습니다",
+      ],
+    ];
+    const softenText = (text: string): string => {
+      let updated = text;
+      for (const [pattern, replacement] of ACTIVITY_SOFTEN_REPLACEMENTS) {
+        updated = updated.replace(pattern, replacement);
+      }
+      return updated;
+    };
+
+    for (const activity of s.activities) {
+      // yearlyAnalysis: rating !== "weak"인 카드만 톤 정리 (weak는 단정 톤 허용)
+      if (Array.isArray(activity.yearlyAnalysis)) {
+        for (const ya of activity.yearlyAnalysis) {
+          if (ya.rating !== "weak" && typeof ya.summary === "string") {
+            ya.summary = softenText(ya.summary);
+          }
+        }
+      }
+      // keyActivities[].evaluation: rating 필드 없음 → 일괄 정리
+      if (Array.isArray(activity.keyActivities)) {
+        for (const ka of activity.keyActivities) {
+          if (typeof ka.evaluation === "string") {
+            ka.evaluation = softenText(ka.evaluation);
+          }
+        }
+      }
+      // activity.overallComment 일괄 정리
+      if (typeof activity.overallComment === "string") {
+        activity.overallComment = softenText(activity.overallComment);
+      }
+    }
+    // section overallComment 일괄 정리
+    if (typeof s.overallComment === "string") {
+      s.overallComment = softenText(s.overallComment);
     }
   }
 
@@ -840,6 +5054,265 @@ const normalizeSection = (
     if (typeof s.overallComment === "string") {
       s.overallComment = diversifyAssessor(s.overallComment);
     }
+
+    // ── 피드백 반영: keyActivities evaluation에 입학사정관 관점 강제 주입 ──
+    const EVALUATOR_KEYWORDS =
+      /입학사정관|학종|평가|전형|면접|변별력|판단|영향|제한적/;
+    const NEGATIVE_KEYWORDS =
+      /다만|아쉬|부족|한계|제한|약점|약하|불리|없[을는]/;
+    const targetDeptForActivity = studentInfo.targetDepartment ?? "";
+
+    for (const activity of s.activities) {
+      if (!Array.isArray(activity.keyActivities)) continue;
+      for (const ka of activity.keyActivities) {
+        if (typeof ka.evaluation !== "string" || ka.evaluation.length < 10)
+          continue;
+
+        const hasEvaluatorView = EVALUATOR_KEYWORDS.test(ka.evaluation);
+        const hasNegative = NEGATIVE_KEYWORDS.test(ka.evaluation);
+
+        if (!hasEvaluatorView) {
+          if (targetDeptForActivity && !hasNegative) {
+            // 긍정 일변도 + 평가 관점 없음 → 입학사정관 관점 + 전공 연관성 경고
+            ka.evaluation += ` 입학사정관은 이 기록의 구체적 과정과 깊이를 기준으로 평가하며, ${targetDeptForActivity} 지원 시 직접적인 진로역량 근거로는 부족할 수 있습니다.`;
+          } else if (targetDeptForActivity && hasNegative) {
+            // 부정 서술 있으나 입학사정관 관점 없음 → 평가 관점만 추가
+            ka.evaluation +=
+              " 입학사정관은 이 기록의 구체적 과정과 깊이를 기준으로 평가 반영 여부를 판단합니다.";
+          } else if (!hasNegative) {
+            // 긍정 일변도 + 평가 관점 없음 (학과 정보 없음)
+            ka.evaluation +=
+              " 입학사정관은 이 기록의 구체적 과정과 깊이를 기준으로 평가 반영 여부를 판단합니다.";
+          }
+        }
+      }
+    }
+  }
+
+  // ── admissionPrediction/admissionStrategy: 단일 과목 진로역량 패턴 치환 ──
+  if (
+    s.sectionId === "admissionPrediction" ||
+    s.sectionId === "admissionStrategy"
+  ) {
+    const singleSubjectPatterns: [RegExp, string][] = [
+      // "정보 과목 프로그래밍 경험이 긍정적입니다" — 간결한 형태
+      [
+        /정보\s*과목\s*(세특\s*)?(프로그래밍\s*)?(경험|활동)[이가은는]\s*(매우\s*)?(긍정적|적합|유리)[^.]*\./g,
+        "정보 과목에서 프로그래밍 기록이 있으나, 생기부 전반에 걸쳐 전공 관련 서술이 부족하여 이것만으로는 진로역량을 인정받기 어렵습니다.",
+      ],
+      // "정보 과목에서 파이썬으로 프로그램을 구현한 경험은 긍정적" 류 (어순 변형 대응)
+      [
+        /정보\s*과목에서\s*[^.]{0,30}(프로그래밍|프로그램|코딩)[^.]{0,20}(경험|활동)[은는이가]\s*(매우\s*)?(긍정적|적합|강점)[^.]*\./g,
+        "정보 과목에서 프로그래밍 기록이 일부 확인되나, 생기부 전반의 전공 관련 서술이 부족하여 서류 경쟁력은 제한적입니다.",
+      ],
+      // "프로그래밍 경험과 수학적 모델링 능력이 긍정적/적합" — rationale에서 반복되는 패턴
+      // (sanitizeAiTone 적용 후 "적합한 편입니다" 등으로 변형될 수 있으므로 문장 끝까지 매칭)
+      [
+        /정보\s*과목\s*프로그래밍\s*(기록|경험)과\s*수학적\s*모델링\s*능력이\s*[^.]*\./g,
+        "프로그래밍 기록과 수학적 능력이 일부 확인되나, 생기부 전반에서 전공 관련 탐구가 부족하여 서류 경쟁력은 제한적입니다.",
+      ],
+      // ── 피드백 반영: "정보 과목의" (조사 "의" 포함) 패턴 ──
+      // "정보 과목의 [형용사] 성취/경험 ... 긍정적"
+      [
+        /정보\s*과목의\s*[^.]{0,60}긍정적[^.]*\./g,
+        "정보 과목에서 관련 기록이 일부 확인되나, 생기부 전반에서 전공 관련 서술이 부족하여 이것만으로는 진로역량을 인정받기 어렵습니다.",
+      ],
+      // "정보 과목의 ... 전공적합성을 어필"
+      [
+        /정보\s*과목의\s*[^.]{0,60}전공적합성을?\s*어필[^.]*\./g,
+        "정보 과목에서 관련 기록이 일부 확인되나, 생기부 전반의 전공 관련 서술이 부족하므로 진로역량 어필에는 한계가 있습니다.",
+      ],
+      // "정보 과목 성취와/과 ... 긍정적"
+      [
+        /정보\s*과목\s*성취[와과]\s*[^.]{0,40}긍정적[^.]*\./g,
+        "정보 과목 성취가 있으나, 생기부 전반의 진로역량이 부족하여 서류 경쟁력은 제한적입니다.",
+      ],
+      // "정보 과목 성취가/도 좋/우수/양호/높"
+      [
+        /정보\s*과목\s*성취[도]?\s*[가와이은는]\s*[^.]{0,30}(좋|우수|양호|높)[^.]*\./g,
+        "정보 과목 성취가 있으나, 생기부 전반의 진로역량이 부족하여 서류 경쟁력은 제한적입니다.",
+      ],
+      // "정보 과목의/에서 ... 합격 가능성이 높/안정적인 합격"
+      [
+        /정보\s*과목[의에서]*\s*[^.]{0,60}(합격\s*가능성[이가]\s*(높|매우\s*높|충분)|안정적[인]?\s*합격)[^.]*\./g,
+        "정보 과목에서 관련 기록이 있으나, 생기부 전반의 전공 관련 서술이 부족하여 학종 서류 경쟁력은 제한적입니다.",
+      ],
+      // "정보 과목의 [높은] 성취도와 프로그래밍 경험은/이" (explicit compound)
+      [
+        /정보\s*과목의\s*(높은\s*|우수한\s*)?성취도?[와과]\s*프로그래밍\s*경험[은는이가][^.]*\./g,
+        "정보 과목에서의 기록이 있으나, 생기부 전반에서 전공 관련 서술이 부족하므로 서류 경쟁력은 제한적입니다.",
+      ],
+      // ── "전공적합성에서 일부 아쉬움" 약한 표현 강화 ──
+      [
+        /전공적합성에서\s*일부\s*아쉬움[을를이가]?\s*(남길|있을)\s*수\s*있습니다/g,
+        "진로역량 평가에서 불리하게 작용하여 학종 서류 경쟁력이 약화됩니다",
+      ],
+      [
+        /전공적합성에서\s*다소\s*아쉬움[을를이가]?\s*(남길|있을)\s*수\s*있습니다/g,
+        "진로역량 평가에서 불리하게 작용하여 학종 서류 경쟁력이 약화됩니다",
+      ],
+      // "전공적합성에서 일부/다소 아쉽습니다" (chanceRationale 축약형)
+      [
+        /전공적합성에서\s*(일부|다소)\s*아쉽습니다/g,
+        "진로역량 평가에서 불리하여 학종 서류 경쟁력이 약화됩니다",
+      ],
+    ];
+
+    const fixSingleSubjectRationale = (text: string): string => {
+      let result = text;
+      for (const [pattern, replacement] of singleSubjectPatterns) {
+        result = result.replace(pattern, replacement);
+      }
+      return result;
+    };
+
+    // overallComment가 객체인 경우 문자열로 강제 변환 (AI가 객체를 반환하는 경우 방어)
+    if (s.overallComment != null && typeof s.overallComment !== "string") {
+      if (typeof s.overallComment === "object") {
+        s.overallComment = Object.values(
+          s.overallComment as Record<string, unknown>
+        )
+          .filter((v) => typeof v === "string")
+          .join(" ");
+      } else {
+        s.overallComment = String(s.overallComment);
+      }
+    }
+
+    // admissionPrediction: predictions[].analysis, universityPredictions[].rationale, overallComment
+    if (Array.isArray(s.predictions)) {
+      for (const pred of s.predictions) {
+        if (typeof pred.analysis === "string") {
+          pred.analysis = fixSingleSubjectRationale(pred.analysis);
+        }
+        if (Array.isArray(pred.universityPredictions)) {
+          for (const uniPred of pred.universityPredictions) {
+            if (typeof uniPred.rationale === "string") {
+              uniPred.rationale = fixSingleSubjectRationale(uniPred.rationale);
+            }
+          }
+        }
+      }
+    }
+    if (typeof s.overallComment === "string") {
+      s.overallComment = fixSingleSubjectRationale(s.overallComment);
+      s.overallComment = s.overallComment.replace(/\(별도 분석\)/g, "");
+    }
+
+    // admissionStrategy: simulations[].cards[].comprehensive/subject.chanceRationale, recommendedPath
+    if (Array.isArray(s.simulations)) {
+      for (const sim of s.simulations) {
+        if (!Array.isArray(sim.cards)) continue;
+        for (const card of sim.cards) {
+          if (typeof card.comprehensive?.chanceRationale === "string") {
+            card.comprehensive.chanceRationale = fixSingleSubjectRationale(
+              card.comprehensive.chanceRationale
+            );
+          }
+          if (typeof card.subject?.chanceRationale === "string") {
+            card.subject.chanceRationale = fixSingleSubjectRationale(
+              card.subject.chanceRationale
+            );
+          }
+        }
+      }
+    }
+    if (typeof s.recommendedPath === "string") {
+      s.recommendedPath = fixSingleSubjectRationale(s.recommendedPath);
+    }
+
+    // ── 전공 미스매치 시 "등급 경쟁력" 긍정 서술에 진로역량 경고 강제 추가 ──
+    const courseMatchRate = pre.recommendedCourseMatch?.matchRate ?? 100;
+    // recommendedCourseMatch는 Phase 2에서 detectedMajorGroup 기반으로 재생성됨
+    const mismatchDept =
+      pre.recommendedCourseMatch?._referenceTargetMajor ?? "";
+    const hasMajorMismatch = courseMatchRate <= 60 && mismatchDept;
+
+    if (hasMajorMismatch) {
+      const hasAdequateWarning = (text: string): boolean =>
+        /(전공적합성|진로역량|전공\s*관련\s*서술)[이가을를에서]*\s*[^.]{0,20}(부족|제한|인정받기\s*어렵|한계|불리|약화|아쉬)|서류\s*경쟁력[이가은는]?\s*[^.]{0,10}(제한|약화|부족)/.test(
+          text
+        );
+      const hasPositiveGrade = (text: string): boolean =>
+        /(등급\s*)?경쟁력[이가]\s*(매우\s*)?(우수|충분|탁월|양호|있|압도|뛰어)/.test(
+          text
+        );
+      const mismatchSuffix = ` 다만, 생기부 전반에서 ${mismatchDept} 관련 서술이 부족하여 학종에서는 전반적 경쟁력이 약화됩니다.`;
+
+      // admissionPrediction: universityPredictions[].rationale
+      if (Array.isArray(s.predictions)) {
+        for (const pred of s.predictions) {
+          if (Array.isArray(pred.universityPredictions)) {
+            for (const uniPred of pred.universityPredictions) {
+              if (
+                typeof uniPred.rationale === "string" &&
+                hasPositiveGrade(uniPred.rationale) &&
+                !hasAdequateWarning(uniPred.rationale)
+              ) {
+                uniPred.rationale += mismatchSuffix;
+              }
+            }
+          }
+        }
+      }
+
+      // admissionStrategy: simulations[].cards[].comprehensive/subject.chanceRationale
+      if (Array.isArray(s.simulations)) {
+        for (const sim of s.simulations) {
+          if (!Array.isArray(sim.cards)) continue;
+          for (const card of sim.cards) {
+            if (
+              typeof card.comprehensive?.chanceRationale === "string" &&
+              hasPositiveGrade(card.comprehensive.chanceRationale) &&
+              !hasAdequateWarning(card.comprehensive.chanceRationale)
+            ) {
+              card.comprehensive.chanceRationale += mismatchSuffix;
+            }
+            if (
+              typeof card.subject?.chanceRationale === "string" &&
+              hasPositiveGrade(card.subject.chanceRationale) &&
+              !hasAdequateWarning(card.subject.chanceRationale)
+            ) {
+              card.subject.chanceRationale += mismatchSuffix;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // ── behaviorAnalysis: competencyTag subcategory 정규화 ──
+  if (s.sectionId === "behaviorAnalysis") {
+    const SUBCATEGORY_NORM: Record<string, string> = {
+      "진로 탐색 활동 및 경험": "진로탐색",
+      "진로 탐색": "진로탐색",
+      "진로탐색 활동": "진로탐색",
+      "나눔과 배려": "나눔과배려",
+      "소통 및 협업": "소통및협업",
+      "소통과 협업": "소통및협업",
+      "성장 과정": "성장과정",
+      "성장과정 및 잠재력": "성장과정",
+      "자기 주도성": "자기주도성",
+      "창의적 문제해결": "창의적문제해결",
+      "경험 다양성": "경험다양성",
+    };
+    const normalizeTags = (tags: any[]) => {
+      if (!Array.isArray(tags)) return;
+      for (const tag of tags) {
+        if (tag && typeof tag.subcategory === "string") {
+          const normed = SUBCATEGORY_NORM[tag.subcategory];
+          if (normed) tag.subcategory = normed;
+        }
+      }
+    };
+    if (Array.isArray(s.yearlyAnalysis)) {
+      for (const ya of s.yearlyAnalysis) {
+        normalizeTags(ya.competencyTags);
+      }
+    }
+    if (Array.isArray(s.consistentTraitsTags)) {
+      normalizeTags(s.consistentTraitsTags);
+    }
   }
 
   // ── interviewPrep: Lite 플랜에서 sampleAnswer 강제 제거 ──
@@ -854,8 +5327,161 @@ const normalizeSection = (
     }
   }
 
-  // ── admissionStrategy: schoolTypeAnalysis 빈 객체 제거 + 괴리 보강 ──
+  // ── academicAnalysis: 졸업생은 성적 개선 우선순위 + 등급 변화 분석 미노출 ──
+  if (s.sectionId === "academicAnalysis" && studentInfo.isGraduate) {
+    delete s.improvementPriority;
+    delete s.gradeChangeAnalysis;
+  }
+
+  // ── consultantReview: 졸업생은 생기부 마무리 방향 미노출 ──
+  if (s.sectionId === "consultantReview" && studentInfo.isGraduate) {
+    delete s.completionDirection;
+  }
+
+  // ── consultantReview: 3학년 데이터 부재 시 growthPotential의 3학년 단정 정정 ──
+  // (예: "1학년부터 3학년까지 꾸준히 약학 계열에 대한 관심이 심화되고 ...")
+  if (
+    s.sectionId === "consultantReview" &&
+    pre.dataYearsPresent &&
+    !pre.dataYearsPresent.year3
+  ) {
+    const stripYear3Phantoms = (text: unknown): unknown => {
+      if (typeof text !== "string") return text;
+      return text
+        .replace(/1학년부터\s*3학년까지/g, "1학년부터 2학년까지")
+        .replace(/1\s*[~∼\-–]\s*3학년/g, "1·2학년")
+        .replace(/1[·\s,]+2[·\s,]+3학년/g, "1·2학년")
+        .replace(/2학년에서\s*3학년으로\s*넘어가[는며]?\s*시점/g, "2학년 후반")
+        .trim();
+    };
+    if (typeof s.growthPotential === "string") {
+      s.growthPotential = stripYear3Phantoms(s.growthPotential);
+    }
+    if (s.evaluationGuide && typeof s.evaluationGuide === "object") {
+      const eg = s.evaluationGuide as Record<string, unknown>;
+      if (typeof eg.growthPotential === "string") {
+        eg.growthPotential = stripYear3Phantoms(eg.growthPotential);
+      }
+    }
+  }
+
+  // ── academicAnalysis: 재학생 improvementPriority에서 이미 이수 완료한 과목명 언급 항목 제거 ──
+  // 사용자 피드백: 성적 개선 우선순위는 다음 학기에 들을 '수강 과목'을 고려해야 함.
+  // 따라서 이미 성적이 확정된 과목(=이수 완료 과목)을 우선순위에 올리는 것은 무의미.
+  if (
+    s.sectionId === "academicAnalysis" &&
+    !studentInfo.isGraduate &&
+    Array.isArray(s.improvementPriority) &&
+    s.improvementPriority.length > 0
+  ) {
+    // 정규화: 공백 제거 + 로마숫자 → 아라비아숫자 + 소문자
+    const normalize = (raw: string): string =>
+      raw
+        .replace(/\s+/g, "")
+        .replace(/[Ⅰ①]/g, "1")
+        .replace(/[Ⅱ②]/g, "2")
+        .replace(/[Ⅲ③]/g, "3")
+        .replace(/[Ⅳ④]/g, "4")
+        .toLowerCase();
+
+    // 이수 완료 과목명 셋 (정규화 후, 3자 이상만 — 짧은 단어는 false-positive 위험)
+    const completedNormalized = new Set<string>();
+    for (const sg of pre.allSubjectGrades ?? []) {
+      if (typeof sg.subject !== "string") continue;
+      const n = normalize(sg.subject);
+      if (n.length >= 3) completedNormalized.add(n);
+    }
+
+    if (completedNormalized.size > 0) {
+      s.improvementPriority = (s.improvementPriority as string[]).filter(
+        (item) => {
+          if (typeof item !== "string") return false;
+          const normalizedItem = normalize(item);
+          for (const subj of completedNormalized) {
+            if (normalizedItem.includes(subj)) return false;
+          }
+          return true;
+        }
+      );
+    }
+  }
+
+  // ── admissionStrategy: 빈 대학명 카드 제거 + schoolTypeAnalysis 빈 객체 제거 + 괴리 보강 ──
   if (s.sectionId === "admissionStrategy") {
+    // STEP 12.5: AI가 string[] 필드에 객체를 넣은 경우 평탄화
+    // (emphasisKeywords/matchingKeywords/keywords, studentStrengthMatch,
+    // studentWeaknessMatch, schoolTypeAnalysis.advantage/cautionTypes)
+    const flattenString = (v: unknown): string => {
+      if (typeof v === "string") return v;
+      if (typeof v === "number" || typeof v === "boolean") return String(v);
+      if (v && typeof v === "object") {
+        const obj = v as Record<string, unknown>;
+        const candidates = [
+          obj.keyword,
+          obj.text,
+          obj.name,
+          obj.label,
+          obj.value,
+          obj.title,
+          obj.item,
+          obj.content,
+        ];
+        for (const c of candidates) {
+          if (typeof c === "string" && c.trim()) return c;
+        }
+      }
+      return "";
+    };
+    const flattenStringArray = (v: unknown): string[] => {
+      if (!Array.isArray(v)) return [];
+      return v.map(flattenString).filter((x) => x.length > 0);
+    };
+    if (Array.isArray(s.universityGuideMatching)) {
+      for (const m of s.universityGuideMatching) {
+        const mm = m as any;
+        if (mm.emphasisKeywords !== undefined) {
+          mm.emphasisKeywords = flattenStringArray(mm.emphasisKeywords);
+        }
+        if (mm.matchingKeywords !== undefined) {
+          mm.matchingKeywords = flattenStringArray(mm.matchingKeywords);
+        }
+        if (mm.keywords !== undefined) {
+          mm.keywords = flattenStringArray(mm.keywords);
+        }
+        if (mm.studentStrengthMatch !== undefined) {
+          mm.studentStrengthMatch = flattenStringArray(mm.studentStrengthMatch);
+        }
+        if (mm.studentWeaknessMatch !== undefined) {
+          mm.studentWeaknessMatch = flattenStringArray(mm.studentWeaknessMatch);
+        }
+      }
+    }
+    if (s.schoolTypeAnalysis) {
+      const sta2 = s.schoolTypeAnalysis as any;
+      if (sta2.advantageTypes !== undefined) {
+        sta2.advantageTypes = flattenStringArray(sta2.advantageTypes);
+      }
+      if (sta2.cautionTypes !== undefined) {
+        sta2.cautionTypes = flattenStringArray(sta2.cautionTypes);
+      }
+    }
+
+    // STEP 13: 대학명이 비어있는 카드 제거
+    if (Array.isArray(s.simulations)) {
+      for (const sim of s.simulations) {
+        if (!Array.isArray(sim.cards)) continue;
+        sim.cards = sim.cards.filter((card: any) => {
+          if (!card.university || card.university.trim() === "") {
+            console.warn(
+              `[postprocessor] 빈 대학명 카드 제거: department=${card.department}`
+            );
+            return false;
+          }
+          return true;
+        });
+      }
+    }
+
     const sta = s.schoolTypeAnalysis;
     if (
       sta &&
@@ -905,11 +5531,63 @@ const normalizeSection = (
     }
   }
 
+  if (s.sectionId === "actionRoadmap" && isRecordClosed) {
+    // 생기부 확정 학생에게 성적 향상·세특 보완처럼 실행 불가능한 조언이
+    // 남아 있으면 제거한다. (프롬프트 분기의 결정적 안전장치)
+    stripUnactionableRoadmapAdvice(s, "[postprocess]");
+  }
+
   if (s.sectionId === "courseAlignment") {
-    // matchRate: 전처리 데이터에서 직접 주입
+    // ── 전처리 권장과목 데이터로 courses + matchRate 강제 대체 ──
     const prMatch = pre.recommendedCourseMatch;
-    if (prMatch.matchRate > 0) {
+    if (prMatch.requiredCourses.length > 0) {
+      const takenSet = new Set(prMatch.takenCourses);
+      const plannedSet = new Set(prMatch.plannedCourses ?? []);
+      s.courses = prMatch.requiredCourses.map((course: string) => ({
+        course,
+        status: takenSet.has(course)
+          ? "이수"
+          : plannedSet.has(course)
+            ? "이수 예정"
+            : "미이수",
+        importance: "권장",
+      }));
       s.matchRate = prMatch.matchRate;
+      // targetMajor는 AI가 생기부 기반으로 생성한 값을 유지 (희망학과 기반 덮어쓰기 금지)
+      // s.targetMajor = prMatch._referenceTargetMajor;
+
+      // ── 표(courses)와 본문 서술 정합성 보정 ──
+      // courses 배열은 위에서 확정 데이터로 덮어쓰지만 missingCourseImpact ·
+      // recommendation은 AI 출력이 그대로 남아, 표에는 "이수"·"이수 예정"인
+      // 과목이 본문에서는 "미이수"로 서술되는 불일치가 발생할 수 있다.
+      const completedCourses = [...takenSet, ...plannedSet];
+      if (completedCourses.length > 0) {
+        for (const field of [
+          "missingCourseImpact",
+          "recommendation",
+        ] as const) {
+          const original = s[field];
+          if (typeof original !== "string" || original.length === 0) continue;
+          const corrected = removeMisstatedMissingCourses(
+            original,
+            completedCourses
+          );
+          if (corrected !== original) {
+            console.log(
+              `[postprocess] courseAlignment.${field}: 이수(예정) 과목을 미이수로 서술한 문장 보정`
+            );
+            s[field] =
+              corrected.length > 0
+                ? corrected
+                : buildCourseAlignmentFallbackText(
+                    field,
+                    [...takenSet],
+                    [...plannedSet],
+                    prMatch.missingCourses ?? []
+                  );
+          }
+        }
+      }
     } else if (Array.isArray(s.courses) && s.courses.length > 0) {
       const taken = s.courses.filter((c: any) => c.status === "이수").length;
       s.matchRate = Math.round((taken / s.courses.length) * 100);
@@ -952,6 +5630,7 @@ const CRITICAL_SECTIONS: Record<ReportPlan, Set<string>> = {
   lite: new Set([
     "studentProfile",
     "competencyScore",
+    "admissionPrediction",
     "academicAnalysis",
     "subjectAnalysis",
     "admissionStrategy",

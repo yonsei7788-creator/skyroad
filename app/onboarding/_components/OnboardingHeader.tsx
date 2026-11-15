@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 
@@ -20,12 +19,7 @@ export const OnboardingHeader = () => {
       <header className={styles.header}>
         <div className={styles.inner}>
           <Link href="/" className={styles.logo}>
-            <Image
-              src="/images/skyroad-logo.png"
-              alt="SKYROAD"
-              width={150}
-              height={60}
-            />
+            SKY<span className={styles.logoAccent}>ROAD</span>
           </Link>
           <button
             type="button"

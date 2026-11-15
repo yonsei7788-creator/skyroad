@@ -3,9 +3,12 @@
 import type { ReportPlan } from "../../types.ts";
 
 export interface InterviewPrepPromptInput {
-  subjectAnalysisResult: string;
+  /** 생기부 세특 원문 텍스트 (subjectAnalysis AI 분석 결과 대신 raw subjectData 사용) */
+  subjectData: string;
   studentProfile: string;
   academicData: string;
+  studentGrade: number;
+  isMedical?: boolean;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
@@ -22,25 +25,62 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - questions 배열은 **최대 5개**입니다. 6개 이상 절대 출력하지 마세요.
-- 각 intent는 **100자 이내**로 작성합니다. 100자 초과 금지.`,
+- 각 intent는 **150자 이내**로 작성합니다. 150자 초과 금지.`,
   premium: `## 플랜별 출력: 정밀
 - 각 질문: question + questionType + intent(1~2줄) + importance(high/medium/low) + answerStrategy(답변 전략, 2줄 이내)
-- **상위 3개 질문(importance: high)에만** sampleAnswer + followUpQuestions(1개)를 포함합니다.
-- 나머지 질문은 sampleAnswer, followUpQuestions를 출력하지 않습니다.
-- **Premium은 반드시 Standard보다 상세해야 합니다**: intent는 1~2줄로 Standard보다 구체적으로, answerStrategy는 Standard에 없는 추가 가치를 제공합니다.
+- ⚠️ **모든 질문에 sampleAnswer(모범 답변)를 반드시 포함하세요.** sampleAnswer가 없는 질문은 품질 실패입니다.
+- **모든 질문에 answerKeywords(핵심 키워드 2~4개)를 반드시 포함하세요.**
+- importance가 "high"인 질문에는 followUpQuestions(꼬리 질문 1개)도 포함합니다.
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - questions 배열은 **최대 8개**입니다. 9개 이상 절대 출력하지 마세요.
-- 각 sampleAnswer는 반드시 **300자 이내**로 작성합니다. 300자 초과 금지.
-- 각 answerStrategy는 **150자 이내**로 작성합니다.`,
+- 각 sampleAnswer는 반드시 **200자 이내**로 작성합니다. 200자 초과 금지.
+- 각 answerStrategy는 **100자 이내**로 작성합니다.`,
 };
 
 export const buildInterviewPrepPrompt = (
   input: InterviewPrepPromptInput,
   plan: ReportPlan
 ): string => {
-  return `## 작업
+  const medicalInterviewContext = input.isMedical
+    ? `## ⚠️ 의·치·한·약·수 계열 면접 특화 가이드 (반드시 적용)
+
+이 학생은 의·치·한·약·수 계열(의·치·한·약·수) 지원 학생입니다.
+
+### 의·치·한·약·수 면접의 특수성
+의·치·한·약·수 면접은 일반 학종 면접과 다릅니다. 반드시 아래 유형의 질문을 포함하세요:
+
+1. **의학 윤리/딜레마 질문** (1개 이상 필수):
+   - 예: "연명치료 중단에 대한 의견", "의료 자원 배분의 공정성", "환자의 자기결정권과 의사의 판단이 충돌할 때"
+   - 생기부에서 윤리적 사고를 보여준 활동이 있으면 그것과 연결하세요.
+
+2. **전공 이해도 질문** (1개 이상 필수):
+   - 생기부의 과학 탐구 활동에서 "왜 이 실험을 했는지", "결과의 한계를 어떻게 해석하는지"
+   - 의·치·한·약·수 지원자에게 과학적 사고력은 핵심 평가 요소입니다.
+
+3. **인성/공감 능력 질문**:
+   - 의사/약사/수의사에게 필요한 공감 능력, 소통 능력 관련 질문
+   - 생기부에서 봉사, 협동, 배려 사례가 있으면 심화 질문으로 연결
+
+4. **진로 변경 질문** (해당 시):
+   - 진로가 변경된 이력이 있으면 "왜 의·치·한·약·수에서 다른 분야로/다른 분야에서 의·치·한·약·수로 변경했는가" 질문 포함
+
+`
+    : "";
+
+  return `${medicalInterviewContext}## 작업
+이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.
+
 학생의 생기부를 바탕으로 예상 면접 질문을 생성하세요.
+
+## 서술 관점: 면접 코치
+이 섹션은 **예상 질문과 답변 전략**을 제시합니다. 질문 의도를 파악하고 실전 대비에 초점을 맞추세요.
+- "이 질문의 의도는 ~를 확인하려는 것이다", "답변 시 ~를 강조하면 효과적이다" 등 코칭 어투를 사용하세요.
+
+## ⛔ 다른 섹션과의 역할 경계 (필수)
+- ❌ 성적 해석, 약점 진단, 합격 가능성 판단 → 각각 다른 섹션에서 다룸
+- ✅ 이 섹션에서 할 것: **예상 질문, 질문 의도, 답변 전략**만. 학생의 약점/강점을 재분석하지 마세요.
+- ⚠️ **표현 차별화**: 성적이나 활동을 언급할 경우, "면접 질문의 배경"으로만 간결하게 언급하세요. 예: ❌ "영어 5등급으로 학업 역량이 부족합니다" → ✅ "영어 성적에 대해 면접관이 질문할 수 있으므로, 학습 전략 변화를 설명할 준비가 필요합니다"
 
 ## 출력 JSON 스키마
 
@@ -87,8 +127,8 @@ questionType은 반드시 다음 4개 중 하나만 사용: "세특기반" | "�
 
 ## 입력 데이터
 
-### 세특 분석 결과
-${input.subjectAnalysisResult}
+### 세특 원문 데이터
+${input.subjectData}
 
 ### 학생 프로필
 ${input.studentProfile}

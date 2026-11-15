@@ -1,8 +1,11 @@
 import type { BehaviorAnalysisSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
+import { renderInsightMarkers } from "./insight-marker";
 import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
+
+const NO_DATA_MSG = "기록이 없어 평가할 수 없습니다.";
 
 interface BehaviorAnalysisRendererProps {
   data: BehaviorAnalysisSection;
@@ -42,14 +45,14 @@ export const BehaviorAnalysisRenderer = ({
         )}
 
         <div className={`${styles.tagGroup} ${styles.mt12}`}>
-          {(data.consistentTraits ?? []).map((trait) => (
-            <span key={trait} className={styles.tag}>
-              {trait}
+          {(data.consistentTraits ?? []).map((trait, idx) => (
+            <span key={`trait-${idx}`} className={styles.tag}>
+              {String(trait)}
             </span>
           ))}
-          {data.personalityKeywords?.map((kw) => (
-            <span key={kw} className={styles.tag}>
-              {kw}
+          {data.personalityKeywords?.map((kw, idx) => (
+            <span key={`personality-${idx}`} className={styles.tag}>
+              {String(kw)}
             </span>
           ))}
         </div>
@@ -64,53 +67,61 @@ export const BehaviorAnalysisRenderer = ({
               <div className={styles.activityYearCard}>
                 <div className={styles.activityYearHeader}>
                   <span className={styles.tableCellBold}>{year.year}학년</span>
-                  <div className={styles.tagGroup}>
-                    {(year.competencyTags ?? []).map((tag, idx) => (
-                      <span key={idx} className={styles.tag}>
-                        {tag.subcategory}
-                      </span>
-                    ))}
-                  </div>
+                  {year.summary !== NO_DATA_MSG && (
+                    <div className={styles.tagGroup}>
+                      {(year.competencyTags ?? []).map((tag, idx) => (
+                        <span key={idx} className={styles.tag}>
+                          {tag.subcategory}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <p className={styles.small}>{safeText(year.summary)}</p>
-                {year.keyQuotes?.map((q, i) => (
-                  <p
-                    key={i}
-                    className={styles.caption}
-                    style={{ fontStyle: "italic", marginTop: 4 }}
-                  >
-                    &ldquo;{q}&rdquo;
-                  </p>
-                ))}
+                <p className={styles.small}>
+                  {renderInsightMarkers(year.summary)}
+                </p>
+                {year.summary !== NO_DATA_MSG &&
+                  year.keyQuotes?.map((q, i) => (
+                    <p
+                      key={i}
+                      className={styles.caption}
+                      style={{ fontStyle: "italic", marginTop: 4 }}
+                    >
+                      &ldquo;{q}&rdquo;
+                    </p>
+                  ))}
               </div>
             );
           })()}
       </div>
 
       {/* Remaining years — each as its own block */}
-      {years.slice(1).map((year) => (
-        <div key={year.year}>
+      {years.slice(1).map((year, idx) => (
+        <div key={`year-${year.year}-${idx}`}>
           <div className={styles.activityYearCard}>
             <div className={styles.activityYearHeader}>
               <span className={styles.tableCellBold}>{year.year}학년</span>
-              <div className={styles.tagGroup}>
-                {(year.competencyTags ?? []).map((tag, idx) => (
-                  <span key={idx} className={styles.tag}>
-                    {tag.subcategory}
-                  </span>
-                ))}
-              </div>
+              {year.summary !== NO_DATA_MSG && (
+                <div className={styles.tagGroup}>
+                  {(year.competencyTags ?? []).map((tag, idx) => (
+                    <span key={idx} className={styles.tag}>
+                      {tag.subcategory}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-            <p className={styles.small}>{safeText(year.summary)}</p>
-            {year.keyQuotes?.map((q, i) => (
-              <p
-                key={i}
-                className={styles.caption}
-                style={{ fontStyle: "italic", marginTop: 4 }}
-              >
-                &ldquo;{q}&rdquo;
-              </p>
-            ))}
+            <p className={styles.small}>{renderInsightMarkers(year.summary)}</p>
+            {year.summary !== NO_DATA_MSG &&
+              year.keyQuotes?.map((q, i) => (
+                <p
+                  key={i}
+                  className={styles.caption}
+                  style={{ fontStyle: "italic", marginTop: 4 }}
+                >
+                  &ldquo;{q}&rdquo;
+                </p>
+              ))}
           </div>
         </div>
       ))}
@@ -120,15 +131,17 @@ export const BehaviorAnalysisRenderer = ({
         <div className={styles.aiCommentary}>
           <div className={styles.aiCommentaryIcon}>✦</div>
           <div className={styles.aiCommentaryContent}>
-            <div className={styles.aiCommentaryLabel}>종합 평가</div>
+            <div className={styles.aiCommentaryLabel}>
+              <span className={styles.markerSky}>종합 평가</span>
+            </div>
             <div className={styles.aiCommentaryText}>
-              {safeText(data.overallComment)}
+              {renderInsightMarkers(data.overallComment)}
             </div>
             <div className={`${styles.aiCommentaryLabel} ${styles.mt12}`}>
-              입시 활용 포인트
+              <span className={styles.markerSky}>입시 활용 포인트</span>
             </div>
             <div className={styles.aiCommentaryText}>
-              {safeText(data.admissionRelevance)}
+              {renderInsightMarkers(data.admissionRelevance)}
             </div>
           </div>
         </div>

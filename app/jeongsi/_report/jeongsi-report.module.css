@@ -1,0 +1,1788 @@
+/* ============================================
+   정시 분석 리포트 전용 스타일
+
+   원칙
+   - 페이지 셸(A4 크기·머리말·꼬리말·쪽 번호)은 report.module.css 의
+     .page / ReportPage 를 그대로 쓴다. 여기서는 페이지 안의 내용만 그린다.
+   - 색상은 기존 리포트 팔레트(인디고 ~ 블루, 슬레이트 텍스트)에서만 고른다.
+     PART 별 accent 는 --report-accent 를 인라인 style 로 덮는다.
+   - 표·숫자 위주 지면이라 숫자는 tabular-nums 로 자릿수를 맞춘다.
+   ============================================ */
+
+.jeongsiReport {
+  font-variant-numeric: tabular-nums;
+
+  /* 구분(tier) 색. 글자(fg) · 배경(bg) · 테두리(border) · 막대(bar) */
+  --tier-reach-fg: #6d28d9;
+  --tier-reach-bg: #f5f3ff;
+  --tier-reach-border: #ddd6fe;
+  --tier-reach-bar: #7c3aed;
+  --tier-match-fg: #1d4ed8;
+  --tier-match-bg: #eff6ff;
+  --tier-match-border: #bfdbfe;
+  --tier-match-bar: #3b82f6;
+  --tier-safety-fg: #047857;
+  --tier-safety-bg: #ecfdf5;
+  --tier-safety-border: #a7f3d0;
+  --tier-safety-bar: #10b981;
+  --tier-snipe-fg: #b45309;
+  --tier-snipe-bg: #fffbeb;
+  --tier-snipe-border: #fde68a;
+  --tier-snipe-bar: #f59e0b;
+
+  --js-ink: #0f172a;
+  --js-ink-2: #1e293b;
+  --js-ink-3: #334155;
+  --js-muted: #475569;
+  --js-line: #e2e8f0;
+  --js-line-strong: #cbd5e1;
+  --js-track: #f1f5f9;
+  --js-soft: #f8fafc;
+}
+
+/* ============================================
+   1. 공통 요소
+   ============================================ */
+
+/* PART 제목: 배지 + 제목 + 한 줄 안내 */
+.partHeading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.partHeadingRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.partBadge {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  background: var(--report-accent);
+  border-radius: 6px;
+  padding: 4px 8px;
+  flex-shrink: 0;
+}
+
+.partTitle {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--js-ink);
+}
+
+.partLead {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--js-muted);
+}
+
+.partLead b {
+  color: var(--js-ink);
+}
+
+/* 소제목 */
+.blockTitle {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.blockTitleSub {
+  font-weight: 500;
+  color: var(--js-muted);
+}
+
+/* 해석 상자 (총평·추천 이유) */
+.insightBox {
+  padding: 16px 18px;
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.insightLabel {
+  font-size: 12px;
+  font-weight: 800;
+  color: #3730a3;
+}
+
+.insightText {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: var(--js-ink-2);
+}
+
+/* 먼저 읽어야 할 안내 */
+.noticeBox {
+  padding: 10px 14px;
+  border: 1px dashed var(--js-line-strong);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.noticeLabel {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.noticeText {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--js-ink-3);
+}
+
+.emptyNotice {
+  padding: 14px 16px;
+  border: 1px dashed var(--js-line-strong);
+  border-radius: 8px;
+  font-size: 12.5px;
+  color: var(--js-muted);
+  text-align: center;
+}
+
+.pill {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--js-ink);
+  background: var(--js-track);
+  border-radius: 50px;
+  padding: 3px 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* 구분 색을 쓰는 요소는 style 로 --tone-* 를 받는다 */
+.tonePill {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tone-fg);
+  background: var(--tone-bg);
+  border-radius: 50px;
+  padding: 3px 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.toneOutlinePill {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tone-fg);
+  background: #ffffff;
+  border: 1px solid var(--tone-border);
+  border-radius: 50px;
+  padding: 2px 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.toneText {
+  font-weight: 700;
+  color: var(--tone-fg);
+}
+
+.muted {
+  color: var(--js-muted);
+}
+
+/* ============================================
+   2. 단독 페이지 (표지 · 목차 · PART 표지)
+   ReportPage 의 콘텐츠 영역(약 247mm)을 채운다.
+   ============================================ */
+
+.standaloneBody {
+  min-height: 236mm;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- 표지 --- */
+
+.coverTopBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: var(--report-accent);
+}
+
+.coverBrandRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.coverBrand {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--js-ink);
+}
+
+.coverBrandAccent {
+  color: var(--report-accent);
+}
+
+.coverDate {
+  font-size: 11px;
+  color: var(--js-muted);
+  letter-spacing: 0.04em;
+}
+
+.coverTitleBlock {
+  padding-top: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.coverOverline {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--report-accent);
+}
+
+.coverTitle {
+  margin: 0;
+  font-size: 40px;
+  line-height: 1.22;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--js-ink);
+}
+
+.coverSubtitle {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--js-ink-3);
+}
+
+.coverScoreStrip {
+  margin-top: 32px;
+  border-top: 2px solid var(--js-ink);
+  border-bottom: 1px solid var(--js-line);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.coverScoreCell {
+  padding: 14px 16px;
+  border-right: 1px solid var(--js-line);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.coverScoreCell:first-child {
+  padding-left: 0;
+}
+
+.coverScoreCell:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+
+.coverScoreLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--js-muted);
+}
+
+.coverScoreValue {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.coverScoreSub {
+  font-size: 11px;
+  color: var(--js-muted);
+}
+
+.coverPrefRow {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--js-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  font-size: 12px;
+  color: var(--js-ink-3);
+}
+
+.coverPrefRow b {
+  color: var(--js-ink);
+  margin-right: 6px;
+}
+
+.summaryHeading {
+  margin-top: 36px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.summaryOverline {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--report-accent);
+}
+
+.summaryTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.summaryCards {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.summaryCard {
+  padding: 14px;
+  background: var(--js-soft);
+  border: 1px solid var(--js-line);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.summaryCardLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--js-muted);
+}
+
+.summaryCardValue {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--js-ink);
+}
+
+.summaryCardValueSmall {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.summaryStrength {
+  color: #047857;
+}
+
+.summaryWeakness {
+  color: #b91c1c;
+}
+
+.summaryCardUnit {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.summaryCardNote {
+  font-size: 11px;
+  color: var(--js-muted);
+}
+
+.summaryTierCounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.summaryPoints {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--js-line);
+}
+
+.summaryPoint {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--js-line);
+}
+
+.summaryPointNum {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--report-accent);
+}
+
+.summaryPointText {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--js-ink-2);
+}
+
+/* --- 목차 --- */
+
+.tocHead {
+  padding-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tocOverline {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--report-accent);
+}
+
+.tocTitle {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--js-ink);
+}
+
+.tocParts {
+  margin-top: 32px;
+  border-top: 2px solid var(--js-ink);
+  display: flex;
+  flex-direction: column;
+}
+
+.tocPart {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 16px;
+  align-items: baseline;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--js-line);
+}
+
+.tocPartNumber {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--part-color);
+}
+
+.tocPartText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tocPartTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.tocPartDesc {
+  font-size: 12.5px;
+  color: var(--js-muted);
+}
+
+.tocUnivTitle {
+  margin-top: 28px;
+}
+
+.tocUnivGrid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 28px;
+}
+
+.tocUniv {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 28px;
+  gap: 8px;
+  align-items: baseline;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--js-line);
+  font-size: 12.5px;
+  color: var(--js-ink);
+}
+
+.tocUnivTier {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--tone-fg);
+}
+
+.tocUnivDept {
+  color: var(--js-ink-3);
+}
+
+.tocUnivGroup {
+  text-align: right;
+  color: var(--js-ink-3);
+}
+
+/* --- PART 표지 --- */
+
+.dividerMain {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+}
+
+.dividerNumber {
+  font-size: 120px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--report-accent);
+}
+
+.dividerBar {
+  width: 64px;
+  height: 4px;
+  background: var(--report-accent);
+}
+
+.dividerPart {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--report-accent);
+}
+
+.dividerTitle {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--js-ink);
+}
+
+.dividerDesc {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--js-ink-3);
+}
+
+.dividerPoints {
+  padding-top: 16px;
+  border-top: 1px solid var(--js-line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dividerPointsLabel {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--js-muted);
+}
+
+.dividerPointGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dividerPoint {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 10px;
+  border-top: 2px solid var(--report-accent);
+}
+
+.dividerPointHead {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.dividerPointBody {
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--js-ink-3);
+}
+
+/* ============================================
+   3. PART 1 성적 종합 분석
+   ============================================ */
+
+.statGrid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.statCell {
+  padding: 14px 16px;
+  border: 1px solid var(--js-line);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--js-muted);
+}
+
+.statValue {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--js-ink);
+}
+
+.dataTable {
+  margin-top: 8px;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--js-ink);
+}
+
+.dataTable thead tr {
+  border-top: 2px solid var(--js-ink);
+  border-bottom: 1px solid var(--js-line-strong);
+}
+
+.dataTable th {
+  padding: 9px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--js-muted);
+  text-align: right;
+}
+
+.dataTable td {
+  padding: 11px 8px;
+  text-align: right;
+  border-bottom: 1px solid var(--js-line);
+}
+
+.dataTable th:first-child,
+.dataTable td:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+
+.dataTable th:last-child,
+.dataTable td:last-child {
+  padding-right: 0;
+}
+
+.cellLeft {
+  text-align: left !important;
+  color: var(--js-ink-3);
+}
+
+.cellBold {
+  font-weight: 700;
+}
+
+.cellUp {
+  font-weight: 700;
+  color: #047857;
+}
+
+.cellDown {
+  font-weight: 700;
+  color: #b91c1c;
+}
+
+.cellFlat {
+  font-weight: 700;
+  color: var(--js-ink-3);
+}
+
+.rowMuted td {
+  background: var(--js-soft);
+  color: var(--js-muted);
+}
+
+.rowMuted td:first-child {
+  padding-left: 8px;
+  color: var(--js-ink);
+  font-weight: 700;
+}
+
+.strengthTag,
+.weaknessTag {
+  margin-left: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.strengthTag {
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.weaknessTag {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.distBars {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.distRow {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 12px;
+}
+
+.distLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--js-ink);
+}
+
+.distTrack {
+  position: relative;
+  height: 18px;
+  background: var(--js-track);
+  border-radius: 4px;
+}
+
+.distFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 18px;
+  border-radius: 4px;
+}
+
+.distAverage {
+  position: absolute;
+  top: -4px;
+  width: 0;
+  height: 26px;
+  border-left: 2px dashed var(--js-ink);
+}
+
+.distValue {
+  font-size: 12px;
+  font-weight: 800;
+  text-align: right;
+  color: var(--js-ink);
+}
+
+.distAxis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: var(--js-muted);
+}
+
+.areaCards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.areaCard {
+  background: var(--js-soft);
+  border-radius: 0 0 10px 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.areaCardStrength {
+  border-top: 3px solid #059669;
+}
+
+.areaCardWeakness {
+  border-top: 3px solid #dc2626;
+}
+
+.areaCardTitleStrength,
+.areaCardTitleWeakness {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.areaCardTitleStrength {
+  color: #047857;
+}
+
+.areaCardTitleWeakness {
+  color: #b91c1c;
+}
+
+.areaCardText {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--js-ink-2);
+}
+
+/* ============================================
+   4. PART 2 나에게 유리한 대학
+   ============================================ */
+
+/* 첫 대학을 감싸 목록 머리선을 긋는다 */
+.rankList {
+  padding-top: 16px;
+  border-top: 2px solid var(--js-ink);
+}
+
+/* 대학 한 곳 = 쪽 나눔 단위 1개. 위쪽 간격은 블록 간격(20px)이 맡는다 */
+.rankItem {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 14px;
+  padding: 0 0 16px 0;
+  border-bottom: 1px solid var(--js-line);
+}
+
+.rankNumber {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--report-accent);
+  line-height: 1.2;
+}
+
+.rankBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rankTitleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.rankTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.rankDept {
+  font-weight: 600;
+  color: var(--js-ink-3);
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.specChip {
+  font-size: 11px;
+  color: var(--js-ink-3);
+  border: 1px solid var(--js-line);
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+
+.scoreTable {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.scoreCell {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 9px;
+  border-radius: 6px;
+  background: var(--js-soft);
+  min-width: 72px;
+}
+
+.scoreCellTotal {
+  background: #ffffff;
+  border: 1px solid var(--js-line);
+}
+
+.scoreCellLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--js-muted);
+}
+
+.scoreCellValue {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.scoreCellMax {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--js-muted);
+}
+
+.rankReason {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--js-ink-2);
+}
+
+/* ============================================
+   5. PART 3 지원 가능 대학·학과
+   ============================================ */
+
+.tierSummaryGap {
+  margin-top: 20px;
+}
+
+.tierSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--js-line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.tierSummaryCell {
+  padding: 12px 16px;
+  border-right: 1px solid var(--js-line);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.tierSummaryCell:last-child {
+  border-right: none;
+}
+
+.tierSummaryName {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--tone-fg);
+}
+
+.tierSummaryCount {
+  font-size: 12px;
+  color: var(--js-muted);
+}
+
+.tierSummaryCount b {
+  font-size: 20px;
+  color: var(--js-ink);
+  margin-right: 2px;
+}
+
+.recTable {
+  display: flex;
+  flex-direction: column;
+}
+
+.recHeadRow,
+.recRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px 56px 56px 176px 56px;
+  align-items: center;
+  column-gap: 6px;
+}
+
+.recHeadRow {
+  border-top: 2px solid var(--js-ink);
+  border-bottom: 1px solid var(--js-line-strong);
+  padding: 9px 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--js-muted);
+}
+
+.recTierLabel {
+  padding: 12px 0 10px 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--tone-fg);
+}
+
+/* 대학 한 곳 = 쪽 나눔 단위 1개. 대학 사이 위쪽 간격은 블록 간격(20px)이
+   맡으므로 아래쪽만 띄운다 */
+.recItem {
+  padding: 0 0 12px 0;
+  border-bottom: 1px solid var(--js-line);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recRow {
+  font-size: 12.5px;
+  color: var(--js-ink);
+}
+
+.recName b {
+  font-weight: 700;
+}
+
+.recName span {
+  color: var(--js-ink-3);
+}
+
+.alignCenter {
+  text-align: center;
+}
+
+.alignRight {
+  text-align: right;
+}
+
+.gapCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gapTrack {
+  position: relative;
+  width: 120px;
+  height: 12px;
+  background: var(--js-track);
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.gapZero {
+  position: absolute;
+  top: -3px;
+  width: 0;
+  height: 18px;
+  border-left: 1.5px solid var(--js-ink);
+}
+
+.gapBar {
+  position: absolute;
+  top: 2px;
+  height: 8px;
+  min-width: 2px;
+  background: var(--tone-bar);
+  border-radius: 2px;
+}
+
+.gapValue {
+  font-weight: 700;
+  color: var(--tone-fg);
+  white-space: nowrap;
+}
+
+.unit {
+  margin-left: 1px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--js-muted);
+}
+
+.recComment {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: var(--js-ink-3);
+}
+
+.recNote {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--js-muted);
+}
+
+.axisNote {
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: var(--js-muted);
+}
+
+/* 판정 지표·입결 학년도 (대학명 아래 한 줄) */
+.recBasis {
+  display: block;
+  margin-top: 2px;
+  font-size: 10.5px;
+  color: var(--js-muted) !important;
+}
+
+/* 모든 대학 공통 축(상향 하한 ~ 안정 상한) 위의 내 위치 */
+.bandTrack {
+  position: relative;
+  width: 112px;
+  height: 12px;
+  border-radius: 3px;
+  overflow: visible;
+  flex-shrink: 0;
+}
+
+.bandZone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.bandSnipe {
+  background: var(--tier-snipe-bg);
+  border-radius: 3px 0 0 3px;
+}
+
+.bandReach {
+  background: var(--tier-reach-bg);
+}
+
+.bandMatch {
+  background: var(--tier-match-bg);
+}
+
+.bandSafety {
+  background: var(--tier-safety-bg);
+  border-radius: 0 3px 3px 0;
+}
+
+.bandMarker {
+  position: absolute;
+  top: -2px;
+  width: 10px;
+  height: 16px;
+  margin-left: -5px;
+  border-radius: 3px;
+  background: var(--tone-bar);
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+/* 판정 기준 표 */
+.criteriaBox {
+  padding: 12px 14px;
+  border: 1px solid var(--js-line);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.criteriaTitle {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.criteriaGrid {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) minmax(0, 1fr);
+  row-gap: 4px;
+  column-gap: 12px;
+  font-size: 11.5px;
+  color: var(--js-ink-2);
+}
+
+.criteriaHead {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--js-muted);
+}
+
+.criteriaRow {
+  display: contents;
+}
+
+.criteriaNote {
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: var(--js-muted);
+}
+
+/* ============================================
+   6. PART 4 가·나·다군 지원 조합
+   ============================================ */
+
+.comboTable {
+  display: flex;
+  flex-direction: column;
+}
+
+.comboHeadRow,
+.comboRow {
+  display: grid;
+  grid-template-columns: 124px repeat(3, minmax(0, 1fr));
+}
+
+.comboHeadRow {
+  border-top: 2px solid var(--js-ink);
+  border-bottom: 1px solid var(--js-line-strong);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--js-muted);
+}
+
+.comboHeadCell {
+  padding: 10px;
+}
+
+.comboHeadCell:first-child {
+  padding-left: 0;
+}
+
+.comboHeadCommon {
+  font-weight: 500;
+}
+
+.comboRow {
+  border-bottom: 1px solid var(--js-line);
+}
+
+.comboNameCell {
+  padding: 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comboLetter {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--report-accent);
+}
+
+.comboName {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.comboSlot {
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.comboSlotDistinct {
+  margin: 6px 4px;
+  padding: 8px 6px;
+  background: #eff6ff;
+  border-radius: 8px;
+}
+
+.comboUniv {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--js-ink);
+}
+
+.comboDept {
+  font-size: 11.5px;
+  color: var(--js-ink-3);
+}
+
+.comboTier {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--tone-fg);
+}
+
+.comboEmpty {
+  font-size: 11.5px;
+  color: var(--js-muted);
+}
+
+.strategyGrid {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.strategyCard {
+  padding: 12px 14px;
+  border: 1px solid var(--js-line);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.strategyName {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.strategyText {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: var(--js-ink-2);
+}
+
+/* 대표 조합 */
+.recommendedBadge {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--report-accent);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.recommendedBox {
+  padding: 16px 18px;
+  border: 2px solid var(--report-accent);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recommendedTitle {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--report-accent);
+}
+
+.recommendedNote {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--js-ink-3);
+}
+
+.recommendedSlots {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recommendedSlot {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  column-gap: 10px;
+  row-gap: 3px;
+  padding-top: 8px;
+  border-top: 1px solid var(--js-line);
+}
+
+.recommendedSlot > :not(.recommendedGroup) {
+  grid-column: 2;
+}
+
+.recommendedGroup {
+  grid-row: span 3;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.recommendedReason {
+  margin: 2px 0 0 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--js-ink-2);
+}
+
+/* ============================================
+   7. PART 5 대학별 상세 분석
+   ============================================ */
+
+.profileHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  border-bottom: 2px solid var(--js-ink);
+  padding-bottom: 16px;
+}
+
+.profileTitleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.profileOverline {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--report-accent);
+}
+
+.profileTitle {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--js-ink);
+}
+
+.profileDept {
+  font-weight: 600;
+  color: var(--js-ink-3);
+}
+
+.profilePills {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.profileStats {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--js-line);
+  border-radius: 10px;
+}
+
+.profileStat {
+  padding: 14px 16px;
+  border-right: 1px solid var(--js-line);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profileStat:last-child {
+  border-right: none;
+}
+
+.profileStatValue {
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.profileStatUnit {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--js-muted);
+}
+
+.bonusNote {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.positionTitle {
+  margin-top: 24px;
+}
+
+.positionAxis {
+  position: relative;
+  margin-top: 46px;
+  height: 84px;
+}
+
+.positionTrack {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 18px;
+  height: 10px;
+  background: var(--js-track);
+  border-radius: 5px;
+}
+
+.positionPass {
+  position: absolute;
+  right: 0;
+  top: 18px;
+  height: 10px;
+  background: var(--tone-bg);
+  border-radius: 0 5px 5px 0;
+}
+
+.positionCut {
+  position: absolute;
+  top: 6px;
+  width: 0;
+  height: 34px;
+  border-left: 2px solid var(--tone-fg);
+}
+
+.positionLabel {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.positionTick {
+  position: absolute;
+  top: 14px;
+  width: 2px;
+  height: 18px;
+  background: #94a3b8;
+}
+
+.positionTickLabel {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 10.5px;
+  color: var(--js-muted);
+  white-space: nowrap;
+}
+
+.positionMe {
+  position: absolute;
+  top: 15px;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  border-radius: 50%;
+  background: var(--js-ink);
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 0 1px var(--js-ink);
+  box-sizing: border-box;
+}
+
+.positionEnd {
+  position: absolute;
+  top: 66px;
+  font-size: 10.5px;
+  color: var(--js-muted);
+}
+
+.profileColumns {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 20px;
+}
+
+.profileColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ruledList {
+  border-top: 2px solid var(--js-ink);
+  display: flex;
+  flex-direction: column;
+}
+
+.cutRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--js-line);
+  font-size: 12.5px;
+  color: var(--js-ink-3);
+}
+
+.cutRow b {
+  color: var(--js-ink);
+}
+
+.cutRowReference {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--js-line-strong);
+  background: var(--tone-bg);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--tone-fg);
+}
+
+.specRow {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 8px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--js-line);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--js-ink);
+}
+
+.specLabel {
+  color: var(--js-muted);
+  font-weight: 600;
+}
+
+.judgementBlock {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 210px;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--js-line);
+  border-radius: 10px;
+}
+
+.judgementFacts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.judgementRow {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 8px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--js-ink);
+}
+
+.judgementLabel {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--js-muted);
+  margin-bottom: 2px;
+}
+
+.judgementDecision {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 12px;
+  border-left: 1px solid var(--js-line);
+}
+
+.judgementText {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--tone-fg);
+}
+
+.judgementSub {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--js-muted);
+}
+
+.passRate {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--js-muted);
+}
+
+.profileReason {
+  margin-top: 18px;
+}
+
+/* ============================================
+   8. 프리뷰 하네스 (화면 전용)
+   ============================================ */
+
+.previewNotice {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 10px 20px;
+  background: var(--report-caution-light, #fffbeb);
+  border-bottom: 1px solid var(--report-caution-border, #fde68a);
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.previewBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.previewTab {
+  padding: 8px 18px;
+  border-radius: 50px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.previewTabActive {
+  border: 2px solid #4f46e5;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-weight: 700;
+}
+
+.previewButton {
+  margin-left: 10px;
+  padding: 8px 18px;
+  border-radius: 50px;
+  border: 1px solid #1e293b;
+  background: #1e293b;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media print {
+  .previewNotice,
+  .previewBar {
+    display: none !important;
+  }
+
+  /* 한 항목이 페이지 중간에서 쪼개지지 않도록 유지 */
+  .rankItem,
+  .recItem,
+  .comboRow,
+  .strategyCard,
+  .areaCard,
+  .insightBox {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}

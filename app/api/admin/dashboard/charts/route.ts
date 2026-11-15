@@ -23,20 +23,27 @@ const PERIOD_DAYS: Record<Period, number> = {
 const isValidPeriod = (value: string | null): value is Period =>
   value === "7d" || value === "30d" || value === "90d";
 
-const formatDate = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+/** KST(UTC+9) 기준 Date → "YYYY-MM-DD" */
+const formatDateKST = (utcMs: number): string => {
+  const kst = new Date(utcMs + 9 * 60 * 60 * 1000);
+  const year = kst.getUTCFullYear();
+  const month = String(kst.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(kst.getUTCDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+};
+
+/** UTC ISO 타임스탬프를 KST 날짜 문자열로 변환 */
+const toKSTDateStr = (isoStr: string): string => {
+  const utcMs = new Date(isoStr).getTime();
+  return formatDateKST(utcMs);
 };
 
 const generateDateRange = (days: number): string[] => {
   const dates: string[] = [];
-  const now = new Date();
+  const nowMs = Date.now();
 
   for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-    dates.push(formatDate(date));
+    dates.push(formatDateKST(nowMs - i * 24 * 60 * 60 * 1000));
   }
 
   return dates;
@@ -75,20 +82,18 @@ export async function GET(request: NextRequest) {
   const period: Period = isValidPeriod(periodParam) ? periodParam : "30d";
   const days = PERIOD_DAYS[period];
 
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - days);
-  const startDateStr = formatDate(startDate);
+  const startDateStr = formatDateKST(Date.now() - days * 24 * 60 * 60 * 1000);
 
   const [signupsResult, revenueResult] = await Promise.all([
     supabase
       .from("profiles")
       .select("created_at")
-      .gte("created_at", `${startDateStr}T00:00:00`),
+      .gte("created_at", `${startDateStr}T00:00:00+09:00`),
     supabase
       .from("payments")
       .select("amount, approved_at")
       .eq("status", "done")
-      .gte("approved_at", `${startDateStr}T00:00:00`),
+      .gte("approved_at", `${startDateStr}T00:00:00+09:00`),
   ]);
 
   const dateRange = generateDateRange(days);
@@ -98,7 +103,7 @@ export async function GET(request: NextRequest) {
 
   signupsResult.data?.forEach((row) => {
     if (row.created_at) {
-      const date = row.created_at.substring(0, 10);
+      const date = toKSTDateStr(row.created_at);
       const current = signupCountMap.get(date);
       if (current !== undefined) {
         signupCountMap.set(date, current + 1);
@@ -111,7 +116,7 @@ export async function GET(request: NextRequest) {
 
   revenueResult.data?.forEach((row) => {
     if (row.approved_at) {
-      const date = row.approved_at.substring(0, 10);
+      const date = toKSTDateStr(row.approved_at);
       const current = revenueMap.get(date);
       if (current !== undefined) {
         revenueMap.set(date, current + (row.amount ?? 0));

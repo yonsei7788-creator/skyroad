@@ -18,7 +18,7 @@ export default async function OnboardingPage() {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "name, phone, high_school_name, high_school_type, admission_year, grade, onboarding_step, onboarding_completed"
+      "name, phone, gender, high_school_name, high_school_type, high_school_region, admission_year, grade, onboarding_step, onboarding_completed"
     )
     .eq("id", user.id)
     .single();
@@ -42,8 +42,10 @@ export default async function OnboardingPage() {
       initialProfile={{
         name: profile?.name ?? "",
         phone: profile?.phone ?? "",
+        gender: (profile?.gender as "" | "male" | "female") ?? "",
         highSchoolName: profile?.high_school_name ?? "",
         highSchoolType: profile?.high_school_type ?? "",
+        highSchoolRegion: profile?.high_school_region ?? "",
         grade: profile?.grade ?? "",
         admissionYear: profile?.admission_year ?? null,
       }}

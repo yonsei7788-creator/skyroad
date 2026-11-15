@@ -1,9 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { motion } from "framer-motion";
-import { AlertCircle, BarChart3, FileText, Send, Users } from "lucide-react";
+import {
+  AlertCircle,
+  Banknote,
+  BarChart3,
+  CreditCard,
+  FileText,
+  Send,
+  Users,
+} from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -28,7 +36,10 @@ interface DashboardStats {
   newUsersYesterday: number;
   totalRecords: number;
   totalDeliveredReports: number;
+  totalPayments: number;
   totalRevenue: number;
+  todayPayments: number;
+  todayRevenue: number;
 }
 
 interface ChartDataPoint {
@@ -113,7 +124,7 @@ const CustomTooltip = ({
 
 const StatsSkeleton = () => (
   <div className={styles.statsGrid}>
-    {Array.from({ length: 4 }).map((_, i) => (
+    {Array.from({ length: 6 }).map((_, i) => (
       <div key={i} className={styles.skeletonCard}>
         <div className={styles.skeletonLineShort} />
         <div className={styles.skeletonLineWide} />
@@ -137,6 +148,24 @@ const AdminDashboardPage = () => {
   const [chartsLoading, setChartsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
   const [chartsError, setChartsError] = useState<string | null>(null);
+
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1024
+  );
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const xAxisInterval = useMemo(() => {
+    if (windowWidth <= 480)
+      return Math.ceil(chartData?.signups?.length ?? 7 / 4);
+    if (windowWidth <= 768)
+      return Math.ceil((chartData?.signups?.length ?? 7) / 6);
+    return "preserveStartEnd" as const;
+  }, [windowWidth, chartData?.signups?.length]);
 
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
@@ -271,6 +300,17 @@ const AdminDashboardPage = () => {
               icon={<Send size={20} />}
               suffix="건"
             />
+            <StatCard
+              label="오늘 결제"
+              value={stats.todayPayments}
+              icon={<CreditCard size={20} />}
+              suffix="건"
+            />
+            <StatCard
+              label="오늘 매출"
+              value={formatCurrency(stats.todayRevenue)}
+              icon={<Banknote size={20} />}
+            />
           </div>
         ) : null}
 
@@ -323,17 +363,19 @@ const AdminDashboardPage = () => {
                     <XAxis
                       dataKey="date"
                       tickFormatter={formatShortDate}
-                      tick={{ fontSize: 12 }}
+                      tick={{ fontSize: windowWidth <= 480 ? 10 : 12 }}
                       stroke={CHART_COLORS.grid}
                       tickLine={false}
                       axisLine={false}
+                      interval={xAxisInterval}
                     />
                     <YAxis
-                      tick={{ fontSize: 12 }}
+                      tick={{ fontSize: windowWidth <= 480 ? 10 : 12 }}
                       stroke={CHART_COLORS.grid}
                       tickLine={false}
                       axisLine={false}
                       allowDecimals={false}
+                      width={windowWidth <= 480 ? 30 : 40}
                     />
                     <Tooltip
                       content={<CustomTooltip formatValue={(v) => `${v}명`} />}
@@ -373,16 +415,18 @@ const AdminDashboardPage = () => {
                     <XAxis
                       dataKey="date"
                       tickFormatter={formatShortDate}
-                      tick={{ fontSize: 12 }}
+                      tick={{ fontSize: windowWidth <= 480 ? 10 : 12 }}
                       stroke={CHART_COLORS.grid}
                       tickLine={false}
                       axisLine={false}
+                      interval={xAxisInterval}
                     />
                     <YAxis
-                      tick={{ fontSize: 12 }}
+                      tick={{ fontSize: windowWidth <= 480 ? 10 : 12 }}
                       stroke={CHART_COLORS.grid}
                       tickLine={false}
                       axisLine={false}
+                      width={windowWidth <= 480 ? 35 : 45}
                       tickFormatter={(value: number) =>
                         value >= 10000
                           ? `${Math.round(value / 10000)}만`

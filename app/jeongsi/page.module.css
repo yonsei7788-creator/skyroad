@@ -1,0 +1,434 @@
+/* ============================================
+   정시 분석 입력 폼
+   클래스 어휘는 app/onboarding/page.module.css 를 따른다.
+   ============================================ */
+
+.section {
+  background: var(--color-bg-secondary);
+  min-height: calc(100vh - 64px);
+  padding-bottom: 96px;
+}
+
+.header {
+  padding: 48px 24px 32px;
+  max-width: 860px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-fg);
+}
+
+.subtitle {
+  margin-top: 6px;
+  font-size: 1rem;
+  color: var(--color-fg-secondary);
+}
+
+@media (min-width: 768px) {
+  .header {
+    padding: 56px 24px 36px;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+}
+
+.container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 36px;
+  box-shadow: 0 4px 20px rgb(0 0 0 / 0.04);
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   Form Blocks
+   ============================================ */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.blockHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.blockTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+.blockTitleIcon {
+  color: var(--color-fg-primary);
+  flex-shrink: 0;
+}
+
+.blockDesc {
+  font-size: 0.875rem;
+  color: var(--color-fg-secondary);
+}
+
+/* ============================================
+   Fields (onboarding 어휘 재사용)
+   ============================================ */
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fieldRow {
+  display: flex;
+  gap: 16px;
+}
+
+.fieldRow > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-fg);
+}
+
+.required {
+  color: var(--color-error-500);
+  font-weight: 600;
+}
+
+.labelIcon {
+  color: var(--color-fg-tertiary);
+  flex-shrink: 0;
+}
+
+.fieldHint {
+  font-size: 0.75rem;
+  color: var(--color-fg-tertiary);
+}
+
+.fieldError {
+  font-size: 0.75rem;
+  color: var(--color-error-500);
+  font-weight: 500;
+}
+
+.fieldWarning {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #b45309;
+  font-weight: 500;
+}
+
+.input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: var(--color-fg);
+  background: var(--color-bg);
+  transition: all 0.2s ease-out;
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--color-fg-tertiary);
+}
+
+.input:focus {
+  border-color: var(--color-border-primary);
+  box-shadow: 0 0 0 3px rgb(79 70 229 / 0.15);
+}
+
+/* number 입력의 스피너 제거 — 점수는 직접 타이핑한다 */
+.input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.input[type="number"]::-webkit-outer-spin-button,
+.input[type="number"]::-webkit-inner-spin-button {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.inputError {
+  border-color: var(--color-error-500);
+}
+
+.inputError:focus {
+  box-shadow: 0 0 0 3px rgb(239 68 68 / 0.15);
+}
+
+.select {
+  width: 100%;
+  padding: 14px 40px 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: var(--color-fg);
+  background: var(--color-bg);
+  transition: all 0.2s ease-out;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  cursor: pointer;
+}
+
+.select:focus {
+  border-color: var(--color-border-primary);
+  box-shadow: 0 0 0 3px rgb(79 70 229 / 0.15);
+}
+
+.selectButtonRow {
+  display: flex;
+  gap: 10px;
+}
+
+.selectButton {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: var(--color-fg-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.selectButton:hover {
+  border-color: var(--color-border-primary);
+}
+
+.selectButton:focus-visible {
+  outline: 2px solid var(--color-border-primary);
+  outline-offset: 2px;
+}
+
+.selectButtonActive {
+  border-color: var(--color-border-primary);
+  background: rgb(79 70 229 / 0.08);
+  color: var(--color-fg-primary);
+  font-weight: 600;
+}
+
+/* ============================================
+   과목 성적 그리드 (선택과목 / 표준점수 / 백분위)
+   ============================================ */
+.scoreRow {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.scoreRowLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+.gradeRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* ============================================
+   Submit
+   ============================================ */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.submitButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 14px;
+  background: var(--color-bg-primary);
+  color: var(--color-fg-inverse);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow-glow-sm);
+  transition: all 0.2s;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: var(--color-bg-primary-hover);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-1px);
+}
+
+.submitButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.submitButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.submitButton:focus-visible {
+  outline: 2px solid var(--color-border-primary);
+  outline-offset: 2px;
+}
+
+.generalError {
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgb(239 68 68 / 0.1);
+  color: var(--color-error-500);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.warningBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  color: #92400e;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.warningBox svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #d97706;
+}
+
+.warningBox strong {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.warningList {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 760px) {
+  .container {
+    padding: 0 16px;
+  }
+
+  .card {
+    padding: 24px 20px;
+    border-radius: 16px;
+  }
+
+  .scoreRow {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .fieldRow {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .selectButtonRow {
+    gap: 8px;
+  }
+
+  .selectButton {
+    padding: 12px 8px;
+    font-size: 0.875rem;
+  }
+}

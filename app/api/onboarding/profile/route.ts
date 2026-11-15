@@ -6,8 +6,10 @@ import { createClient } from "@/libs/supabase/server";
 interface ProfileBody {
   name: string;
   phone: string;
+  gender?: "male" | "female";
   highSchoolName: string;
   highSchoolType: string;
+  highSchoolRegion?: string;
   grade: string;
   admissionYear: number | null;
 }
@@ -34,8 +36,16 @@ export const PUT = async (request: NextRequest) => {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  const { name, phone, highSchoolName, highSchoolType, grade, admissionYear } =
-    body;
+  const {
+    name,
+    phone,
+    gender,
+    highSchoolName,
+    highSchoolType,
+    highSchoolRegion,
+    grade,
+    admissionYear,
+  } = body;
 
   if (!name || !name.trim()) {
     return NextResponse.json(
@@ -90,12 +100,14 @@ export const PUT = async (request: NextRequest) => {
     .update({
       name: name.trim(),
       phone,
+      gender: gender === "male" || gender === "female" ? gender : null,
       high_school_name: highSchoolName.trim(),
       high_school_type:
         highSchoolType &&
         SCHOOL_TYPES.includes(highSchoolType as (typeof SCHOOL_TYPES)[number])
           ? highSchoolType
           : null,
+      high_school_region: highSchoolRegion?.trim() || null,
       grade,
       admission_year: admissionYear,
       updated_at: new Date().toISOString(),

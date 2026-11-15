@@ -18,22 +18,24 @@ interface PremiumReportProps {
   data: ReportContent;
 }
 
-const PART_CONFIG = [
+const buildPartConfig = (isGraduate?: boolean) => [
   {
     partNumber: "PART 1",
     title: "진단",
-    description:
-      "생기부 전체를 기반으로 한 학생 유형 분류, 역량 정밀 스코어, 합격 예측",
+    description: "학생 유형 분류, 역량 점수, 희망학과 판단",
+    color: "#7c3aed",
     sectionIds: ["studentProfile", "competencyScore", "admissionPrediction"],
   },
   {
     partNumber: "PART 2",
     title: "정밀 분석",
-    description:
-      "성적 분석, 권장과목 이수, 출결, 창체 활동, 문장 단위 세특 분석, 행동특성",
+    description: isGraduate
+      ? "학업 분석, 출결 분석, 활동 분석, 과목별 분석, 행동특성 분석"
+      : "학업 분석, 과목 적합도, 출결 분석, 활동 분석, 과목별 분석, 행동특성 분석",
+    color: "#6d28d9",
     sectionIds: [
       "academicAnalysis",
-      "courseAlignment",
+      ...(isGraduate ? [] : ["courseAlignment"]),
       "attendanceAnalysis",
       "activityAnalysis",
       "subjectAnalysis",
@@ -44,21 +46,30 @@ const PART_CONFIG = [
     partNumber: "PART 3",
     title: "전략 & 실행",
     description:
-      "보완 전략, 세특 주제 설계, 면접 대비(답변 포함), 입시 전략, 스토리 분석, 실행 로드맵",
+      "부족한 부분 + 보완 전략, 주제 추천, 입시 전략, 비교과 경쟁력 분석, 실행 로드맵, 면접 준비",
+    color: "#8b4cf5",
     sectionIds: [
       "weaknessAnalysis",
       "topicRecommendation",
-      "interviewPrep",
       "admissionStrategy",
-      "storyAnalysis",
+      "competitiveProfiling",
       "actionRoadmap",
+      "interviewPrep",
     ],
   },
   {
     partNumber: "부록",
     title: "부록",
-    description: "추천 도서, 전공 추천",
-    sectionIds: ["bookRecommendation", "majorExploration"],
+    description: "학과 탐색",
+    color: "#9a5df7",
+    sectionIds: ["majorExploration"],
+  },
+  {
+    partNumber: "총평",
+    title: "전임 컨설턴트 총평",
+    description: "종합 평가 및 전략 방향",
+    color: "#7c3aed",
+    sectionIds: ["consultantReview"],
   },
 ];
 
@@ -95,9 +106,10 @@ export const PremiumReport = ({ data }: PremiumReportProps) => {
             .filter((s): s is ReportSection => s !== undefined)}
           plan="premium"
           studentName={meta.studentInfo.name}
+          isGraduate={meta.studentInfo.isGraduate}
         />
 
-        {PART_CONFIG.map((part) => {
+        {buildPartConfig(meta.studentInfo.isGraduate).map((part) => {
           const partSections = part.sectionIds
             .map((id) => sectionMap.get(id))
             .filter((s): s is ReportSection => s !== undefined);
@@ -112,8 +124,12 @@ export const PremiumReport = ({ data }: PremiumReportProps) => {
             };
           });
 
+          const partStyle = {
+            "--report-accent": part.color,
+          } as React.CSSProperties;
+
           return (
-            <div key={part.partNumber}>
+            <div key={part.partNumber} style={partStyle}>
               <PartPage
                 partNumber={part.partNumber}
                 title={part.title}
@@ -134,6 +150,7 @@ export const PremiumReport = ({ data }: PremiumReportProps) => {
                     section={item.section}
                     plan="premium"
                     sectionNumber={item.num}
+                    isGraduate={meta.studentInfo.isGraduate}
                   />
                 </AutoPaginatedSection>
               ))}

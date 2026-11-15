@@ -48,7 +48,9 @@
   border-radius: 16px;
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-border);
-  transition: box-shadow 0.3s, transform 0.3s;
+  transition:
+    box-shadow 0.3s,
+    transform 0.3s;
 }
 
 .card:hover {
@@ -108,4 +110,31 @@
   font-size: 0.875rem;
   color: var(--color-fg-secondary);
   font-weight: 500;
+}
+
+/* ---- Mobile Optimization ---- */
+@media (max-width: 639px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .card {
+    padding: 20px 16px;
+    border-radius: 12px;
+  }
+
+  .iconCircle {
+    width: 40px;
+    height: 40px;
+  }
+
+  .value {
+    margin-top: 12px;
+    font-size: 1.375rem;
+  }
+
+  .label {
+    font-size: 0.75rem;
+  }
 }

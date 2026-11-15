@@ -4,6 +4,7 @@ import type {
   SubjectRating,
 } from "@/libs/report/types";
 
+import { renderInsightMarkers } from "./insight-marker";
 import styles from "./report.module.css";
 import { safeText } from "./safe-text";
 import { SectionHeader } from "./SectionHeader";
@@ -18,21 +19,6 @@ interface SubjectAnalysisRendererProps {
   data: SubjectAnalysisSection;
   sectionNumber: number;
 }
-
-const RATING_LABEL: Record<SubjectRating, string> = {
-  excellent: "우수",
-  good: "양호",
-  average: "보통",
-  weak: "미흡",
-};
-
-const IMPACT_LABEL: Record<string, string> = {
-  very_high: "매우 높음",
-  high: "높음",
-  medium: "보통",
-  low: "낮음",
-  very_low: "매우 낮음",
-};
 
 const RATING_ORDER: Record<SubjectRating, number> = {
   excellent: 0,
@@ -57,16 +43,11 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
     subject.improvementDirection ||
     subject.improvementExample;
 
-  // Block 1: 과목 설명 + 심화 분석을 하나의 블록으로 통합
+  // Block 1: 과목 헤더 + 태그 + 활동요약 + 인용
   blocks.push(
     <div key={key}>
-      <div className={styles.h3}>{subject.subjectName}</div>
-      <div className={`${styles.caption} ${styles.mb8}`}>
-        {subject.year}학년 · {RATING_LABEL[subject.rating]}
-        {subject.importancePercent !== undefined &&
-          ` · 중요도 ${subject.importancePercent}%`}
-        {subject.evaluationImpact &&
-          ` · 평가 영향도 ${IMPACT_LABEL[subject.evaluationImpact] ?? subject.evaluationImpact}`}
+      <div className={styles.h3} style={{ marginBottom: 4 }}>
+        {subject.subjectName}
       </div>
 
       {(subject.competencyTags ?? []).length > 0 && (
@@ -89,7 +70,7 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
 
       {!subject.detailedEvaluation && subject.evaluationComment && (
         <p className={`${styles.small} ${styles.mt6}`}>
-          {safeText(subject.evaluationComment)}
+          {renderInsightMarkers(subject.evaluationComment)}
         </p>
       )}
 
@@ -105,68 +86,70 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
         </div>
       )}
 
-      {hasExtras && (
-        <>
-          {subject.crossSubjectConnections &&
-            subject.crossSubjectConnections.length > 0 && (
-              <div className={styles.mt8}>
-                <span className={`${styles.emphasis} ${styles.small}`}>
-                  교과 연결:
-                </span>{" "}
-                <span className={styles.caption}>
-                  {subject.crossSubjectConnections
-                    .map(
-                      (conn) => `${conn.targetSubject}(${conn.connectionType})`
-                    )
-                    .join(", ")}
-                </span>
-              </div>
-            )}
-
-          {subject.detailedEvaluation && (
-            <div className={`${styles.aiCommentary} ${styles.mt8}`}>
-              <div className={styles.aiCommentaryIcon}>✦</div>
-              <div className={styles.aiCommentaryContent}>
-                <div className={styles.aiCommentaryLabel}>상세 평가</div>
-                <div className={styles.aiCommentaryText}>
-                  {safeOrEmpty(subject.detailedEvaluation)}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {(subject.improvementDirection || subject.improvementExample) && (
-            <div className={`${styles.callout} ${styles.mt8}`}>
-              <div className={styles.calloutContent}>
-                {subject.improvementDirection && (
-                  <>
-                    <span className={styles.emphasis}>개선 방향:</span>{" "}
-                    {safeOrEmpty(subject.improvementDirection)}
-                  </>
-                )}
-                {subject.improvementDirection && subject.improvementExample && (
-                  <br />
-                )}
-                {subject.improvementExample && (
-                  <>
-                    <span className={styles.emphasis}>개선 예시:</span>{" "}
-                    {safeOrEmpty(subject.improvementExample)}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      {subject.crossSubjectConnections &&
+        subject.crossSubjectConnections.length > 0 && (
+          <div className={styles.mt8}>
+            <span className={`${styles.emphasis} ${styles.small}`}>
+              교과 연결:
+            </span>{" "}
+            <span className={styles.caption}>
+              {subject.crossSubjectConnections
+                .map((conn) => `${conn.targetSubject}(${conn.connectionType})`)
+                .join(", ")}
+            </span>
+          </div>
+        )}
     </div>
   );
+
+  // Block 2: 상세 평가 (별도 블록 → 페이지 분리 가능)
+  if (subject.detailedEvaluation) {
+    blocks.push(
+      <div key={`${key}-eval`} className={styles.aiCommentary}>
+        <div className={styles.aiCommentaryIcon}>✦</div>
+        <div className={styles.aiCommentaryContent}>
+          <div className={styles.aiCommentaryText}>
+            {renderInsightMarkers(subject.detailedEvaluation)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Block 3: 개선 방향/예시 (별도 블록 → 페이지 분리 가능)
+  if (subject.improvementDirection || subject.improvementExample) {
+    blocks.push(
+      <div key={`${key}-improve`} className={styles.callout}>
+        <div className={styles.calloutContent}>
+          {subject.improvementDirection && (
+            <>
+              <span className={styles.emphasis}>개선 방향:</span>{" "}
+              {renderInsightMarkers(subject.improvementDirection)}
+            </>
+          )}
+          {subject.improvementDirection && subject.improvementExample && <br />}
+          {subject.improvementExample && (
+            <>
+              <span className={styles.emphasis}>개선 예시:</span>{" "}
+              {renderInsightMarkers(subject.improvementExample)}
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // Block 3: 문장 단위 분석 (Premium — 분량이 커서 별도 페이지)
   if (subject.sentenceAnalysis && subject.sentenceAnalysis.length > 0) {
     blocks.push(
       <div key={`${key}-sa`}>
-        <div className={`${styles.overline} ${styles.mb6}`}>
-          {subject.subjectName} — 문장 단위 분석
+        <div
+          className={`${styles.caption} ${styles.mb6}`}
+          style={{ fontWeight: 600 }}
+        >
+          <span className={styles.markerSky}>
+            {subject.subjectName} — 문장 단위 분석
+          </span>
         </div>
         <table className={styles.compactTable}>
           <thead>
@@ -183,12 +166,12 @@ const renderSubjectBlocks = (subject: SubjectAnalysisItem) => {
                   {sa.improvementSuggestion && (
                     <p className={`${styles.caption} ${styles.mt4}`}>
                       <span className={styles.emphasis}>개선:</span>{" "}
-                      {safeText(sa.improvementSuggestion)}
+                      {renderInsightMarkers(sa.improvementSuggestion)}
                     </p>
                   )}
                 </td>
                 <td className={`${styles.tableAlignCenter} ${styles.caption}`}>
-                  {safeText(sa.evaluation)}
+                  {renderInsightMarkers(sa.evaluation)}
                 </td>
               </tr>
             ))}

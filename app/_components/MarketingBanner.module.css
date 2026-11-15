@@ -1,0 +1,308 @@
+.banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 150;
+  cursor: pointer;
+  background: linear-gradient(90deg, #d63327 0%, #b2261a 55%, #8a1c12 100%);
+  color: #fff;
+}
+
+.inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: 14px 56px 14px 20px;
+}
+
+/* ---- 사이렌 + 말풍선 + 메인 문구 묶음 (배너 정중앙 고정) ---- */
+.centerGroup {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: min(calc(100% - 500px), 1000px);
+}
+
+.sirenBubbleGroup {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sirenArea {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+/* ---- 말풍선 뱃지 ---- */
+.speechBubble {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  background: linear-gradient(180deg, #fce992 0%, #f6d066 55%, #eebb3f 100%);
+  border-radius: 16px;
+  padding: 8px 20px 9px;
+}
+
+.speechBubble::after {
+  content: "";
+  position: absolute;
+  right: -11px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-style: solid;
+  border-width: 9px 0 9px 12px;
+  border-color: transparent transparent transparent #e9b73a;
+}
+
+.speechLine {
+  font-weight: 800;
+  font-size: 0.9375rem;
+  line-height: 1.3;
+  color: #a52a1a;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* ---- 메인 문구 + 밑줄 강조 ---- */
+.mainTextWrap {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.mainTextInner {
+  position: relative;
+  width: max-content;
+  max-width: 100%;
+  padding: 4px 10px 16px 4px;
+}
+
+.mainText {
+  font-weight: 800;
+  font-size: 1.875rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #fff;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.15);
+}
+
+.underline {
+  position: absolute;
+  left: 3%;
+  right: 6%;
+  bottom: 4px;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffe27a 0%, #f7b733 100%);
+  box-shadow: 0 1px 4px rgb(247 183 51 / 0.55);
+  transform: rotate(-1deg);
+  transform-origin: center;
+}
+
+.sparkleStart {
+  position: absolute;
+  left: -10px;
+  top: -4px;
+  width: 18px;
+  height: 18px;
+  color: #ffe27a;
+  transform: rotate(-15deg);
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.25));
+}
+
+.sparkleEnd {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 16px;
+  height: 16px;
+  color: #ffe27a;
+  transform: rotate(20deg);
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.25));
+}
+
+/* ---- 우측 안내 문구 + CTA ---- */
+.rightArea {
+  flex-shrink: 0;
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.subText {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.highlight {
+  color: #ffd479;
+  font-weight: 700;
+}
+
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  background: #fff;
+  color: #c81e2c;
+  font-weight: 800;
+  font-size: 0.8125rem;
+  padding: 8px 16px;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.15);
+}
+
+.closeButton {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #fff;
+  opacity: 0.85;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.closeButton:hover {
+  opacity: 1;
+}
+
+@media (max-width: 1080px) {
+  .rightArea {
+    display: none;
+  }
+
+  .centerGroup {
+    max-width: min(84%, 780px);
+  }
+}
+
+/* ---- 모바일: 중앙 팝업 ---- */
+.popupOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 0.55);
+}
+
+.popupCard {
+  position: relative;
+  width: min(100%, 360px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  padding: 40px 24px 32px;
+  border-radius: 24px;
+  background: linear-gradient(160deg, #e2382b 0%, #b2261a 55%, #8a1c12 100%);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.45);
+  color: #fff;
+  cursor: pointer;
+}
+
+.popupCloseButton {
+  position: absolute;
+  top: -16px;
+  right: -16px;
+  z-index: 1;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  color: #333;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.35);
+  cursor: pointer;
+}
+
+.popupSirenArea {
+  width: 104px;
+  height: 104px;
+  object-fit: contain;
+}
+
+.popupSpeechBubble {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 8px 20px 9px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fce992 0%, #f6d066 55%, #eebb3f 100%);
+}
+
+.popupSpeechBubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  transform: translateX(-50%);
+  border-style: solid;
+  border-width: 12px 8px 0;
+  border-color: #eebb3f transparent transparent;
+}
+
+.popupMainText {
+  font-weight: 800;
+  font-size: 1.375rem;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: #fff;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.15);
+}
+
+.popupUnderline {
+  width: 72px;
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffe27a 0%, #f7b733 100%);
+  box-shadow: 0 1px 4px rgb(247 183 51 / 0.55);
+}
+
+@media (max-width: 767px) {
+  .banner {
+    display: none;
+  }
+
+  .popupOverlay {
+    display: flex;
+  }
+}

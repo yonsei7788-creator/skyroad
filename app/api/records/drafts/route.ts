@@ -6,6 +6,7 @@ interface DraftBody {
   method: "pdf" | "image" | "text";
   record: Record<string, unknown>;
   isReviewed?: boolean;
+  plannedSubjects?: string;
 }
 
 export async function GET() {
@@ -27,13 +28,18 @@ export async function GET() {
     .from("record_drafts")
     .select("*")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
+  if (error) {
+    console.error("draft fetch error:", error);
     return NextResponse.json(
-      { error: "저장된 임시 데이터가 없습니다." },
-      { status: 404 }
+      { error: "임시 데이터 조회에 실패했습니다." },
+      { status: 500 }
     );
+  }
+
+  if (!data) {
+    return NextResponse.json(null);
   }
 
   return NextResponse.json(data);
@@ -61,7 +67,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  const { method, record, isReviewed } = body;
+  const { method, record, isReviewed, plannedSubjects } = body;
   if (!method || !record) {
     return NextResponse.json(
       { error: "method와 record가 필요합니다." },
@@ -77,6 +83,7 @@ export async function POST(request: NextRequest) {
         submission_type: method,
         record_data: record,
         is_reviewed: isReviewed ?? false,
+        planned_subjects: plannedSubjects ?? null,
       },
       { onConflict: "user_id" }
     )

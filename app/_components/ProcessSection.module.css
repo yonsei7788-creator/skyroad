@@ -237,3 +237,30 @@
 .detailDot.accentGreen {
   background: var(--color-success-500);
 }
+
+/* ---- Mobile Optimization ---- */
+@media (max-width: 767px) {
+  .section {
+    padding: 72px 0;
+  }
+
+  .sectionTitle {
+    font-size: 1.625rem;
+  }
+
+  .timeline {
+    margin-top: 48px;
+  }
+
+  .timelineItem {
+    padding-bottom: 32px;
+  }
+
+  .card {
+    padding: 24px 20px;
+  }
+
+  .stepTitle {
+    font-size: 1.25rem;
+  }
+}

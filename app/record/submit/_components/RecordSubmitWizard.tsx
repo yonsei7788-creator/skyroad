@@ -12,20 +12,24 @@ import {
   Save,
 } from "lucide-react";
 
+import { createClient } from "@/libs/supabase/client";
+
 import { StepIndicator } from "./StepIndicator";
 import { MethodSelectStep } from "./MethodSelectStep";
 import { PdfUploadStep } from "./PdfUploadStep";
-import { ImageUploadStep } from "./ImageUploadStep";
 import { TextInputStep } from "./TextInputStep";
 import { ReviewStep } from "./ReviewStep";
 import { ParsingOverlay } from "./ParsingOverlay";
-import { INITIAL_WIZARD_STATE, validateRequiredFields } from "./types";
+import {
+  ATTENDANCE_MAX_ROWS,
+  INITIAL_WIZARD_STATE,
+  validateRequiredFields,
+} from "./types";
 import type {
   InputMethod,
   WizardState,
   WizardStep,
   SchoolRecord,
-  ImageFile,
 } from "./types";
 
 import styles from "../page.module.css";
@@ -37,27 +41,17 @@ interface ToastData {
 
 type DraftSaveStatus = "idle" | "saving" | "saved" | "error";
 
-const fileToBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(",")[1]);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-
 const saveDraft = async (
   method: InputMethod,
   record: SchoolRecord,
-  isReviewed?: boolean
+  isReviewed?: boolean,
+  plannedSubjects?: string
 ): Promise<string | null> => {
   try {
     const response = await fetch("/api/records/drafts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ method, record, isReviewed }),
+      body: JSON.stringify({ method, record, isReviewed, plannedSubjects }),
     });
     if (!response.ok) return null;
     const data = await response.json();
@@ -78,6 +72,7 @@ const deleteDraft = async (): Promise<void> => {
 interface RecordSubmitWizardProps {
   mode?: "create" | "edit";
   initialRecord?: SchoolRecord;
+  initialPlannedSubjects?: string;
   recordId?: string;
   onSubmitSuccess?: () => void;
 }
@@ -85,6 +80,7 @@ interface RecordSubmitWizardProps {
 export const RecordSubmitWizard = ({
   mode = "create",
   initialRecord,
+  initialPlannedSubjects,
   recordId,
   onSubmitSuccess,
 }: RecordSubmitWizardProps) => {
@@ -98,6 +94,7 @@ export const RecordSubmitWizard = ({
           step: 2 as WizardStep,
           method: "text" as InputMethod,
           record: initialRecord,
+          plannedSubjects: initialPlannedSubjects ?? "",
           draftLoading: false,
         }
       : { ...INITIAL_WIZARD_STATE }
@@ -107,6 +104,7 @@ export const RecordSubmitWizard = ({
     method: InputMethod;
     record: SchoolRecord;
     draftId: string;
+    plannedSubjects?: string;
   } | null>(null);
 
   const [draftSaveStatus, setDraftSaveStatus] =
@@ -135,11 +133,14 @@ export const RecordSubmitWizard = ({
         const response = await fetch("/api/records/drafts");
         if (response.ok) {
           const draft = await response.json();
-          setPendingDraft({
-            method: draft.submission_type as InputMethod,
-            record: draft.record_data as SchoolRecord,
-            draftId: draft.id as string,
-          });
+          if (draft) {
+            setPendingDraft({
+              method: draft.submission_type as InputMethod,
+              record: draft.record_data as SchoolRecord,
+              draftId: draft.id as string,
+              plannedSubjects: (draft.planned_subjects as string) ?? "",
+            });
+          }
         }
       } catch {
         // draft 없음 또는 에러 → 무시
@@ -152,13 +153,13 @@ export const RecordSubmitWizard = ({
 
   const handleRestoreDraft = () => {
     if (!pendingDraft) return;
-    const isAiMode =
-      pendingDraft.method === "pdf" || pendingDraft.method === "image";
+    const isAiMode = pendingDraft.method === "pdf";
     setState((prev) => ({
       ...prev,
       method: pendingDraft.method,
       record: pendingDraft.record,
       draftId: pendingDraft.draftId,
+      plannedSubjects: pendingDraft.plannedSubjects ?? "",
       step: isAiMode ? 3 : 2,
     }));
     setPendingDraft(null);
@@ -181,10 +182,6 @@ export const RecordSubmitWizard = ({
     }));
   };
 
-  const handleImagesChange = (images: ImageFile[]) => {
-    setState((prev) => ({ ...prev, images }));
-  };
-
   const handleRecordChange = (record: SchoolRecord) => {
     setState((prev) => ({ ...prev, record }));
     setDraftSaveStatus("idle");
@@ -192,9 +189,15 @@ export const RecordSubmitWizard = ({
     if (state.method && !isEditMode) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       const { method } = state;
+      const currentPlannedSubjects = state.plannedSubjects;
       debounceRef.current = setTimeout(async () => {
         setDraftSaveStatus("saving");
-        const draftId = await saveDraft(method, record);
+        const draftId = await saveDraft(
+          method,
+          record,
+          undefined,
+          currentPlannedSubjects
+        );
         if (draftId) {
           setState((prev) => ({ ...prev, draftId }));
           setDraftSaveStatus("saved");
@@ -206,11 +209,20 @@ export const RecordSubmitWizard = ({
     }
   };
 
+  const handlePlannedSubjectsChange = (value: string) => {
+    setState((prev) => ({ ...prev, plannedSubjects: value }));
+  };
+
   const handleManualSave = async () => {
     if (!state.method || isEditMode) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     setDraftSaveStatus("saving");
-    const draftId = await saveDraft(state.method, state.record);
+    const draftId = await saveDraft(
+      state.method,
+      state.record,
+      undefined,
+      state.plannedSubjects
+    );
     if (draftId) {
       setState((prev) => ({ ...prev, draftId }));
       setDraftSaveStatus("saved");
@@ -220,7 +232,7 @@ export const RecordSubmitWizard = ({
     }
   };
 
-  const isAiParseMode = state.method === "pdf" || state.method === "image";
+  const isAiParseMode = state.method === "pdf";
   const totalSteps = isAiParseMode ? 4 : 3;
   const reviewStep = totalSteps;
 
@@ -233,8 +245,6 @@ export const RecordSubmitWizard = ({
     switch (state.method) {
       case "pdf":
         return state.pdfFile !== null;
-      case "image":
-        return state.images.length > 0;
       case "text":
         return isRequiredFieldsMet;
     }
@@ -249,60 +259,87 @@ export const RecordSubmitWizard = ({
     setState((prev) => ({ ...prev, isParsing: true, parseError: null }));
 
     try {
-      let files: { data: string; mimeType: string }[];
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error("로그인이 필요합니다.");
+      const { user } = session;
 
-      if (state.method === "pdf") {
-        if (!state.pdfFile) return;
-        const base64 = await fileToBase64(state.pdfFile);
-        files = [{ data: base64, mimeType: "application/pdf" }];
-      } else {
-        // image mode — convert all images to base64
-        files = await Promise.all(
-          state.images.map(async (img) => {
-            const base64 = await fileToBase64(img.file);
-            return { data: base64, mimeType: img.file.type };
-          })
-        );
+      // 파일을 Supabase Storage에 업로드
+      const filesToUpload: File[] = state.pdfFile ? [state.pdfFile] : [];
+
+      const uploadedPaths: { path: string; mimeType: string }[] = [];
+
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
+        const ext = file.name.split(".").pop() || "pdf";
+        const storagePath = `${user.id}/${Date.now()}-${i}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("record-uploads")
+          .upload(storagePath, file);
+
+        if (uploadError)
+          throw new Error(`파일 업로드 실패: ${uploadError.message}`);
+        uploadedPaths.push({ path: storagePath, mimeType: file.type });
       }
 
-      const response = await fetch("/api/records/parse", {
+      const response = await fetch("/api/records/parse-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ files }),
+        body: JSON.stringify({ storagePaths: uploadedPaths }),
       });
 
       if (!response.ok) {
-        let message = "파싱에 실패했습니다.";
-        try {
-          const data = await response.json();
-          message = data.error || message;
-        } catch {
-          // Vercel/Next.js 게이트웨이 에러 등 non-JSON 응답
-          if (response.status === 504 || response.status === 502) {
-            message =
-              "AI 분석 시간이 초과되었습니다. 파일 크기를 줄이거나 다시 시도해주세요.";
-          }
-        }
-        throw new Error(message);
+        throw new Error(
+          "PDF 파싱에 실패했습니다. 카카오톡 전자증명서, 네이버 전자증명서, 또는 정부24 앱에서 발급한 정식 생활기록부 PDF로 다시 시도해주세요."
+        );
       }
 
-      const parsed: SchoolRecord = await response.json();
+      const parsed = await response.json();
+      const warning = parsed._warning as string | undefined;
+      delete parsed._warning;
+
+      // 출결은 최대 ATTENDANCE_MAX_ROWS 개까지만 허용 — 초과분은 뒤에서 잘라낸다.
+      const parsedRecord = parsed as SchoolRecord;
+      if (
+        Array.isArray(parsedRecord.attendance) &&
+        parsedRecord.attendance.length > ATTENDANCE_MAX_ROWS
+      ) {
+        parsedRecord.attendance = parsedRecord.attendance.slice(
+          0,
+          ATTENDANCE_MAX_ROWS
+        );
+      }
 
       // AI 파싱 완료 후 draft 자동 저장
-      const draftId = await saveDraft(state.method!, parsed);
+      const draftId = await saveDraft(
+        state.method!,
+        parsedRecord,
+        undefined,
+        state.plannedSubjects
+      );
 
       setState((prev) => ({
         ...prev,
-        record: parsed,
+        record: parsedRecord,
         isParsing: false,
         step: 3,
         draftId: draftId ?? prev.draftId,
       }));
+
+      if (warning) {
+        showToast(warning, "error");
+      }
     } catch (err) {
-      const message =
+      const raw =
         err instanceof Error
           ? err.message
           : "AI 파싱에 실패했습니다. 다시 시도해주세요.";
+      const message = raw.includes("LockManager")
+        ? "인증 세션이 만료되었습니다. 페이지를 새로고침한 후 다시 시도해주세요."
+        : raw;
       setState((prev) => ({
         ...prev,
         isParsing: false,
@@ -356,6 +393,7 @@ export const RecordSubmitWizard = ({
         body: JSON.stringify({
           method: state.method,
           record: state.record,
+          plannedSubjects: state.plannedSubjects,
           ...(isEditMode && recordId ? { recordId } : {}),
         }),
       });
@@ -408,7 +446,7 @@ export const RecordSubmitWizard = ({
           <p className={styles.wizardSubtitle}>
             {isEditMode
               ? "생기부 데이터를 수정하고 다시 분석하세요"
-              : "생기부를 등록하고 AI 분석을 시작하세요"}
+              : "지금 생기부, 합격 가능한 수준인지 알고 있나요?"}
           </p>
         </div>
         <div className={styles.wizardContainer}>
@@ -432,7 +470,7 @@ export const RecordSubmitWizard = ({
         <p className={styles.wizardSubtitle}>
           {isEditMode
             ? "생기부 데이터를 수정하고 다시 분석하세요"
-            : "생기부를 등록하고 AI 분석을 시작하세요"}
+            : "지금 생기부, 합격 가능한 수준인지 알고 있나요?"}
         </p>
       </div>
 
@@ -491,18 +529,13 @@ export const RecordSubmitWizard = ({
             />
           )}
 
-          {state.step === 2 && state.method === "image" && (
-            <ImageUploadStep
-              images={state.images}
-              onImagesChange={handleImagesChange}
-            />
-          )}
-
           {state.step === 2 && state.method === "text" && (
             <TextInputStep
               record={state.record}
               onRecordChange={handleRecordChange}
               requiredFieldErrors={requiredFieldErrors}
+              plannedSubjects={state.plannedSubjects}
+              onPlannedSubjectsChange={handlePlannedSubjectsChange}
             />
           )}
 
@@ -511,11 +544,17 @@ export const RecordSubmitWizard = ({
               record={state.record}
               onRecordChange={handleRecordChange}
               requiredFieldErrors={requiredFieldErrors}
+              plannedSubjects={state.plannedSubjects}
+              onPlannedSubjectsChange={handlePlannedSubjectsChange}
             />
           )}
 
           {state.step === reviewStep && state.method && (
-            <ReviewStep method={state.method} record={state.record} />
+            <ReviewStep
+              method={state.method}
+              record={state.record}
+              validationErrors={requiredFieldErrors}
+            />
           )}
 
           {/* Parse error (shown on step 2 for pdf/image) */}
@@ -612,7 +651,7 @@ export const RecordSubmitWizard = ({
                 type="button"
                 className={styles.wizardSubmitBtn}
                 onClick={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !isRequiredFieldsMet}
               >
                 {isSubmitting ? (
                   <>

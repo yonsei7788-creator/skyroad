@@ -5,6 +5,7 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 32px 24px;
+  box-sizing: border-box;
 }
 
 .header {
@@ -120,6 +121,25 @@
 .planSelect:focus {
   border-color: var(--color-primary-400);
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-neutral-600);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary-600);
+  cursor: pointer;
 }
 
 /* Action button in table */
@@ -489,6 +509,30 @@
   color: #ffffff;
 }
 
+.deleteButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--color-danger-50, #fef2f2);
+  color: var(--color-danger-600, #dc2626);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1px solid var(--color-danger-500, #ef4444);
+  transition: all 0.15s ease;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background: var(--color-danger-500, #ef4444);
+  color: #ffffff;
+}
+
+.deleteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ============================================
    Spinner & Loading
    ============================================ */
@@ -703,11 +747,150 @@
 }
 
 /* ============================================
-   Responsive
+   Mobile Card List (hidden on desktop)
+   ============================================ */
+.cardList {
+  display: none;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.card:hover {
+  background: var(--color-neutral-50);
+}
+
+.card:active {
+  background: var(--color-neutral-100);
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.cardUserName {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-neutral-900);
+}
+
+.cardSub {
+  font-size: 0.75rem;
+  color: var(--color-neutral-400);
+  margin-bottom: 10px;
+}
+
+.cardDivider {
+  height: 1px;
+  background: var(--color-border);
+  margin-bottom: 10px;
+}
+
+.cardTarget {
+  font-size: 0.8125rem;
+  color: var(--color-neutral-700);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--color-neutral-500);
+  margin-bottom: 8px;
+}
+
+.cardMetaDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--color-neutral-300);
+  flex-shrink: 0;
+}
+
+.cardBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardDate {
+  font-size: 0.75rem;
+  color: var(--color-neutral-400);
+}
+
+.cardActionBtn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--color-primary-50);
+  color: var(--color-primary-600);
+  transition: background 0.15s ease;
+}
+
+.cardActionBtn:active {
+  background: var(--color-primary-100);
+}
+
+.cardActionBtnSecondary {
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-600);
+}
+
+/* ============================================
+   Mobile Section Selector (detail page)
+   ============================================ */
+.mobileSectionSelector {
+  display: none;
+}
+
+.mobileSectionSelect {
+  width: 100%;
+  height: 48px;
+  padding: 0 36px 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-neutral-800);
+  background: #ffffff;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+/* ============================================
+   Mobile Bottom Action Bar (detail page)
+   ============================================ */
+.mobileActionBar {
+  display: none;
+}
+
+/* ============================================
+   Responsive — List Page
    ============================================ */
 @media (max-width: 768px) {
   .container {
     padding: 20px 16px;
+    width: auto;
+    max-width: 100vw;
+    box-sizing: border-box;
   }
 
   .filters {
@@ -717,13 +900,270 @@
 
   .statusTabs {
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .statusTabs::-webkit-scrollbar {
+    display: none;
   }
 
   .searchWrapper {
     max-width: none;
+    width: 100%;
+  }
+
+  .searchInput {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .planSelect {
     width: 100%;
+    box-sizing: border-box;
   }
+
+  .mockTestSection {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .mockTestButtons {
+    width: 100%;
+  }
+
+  .mockTestButton {
+    flex: 1;
+  }
+
+  /* Hide table, show cards */
+  .tableHide {
+    display: none;
+  }
+
+  .cardList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .card {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* ============================================
+   Responsive — Detail Page (Review)
+   ============================================ */
+@media (max-width: 768px) {
+  .reviewLayout {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - var(--admin-header-height, 56px));
+    height: calc(100dvh - var(--admin-header-height, 56px));
+    overflow: hidden;
+  }
+
+  .reviewLayout.previewHidden {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Top Bar — stacked */
+  .topBar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 16px;
+    flex-shrink: 0;
+  }
+
+  .topBarTitle {
+    font-size: 0.875rem;
+  }
+
+  .topBarProgress {
+    order: 10;
+    width: 100%;
+  }
+
+  .progressBarContainer {
+    max-width: none;
+    flex: 1;
+  }
+
+  /* Hide desktop-only actions from topBar */
+  .topBarActions {
+    display: none;
+  }
+
+  /* Hide left nav */
+  .leftNav {
+    display: none;
+  }
+
+  /* Show mobile section selector */
+  .mobileSectionSelector {
+    display: block;
+    padding: 0 16px;
+    margin: 12px 0 4px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 50;
+  }
+
+  /* Center editor — scrollable area */
+  .centerEditor {
+    padding: 16px;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+  }
+
+  .sectionEditorTitle {
+    font-size: 1rem;
+  }
+
+  /* Hide preview panel visually but keep renderable for PDF generation */
+  .rightPreview {
+    position: fixed;
+    left: -9999px;
+    top: 0;
+    width: 900px;
+    overflow: auto;
+  }
+
+  .expandPreviewButton {
+    display: none;
+  }
+
+  /* Mobile bottom action bar — fixed at bottom */
+  .mobileActionBar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--color-border);
+    background: #ffffff;
+    flex-shrink: 0;
+    z-index: 20;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  .mobileActionBar > button {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 8px;
+    font-size: 0.75rem;
+    min-height: 44px;
+  }
+
+  /* Toast positioning */
+  .toastContainer {
+    top: auto;
+    bottom: 80px;
+    right: 16px;
+    left: 16px;
+  }
+
+  .toast {
+    max-width: none;
+    font-size: 0.8125rem;
+  }
+
+  /* Modal */
+  .modal {
+    width: calc(100% - 32px);
+  }
+}
+
+/* ============================================
+   AI Failed Panel (재생성)
+   ============================================ */
+.aiFailedPanel {
+  max-width: 480px;
+  margin: 60px auto;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.04);
+}
+
+.aiFailedIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgb(239 68 68 / 0.1);
+  color: #dc2626;
+}
+
+.aiFailedTitle {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--color-fg);
+}
+
+.aiFailedError {
+  font-size: 0.8125rem;
+  color: #dc2626;
+  background: rgb(239 68 68 / 0.06);
+  border: 1px solid rgb(239 68 68 / 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  width: 100%;
+  text-align: left;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.aiFailedMeta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 16px;
+  width: 100%;
+  margin-top: 4px;
+  font-size: 0.8125rem;
+}
+
+.aiFailedMeta dt {
+  color: var(--color-fg-secondary);
+  font-weight: 600;
+  text-align: left;
+}
+
+.aiFailedMeta dd {
+  color: var(--color-fg);
+  text-align: left;
+}
+
+.aiRegenerateButton {
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  background: var(--color-bg-primary);
+  color: var(--color-fg-inverse);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+
+.aiRegenerateButton:hover {
+  background: var(--color-bg-primary-hover);
 }

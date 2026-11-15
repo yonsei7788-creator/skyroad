@@ -1,6 +1,7 @@
 import type { ActivityAnalysisSection, ReportPlan } from "@/libs/report/types";
 import type React from "react";
 
+import { renderInsightMarkers } from "./insight-marker";
 import { ReportBadge } from "./ReportBadge";
 import styles from "./report.module.css";
 import { safeText } from "./safe-text";
@@ -11,6 +12,8 @@ interface ActivityAnalysisRendererProps {
   sectionNumber: number;
   plan?: ReportPlan;
 }
+
+const NO_DATA_MSG = "기록이 없어 평가할 수 없습니다.";
 
 export const ActivityAnalysisRenderer = ({
   data,
@@ -43,13 +46,18 @@ export const ActivityAnalysisRenderer = ({
 
             <h3 className={`${styles.h3} ${styles.mb12}`}>{activity.type}</h3>
 
-            {(activity.yearlyAnalysis ?? []).map((year) => (
-              <div key={year.year} className={styles.activityYearCard}>
+            {(activity.yearlyAnalysis ?? []).map((year, yIdx) => (
+              <div
+                key={`${activity.type}-year-${year.year}-${yIdx}`}
+                className={styles.activityYearCard}
+              >
                 <div className={styles.activityYearHeader}>
                   <span className={styles.tableCellBold}>{year.year}학년</span>
                   <ReportBadge rating={year.rating} />
                 </div>
-                <p className={styles.small}>{safeText(year.summary)}</p>
+                <p className={styles.small}>
+                  {renderInsightMarkers(year.summary)}
+                </p>
                 {(year.competencyTags ?? []).length > 0 && (
                   <div className={`${styles.tagGroup} ${styles.mt6}`}>
                     {(year.competencyTags ?? []).map((tag, idx) => (
@@ -61,31 +69,36 @@ export const ActivityAnalysisRenderer = ({
                 )}
                 {year.ratingRationale && (
                   <p className={`${styles.ratingRationale} ${styles.mt6}`}>
-                    {safeText(year.ratingRationale)}
+                    {renderInsightMarkers(year.ratingRationale)}
                   </p>
                 )}
               </div>
             ))}
 
-            {activity.volumeAssessment && (
-              <p className={`${styles.small} ${styles.mt12}`}>
-                <span className={styles.emphasis}>기록 분량:</span>{" "}
-                {safeText(activity.volumeAssessment)}
-              </p>
-            )}
+            {activity.volumeAssessment &&
+              activity.overallComment !== NO_DATA_MSG && (
+                <p className={`${styles.small} ${styles.mt12}`}>
+                  <span className={styles.emphasis}>기록 분량:</span>{" "}
+                  {safeText(activity.volumeAssessment)}
+                </p>
+              )}
 
-            <p className={`${styles.small} ${styles.mt12}`}>
-              {safeText(activity.overallComment)}
-            </p>
+            {activity.overallComment &&
+              activity.overallComment !== NO_DATA_MSG && (
+                <p className={`${styles.small} ${styles.mt12}`}>
+                  {renderInsightMarkers(activity.overallComment)}
+                </p>
+              )}
 
             {!(activity.keyActivities && activity.keyActivities.length > 0) &&
-              activity.improvementDirection && (
+              activity.improvementDirection &&
+              activity.overallComment !== NO_DATA_MSG && (
                 <div
                   className={`${styles.callout} ${styles.calloutCaution} ${styles.mt16}`}
                 >
                   <div className={styles.calloutContent}>
                     <span className={styles.emphasis}>개선 방향:</span>{" "}
-                    {safeText(activity.improvementDirection)}
+                    {renderInsightMarkers(activity.improvementDirection)}
                   </div>
                 </div>
               )}
@@ -114,7 +127,9 @@ export const ActivityAnalysisRenderer = ({
                     </span>
                     <span className={styles.tableCellBold}>{ka.activity}</span>
                   </div>
-                  <p className={styles.small}>{safeText(ka.evaluation)}</p>
+                  <p className={styles.small}>
+                    {renderInsightMarkers(ka.evaluation)}
+                  </p>
                   {(ka.competencyTags ?? []).length > 0 && (
                     <div className={`${styles.tagGroup} ${styles.mt6}`}>
                       {(ka.competencyTags ?? []).map((tag, tagIdx) => (
@@ -132,7 +147,7 @@ export const ActivityAnalysisRenderer = ({
                   >
                     <div className={styles.calloutContent}>
                       <span className={styles.emphasis}>개선 방향:</span>{" "}
-                      {safeText(activity.improvementDirection)}
+                      {renderInsightMarkers(activity.improvementDirection)}
                     </div>
                   </div>
                 )}
@@ -144,14 +159,18 @@ export const ActivityAnalysisRenderer = ({
         return blocks;
       })}
 
+      {/* 기록 없는 활동 영역은 렌더링하지 않음 */}
+
       {/* Final Block: Overall AI commentary */}
       <div>
         <div className={`${styles.aiCommentary} ${styles.mt20}`}>
           <div className={styles.aiCommentaryIcon}>✦</div>
           <div className={styles.aiCommentaryContent}>
-            <div className={styles.aiCommentaryLabel}>창체 종합 평가</div>
+            <div className={styles.aiCommentaryLabel}>
+              <span className={styles.markerSky}>창체 종합 평가</span>
+            </div>
             <div className={styles.aiCommentaryText}>
-              {safeText(data.overallComment)}
+              {renderInsightMarkers(data.overallComment)}
             </div>
           </div>
         </div>

@@ -64,7 +64,8 @@
 
 .warning {
   font-size: 0.875rem;
-  color: var(--color-fg-tertiary);
+  color: var(--color-fg);
+  font-weight: 700;
   margin-top: 8px;
 }
 

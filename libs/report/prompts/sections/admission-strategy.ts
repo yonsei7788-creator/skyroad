@@ -4,89 +4,93 @@ import type { ReportPlan } from "../../types.ts";
 
 export interface AdmissionStrategyPromptInput {
   academicAnalysis: string;
-  competencyEvaluation: string;
-  admissionPredictionResult: string;
   universityCandidates: string;
   recommendedCourseMatch: string;
   studentProfile: string;
-  basePassRates?: string;
-  majorEvaluationContext?: string;
+  gradingSystem?: "5등급제" | "9등급제";
+  studentGrade: number;
+  isGraduate?: boolean;
+  /**
+   * 생기부가 더 이상 바뀔 수 없는 상태 — 졸업생이거나, 3학년 1학기까지만
+   * 데이터가 있고 7월 이후(1학기 기말고사 종료)인 경우 true.
+   */
+  isRecordFinalized?: boolean;
+  currentDate: string;
+  isMedical?: boolean;
+  /** 학년별 이수 완료 과목 요약 */
+  completedSubjectsByYear?: string;
+  isArtSportPractical?: boolean;
+  /** 학생이 선택한 전형 목록 (예: ["학생부교과", "학생부종합"]) */
+  selectedAdmissionTypes?: string[];
+  /** majorExploration에서 추천한 학과 목록 (예: "행정학과, 정치외교학과, 사회학과") */
+  majorExplorationDepartments?: string;
+  /** Phase 2 생기부 역량 추출 결과 (세특/활동 분석 포함) — 학종 분석의 핵심 근거 */
+  competencyExtraction?: string;
+  /** 과목별 세특 분석 결과 — 학종 chanceRationale 작성 시 참조 */
+  subjectAnalysisResult?: string;
+  /** 교과전형 전용 성적 분석 (과목별 데이터 제거됨) — 교과 type에서만 사용 */
+  gyogwaAcademicAnalysis?: string;
+  /** 학생이 입력한 수강 예정 과목 텍스트 */
+  plannedSubjects?: string;
+  /** admissionPrediction 섹션 결과 JSON — recommendedPath의 추천 전형이 admissionPrediction.recommendedType과 일치해야 일관성 보장 */
+  admissionPredictionResult?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 간략
 - 추천 전형 방향(recommendedPath, 2~3줄) 출력
-- 대학 추천(recommendations): 상향 1/적정 1/안정 2/하향 2 = 총 **6개** 고정, 대학명+학과+전형명+티어+간단 rationale(1줄)
-- ⚠️ 반드시 "하향" 티어 대학 2개를 포함하세요. 하향 대학은 합격 가능성이 높은 안전 지원 대학입니다.
-- typeStrategies, schoolTypeAnalysis, nextSemesterStrategy, csatMinimumStrategy, applicationSimulation, universityGuideMatching, tierGroupedRecommendations 필드는 출력하지 않습니다.
+- 대학 추천(simulations): 1개 그룹, 후보군 전체를 카드로 출력 (최대 6개)
+- 각 카드에 학종(comprehensive) + 교과(subject) 추천을 모두 포함
+- chanceRationale은 각각 **150자 이내**로 작성
+- typeStrategies, schoolTypeAnalysis, nextSemesterStrategy, universityGuideMatching 필드는 출력하지 않습니다.
 
 ### ⚠️ chanceRationale 현실적 평가 규칙
-- chanceRationale에 "충분히 합격", "높은 경쟁력"만 쓰면 안 됩니다.
-- 반드시 **왜 유리한지 + 어떤 리스크가 있는지** 함께 서술하세요.
-- BAD: "내신 등급이 우수하여 합격 가능성이 높습니다."
-- GOOD: "내신은 적정 수준이나, 세특 내용이 학과와 괴리가 있어 서류 평가에서 불리할 수 있습니다."
+- "충분히 합격", "높은 경쟁력"만 쓰면 안 됩니다.
+- **왜 유리한지 + 어떤 리스크가 있는지** 함께 서술하세요.
+- 교과 chanceRationale: **합격선 대비 학생 등급의 상대적 위치만** 서술. 커트라인 수치 노출 금지. 서류평가/생기부/세특 언급 금지.
 
-⚠️ **분량 제한**: 이 섹션은 A4 1페이지 이내로 작성합니다.`,
+### ⛔ 본문 영단어 사용 금지
+- 한글 서술문 안에 "high", "medium", "low" 등 영단어 사용 금지. 한글(높음/보통/낮음)로 대체하세요.`,
   standard: `## 플랜별 출력: 상세
-- 추천 전형 방향(recommendedPath) + 대학 추천(recommendations)
-- 대학 추천 수: 상향 2/적정 2/안정 2/하향 2 = 총 **8개** 고정.
-- ⚠️ 반드시 4개 티어(상향/적정/안정/하향) 모두 포함하세요. 하향 대학은 합격 가능성이 높은 안전 지원 대학입니다.
-- 대학별 합격 가능성(chance + chanceRationale + chancePercentLabel)만 출력합니다. admissionData 필드는 출력하지 않습니다.
+- 추천 전형 방향(recommendedPath) + 대학 추천(simulations)
+- 1개 그룹, 후보군 전체를 카드로 출력 (최대 6개)
+- 각 카드에 학종(comprehensive) + 교과(subject) 추천을 모두 포함
 - 전형별 전략(typeStrategies) 출력
 - 주의/유리 학교 유형(schoolTypeAnalysis)
 - 다음 학기 전략(nextSemesterStrategy)
-- csatMinimumStrategy, applicationSimulation, universityGuideMatching, tierGroupedRecommendations 필드는 출력하지 않습니다.
+- universityGuideMatching 필드는 출력하지 않습니다.
 
-### ⚠️ chanceRationale 작성 규칙 (학생부종합전형)
-- 학생부종합전형 추천 시 **교과성적만 언급하면 안 됩니다**.
-- 학종은 서류(생기부) 정성평가가 핵심이므로, 반드시 **세특/활동 내용 기반 분석**을 포함하세요.
-- BAD: "환산 등급이 합격자 평균보다 높아 등급 경쟁력이 압도적입니다."
-- GOOD: "등급 경쟁력은 우수하나, 생기부 내 전공 관련 탐구가 부족하여 서류 평가에서 불리할 수 있습니다."
-- 특히 안정/하향 티어라도 학종이면 전공적합성, 진로역량 등 서류 평가 요소를 반드시 언급하세요.
+### ⚠️ chanceRationale 작성 규칙
+- 학종 chanceRationale: **교과성적만 언급 금지**. 세특/활동 내용 기반 분석 포함 필수.
+- 교과 chanceRationale: **합격선 대비 학생 등급의 상대적 위치만** 서술. 커트라인 수치 노출 금지. 서류평가/생기부/세특 언급 금지.
+- 각 chanceRationale은 **150자 이내**.
+- typeStrategies의 각 analysis는 **200자 이내**.
 
-⚠️ **분량 제한 (반드시 준수)**:
-- recommendations는 반드시 **8개** 고정.
-- 각 chanceRationale은 반드시 **80자 이내**로 작성합니다. 80자 초과 금지.
-- typeStrategies의 각 analysis는 **100자 이내**, 각 reason은 **80자 이내**로 작성합니다.
-- schoolTypeAnalysis의 rationale은 **100자 이내**로 작성합니다.
-- nextSemesterStrategy는 **150자 이내**로 작성합니다.`,
+### ⛔ 본문 영단어 사용 금지 (위반 시 품질 실패)
+- 모든 한글 서술 필드에서 영단어 사용 금지. JSON enum 값은 영문 그대로, 한글 서술문은 한글만.`,
   premium: `## 플랜별 출력: 정밀
 Standard의 모든 항목에 추가로 다음을 출력합니다:
-- 대학 추천 수: 상향 3/적정 3/안정 3/하향 3 = 총 **최대 12개**.
-- ⚠️ 반드시 4개 티어(상향/적정/안정/하향) 모두 포함하세요. 하향 대학은 합격 가능성이 높은 안전 지원 대학입니다.
+- 1개 그룹, 후보군 전체를 카드로 출력 (최대 6개)
+- 각 카드에 학종(comprehensive) + 교과(subject) 추천을 모두 포함
 - 전형별 상세 전략(typeStrategies)
-- 수능 최저 전략(csatMinimumStrategy)
-- 6장 카드 배분 시뮬레이션(applicationSimulation): 반드시 아래 형식. **학생부교과전형도 반드시 포함**하세요.
-  "applicationSimulation": {"description": "수시 6개 + 정시 배분 전략...", "details": [{"admissionType": "학생부종합", "count": 3, "targetUniversities": ["한양대", "중앙대", "경희대"]}, {"admissionType": "학생부교과", "count": 2, "targetUniversities": ["서울시립대", "숭실대"]}, {"admissionType": "논술", "count": 1, "targetUniversities": ["건국대"]}]}
-  ⚠️ **전형 유형별 최소 1개 배정**: 학생부종합과 학생부교과에 각각 최소 1개는 배분하세요. 교과전형이 불리한 학생이라도 안전망 차원에서 최소 1개는 교과전형 하향 안정권 대학에 배정합니다.
 - 대학별 학종 가이드북 키워드 매칭(universityGuideMatching): **상위 3개 대학만** 배열 형식으로 출력
-  "universityGuideMatching": [{"university": "한양대학교", "emphasisKeywords": ["자기주도성", "탐구력"], "studentStrengthMatch": ["세특 탐구 깊이"], "studentWeaknessMatch": ["교과 편차"]}]
-- 조합별 대학 추천(tierGroupedRecommendations): "상향 위주" 2개 + "안정 위주" 2개 + "하향 위주" 2개 = 총 6개
-- 서울대학교는 학생부교과전형이 없으므로 교과전형 데이터를 생성하지 않습니다.
+- 서울대학교 카드는 subject 필드를 null로 설정합니다.
 
-### ⚠️ chanceRationale 작성 규칙 (학생부종합전형)
-- 학생부종합전형 추천 시 **교과성적만 언급하면 안 됩니다**.
-- 학종은 서류(생기부) 정성평가가 핵심이므로, 반드시 **세특/활동 내용 기반 분석**을 포함하세요.
-- 특히 안정/하향 티어라도 학종이면 전공적합성, 진로역량 등 서류 평가 요소를 반드시 언급하세요.
+### ⚠️ chanceRationale 작성 규칙
+- 학종 chanceRationale: **교과성적만 언급 금지**. 세특/활동 기반 분석 필수.
+- 교과 chanceRationale: **합격선 대비 학생 등급의 상대적 위치만** 서술. 커트라인 수치 노출 금지. 서류평가/생기부/세특 언급 금지.
+- 각 chanceRationale은 **150자 이내**.
+- typeStrategies의 각 analysis는 **200자 이내**.
 
-⚠️ **분량 제한 (반드시 준수)**:
-- recommendations는 **최대 12개**.
-- 각 chanceRationale은 반드시 **150자 이내**로 작성합니다. 150자 초과 금지.
-- admissionData 포함 가능.
-- typeStrategies의 각 analysis는 **200자 이내**로 작성합니다.`,
+### ⛔ 본문 영단어 사용 금지 (위반 시 품질 실패)
+- 모든 한글 서술 필드에서 영단어 사용 금지. JSON enum 값은 영문 그대로, 한글 서술문은 한글만.`,
 };
 
 const ADMISSION_CONTEXT = `## 학교유형별 특수전형 안내
-- **특성화고**: 특성화고 특별전형(정원 외) 지원 가능. 일반대학 지원 시 내신 경쟁력이 일반고 대비 불리할 수 있으며, 특성화고 환산 보정이 적용됨을 안내하세요. 특성화고졸 재직자 전형도 졸업 후 경로로 안내하세요.
+- **특성화고**: 특성화고 특별전형(정원 외) 지원 가능. 일반대학 지원 시 내신 경쟁력이 일반고 대비 불리할 수 있음을 안내하세요. 특성화고졸 재직자 전형도 졸업 후 경로로 안내하세요.
 - **자율고/외국어고/국제고**: 2025학년도부터 자사고·외고·국제고 일반고 전환 예정. 전환 이전 학생은 기존 학교 유형으로 평가됨을 안내하세요.
 - **과학고/영재학교**: 조기졸업, 과학특성화대학 추천 입학 등 특수 경로를 안내하세요.
 → 학생의 학교 유형에 해당하는 특수전형이 있으면 반드시 typeStrategies나 recommendedPath에서 언급하세요.
-
-## 정시 학생부 반영 대학 (2028학년도)
-정시에서 학생부를 반영하는 주요 대학:
-서울대(2023~), 고려대(2024~), 연세대(2026~), 한양대(2026~),
-성균관대 사대(2026~), 동국대(2027~), 중앙대(2027~), 경희대(2028~)
-→ 이 대학을 정시 목표로 하는 경우 학생부 준비도 중요함을 안내하세요.
 
 ## 학교폭력 기록 주의사항
 학생 프로필에 학교폭력 조치 기록이 있는 경우:
@@ -98,90 +102,234 @@ export const buildAdmissionStrategyPrompt = (
   input: AdmissionStrategyPromptInput,
   plan: ReportPlan
 ): string => {
-  return `## 작업
+  const fiveGradeContext =
+    input.gradingSystem === "5등급제"
+      ? `## ⚠️⚠️⚠️ 5등급제 대학 추천 기준 (최우선 — 반드시 적용)
+
+이 학생은 **5등급제** 적용 학생입니다. 위 등급별 대학 라인 테이블을 참조하여 학생의 등급과 비교하세요.
+등급 표기 예시: "평균 2.42등급입니다", "<이 학생이 실제로 우수한 성적을 보인 전공 핵심 과목만 나열>에서 우수한 성적을 유지하고 있습니다" (⚠️ 검증 없이 "전공 핵심 과목"을 뭉뚱그려 단정하지 말고, 실제로 해당하는 과목만 나열하세요)
+
+### 5등급제 등급별 대학 라인 (일반고 학종 기준)
+| 5등급제 등급 | 예상 대학 |
+|-------------|----------|
+| 1.0 | 의·치·한·약·수, 서울대, SKY, KAIST |
+| 1.1 | 서강대, 성균관대, 한양대 |
+| 1.2 | 중앙대, 경희대, 한국외대, 시립대 |
+| 1.3 | 건국대, 동국대, 홍익대 |
+| 1.4 | 아주대, 인하대, 경북대, 부산대 |
+| 1.5 | 국민대, 숭실대, 세종대, 단국대 |
+| 1.6~1.7 | 한양대(ERICA), 광운대, 명지대 |
+| 1.8~2.0 | 인천대, 가천대, 경기대 |
+| 2.0 이상 | 지방 국립대, 수도권 하위 대학 |
+
+⚠️ **대학 추천 시 반드시 위 테이블을 기준으로 하세요.**
+`
+      : "";
+
+  const nineGradeContext =
+    input.gradingSystem === "9등급제"
+      ? `## ⚠️ 9등급제 대학 추천 기준 (반드시 적용)
+
+이 학생은 **9등급제** 적용 학생입니다.
+
+### 9등급제 등급별 대학 라인 (일반고 학종 기준)
+| 9등급제 등급 | 예상 대학 |
+|-------------|----------|
+| 1.0~1.5 | 의·치·한·약·수, 서울대, SKY, KAIST |
+| 1.5~2.0 | 서강대, 성균관대, 한양대 |
+| 2.0~2.5 | 중앙대, 경희대, 한국외대, 시립대 |
+| 2.5~3.0 | 건국대, 동국대, 홍익대 |
+| 3.0~3.5 | 아주대, 인하대, 경북대, 부산대 |
+| 3.5~4.0 | 국민대, 숭실대, 세종대, 단국대 |
+| 4.0~4.5 | 한양대(ERICA), 광운대, 명지대 |
+| 4.5~5.0 | 인천대, 가천대, 경기대 |
+| 5.0 이상 | 지방 국립대, 수도권 하위 대학 |
+
+### 교과전형 vs 종합전형 커트라인 차이
+- **교과전형**: 내신 2.5~3.0 필요
+- **종합전형**: 내신 3.0~3.5까지 가능 (세특/활동 반영)
+
+⚠️ 위 등급별 대학 라인 테이블을 참조하여 학생의 등급과 비교하세요.
+⚠️ 내신 5.0 이상의 학생에게 중앙대 이상 대학을 추천하면 안 됩니다.
+`
+      : "";
+
+  const medicalContext = input.isMedical
+    ? `## ⚠️⚠️⚠️ 의·치·한·약·수 계열 입시 특화 가이드 (최우선 — 반드시 적용)
+
+이 학생은 **의·치·한·약·수 계열(의·치·한·약·수)** 지원 학생입니다. 아래 규칙을 반드시 적용하세요.
+
+⚠️ **생기부 기반 원칙은 의·치·한·약·수 학생에게도 동일하게 적용됩니다.**
+생기부에서 의·치·한·약·수 관련 탐구가 확인되더라도, 다른 분야의 강점이 더 두드러진다면 그 강점 계열을 우선 추천하세요.
+
+### 1. 영어 1등급 필수 조건 — ⚠️ 성적 데이터에서 영어 등급을 반드시 확인
+- 의·치·한·약·수 계열에서는 **영어 1등급이 사실상 필수 조건**입니다.
+- ⚠️ **성적 데이터(rawAcademicData/preprocessedAcademicData)에서 학생의 영어 등급을 확인하고, recommendedPath에 "영어 X등급으로 의·치·한·약·수 기준 충족/미충족"을 반드시 명시하세요.**
+- 학생의 영어 등급이 1등급이 아닌 경우, chanceRationale에 "영어 등급 보완이 필요합니다"를 반드시 언급하세요.
+- 영어는 절대평가이므로 꾸준한 학습으로 안정적인 1등급 확보가 가능합니다.
+
+### 2. 합격선 소수점 단위 변별 — ⚠️ chanceRationale에 반드시 반영
+- 의·치·한·약·수 합격선은 **소수점 0.1~0.2등급 차이**로 합격·불합격이 갈립니다.
+- 전년도 단일 결과만으로 판단하지 말고, **최소 3개년 입시 결과를 종합 비교**해야 합니다.
+- 등급별 대학 라인 테이블을 참조하여 합격선 대비 상대적 위치를 판단하세요.
+- ⚠️ **모든 의·치·한·약·수 카드의 chanceRationale에 "의·치·한·약·수 합격선은 소수점 단위에서 변별되므로 3개년 이상 입시 결과 종합이 필요합니다"를 포함하세요.**
+
+### 3. 대학별 경쟁력 특수성
+- ⚠️ **울산대학교 의과대학**은 지방대이지만 서울대·연세대·고려대·성균관대와 함께 **빅5 의대**로 분류됩니다. "지방 의대"라는 이유로 합격 가능성을 높게 판단하면 안 됩니다.
+- 반면 고신대, 동국대(WISE) 등 일부 지방 의대는 상대적으로 낮은 합격선을 형성합니다.
+- 대학의 소재지가 아닌 실제 입결 수준 기준으로 판단하세요.
+
+### 4. 사탐 의·치·한·약·수 현상 (2026학년도 기준) — ⚠️ 고1~고2 학생에게 recommendedPath에 반드시 언급
+- 최근 의·치·한·약·수 계열에서 **사회탐구/확률과 통계 선택자**가 증가하고 있습니다:
+  - 의예과: 사탐 응시자 9.3%
+  - 한의예과: 74.8% (사실상 사탐 경쟁 중심)
+  - 수의예과: 40.5%
+  - 약학계열: 23.8%
+- 과탐에서 확보하기 어려운 **안정적인 고득점(높은 백분위)**을 사탐에서 확보하려는 전략적 판단의 결과입니다.
+- 다만 확률과 통계는 상위권 점수 집중도가 높고, 표준점수 최고점이 미적분·기하 대비 낮은 경우가 많으므로 주의가 필요합니다.
+- ⚠️ **고1~고2 학생의 경우, recommendedPath에 다음 문장을 반드시 포함하세요:**
+  "사탐 의·치·한·약·수 현상(의예 9.3%, 한의예 74.8%, 수의예 40.5%, 약학 23.8%)을 고려한 과목 선택 전략이 필요합니다. 확률과 통계는 상위권 점수 집중도가 높고 표준점수 최고점이 미적분·기하 대비 낮으므로, 표준점수 구조와 목표 대학 반영 방식을 종합 고려해야 합니다."
+
+### 5. 의대 정원 확대 (2027학년도) — ⚠️ recommendedPath에 반드시 언급
+- 전국 의과대학 정원 약 490명 증원 → **2027학년도 총 3,548명 선발** 예정입니다.
+- 정원 확대는 긍정적이나, **N수생 유입 증가**로 상위권 경쟁 강도가 오히려 심화될 가능성이 있습니다.
+- "정원이 늘었으니 합격 가능성이 높다"는 안이한 판단은 금지합니다.
+- ⚠️ **recommendedPath에 "의대 정원 약 490명 증원(2027학년도 총 3,548명)으로 기회가 확대되나, N수생 유입 증가로 상위권 경쟁은 심화 가능"을 반드시 포함하세요.**
+
+### 6. 의·치·한·약·수 학년별 핵심 전략
+- **고1**: 과목 선택이 가장 중요한 시기. 미적분·기하(2015)/미적분Ⅰ·Ⅱ(2022)와 과학 심화과목(생명과학Ⅱ·화학Ⅱ 또는 2022 교육과정 상위과목) 선택 여부가 의·치·한·약·수 지원 가능성을 결정합니다. 영어 1등급 확보를 위한 기초 다지기도 필수입니다.
+- **고2**: 깊이 있는 실험 탐구 + 세특 축적이 핵심. 수학·과학 핵심 과목 성적 관리와 동시에, 생명과학/화학 세특에서 과학적 방법론을 적용한 탐구 기록을 쌓아야 합니다.
+- **고3/졸업생**: 학종 서류 마무리 + 면접 대비가 최우선. 수시 원서 배치 전략과 면접 준비에 집중하세요.
+
+### 7. 계열별 전략 차이 (반드시 해당 계열에 맞게 안내)
+- **의대**: 가장 높은 경쟁률/입결. 전 과목 1등급 또는 상위 1~2% 필요. 학종에서는 과학적 탐구 역량과 세특의 깊이가 핵심.
+- **치대**: 경쟁 치열. 수도권 대학에서는 종합전형 비중도 적지 않아 학생부·비교과 병행 필요.
+- **한의대**: 사탐 응시자 비율 74.8%로 압도적. 영어 1등급 확보의 중요성이 매우 큼.
+- **약대**: 수도권 종합전형 비중도 무시 불가. 영어 반영 방식까지 고려한 전략적 접근이 중요.
+- **수의대**: 전통적 자연계열이나 사탐 응시자 40.5%로 증가 추세.
+
+`
+    : "";
+
+  const timeContext = `## ⚠️ 시점 규칙
+- 현재 날짜: ${input.currentDate}
+- 학생 학년: ${input.studentGrade}학년
+${input.isGraduate || input.isRecordFinalized ? `- 이 학생은 ${input.isGraduate ? "졸업생" : "생기부가 최종 확정된 3학년"}입니다. nextSemesterStrategy는 생략하세요. "성적 향상", "등급을 끌어올려야" 같은 표현을 사용하지 말고, 확정된 성적을 활용한 전형별 전략으로 서술하세요. 학종·논술 type은 확정된 성적의 입시적 의미 + 면접·수능·지원 전략 관점을 포함하고, 교과 type은 아래 "교과 type" 기준대로 최종 평균 등급의 정량 기준 적합도만 서술하세요.` : input.studentGrade <= 2 ? `- 이 학생은 아직 ${input.studentGrade}학년입니다. "3학년 1학기" 등 특정 학기를 지칭하지 말고 "남은 학기", "앞으로의 기간" 등으로 표현하세요.` : `- 이 학생은 3학년입니다. 현재 시점에서 실행 가능한 전략만 제시하세요.`}
+- ❌ 현재 날짜 기준 이미 지난 시기를 언급하지 마세요 (예: 3월인데 "방학 사전 준비").
+
+`;
+
+  const artSportPracticalContext = input.isArtSportPractical
+    ? `## ⚠️ 실기 예체능 학과 규칙 (필수)
+생기부 분석 결과, 이 학생의 주요 활동 분야는 실기 전형이 포함된 예체능 계열입니다.
+전략 방향(recommendedPath)과 전형별 전략(typeStrategies)은 정상 분석하되,
+simulations[0].cards는 빈 배열([])로 출력하세요.
+simulations[0].description에 "실기 전형이 포함된 학과로, 실기 성적에 따라 합격 여부가 크게 달라지므로 추천 대학을 제공하지 않습니다."를 포함하세요.
+
+`
+    : "";
+
+  const admissionTypeRestriction = input.selectedAdmissionTypes?.length
+    ? `## ⛔ 지원 전형 제한 (최우선 규칙)
+이 학생이 선택한 전형: **${input.selectedAdmissionTypes.join(", ")}**
+위 전형만 분석하고 추천하세요. **선택하지 않은 전형은 언급하거나 추천하지 마세요.**
+- recommendedPath, simulations, description 등 모든 필드에서 선택하지 않은 전형을 권유하면 안 됩니다.
+- 선택하지 않은 전형을 "고려해볼 만합니다", "병행하세요" 등으로 추천하는 것은 금지.
+
+`
+    : `## 전형별 전략 필수 포함
+typeStrategies에 **학종, 교과** 전형을 반드시 모두 포함하세요.
+각 전형별로 이 학생의 적합도(적합/보통/부적합)와 분석을 작성하세요.
+⛔ 정시 전형은 포함하지 마세요.
+`;
+
+  return `${admissionTypeRestriction}${fiveGradeContext}${nineGradeContext}${medicalContext}${artSportPracticalContext}${timeContext}## 작업
 학생의 성적과 생기부 분석 결과를 바탕으로 입시 전략과 대학을 추천하세요.
+
+## 서술 관점: 원서 설계사
+이 섹션은 **전형별 조합과 지원 전략**을 설계합니다. 원서 배치와 전형 선택의 근거를 중심으로 서술하세요.
+- "~전형에서는 ~가 유리하므로 ~전략이 적합하다", "원서 배치 시 ~를 고려해야 한다" 등 전략 설계 어투를 사용하세요.
+
+## ⛔ 다른 섹션과의 역할 경계 (필수)
+이 섹션은 **"어떻게 지원할 것인가"**만 담당합니다. 아래 내용은 다른 섹션에서 다루므로 **절대 언급하지 마세요**:
+- ❌ 성적 해석 (예: "N등급이라 약점이다", "성적 추세가 하락한다") → academicAnalysis에서 다룸
+- ❌ 약점 진단 (예: "탐구 깊이가 부족하다", "세특이 빈약하다") → weaknessAnalysis에서 다룸
+- ❌ 합격 가능성 단정/수치 판단 (예: "합격률 60%", "안정적으로 지원 가능", "도전해볼 만") → 이 섹션은 합격 가능성을 단정하지 않습니다. 전형 방향·원서 배치·준비 과제만 서술.
+- ❌ **개별 대학을 짧은 한글 라벨(예: "○○ 지원", "○○ 라인", "○○ 추천", "○○ 합격권")로 분류 금지** (recommendedPath, typeStrategies.analysis, simulations.description 등 모든 자유 서술 필드 공통)
+  - 본문에서 대학별 합격 가능성 단정 표현을 사용하지 마세요. 대신 "[학과] 평가 기준에 부합하는 [요소]가 [생기부 영역]에서 확인됩니다" 같은 부합도 표현을 사용하세요.
+- ✅ 이 섹션에서 할 것: 원서 배치 전략, 전형 조합, 대학 추천 및 그 **전략적 근거**
+- ⚠️ 성적 향상 목표는 전략적 맥락에서 1회만 간결하게 언급하세요. "N등급까지 올려야 한다"를 반복하지 마세요. 상세한 성적 분석은 academicAnalysis·consultantReview에서 다룹니다.
+- ✅ 약점을 언급해야 할 경우 "~를 고려한 전략"으로 표현하세요. 약점 자체를 진단하지 마세요.
+- ⚠️ **표현 차별화**: 성적이나 약점을 언급할 경우, "전략 선택의 근거"로만 간결하게 언급하세요. 예: ❌ "영어 5등급으로 학업 역량이 부족합니다" → ✅ "영어 약점을 고려하면 학종이 교과전형보다 유리합니다"
+
+## ⛔ 핵심 원칙: 분석 방향은 생기부가 결정합니다 (최우선 규칙)
+전략 수립과 방향 제시는 반드시 생기부 데이터 자체에서 도출된 강점과 특성을 기반으로 해야 합니다.
+- 전략의 방향, 추천 학과, 강점/약점 분석은 모두 **생기부 내용**에서 출발해야 합니다.
+
+## ⛔ 용어·표현 규칙 (필수)
+- "전공적합성" → "진로역량" 용어 규칙은 시스템 프롬프트를 따릅니다.
+- typeStrategies의 analysis, recommendedPath에서 **"~에 적합한 역량이 있다"가 아닌 "생기부에서 ~역량이 확인된다"로 서술**하세요.
+
+## ⛔ 생기부 기반 학과 추천 (최우선 규칙)
+
+**학과 추천은 반드시 생기부 내용에 기반해야 합니다.**
+- ✅ 생기부의 세특 탐구 주제, 활동 이력, 교과 성취도를 종합 분석하여 **실제로 적합한 학과**를 AI가 판단하여 추천합니다.
+
+**예시:**
+- 2학년까지 컴퓨터 관련 활동을 하다가 3학년에 유아교육 활동을 잠깐 한 경우 → 컴퓨터/SW 관련 학과를 추천해야 합니다. 유아교육과를 추천하면 안 됩니다.
+
+**판단 기준:**
+- 생기부에서 가장 많은 비중을 차지하는 탐구 분야가 무엇인가?
+- 어떤 계열의 세특 서술이 가장 깊고 일관적인가?
+- 단기간(1학기)의 활동으로 방향이 바뀐 것처럼 보이면, 장기간 축적된 방향을 우선합니다.
 
 ## 출력 JSON 스키마
 
-중요: recommendations, typeStrategies, tierGroupedRecommendations의 각 배열 요소는 반드시 완전한 객체여야 합니다. null 대신 빈 배열이나 빈 객체를 사용하세요.
-
 **enum 제한 (반드시 아래 값만 사용):**
-- typeStrategies[].type: "학종" | "교과" | "정시" (다른 표현 금지)
+- typeStrategies[].type: "학종" | "교과" | "논술" | "고른기회"
 - typeStrategies[].suitability: "적합" | "보통" | "부적합"
-- recommendations[].tier: "상향" | "안정" | "하향"
-- recommendations[].chance: "very_high" | "high" | "medium" | "low" | "very_low"
-- tierGroupedRecommendations[].tierGroup: "상향 위주" | "안정 위주" | "하향 위주"
-- universityGuideMatching: 반드시 배열 형태 (객체 아님)
-- applicationSimulation: 반드시 {"description": "string", "details": [...]} 형태
 
 {
   "sectionId": "admissionStrategy",
   "title": "입시 전략",
-  "recommendedPath": "학생부종합전형을 주력으로 하되, 교과전형도 병행하는 전략이...",
-  "recommendations": [
-    {
-      "university": "한양대학교",
-      "department": "행정학과",
-      "admissionType": "학생부종합-서류형",
-      "tier": "안정",
-      "chance": "medium",
-      "chanceRationale": "세특 내용이 우수하나 내신이...",
-      "chancePercentLabel": "55~65%",
-      "admissionData": {"cutoff50": 2.5, "cutoff70": 3.0, "competitionRate": 5.2, "enrollment": 30}
-    }
-  ],
+  "recommendedPath": "생기부 분석 결과 [실제 탐구 분야] 계열이 가장 적합하며...",
+  "simulations": [],
   "typeStrategies": [
-    {"type": "학종", "analysis": "세특 내용의 질과 활동 일관성이...", "suitability": "적합", "reason": "진로 관련 탐구가 구체적이며..."},
-    {"type": "교과", "analysis": "내신 등급이 안정적이며...", "suitability": "보통", "reason": "교과 성적은 양호하나..."},
-    {"type": "정시", "analysis": "수능 대비 전략이...", "suitability": "부적합", "reason": "수능 데이터 부족으로..."}
-  ],
-  "schoolTypeAnalysis": {
-    "cautionTypes": ["지역균형전형 미운영 대학"],
-    "advantageTypes": ["서류 중심 평가 대학"],
-    "rationale": "학생의 세특 내용이 우수하여..."
-  },
-  "tierGroupedRecommendations": [
-    {
-      "tierGroup": "상향 위주",
-      "recommendations": [
-        {"university": "서울대학교", "department": "행정학과", "admissionType": "학생부종합-일반", "tier": "상향", "chance": "low", "chanceRationale": "...", "chancePercentLabel": "20~30%", "admissionData": {}}
-      ]
-    }
+    {"type": "학종", "analysis": "...", "suitability": "적합", "reason": "..."},
+    {"type": "교과", "analysis": "...", "suitability": "보통", "reason": "..."},
   ]
 }
 
-**recommendations vs tierGroupedRecommendations 관계:**
-- \`recommendations\`: Lite/Standard에서 사용. 단일 리스트에 상향/안정/하향 대학을 혼합 배치.
-- \`tierGroupedRecommendations\`: Premium 전용. 상향 위주/안정 위주/하향 위주 3가지 시나리오별로 2개씩 그룹화하여 총 6개 추천. recommendations와 별도 필드.
+⚠️ **simulations는 빈 배열로 출력하세요.** 대학 추천 카드는 코드에서 자동 생성됩니다.
 
-⚠️ **대학 중복 금지 규칙:**
-- 같은 대학-학과 조합이 recommendations 내에서 2번 이상 나타나면 안 됩니다.
-- tierGroupedRecommendations에서도 같은 대학-학과가 다른 tierGroup에 중복 배치되면 안 됩니다.
-- 각 대학-학과는 하나의 티어에만 속해야 합니다 (상향이면 상향에만).
-- recommendations와 tierGroupedRecommendations 간 합격률/chance가 일치해야 합니다.
+## ⛔⛔⛔ typeStrategies 전형별 분석 기준 (최우선 — 위반 시 품질 실패)
 
-## 대학 추천 규칙
-- 아래 제공된 "대학 후보군"은 코드에서 학생의 환산 등급을 기반으로 사전 산정한 결과입니다.
-- 이 후보군 범위 내에서만 대학을 추천하세요. 후보군에 없는 대학은 추천하지 마세요.
-- 커트라인, 경쟁률, 모집인원 등 구체적 입시 수치는 제공된 데이터만 인용하세요. 직접 수치를 생성하지 마세요.
-- 역할: 후보군 중 학생의 역량/세특과 가장 잘 매칭되는 대학을 선별하고 전략적 분석을 제공하세요.
+각 type별로 **분석해야 할 요소가 다릅니다.** 반드시 아래 기준을 따르세요.
 
-## 전형 다양성 (필수)
-- 지원 조합 시뮬레이션에서 학생부종합전형만 추천하지 마세요.
-- 학생부교과전형도 반드시 1개 이상 포함하세요.
-- 특히 생기부 내용과 희망 학과의 괴리가 큰 경우, 서류 비중이 낮은 전형(교과전형, 면접 중심 전형)을 우선 추천하세요.
+### "학종" type
+- 분석 요소: 최종 등급 + 세특/활동 품질 + 성적 추이(발전가능성) + 과목 선택 전략성
+- 성적 상승/하락 추이 언급 가능 (학종에서는 발전가능성 평가 요소)
 
-## 전공 미스매치 대응
-- 생기부의 탐구 내용이 희망 학과와 일치하지 않는 경우:
-  - "세특 내용의 질과 탐구 활동의 깊이가 우수하다"라고 평가하지 마세요.
-  - 대신 "희망 학과와 생기부 내용 간 괴리가 있어, 서류전형보다 면접 비중이 높은 전형이 유리합니다"로 안내하세요.
+### "교과" type
+- 교과전형은 **최종 평균 등급 ↔ 정량 기준 적합도**가 분석의 전부입니다.
+${input.gyogwaAcademicAnalysis ? `- ⚠️ 교과 type 분석 시 아래 "교과전형 전용 성적 분석"만 참조하세요. 개별 과목명이나 과목별 등급을 언급하지 않고, 최종 평균 등급의 정량 기준 적합도만 평가하세요.\n` : ""}
+- analysis 작성법: "최종 평균 N등급으로, 교과전형 정량 기준에 [부합/보완 필요/현저한 보완 필요]한 적합도입니다" 형태로 작성하세요.
+- 정량 기준 미달 시 솔직하게 "보완 필요"/"현저한 보완 필요"로 서술하되, 합격 가능성은 단정하지 않습니다.
+- ✅ "전체 평균 2.41등급으로, 광운대 합격선 대비 여유가 있어 합격 가능성이 높습니다"
+${
+  input.isGraduate || input.isRecordFinalized
+    ? `- 이 학생은 성적이 이미 확정되었으므로, 정량 기준 미달이어도 "성적을 끌어올리는 것이 핵심"처럼 향후 성적 변화를 전제한 표현은 사용하지 않습니다. 대신 "전체 평균 3.02등급은 교과전형 정량 기준 대비 보완 필요 수준이며, 확정된 성적 범위 안에서 지원 가능한 대학 풀을 조정하는 것이 핵심입니다"처럼 확정된 평균을 기준으로 한 지원 전략으로 서술하세요.
+- "교과" type의 analysis는 "확정된 전체 평균 등급"이 "합격선" 대비 어디에 위치하는가, 이 축 하나만 다룹니다. 개별 과목명(국어/수학/영어 등)과 그 과목의 편차·개선 필요성은 등장시키지 않습니다.
+- ❌ 위반 예시: "다만, 국어 과목의 편차를 줄이기 위한 노력이 필요하며, 3학년 2학기 국어 성적 관리에 집중하여 경쟁력을 더욱 보완하는 것이 중요합니다." (확정된 성적을 실행 가능한 것처럼 서술한 오류 — 과목명 언급 자체가 신호)
+- ✅ 올바른 예시: "최종 평균 1.76등급은 목표 대학 합격선 대비 여유가 있는 위치로, 확정된 정량 기준을 바탕으로 안정적인 지원이 가능합니다."`
+    : `- ✅ "전체 평균 3.02등급으로, 전공 핵심 과목 성적을 끌어올리는 것이 핵심입니다"`
+}
 
-## 생기부-학과 괴리 대응 전략
-- 학과 맞춤 평가 기준이 제공된 경우, 학생의 생기부가 목표 학과와 괴리가 큰지 판단하세요.
-- **괴리가 큰 경우** (핵심 교과 성적 부진 또는 관련 활동 부재):
-  - 학종보다 **면접전형, 교과전형**을 우선 추천합니다.
-  - recommendedPath에서 괴리 사실과 대안 전략을 솔직하게 안내합니다.
-  - "정성 평가 반영"이라는 모호한 표현 대신, 구체적으로 어떤 전형이 유리한지 제시합니다.
+### "논술" type
+- 분석 요소: 내신 등급 + 논술 반영 비율 + 수리/언어 논술 유형별 적합도
+- ⛔ 논술 실력은 검증 불가능하므로 "논술 실력에 따라 역전 가능"이라고만 서술하세요. 논술 실력이 뛰어나다고 단정하면 안 됩니다.
+- 분석 방향: 내신이 다소 부족해도 논술 비중이 높은 대학에서는 지원 가능성이 있다는 점을 안내하되, 논술 준비 부담(수시 6장 배분)과 합격 불확실성도 함께 언급하세요.
+- 수학 교과 성적이 우수하면 수리논술 대학에 유리하다는 점, 국어/사회 교과가 우수하면 인문논술에 유리하다는 점을 교과 성적 기반으로 서술하세요.
 
 ## 주의/유리 학교 유형 판단 기준
 | 학생 특성 | 피해야 할 학교 | 유리한 학교 |
@@ -192,94 +340,261 @@ export const buildAdmissionStrategyPrompt = (
 | 출결 이슈 | 출결 엄격 반영 학교 | -- |
 | 생기부-학과 괴리 큼 | 서류 중심 평가 대학 | 면접형 학종, 학업역량 중심 전형 |
 
-## ⚠️ 생기부-학과 괴리 시 schoolTypeAnalysis 작성 규칙 (필수)
-- 생기부의 탐구 내용이 희망 학과와 **뚜렷하게 다른 경우** (예: 환경 탐구 → 컴퓨터공학, 문과 활동 → 공학):
-  - **cautionTypes에 "서류 중심 평가 대학"을 반드시 포함**하세요.
-  - **advantageTypes에 "면접형 학생부종합전형" 또는 "학업역량 중심 평가 전형"을 반드시 포함**하세요.
-  - rationale에 다음 내용을 반드시 포함하세요:
-    "생기부는 [실제 탐구 계열] 관련 내용이 대부분이므로 희망 학과인 [학과명]과 부합하지 않아 서류 평가 중심 대학에서는 잠재력 어필이 어렵습니다. 면접형 학생부종합전형을 통해 역량과 전공 관련 경험을 강조하거나, 학업역량을 중점적으로 보는 전형으로 지원하는 것이 유리합니다."
-  - BAD: "세특 내용이 우수하여 서류 중심 평가 대학에서 잠재력을 어필할 수 있습니다."
-  - GOOD: "생기부는 환경 분야 중심으로, 컴퓨터공학과와 부합하지 않아 서류 평가 중심 대학에서는 불리합니다. 면접형 학종에서 역량을 직접 어필하는 전략이 필요합니다."
-
 ${ADMISSION_CONTEXT}
 
 ## 코드 산정 대학 후보군
 ${input.universityCandidates}
-
-## 코드 산정 기본 합격률 (등급-커트라인 기반)
-${input.basePassRates ?? "없음"}
-→ 대학 추천 시 chancePercentLabel은 반드시 이 기본 합격률의 ±10%p 범위 내에서 설정하세요.
-→ gradeDiff가 +0.5 이상인 대학에 50% 이상, +1.0 이상인 대학에 30% 이상 합격률 부여 금지.
-→ ⚠️ 티어와 chance가 일관되어야 합니다: "하향" 대학은 "very_high"/"high", "안정" 대학은 "high"/"medium", "상향" 대학은 "low"/"very_low".
-→ 모든 대학이 "low"/"very_low"만 나오면 안 됩니다. 안정/하향 대학은 반드시 "medium" 이상이어야 합니다.
-
-## 합격 예측 결과
-${input.admissionPredictionResult}
 
 ## 권장 이수 과목 매칭
 ${input.recommendedCourseMatch}
 → 학생의 목표 계열 대비 권장과목 이수율을 입시 전략에 반영하세요.
 → 미이수 과목이 있다면 이것이 지원 시 불리할 수 있음을 안내하세요.
 
+${input.completedSubjectsByYear ? `## 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n→ 이수 완료 과목의 성적 향상을 조언하지 마세요. 해당 교과 영역의 향후 선택과목으로 보완하라고 안내하세요.` : ""}
+
+${input.plannedSubjects ? `## 수강 예정 과목 정보\n${input.plannedSubjects}\n→ 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.` : ""}
+
 ## 입력 데이터
 
-### 성적 분석 결과
+${
+  input.admissionPredictionResult
+    ? `### ⭐⭐⭐ 합격 예측 결과 (recommendedPath와 일관성 필수 — 최우선)
+${input.admissionPredictionResult}
+
+⛔ **recommendedPath 작성 가드 (위반 시 품질 실패)**:
+- 위 합격 예측 결과의 \`recommendedType\` 값(예: "학종", "교과", "논술")이 학생에게 가장 적합한 전형으로 이미 결정되어 있습니다.
+- recommendedPath의 핵심 추천 전형은 반드시 위 \`recommendedType\`과 **동일**해야 합니다.
+- ❌ 합격 예측은 "교과"인데 recommendedPath에서 "학생부종합 중심 지원" 추천 → 학생/학부모에게 모순된 정보 전달, 품질 실패.
+- ✅ 합격 예측이 "교과"면 recommendedPath도 "학생부교과전형 중심"으로 작성. 다른 전형은 보조 옵션으로만 언급.
+- 두 섹션의 추천 전형이 다르면 학생은 어느 쪽을 따라야 할지 혼란합니다.
+
+`
+    : ""
+}### 성적 분석 결과 (학종/논술 type에서 사용)
 ${input.academicAnalysis}
 
-### 역량별 종합 평가 결과
-${input.competencyEvaluation}
+${
+  input.gyogwaAcademicAnalysis
+    ? `### 교과전형 전용 성적 분석 (교과 type에서만 사용 — 최종 평균 등급만 포함)
+⚠️ "교과" type의 analysis, chanceRationale 작성 시 이 데이터만 참조하세요. 위 "성적 분석 결과"의 개별 과목 정보를 교과 type에서 사용하면 안 됩니다.
+${input.gyogwaAcademicAnalysis}`
+    : ""
+}
+
+${
+  input.competencyExtraction
+    ? `### 생기부 역량 분석 (학종 분석의 핵심 근거 — 반드시 활용)
+${input.competencyExtraction}
+→ 학종 chanceRationale, typeStrategies의 "학종" analysis, recommendedPath 작성 시 위 역량 분석을 근거로 서술하세요.
+→ "생기부에서 [구체적 역량/활동]이 확인되며, 이는 [학과]의 평가 기준과 부합합니다"식으로 서술하세요.`
+    : ""
+}
+
+${
+  input.subjectAnalysisResult
+    ? `### 과목별 세특 분석 (학종 서류 평가 참고)
+${input.subjectAnalysisResult}
+→ 학종 평가에서 세특 서술의 깊이와 방향성은 핵심 평가 요소입니다. 위 분석을 chanceRationale에 반영하세요.`
+    : ""
+}
 
 ### 학생 프로필
 ${input.studentProfile}
 
-${input.majorEvaluationContext ? `### 학과 맞춤 평가 기준 (입학사정관 관점)\n${input.majorEvaluationContext}\n\n⚠️ 대학 추천 시 이 계열의 핵심 교과 성취도와 관련 활동 일치도를 고려하여 학생의 강점/약점을 분석하세요. universityGuideMatching에서 emphasisKeywords와 studentStrengthMatch/WeaknessMatch를 이 기준에 맞춰 작성하세요.` : ""}
+
+## ⛔ 출력 전 자기 검증 (반드시 수행)
+JSON을 출력하기 전에 아래 항목을 점검하세요. 하나라도 위반하면 수정 후 출력합니다:
+1. 추천 학과가 생기부 내용에 기반하는가?
+2. simulations 배열에 **1개 그룹만** 있는가? (2개면 위반)
+3. ⛔ **후보군에 있는 대학을 전부 카드로 만들었는가?** (후보군 6개인데 카드 3개만 출력하면 품질 실패)
+4. 후보군 수와 카드 수가 일치하는가? (불일치하면 누락된 대학을 추가)
+5. 각 카드에 학종(comprehensive)과 교과(subject) 추천이 모두 포함되었는가? (후보군 데이터에 교과 정보가 없으면 subject의 chance를 "unknown"으로 설정)
+6. 한글 서술문 안에 "high", "medium", "low" 등 영단어가 포함되지 않았는가?
+7. ⛔ **같은 카드에서 comprehensive.chance와 subject.chance가 동일하지 않은가?** (동일하면 반드시 수정: 학종이 교과보다 유리하므로 학종 chance를 한 단계 높이거나 교과를 한 단계 낮추세요)
+8. ⛔ **같은 카드에서 comprehensive.chancePercentLabel과 subject.chancePercentLabel이 동일하지 않은가?** (동일하면 반드시 수정: 학종 퍼센트를 +10%p 높이거나 교과를 -10%p 낮추세요)
+9. ⛔ **riskLevel 필드가 출력되지 않았는가?** (출력하면 위반)
+10. ⛔ **학종 chanceRationale에 "등급", "내신", "성적" 단어만 있고 세특/활동/탐구/역량 언급이 없지 않은가?** (성적만으로 학종을 분석하면 품질 실패 — 반드시 생기부 역량 분석을 근거로 서술)
+11. ⛔ **typeStrategies의 "학종" analysis에 생기부 기반 근거(세특 주제, 탐구 활동, 진로역량)가 포함되었는가?** (성적만 언급하면 품질 실패)
 
 ${PLAN_SPECIFIC[plan]}`;
 };
 
-/** 고1 전용 대체 프롬프트 (directionGuide) */
-export interface DirectionGuidePromptInput {
-  competencyExtraction: string;
-  academicAnalysis: string;
-  recommendedCourseMatch: string;
-  studentProfile: string;
-}
-
-export const buildDirectionGuidePrompt = (
-  input: DirectionGuidePromptInput
+/**
+ * 교과전형 전용 입시 전략 프롬프트.
+ * 학종/진로역량/세특 품질/발전가능성/성적 추세 개념이 존재하지 않음.
+ * 최종 등급 vs 합격선, 수능 최저 중심.
+ */
+export const buildGyogwaAdmissionStrategyPrompt = (
+  input: AdmissionStrategyPromptInput,
+  plan: ReportPlan
 ): string => {
-  return `## 작업 (고1 전용)
-학생의 생기부에서 드러나는 관심 분야를 분석하여 방향 설정 가이드를 작성하세요.
+  const fiveGradeContext =
+    input.gradingSystem === "5등급제"
+      ? `## 5등급제 교과전형 대학 라인
+| 5등급제 등급 | 예상 대학 |
+|-------------|----------|
+| 1.0 | 의·치·한·약·수, 서울대, SKY, KAIST |
+| 1.1 | 서강대, 성균관대, 한양대 |
+| 1.2 | 중앙대, 경희대, 한국외대, 시립대 |
+| 1.3 | 건국대, 동국대, 홍익대 |
+| 1.4 | 아주대, 인하대, 경북대, 부산대 |
+| 1.5 | 국민대, 숭실대, 세종대, 단국대 |
+| 1.6~1.7 | 한양대(ERICA), 광운대, 명지대 |
+| 1.8~2.0 | 인천대, 가천대, 경기대 |
+| 2.0 이상 | 지방 국립대, 수도권 하위 대학 |
 
-## 출력 JSON 스키마
-\`\`\`json
+`
+      : "";
+
+  const nineGradeContext =
+    input.gradingSystem === "9등급제"
+      ? `## 9등급제 교과전형 대학 라인
+| 9등급제 등급 | 예상 대학 |
+|-------------|----------|
+| 1.0~1.5 | 의·치·한·약·수, 서울대, SKY |
+| 1.5~2.0 | 서강대, 성균관대, 한양대 |
+| 2.0~2.5 | 중앙대, 경희대, 한국외대 |
+| 2.5~3.0 | 건국대, 동국대, 홍익대 |
+| 3.0~3.5 | 아주대, 인하대, 경북대, 부산대 |
+| 3.5~4.0 | 국민대, 숭실대, 세종대, 단국대 |
+| 4.0~4.5 | 한양대(ERICA), 광운대, 명지대 |
+| 4.5~5.0 | 인천대, 가천대, 경기대 |
+| 5.0 이상 | 지방 국립대, 수도권 하위 대학 |
+
+### 교과전형 커트라인 특성
+- 교과전형은 성적순 정량 선발이므로 합격선이 높습니다.
+- 내신 2.5~3.0 필요
+`
+      : "";
+
+  const timeContext = `## 시점 규칙
+- 현재 날짜: ${input.currentDate}
+- 학생 학년: ${input.studentGrade}학년
+${input.isGraduate || input.isRecordFinalized ? `- 이 학생은 ${input.isGraduate ? "졸업생" : "생기부가 최종 확정된 3학년"}입니다. nextSemesterStrategy는 생략하세요. "성적 향상", "등급을 끌어올려야" 같은 표현을 사용하지 말고, 확정된 최종 평균 등급의 합격선 대비 정량 기준 적합도로만 서술하세요.` : input.studentGrade <= 2 ? `- 이 학생은 아직 ${input.studentGrade}학년입니다. "남은 학기", "앞으로의 기간" 등 유연한 표현을 사용하세요.` : `- 이 학생은 3학년입니다. 현재 시점에서 실행 가능한 전략만 제시하세요.`}
+
+`;
+
+  const academicPriorityLine =
+    input.isGraduate || input.isRecordFinalized
+      ? `- 교과전형은 전 과목 또는 국영수사과(인문)/국영수과(자연) 평균으로 반영되며, 이 학생은 그 평균이 이미 확정되었습니다. "합격선 대비 이 확정된 평균 등급의 위치"가 지원 전략의 핵심 판단 기준으로 서술하세요.`
+      : `- 교과전형은 전 과목 또는 국영수사과(인문)/국영수과(자연) 평균으로 반영하므로, "전체 평균 등급을 끌어올리는 것이 최우선 과제"로 서술하세요.`;
+
+  // 마감/졸업 학생의 analysis·recommendedPath는 "확정된 전체 평균 vs 합격선"
+  // 하나의 판단 축만 다뤄야 한다. 개별 과목명(예: 국어)의 강약점은 이미 확정된
+  // 사실이며 실행 가능한 조언이 아니므로, 성적 분석 결과 입력에 그 과목의
+  // 편차가 언급되어 있더라도 이 섹션 출력에는 옮기지 않는다. 이 규칙 없이
+  // "성적 향상/등급을 끌어올려야" 같은 문구만 금지했을 때는, 모델이 "편차를
+  // 줄이기 위한 노력", "성적 관리에 집중" 등 동의어로 우회해 같은 조언을
+  // 반복 생성했다 — 어휘 금지가 아니라 다루는 축 자체를 한정해야 막힌다.
+  const subjectLevelConstraint =
+    input.isGraduate || input.isRecordFinalized
+      ? `## ⚠️ analysis·recommendedPath 서술 축 제한 (마감/졸업 학생 — 위반 시 품질 실패)
+이 학생은 성적이 이미 확정되어 더 이상 바뀌지 않습니다. analysis와 recommendedPath는 아래 축 하나만 다룹니다:
+**"확정된 전체 평균 등급"이 "합격선" 대비 어디에 위치하는가.**
+
+- 개별 과목명(국어/수학/영어/사회탐구/과학탐구 등)과 그 과목의 편차·부족·개선 필요성은 이 두 필드에 등장시키지 않습니다. (해당 내용은 이미 academicAnalysis 섹션이 사실로 다뤘습니다.)
+- ❌ 위반 예시: "다만, 국어 과목의 편차를 줄이기 위한 노력이 필요하며, 3학년 2학기 국어 성적 관리에 집중하여 경쟁력을 더욱 보완하는 것이 중요합니다." (확정된 성적을 실행 가능한 것처럼 서술한 오류 — 과목명 언급 자체가 신호)
+- ✅ 올바른 예시: "최종 평균 1.76등급은 목표 대학 합격선 대비 여유가 있는 위치로, 확정된 정량 기준을 바탕으로 안정적인 지원이 가능합니다."
+- analysis·recommendedPath 안에 국어/수학/영어/사회탐구/과학탐구 등 과목명이 등장하면 그 문장을 전체 평균 등급 중심 문장으로 다시 쓰세요.
+
+`
+      : "";
+
+  return `${fiveGradeContext}${nineGradeContext}${timeContext}## 작업
+이 학생은 모든 지원 대학이 **학생부교과전형**입니다.
+최종 평균 등급과 합격선을 비교하여 교과전형 중심의 입시 전략과 대학을 추천하세요.
+
+## 서술 관점: 원서 설계사
+이 섹션은 **전형별 조합과 지원 전략**을 설계합니다. 원서 배치와 전형 선택의 근거를 중심으로 서술하세요.
+- "~전형에서는 ~가 유리하므로 ~전략이 적합하다" 등 전략 설계 어투를 사용하세요.
+
+## ⛔ 다른 섹션과의 역할 경계 (필수)
+- ❌ 성적 해석 (등급 추세, 편차 분석) → academicAnalysis에서 다룸
+- ❌ 약점 진단 → weaknessAnalysis에서 다룸
+- ❌ 합격 가능성 수치/판단 → admissionPrediction에서 다룸
+- ✅ 이 섹션에서 할 것: 원서 배치 전략, 전형 조합, 대학 추천 및 그 **전략적 근거**만
+
+## 교과전형 전략 핵심 원칙
+- 교과전형은 **최종 평균 등급 vs 합격선** 비교가 전부입니다.
+- 모든 분석 문장은 "최종 평균 N등급은 합격선 대비 ~" 형식으로 작성하세요.
+${academicPriorityLine}
+
+${subjectLevelConstraint}## 출력 JSON 스키마
+
+**enum 제한:**
+- typeStrategies[].type: "교과"
+- typeStrategies[].suitability: "적합" | "보통" | "부적합"
+- chance: "very_high" | "high" | "medium" | "low" | "very_low"
+
 {
-  "sectionId": "directionGuide",
-  "title": "방향 설정 가이드",
-  "recommendedTracks": ["string (적합한 계열/학과 방향, 2~3개)"],
-  "subjectSelectionGuide": ["string (과목명 + 선택 이유)"],
-  "preparationAdvice": "string (향후 탐구 방향 제안)"
+  "sectionId": "admissionStrategy",
+  "title": "입시 전략",
+  "recommendedPath": "최종 평균 N등급으로, 지방 거점국립대 교과전형에서 경쟁력이 있으며...",
+  "simulations": [
+    {
+      "description": "학생의 최종 등급을 기준으로 교과전형 지원 가능 대학을 추천합니다.",
+      "cards": [
+        {
+          "university": "(입력에 등장한 실제 대학명)",
+          "department": "(입력에 등장한 실제 학과명)",
+          "subject": {
+            "admissionType": "학생부교과",
+            "chance": "medium",
+            "chanceRationale": "최종 평균 등급이 교과전형 합격선에 근접하여 합격 가능성이 있습니다.",
+            "chancePercentLabel": "40~50%"
+          }
+        }
+      ]
+    }
+  ],
+  "typeStrategies": [
+    {"type": "교과", "analysis": "최종 평균 N등급은 합격선 대비...", "suitability": "보통", "reason": "..."},
+  ]
 }
-\`\`\`
 
-## 출력
-- 적합한 계열/학과 방향 (recommendedTracks: 2~3개, 근거 포함)
-- 2학년 선택과목 추천 (subjectSelectionGuide: 과목명 + 선택 이유)
-  - 목표 계열에 따른 2028학년도 계열별 권장 선택과목 데이터를 활용하세요.
-  - 메디컬 지망 시 대학별 필수 과목(수학·과학)을 구체적으로 사전 안내하세요.
-- 향후 탐구 방향 제안 (preparationAdvice)
+⚠️ **카드에 comprehensive(학종) 필드를 포함하지 마세요.** subject(교과) 필드만 출력합니다.
+⚠️ typeStrategies에 "학종" type이나 "정시" type을 포함하지 마세요. "교과"만 분석합니다.
+
+## 대학 추천 규칙
+- simulations에 1개 그룹만 출력. 후보군 전체를 카드로 만드세요.
+- 후보군에서만 선택. 후보군에 없는 대학 추가 금지.
+- 등급별 대학 라인 테이블을 참조하여 chance를 판단하세요.
+- 추천 등급 범위: 5등급제 ±0.2등급, 9등급제 ±1.0등급 내
+- "very_low" 카드 포함 금지. "very_high" 카드 2개 이상 금지.
+
+## 환산 등급 노출 금지
+"환산 등급", "보정 등급" 등의 표현을 절대 사용하지 마세요.
+
+## 코드 산정 대학 후보군
+${input.universityCandidates}
+
+${input.completedSubjectsByYear ? `## 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n→ 이수 완료 과목 성적 향상을 조언하지 마세요.` : ""}
+
+${input.plannedSubjects ? `## 수강 예정 과목 정보\n${input.plannedSubjects}\n→ 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.` : ""}
 
 ## 입력 데이터
 
-### 역량 추출 결과
-${input.competencyExtraction}
+${
+  input.admissionPredictionResult
+    ? `### ⭐⭐⭐ 합격 예측 결과 (recommendedPath와 일관성 필수)
+${input.admissionPredictionResult}
 
-### 성적 분석 결과
+⛔ recommendedPath의 핵심 추천 전형은 위 \`recommendedType\`과 **반드시 동일**해야 합니다. 다르면 학생/학부모에게 모순된 정보 전달 → 품질 실패.
+
+`
+    : ""
+}### 성적 분석 결과
 ${input.academicAnalysis}
 
-### 권장 이수 과목 매칭 데이터
-${input.recommendedCourseMatch}
-
 ### 학생 프로필
-${input.studentProfile}`;
+${input.studentProfile}
+
+${PLAN_SPECIFIC[plan]}${
+    input.isGraduate || input.isRecordFinalized
+      ? `
+
+## ✅ 출력 전 마지막 자가 점검 (analysis·recommendedPath 각 1회씩 수행)
+문장을 다 쓴 뒤, 국어/수학/영어/사회탐구/과학탐구 등 과목명이 등장하는지 확인하세요. 등장한다면 그 문장을 지우고 "최종 평균 등급은 합격선 대비 ~" 형식의 문장으로 바꿉니다.`
+      : ""
+  }`;
 };

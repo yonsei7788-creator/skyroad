@@ -18,9 +18,9 @@ const PLAN_SPECIFIC: Record<ReportPlan, string> = {
 - crossSubjectLinks, storyEnhancementSuggestions, interviewStoryGuide 필드는 출력하지 않습니다.
 
 ⚠️ **분량 제한 (반드시 준수)**:
-- mainStoryline은 반드시 **200자 이내**로 작성합니다. 200자 초과 금지.
-- yearProgressions는 **최대 3개** (학년 수만큼)이며, 각 description은 **80자 이내**로 작성합니다.
-- careerConsistencyComment는 **100자 이내**로 작성합니다.`,
+- mainStoryline은 반드시 **300자 이내**로 작성합니다. 300자 초과 금지.
+- yearProgressions는 **최대 3개** (학년 수만큼)이며, 각 description은 **120자 이내**로 작성합니다.
+- careerConsistencyComment는 **150자 이내**로 작성합니다.`,
   premium: `## 출력 수준: 확장
 Standard의 모든 항목 + 다음을 추가로 출력하세요:
 
@@ -46,7 +46,7 @@ Standard의 모든 항목 + 다음을 추가로 출력하세요:
 ### 6. 면접 스토리텔링 가이드 (interviewStoryGuide)
 - 면접에서 생기부를 어떤 흐름으로 설명할지 가이드합니다.
 - "자기소개 → 탐구 계기 → 심화 과정 → 미래 계획" 구조로 정리합니다.
-- **톤 주의 (필수)**: "~구성하세요", "~설명하세요", "~하세요" 같은 지시형 종결어미를 절대 사용하지 마세요. 대신 "~구성하는 것이 효과적입니다", "~설명하는 방향이 좋습니다", "~하면 좋겠습니다" 형태를 사용합니다.
+- **톤 주의**: 시스템 프롬프트의 지시형 종결어미 금지 규칙 적용. "~구성하는 것이 효과적입니다", "~하면 좋겠습니다" 형태를 사용합니다.
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - mainStoryline은 반드시 **300자 이내**로 작성합니다. 300자 초과 금지.
@@ -62,6 +62,16 @@ export const buildStoryAnalysisPrompt = (
 ): string => {
   return `## 작업
 학생의 생기부 전체를 하나의 스토리로 분석하세요.
+
+## 서술 관점: 내러티브 분석가
+이 섹션은 **생기부 전체를 하나의 성장 스토리로 해석**합니다. 시간 순서에 따른 변화와 연결성을 중심으로 서술하세요.
+- "1학년 ~에서 출발하여 ~으로 발전했다", "~경험이 ~로 이어지며 일관된 흐름을 형성한다" 등 내러티브 어투를 사용하세요.
+
+## ⛔ 다른 섹션과의 역할 경계 (필수)
+- ❌ 성적·등급 해석 → academicAnalysis에서 다룸
+- ❌ 개별 활동/세특의 질적 평가 → activityAnalysis·subjectAnalysis에서 다룸
+- ❌ 약점 진단 → weaknessAnalysis에서 다룸
+- ✅ 이 섹션에서 할 것: **시간 순서에 따른 성장 흐름과 과목 간 연결성**만 분석
 
 ## 출력 JSON 스키마
 

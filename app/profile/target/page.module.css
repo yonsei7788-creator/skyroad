@@ -119,7 +119,6 @@
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: 20px;
-  overflow: hidden;
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
@@ -441,6 +440,37 @@
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--color-success-500, #22c55e);
+}
+
+.artSportNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  color: #92400e;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.artSportNotice svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #d97706;
+}
+
+.artSportNotice strong {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.artSportNotice p {
+  margin: 0;
+  font-weight: 400;
 }
 
 /* ============================================

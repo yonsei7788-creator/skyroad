@@ -399,15 +399,6 @@ interface FiveGradeSimulation {
   interpretation: string;
 }
 
-/** Premium: 대학별 반영 방법 시뮬레이션 */
-interface UniversityGradeSimulation {
-  university: string;
-  department: string;
-  reflectionMethod: string;
-  calculatedScore: number;
-  interpretation: string;
-}
-
 /** Standard+: 소인수 과목 분석 */
 interface SmallClassSubjectAnalysis {
   subject: string;
@@ -440,7 +431,6 @@ export interface AcademicAnalysisSection extends BaseSection {
 
   // Premium
   fiveGradeSimulation?: FiveGradeSimulation[];
-  universityGradeSimulations?: UniversityGradeSimulation[];
   improvementPriority?: string[];
 }
 ```
@@ -862,18 +852,7 @@ export interface AdmissionStrategySection extends BaseSection {
 
 **참고**: `admissionStrategy` 섹션은 조건부 제공이다.
 
-- 고2 이상 생기부 포함 시: 전체 제공
-- 고1 생기부만: `DirectionGuideSection` 대체 제공 (아래 참조)
-
-```typescript
-/** 고1 전용: 방향 설정 가이드 (admissionStrategy 대체) */
-export interface DirectionGuideSection extends BaseSection {
-  sectionId: "directionGuide";
-  recommendedTracks: string[];
-  subjectSelectionGuide: string[];
-  preparationAdvice: string;
-}
-```
+- 고1 이상 학기가 하나라도 포함되면 전체 제공 (학년별 대체 섹션 없음)
 
 #### 섹션 17: 생기부 스토리 구조 분석 (storyAnalysis) -- Standard+
 
@@ -1041,7 +1020,6 @@ export type ReportSection =
   | TopicRecommendationSection
   | InterviewPrepSection
   | AdmissionStrategySection
-  | DirectionGuideSection
   | StoryAnalysisSection
   | ActionRoadmapSection
   // 부록
@@ -1070,7 +1048,6 @@ type LiteSectionId =
   | "weaknessAnalysis"
   | "topicRecommendation"
   | "admissionStrategy"
-  | "directionGuide"
   // 부록
   | "wordCloud";
 
@@ -1157,7 +1134,7 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     // Part 3: 전략
     "weaknessAnalysis",
     "topicRecommendation",
-    "admissionStrategy", // 또는 "directionGuide" (고1)
+    "admissionStrategy",
     // 부록
     "wordCloud",
   ],
@@ -1180,7 +1157,7 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     "weaknessAnalysis",
     "topicRecommendation",
     "interviewPrep",
-    "admissionStrategy", // 또는 "directionGuide" (고1)
+    "admissionStrategy",
     "storyAnalysis",
     "actionRoadmap",
     // 부록
@@ -1207,7 +1184,7 @@ export const SECTION_ORDER: Record<ReportPlan, string[]> = {
     "weaknessAnalysis",
     "topicRecommendation",
     "interviewPrep",
-    "admissionStrategy", // 또는 "directionGuide" (고1)
+    "admissionStrategy",
     "storyAnalysis",
     "actionRoadmap",
     // 부록
@@ -1484,14 +1461,6 @@ const FiveGradeSimulationSchema = z.object({
   interpretation: z.string().min(1),
 });
 
-const UniversityGradeSimulationSchema = z.object({
-  university: z.string().min(1),
-  department: z.string().min(1),
-  reflectionMethod: z.string().min(1),
-  calculatedScore: z.number(),
-  interpretation: z.string().min(1),
-});
-
 const SmallClassSubjectAnalysisSchema = z.object({
   subject: z.string().min(1),
   enrollmentSize: z.number().int(),
@@ -1520,9 +1489,6 @@ const AcademicAnalysisSectionSchema = z.object({
     .optional(),
   gradeInflationContext: z.string().optional(),
   fiveGradeSimulation: z.array(FiveGradeSimulationSchema).optional(),
-  universityGradeSimulations: z
-    .array(UniversityGradeSimulationSchema)
-    .optional(),
   improvementPriority: z.array(z.string().min(1)).optional(),
 });
 
@@ -1818,16 +1784,6 @@ const AdmissionStrategySectionSchema = z.object({
   universityGuideMatching: z.array(UniversityGuideMatchingSchema).optional(),
 });
 
-// ─── 고1 전용: 방향 설정 가이드 ───
-
-const DirectionGuideSectionSchema = z.object({
-  sectionId: z.literal("directionGuide"),
-  title: z.string().min(1),
-  recommendedTracks: z.array(z.string().min(1)).min(1),
-  subjectSelectionGuide: z.array(z.string().min(1)).min(1),
-  preparationAdvice: z.string().min(1),
-});
-
 // ─── 섹션 17: 생기부 스토리 구조 분석 ───
 
 const YearProgressionSchema = z.object({
@@ -1987,7 +1943,6 @@ const ReportSectionSchema = z.discriminatedUnion("sectionId", [
   TopicRecommendationSectionSchema,
   InterviewPrepSectionSchema,
   AdmissionStrategySectionSchema,
-  DirectionGuideSectionSchema,
   StoryAnalysisSectionSchema,
   ActionRoadmapSectionSchema,
   BookRecommendationSectionSchema,
@@ -2024,16 +1979,6 @@ export const validateByPlan = (content: ReportContent): string[] => {
   const actualSectionIds = content.sections.map((s) => s.sectionId);
 
   for (const expected of expectedSections) {
-    // admissionStrategy는 조건부이므로 directionGuide로 대체 가능
-    if (expected === "admissionStrategy") {
-      if (
-        !actualSectionIds.includes("admissionStrategy") &&
-        !actualSectionIds.includes("directionGuide")
-      ) {
-        errors.push("필수 섹션 누락: admissionStrategy 또는 directionGuide");
-      }
-      continue;
-    }
     if (!actualSectionIds.includes(expected)) {
       errors.push(`필수 섹션 누락: ${expected}`);
     }
@@ -2416,4 +2361,3 @@ ALTER TABLE reports ADD COLUMN ai_model_version text;                 -- 사용�
 | (신규)               | `bookRecommendation`   | 부록 신규: 추천 도서 (Standard+)                            |
 | (신규)               | `majorExploration`     | 부록 신규: AI 전공 추천 (Standard+)                         |
 | (신규)               | `wordCloud`            | 부록 신규: 워드 클라우드 (전 플랜)                          |
-| (신규)               | `directionGuide`       | 조건부: 고1 전용 (admissionStrategy 대체)                   |

@@ -51,6 +51,14 @@
   font-size: 1.0625rem;
   color: var(--color-fg-secondary);
   line-height: 1.6;
+  word-break: keep-all;
+}
+
+@media (min-width: 1024px) {
+  .sectionSubtitle {
+    white-space: nowrap;
+    max-width: none;
+  }
 }
 
 /* Grid */
@@ -97,6 +105,10 @@
   box-shadow:
     0 0 0 4px var(--color-primary-50),
     var(--shadow-lg);
+}
+
+.logoAccent {
+  color: var(--color-primary-600);
 }
 
 /* Recommend Badge */
@@ -197,4 +209,29 @@
   background: var(--color-success-50);
   color: var(--color-success-500);
   margin-top: 1px;
+}
+
+/* ---- Mobile Optimization ---- */
+@media (max-width: 767px) {
+  .section {
+    padding: 72px 0;
+  }
+
+  .sectionTitle {
+    font-size: 1.625rem;
+  }
+
+  .grid {
+    gap: 16px;
+    margin-top: 40px;
+  }
+
+  .cardNeutral,
+  .cardPrimary {
+    padding: 24px 20px;
+  }
+
+  .item {
+    font-size: 0.875rem;
+  }
 }

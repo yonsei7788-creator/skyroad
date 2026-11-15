@@ -1,12 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import {
-  FileText,
-  ArrowRight,
-  ClipboardList,
-  CreditCard,
-  GraduationCap,
-} from "lucide-react";
+import { ArrowRight, ClipboardList, GraduationCap } from "lucide-react";
 
 import { Header } from "@/app/_components/Header";
 import { Footer } from "@/app/_components/Footer";
@@ -85,34 +79,54 @@ const formatAmount = (amount: number) => `${amount.toLocaleString("ko-KR")}원`;
 const getStepIndex = (status: string) =>
   STATUS_STEPS.findIndex((s) => s.key === status);
 
-const OrderCard = ({ order }: { order: OrderRow }) => {
+const getCardAccentClass = (status: string) => {
+  if (status === "delivered") return styles.orderCardDelivered;
+  if (status === "pending_payment") return styles.orderCardPending;
+  return "";
+};
+
+const getReportIconClass = (aiStatus: string) => {
+  if (aiStatus === "completed") return styles.reportIconComplete;
+  if (aiStatus === "processing") return styles.reportIconProcessing;
+  if (aiStatus === "failed") return styles.reportIconFailed;
+  return "";
+};
+
+const OrderCard = ({
+  order,
+  isAdmin,
+}: {
+  order: OrderRow;
+  isAdmin: boolean;
+}) => {
   const currentStepIdx = getStepIndex(order.status);
   const isDelivered = order.status === "delivered";
   const isAnalyzing = order.status === "analyzing" || order.status === "paid";
+  const progressPercent = ((currentStepIdx + 1) / STATUS_STEPS.length) * 100;
 
   return (
-    <div className={styles.orderCard}>
-      {/* Header: Plan name + Status badge */}
+    <div className={`${styles.orderCard} ${getCardAccentClass(order.status)}`}>
+      {/* Header: Plan + Badge / Date + Amount */}
       <div className={styles.orderCardHeader}>
-        <div className={styles.orderCardLeft}>
+        <div className={styles.orderCardTop}>
           <div className={styles.planName}>
             {order.plans.display_name} 리포트
           </div>
-          <div className={styles.orderDate}>{formatDate(order.created_at)}</div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span className={styles.orderAmount}>
-            {formatAmount(order.amount)}
-          </span>
           <span
             className={`${styles.statusBadge} ${STATUS_CLASS[order.status] ?? styles.statusPending}`}
           >
             {STATUS_LABEL[order.status] ?? order.status}
           </span>
         </div>
+        <div className={styles.orderCardBottom}>
+          <div className={styles.orderDate}>{formatDate(order.created_at)}</div>
+          <span className={styles.orderAmount}>
+            {formatAmount(order.amount)}
+          </span>
+        </div>
       </div>
 
-      {/* Progress steps */}
+      {/* Desktop: Progress steps */}
       <div className={styles.steps}>
         {STATUS_STEPS.map((step, idx) => {
           const isComplete = idx < currentStepIdx;
@@ -146,6 +160,22 @@ const OrderCard = ({ order }: { order: OrderRow }) => {
         })}
       </div>
 
+      {/* Mobile: Simplified progress bar */}
+      <div className={styles.mobileProgress}>
+        <span className={styles.mobileProgressLabel}>
+          {STATUS_LABEL[order.status] ?? order.status}
+        </span>
+        <div className={styles.mobileProgressBar}>
+          <div
+            className={`${styles.mobileProgressFill} ${isDelivered ? styles.mobileProgressFillComplete : ""}`}
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+        <span className={styles.mobileProgressCount}>
+          {currentStepIdx + 1}/{STATUS_STEPS.length}
+        </span>
+      </div>
+
       {/* AI Progress bar (during analysis) */}
       {isAnalyzing &&
         order.reports.length > 0 &&
@@ -167,18 +197,6 @@ const OrderCard = ({ order }: { order: OrderRow }) => {
         )}
 
       {/* Action area */}
-      {order.status === "pending_payment" && (
-        <div className={styles.actionArea}>
-          <Link
-            href={`/checkout?plan=${order.plans.name}`}
-            className={styles.actionButton}
-          >
-            <CreditCard size={14} />
-            결제하기
-          </Link>
-        </div>
-      )}
-
       {order.status === "paid" &&
         (order.reports.length === 0 ||
           order.reports[0].ai_status === "pending" ||
@@ -197,45 +215,58 @@ const OrderCard = ({ order }: { order: OrderRow }) => {
         )}
 
       {/* Report rows */}
-      {order.reports.length > 0 &&
-        order.reports.map((report) => (
-          <div key={report.id} className={styles.reportRow}>
-            <div className={styles.reportIcon}>
-              <GraduationCap size={18} />
-            </div>
-            <div className={styles.reportInfo}>
-              <div className={styles.reportUni}>
-                {report.target_universities
-                  ? `${report.target_universities.university_name} ${report.target_universities.department}`
-                  : "리포트"}
-              </div>
-              <div className={styles.reportMeta}>
-                {report.ai_status === "completed" && report.delivered_at
-                  ? `전달 완료 · ${formatDate(report.delivered_at)}`
-                  : report.ai_status === "completed"
-                    ? "분석 완료"
-                    : report.ai_status === "processing"
-                      ? `분석중 · ${report.ai_progress}%`
-                      : report.ai_status === "failed"
-                        ? "분석 실패"
-                        : "대기중"}
-              </div>
-            </div>
-            {report.ai_status === "completed" ? (
-              <Link
-                href={`/report/${report.id}`}
-                className={styles.reportAction}
+      {order.reports.length > 0 && (
+        <>
+          <div className={styles.reportSectionLabel}>리포트</div>
+          {order.reports.map((report) => (
+            <div key={report.id} className={styles.reportRow}>
+              <div
+                className={`${styles.reportIcon} ${getReportIconClass(report.ai_status)}`}
               >
-                리포트 보기
-                <ArrowRight size={14} />
-              </Link>
-            ) : (
-              <span className={styles.reportActionDisabled}>
-                {report.ai_status === "processing" ? "분석중..." : "준비중"}
-              </span>
-            )}
-          </div>
-        ))}
+                <GraduationCap size={18} />
+              </div>
+              <div className={styles.reportInfo}>
+                <div className={styles.reportUni}>
+                  {report.target_universities
+                    ? `${report.target_universities.university_name} ${report.target_universities.department}`
+                    : "리포트"}
+                </div>
+                <div className={styles.reportMeta}>
+                  {report.ai_status === "completed" && report.delivered_at
+                    ? `전달 완료 · ${formatDate(report.delivered_at)}`
+                    : report.ai_status === "completed" ||
+                        report.ai_status === "deferred"
+                      ? "전문가 검토중"
+                      : report.ai_status === "processing"
+                        ? `분석중 · ${report.ai_progress}%`
+                        : report.ai_status === "failed"
+                          ? "분석 실패"
+                          : "대기중"}
+                </div>
+              </div>
+              {report.ai_status === "completed" &&
+              (isAdmin || order.status === "delivered") ? (
+                <Link
+                  href={`/report/${report.id}`}
+                  className={styles.reportAction}
+                >
+                  리포트 보기
+                  <ArrowRight size={14} />
+                </Link>
+              ) : (
+                <span className={styles.reportActionDisabled}>
+                  {report.ai_status === "processing"
+                    ? "분석중..."
+                    : report.ai_status === "completed" ||
+                        report.ai_status === "deferred"
+                      ? "검수중"
+                      : "준비중"}
+                </span>
+              )}
+            </div>
+          ))}
+        </>
+      )}
     </div>
   );
 };
@@ -283,6 +314,7 @@ const ConsultingHistoryPage = async () => {
     `
     )
     .eq("user_id", user.id)
+    .or("is_admin_only.is.null,is_admin_only.eq.false")
     .order("created_at", { ascending: false });
 
   const orderList = (orders ?? []) as unknown as OrderRow[];
@@ -299,7 +331,9 @@ const ConsultingHistoryPage = async () => {
         <div className={styles.container}>
           {isAdmin && <AdminGenerateSection userId={user.id} />}
           {orderList.length > 0 ? (
-            orderList.map((order) => <OrderCard key={order.id} order={order} />)
+            orderList.map((order) => (
+              <OrderCard key={order.id} order={order} isAdmin={isAdmin} />
+            ))
           ) : (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>
@@ -307,15 +341,10 @@ const ConsultingHistoryPage = async () => {
               </div>
               <p className={styles.emptyText}>아직 컨설팅 내역이 없습니다</p>
               <p className={styles.emptySubtext}>
-                리포트를 구매하면 이곳에서 진행 상황과
+                리포트를 생성하면 이곳에서 진행 상황과
                 <br />
                 결과를 확인할 수 있습니다.
               </p>
-              <Link href="/pricing" className={styles.emptyCta}>
-                <FileText size={16} />
-                리포트 구매하기
-                <ArrowRight size={16} />
-              </Link>
             </div>
           )}
         </div>

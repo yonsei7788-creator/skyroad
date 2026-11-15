@@ -12,6 +12,7 @@ export const maxDuration = 60;
 
 interface GenerateBody {
   orderId: string;
+  force?: boolean;
 }
 
 const GRADE_MAP: Record<string, number> = {
@@ -45,7 +46,7 @@ export const POST = async (request: NextRequest) => {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  const { orderId } = body;
+  const { orderId, force } = body;
   if (!orderId) {
     return NextResponse.json(
       { error: "orderId가 필요합니다." },
@@ -78,17 +79,23 @@ export const POST = async (request: NextRequest) => {
   }
 
   // 주문 소유자 또는 관리자만 생성 가능
-  if (order.user_id !== user.id) {
+  let isAdmin = false;
+  if (order.user_id !== user.id || force) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
 
-    if (!profile || profile.role !== "admin") {
+    isAdmin = profile?.role === "admin";
+
+    if (order.user_id !== user.id && !isAdmin) {
       return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
     }
   }
+
+  // force 옵션은 관리자만 사용 가능
+  const forceRegenerate = Boolean(force) && isAdmin;
 
   // 결제 완료 상태 확인
   if (order.status === "pending_payment") {
@@ -105,7 +112,7 @@ export const POST = async (request: NextRequest) => {
     .eq("order_id", orderId)
     .single();
 
-  if (existingReport?.ai_status === "processing") {
+  if (existingReport?.ai_status === "processing" && !forceRegenerate) {
     // 이미 processing 상태 — wave state가 있으면 태스크 큐 반환하여 이어서 실행
     const waveState = existingReport.ai_wave_state as {
       taskQueue?: string[];
@@ -117,33 +124,57 @@ export const POST = async (request: NextRequest) => {
 
       const { data: userProfile } = await supabase
         .from("profiles")
-        .select("name, grade, high_school_type")
+        .select(
+          "name, grade, gender, high_school_name, high_school_type, high_school_region"
+        )
         .eq("id", order.user_id)
         .single();
 
       const profiles = userProfile ?? {
         name: "학생",
         grade: "high2",
+        high_school_name: null,
         high_school_type: "일반고",
+        gender: null,
+        high_school_region: null,
       };
 
       const { data: targetUnis } = await supabase
         .from("target_universities")
-        .select("university_name, department")
+        .select("university_name, admission_type, department, priority")
         .eq("user_id", order.user_id)
         .order("priority", { ascending: true });
 
       const targetUni = targetUnis?.[0];
 
+      const { data: mockExamsCheck } = await supabase
+        .from("record_mock_exams")
+        .select("id")
+        .eq("record_id", order.record_id as string)
+        .limit(1);
+
       const studentInfo: StudentInfo = {
         name: profiles.name ?? "학생",
         grade: GRADE_MAP[profiles.grade] ?? 2,
+        isGraduate: profiles.grade === "graduate",
         track: "통합",
         schoolType:
           (profiles.high_school_type as StudentInfo["schoolType"]) ?? "일반고",
+        schoolName: profiles.high_school_name ?? undefined,
         targetUniversity: targetUni?.university_name,
         targetDepartment: targetUni?.department,
-        hasMockExamData: false,
+        gender: (profiles.gender as "male" | "female" | null) ?? null,
+        highSchoolRegion: profiles.high_school_region ?? undefined,
+        targetUniversities:
+          targetUnis && targetUnis.length > 0
+            ? targetUnis.map((u) => ({
+                priority: u.priority,
+                universityName: u.university_name,
+                admissionType: u.admission_type ?? "학종",
+                department: u.department,
+              }))
+            : undefined,
+        hasMockExamData: (mockExamsCheck?.length ?? 0) > 0,
       };
 
       return NextResponse.json({
@@ -160,7 +191,7 @@ export const POST = async (request: NextRequest) => {
   }
 
   // 실패한 리포트 재시도 판별
-  const isRetry = existingReport?.ai_status === "failed";
+  const isRetry = existingReport?.ai_status === "failed" || forceRegenerate;
 
   if (
     !isRetry &&
@@ -176,6 +207,19 @@ export const POST = async (request: NextRequest) => {
   // admin client를 먼저 생성 (RLS 우회 필요)
   const adminClient = createAdminClient();
   const dbClient = adminClient ?? supabase;
+
+  // 강제 재생성: 기존 wave state 초기화
+  if (forceRegenerate && existingReport) {
+    await dbClient
+      .from("reports")
+      .update({
+        ai_wave_state: null,
+        ai_progress: 0,
+        ai_current_section: null,
+        ai_error: null,
+      })
+      .eq("id", existingReport.id);
+  }
 
   // 리포트 레코드 확보 (없으면 생성)
   let reportId: string;
@@ -233,18 +277,31 @@ export const POST = async (request: NextRequest) => {
 
   const { data: userProfile } = await dbClient
     .from("profiles")
-    .select("name, grade, high_school_type")
+    .select(
+      "name, grade, high_school_name, high_school_type, high_school_region"
+    )
     .eq("id", order.user_id)
     .single();
 
   const profiles = userProfile ?? {
     name: "학생",
     grade: "high2",
+    high_school_name: null,
     high_school_type: "일반고",
+    high_school_region: null,
   };
 
   const plan = plans.name as ReportPlan;
   const recordId = order.record_id as string;
+
+  // 수강 예정 과목 (학생 직접 입력)
+  const { data: recordRow } = await dbClient
+    .from("records")
+    .select("planned_subjects")
+    .eq("id", recordId)
+    .single();
+  const plannedSubjects =
+    (recordRow?.planned_subjects as string | null) ?? undefined;
 
   // 목표 대학 정보 조회 (1~3지망 전체)
   const { data: targetUnis } = await dbClient
@@ -255,15 +312,33 @@ export const POST = async (request: NextRequest) => {
 
   const targetUni = targetUnis?.[0];
 
+  const { data: mockExamsMain } = await dbClient
+    .from("record_mock_exams")
+    .select("id")
+    .eq("record_id", recordId)
+    .limit(1);
+
   const studentInfo: StudentInfo = {
     name: profiles.name ?? "학생",
     grade: GRADE_MAP[profiles.grade] ?? 2,
+    isGraduate: profiles.grade === "graduate",
     track: "통합",
     schoolType:
       (profiles.high_school_type as StudentInfo["schoolType"]) ?? "일반고",
+    schoolName: profiles.high_school_name ?? undefined,
     targetUniversity: targetUni?.university_name,
     targetDepartment: targetUni?.department,
-    hasMockExamData: false,
+    highSchoolRegion: profiles.high_school_region ?? undefined,
+    targetUniversities:
+      targetUnis && targetUnis.length > 0
+        ? targetUnis.map((u) => ({
+            priority: u.priority,
+            universityName: u.university_name,
+            admissionType: u.admission_type ?? "학종",
+            department: u.department,
+          }))
+        : undefined,
+    hasMockExamData: (mockExamsMain?.length ?? 0) > 0,
   };
 
   // 7. 전처리 실행 (Gemini 호출 없음 — 빠름)
@@ -274,7 +349,10 @@ export const POST = async (request: NextRequest) => {
       studentInfo,
       reportId,
       dbClient,
-      recordId
+      recordId,
+      undefined,
+      undefined,
+      { plannedSubjects }
     );
 
     return NextResponse.json({

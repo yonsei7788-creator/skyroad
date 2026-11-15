@@ -8,33 +8,31 @@ import {
   AdmissionStrategyRenderer,
   AttendanceAnalysisRenderer,
   BehaviorAnalysisRenderer,
-  BookRecommendationRenderer,
-  CompetencyEvaluationRenderer,
   CompetencyScoreRenderer,
+  CompetitiveProfilingRenderer,
+  ConsultantReviewRenderer,
   CourseAlignmentRenderer,
-  DiagnosticRenderer,
-  DirectionGuideRenderer,
   InterviewPrepRenderer,
   MajorExplorationRenderer,
-  OverallAssessmentRenderer,
   StoryAnalysisRenderer,
   StudentProfileRenderer,
   SubjectAnalysisRenderer,
   TopicRecommendationRenderer,
   WeaknessAnalysisRenderer,
-  WordCloudRenderer,
 } from "../_components";
 
 interface SectionRendererProps {
   section: ReportSection;
   plan: ReportPlan;
   sectionNumber: number;
+  isGraduate?: boolean;
 }
 
 export const SectionRenderer = ({
   section,
   plan,
   sectionNumber,
+  isGraduate,
 }: SectionRendererProps) => {
   switch (section.sectionId) {
     // Part 1: 진단
@@ -62,19 +60,8 @@ export const SectionRenderer = ({
           plan={plan}
         />
       );
-    case "diagnostic":
-      return (
-        <DiagnosticRenderer data={section} sectionNumber={sectionNumber} />
-      );
 
     // Part 2: 분석
-    case "competencyEvaluation":
-      return (
-        <CompetencyEvaluationRenderer
-          data={section}
-          sectionNumber={sectionNumber}
-        />
-      );
     case "academicAnalysis":
       return (
         <AcademicAnalysisRenderer
@@ -83,6 +70,7 @@ export const SectionRenderer = ({
         />
       );
     case "courseAlignment":
+      if (isGraduate) return null;
       return (
         <CourseAlignmentRenderer data={section} sectionNumber={sectionNumber} />
       );
@@ -108,13 +96,6 @@ export const SectionRenderer = ({
     case "behaviorAnalysis":
       return (
         <BehaviorAnalysisRenderer
-          data={section}
-          sectionNumber={sectionNumber}
-        />
-      );
-    case "overallAssessment":
-      return (
-        <OverallAssessmentRenderer
           data={section}
           sectionNumber={sectionNumber}
         />
@@ -148,9 +129,12 @@ export const SectionRenderer = ({
           plan={plan}
         />
       );
-    case "directionGuide":
+    case "competitiveProfiling":
       return (
-        <DirectionGuideRenderer data={section} sectionNumber={sectionNumber} />
+        <CompetitiveProfilingRenderer
+          data={section}
+          sectionNumber={sectionNumber}
+        />
       );
     case "storyAnalysis":
       return (
@@ -158,21 +142,21 @@ export const SectionRenderer = ({
       );
     case "actionRoadmap":
       return (
-        <ActionRoadmapRenderer
+        <ActionRoadmapRenderer data={section} sectionNumber={sectionNumber} />
+      );
+
+    // 전임 컨설턴트 총평
+    case "consultantReview":
+      return (
+        <ConsultantReviewRenderer
           data={section}
           sectionNumber={sectionNumber}
           plan={plan}
+          isGraduate={isGraduate}
         />
       );
 
     // 부록
-    case "bookRecommendation":
-      return (
-        <BookRecommendationRenderer
-          data={section}
-          sectionNumber={sectionNumber}
-        />
-      );
     case "majorExploration":
       return (
         <MajorExplorationRenderer
@@ -180,8 +164,6 @@ export const SectionRenderer = ({
           sectionNumber={sectionNumber}
         />
       );
-    case "wordCloud":
-      return <WordCloudRenderer data={section} sectionNumber={sectionNumber} />;
 
     default:
       return null;

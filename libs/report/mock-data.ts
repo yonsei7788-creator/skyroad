@@ -11,24 +11,19 @@ import type {
   StudentProfileSection,
   CompetencyScoreSection,
   AdmissionPredictionSection,
-  DiagnosticSection,
-  CompetencyEvaluationSection,
   AcademicAnalysisSection,
   CourseAlignmentSection,
   AttendanceAnalysisSection,
   ActivityAnalysisSection,
   SubjectAnalysisSection,
   BehaviorAnalysisSection,
-  OverallAssessmentSection,
   WeaknessAnalysisSection,
   TopicRecommendationSection,
   InterviewPrepSection,
   AdmissionStrategySection,
   StoryAnalysisSection,
   ActionRoadmapSection,
-  BookRecommendationSection,
   MajorExplorationSection,
-  WordCloudSection,
   ReportMeta,
 } from "./types";
 
@@ -39,6 +34,7 @@ import type {
 const BASE_STUDENT_INFO = {
   name: "김민수",
   grade: 2 as const,
+  isGraduate: false,
   track: "이과" as const,
   schoolType: "일반고" as const,
   targetUniversity: "서울대학교",
@@ -203,6 +199,56 @@ const competencyScoreLite: CompetencyScoreSection = {
   ],
   interpretation:
     "학업 역량과 진로 역량에서 강점을 보이나, 공동체 역량이 상대적으로 약합니다. 리더십과 봉사 활동을 통해 균형 잡힌 역량 프로필을 만들 필요가 있습니다.",
+  competencyAxes: [
+    { key: "naesin", label: "내신", score: 84, isStrength: true },
+    { key: "setuk", label: "세특", score: 78 },
+    { key: "majorFit", label: "전공적합성", score: 78 },
+    {
+      key: "extracurricular",
+      label: "비교과",
+      score: 65,
+      isWeakness: true,
+    },
+    { key: "growth", label: "성장성", score: 68 },
+  ],
+  competencyHighlights: {
+    strengths: [
+      {
+        name: "교과 성취도",
+        categoryLabel: "학업 역량",
+        score: 85,
+        maxScore: 100,
+        gap: 15,
+        reason: "주요 교과 평균 2.1등급으로 상위권 유지",
+      },
+      {
+        name: "전공 적합성",
+        categoryLabel: "진로 역량",
+        score: 82,
+        maxScore: 100,
+        gap: 18,
+        reason: "컴퓨터공학 관련 활동(코딩, 알고리즘 대회)이 일관되게 기록됨",
+      },
+    ],
+    improvements: [
+      {
+        name: "리더십",
+        categoryLabel: "공동체 역량",
+        score: 60,
+        maxScore: 100,
+        gap: 40,
+        reason: "소규모 프로젝트 리더 경험은 있으나 공식적 리더 역할 부족",
+      },
+      {
+        name: "봉사 및 나눔",
+        categoryLabel: "공동체 역량",
+        score: 62,
+        maxScore: 100,
+        gap: 38,
+        reason: "진로 연계 봉사 경험이 부족하여 인성 영역 보완이 필요",
+      },
+    ],
+  },
 };
 
 const competencyScoreStandard: CompetencyScoreSection = {
@@ -253,7 +299,7 @@ const competencyScoreStandard: CompetencyScoreSection = {
 
 const admissionPredictionLite: AdmissionPredictionSection = {
   sectionId: "admissionPrediction",
-  title: "합격 예측",
+  title: "희망 학교·학과 판단",
   recommendedType: "학종",
   recommendedTypeReason:
     "컴퓨터공학 관련 세특 활동과 탐구 경험이 풍부하여 학생부종합전형에서 전공 적합성을 어필할 수 있습니다. 내신 2.1등급으로 교과전형 상위권 대학 지원은 다소 어려우나, 활동 기반 평가에서 강점을 발휘할 수 있습니다.",
@@ -271,13 +317,6 @@ const admissionPredictionLite: AdmissionPredictionSection = {
       passRateRange: [30, 40],
       analysis:
         "내신 2.1등급은 서울대 교과전형 합격선(1.5등급 이내)에 미달하여 교과전형으로의 지원은 권장하지 않습니다.",
-    },
-    {
-      admissionType: "정시",
-      passRateLabel: "40~50%",
-      passRateRange: [40, 50],
-      analysis:
-        "모의고사 성적이 양호하나, 수능 변동성을 고려하면 정시는 보조 전략으로 활용하는 것이 적절합니다.",
     },
   ],
   overallComment:
@@ -327,11 +366,6 @@ const admissionPredictionStandard: AdmissionPredictionSection = {
       band: "도전",
       rationale: "내신 2.1등급은 서울대 교과전형 합격선(1.5등급)에 미달",
     },
-    {
-      admissionType: "정시",
-      band: "적정",
-      rationale: "모의고사 성적 기준 적정 범위 내이나 수능 변동성 존재",
-    },
   ],
   detailedUniversityPredictions: [
     {
@@ -376,391 +410,9 @@ const admissionPredictionStandard: AdmissionPredictionSection = {
   ],
 };
 
-// ─── 섹션 4: 종합 진단 ───
-
-const diagnosticLite: DiagnosticSection = {
-  sectionId: "diagnostic",
-  title: "종합 진단",
-  oneLiner:
-    "컴퓨터공학에 대한 뚜렷한 진로 목표와 알고리즘 탐구 역량을 갖추었으나, 공동체 활동과 인문학적 소양 보완이 서울대 합격의 관건입니다.",
-  keywords: [
-    {
-      label: "알고리즘 탐구 역량",
-      description:
-        "정보 교과와 수학 세특에서 알고리즘 설계 및 구현 능력을 꾸준히 보여줌",
-    },
-    {
-      label: "융합적 사고 필요",
-      description:
-        "컴퓨터과학과 타 교과(물리, 사회) 간 융합 활동이 부족하여 사고의 폭 확장 필요",
-    },
-    {
-      label: "공동체 역량 보완",
-      description:
-        "팀 프로젝트 경험은 있으나, 공식적 리더 역할이나 진로 연계 봉사 경험이 제한적",
-    },
-  ],
-  competencySummary: [
-    {
-      category: "academic",
-      label: "학업 역량",
-      summary:
-        "수학과 정보 교과에서 상위권 성취를 유지하며, 알고리즘 기반 문제 해결 역량이 돋보입니다.",
-    },
-    {
-      category: "career",
-      label: "진로 역량",
-      summary:
-        "1학년부터 컴퓨터공학 관련 활동을 일관되게 수행하여 진로 방향이 명확합니다.",
-    },
-    {
-      category: "community",
-      label: "공동체 역량",
-      summary:
-        "협업 프로젝트 경험은 있으나, 리더십과 봉사 활동의 양적·질적 확대가 필요합니다.",
-    },
-    {
-      category: "growth",
-      label: "발전가능성",
-      summary:
-        "1학년 대비 2학년에서 탐구 깊이와 자기주도성이 성장하고 있어 향후 발전 가능성이 높습니다.",
-    },
-  ],
-};
-
-const diagnosticStandard: DiagnosticSection = {
-  ...diagnosticLite,
-  admissionPositioning:
-    "학생부종합전형(학종)을 주력 전형으로, 전공 적합성과 탐구 역량을 중심으로 어필하는 것이 가장 효과적입니다. 3학년 1학기에 공동체 역량과 융합 활동을 보강하면 서울대 합격 가능성이 크게 상승합니다.",
-};
-
-const diagnosticPremium: DiagnosticSection = {
-  ...diagnosticStandard,
-  strategyOverview:
-    "상향 1곳(서울대) + 안정 3곳(KAIST, 고려대, 성균관대) + 하향 2곳(한양대, 서울시립대)의 6개 대학 조합을 추천합니다. 학종 4장 + 교과 1장 + 정시 대비 병행 전략이 최적입니다.",
-  // v4
-  dashboardMetrics: {
-    totalScore: 225,
-    percentileLabel: "상위 22%",
-    gradeTrend: "상승",
-    recordFillRate: 81,
-    recommendedType: "학종",
-  },
-  competencyBars: [
-    {
-      category: "academic",
-      label: "학업 역량",
-      score: 82,
-      maxScore: 100,
-      assessment: "우수",
-    },
-    {
-      category: "career",
-      label: "진로 역량",
-      score: 78,
-      maxScore: 100,
-      assessment: "양호",
-    },
-    {
-      category: "community",
-      label: "공동체 역량",
-      score: 65,
-      maxScore: 100,
-      assessment: "보완필요",
-    },
-    {
-      category: "growth",
-      label: "발전가능성",
-      score: 75,
-      maxScore: 100,
-      assessment: "양호",
-    },
-  ],
-  topStrengths: ["알고리즘 설계 역량", "수학-IT 융합 사고", "진로 일관성"],
-  topWeaknesses: ["리더십 경험 부족", "인문 교과 연계 부재", "봉사 활동 미비"],
-  characterLabel: {
-    label: "논리의 개척자",
-    rationale:
-      "알고리즘과 수학적 사고에 강점을 보이며, 코딩을 통해 문제를 체계적으로 해결하는 유형",
-  },
-};
-
 // ============================================================
 // Part 2: 분석
 // ============================================================
-
-// ─── 섹션 5: 역량별 종합 평가 ───
-
-const competencyEvaluationLite: CompetencyEvaluationSection = {
-  sectionId: "competencyEvaluation",
-  title: "역량별 종합 평가",
-  strengths: [
-    {
-      competencyTag: {
-        category: "academic",
-        subcategory: "탐구 역량",
-        assessment: "우수",
-      },
-      label: "알고리즘 설계 및 구현",
-      evidence:
-        "정보 세특에서 다익스트라 알고리즘을 활용한 최단 경로 탐색 프로그램을 독립적으로 설계하고 Python으로 구현한 경험이 기록됨",
-    },
-    {
-      competencyTag: {
-        category: "academic",
-        subcategory: "교과 성취도",
-        assessment: "우수",
-      },
-      label: "수학 교과 우수 성취",
-      evidence:
-        "수학Ⅱ 1등급, 미적분 2등급으로 수리적 사고력이 높으며, 수학적 모델링 활동도 우수",
-    },
-    {
-      competencyTag: {
-        category: "career",
-        subcategory: "전공 적합성",
-        assessment: "우수",
-      },
-      label: "컴퓨터공학 진로 일관성",
-      evidence:
-        "1학년 정보 교과 → 2학년 알고리즘 심화 탐구 → 코딩 동아리 활동으로 진로가 일관되게 심화됨",
-    },
-  ],
-  weaknesses: [
-    {
-      competencyTag: {
-        category: "community",
-        subcategory: "리더십",
-        assessment: "미흡",
-      },
-      label: "공식적 리더 역할 부족",
-      evidence:
-        "동아리나 학급에서 공식적 임원 경험이 없으며, 주로 기술적 기여에 집중",
-    },
-    {
-      competencyTag: {
-        category: "community",
-        subcategory: "봉사 및 나눔",
-        assessment: "부족",
-      },
-      label: "진로 연계 봉사 부재",
-      evidence:
-        "봉사 활동이 단순 참여 수준이며, 코딩 교육 봉사 등 진로 연계 봉사 경험이 전무",
-    },
-    {
-      competencyTag: {
-        category: "academic",
-        subcategory: "융합 사고",
-        assessment: "미흡",
-      },
-      label: "인문-과학 융합 활동 부족",
-      evidence:
-        "국어, 사회 등 인문 교과에서 IT와의 연결점을 찾는 활동이 기록되지 않음",
-    },
-  ],
-  overallComment:
-    "컴퓨터공학에 대한 학업적 역량과 진로 적합성은 우수하나, 공동체 역량(리더십, 봉사)과 인문학적 융합 사고가 부족합니다. 서울대가 강조하는 '균형 잡힌 인재상'에 부합하기 위해 3학년에 이 부분을 집중적으로 보완해야 합니다.",
-  competencyRatings: [
-    {
-      category: "academic",
-      label: "학업 역량",
-      grade: "A",
-      comment:
-        "주요 교과 성적과 탐구 활동 모두 우수한 수준. 세특 서술의 깊이도 양호함",
-    },
-    {
-      category: "career",
-      label: "진로 역량",
-      grade: "A",
-      comment:
-        "명확한 진로 방향과 일관된 활동이 강점. 외부 대회 실적이 추가되면 더욱 강력해짐",
-    },
-    {
-      category: "community",
-      label: "공동체 역량",
-      grade: "C",
-      comment:
-        "리더십과 봉사 활동이 현저히 부족. 서울대 합격을 위해 반드시 보강해야 하는 영역",
-    },
-    {
-      category: "growth",
-      label: "발전가능성",
-      grade: "B",
-      comment:
-        "1학년 대비 탐구 깊이가 성장 중이나, 성장 서사가 더 명확해질 필요가 있음",
-    },
-  ],
-};
-
-const competencyEvaluationPremium: CompetencyEvaluationSection = {
-  ...competencyEvaluationLite,
-  strengths: [
-    ...competencyEvaluationLite.strengths,
-    {
-      competencyTag: {
-        category: "academic",
-        subcategory: "자기주도 학습",
-        assessment: "양호",
-      },
-      label: "독립적 프로젝트 수행 능력",
-      evidence:
-        "정보 교과 외에도 개인적으로 웹 애플리케이션 개발 프로젝트를 수행한 경험이 세특에 기록됨",
-    },
-    {
-      competencyTag: {
-        category: "career",
-        subcategory: "진로 탐색",
-        assessment: "양호",
-      },
-      label: "IT 산업 트렌드 이해",
-      evidence:
-        "AI, 빅데이터 등 최신 기술 트렌드를 교과 활동과 연결하여 탐구한 경험이 있음",
-    },
-  ],
-  weaknesses: [
-    ...competencyEvaluationLite.weaknesses,
-    {
-      competencyTag: {
-        category: "growth",
-        subcategory: "자기 성찰",
-        assessment: "미흡",
-      },
-      label: "실패 경험 기반 성장 서사 부족",
-      evidence:
-        "도전적 활동에서의 실패와 극복 과정이 세특에 구체적으로 드러나지 않음",
-    },
-    {
-      competencyTag: {
-        category: "academic",
-        subcategory: "학업 관리",
-        assessment: "미흡",
-      },
-      label: "비전공 교과 관리 소홀",
-      evidence:
-        "국어, 사회 교과의 세특이 평이하여 학업 성실성에 대한 의구심을 줄 수 있음",
-    },
-  ],
-  competencyRatings: competencyEvaluationLite.competencyRatings.map((r) => ({
-    ...r,
-    subcategories:
-      r.category === "academic"
-        ? [
-            {
-              name: "교과 성취도",
-              grade: "A" as const,
-              comment: "주요 교과 평균 2.1등급, 수학 1등급",
-            },
-            {
-              name: "탐구 역량",
-              grade: "A" as const,
-              comment: "알고리즘 설계, 코딩 프로젝트 등 심화 탐구 활동 우수",
-            },
-            {
-              name: "세특 충실도",
-              grade: "B" as const,
-              comment: "전공 교과 세특 우수, 비전공 교과 보완 필요",
-            },
-          ]
-        : r.category === "career"
-          ? [
-              {
-                name: "전공 적합성",
-                grade: "A" as const,
-                comment: "컴퓨터공학 관련 활동의 일관성과 깊이가 우수",
-              },
-              {
-                name: "진로 탐색 활동",
-                grade: "B" as const,
-                comment: "교내 활동 중심, 외부 활동 확대 필요",
-              },
-            ]
-          : r.category === "community"
-            ? [
-                {
-                  name: "리더십",
-                  grade: "C" as const,
-                  comment: "공식적 리더 역할 경험 부족",
-                },
-                {
-                  name: "협업 능력",
-                  grade: "B" as const,
-                  comment: "팀 프로젝트 참여 경험은 있으나 조율 역할 제한적",
-                },
-                {
-                  name: "봉사 및 나눔",
-                  grade: "D" as const,
-                  comment: "진로 연계 봉사 경험 전무",
-                },
-              ]
-            : undefined,
-  })),
-  // v4
-  competencyCharacters: [
-    {
-      category: "academic",
-      characterLabel: {
-        label: "분석형 탐구자",
-        rationale: "알고리즘 효율성을 분석하고 최적화하는 체계적 사고 역량",
-      },
-    },
-    {
-      category: "career",
-      characterLabel: {
-        label: "일관된 코딩러",
-        rationale: "1학년부터 컴퓨터공학 진로가 일관되며 점진적으로 심화됨",
-      },
-    },
-  ],
-  citationAnalysis: [
-    {
-      originalText:
-        "다익스트라 알고리즘의 시간 복잡도를 분석하여 O(V²)에서 우선순위 큐를 활용해 O((V+E)logV)로 최적화하는 과정을 탐구함.",
-      source: "2학년 정보 세특",
-      competencyTags: [
-        { category: "academic", subcategory: "탐구 역량", assessment: "우수" },
-      ],
-      assessment: "우수",
-      positivePoint: "알고리즘 최적화 역량을 구체적 수치와 함께 보여줌",
-    },
-    {
-      originalText:
-        "함수의 극한 개념을 활용하여 머신러닝의 경사하강법 원리를 탐구하고 발표함.",
-      source: "2학년 수학Ⅱ 세특",
-      competencyTags: [
-        { category: "academic", subcategory: "융합 사고", assessment: "우수" },
-      ],
-      assessment: "우수",
-      positivePoint: "수학-AI 융합적 사고가 돋보이는 핵심 활동",
-    },
-    {
-      originalText: "모둠 활동에서 프로그램 시연을 담당하여 발표함.",
-      source: "2학년 정보 세특",
-      competencyTags: [{ category: "community", subcategory: "협업 능력" }],
-      assessment: "보완필요",
-      improvementSuggestion:
-        "구체적 역할과 기여도가 드러나지 않음. 팀 내 기술적 리딩 역할을 명시해야 함",
-    },
-  ],
-  competencyBenchmarks: [
-    {
-      category: "academic",
-      comparison: {
-        myValue: 82,
-        targetRangeAvg: 88,
-        overallAvg: 70,
-        estimationBasis: "AI 추정",
-      },
-    },
-    {
-      category: "career",
-      comparison: { myValue: 78, targetRangeAvg: 82, overallAvg: 65 },
-    },
-    {
-      category: "community",
-      comparison: { myValue: 65, targetRangeAvg: 80, overallAvg: 60 },
-    },
-  ],
-};
 
 // ─── 섹션 6: 성적 분석 ───
 
@@ -933,24 +585,6 @@ const academicAnalysisPremium: AcademicAnalysisSection = {
       percentileCumulative: 34,
     },
   ],
-  universityGradeSimulations: [
-    {
-      university: "서울대학교",
-      department: "컴퓨터공학과",
-      reflectionMethod: "학종 종합평가 (등급 + 세특 + 활동)",
-      calculatedScore: 78,
-      interpretation:
-        "전공 교과 성적은 합격선에 근접하나, 비전공 교과와 활동 보강 시 경쟁력 상승",
-    },
-    {
-      university: "고려대학교",
-      department: "컴퓨터학과",
-      reflectionMethod: "학종 학업우수형 (교과 중심 평가)",
-      calculatedScore: 85,
-      interpretation:
-        "교과 성적과 세특 활동 모두 합격선 이상으로 안정적 합격 예상",
-    },
-  ],
   improvementPriority: [
     "국어 교과 2등급 달성",
     "한국사 2등급 달성",
@@ -1049,7 +683,7 @@ const attendanceAnalysis: AttendanceAnalysisSection = {
   impactAnalysis:
     "무단결석·지각·조퇴가 전혀 없으며, 질병 결석도 최소 수준으로 입시에서 출결 관련 감점 요인은 없습니다.",
   integrityContribution:
-    "출결 상태가 매우 양호하여 성실성 평가에서 긍정적으로 작용합니다.",
+    "출결 상태가 매우 우수하여 성실성 평가에서 긍정적으로 작용합니다.",
   // v4
   comparisonData: {
     myValue: 3,
@@ -1083,11 +717,11 @@ const activityAnalysisLite: ActivityAnalysisSection = {
             {
               category: "community",
               subcategory: "협업 능력",
-              assessment: "양호",
+              assessment: "보통",
             },
           ],
           ratingRationale:
-            "학급 환경 개선 프로젝트에서 IT 환경 구축을 제안하고 실행한 점은 문제해결능력과 실행력을 보여주나, 프로젝트의 범위가 교실 내로 한정되어 있고 타 학생과의 협업 깊이나 결과물의 구체적 성과가 생기부에 충분히 드러나지 않아 '양호'로 평가하였습니다.",
+            "학급 환경 개선 프로젝트에서 IT 환경 구축을 제안하고 실행한 점은 문제해결능력과 실행력을 보여주나, 프로젝트의 범위가 교실 내로 한정되어 있고 타 학생과의 협업 깊이나 결과물의 구체적 성과가 생기부에 충분히 드러나지 않아 '보통'으로 평가하였습니다.",
         },
         {
           year: 2,
@@ -1103,7 +737,7 @@ const activityAnalysisLite: ActivityAnalysisSection = {
             {
               category: "community",
               subcategory: "협업 능력",
-              assessment: "양호",
+              assessment: "보통",
             },
           ],
           ratingRationale:
@@ -1125,11 +759,11 @@ const activityAnalysisLite: ActivityAnalysisSection = {
             {
               category: "career",
               subcategory: "전공 적합성",
-              assessment: "양호",
+              assessment: "보통",
             },
           ],
           ratingRationale:
-            "코딩 동아리에 자발적으로 가입하여 Python 기초를 학습하고 간단한 프로그램을 개발한 점은 진로 탐색의 시작으로 의미 있으나, 1학년 수준의 기초 활동에 머물러 있어 독창적 성과물이나 심화 탐구가 부족합니다. 동아리 내 역할도 일반 부원 수준이어서 '양호'로 평가하였습니다.",
+            "코딩 동아리에 자발적으로 가입하여 Python 기초를 학습하고 간단한 프로그램을 개발한 점은 진로 탐색의 시작으로 의미 있으나, 1학년 수준의 기초 활동에 머물러 있어 독창적 성과물이나 심화 탐구가 부족합니다. 동아리 내 역할도 일반 부원 수준이어서 '보통'으로 평가하였습니다.",
         },
         {
           year: 2,
@@ -1176,11 +810,11 @@ const activityAnalysisLite: ActivityAnalysisSection = {
             {
               category: "career",
               subcategory: "진로 탐색 활동",
-              assessment: "양호",
+              assessment: "보통",
             },
           ],
           ratingRationale:
-            "직업 탐구 보고서를 작성하고 AI 관련 진로 특강에 참여한 점에서 1학년 대비 진로 탐색의 구체성이 향상되었습니다. 다만 보고서의 깊이나 특강 참여 후 후속 탐구 활동이 생기부에 충분히 드러나지 않아 '양호'로 평가하였습니다.",
+            "직업 탐구 보고서를 작성하고 AI 관련 진로 특강에 참여한 점에서 1학년 대비 진로 탐색의 구체성이 향상되었습니다. 다만 보고서의 깊이나 특강 참여 후 후속 탐구 활동이 생기부에 충분히 드러나지 않아 '보통'으로 평가하였습니다.",
         },
       ],
       overallComment:
@@ -1241,7 +875,7 @@ const activityAnalysisStandard: ActivityAnalysisSection = {
                 {
                   category: "community" as const,
                   subcategory: "협업 능력",
-                  assessment: "양호" as const,
+                  assessment: "보통" as const,
                 },
               ],
             },
@@ -1258,7 +892,7 @@ const activityAnalysisStandard: ActivityAnalysisSection = {
                 {
                   category: "community" as const,
                   subcategory: "협업 능력",
-                  assessment: "양호" as const,
+                  assessment: "보통" as const,
                 },
               ],
             },
@@ -1278,7 +912,7 @@ const activityAnalysisStandard: ActivityAnalysisSection = {
                   {
                     category: "community" as const,
                     subcategory: "리더십",
-                    assessment: "양호" as const,
+                    assessment: "보통" as const,
                   },
                 ],
               },
@@ -1307,7 +941,7 @@ const activityAnalysisStandard: ActivityAnalysisSection = {
                   {
                     category: "career" as const,
                     subcategory: "전공 적합성",
-                    assessment: "양호" as const,
+                    assessment: "보통" as const,
                   },
                 ],
               },
@@ -1333,7 +967,7 @@ const activityAnalysisStandard: ActivityAnalysisSection = {
                     {
                       category: "career" as const,
                       subcategory: "진로 탐색 활동",
-                      assessment: "양호" as const,
+                      assessment: "보통" as const,
                     },
                   ],
                 },
@@ -1541,10 +1175,10 @@ const activityAnalysisPremium: ActivityAnalysisSection = {
                     {
                       category: "community" as const,
                       subcategory: "협업 능력",
-                      assessment: "양호" as const,
+                      assessment: "보통" as const,
                     },
                   ],
-                  assessment: "양호" as const,
+                  assessment: "보통" as const,
                   positivePoint: "IT 특기를 공동체에 기여하는 방식으로 활용",
                 },
               ],
@@ -1583,7 +1217,7 @@ const activityAnalysisPremium: ActivityAnalysisSection = {
                       {
                         category: "community" as const,
                         subcategory: "리더십",
-                        assessment: "양호" as const,
+                        assessment: "보통" as const,
                       },
                     ],
                     assessment: "우수" as const,
@@ -1623,10 +1257,10 @@ const activityAnalysisPremium: ActivityAnalysisSection = {
                       {
                         category: "career" as const,
                         subcategory: "전공 적합성",
-                        assessment: "양호" as const,
+                        assessment: "보통" as const,
                       },
                     ],
-                    assessment: "양호" as const,
+                    assessment: "보통" as const,
                     positivePoint:
                       "프로그래밍 입문 단계에서의 자기주도적 학습 태도",
                   },
@@ -1672,10 +1306,10 @@ const activityAnalysisPremium: ActivityAnalysisSection = {
                         {
                           category: "career" as const,
                           subcategory: "진로 탐색 활동",
-                          assessment: "양호" as const,
+                          assessment: "보통" as const,
                         },
                       ],
-                      assessment: "양호" as const,
+                      assessment: "보통" as const,
                       positivePoint:
                         "세부 직군까지 조사한 점에서 진로 인식의 구체성 향상",
                       improvementSuggestion:
@@ -1732,7 +1366,7 @@ const activityAnalysisPremium: ActivityAnalysisSection = {
                             assessment: "부족" as const,
                           },
                         ],
-                        assessment: "보완필요" as const,
+                        assessment: "미흡" as const,
                         improvementSuggestion:
                           "단순 정리 봉사에서 벗어나 전공 역량을 활용한 코딩 교육 봉사로 전환 필요",
                       },
@@ -1893,7 +1527,7 @@ const subjectAnalysisLite: SubjectAnalysisSection = {
           subcategory: "교과 성취도",
           assessment: "우수",
         },
-        { category: "academic", subcategory: "융합 사고", assessment: "양호" },
+        { category: "academic", subcategory: "융합 사고", assessment: "보통" },
       ],
       activitySummary:
         "함수의 극한 개념을 활용하여 머신러닝의 경사하강법 원리를 탐구하고 발표",
@@ -1925,14 +1559,14 @@ const subjectAnalysisLite: SubjectAnalysisSection = {
         {
           category: "academic",
           subcategory: "교과 성취도",
-          assessment: "양호",
+          assessment: "보통",
         },
-        { category: "academic", subcategory: "융합 사고", assessment: "양호" },
+        { category: "academic", subcategory: "융합 사고", assessment: "보통" },
       ],
       activitySummary:
         "베이즈 정리를 활용한 스팸 메일 필터링 원리를 탐구하고 확률 모델 보고서 작성",
       evaluationComment:
-        "확률 개념을 실제 IT 기술에 적용한 시도가 좋습니다. 조건부 확률의 이해도가 높으며 데이터 사이언스와의 연결성이 양호합니다.",
+        "확률 개념을 실제 IT 기술에 적용한 시도가 좋습니다. 조건부 확률의 이해도가 높으며 데이터 사이언스와의 연결성이 보통 수준입니다.",
     },
     {
       subjectName: "물리학Ⅰ",
@@ -1942,7 +1576,7 @@ const subjectAnalysisLite: SubjectAnalysisSection = {
         {
           category: "academic",
           subcategory: "교과 성취도",
-          assessment: "양호",
+          assessment: "보통",
         },
       ],
       activitySummary:
@@ -1958,7 +1592,7 @@ const subjectAnalysisLite: SubjectAnalysisSection = {
         {
           category: "academic",
           subcategory: "교과 성취도",
-          assessment: "양호",
+          assessment: "보통",
         },
       ],
       activitySummary:
@@ -1974,9 +1608,9 @@ const subjectAnalysisLite: SubjectAnalysisSection = {
         {
           category: "academic",
           subcategory: "교과 성취도",
-          assessment: "양호",
+          assessment: "보통",
         },
-        { category: "career", subcategory: "전공 적합성", assessment: "양호" },
+        { category: "career", subcategory: "전공 적합성", assessment: "보통" },
       ],
       activitySummary:
         "실리콘밸리 기업 문화에 대한 영어 에세이 작성 및 TED 강연(컴퓨터과학 관련) 요약 발표",
@@ -2001,7 +1635,7 @@ const subjectAnalysisLite: SubjectAnalysisSection = {
         {
           category: "academic",
           subcategory: "교과 성취도",
-          assessment: "양호",
+          assessment: "보통",
         },
       ],
       activitySummary:
@@ -2017,9 +1651,9 @@ const subjectAnalysisLite: SubjectAnalysisSection = {
         {
           category: "academic",
           subcategory: "교과 성취도",
-          assessment: "양호",
+          assessment: "보통",
         },
-        { category: "community", subcategory: "시민의식", assessment: "양호" },
+        { category: "community", subcategory: "시민의식", assessment: "보통" },
       ],
       activitySummary:
         "AI 윤리와 알고리즘 편향성 문제를 탐구하고, 기술 윤리 가이드라인을 제안하는 발표 수행",
@@ -2044,7 +1678,7 @@ const subjectAnalysisLite: SubjectAnalysisSection = {
       year: 2,
       rating: "good",
       competencyTags: [
-        { category: "community", subcategory: "협업 능력", assessment: "양호" },
+        { category: "community", subcategory: "협업 능력", assessment: "보통" },
       ],
       activitySummary:
         "배드민턴 경기 전략을 데이터 분석으로 수립하고, 팀 경기에서 전략 분석 역할 수행",
@@ -2072,7 +1706,7 @@ const subjectAnalysisLite: SubjectAnalysisSection = {
           subcategory: "교과 성취도",
           assessment: "우수",
         },
-        { category: "academic", subcategory: "탐구 역량", assessment: "양호" },
+        { category: "academic", subcategory: "탐구 역량", assessment: "보통" },
       ],
       activitySummary:
         "지수함수와 로그함수를 활용한 암호화 원리를 탐구하고 RSA 알고리즘의 수학적 기반을 발표",
@@ -2087,7 +1721,7 @@ const subjectAnalysisLite: SubjectAnalysisSection = {
         {
           category: "academic",
           subcategory: "교과 성취도",
-          assessment: "양호",
+          assessment: "보통",
         },
       ],
       activitySummary:
@@ -2103,14 +1737,14 @@ const subjectAnalysisLite: SubjectAnalysisSection = {
         {
           category: "academic",
           subcategory: "교과 성취도",
-          assessment: "양호",
+          assessment: "보통",
         },
-        { category: "academic", subcategory: "탐구 역량", assessment: "양호" },
+        { category: "academic", subcategory: "탐구 역량", assessment: "보통" },
       ],
       activitySummary:
         "에너지 효율 관련 탐구에서 데이터 수집 및 그래프 분석을 담당하고 결과 보고서 작성",
       evaluationComment:
-        "과학적 탐구 과정에서 데이터 분석 역량이 돋보입니다. 실험 설계의 체계성이 양호하며, 과학적 사고력의 기초가 잘 잡혀 있습니다.",
+        "과학적 탐구 과정에서 데이터 분석 역량이 돋보입니다. 실험 설계의 체계성이 보통 수준이며, 과학적 사고력의 기초가 잘 잡혀 있습니다.",
     },
     {
       subjectName: "통합사회",
@@ -2292,45 +1926,45 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
   subjectGroupMatrix: [
     {
       group: "국어",
-      적극성: "양호" as const,
-      탐구정신: "보완필요" as const,
-      전공진로탐색: "보완필요" as const,
-      협력성: "양호" as const,
+      적극성: "보통" as const,
+      탐구정신: "미흡" as const,
+      전공진로탐색: "미흡" as const,
+      협력성: "보통" as const,
     },
     {
       group: "수학",
       적극성: "우수" as const,
       탐구정신: "우수" as const,
       전공진로탐색: "우수" as const,
-      협력성: "양호" as const,
+      협력성: "보통" as const,
     },
     {
       group: "영어",
-      적극성: "양호" as const,
-      탐구정신: "양호" as const,
-      전공진로탐색: "양호" as const,
-      협력성: "양호" as const,
+      적극성: "보통" as const,
+      탐구정신: "보통" as const,
+      전공진로탐색: "보통" as const,
+      협력성: "보통" as const,
     },
     {
       group: "사회",
-      적극성: "양호" as const,
-      탐구정신: "양호" as const,
-      전공진로탐색: "양호" as const,
-      협력성: "양호" as const,
+      적극성: "보통" as const,
+      탐구정신: "보통" as const,
+      전공진로탐색: "보통" as const,
+      협력성: "보통" as const,
     },
     {
       group: "과학",
-      적극성: "양호" as const,
-      탐구정신: "양호" as const,
-      전공진로탐색: "양호" as const,
-      협력성: "양호" as const,
+      적극성: "보통" as const,
+      탐구정신: "보통" as const,
+      전공진로탐색: "보통" as const,
+      협력성: "보통" as const,
     },
     {
       group: "기타",
       적극성: "우수" as const,
       탐구정신: "우수" as const,
       전공진로탐색: "우수" as const,
-      협력성: "양호" as const,
+      협력성: "보통" as const,
     },
   ],
   subjects: subjectAnalysisStandard.subjects.map((s) => ({
@@ -2347,8 +1981,8 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
       : ["국어", "한국어문학", "통합사회", "한국사", "화학Ⅰ", "음악"].includes(
             s.subjectName
           )
-        ? ("보완필요" as const)
-        : ("양호" as const),
+        ? ("미흡" as const)
+        : ("보통" as const),
     importancePercent:
       s.subjectName === "정보"
         ? 18
@@ -2493,7 +2127,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
             },
             {
               dimension: "표현 능력",
-              rating: "양호" as const,
+              rating: "보통" as const,
               evidence: "기술적 내용의 논리적 서술",
             },
           ]
@@ -2511,7 +2145,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
               },
               {
                 dimension: "탐구 깊이",
-                rating: "양호" as const,
+                rating: "보통" as const,
                 evidence: "경사하강법 원리 분석",
               },
             ]
@@ -2557,7 +2191,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                   },
                   {
                     dimension: "표현 능력",
-                    rating: "양호" as const,
+                    rating: "보통" as const,
                     evidence: "수학적 개념의 시각화 발표",
                   },
                 ]
@@ -2583,17 +2217,17 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                   ? [
                       {
                         dimension: "교과 이해도",
-                        rating: "양호" as const,
+                        rating: "보통" as const,
                         evidence: "전자기학 기본 개념 이해",
                       },
                       {
                         dimension: "전공 적합성",
-                        rating: "양호" as const,
+                        rating: "보통" as const,
                         evidence: "반도체-하드웨어 연결 시도",
                       },
                       {
                         dimension: "탐구 깊이",
-                        rating: "보완필요" as const,
+                        rating: "미흡" as const,
                         evidence: "개론 수준의 탐구에 머무름",
                       },
                     ]
@@ -2601,17 +2235,17 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                     ? [
                         {
                           dimension: "교과 이해도",
-                          rating: "양호" as const,
+                          rating: "보통" as const,
                           evidence: "조건부 확률 개념 이해",
                         },
                         {
                           dimension: "융합 사고",
-                          rating: "양호" as const,
+                          rating: "보통" as const,
                           evidence: "베이즈 정리의 IT 적용",
                         },
                         {
                           dimension: "탐구 깊이",
-                          rating: "양호" as const,
+                          rating: "보통" as const,
                           evidence: "확률 모델 보고서 작성",
                         },
                       ]
@@ -2619,17 +2253,17 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                       ? [
                           {
                             dimension: "교과 이해도",
-                            rating: "양호" as const,
+                            rating: "보통" as const,
                             evidence: "물질의 성질 기본 이해",
                           },
                           {
                             dimension: "전공 적합성",
-                            rating: "보완필요" as const,
+                            rating: "미흡" as const,
                             evidence: "반도체 소재 탐구 시도",
                           },
                           {
                             dimension: "탐구 깊이",
-                            rating: "보완필요" as const,
+                            rating: "미흡" as const,
                             evidence: "화학적 분석 깊이 부족",
                           },
                         ]
@@ -2637,17 +2271,17 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                         ? [
                             {
                               dimension: "교과 이해도",
-                              rating: "양호" as const,
+                              rating: "보통" as const,
                               evidence: "영어 에세이 작성 능력",
                             },
                             {
                               dimension: "전공 적합성",
-                              rating: "양호" as const,
+                              rating: "보통" as const,
                               evidence: "기술 관련 영어 콘텐츠 활용",
                             },
                             {
                               dimension: "표현 능력",
-                              rating: "양호" as const,
+                              rating: "보통" as const,
                               evidence: "TED 강연 요약 발표",
                             },
                           ]
@@ -2655,17 +2289,17 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                           ? [
                               {
                                 dimension: "교과 이해도",
-                                rating: "양호" as const,
+                                rating: "보통" as const,
                                 evidence: "영어 원서 독해 능력",
                               },
                               {
                                 dimension: "전공 적합성",
-                                rating: "양호" as const,
+                                rating: "보통" as const,
                                 evidence: "IT 기업가 관련 영어 활동",
                               },
                               {
                                 dimension: "탐구 깊이",
-                                rating: "보완필요" as const,
+                                rating: "미흡" as const,
                                 evidence: "학술적 영어 활용 미흡",
                               },
                             ]
@@ -2673,17 +2307,17 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                             ? [
                                 {
                                   dimension: "교과 이해도",
-                                  rating: "양호" as const,
+                                  rating: "보통" as const,
                                   evidence: "기본적 문학 감상 역량",
                                 },
                                 {
                                   dimension: "전공 적합성",
-                                  rating: "보완필요" as const,
+                                  rating: "미흡" as const,
                                   evidence: "진로 연결 부족",
                                 },
                                 {
                                   dimension: "탐구 깊이",
-                                  rating: "보완필요" as const,
+                                  rating: "미흡" as const,
                                   evidence: "일반적 수준의 감상에 머무름",
                                 },
                               ]
@@ -2691,7 +2325,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                               ? [
                                   {
                                     dimension: "교과 이해도",
-                                    rating: "양호" as const,
+                                    rating: "보통" as const,
                                     evidence: "윤리적 논증 구조 이해",
                                   },
                                   {
@@ -2701,7 +2335,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                   },
                                   {
                                     dimension: "탐구 깊이",
-                                    rating: "양호" as const,
+                                    rating: "보통" as const,
                                     evidence: "구체적 가이드라인 제안",
                                   },
                                 ]
@@ -2709,17 +2343,17 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                 ? [
                                     {
                                       dimension: "교과 이해도",
-                                      rating: "양호" as const,
+                                      rating: "보통" as const,
                                       evidence: "시대별 정리 능력",
                                     },
                                     {
                                       dimension: "전공 적합성",
-                                      rating: "보완필요" as const,
+                                      rating: "미흡" as const,
                                       evidence: "과학기술사 시도",
                                     },
                                     {
                                       dimension: "탐구 깊이",
-                                      rating: "보완필요" as const,
+                                      rating: "미흡" as const,
                                       evidence: "단순 나열 수준",
                                     },
                                   ]
@@ -2727,17 +2361,17 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                   ? [
                                       {
                                         dimension: "교과 이해도",
-                                        rating: "양호" as const,
+                                        rating: "보통" as const,
                                         evidence: "과학적 탐구 과정 이해",
                                       },
                                       {
                                         dimension: "탐구 깊이",
-                                        rating: "양호" as const,
+                                        rating: "보통" as const,
                                         evidence: "데이터 수집·분석 역량",
                                       },
                                       {
                                         dimension: "표현 능력",
-                                        rating: "양호" as const,
+                                        rating: "보통" as const,
                                         evidence: "보고서 작성 능력",
                                       },
                                     ]
@@ -2745,17 +2379,17 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                     ? [
                                         {
                                           dimension: "교과 이해도",
-                                          rating: "양호" as const,
+                                          rating: "보통" as const,
                                           evidence: "사회 현상 기본 이해",
                                         },
                                         {
                                           dimension: "전공 적합성",
-                                          rating: "보완필요" as const,
+                                          rating: "미흡" as const,
                                           evidence: "정보화 주제 선택",
                                         },
                                         {
                                           dimension: "탐구 깊이",
-                                          rating: "보완필요" as const,
+                                          rating: "미흡" as const,
                                           evidence: "표면적 분석 수준",
                                         },
                                       ]
@@ -2763,18 +2397,18 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                       ? [
                                           {
                                             dimension: "교과 이해도",
-                                            rating: "양호" as const,
+                                            rating: "보통" as const,
                                             evidence: "문학 감상 기본 역량",
                                           },
                                           {
                                             dimension: "전공 적합성",
-                                            rating: "보완필요" as const,
+                                            rating: "미흡" as const,
                                             evidence:
                                               "SF 소설 통한 진로 연결 시도",
                                           },
                                           {
                                             dimension: "탐구 깊이",
-                                            rating: "보완필요" as const,
+                                            rating: "미흡" as const,
                                             evidence: "비평적 분석 미흡",
                                           },
                                         ]
@@ -2793,7 +2427,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                             },
                                             {
                                               dimension: "탐구 깊이",
-                                              rating: "양호" as const,
+                                              rating: "보통" as const,
                                               evidence:
                                                 "암호화 원리 수학적 분석",
                                             },
@@ -2802,17 +2436,17 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                           ? [
                                               {
                                                 dimension: "협력성",
-                                                rating: "양호" as const,
+                                                rating: "보통" as const,
                                                 evidence: "팀 경기 참여",
                                               },
                                               {
                                                 dimension: "전공 적합성",
-                                                rating: "양호" as const,
+                                                rating: "보통" as const,
                                                 evidence: "데이터 분석적 접근",
                                               },
                                               {
                                                 dimension: "자기주도성",
-                                                rating: "양호" as const,
+                                                rating: "보통" as const,
                                                 evidence:
                                                   "전략 분석 역할 자발적 수행",
                                               },
@@ -2820,12 +2454,12 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                           : [
                                               {
                                                 dimension: "교과 이해도",
-                                                rating: "양호" as const,
+                                                rating: "보통" as const,
                                                 evidence: "기본 역량 충족",
                                               },
                                               {
                                                 dimension: "전공 적합성",
-                                                rating: "보완필요" as const,
+                                                rating: "미흡" as const,
                                                 evidence: "진로 연결 미흡",
                                               },
                                             ],
@@ -2866,7 +2500,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
               competencyTags: [
                 { category: "community" as const, subcategory: "협업 능력" },
               ],
-              assessment: "보완필요" as const,
+              assessment: "미흡" as const,
               improvementSuggestion:
                 "구체적 역할과 기여 내용이 드러나도록 기록 보완 필요",
             },
@@ -2942,10 +2576,10 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                     {
                       category: "academic" as const,
                       subcategory: "교과 성취도",
-                      assessment: "양호" as const,
+                      assessment: "보통" as const,
                     },
                   ],
-                  assessment: "양호" as const,
+                  assessment: "보통" as const,
                   positivePoint: "수학적 논증의 체계성",
                 },
               ]
@@ -3042,7 +2676,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                           {
                             category: "academic" as const,
                             subcategory: "탐구 역량",
-                            assessment: "양호" as const,
+                            assessment: "보통" as const,
                           },
                           {
                             category: "career" as const,
@@ -3065,10 +2699,10 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                             {
                               category: "community" as const,
                               subcategory: "시민의식",
-                              assessment: "양호" as const,
+                              assessment: "보통" as const,
                             },
                           ],
-                          assessment: "양호" as const,
+                          assessment: "보통" as const,
                           positivePoint: "기술 개발자의 사회적 책임감 표현",
                         },
                         {
@@ -3079,10 +2713,10 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                             {
                               category: "community" as const,
                               subcategory: "시민의식",
-                              assessment: "양호" as const,
+                              assessment: "보통" as const,
                             },
                           ],
-                          assessment: "양호" as const,
+                          assessment: "보통" as const,
                           positivePoint: "구체적 대안 제시 능력",
                         },
                       ]
@@ -3096,10 +2730,10 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                               {
                                 category: "academic" as const,
                                 subcategory: "교과 성취도",
-                                assessment: "양호" as const,
+                                assessment: "보통" as const,
                               },
                             ],
-                            assessment: "양호" as const,
+                            assessment: "보통" as const,
                             positivePoint: "물리학과 컴퓨터공학의 연결 시도",
                             improvementSuggestion:
                               "실험적 검증이나 시뮬레이션을 추가하면 탐구의 깊이가 향상됨",
@@ -3115,10 +2749,10 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                 {
                                   category: "academic" as const,
                                   subcategory: "탐구 역량",
-                                  assessment: "양호" as const,
+                                  assessment: "보통" as const,
                                 },
                               ],
-                              assessment: "양호" as const,
+                              assessment: "보통" as const,
                               positivePoint: "데이터 기반 분석 역량",
                             },
                           ]
@@ -3177,7 +2811,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                 {
                   category: "career" as const,
                   subcategory: "전공 적합성",
-                  assessment: "양호" as const,
+                  assessment: "보통" as const,
                 },
               ],
               highlight: "positive" as const,
@@ -3219,7 +2853,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                   {
                     category: "academic" as const,
                     subcategory: "탐구 역량",
-                    assessment: "양호" as const,
+                    assessment: "보통" as const,
                   },
                 ],
                 highlight: "positive" as const,
@@ -3243,7 +2877,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                   {
                     category: "community" as const,
                     subcategory: "협업 능력",
-                    assessment: "양호" as const,
+                    assessment: "보통" as const,
                   },
                 ],
                 highlight: "positive" as const,
@@ -3296,7 +2930,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                     {
                       category: "academic" as const,
                       subcategory: "교과 성취도",
-                      assessment: "양호" as const,
+                      assessment: "보통" as const,
                     },
                   ],
                   highlight: "positive" as const,
@@ -3309,7 +2943,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                     {
                       category: "career" as const,
                       subcategory: "전공 적합성",
-                      assessment: "양호" as const,
+                      assessment: "보통" as const,
                     },
                   ],
                   highlight: "positive" as const,
@@ -3434,7 +3068,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                         {
                           category: "growth" as const,
                           subcategory: "자기주도성",
-                          assessment: "양호" as const,
+                          assessment: "보통" as const,
                         },
                       ],
                       highlight: "positive" as const,
@@ -3464,7 +3098,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                           {
                             category: "academic" as const,
                             subcategory: "교과 성취도",
-                            assessment: "양호" as const,
+                            assessment: "보통" as const,
                           },
                         ],
                         highlight: "positive" as const,
@@ -3478,7 +3112,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                           {
                             category: "academic" as const,
                             subcategory: "탐구 역량",
-                            assessment: "양호" as const,
+                            assessment: "보통" as const,
                           },
                         ],
                         highlight: "neutral" as const,
@@ -3508,7 +3142,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                             {
                               category: "academic" as const,
                               subcategory: "융합 사고",
-                              assessment: "양호" as const,
+                              assessment: "보통" as const,
                             },
                           ],
                           highlight: "positive" as const,
@@ -3522,7 +3156,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                             {
                               category: "academic" as const,
                               subcategory: "탐구 역량",
-                              assessment: "양호" as const,
+                              assessment: "보통" as const,
                             },
                           ],
                           highlight: "positive" as const,
@@ -3552,7 +3186,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                               {
                                 category: "community" as const,
                                 subcategory: "시민의식",
-                                assessment: "양호" as const,
+                                assessment: "보통" as const,
                               },
                             ],
                             highlight: "positive" as const,
@@ -3566,7 +3200,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                               {
                                 category: "community" as const,
                                 subcategory: "시민의식",
-                                assessment: "양호" as const,
+                                assessment: "보통" as const,
                               },
                             ],
                             highlight: "positive" as const,
@@ -3580,7 +3214,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                               {
                                 category: "community" as const,
                                 subcategory: "협업 능력",
-                                assessment: "양호" as const,
+                                assessment: "보통" as const,
                               },
                             ],
                             highlight: "positive" as const,
@@ -3611,7 +3245,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                 {
                                   category: "academic" as const,
                                   subcategory: "탐구 역량",
-                                  assessment: "양호" as const,
+                                  assessment: "보통" as const,
                                 },
                               ],
                               highlight: "positive" as const,
@@ -3625,7 +3259,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                 {
                                   category: "academic" as const,
                                   subcategory: "교과 성취도",
-                                  assessment: "양호" as const,
+                                  assessment: "보통" as const,
                                 },
                               ],
                               highlight: "positive" as const,
@@ -3655,7 +3289,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                   {
                                     category: "career" as const,
                                     subcategory: "전공 적합성",
-                                    assessment: "양호" as const,
+                                    assessment: "보통" as const,
                                   },
                                 ],
                                 highlight: "positive" as const,
@@ -3669,7 +3303,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                   {
                                     category: "academic" as const,
                                     subcategory: "교과 성취도",
-                                    assessment: "양호" as const,
+                                    assessment: "보통" as const,
                                   },
                                 ],
                                 highlight: "positive" as const,
@@ -3719,7 +3353,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                 },
                                 {
                                   sentence:
-                                    "수업 참여도는 양호하나 글쓰기에서 논리적 구성력을 더 키울 필요가 있음.",
+                                    "수업 참여도는 보통이나 글쓰기에서 논리적 구성력을 더 키울 필요가 있음.",
                                   evaluation:
                                     "교사 피드백으로 개선 방향을 제시하는 서술.",
                                   competencyTags: [
@@ -3744,7 +3378,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                       {
                                         category: "academic" as const,
                                         subcategory: "교과 성취도",
-                                        assessment: "양호" as const,
+                                        assessment: "보통" as const,
                                       },
                                     ],
                                     highlight: "neutral" as const,
@@ -3758,7 +3392,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                       {
                                         category: "growth" as const,
                                         subcategory: "성실성",
-                                        assessment: "양호" as const,
+                                        assessment: "보통" as const,
                                       },
                                     ],
                                     highlight: "neutral" as const,
@@ -3817,7 +3451,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                           {
                                             category: "career" as const,
                                             subcategory: "전공 적합성",
-                                            assessment: "양호" as const,
+                                            assessment: "보통" as const,
                                           },
                                         ],
                                         highlight: "positive" as const,
@@ -3847,7 +3481,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                             {
                                               category: "academic" as const,
                                               subcategory: "탐구 역량",
-                                              assessment: "양호" as const,
+                                              assessment: "보통" as const,
                                             },
                                           ],
                                           highlight: "positive" as const,
@@ -3861,7 +3495,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                             {
                                               category: "academic" as const,
                                               subcategory: "탐구 역량",
-                                              assessment: "양호" as const,
+                                              assessment: "보통" as const,
                                             },
                                           ],
                                           highlight: "positive" as const,
@@ -3950,7 +3584,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                                     category:
                                                       "community" as const,
                                                     subcategory: "협업 능력",
-                                                    assessment: "양호" as const,
+                                                    assessment: "보통" as const,
                                                   },
                                                 ],
                                                 highlight: "positive" as const,
@@ -3965,7 +3599,7 @@ const subjectAnalysisPremium: SubjectAnalysisSection = {
                                                     category:
                                                       "community" as const,
                                                     subcategory: "협업 능력",
-                                                    assessment: "양호" as const,
+                                                    assessment: "보통" as const,
                                                   },
                                                 ],
                                                 highlight: "neutral" as const,
@@ -4027,7 +3661,7 @@ const behaviorAnalysis: BehaviorAnalysisSection = {
       summary:
         "수업 시간에 집중력이 높고 과제 제출이 성실하며, 모둠 활동에서 맡은 역할을 묵묵히 수행하는 학생으로 평가됨",
       competencyTags: [
-        { category: "growth", subcategory: "성실성", assessment: "양호" },
+        { category: "growth", subcategory: "성실성", assessment: "보통" },
       ],
       keyQuotes: ["맡은 일에 대한 책임감이 강하고, 수업 태도가 모범적임"],
     },
@@ -4050,59 +3684,6 @@ const behaviorAnalysis: BehaviorAnalysisSection = {
     "1학년부터 2학년까지 일관되게 성실하고 집중력 높은 학생으로 평가받고 있으며, 2학년에서 자기주도적 학습 태도가 뚜렷이 형성되었습니다. 다만 리더십이나 타인과의 소통에 대한 서술이 부족하여, 3학년에는 리더 역할이나 멘토링 경험을 통해 이 부분을 보완할 필요가 있습니다.",
   admissionRelevance:
     "행동특성에서 '자기주도성'과 '끈기'가 일관되게 드러나는 것은 서울대가 중시하는 '발전가능성' 평가에서 긍정적으로 작용합니다. 3학년에 리더십 관련 서술이 추가되면 '공동체 의식' 항목도 보강됩니다.",
-};
-
-// ─── 섹션 12: 기록 충실도 종합 ───
-
-const overallAssessment: OverallAssessmentSection = {
-  sectionId: "overallAssessment",
-  title: "기록 충실도 종합",
-  volumeAnalysis: [
-    {
-      category: "교과 세특",
-      maxCapacity: "500자 x 전 과목",
-      actualVolume: "평균 420자",
-      fillRate: 84,
-      assessment:
-        "양호. 전공 교과는 480자 이상 충실, 비전공 교과 350자 수준으로 보완 필요",
-    },
-    {
-      category: "창체 - 자율",
-      maxCapacity: "500자",
-      actualVolume: "380자",
-      fillRate: 76,
-      assessment:
-        "보통. IT 관련 자율활동은 기록되었으나 리더십 활동이 빠져 있음",
-    },
-    {
-      category: "창체 - 동아리",
-      maxCapacity: "500자",
-      actualVolume: "470자",
-      fillRate: 94,
-      assessment: "우수. 코딩 동아리 활동이 구체적이고 풍부하게 기록됨",
-    },
-    {
-      category: "창체 - 진로",
-      maxCapacity: "700자",
-      actualVolume: "450자",
-      fillRate: 64,
-      assessment: "미흡. 진로 탐색 활동의 깊이와 분량이 부족",
-    },
-    {
-      category: "행동특성 및 종합의견",
-      maxCapacity: "500자",
-      actualVolume: "440자",
-      fillRate: 88,
-      assessment: "양호. 성실성과 탐구 열정이 잘 드러나나 리더십 언급 부족",
-    },
-  ],
-  overallFillRate: 81,
-  qualityAssessment:
-    "전공 관련 기록(정보, 수학, 동아리)은 질적으로 우수하나, 비전공 교과와 진로 활동 기록의 질적 수준을 높일 필요가 있습니다.",
-  competitivenessSum:
-    "학업: 수학/정보 중심 우수 | 진로: 컴퓨터공학 일관성 확보 | 공동체: 리더십·봉사 보강 시급 | 발전가능성: 상승 추세 긍정적",
-  finalComment:
-    "전체 기록 충실도 81%로 양호한 수준이나, 서울대 합격을 위해서는 90% 이상의 충실도가 권장됩니다. 3학년 1학기에 진로 활동 기록 강화, 비전공 교과 세특 보완, 리더십 활동 추가가 필요합니다.",
 };
 
 // ============================================================
@@ -4246,7 +3827,7 @@ const WEAKNESS_TAG_MAP: Record<
   {
     category: "academic" | "career" | "community" | "growth";
     subcategory: string;
-    assessment: "우수" | "양호" | "미흡" | "부족";
+    assessment: "우수" | "보통" | "미흡" | "부족";
   }
 > = {
   "공동체 역량 (리더십·봉사)": {
@@ -4332,7 +3913,7 @@ const WEAKNESS_PREMIUM_MAP: Record<
     effectiveness: "high" | "medium" | "low";
     executionStrategy: string;
     subjectLinkStrategy?: string;
-    tierRating: "우수" | "양호" | "보완필요";
+    tierRating: "우수" | "보통" | "미흡";
     improvementTable?: {
       currentState: string;
       targetState: string;
@@ -4355,7 +3936,7 @@ const WEAKNESS_PREMIUM_MAP: Record<
     effectiveness: "high",
     executionStrategy:
       "3학년 시작과 동시에 동아리 부장에 지원하고, 코딩 교육 봉사를 학기 초부터 시작하여 지속적 기록을 확보합니다.",
-    tierRating: "보완필요",
+    tierRating: "미흡",
     improvementTable: {
       currentState: "공식 리더 경험 0회, 진로 연계 봉사 0회",
       targetState: "리더 역할 1건 이상, 봉사 활동 월 2회 이상",
@@ -4386,7 +3967,7 @@ const WEAKNESS_PREMIUM_MAP: Record<
       "3학년 1학기 국어/사회 수업에서 IT 관련 주제를 선정하여 세특 기록을 미리 준비합니다.",
     subjectLinkStrategy:
       "국어(자연어처리) → 정보(NLP 구현) → 영어(기술 논문 읽기)로 교과 간 연결 고리를 형성합니다.",
-    tierRating: "보완필요",
+    tierRating: "미흡",
     improvementTable: {
       currentState: "비전공 교과 세특에 진로 연계 0건",
       targetState: "국어·사회·한국사 각 1건 이상 진로 연계 세특",
@@ -4414,7 +3995,7 @@ const WEAKNESS_PREMIUM_MAP: Record<
     effectiveness: "high",
     executionStrategy:
       "방학 중 알고리즘 대회 준비를 시작하고, 학기 중 교내 대회에 참가하여 실적을 쌓습니다.",
-    tierRating: "양호",
+    tierRating: "보통",
     recordSource: "수상경력, 동아리활동",
     detailedStrategy:
       "겨울방학부터 백준 온라인 저지, 코드포스 등 플랫폼에서 알고리즘 문제풀이를 꾸준히 진행합니다. 한국정보올림피아드(KOI) 지역 예선을 목표로 준비하되, 교내 SW 경진대회에도 참가하여 입상 실적을 확보합니다. 대회 준비 과정 자체를 자기주도 학습의 기록으로 남깁니다.",
@@ -4429,7 +4010,7 @@ const WEAKNESS_PREMIUM_MAP: Record<
     effectiveness: "medium",
     executionStrategy:
       "단순 체험을 넘어서 자기주도적 진로 탐색 프로젝트를 설계하고, 탐색 과정에서의 문제 인식과 해결 노력을 체계적으로 기록합니다.",
-    tierRating: "보완필요",
+    tierRating: "미흡",
     improvementTable: {
       currentState: "진로 활동이 단순 탐방·체험 2건에 그침",
       targetState: "심화 진로 탐색 프로젝트 2건 이상, 산출물 포함",
@@ -4457,7 +4038,7 @@ const WEAKNESS_PREMIUM_MAP: Record<
     effectiveness: "high",
     executionStrategy:
       "3학년 1학기 비전공 교과에서 진로와 연결되는 탐구 주제를 선정하여 질적으로 차별화된 세특 기록을 확보합니다. 교과 교사와 사전 협의하여 기재 방향을 조율합니다.",
-    tierRating: "보완필요",
+    tierRating: "미흡",
     improvementTable: {
       currentState: "비전공 교과 세특 평균 250자, 진로 연계 0건",
       targetState: "비전공 교과 세특 평균 400자 이상, 진로 연계 3건 이상",
@@ -4486,7 +4067,7 @@ const WEAKNESS_PREMIUM_MAP: Record<
     effectiveness: "medium",
     executionStrategy:
       "3학년 활동에서 의도적으로 도전적 과제를 선택하고, 실패-분석-재도전의 과정을 학습 일지와 교사 상담을 통해 기록으로 남깁니다.",
-    tierRating: "보완필요",
+    tierRating: "미흡",
     improvementTable: {
       currentState: "실패-극복 서사 0건, 성장 과정 구체적 기술 없음",
       targetState: "도전-실패-극복 에피소드 2건 이상 세특 반영",
@@ -4511,7 +4092,7 @@ const WEAKNESS_PREMIUM_MAP: Record<
       "3학년에 2개 이상의 교과를 연결하는 융합 프로젝트를 수행하고, 그 과정과 결과를 각 교과 세특에 교차 기재합니다.",
     subjectLinkStrategy:
       "국어(텍스트마이닝) → 정보(프로그래밍) → 사회(데이터분석) 3교과 연결 프로젝트를 설계합니다.",
-    tierRating: "양호",
+    tierRating: "보통",
     improvementTable: {
       currentState: "교과 간 융합 프로젝트 0건",
       targetState: "2교과 이상 연결 프로젝트 2건",
@@ -4540,7 +4121,7 @@ const WEAKNESS_PREMIUM_MAP: Record<
     effectiveness: "medium",
     executionStrategy:
       "비전공 교과 수업에서의 참여도를 높이고, 교과 교사가 관찰할 수 있는 활동(발표, 질문, 토론)을 적극적으로 수행합니다.",
-    tierRating: "보완필요",
+    tierRating: "미흡",
     improvementTable: {
       currentState: "전공 교과 세특 480자 vs 비전공 교과 250자 (편차 46%p)",
       targetState: "전 교과 세특 평균 400자 이상 (편차 15%p 이내)",
@@ -4568,7 +4149,7 @@ const WEAKNESS_PREMIUM_MAP: Record<
     effectiveness: "medium",
     executionStrategy:
       "전공 도서와 인문·사회 도서를 균형 있게 읽고, 독서 내용을 교과 탐구 주제로 발전시켜 세특에 반영합니다.",
-    tierRating: "양호",
+    tierRating: "보통",
     expectedScoreImpact: {
       category: "growth",
       currentScore: 70,
@@ -4589,7 +4170,7 @@ const WEAKNESS_PREMIUM_MAP: Record<
     effectiveness: "medium",
     executionStrategy:
       "코딩 역량을 활용한 봉사·멘토링 활동, 학교 행사 기획 참여 등으로 인성·공동체 소재를 확보하고, 교과 외 관심사와 IT를 연결하는 창의적 경험을 추가합니다.",
-    tierRating: "양호",
+    tierRating: "보통",
     recordSource: "봉사활동, 자율활동, 동아리활동",
     detailedStrategy:
       "자기소개서는 학업 역량, 전공 적합성, 인성·공동체를 균형 있게 보여줘야 합니다. 현재 코딩/알고리즘 위주의 활동에 더해, 코딩 교육 봉사, 학교 행사 기획(IT 활용), 교과 외 관심사와 IT의 융합 경험을 추가하여 소재 풀을 넓힙니다. 특히 '기술을 통한 사회 기여'라는 스토리를 일관되게 구축합니다.",
@@ -4618,7 +4199,7 @@ const weaknessAnalysisPremium: WeaknessAnalysisSection = {
       effectiveness: premiumData?.effectiveness ?? ("medium" as const),
       executionStrategy: premiumData?.executionStrategy ?? "",
       subjectLinkStrategy: premiumData?.subjectLinkStrategy,
-      tierRating: premiumData?.tierRating ?? ("양호" as const),
+      tierRating: premiumData?.tierRating ?? ("보통" as const),
       improvementTable: premiumData?.improvementTable,
       expectedScoreImpact: premiumData?.expectedScoreImpact,
       recordSource: premiumData?.recordSource,
@@ -5691,166 +5272,66 @@ const interviewPrepPremium: InterviewPrepSection = {
 
 // ─── 섹션 16: 입시 전략 + 대학 추천 ───
 
+const MOCK_CARD = (
+  uni: string,
+  dept: string,
+  chance: "low" | "medium" | "high" = "medium"
+) => ({
+  university: uni,
+  department: dept,
+  comprehensive: {
+    admissionType: "학생부종합-일반",
+    chance,
+    chanceRationale:
+      chance === "medium"
+        ? "전공 관련 세특이 확인되나 상위권 경쟁이 치열하여 적정 수준"
+        : chance === "low"
+          ? "전공 적합성은 있으나 상위권 경쟁이 치열하여 도전적 지원"
+          : "현재 스펙으로 안정적 합격 가능",
+    chancePercentLabel:
+      chance === "medium" ? "40~55%" : chance === "low" ? "30~40%" : "70~85%",
+  },
+  subject: {
+    admissionType: "학생부교과-지역균형",
+    chance:
+      chance === "high"
+        ? ("medium" as const)
+        : chance === "medium"
+          ? ("low" as const)
+          : ("very_low" as const),
+    chanceRationale:
+      chance === "medium"
+        ? "내신 등급 기준 교과전형 지원 가능 수준"
+        : chance === "low"
+          ? "교과 합격선과 격차가 있어 어려운 편"
+          : "내신 등급이 합격선을 충족하여 안정적",
+    chancePercentLabel:
+      chance === "medium" ? "30~45%" : chance === "low" ? "20~30%" : "60~75%",
+  },
+});
+
 const admissionStrategyLite: AdmissionStrategySection = {
   sectionId: "admissionStrategy",
   title: "입시 전략 및 대학 추천",
   recommendedPath:
     "학생부종합전형을 주력으로, 전공 적합성과 탐구 역량을 중심으로 어필하는 전략을 추천합니다.",
-  recommendations: [
+  simulations: [
     {
-      university: "서울대학교",
-      department: "컴퓨터공학과",
-      admissionType: "학생부종합 (일반전형)",
-      tier: "상향",
-    },
-    {
-      university: "KAIST",
-      department: "전산학부",
-      admissionType: "학생부종합",
-      tier: "상향",
-    },
-    {
-      university: "고려대학교",
-      department: "컴퓨터학과",
-      admissionType: "학생부종합 (학업우수형)",
-      tier: "안정",
-    },
-    {
-      university: "성균관대학교",
-      department: "소프트웨어학과",
-      admissionType: "학생부종합 (계열모집)",
-      tier: "안정",
-    },
-    {
-      university: "한양대학교",
-      department: "컴퓨터소프트웨어학부",
-      admissionType: "학생부종합 (일반)",
-      tier: "하향",
-    },
-    {
-      university: "서울시립대학교",
-      department: "컴퓨터과학부",
-      admissionType: "학생부종합",
-      tier: "하향",
-    },
-    {
-      university: "연세대학교",
-      department: "컴퓨터과학과",
-      admissionType: "학생부종합 (활동우수형)",
-      tier: "안정",
-    },
-    {
-      university: "서강대학교",
-      department: "컴퓨터공학과",
-      admissionType: "학생부종합 (일반형)",
-      tier: "안정",
-    },
-    {
-      university: "중앙대학교",
-      department: "소프트웨어학부",
-      admissionType: "학생부종합 (다빈치형인재)",
-      tier: "하향",
-    },
-    {
-      university: "건국대학교",
-      department: "컴퓨터공학부",
-      admissionType: "학생부종합 (KU자기추천)",
-      tier: "하향",
+      description: "학생의 성적과 생기부를 종합 분석한 대학 추천입니다.",
+      cards: [
+        MOCK_CARD("연세대학교", "컴퓨터과학과", "low"),
+        MOCK_CARD("고려대학교", "컴퓨터학과", "medium"),
+        MOCK_CARD("성균관대학교", "소프트웨어학과", "medium"),
+        MOCK_CARD("한양대학교", "컴퓨터소프트웨어학부", "medium"),
+        MOCK_CARD("중앙대학교", "소프트웨어학부", "medium"),
+        MOCK_CARD("건국대학교", "컴퓨터공학부", "high"),
+      ],
     },
   ],
 };
 
-const ADMISSION_RATIONALE_MAP: Record<string, string> = {
-  서울대학교:
-    "전공 적합성은 우수하나 공동체 역량 보완 필요. 3학년 보강 시 합격 가능성 상승.",
-  KAIST: "수학·정보 성적이 강점이나, 외부 대회 실적 추가 시 경쟁력 상승.",
-  고려대학교: "현재 스펙으로 안정적 합격 가능. 학업우수형 전형에 매우 적합.",
-  성균관대학교:
-    "소프트웨어 특성화 학과로 전공 적합성이 높으며, 현재 내신과 활동으로 합격 가능성 높음.",
-  한양대학교:
-    "내신과 세특 활동 기준 안정적 합격 가능. 교과전형도 보조적으로 고려 가능.",
-  서울시립대학교: "현재 스펙 기준 합격 가능성이 매우 높음. 안전한 하향 지원처.",
-  연세대학교:
-    "활동우수형 전형에서 코딩 동아리·해커톤 경험이 강점. 전공 적합성 우수하나 공동체 활동 보강 권장.",
-  서강대학교:
-    "소규모 학과로 전공 적합성을 중시하며, 현재 수학·정보 세특이 강점. 안정적 합격 전망.",
-  중앙대학교:
-    "다빈치형인재 전형에서 자기주도 탐구 역량을 높이 평가. 현재 스펙으로 합격 가능성 매우 높음.",
-  건국대학교:
-    "KU자기추천 전형에서 진로 일관성과 탐구 활동이 강점. 안전한 하향 지원처로 적합.",
-};
-
 const admissionStrategyStandard: AdmissionStrategySection = {
   ...admissionStrategyLite,
-  recommendations: admissionStrategyLite.recommendations.map((r) => ({
-    ...r,
-    chance: r.tier === "상향" ? ("medium" as const) : ("high" as const),
-    chanceRationale:
-      ADMISSION_RATIONALE_MAP[r.university] ??
-      "현재 스펙 기준 합격 가능성이 높음.",
-    chancePercentLabel:
-      r.tier === "상향" ? "40~55%" : r.tier === "안정" ? "65~80%" : "80~90%",
-    admissionData:
-      r.university === "서울대학교"
-        ? { cutoff50: 1.5, cutoff70: 1.8, competitionRate: 3.2, enrollment: 55 }
-        : r.university === "KAIST"
-          ? { cutoff50: 1.6, competitionRate: 2.8, enrollment: 120 }
-          : r.university === "고려대학교"
-            ? {
-                cutoff50: 1.8,
-                cutoff70: 2.1,
-                competitionRate: 4.5,
-                enrollment: 60,
-              }
-            : r.university === "연세대학교"
-              ? {
-                  cutoff50: 1.7,
-                  cutoff70: 2.0,
-                  competitionRate: 5.1,
-                  enrollment: 55,
-                }
-              : r.university === "성균관대학교"
-                ? {
-                    cutoff50: 2.0,
-                    cutoff70: 2.3,
-                    competitionRate: 4.8,
-                    enrollment: 50,
-                  }
-                : r.university === "서강대학교"
-                  ? {
-                      cutoff50: 2.0,
-                      cutoff70: 2.4,
-                      competitionRate: 3.9,
-                      enrollment: 40,
-                    }
-                  : r.university === "한양대학교"
-                    ? {
-                        cutoff50: 2.2,
-                        cutoff70: 2.5,
-                        competitionRate: 5.2,
-                        enrollment: 50,
-                      }
-                    : r.university === "중앙대학교"
-                      ? {
-                          cutoff50: 2.5,
-                          cutoff70: 2.8,
-                          competitionRate: 6.1,
-                          enrollment: 80,
-                        }
-                      : r.university === "건국대학교"
-                        ? {
-                            cutoff50: 2.8,
-                            cutoff70: 3.1,
-                            competitionRate: 5.5,
-                            enrollment: 60,
-                          }
-                        : {
-                            cutoff50: 2.3,
-                            cutoff70: 2.7,
-                            competitionRate: 4.0,
-                            enrollment: 45,
-                          },
-  })),
   typeStrategies: [
     {
       type: "학종",
@@ -5869,12 +5350,12 @@ const admissionStrategyStandard: AdmissionStrategySection = {
         "서울대 교과전형 합격선 1.5등급 이내에 미달, 중상위권 대학에서는 가능성 있음",
     },
     {
-      type: "정시",
+      type: "논술",
       analysis:
-        "모의고사 성적이 양호하여 보조 전략으로 활용 가능하나, 수능 변동성을 고려해야 합니다.",
+        "논술전형은 논술 성적 비중이 높아 내신이 다소 부족해도 역전 가능성이 있으나, 논술 실력은 검증 불가하므로 보수적으로 판단합니다.",
       suitability: "보통",
       reason:
-        "현재 모의고사 기준 상위권이나, 수능 당일 변수가 크므로 보조 전략으로 활용",
+        "내신 등급이 상위권이므로 논술전형에서도 기본 경쟁력을 갖추고 있으나, 논술 실력에 따라 결과가 달라짐",
     },
   ],
   schoolTypeAnalysis: {
@@ -5887,429 +5368,26 @@ const admissionStrategyStandard: AdmissionStrategySection = {
 
 const admissionStrategyPremium: AdmissionStrategySection = {
   ...admissionStrategyStandard,
-  csatMinimumStrategy:
-    "수능 최저 충족을 위해 국어 3등급 → 2등급, 영어 2등급 유지가 필요합니다. 수학과 탐구는 현재 수준 유지 시 충족 가능합니다.",
-  applicationSimulation: {
-    description: "수시 6장 최적 배분 시뮬레이션",
-    details: [
-      {
-        admissionType: "학종",
-        count: 4,
-        targetUniversities: ["서울대", "연세대", "고려대", "성균관대"],
-      },
-      {
-        admissionType: "교과",
-        count: 1,
-        targetUniversities: ["서강대"],
-      },
-      {
-        admissionType: "정시 대비",
-        count: 1,
-        targetUniversities: ["중앙대"],
-      },
-    ],
-  },
   universityGuideMatching: [
     {
       university: "서울대학교",
-      emphasisKeywords: [
-        "자기주도성",
-        "학업 역량",
-        "발전가능성",
-        "공동체 의식",
-      ],
+      emphasisKeywords: ["자기주도성", "학업 역량"],
       studentStrengthMatch: ["자기주도성", "학업 역량"],
       studentWeaknessMatch: ["공동체 의식"],
     },
     {
       university: "연세대학교",
-      emphasisKeywords: ["창의성", "도전정신", "리더십", "전공 적합성"],
+      emphasisKeywords: ["창의성", "도전정신", "전공 적합성"],
       studentStrengthMatch: ["전공 적합성", "도전정신"],
       studentWeaknessMatch: ["리더십"],
     },
     {
       university: "고려대학교",
-      emphasisKeywords: ["학업 역량", "자기개발 역량", "인성", "전공 적합성"],
-      studentStrengthMatch: ["학업 역량", "자기개발 역량"],
+      emphasisKeywords: ["학업 역량", "자기개발 역량", "전공 적합성"],
+      studentStrengthMatch: ["학업 역량"],
       studentWeaknessMatch: ["인성"],
     },
-    {
-      university: "성균관대학교",
-      emphasisKeywords: ["소프트웨어 역량", "문제 해결 능력", "협업 역량"],
-      studentStrengthMatch: ["소프트웨어 역량", "문제 해결 능력"],
-      studentWeaknessMatch: ["협업 역량"],
-    },
-    {
-      university: "서강대학교",
-      emphasisKeywords: ["자기주도 학습", "탐구 역량", "전공 관심도"],
-      studentStrengthMatch: ["자기주도 학습", "탐구 역량", "전공 관심도"],
-      studentWeaknessMatch: [],
-    },
-    {
-      university: "중앙대학교",
-      emphasisKeywords: ["자기주도 탐구", "창의적 문제해결", "잠재력"],
-      studentStrengthMatch: ["자기주도 탐구", "창의적 문제해결"],
-      studentWeaknessMatch: [],
-    },
   ],
-  // v4
-  universityRiskBands: [
-    {
-      university: "서울대학교",
-      department: "컴퓨터공학과",
-      band: "소신",
-      rationale: "전공 적합성 우수하나 공동체 역량 보강 필요",
-    },
-    {
-      university: "KAIST",
-      department: "전산학부",
-      band: "도전",
-      rationale:
-        "수학·정보 역량은 강점이나 외부 대회 실적 부족으로 경쟁력 다소 낮음",
-    },
-    {
-      university: "연세대학교",
-      department: "컴퓨터과학과",
-      band: "적정",
-      rationale:
-        "활동우수형 전형에서 세특 기반 활동이 강점. 리더십 보강 시 안정권",
-    },
-    {
-      university: "고려대학교",
-      department: "컴퓨터학과",
-      band: "안정",
-      rationale: "현재 스펙으로 안정적 합격 가능",
-    },
-    {
-      university: "성균관대학교",
-      department: "소프트웨어학과",
-      band: "안정",
-      rationale: "전공 적합성과 내신 모두 합격선 충족",
-    },
-    {
-      university: "서강대학교",
-      department: "컴퓨터공학과",
-      band: "안정",
-      rationale: "소규모 학과 특성상 전공 적합성을 중시하여 현재 스펙으로 충분",
-    },
-    {
-      university: "한양대학교",
-      department: "컴퓨터소프트웨어학부",
-      band: "안정",
-      rationale: "내신과 활동 모두 합격선 충족",
-    },
-    {
-      university: "중앙대학교",
-      department: "소프트웨어학부",
-      band: "안정",
-      rationale: "현재 스펙 기준 안정적 합격 전망",
-    },
-    {
-      university: "건국대학교",
-      department: "컴퓨터공학부",
-      band: "안정",
-      rationale: "합격 가능성 매우 높은 안전 지원처",
-    },
-    {
-      university: "서울시립대학교",
-      department: "컴퓨터과학부",
-      band: "안정",
-      rationale: "합격 가능성 매우 높은 안전 지원처",
-    },
-  ],
-  typeSuitabilityChart: [
-    {
-      type: "학종",
-      score: 78,
-      keyStrengths: ["전공 적합성", "탐구 역량", "진로 일관성"],
-      keyRisks: ["공동체 역량 부족", "인문 교과 연계 미비"],
-    },
-    {
-      type: "교과",
-      score: 52,
-      keyStrengths: ["전공 교과 1등급"],
-      keyRisks: ["전 교과 평균 2.1등급", "비전공 교과 3등급대"],
-    },
-    {
-      type: "정시",
-      score: 65,
-      keyStrengths: ["수학·탐구 영역 강점"],
-      keyRisks: ["국어 영역 변동성", "수능 당일 변수"],
-    },
-  ],
-  strategyMatrix: [
-    {
-      tier: "상향",
-      recommendations: [
-        {
-          university: "서울대학교",
-          department: "컴퓨터공학과",
-          type: "학종",
-          band: "소신",
-        },
-        {
-          university: "KAIST",
-          department: "전산학부",
-          type: "학종",
-          band: "도전",
-        },
-      ],
-    },
-    {
-      tier: "안정",
-      recommendations: [
-        {
-          university: "연세대학교",
-          department: "컴퓨터과학과",
-          type: "학종",
-          band: "적정",
-        },
-        {
-          university: "고려대학교",
-          department: "컴퓨터학과",
-          type: "학종",
-          band: "안정",
-        },
-        {
-          university: "성균관대학교",
-          department: "소프트웨어학과",
-          type: "학종",
-          band: "안정",
-        },
-        {
-          university: "서강대학교",
-          department: "컴퓨터공학과",
-          type: "학종",
-          band: "안정",
-        },
-      ],
-    },
-    {
-      tier: "하향",
-      recommendations: [
-        {
-          university: "한양대학교",
-          department: "컴퓨터소프트웨어학부",
-          type: "학종",
-          band: "안정",
-        },
-        {
-          university: "중앙대학교",
-          department: "소프트웨어학부",
-          type: "학종",
-          band: "안정",
-        },
-        {
-          university: "건국대학교",
-          department: "컴퓨터공학부",
-          type: "학종",
-          band: "안정",
-        },
-        {
-          university: "서울시립대학교",
-          department: "컴퓨터과학부",
-          type: "학종",
-          band: "안정",
-        },
-      ],
-    },
-  ],
-  tierGroupedRecommendations: [
-    {
-      tierGroup: "상향 위주",
-      recommendations: [
-        {
-          university: "서울대학교",
-          department: "컴퓨터공학과",
-          admissionType: "학생부종합 (일반전형)",
-          tier: "상향",
-          chance: "medium",
-          chanceRationale:
-            "전공 적합성은 우수하나 공동체 역량 보완 필요. 3학년 보강 시 합격 가능성 상승.",
-          chancePercentLabel: "40~50%",
-        },
-        {
-          university: "KAIST",
-          department: "전산학부",
-          admissionType: "학생부종합",
-          tier: "상향",
-          chance: "medium",
-          chanceRationale:
-            "수학·정보 성적이 강점이나, 외부 대회 실적 추가 시 경쟁력 상승.",
-          chancePercentLabel: "35~45%",
-        },
-        {
-          university: "포항공과대학교",
-          department: "컴퓨터공학과",
-          admissionType: "학생부종합 (일반전형)",
-          tier: "상향",
-          chance: "medium",
-          chanceRationale:
-            "이공계 특성화 대학으로 수학·과학 역량이 강점. 연구 경험 추가 시 경쟁력 상승.",
-          chancePercentLabel: "40~50%",
-        },
-        {
-          university: "연세대학교",
-          department: "컴퓨터과학과",
-          admissionType: "학생부종합 (활동우수형)",
-          tier: "상향",
-          chance: "medium",
-          chanceRationale:
-            "활동우수형 전형에서 코딩 동아리·해커톤 경험이 강점이나 리더십 보강 권장.",
-          chancePercentLabel: "45~55%",
-        },
-        {
-          university: "고려대학교",
-          department: "컴퓨터학과",
-          admissionType: "학생부종합 (학업우수형)",
-          tier: "상향",
-          chance: "medium",
-          chanceRationale:
-            "학업우수형 전형에서 내신과 세특 활동이 합격선 근접. 3학년 성적 유지 시 가능성 높음.",
-          chancePercentLabel: "50~60%",
-        },
-        {
-          university: "성균관대학교",
-          department: "소프트웨어학과",
-          admissionType: "학생부종합 (계열모집)",
-          tier: "상향",
-          chance: "medium",
-          chanceRationale:
-            "소프트웨어 특성화 학과로 전공 적합성이 높으나, 상향 지원 시 내신 보강 필요.",
-          chancePercentLabel: "50~60%",
-        },
-      ],
-    },
-    {
-      tierGroup: "안정 위주",
-      recommendations: [
-        {
-          university: "고려대학교",
-          department: "컴퓨터학과",
-          admissionType: "학생부종합 (학업우수형)",
-          tier: "안정",
-          chance: "high",
-          chanceRationale:
-            "현재 스펙으로 안정적 합격 가능. 학업우수형 전형에 매우 적합.",
-          chancePercentLabel: "70~80%",
-        },
-        {
-          university: "성균관대학교",
-          department: "소프트웨어학과",
-          admissionType: "학생부종합 (계열모집)",
-          tier: "안정",
-          chance: "high",
-          chanceRationale:
-            "전공 적합성이 높으며 현재 내신과 활동으로 합격 가능성 높음.",
-          chancePercentLabel: "70~80%",
-        },
-        {
-          university: "한양대학교",
-          department: "컴퓨터소프트웨어학부",
-          admissionType: "학생부종합 (일반)",
-          tier: "안정",
-          chance: "high",
-          chanceRationale: "내신과 세특 활동 기준 안정적 합격 가능.",
-          chancePercentLabel: "70~80%",
-        },
-        {
-          university: "서강대학교",
-          department: "컴퓨터공학과",
-          admissionType: "학생부종합 (일반형)",
-          tier: "안정",
-          chance: "high",
-          chanceRationale:
-            "소규모 학과로 전공 적합성을 중시하며 현재 수학·정보 세특이 강점.",
-          chancePercentLabel: "75~85%",
-        },
-        {
-          university: "경희대학교",
-          department: "컴퓨터공학과",
-          admissionType: "학생부종합 (네오르네상스)",
-          tier: "안정",
-          chance: "high",
-          chanceRationale:
-            "네오르네상스 전형에서 자기주도 탐구와 진로 일관성이 강점으로 작용.",
-          chancePercentLabel: "75~85%",
-        },
-        {
-          university: "서울시립대학교",
-          department: "컴퓨터과학부",
-          admissionType: "학생부종합",
-          tier: "안정",
-          chance: "high",
-          chanceRationale: "현재 스펙 기준 합격 가능성이 매우 높음.",
-          chancePercentLabel: "80~90%",
-        },
-      ],
-    },
-    {
-      tierGroup: "하향 위주",
-      recommendations: [
-        {
-          university: "중앙대학교",
-          department: "소프트웨어학부",
-          admissionType: "학생부종합 (다빈치형인재)",
-          tier: "하향",
-          chance: "high",
-          chanceRationale:
-            "다빈치형인재 전형에서 자기주도 탐구 역량을 높이 평가. 합격 가능성 매우 높음.",
-          chancePercentLabel: "85~95%",
-        },
-        {
-          university: "건국대학교",
-          department: "컴퓨터공학부",
-          admissionType: "학생부종합 (KU자기추천)",
-          tier: "하향",
-          chance: "high",
-          chanceRationale:
-            "진로 일관성과 탐구 활동이 강점. 안전한 하향 지원처.",
-          chancePercentLabel: "85~95%",
-        },
-        {
-          university: "동국대학교",
-          department: "컴퓨터공학과",
-          admissionType: "학생부종합 (Do Dream)",
-          tier: "하향",
-          chance: "high",
-          chanceRationale:
-            "Do Dream 전형에서 전공 적합성과 자기주도 활동이 높이 평가됨.",
-          chancePercentLabel: "85~95%",
-        },
-        {
-          university: "숭실대학교",
-          department: "컴퓨터학부",
-          admissionType: "학생부종합 (SSU미래인재)",
-          tier: "하향",
-          chance: "high",
-          chanceRationale:
-            "IT 특성화 대학으로 전공 적합성이 높으며 합격 가능성 매우 높음.",
-          chancePercentLabel: "90~95%",
-        },
-        {
-          university: "세종대학교",
-          department: "컴퓨터공학과",
-          admissionType: "학생부종합 (창의인재)",
-          tier: "하향",
-          chance: "high",
-          chanceRationale: "현재 스펙 기준 합격이 거의 확실한 안전 지원처.",
-          chancePercentLabel: "90~95%",
-        },
-        {
-          university: "국민대학교",
-          department: "소프트웨어학부",
-          admissionType: "학생부종합 (국민프런티어)",
-          tier: "하향",
-          chance: "high",
-          chanceRationale:
-            "소프트웨어 분야 특성화로 전공 적합성 높음. 합격 확실한 안전 지원처.",
-          chancePercentLabel: "90~95%",
-        },
-      ],
-    },
-  ],
-  nextSemesterStrategy:
-    "3학년 1학기에는 국어·한국사 교과 성적을 2등급 이내로 끌어올리는 것을 최우선으로 하되, 전공 교과(수학·정보) 1등급 유지를 병행해야 합니다. 세특에서는 전공 심화 탐구(AI/알고리즘)와 함께 인문·사회 교과에서도 IT 연계 주제를 발굴하여 교과 간 융합 역량을 보여주는 것이 중요합니다. 또한 동아리 부장이나 학급 임원 등 공식 리더 역할을 맡아 공동체 역량을 보강하고, 지역 아동센터 코딩 교육 봉사를 시작하여 진로 연계 봉사 기록을 확보해야 합니다.",
 };
 
 // ─── 섹션 17: 생기부 스토리 구조 분석 ───
@@ -6437,7 +5515,7 @@ const storyAnalysisPremium: StoryAnalysisSection = {
             {
               category: "community",
               subcategory: "리더십",
-              assessment: "양호",
+              assessment: "보통",
             },
           ],
         },
@@ -6473,70 +5551,10 @@ const actionRoadmapStandard: ActionRoadmapSection = {
   title: "실행 로드맵",
   completionStrategy:
     "3학년 1학기에 세특 보강(인문 교과 연계, 융합 탐구)과 공동체 활동(동아리 부장, 봉사)을 동시에 추진하여 생기부의 완성도를 높입니다.",
-  phases: [
-    {
-      phase: "1단계: 기반 강화",
-      period: "고2 겨울방학 (12월~2월)",
-      goals: [
-        "국어·한국사 내신 대비 학습 시작",
-        "코딩 교육 봉사 기관 섭외",
-        "알고리즘 대회 준비 시작",
-      ],
-      tasks: [
-        "국어 비문학 독해 연습 (주 3회, 하루 30분)",
-        "한국사 개념 정리 노트 작성",
-        "코딩 교육 봉사 기관(지역 아동센터 등) 탐색 및 연락",
-        "백준 온라인 저지에서 알고리즘 문제 풀이 (주 5일)",
-        "3학년 1학기 세특 주제 사전 조사 및 선정",
-      ],
-    },
-    {
-      phase: "2단계: 세특 보강 + 활동 강화",
-      period: "고3 1학기 (3월~7월)",
-      goals: [
-        "국어·사회 세특에서 IT 연계 활동 기록",
-        "코딩 동아리 부장 활동",
-        "교내 SW 경진대회 참가",
-      ],
-      tasks: [
-        "국어 세특: 자연어 처리 탐구 활동 수행",
-        "사회 세특: AI 윤리 에세이 작성",
-        "동아리 부장으로서 신입 부원 멘토링 및 연간 활동 기획",
-        "코딩 교육 봉사 (월 2회)",
-        "교내 SW 경진대회 출전",
-        "전 교과 세특 진로 연결 활동 확보",
-      ],
-    },
-    {
-      phase: "3단계: 지원 준비",
-      period: "고3 여름 (7월~9월)",
-      goals: ["자기소개서 작성", "최종 지원 대학 확정", "면접 기초 준비"],
-      tasks: [
-        "자기소개서 초안 작성 (7월)",
-        "선생님 피드백 반영 3회 이상 수정",
-        "수시 6개 대학 최종 확정",
-        "면접 예상 질문 리스트 작성 시작",
-      ],
-    },
-  ],
 };
 
 const actionRoadmapPremium: ActionRoadmapSection = {
   ...actionRoadmapStandard,
-  phases: [
-    ...actionRoadmapStandard.phases,
-    {
-      phase: "4단계: 면접 집중",
-      period: "고3 가을 (10월~11월)",
-      goals: ["대학별 면접 완벽 대비", "생기부 기반 심층 질문 대응력 확보"],
-      tasks: [
-        "서울대 면접 기출 분석 및 모의 면접 (주 2회)",
-        "생기부 전 항목 예상 질문 50개 답변 준비",
-        "IT 시사 이슈 주간 정리",
-        "대학별 면접 특성 분석 및 맞춤 답변 전략 수립",
-      ],
-    },
-  ],
   prewriteProposals: [
     "겨울방학 중 NLP 기초 학습 및 간단한 챗봇 프로젝트 수행",
     "알고리즘 문제 100제 풀이 기록 정리",
@@ -6585,81 +5603,7 @@ const actionRoadmapPremium: ActionRoadmapSection = {
   ],
 };
 
-// ============================================================
-// 부록
-// ============================================================
-
-// ─── 섹션 19: 추천 도서 ───
-
-const bookRecommendationStandard: BookRecommendationSection = {
-  sectionId: "bookRecommendation",
-  title: "추천 도서",
-  books: [
-    {
-      title: "알고리즘, 인생을 계산하다",
-      author: "브라이언 크리스천, 톰 그리피스",
-      reason:
-        "알고리즘적 사고를 일상생활에 적용하는 방법을 다루어, 컴퓨터과학의 실용적 가치를 이해하는 데 도움",
-      connectionToRecord:
-        "다익스트라 알고리즘 탐구 경험을 더 넓은 맥락에서 이해할 수 있으며, 면접에서 활용 가능",
-      relatedSubject: "정보",
-    },
-    {
-      title: "이것이 코딩 테스트다",
-      author: "나동빈",
-      reason:
-        "알고리즘 문제 유형별 풀이 전략을 체계적으로 학습할 수 있어 정보올림피아드 대비에 직접적 도움",
-      connectionToRecord:
-        "코딩 동아리 활동과 연계하여 알고리즘 학습의 체계성을 보여줄 수 있음",
-      relatedSubject: "정보",
-    },
-    {
-      title: "수학의 언어로 세상을 본다면",
-      author: "오구리 히로시",
-      reason:
-        "수학적 사고의 본질을 이해하고, 수학이 과학과 기술에 어떻게 활용되는지를 다루는 책",
-      connectionToRecord:
-        "수학-정보 융합 탐구의 배경 지식을 넓히고, 수학적 사고의 가치를 면접에서 설명할 수 있음",
-      relatedSubject: "수학",
-    },
-    {
-      title: "정의란 무엇인가",
-      author: "마이클 샌델",
-      reason:
-        "AI 윤리, 기술과 사회의 관계를 고민하는 데 필요한 철학적 사고의 기초를 다져줌",
-      connectionToRecord:
-        "인문학적 소양을 보여주는 독서 기록으로, 세특에서 IT 윤리 탐구와 연결 가능",
-      relatedSubject: "사회",
-    },
-  ],
-};
-
-const bookRecommendationPremium: BookRecommendationSection = {
-  ...bookRecommendationStandard,
-  books: [
-    ...bookRecommendationStandard.books,
-    {
-      title: "인공지능: 현대적 접근방식",
-      author: "스튜어트 러셀, 피터 노빅",
-      reason:
-        "AI의 이론적 기초부터 최신 기술까지 포괄적으로 다루는 대학 교재 수준의 책. 대학 선행 학습에 도움",
-      connectionToRecord:
-        "경사하강법 탐구를 AI 전체 분야로 확장하는 데 기여하며, 면접에서 전공 깊이를 보여줄 수 있음",
-      relatedSubject: "정보",
-    },
-    {
-      title: "클린 코드",
-      author: "로버트 C. 마틴",
-      reason:
-        "좋은 코드를 작성하는 원칙과 실천 방법을 배울 수 있어, 프로그래밍 역량을 한 단계 높여줌",
-      connectionToRecord:
-        "코딩 동아리에서의 프로젝트 품질을 높이고, 소프트웨어 공학에 대한 이해를 보여줄 수 있음",
-      relatedSubject: "정보",
-    },
-  ],
-};
-
-// ─── 섹션 20: AI 전공 추천 ───
+// ─── AI 전공 추천 ───
 
 const majorExploration: MajorExplorationSection = {
   sectionId: "majorExploration",
@@ -6698,45 +5642,6 @@ const majorExploration: MajorExplorationSection = {
   ],
 };
 
-// ─── 섹션 21: 워드 클라우드 ───
-
-const wordCloud: WordCloudSection = {
-  sectionId: "wordCloud",
-  title: "키워드 분석",
-  words: [
-    { text: "알고리즘", frequency: 15, category: "academic" },
-    { text: "프로그래밍", frequency: 14, category: "career" },
-    { text: "Python", frequency: 12, category: "career" },
-    { text: "탐구", frequency: 11, category: "academic" },
-    { text: "문제해결", frequency: 10, category: "academic" },
-    { text: "수학", frequency: 9, category: "academic" },
-    { text: "다익스트라", frequency: 8, category: "academic" },
-    { text: "코딩", frequency: 8, category: "career" },
-    { text: "경사하강법", frequency: 7, category: "academic" },
-    { text: "인공지능", frequency: 7, category: "career" },
-    { text: "데이터", frequency: 6, category: "academic" },
-    { text: "시간복잡도", frequency: 6, category: "academic" },
-    { text: "동아리", frequency: 5, category: "community" },
-    { text: "해커톤", frequency: 5, category: "community" },
-    { text: "성실성", frequency: 5, category: "growth" },
-    { text: "자기주도", frequency: 5, category: "growth" },
-    { text: "융합", frequency: 4, category: "academic" },
-    { text: "반도체", frequency: 4, category: "academic" },
-    { text: "실험", frequency: 4, category: "academic" },
-    { text: "발표", frequency: 4, category: "community" },
-    { text: "팀프로젝트", frequency: 3, category: "community" },
-    { text: "끈기", frequency: 3, category: "growth" },
-    { text: "논리", frequency: 3, category: "academic" },
-    { text: "최적화", frequency: 3, category: "academic" },
-    { text: "소프트웨어", frequency: 3, category: "career" },
-    { text: "웹개발", frequency: 2, category: "career" },
-    { text: "머신러닝", frequency: 2, category: "career" },
-    { text: "그래프이론", frequency: 2, category: "academic" },
-    { text: "성장", frequency: 2, category: "growth" },
-    { text: "책임감", frequency: 2, category: "growth" },
-  ],
-};
-
 // ============================================================
 // 플랜별 리포트 조합
 // ============================================================
@@ -6765,7 +5670,7 @@ const premiumMeta: ReportMeta = {
   version: 1,
 };
 
-/** Lite 플랜 mock 리포트 (14 섹션) */
+/** Lite 플랜 mock 리포트 (10 섹션) */
 export const LITE_MOCK_REPORT: ReportContent = {
   meta: liteMeta,
   sections: [
@@ -6774,18 +5679,18 @@ export const LITE_MOCK_REPORT: ReportContent = {
     competencyScoreLite,
     // Part 2: 분석
     academicAnalysisLite,
+    courseAlignment,
     attendanceAnalysis,
     activityAnalysisLite,
     subjectAnalysisLite,
+    behaviorAnalysis,
     // Part 3: 전략
-    weaknessAnalysisLite,
-    topicRecommendationLite,
     interviewPrepLite,
-    admissionStrategyLite,
+    majorExploration,
   ],
 };
 
-/** Standard 플랜 mock 리포트 (21 섹션) */
+/** Standard 플랜 mock 리포트 (12 섹션) */
 export const STANDARD_MOCK_REPORT: ReportContent = {
   meta: standardMeta,
   sections: [
@@ -6801,16 +5706,13 @@ export const STANDARD_MOCK_REPORT: ReportContent = {
     subjectAnalysisStandard,
     behaviorAnalysis,
     // Part 3: 전략
-    weaknessAnalysisStandard,
     topicRecommendationStandard,
     interviewPrepStandard,
-    admissionStrategyStandard,
-    storyAnalysisStandard,
-    actionRoadmapStandard,
+    majorExploration,
   ],
 };
 
-/** Premium 플랜 mock 리포트 (21 섹션 + 확장 필드) */
+/** Premium 플랜 mock 리포트 (16 섹션) */
 export const PREMIUM_MOCK_REPORT: ReportContent = {
   meta: premiumMeta,
   sections: [
@@ -6832,8 +5734,6 @@ export const PREMIUM_MOCK_REPORT: ReportContent = {
     admissionStrategyPremium,
     storyAnalysisPremium,
     actionRoadmapPremium,
-    // 부록
-    bookRecommendationPremium,
     majorExploration,
   ],
 };

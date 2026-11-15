@@ -6,25 +6,18 @@ const PART_CONFIG = [
   {
     label: "PART 1",
     title: "진단",
-    sectionIds: [
-      "studentProfile",
-      "competencyScore",
-      "admissionPrediction",
-      "diagnostic",
-    ],
+    sectionIds: ["studentProfile", "competencyScore", "admissionPrediction"],
   },
   {
     label: "PART 2",
     title: "정밀 분석",
     sectionIds: [
-      "competencyEvaluation",
       "academicAnalysis",
       "courseAlignment",
       "attendanceAnalysis",
       "activityAnalysis",
       "subjectAnalysis",
       "behaviorAnalysis",
-      "overallAssessment",
     ],
   },
   {
@@ -35,7 +28,6 @@ const PART_CONFIG = [
       "topicRecommendation",
       "interviewPrep",
       "admissionStrategy",
-      "directionGuide",
       "storyAnalysis",
       "actionRoadmap",
     ],
@@ -43,7 +35,12 @@ const PART_CONFIG = [
   {
     label: "부록",
     title: "부록",
-    sectionIds: ["bookRecommendation", "majorExploration", "wordCloud"],
+    sectionIds: ["majorExploration", "competitiveProfiling"],
+  },
+  {
+    label: "총평",
+    title: "전임 컨설턴트",
+    sectionIds: ["consultantReview"],
   },
 ];
 

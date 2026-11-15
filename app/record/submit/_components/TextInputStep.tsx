@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useState, useRef } from "react";
 import { AlertCircle, Check, Plus, X } from "lucide-react";
 
 import { AccordionStep } from "./SectionTable";
@@ -14,7 +14,11 @@ import type {
   CreativeActivityArea,
   ValidationError,
 } from "./types";
-import { REQUIRED_FIELD_RULES, REQUIRED_SECTION_KEYS } from "./types";
+import {
+  ATTENDANCE_MAX_ROWS,
+  REQUIRED_FIELD_RULES,
+  REQUIRED_SECTION_KEYS,
+} from "./types";
 import {
   createEmptyAttendanceRow,
   createEmptyAwardRow,
@@ -217,6 +221,13 @@ const awardColumns: ColumnDef<Record<string, unknown>>[] = [
     label: "학년",
     type: "select",
     options: YEAR_OPTIONS,
+    width: "54px",
+  },
+  {
+    key: "semester",
+    label: "학기",
+    type: "select",
+    options: SEMESTER_OPTIONS,
     width: "54px",
   },
   {
@@ -627,6 +638,13 @@ const generalSubjectColumns: ColumnDef<Record<string, unknown>>[] = [
     max: 9,
     width: "48px",
   },
+  {
+    key: "note",
+    label: "비고",
+    type: "text",
+    placeholder: "공동, 타기관",
+    width: "80px",
+  },
 ];
 
 const careerSubjectColumns: ColumnDef<Record<string, unknown>>[] = [
@@ -707,6 +725,13 @@ const careerSubjectColumns: ColumnDef<Record<string, unknown>>[] = [
     type: "text",
     placeholder: "40%|35.1|24.9",
     width: "100px",
+  },
+  {
+    key: "note",
+    label: "비고",
+    type: "text",
+    placeholder: "공동, 타기관",
+    width: "80px",
   },
 ];
 
@@ -833,6 +858,7 @@ const ACCORDION_STEPS: AccordionStepDef[] = [
         columns: attendanceColumns,
         addLabel: "학년 추가",
         createEmpty: createEmptyAttendanceRow,
+        maxRows: ATTENDANCE_MAX_ROWS,
       },
       {
         key: "awards",
@@ -929,16 +955,144 @@ const ACCORDION_STEPS: AccordionStepDef[] = [
 // TextInputStep
 // ============================================
 
+const parseSubjects = (str: string): string[] => {
+  if (!str.trim()) return [];
+  return str
+    .split(/[,、，\n]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+};
+
 interface TextInputStepProps {
   record: SchoolRecord;
   onRecordChange: (record: SchoolRecord) => void;
   requiredFieldErrors?: ValidationError[];
+  plannedSubjects?: string;
+  onPlannedSubjectsChange?: (value: string) => void;
 }
+
+const PlannedSubjectsInput = ({
+  plannedSubjects = "",
+  onPlannedSubjectsChange,
+}: {
+  plannedSubjects: string;
+  onPlannedSubjectsChange: (value: string) => void;
+}) => {
+  const [subjects, setSubjects] = useState<string[]>(() => {
+    const parsed = parseSubjects(plannedSubjects);
+    return parsed.length > 0 ? parsed : [""];
+  });
+
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const commit = (next: string[]) => {
+    setSubjects(next);
+    onPlannedSubjectsChange(next.filter(Boolean).join(", "));
+  };
+
+  const handleSubjectChange = (index: number, value: string) => {
+    commit(subjects.map((s, i) => (i === index ? value : s)));
+  };
+
+  const handleAddSubject = () => {
+    const next = [...subjects, ""];
+    commit(next);
+    setTimeout(() => inputRefs.current[next.length - 1]?.focus(), 0);
+  };
+
+  const handleRemoveSubject = (index: number) => {
+    if (subjects.length <= 1) {
+      commit([""]);
+      setTimeout(() => inputRefs.current[0]?.focus(), 0);
+      return;
+    }
+    commit(subjects.filter((_, i) => i !== index));
+    setTimeout(() => inputRefs.current[Math.max(0, index - 1)]?.focus(), 0);
+  };
+
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const next = [
+        ...subjects.slice(0, index + 1),
+        "",
+        ...subjects.slice(index + 1),
+      ];
+      commit(next);
+      setTimeout(() => inputRefs.current[index + 1]?.focus(), 0);
+    } else if (
+      e.key === "Backspace" &&
+      subjects[index] === "" &&
+      subjects.length > 1
+    ) {
+      e.preventDefault();
+      handleRemoveSubject(index);
+    }
+  };
+
+  return (
+    <div className={styles.plannedSubjectsSection}>
+      <div className={styles.plannedSubjectsHeader}>
+        <span className={styles.plannedSubjectsTitle}>수강 예정 과목</span>
+        <span className={styles.plannedSubjectsOptionalBadge}>선택</span>
+      </div>
+      <p className={styles.plannedSubjectsDesc}>
+        현재 학기 또는 다음 학기에 수강할 예정인 과목을 입력하면, 리포트에서
+        해당 과목에 맞는 맞춤 조언을 받을 수 있습니다.
+      </p>
+
+      <div className={styles.plannedSubjectsList}>
+        {subjects.map((subject, index) => (
+          <div key={index} className={styles.plannedSubjectItem}>
+            <span className={styles.plannedSubjectIndex}>{index + 1}</span>
+            <input
+              ref={(el) => {
+                inputRefs.current[index] = el;
+              }}
+              type="text"
+              className={styles.plannedSubjectInput}
+              value={subject}
+              onChange={(e) => handleSubjectChange(index, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, index)}
+              placeholder={
+                index === 0 ? "예: 물리학II, 미적분" : "과목명을 입력하세요"
+              }
+              aria-label={`수강 예정 과목 ${index + 1}`}
+            />
+            <button
+              type="button"
+              className={styles.plannedSubjectRemoveBtn}
+              onClick={() => handleRemoveSubject(index)}
+              aria-label={`${index + 1}번 과목 삭제`}
+              tabIndex={-1}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        className={styles.plannedSubjectAddBtn}
+        onClick={handleAddSubject}
+      >
+        <Plus size={14} />
+        과목 추가
+      </button>
+    </div>
+  );
+};
 
 export const TextInputStep = ({
   record,
   onRecordChange,
   requiredFieldErrors = [],
+  plannedSubjects = "",
+  onPlannedSubjectsChange,
 }: TextInputStepProps) => {
   const errorKeys = new Set(requiredFieldErrors.map((e) => e.key));
   const allMet = requiredFieldErrors.length === 0;
@@ -946,7 +1100,7 @@ export const TextInputStep = ({
   return (
     <div className={styles.textInputStep}>
       <div className={styles.textInputHeader}>
-        <h3 className={styles.stepSectionTitle}>생활기록부 직접 입력</h3>
+        <h3 className={styles.stepSectionTitle}>생활기록부 등록</h3>
         <p className={styles.stepSectionDesc}>
           각 STEP을 열어 생기부 데이터를 입력해주세요.{" "}
           <span className={styles.requiredHint}>
@@ -955,6 +1109,14 @@ export const TextInputStep = ({
           </span>
         </p>
       </div>
+
+      {/* 수강 예정 과목 — 생기부 아코디언 위 (제일 위) */}
+      {onPlannedSubjectsChange && (
+        <PlannedSubjectsInput
+          plannedSubjects={plannedSubjects}
+          onPlannedSubjectsChange={onPlannedSubjectsChange}
+        />
+      )}
 
       {ACCORDION_STEPS.map((step) => (
         <AccordionStep
@@ -976,7 +1138,7 @@ export const TextInputStep = ({
         </p>
         <ul className={styles.requiredChecklistItems}>
           {REQUIRED_FIELD_RULES.map((rule) => {
-            const count = record[rule.key].length;
+            const count = (record[rule.key] ?? []).length;
             const met = count >= rule.minCount;
             return (
               <li
@@ -992,13 +1154,28 @@ export const TextInputStep = ({
                   {rule.label}
                   <span className={styles.requiredChecklistCount}>
                     {count}/{rule.minCount}
-                    {rule.minCount > 1 ? "건" : "개 학년"}
+                    {rule.minCount > 1 ? "건" : "개 학년"} ({rule.minCount}
+                    {rule.minCount > 1 ? "건" : "개 학년"} 이상 필수 입력)
                   </span>
                 </span>
               </li>
             );
           })}
         </ul>
+        {/* 행 내부 필수값 검증 에러 */}
+        {requiredFieldErrors
+          .filter(
+            (e) =>
+              !REQUIRED_FIELD_RULES.some(
+                (r) => r.key === e.key && r.message === e.message
+              )
+          )
+          .map((e, i) => (
+            <p key={i} className={styles.requiredChecklistItemUnmet}>
+              <AlertCircle size={14} />
+              <span>{e.message}</span>
+            </p>
+          ))}
       </div>
     </div>
   );

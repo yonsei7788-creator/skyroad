@@ -1,7 +1,7 @@
 import type { AttendanceAnalysisSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface AttendanceAnalysisRendererProps {
@@ -42,24 +42,30 @@ export const AttendanceAnalysisRenderer = ({
           <thead>
             <tr>
               <th>학년</th>
+              <th className={styles.tableAlignCenter}>수업일수</th>
               <th className={styles.tableAlignCenter}>총 결석</th>
               <th className={styles.tableAlignCenter}>질병</th>
               <th className={styles.tableAlignCenter}>미인정</th>
               <th className={styles.tableAlignCenter}>기타</th>
               <th className={styles.tableAlignCenter}>지각</th>
               <th className={styles.tableAlignCenter}>조퇴</th>
+              <th className={styles.tableAlignCenter}>특기사항</th>
             </tr>
           </thead>
           <tbody>
-            {(data.summaryByYear ?? []).map((row) => (
-              <tr key={row.year}>
+            {(data.summaryByYear ?? []).map((row, idx) => (
+              <tr key={`year-${row.year}-${idx}`}>
                 <td className={styles.tableCellBold}>{row.year}학년</td>
+                <td className={styles.tableAlignCenter}>
+                  {row.totalDays ?? "-"}
+                </td>
                 <td className={styles.tableAlignCenter}>{row.totalAbsence}</td>
                 <td className={styles.tableAlignCenter}>{row.illness}</td>
                 <td className={styles.tableAlignCenter}>{row.unauthorized}</td>
                 <td className={styles.tableAlignCenter}>{row.etc}</td>
                 <td className={styles.tableAlignCenter}>{row.lateness}</td>
                 <td className={styles.tableAlignCenter}>{row.earlyLeave}</td>
+                <td className={styles.tableAlignCenter}>{row.note || "-"}</td>
               </tr>
             ))}
           </tbody>
@@ -96,7 +102,7 @@ export const AttendanceAnalysisRenderer = ({
             </table>
             {data.comparisonData.estimationBasis && (
               <p className={`${styles.caption} ${styles.mt4}`}>
-                * {safeText(data.comparisonData.estimationBasis)}
+                * {renderInsightMarkers(data.comparisonData.estimationBasis)}
               </p>
             )}
           </>
@@ -118,12 +124,16 @@ export const AttendanceAnalysisRenderer = ({
           )}
 
           <p className={`${styles.body} ${styles.mt8}`}>
-            <span className={styles.emphasis}>입시 영향:</span>{" "}
-            {safeText(data.impactAnalysis)}
+            <span className={`${styles.emphasis} ${styles.markerYellow}`}>
+              입시 영향:
+            </span>{" "}
+            {renderInsightMarkers(data.impactAnalysis)}
           </p>
           <p className={`${styles.body} ${styles.mt8}`}>
-            <span className={styles.emphasis}>성실성 기여:</span>{" "}
-            {safeText(data.integrityContribution)}
+            <span className={`${styles.emphasis} ${styles.markerYellow}`}>
+              성실성 기여:
+            </span>{" "}
+            {renderInsightMarkers(data.integrityContribution)}
           </p>
 
           {data.estimatedDeduction && (
@@ -131,7 +141,7 @@ export const AttendanceAnalysisRenderer = ({
               <span className={styles.emphasis}>
                 추정 감점: {data.estimatedDeduction.deductionPoints}점
               </span>{" "}
-              — {safeText(data.estimatedDeduction.rationale)}
+              — {renderInsightMarkers(data.estimatedDeduction.rationale)}
             </p>
           )}
         </div>
@@ -141,8 +151,10 @@ export const AttendanceAnalysisRenderer = ({
             className={`${styles.callout} ${styles.calloutCaution} ${styles.mt16}`}
           >
             <div className={styles.calloutContent}>
-              <span className={styles.emphasis}>개선 방향:</span>{" "}
-              {safeText(data.improvementAdvice)}
+              <span className={`${styles.emphasis} ${styles.markerSky}`}>
+                개선 방향:
+              </span>{" "}
+              {renderInsightMarkers(data.improvementAdvice)}
             </div>
           </div>
         )}

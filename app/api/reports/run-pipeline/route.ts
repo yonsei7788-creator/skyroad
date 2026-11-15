@@ -17,16 +17,23 @@ import {
   executeTask,
 } from "@/libs/report/pipeline/wave-executor";
 import { postprocess } from "@/libs/report/pipeline/postprocessor";
+import {
+  createPipelineCache,
+  deletePipelineCache,
+} from "@/libs/report/pipeline/cache-manager";
+import { COMMON_SYSTEM_PROMPT } from "@/libs/report/prompts/system";
 import type {
   WaveState,
   SerializedTexts,
 } from "@/libs/report/pipeline/wave-state";
+import { saveWaveState } from "@/libs/report/pipeline/wave-state";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 interface RunPipelineBody {
   orderId: string;
+  force?: boolean;
 }
 
 const GRADE_MAP: Record<string, number> = {
@@ -45,10 +52,20 @@ const sendEvent = (
 };
 
 // ─── 태스크 의존성 그래프 ───
-// 각 태스크가 의존하는 선행 태스크 목록 (phase2 제외 — 항상 첫 번째)
+// phase2Extract는 항상 첫 번째 웨이브 (모든 태스크가 암묵적으로 의존)
+// phase2Classify는 섹션 웨이브와 병렬 실행 (studentProfile/competencyScore만 명시적 의존)
 const TASK_DEPS: Record<string, string[]> = {
-  studentProfile: [],
-  competencyScore: [],
+  phase2Classify: [],
+  // studentProfile은 추천 전형(recommendedAdmissionType)을 admissionPrediction에서 주입받고,
+  // Premium은 strategy bullet을 admissionStrategy 결과 기반으로 생성하므로 둘 다 의존.
+  // Lite/Standard 큐에는 admissionStrategy가 없고 Lite 큐에는 admissionPrediction도 없어 buildWaves에서 자동 무시됨.
+  // (학년과 무관하게 admissionStrategy를 생성하므로 고1 대체 분기는 없다)
+  studentProfile: [
+    "phase2Classify",
+    "admissionPrediction",
+    "admissionStrategy",
+  ],
+  competencyScore: ["phase2Classify"],
   academicAnalysis: [],
   attendanceAnalysis: [],
   activityAnalysis: [],
@@ -56,30 +73,41 @@ const TASK_DEPS: Record<string, string[]> = {
   subjectAnalysis: [],
   behaviorAnalysis: [],
   weaknessAnalysis: [],
-  storyAnalysis: [],
   majorExploration: [],
-  diagnostic: [],
-  competencyEvaluation: [],
-  directionGuide: [],
-  topicRecommendation: ["subjectAnalysis", "weaknessAnalysis"],
-  interviewPrep: ["subjectAnalysis"],
+  // topicRecommendation/interviewPrep은 subjectAnalysis 의존을 제거하여 Wave 2로 이동.
+  // topicRecommendation은 majorExploration 결과를 aiRecommendedMajors로 참조하므로 의존 유지.
+  topicRecommendation: ["majorExploration"],
+  interviewPrep: [],
   admissionPrediction: [
     "subjectAnalysis",
     "academicAnalysis",
     "attendanceAnalysis",
+    "phase2Classify",
   ],
-  admissionStrategy: ["admissionPrediction", "academicAnalysis"],
-  actionRoadmap: ["weaknessAnalysis", "admissionStrategy", "directionGuide"],
+  admissionStrategy: [
+    "academicAnalysis",
+    "majorExploration",
+    "admissionPrediction",
+  ],
+  actionRoadmap: ["weaknessAnalysis", "admissionStrategy"],
+  consultantReview: [
+    "competencyScore",
+    "academicAnalysis",
+    "subjectAnalysis",
+    "admissionPrediction",
+    "admissionStrategy",
+  ],
 };
 
-const PARALLEL_CONCURRENCY = 3;
-const BATCH_DELAY_MS = 1000;
+const PARALLEL_CONCURRENCY = 6;
+const BATCH_DELAY_MS = 100;
 
 // 태스크 큐를 의존성 기반 병렬 웨이브로 분할
+// phase2Extract는 항상 Wave 0으로 고정 (모든 태스크가 암묵적으로 의존)
 const buildWaves = (taskQueue: string[]): string[][] => {
-  const remaining = taskQueue.filter((t) => t !== "phase2");
-  const hasPhase2 = taskQueue.includes("phase2");
-  const waves: string[][] = hasPhase2 ? [["phase2"]] : [];
+  const remaining = taskQueue.filter((t) => t !== "phase2Extract");
+  const hasPhase2Extract = taskQueue.includes("phase2Extract");
+  const waves: string[][] = hasPhase2Extract ? [["phase2Extract"]] : [];
 
   const completed = new Set<string>();
 
@@ -155,6 +183,12 @@ const executeWaveParallel = async (
   reportId: string,
   dbClient: SupabaseClient
 ): Promise<WaveState> => {
+  // 재시도는 Gemini 클라이언트의 withRetry(3회)만 사용한다.
+  // 이전 구현은 wave-executor 레벨에서 한 번 더 재시도를 붙여(단일 3→6, 다중 3→6)
+  // withRetry가 이미 실패한 뒤에도 파이프라인이 계속 진행되는 느낌을 줬음.
+  // → withRetry가 소진되면 즉시 파이프라인 실패.
+
+  // 단일 태스크 웨이브
   if (wave.length === 1) {
     try {
       return await executeTask(
@@ -167,29 +201,21 @@ const executeWaveParallel = async (
         dbClient,
         { skipSave: true }
       );
-    } catch (firstError) {
-      console.warn(
-        `[report:${reportId}] 단일 태스크 ${wave[0]} 실패, 재시도: ${(firstError as Error).message}`
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(
+        `[report:${reportId}] 단일 태스크 ${wave[0]} 실패 (withRetry 소진): ${msg}`
       );
-      await sleep(BATCH_DELAY_MS);
-      return executeTask(
-        wave[0],
-        geminiClient,
-        plan,
-        studentInfo,
-        state,
-        reportId,
-        dbClient,
-        { skipSave: true }
+      throw new Error(
+        `AI 서버가 일시적으로 불안정하여 리포트 생성에 실패했습니다. 잠시 후 다시 시도해 주세요. (${wave[0]} 섹션 생성 실패)`
       );
     }
   }
 
+  // 다중 태스크 웨이브 — 병렬 실행, 하나라도 실패하면 즉시 throw
   const newSections: ReportSection[] = [];
   let mergedSer: SerializedTexts = { ...state.serializedTexts! };
-  const failedTasks: string[] = [];
 
-  // 배치 단위 병렬 실행
   for (let i = 0; i < wave.length; i += PARALLEL_CONCURRENCY) {
     if (i > 0) await sleep(BATCH_DELAY_MS);
 
@@ -208,15 +234,18 @@ const executeWaveParallel = async (
       )
     );
 
-    for (const result of results) {
-      if (result.error) {
-        console.warn(
-          `[report:${reportId}] 태스크 ${result.taskId} 실패 (재시도 예정): ${result.error.message}`
-        );
-        failedTasks.push(result.taskId);
-        continue;
-      }
+    // 배치에 하나라도 실패가 있으면 즉시 중단
+    const failed = results.find((r) => r.error);
+    if (failed) {
+      console.error(
+        `[report:${reportId}] 태스크 ${failed.taskId} 실패 (withRetry 소진): ${failed.error?.message}`
+      );
+      throw new Error(
+        `AI 서버가 일시적으로 불안정하여 리포트 생성에 실패했습니다. 잠시 후 다시 시도해 주세요. (${failed.taskId} 섹션 생성 실패)`
+      );
+    }
 
+    for (const result of results) {
       const addedSections = (result.state!.completedSections ?? []).filter(
         (s) =>
           !state.completedSections?.some(
@@ -226,51 +255,6 @@ const executeWaveParallel = async (
       );
       newSections.push(...addedSections);
       mergedSer = { ...mergedSer, ...result.state!.serializedTexts };
-    }
-  }
-
-  // 실패한 태스크 순차 재시도 (rate limit 회피)
-  if (failedTasks.length > 0) {
-    console.log(
-      `[report:${reportId}] ${failedTasks.length}개 태스크 순차 재시도: [${failedTasks.join(", ")}]`
-    );
-
-    // 재시도용 state: 지금까지 성공한 결과 병합
-    const retryState: WaveState = {
-      ...state,
-      completedSections: [...(state.completedSections ?? []), ...newSections],
-      serializedTexts: mergedSer,
-    };
-
-    for (const taskId of failedTasks) {
-      await sleep(BATCH_DELAY_MS);
-
-      try {
-        const result = await executeTask(
-          taskId,
-          geminiClient,
-          plan,
-          studentInfo,
-          retryState,
-          reportId,
-          dbClient,
-          { skipSave: true }
-        );
-
-        const addedSections = (result.completedSections ?? []).filter(
-          (s) =>
-            !retryState.completedSections?.some(
-              (existing) => existing.sectionId === s.sectionId
-            ) &&
-            !newSections.some((existing) => existing.sectionId === s.sectionId)
-        );
-        newSections.push(...addedSections);
-        mergedSer = { ...mergedSer, ...result.serializedTexts };
-      } catch (retryError) {
-        console.error(
-          `[report:${reportId}] 태스크 ${taskId} 재시도 실패 (스킵): ${(retryError as Error).message}`
-        );
-      }
     }
   }
 
@@ -307,7 +291,7 @@ export const POST = async (request: NextRequest) => {
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
   }
 
-  const { orderId } = body;
+  const { orderId, force } = body;
   if (!orderId) {
     return NextResponse.json(
       { error: "orderId가 필요합니다." },
@@ -339,17 +323,23 @@ export const POST = async (request: NextRequest) => {
     );
   }
 
-  if (order.user_id !== user.id) {
+  let isAdmin = false;
+  if (order.user_id !== user.id || force) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
 
-    if (!profile || profile.role !== "admin") {
+    isAdmin = profile?.role === "admin";
+
+    if (order.user_id !== user.id && !isAdmin) {
       return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
     }
   }
+
+  // force 옵션은 관리자만 사용 가능
+  const forceRegenerate = Boolean(force) && isAdmin;
 
   if (order.status === "pending_payment") {
     return NextResponse.json(
@@ -365,11 +355,14 @@ export const POST = async (request: NextRequest) => {
     .eq("order_id", orderId)
     .single();
 
-  if (existingReport?.ai_status === "processing") {
+  if (existingReport?.ai_status === "processing" && !forceRegenerate) {
     return NextResponse.json({ error: "이미 생성 중입니다." }, { status: 409 });
   }
 
-  const isRetry = existingReport?.ai_status === "failed";
+  const isRetry =
+    existingReport?.ai_status === "failed" ||
+    existingReport?.ai_status === "deferred" ||
+    forceRegenerate;
 
   if (
     !isRetry &&
@@ -437,16 +430,30 @@ export const POST = async (request: NextRequest) => {
   const plan = plans.name as ReportPlan;
   const recordId = order.record_id as string;
 
+  // 수강 예정 과목 (학생 직접 입력)
+  const { data: recordRow } = await dbClient
+    .from("records")
+    .select("planned_subjects")
+    .eq("id", recordId)
+    .single();
+  const plannedSubjects =
+    (recordRow?.planned_subjects as string | null) ?? undefined;
+
   const { data: userProfile } = await dbClient
     .from("profiles")
-    .select("name, grade, high_school_type")
+    .select(
+      "name, grade, gender, high_school_name, high_school_type, high_school_region"
+    )
     .eq("id", order.user_id)
     .single();
 
   const profiles = userProfile ?? {
     name: "학생",
     grade: "high2",
+    high_school_name: null,
     high_school_type: "일반고",
+    gender: null,
+    high_school_region: null,
   };
 
   const { data: targetUnis } = await dbClient
@@ -457,18 +464,36 @@ export const POST = async (request: NextRequest) => {
 
   const targetUni = targetUnis?.[0];
 
+  const { data: mockExamsPipeline } = await dbClient
+    .from("record_mock_exams")
+    .select("id")
+    .eq("record_id", recordId)
+    .limit(1);
+
   const studentInfo: StudentInfo = {
     name: profiles.name ?? "학생",
     grade: GRADE_MAP[profiles.grade] ?? 2,
+    isGraduate: profiles.grade === "graduate",
     track: "통합",
     schoolType:
       (profiles.high_school_type as StudentInfo["schoolType"]) ?? "일반고",
+    schoolName: profiles.high_school_name ?? undefined,
     targetUniversity: targetUni?.university_name,
     targetDepartment: targetUni?.department,
-    hasMockExamData: false,
+    gender: (profiles.gender as "male" | "female" | null) ?? null,
+    highSchoolRegion: profiles.high_school_region ?? undefined,
+    targetUniversities:
+      targetUnis && targetUnis.length > 0
+        ? targetUnis.map((u) => ({
+            priority: u.priority,
+            universityName: u.university_name,
+            admissionType: u.admission_type ?? "학종",
+            department: u.department,
+          }))
+        : undefined,
+    hasMockExamData: (mockExamsPipeline?.length ?? 0) > 0,
   };
 
-  // Gemini 클라이언트
   const geminiApiKey = env.GEMINI_API_KEY;
   if (!geminiApiKey) {
     await markFailed(dbClient, reportId, orderId, "GEMINI_API_KEY 미설정");
@@ -478,14 +503,40 @@ export const POST = async (request: NextRequest) => {
     );
   }
 
-  const geminiClient = createGeminiClient(geminiApiKey);
+  // 컨텍스트 캐시 생성 (실패 시 캐시 없이 진행)
+  const primaryCacheHandle = await createPipelineCache(
+    geminiApiKey,
+    COMMON_SYSTEM_PROMPT,
+    reportId
+  );
+
+  const geminiClient = createGeminiClient({
+    apiKeys: [geminiApiKey],
+    cacheHandles: [primaryCacheHandle],
+    commonSystemPrompt: COMMON_SYSTEM_PROMPT,
+  });
 
   // 7. SSE 스트리밍 — 전체 파이프라인을 하나의 스트림에서 실행
   const encoder = new TextEncoder();
 
+  // Vercel maxDuration=300s. 250s를 상한으로 두고 웨이브 진입 전 초과 시 실패 처리.
+  // (Vercel이 함수를 강제 종료하기 전에 DB를 failed로 업데이트할 시간 확보)
+  const PIPELINE_TIME_BUDGET_MS = 280_000;
+  const pipelineStartMs = Date.now();
+
   const stream = new ReadableStream({
     async start(controller) {
+      let state: WaveState | null = null;
+      let completedCount = 0;
+
       try {
+        // 클라이언트가 reportId를 알도록 init 이벤트 전송
+        // (스트림 비정상 종료 시 DB 상태 확인용)
+        sendEvent(controller, encoder, {
+          type: "init",
+          reportId,
+        });
+
         // 전처리
         sendEvent(controller, encoder, {
           type: "progress",
@@ -493,7 +544,7 @@ export const POST = async (request: NextRequest) => {
           progress: 2,
         });
 
-        let state: WaveState = await executePreprocess(
+        state = await executePreprocess(
           plan,
           studentInfo,
           reportId,
@@ -501,12 +552,11 @@ export const POST = async (request: NextRequest) => {
           recordId,
           undefined,
           undefined,
-          { skipSave: true }
+          { skipSave: true, plannedSubjects }
         );
 
         const { taskQueue } = state;
         const waves = buildWaves(taskQueue);
-        let completedCount = 0;
 
         console.log(
           `[report:${reportId}] 병렬 웨이브 구성: ${waves.length}개 웨이브, 총 ${taskQueue.length}개 태스크`
@@ -519,6 +569,14 @@ export const POST = async (request: NextRequest) => {
 
         for (let wi = 0; wi < waves.length; wi++) {
           const wave = waves[wi];
+
+          // 시간 예산 확인 — Vercel 타임아웃 전에 명시적으로 실패 처리
+          const elapsedMs = Date.now() - pipelineStartMs;
+          if (elapsedMs > PIPELINE_TIME_BUDGET_MS) {
+            throw new Error(
+              `리포트 생성 시간 초과 (${Math.round(elapsedMs / 1000)}s). AI 응답 지연으로 중단되었습니다. 잠시 후 다시 시도해 주세요.`
+            );
+          }
 
           // 웨이브 시작 시 첫 번째 태스크 이름으로 진행률 보고
           const progress = Math.min(
@@ -547,11 +605,19 @@ export const POST = async (request: NextRequest) => {
 
           completedCount += wave.length;
 
-          // 웨이브 완료 후 최종 진행률
+          // 웨이브 완료 후 상태 저장 (Vercel 강제 종료 시에도 진행분 보존)
           const waveEndProgress = Math.min(
             98,
             Math.round((completedCount / taskQueue.length) * 98)
           );
+          await saveWaveState(
+            dbClient,
+            reportId,
+            state,
+            waveEndProgress,
+            wave[wave.length - 1]
+          );
+
           sendEvent(controller, encoder, {
             type: "progress",
             section: wave[wave.length - 1],
@@ -569,12 +635,20 @@ export const POST = async (request: NextRequest) => {
           `[report:${reportId}] 후처리 시작: ${sections.length}개 섹션`
         );
 
+        // Phase 2에서 감지된 강점 계열을 postprocessor에 전달
+        const detectedMajor =
+          state.phase2Results?.competencyExtraction?.detectedMajorGroup;
+
         const result = postprocess(
           sections,
           state.preprocessedData!,
           studentInfo,
           plan,
-          reportId
+          reportId,
+          state.preprocessedTexts?.universityCandidatesText,
+          detectedMajor,
+          state.preprocessedTexts?.strategyUniversityCandidatesText,
+          state.preprocessedTexts?.creativeActivitiesText
         );
 
         console.log(
@@ -592,7 +666,7 @@ export const POST = async (request: NextRequest) => {
             ai_wave_state: null,
             ai_current_wave: null,
             ai_generated_at: new Date().toISOString(),
-            ai_model_version: "gemini-2.5-flash",
+            ai_model_version: "gemini-2.5-flash-lite",
           })
           .eq("id", reportId);
 
@@ -602,7 +676,7 @@ export const POST = async (request: NextRequest) => {
 
         await dbClient
           .from("orders")
-          .update({ status: "analysis_complete" })
+          .update({ status: "under_review" })
           .eq("id", orderId);
 
         sendEvent(controller, encoder, {
@@ -616,22 +690,54 @@ export const POST = async (request: NextRequest) => {
         const message = err instanceof Error ? err.message : "파이프라인 오류";
         console.error(`[report:${reportId}] 파이프라인 오류:`, message);
 
-        await dbClient
-          .from("reports")
-          .update({ ai_status: "failed", ai_error: message })
-          .eq("id", reportId);
+        // 모든 실패 → deferred (자동 재시도 대상)
+        try {
+          // 중단 지점의 wave state 저장 (재개용)
+          if (state) {
+            const progress = Math.min(
+              98,
+              Math.round(((completedCount + 1) / (state.totalTasks || 1)) * 98)
+            );
+            await saveWaveState(
+              dbClient,
+              reportId,
+              state,
+              progress,
+              "deferred"
+            );
+          }
 
-        await dbClient
-          .from("orders")
-          .update({ status: "paid" })
-          .eq("id", orderId);
+          await dbClient
+            .from("reports")
+            .update({
+              ai_status: "deferred",
+              ai_deferred_at: new Date().toISOString(),
+              ai_error: message,
+            })
+            .eq("id", reportId);
+          // order는 analyzing 유지 — 사용자에게 "전문가 검토중"으로 보임
+        } catch (dbErr) {
+          console.error(
+            `[report:${reportId}] deferred 상태 DB 업데이트 실패:`,
+            dbErr
+          );
+        }
 
-        sendEvent(controller, encoder, {
-          type: "error",
-          error: message,
-        });
+        try {
+          sendEvent(controller, encoder, {
+            type: "deferred",
+          });
+        } catch {
+          // 스트림이 이미 닫혔을 수 있음
+        }
       } finally {
-        controller.close();
+        // 컨텍스트 캐시 정리 (실패해도 TTL로 자동 만료됨)
+        await deletePipelineCache(primaryCacheHandle, reportId);
+        try {
+          controller.close();
+        } catch {
+          // 이미 닫힘
+        }
       }
     },
   });

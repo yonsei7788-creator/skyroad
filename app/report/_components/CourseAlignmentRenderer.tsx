@@ -2,7 +2,7 @@ import type { CourseAlignmentSection } from "@/libs/report/types";
 
 import { ReportProgress } from "./ReportProgress";
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface CourseAlignmentRendererProps {
@@ -11,12 +11,14 @@ interface CourseAlignmentRendererProps {
 }
 
 const STATUS_CLASS: Record<string, string> = {
-  "\uC774\uC218": styles.tagStrength,
-  "\uBBF8\uC774\uC218": styles.tagWeakness,
+  "\uC774\uC218": styles.tagStrength, // \uC774\uC218
+  "\uC774\uC218 \uC608\uC815": styles.tagAccent, // \uC774\uC218 \uC608\uC815 (\uD559\uC0DD\uC774 \uC218\uAC15 \uC608\uC815 \uC785\uB825)
+  "\uBBF8\uC774\uC218": styles.tagWeakness, // \uBBF8\uC774\uC218
 };
 
 const IMPORTANCE_CLASS: Record<string, string> = {
-  "\uD544\uC218": styles.tagWeakness,
+  "\uD544\uC218": styles.tagAccent,
+  "\uD575\uC2EC \uAD8C\uC7A5": styles.tagStrength,
   "\uAD8C\uC7A5": styles.tagAccent,
 };
 
@@ -25,12 +27,17 @@ export const CourseAlignmentRenderer = ({
   sectionNumber,
 }: CourseAlignmentRendererProps) => {
   const courses = data.courses ?? [];
+
+  // 필수 데이터 없으면 섹션 렌더링 스킵
+  if (courses.length === 0 && !data.targetMajor) return null;
   const matchRate =
     data.matchRate > 0
       ? data.matchRate
       : courses.length > 0
         ? Math.round(
-            (courses.filter((c) => c.status === "이수").length /
+            (courses.filter(
+              (c) => c.status === "이수" || c.status === "이수 예정"
+            ).length /
               courses.length) *
               100
           )
@@ -79,22 +86,28 @@ export const CourseAlignmentRenderer = ({
           </tbody>
         </table>
 
-        <div
-          className={`${styles.callout} ${styles.calloutCaution} ${styles.mt20}`}
-        >
-          <div className={styles.calloutContent}>
-            <span className={styles.emphasis}>미이수 과목 영향:</span>{" "}
-            {safeText(data.missingCourseImpact)}
+        {data.missingCourseImpact && (
+          <div
+            className={`${styles.callout} ${styles.calloutCaution} ${styles.mt20}`}
+          >
+            <div className={styles.calloutContent}>
+              <span className={`${styles.emphasis} ${styles.markerYellow}`}>
+                미이수 과목 영향:
+              </span>{" "}
+              {renderInsightMarkers(data.missingCourseImpact)}
+            </div>
           </div>
-        </div>
+        )}
 
         {data.recommendation && (
           <div className={`${styles.aiCommentary} ${styles.mt16}`}>
             <div className={styles.aiCommentaryIcon}>✦</div>
             <div className={styles.aiCommentaryContent}>
-              <div className={styles.aiCommentaryLabel}>이수 전략</div>
+              <div className={styles.aiCommentaryLabel}>
+                <span className={styles.markerSky}>이수 전략</span>
+              </div>
               <div className={styles.aiCommentaryText}>
-                {safeText(data.recommendation)}
+                {renderInsightMarkers(data.recommendation)}
               </div>
             </div>
           </div>
@@ -130,7 +143,9 @@ export const CourseAlignmentRenderer = ({
                       {req.met ? "충족" : "미충족"}
                     </span>
                   </td>
-                  <td className={styles.small}>{safeText(req.details)}</td>
+                  <td className={styles.small}>
+                    {renderInsightMarkers(req.details)}
+                  </td>
                 </tr>
               ))}
             </tbody>

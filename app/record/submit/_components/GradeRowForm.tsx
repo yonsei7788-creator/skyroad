@@ -194,6 +194,17 @@ export const GradeRowForm = ({
             onChange={(e) => handleNumberChange("gradeRank", e.target.value)}
           />
         </div>
+
+        <div className={styles.gradeRowField}>
+          <label className={styles.gradeRowLabel}>비고</label>
+          <input
+            type="text"
+            className={styles.gradeRowInput}
+            placeholder="예: 공동, 타기관"
+            value={row.note}
+            onChange={(e) => onChange(row.id, "note", e.target.value)}
+          />
+        </div>
       </div>
 
       {canRemove && (

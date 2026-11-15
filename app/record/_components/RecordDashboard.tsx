@@ -68,6 +68,7 @@ interface RecordDashboardProps {
   profile: ProfileData;
   record: RecordData | null;
   generalSubjects: GeneralSubjectData[];
+  hasPaidOrder: boolean;
 }
 
 // ============================================
@@ -113,15 +114,15 @@ const SUBJECT_AREA_MAP: Record<string, string> = {
 const BAR_COLORS = ["#4F46E5", "#6366F1", "#818CF8", "#A5B4FC", "#C7D2FE"];
 
 const WAFFLE_COLORS: Record<number, string> = {
-  1: "#1E1B4B",
-  2: "#3730A3",
-  3: "#4338CA",
-  4: "#4F46E5",
-  5: "#6366F1",
-  6: "#818CF8",
-  7: "#A5B4FC",
-  8: "#C7D2FE",
-  9: "#E0E7FF",
+  1: "#1E40AF", // 진한 파랑
+  2: "#2563EB", // 파랑
+  3: "#3B82F6", // 밝은 파랑
+  4: "#6366F1", // 인디고
+  5: "#F59E0B", // 주황 (중간 경계)
+  6: "#F97316", // 진한 주황
+  7: "#EF4444", // 빨강
+  8: "#DC2626", // 진한 빨강
+  9: "#991B1B", // 매우 진한 빨강
 };
 
 // ============================================
@@ -134,17 +135,20 @@ const formatDate = (dateStr: string) => {
 };
 
 const getGradeColor = (grade: number): string => {
-  if (grade <= 2) return "var(--color-primary-700)";
-  if (grade <= 4) return "var(--color-primary-500)";
-  if (grade <= 6) return "var(--color-primary-300)";
-  return "var(--color-neutral-400)";
+  if (grade <= 2) return "#1E40AF";
+  if (grade <= 3) return "#3B82F6";
+  if (grade <= 4) return "#6366F1";
+  if (grade <= 5) return "#F59E0B";
+  if (grade <= 6) return "#F97316";
+  return "#EF4444";
 };
 
 const getGradeBg = (grade: number): string => {
-  if (grade <= 2) return "var(--color-primary-100)";
-  if (grade <= 4) return "var(--color-primary-50)";
-  if (grade <= 6) return "var(--color-neutral-100)";
-  return "var(--color-neutral-50)";
+  if (grade <= 2) return "#DBEAFE";
+  if (grade <= 4) return "#E0E7FF";
+  if (grade <= 5) return "#FEF3C7";
+  if (grade <= 6) return "#FFEDD5";
+  return "#FEE2E2";
 };
 
 const matchesCategory = (category: string, key: CategoryKey): boolean => {
@@ -372,6 +376,7 @@ export const RecordDashboard = ({
   profile,
   record,
   generalSubjects,
+  hasPaidOrder,
 }: RecordDashboardProps) => {
   const router = useRouter();
   const isRegistered = !!record;
@@ -422,8 +427,10 @@ export const RecordDashboard = ({
 
   // ---- Computed Data ----
 
+  const showRealData = isRegistered && hasPaidOrder;
+
   const categoryGrades = useMemo(() => {
-    if (!isRegistered) return DUMMY_CATEGORY_GRADES;
+    if (!showRealData) return DUMMY_CATEGORY_GRADES;
     return {
       all: computeWeightedAverage(generalSubjects, "all"),
       korEngMathSocSci: computeWeightedAverage(
@@ -433,15 +440,15 @@ export const RecordDashboard = ({
       korEngMathSoc: computeWeightedAverage(generalSubjects, "korEngMathSoc"),
       korEngMathSci: computeWeightedAverage(generalSubjects, "korEngMathSci"),
     } as Record<CategoryKey, number | null>;
-  }, [isRegistered, generalSubjects]);
+  }, [showRealData, generalSubjects]);
 
   const barData = useMemo(() => {
-    if (!isRegistered) return DUMMY_BAR_DATA;
+    if (!showRealData) return DUMMY_BAR_DATA;
     return computeSubjectAreaAverages(generalSubjects);
-  }, [isRegistered, generalSubjects]);
+  }, [showRealData, generalSubjects]);
 
   const trendData = useMemo(() => {
-    if (!isRegistered) return DUMMY_TREND;
+    if (!showRealData) return DUMMY_TREND;
     const allSemesters = computeSemesterAverages(generalSubjects, "all");
     const korEngMathSocSciSemesters = computeSemesterAverages(
       generalSubjects,
@@ -466,22 +473,22 @@ export const RecordDashboard = ({
       korEngMathSci:
         korEngMathSciSemesters.find((s) => s.key === key)?.value ?? null,
     }));
-  }, [isRegistered, generalSubjects]);
+  }, [showRealData, generalSubjects]);
 
   const scoreVsAvgData = useMemo(() => {
-    if (!isRegistered) return [];
+    if (!showRealData) return [];
     return computeScoreVsAverage(generalSubjects);
-  }, [isRegistered, generalSubjects]);
+  }, [showRealData, generalSubjects]);
 
   const gradeDistribution = useMemo(() => {
-    if (!isRegistered) return [];
+    if (!showRealData) return [];
     return computeGradeDistribution(generalSubjects);
-  }, [isRegistered, generalSubjects]);
+  }, [showRealData, generalSubjects]);
 
   const semesterGroups = useMemo(() => {
-    if (!isRegistered) return [];
+    if (!showRealData) return [];
     return groupBySemester(generalSubjects);
-  }, [isRegistered, generalSubjects]);
+  }, [showRealData, generalSubjects]);
 
   const headlineGrade = categoryGrades.korEngMathSocSci;
   const headlineRounded = headlineGrade
@@ -550,9 +557,13 @@ export const RecordDashboard = ({
                 )}
               </div>
             ) : (
-              <span className={styles.contextBarDetail}>
+              <Link
+                href="/profile/settings?tab=academic"
+                className={styles.contextBarDetail}
+                style={{ textDecoration: "underline" }}
+              >
                 입시 정보가 등록되지 않았습니다
-              </span>
+              </Link>
             )}
           </div>
           <div className={styles.contextBarRight}>
@@ -562,20 +573,12 @@ export const RecordDashboard = ({
                   {formatDate(record.updatedAt)} 수정
                 </span>
                 <Link
-                  href="/record/submit?mode=edit"
+                  href="/profile/settings?tab=academic"
                   className={styles.contextBarLink}
                 >
                   <Pencil size={12} />
                   수정
                 </Link>
-                <button
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className={styles.contextBarDelete}
-                >
-                  <Trash2 size={12} />
-                  {isDeleting ? "삭제 중..." : "삭제"}
-                </button>
               </>
             ) : (
               <Link href="/record/submit" className={styles.contextBarRegister}>
@@ -655,7 +658,7 @@ export const RecordDashboard = ({
             </div>
             <div
               className={styles.cardBody}
-              {...(!isRegistered ? { inert: true } : {})}
+              {...(!isRegistered || !hasPaidOrder ? { inert: true } : {})}
             >
               <div className={styles.heroGaugePanel}>
                 <span className={styles.gaugeLabel}>국영수사과</span>
@@ -673,7 +676,7 @@ export const RecordDashboard = ({
                         outerRadius="100%"
                         dataKey="value"
                         stroke="none"
-                        isAnimationActive={isRegistered}
+                        isAnimationActive={showRealData}
                       >
                         <Cell
                           fill={
@@ -700,7 +703,7 @@ export const RecordDashboard = ({
                     : "-"}
                 </span>
                 <span className={styles.gaugeUnit}>등급</span>
-                {isRegistered &&
+                {showRealData &&
                   semesterChange !== null &&
                   semesterChange !== 0 && (
                     <span
@@ -739,6 +742,7 @@ export const RecordDashboard = ({
               </div>
             </div>
             {!isRegistered && <DemoOverlay />}
+            {isRegistered && !hasPaidOrder && <PaidOverlay />}
           </div>
 
           {/* 교과별 내신 성적 (Right) */}
@@ -748,7 +752,7 @@ export const RecordDashboard = ({
             </div>
             <div
               className={styles.cardBody}
-              {...(!isRegistered ? { inert: true } : {})}
+              {...(!isRegistered || !hasPaidOrder ? { inert: true } : {})}
             >
               <div className={styles.barChartArea}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -808,6 +812,7 @@ export const RecordDashboard = ({
               </div>
             </div>
             {!isRegistered && <DemoOverlay />}
+            {isRegistered && !hasPaidOrder && <PaidOverlay />}
           </div>
         </div>
 
@@ -915,10 +920,11 @@ export const RecordDashboard = ({
             </div>
           </div>
           {!isRegistered && <DemoOverlay />}
+          {isRegistered && !hasPaidOrder && <PaidOverlay />}
         </div>
 
         {/* Analysis Grid: Score vs Avg + Waffle */}
-        {isRegistered && scoreVsAvgData.length > 0 && (
+        {isRegistered && hasPaidOrder && scoreVsAvgData.length > 0 && (
           <div className={styles.analysisGrid}>
             {/* Score vs Average */}
             <div className={styles.card}>
@@ -996,7 +1002,7 @@ export const RecordDashboard = ({
         )}
 
         {/* Subject Analysis (replaces raw transcript) */}
-        {isRegistered && semesterGroups.length > 0 && (
+        {isRegistered && hasPaidOrder && semesterGroups.length > 0 && (
           <div className={styles.analysisSection}>
             <div className={styles.semesterTabs}>
               {semesterGroups.map((g, idx) => (
@@ -1104,10 +1110,23 @@ const DemoOverlay = () => (
   <div className={styles.demoOverlay}>
     <span className={styles.demoBadge}>샘플 데이터</span>
     <span className={styles.demoText}>
-      내 생기부를 등록하면 나만의 분석을 받을 수 있어요
+      리포트를 생성하면 나만의 성적 분석을 확인할 수 있어요
     </span>
-    <Link href="/record/submit" className={styles.demoButton}>
-      30초 만에 내 성적 확인하기
+    <Link href="/profile/consulting" className={styles.demoButton}>
+      리포트 생성하러 가기
+      <ArrowRight size={14} />
+    </Link>
+  </div>
+);
+
+const PaidOverlay = () => (
+  <div className={styles.demoOverlay}>
+    <span className={styles.demoBadge}>리포트 필요</span>
+    <span className={styles.demoText}>
+      리포트를 생성하면 상세 성적 분석을 확인할 수 있어요
+    </span>
+    <Link href="/profile/consulting" className={styles.demoButton}>
+      리포트 생성하러 가기
       <ArrowRight size={14} />
     </Link>
   </div>

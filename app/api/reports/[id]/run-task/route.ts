@@ -9,6 +9,7 @@ import { createGeminiClient } from "@/libs/report/pipeline/gemini-client";
 import { executeTask } from "@/libs/report/pipeline/wave-executor";
 import { loadWaveState } from "@/libs/report/pipeline/wave-state";
 import { postprocess } from "@/libs/report/pipeline/postprocessor";
+import { COMMON_SYSTEM_PROMPT } from "@/libs/report/prompts/system";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -68,7 +69,6 @@ export const POST = async (
     );
   }
 
-  // Gemini 클라이언트 생성
   const geminiApiKey = env.GEMINI_API_KEY;
   if (!geminiApiKey) {
     return NextResponse.json(
@@ -77,7 +77,11 @@ export const POST = async (
     );
   }
 
-  const geminiClient = createGeminiClient(geminiApiKey);
+  // run-task는 단일 태스크만 실행하므로 캐시를 생성하지 않음
+  const geminiClient = createGeminiClient({
+    apiKeys: [geminiApiKey],
+    commonSystemPrompt: COMMON_SYSTEM_PROMPT,
+  });
 
   try {
     console.log(
@@ -106,12 +110,19 @@ export const POST = async (
       console.log(
         `[report:${reportId}] 마지막 태스크! 총 ${sections.length}개 섹션으로 후처리 시작`
       );
+      const detectedMajor =
+        nextState.phase2Results?.competencyExtraction?.detectedMajorGroup;
+
       const result = postprocess(
         sections,
         nextState.preprocessedData!,
         studentInfo,
         plan,
-        reportId
+        reportId,
+        nextState.preprocessedTexts?.universityCandidatesText,
+        detectedMajor,
+        nextState.preprocessedTexts?.strategyUniversityCandidatesText,
+        nextState.preprocessedTexts?.creativeActivitiesText
       );
 
       await dbClient
@@ -124,13 +135,13 @@ export const POST = async (
           ai_wave_state: null,
           ai_current_wave: null,
           ai_generated_at: new Date().toISOString(),
-          ai_model_version: "gemini-2.5-pro",
+          ai_model_version: "gemini-2.5-flash-lite",
         })
         .eq("id", reportId);
 
       await dbClient
         .from("orders")
-        .update({ status: "analysis_complete" })
+        .update({ status: "under_review" })
         .eq("id", orderId);
 
       return NextResponse.json({
@@ -157,16 +168,20 @@ export const POST = async (
         : "태스크 실행 중 오류가 발생했습니다.";
     console.error(`[report:${reportId}] 태스크 ${taskId} 오류:`, message);
 
+    // 모든 실패 → deferred (자동 재시도 대상)
     await dbClient
       .from("reports")
       .update({
-        ai_status: "failed",
+        ai_status: "deferred",
+        ai_deferred_at: new Date().toISOString(),
         ai_error: message,
       })
       .eq("id", reportId);
+    // order는 analyzing 유지
 
-    await dbClient.from("orders").update({ status: "paid" }).eq("id", orderId);
-
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: message, deferred: true },
+      { status: 503 }
+    );
   }
 };

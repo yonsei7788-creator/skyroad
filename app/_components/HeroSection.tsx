@@ -4,6 +4,9 @@ import {
   Bot,
   CheckCircle2,
   Clock,
+  ExternalLink,
+  FileText,
+  MessageCircle,
   Shield,
   ShieldCheck,
   UserCheck,
@@ -21,10 +24,146 @@ const MOCK_SCORES = [
 ];
 
 const TRUST_BADGES = [
-  { icon: Shield, label: "AI 정밀 분석" },
+  { icon: Shield, label: "자체 개발 고도화 AI 분석" },
   { icon: UserCheck, label: "전임 컨설턴트 검수 포함" },
-  { icon: Clock, label: "48시간 내 전달" },
+  { icon: Clock, label: "72시간 내 전달" },
 ];
+
+export const HeroPreview = () => {
+  return (
+    <FadeIn delay={0.5} direction="up" distance={50}>
+      <div className={styles.previewWrapper}>
+        <div className={styles.previewCard}>
+          <div className={styles.stepIndicator}>
+            <div className={styles.stepItem}>
+              <div className={styles.stepIconAi}>
+                <Bot size={14} />
+              </div>
+              <span className={styles.stepLabel}>AI 분석</span>
+            </div>
+            <div className={styles.stepArrow}>
+              <ArrowRight size={14} />
+            </div>
+            <div className={styles.stepItem}>
+              <div className={styles.stepIconExpert}>
+                <UserCheck size={14} />
+              </div>
+              <span className={styles.stepLabel}>전문가 검수</span>
+            </div>
+            <div className={styles.stepBadgeComplete}>
+              <CheckCircle2 size={12} />
+              완료
+            </div>
+          </div>
+
+          <div className={styles.analysisHeader}>
+            <div className={styles.analysisHeaderLeft}>
+              <BarChart3 size={16} />
+              <span>종합 분석 결과</span>
+            </div>
+            <div className={styles.analysisBadge}>
+              <CheckCircle2 size={12} />
+              검수 완료
+            </div>
+          </div>
+
+          <div className={styles.scoreSection}>
+            <div className={styles.totalScore}>
+              <svg viewBox="0 0 100 100" className={styles.scoreRing}>
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  fill="none"
+                  stroke="#e2e8f0"
+                  strokeWidth="8"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  fill="none"
+                  stroke="#6366f1"
+                  strokeWidth="8"
+                  strokeDasharray="221"
+                  strokeDashoffset="44"
+                  strokeLinecap="round"
+                  transform="rotate(-90 50 50)"
+                />
+              </svg>
+              <div className={styles.scoreCenter}>
+                <span className={styles.scoreNum}>258.89</span>
+                <span className={styles.scoreTotal}>/300점</span>
+              </div>
+            </div>
+
+            <div className={styles.barList}>
+              {MOCK_SCORES.map((item) => (
+                <div key={item.label} className={styles.barItem}>
+                  <div className={styles.barMeta}>
+                    <span className={styles.barLabel}>{item.label}</span>
+                    <span className={styles.barValue}>{item.score}%</span>
+                  </div>
+                  <div className={styles.barTrack}>
+                    <div
+                      className={styles.barFill}
+                      style={{
+                        width: `${item.score}%`,
+                        background: item.color,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <a
+        href="https://plus.gov.kr/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.gov24Banner}
+      >
+        <div className={styles.gov24Left}>
+          <FileText size={18} className={styles.gov24Icon} />
+          <div className={styles.gov24Text}>
+            <span className={styles.gov24Label}>
+              생기부 발급이 필요하신가요?
+            </span>
+            <span className={styles.gov24Desc}>
+              정부24에서 학생부 PDF를 발급받은 뒤 업로드하세요.
+            </span>
+          </div>
+        </div>
+        <span className={styles.gov24Link}>
+          바로가기
+          <ExternalLink size={14} />
+        </span>
+      </a>
+      <a
+        href="https://open.kakao.com/o/sGtx5Hli"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.kakaoBanner}
+      >
+        <div className={styles.gov24Left}>
+          <MessageCircle size={18} className={styles.kakaoIcon} />
+          <div className={styles.gov24Text}>
+            <span className={styles.gov24Label}>궁금한 점이 있으신가요?</span>
+            <span className={styles.gov24Desc}>
+              카카오톡 오픈채팅으로 편하게 문의하세요.
+            </span>
+          </div>
+        </div>
+        <span className={styles.kakaoLink}>
+          문의하기
+          <ExternalLink size={14} />
+        </span>
+      </a>
+    </FadeIn>
+  );
+};
 
 export const HeroSection = () => {
   return (
@@ -36,7 +175,7 @@ export const HeroSection = () => {
           <FadeIn delay={0} direction="up">
             <div className={styles.badge}>
               <ShieldCheck size={14} className={styles.badgeIcon} />
-              <span>AI + 입시 전문 컨설턴트 이중 검증 시스템</span>
+              <span>입시 전문 컨설턴트 이중 검증 시스템</span>
             </div>
           </FadeIn>
 
@@ -51,11 +190,16 @@ export const HeroSection = () => {
           <FadeIn delay={0.2} direction="up">
             <p className={styles.subtext}>
               &ldquo;이 생기부로 어디까지 갈 수 있을까?&rdquo;
-              <br />
-              <strong className={styles.subtextHighlight}>
-                AI 정밀 분석 + 입시 전문가 2차 검수
-              </strong>
             </p>
+            <div className={styles.subtextFeatures}>
+              <strong className={styles.subtextBold}>
+                자체 개발 고도화 AI 정밀 분석
+              </strong>
+              <span className={styles.subtextPlus}>+</span>
+              <strong className={styles.subtextHighlight}>
+                전문 입시 컨설턴트 2차 검수
+              </strong>
+            </div>
           </FadeIn>
 
           <FadeIn delay={0.3} direction="up">
@@ -77,97 +221,10 @@ export const HeroSection = () => {
           </FadeIn>
         </div>
 
-        {/* Right: Product Preview */}
-        <FadeIn delay={0.5} direction="up" distance={50}>
-          <div className={styles.previewWrapper}>
-            <div className={styles.previewCard}>
-              {/* Step indicator */}
-              <div className={styles.stepIndicator}>
-                <div className={styles.stepItem}>
-                  <div className={styles.stepIconAi}>
-                    <Bot size={14} />
-                  </div>
-                  <span className={styles.stepLabel}>AI 분석</span>
-                </div>
-                <div className={styles.stepArrow}>
-                  <ArrowRight size={14} />
-                </div>
-                <div className={styles.stepItem}>
-                  <div className={styles.stepIconExpert}>
-                    <UserCheck size={14} />
-                  </div>
-                  <span className={styles.stepLabel}>전문가 검수</span>
-                </div>
-                <div className={styles.stepBadgeComplete}>
-                  <CheckCircle2 size={12} />
-                  완료
-                </div>
-              </div>
-
-              <div className={styles.analysisHeader}>
-                <div className={styles.analysisHeaderLeft}>
-                  <BarChart3 size={16} />
-                  <span>종합 분석 결과</span>
-                </div>
-                <div className={styles.analysisBadge}>
-                  <CheckCircle2 size={12} />
-                  검수 완료
-                </div>
-              </div>
-
-              <div className={styles.scoreSection}>
-                <div className={styles.totalScore}>
-                  <svg viewBox="0 0 100 100" className={styles.scoreRing}>
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="42"
-                      fill="none"
-                      stroke="#e2e8f0"
-                      strokeWidth="8"
-                    />
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="42"
-                      fill="none"
-                      stroke="#6366f1"
-                      strokeWidth="8"
-                      strokeDasharray="221"
-                      strokeDashoffset="44"
-                      strokeLinecap="round"
-                      transform="rotate(-90 50 50)"
-                    />
-                  </svg>
-                  <div className={styles.scoreCenter}>
-                    <span className={styles.scoreNum}>258.89</span>
-                    <span className={styles.scoreTotal}>/300점</span>
-                  </div>
-                </div>
-
-                <div className={styles.barList}>
-                  {MOCK_SCORES.map((item) => (
-                    <div key={item.label} className={styles.barItem}>
-                      <div className={styles.barMeta}>
-                        <span className={styles.barLabel}>{item.label}</span>
-                        <span className={styles.barValue}>{item.score}%</span>
-                      </div>
-                      <div className={styles.barTrack}>
-                        <div
-                          className={styles.barFill}
-                          style={{
-                            width: `${item.score}%`,
-                            background: item.color,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </FadeIn>
+        {/* Right: Product Preview — 데스크톱에서만 표시 */}
+        <div className={styles.desktopOnly}>
+          <HeroPreview />
+        </div>
       </div>
     </section>
   );

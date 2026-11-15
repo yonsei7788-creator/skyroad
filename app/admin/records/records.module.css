@@ -451,6 +451,109 @@
 }
 
 /* ============================================
+   Filter Row (for grouping selects)
+   ============================================ */
+.filterRow {
+  display: contents;
+}
+
+/* ============================================
+   Mobile Card List (hidden on desktop)
+   ============================================ */
+.cardList {
+  display: none;
+}
+
+.card {
+  background: var(--admin-card-bg, #ffffff);
+  border: 1px solid var(--admin-card-border, var(--color-border));
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.card:hover {
+  background: var(--color-bg-secondary);
+}
+
+.card:active {
+  background: var(--color-bg-tertiary);
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.cardUserName {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-fg);
+}
+
+.cardId {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--color-fg-tertiary);
+  margin-bottom: 10px;
+}
+
+.cardDivider {
+  height: 1px;
+  background: var(--color-border);
+  margin-bottom: 10px;
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--color-fg-secondary);
+  margin-bottom: 8px;
+}
+
+.cardMetaDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--color-neutral-300);
+  flex-shrink: 0;
+}
+
+.cardBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardDate {
+  font-size: 0.75rem;
+  color: var(--color-fg-tertiary);
+}
+
+.cardAction {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-primary-600);
+  background: var(--color-primary-50);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.cardAction:active {
+  background: var(--color-primary-100);
+}
+
+/* ============================================
    Responsive
    ============================================ */
 @media (max-width: 768px) {
@@ -476,8 +579,25 @@
     max-width: none;
   }
 
+  .filterRow {
+    display: flex;
+    gap: 8px;
+  }
+
   .selectFilter {
-    width: 100%;
+    flex: 1;
+    width: auto;
+  }
+
+  /* Hide table, show cards */
+  .tableHide {
+    display: none;
+  }
+
+  .cardList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .modalOverlay {

@@ -355,3 +355,30 @@
   font-size: 0.8125rem;
   color: var(--color-fg-tertiary);
 }
+
+/* ---- Mobile Optimization ---- */
+@media (max-width: 639px) {
+  .section {
+    padding: 72px 0;
+  }
+
+  .sectionTitle {
+    font-size: 1.625rem;
+  }
+
+  .cardWrapper {
+    margin-top: 48px;
+  }
+
+  .cardCol {
+    gap: 20px;
+    padding: 16px 14px;
+  }
+
+  .cardHeader {
+    padding: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}

@@ -1,8 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Search, X, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Loader2,
+  Search,
+  X,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+} from "lucide-react";
 
 import { Badge } from "@/app/admin/_components/Badge";
 import { DataTable } from "@/app/admin/_components/DataTable";
@@ -602,6 +610,12 @@ const BehavioralTab = ({ data }: { data: Record<string, unknown>[] }) => {
 /* ============================================
    Detail Modal Component
    ============================================ */
+const PLAN_OPTIONS = [
+  { value: "lite", label: "라이트" },
+  { value: "standard", label: "스탠다드" },
+  { value: "premium", label: "프리미엄" },
+] as const;
+
 const RecordDetailModal = ({
   recordId,
   onClose,
@@ -609,10 +623,45 @@ const RecordDetailModal = ({
   recordId: string;
   onClose: () => void;
 }) => {
+  const router = useRouter();
   const [detail, setDetail] = useState<RecordDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("info");
+
+  // 리포트 생성
+  const [selectedPlan, setSelectedPlan] = useState<string>("premium");
+  const [adminOnly, setAdminOnly] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setGenerateError(null);
+    try {
+      const res = await fetch("/api/admin/reports/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recordId,
+          plan: selectedPlan,
+          adminOnly,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "리포트 생성에 실패했습니다.");
+      }
+      const data = await res.json();
+      router.push(`/report/generating?orderId=${data.orderId}&from=admin`);
+    } catch (err) {
+      setGenerateError(
+        err instanceof Error ? err.message : "리포트 생성에 실패했습니다."
+      );
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -747,6 +796,102 @@ const RecordDetailModal = ({
             </div>
             <div className={styles.modalBody}>
               <div className={styles.tabContent}>{renderTabContent()}</div>
+            </div>
+
+            {/* 리포트 생성 섹션 */}
+            <div
+              style={{
+                borderTop: "1px solid var(--color-border)",
+                padding: "16px 24px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                background: "var(--color-neutral-50)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  fontWeight: 600,
+                  fontSize: "0.875rem",
+                }}
+              >
+                <FileText size={16} />
+                리포트 생성
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <select
+                  value={selectedPlan}
+                  onChange={(e) => setSelectedPlan(e.target.value)}
+                  className={styles.selectFilter}
+                  style={{ flex: "none", width: "auto" }}
+                >
+                  {PLAN_OPTIONS.map((p) => (
+                    <option key={p.value} value={p.value}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "0.8125rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={adminOnly}
+                    onChange={(e) => setAdminOnly(e.target.checked)}
+                    style={{ accentColor: "var(--color-primary-600)" }}
+                  />
+                  유저에게 미노출
+                </label>
+                <button
+                  onClick={handleGenerate}
+                  disabled={generating}
+                  style={{
+                    marginLeft: "auto",
+                    padding: "8px 16px",
+                    borderRadius: "8px",
+                    fontSize: "0.8125rem",
+                    fontWeight: 600,
+                    background: "var(--color-primary-600)",
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    opacity: generating ? 0.6 : 1,
+                    cursor: generating ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {generating && (
+                    <Loader2 size={14} className={styles.spinner} />
+                  )}
+                  생성 시작
+                </button>
+              </div>
+              {generateError && (
+                <p
+                  style={{
+                    fontSize: "0.8125rem",
+                    color: "var(--color-error-600)",
+                  }}
+                >
+                  {generateError}
+                </p>
+              )}
             </div>
           </>
         )}
@@ -1005,28 +1150,30 @@ const RecordsPage = () => {
           />
         </div>
 
-        <select
-          className={styles.selectFilter}
-          value={typeFilter}
-          onChange={(e) => handleTypeChange(e.target.value)}
-        >
-          <option value="">전체 제출 방식</option>
-          <option value="pdf">PDF</option>
-          <option value="image">Image</option>
-          <option value="text">Text</option>
-        </select>
+        <div className={styles.filterRow}>
+          <select
+            className={styles.selectFilter}
+            value={typeFilter}
+            onChange={(e) => handleTypeChange(e.target.value)}
+          >
+            <option value="">전체 제출 방식</option>
+            <option value="pdf">PDF</option>
+            <option value="image">Image</option>
+            <option value="text">Text</option>
+          </select>
 
-        <select
-          className={styles.selectFilter}
-          value={gradeFilter}
-          onChange={(e) => handleGradeChange(e.target.value)}
-        >
-          <option value="">전체 학년</option>
-          <option value="high1">1학년</option>
-          <option value="high2">2학년</option>
-          <option value="high3">3학년</option>
-          <option value="repeat">재수</option>
-        </select>
+          <select
+            className={styles.selectFilter}
+            value={gradeFilter}
+            onChange={(e) => handleGradeChange(e.target.value)}
+          >
+            <option value="">전체 학년</option>
+            <option value="high1">1학년</option>
+            <option value="high2">2학년</option>
+            <option value="high3">3학년</option>
+            <option value="repeat">재수</option>
+          </select>
+        </div>
 
         <label className={styles.checkboxLabel}>
           <input
@@ -1038,8 +1185,8 @@ const RecordsPage = () => {
         </label>
       </div>
 
-      {/* Table */}
-      <div className={styles.tableCard}>
+      {/* Table (desktop) */}
+      <div className={`${styles.tableCard} ${styles.tableHide}`}>
         {!isLoading && records.length === 0 ? (
           <EmptyState
             title="레코드가 없습니다"
@@ -1047,6 +1194,86 @@ const RecordsPage = () => {
           />
         ) : (
           <DataTable columns={columns} data={records} isLoading={isLoading} />
+        )}
+      </div>
+
+      {/* Card List (mobile) */}
+      <div className={styles.cardList}>
+        {isLoading ? (
+          <div className={styles.loader}>
+            <Loader2 size={20} className={styles.spinner} />
+          </div>
+        ) : records.length === 0 ? (
+          <EmptyState
+            title="레코드가 없습니다"
+            description="조건에 맞는 생기부 레코드가 없습니다. 필터를 조정해 보세요."
+          />
+        ) : (
+          records.map((record) => {
+            const orderMapping = record.orderStatus
+              ? ORDER_STATUS_BADGE_MAP[record.orderStatus as OrderStatusKey]
+              : null;
+            return (
+              <div
+                key={record.id}
+                className={styles.card}
+                onClick={() => handleDetailOpen(record.id)}
+              >
+                <div className={styles.cardTop}>
+                  <span className={styles.cardUserName}>
+                    {record.userName ?? "-"}
+                  </span>
+                  <Badge
+                    variant={
+                      record.submissionType === "text" ? "neutral" : "info"
+                    }
+                  >
+                    {SUBMISSION_TYPE_LABEL[record.submissionType] ??
+                      record.submissionType}
+                  </Badge>
+                </div>
+                <div className={styles.cardId}>{truncateId(record.id)}</div>
+                <div className={styles.cardDivider} />
+                <div className={styles.cardMeta}>
+                  <span>
+                    {GRADE_LABEL_MAP[record.gradeLevel] ?? record.gradeLevel}
+                  </span>
+                  <span className={styles.cardMetaDot} />
+                  <span
+                    className={
+                      record.textVerified
+                        ? styles.verifiedTrue
+                        : styles.verifiedFalse
+                    }
+                  >
+                    {record.textVerified ? "\u2713 검증" : "\u2717 미검증"}
+                  </span>
+                  {orderMapping && (
+                    <>
+                      <span className={styles.cardMetaDot} />
+                      <Badge variant={orderMapping.variant}>
+                        {orderMapping.label}
+                      </Badge>
+                    </>
+                  )}
+                </div>
+                <div className={styles.cardBottom}>
+                  <span className={styles.cardDate}>
+                    {formatDate(record.createdAt)}
+                  </span>
+                  <button
+                    className={styles.cardAction}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDetailOpen(record.id);
+                    }}
+                  >
+                    상세보기
+                  </button>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
 

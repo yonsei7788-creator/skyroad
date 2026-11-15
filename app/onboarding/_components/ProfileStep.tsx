@@ -9,12 +9,13 @@ import {
   School,
   CalendarDays,
   GraduationCap,
+  MapPin,
   X,
   ArrowRight,
   Loader2,
 } from "lucide-react";
 
-import { SCHOOL_TYPES } from "./types";
+import { SCHOOL_TYPES, REGION_OPTIONS, GENDER_OPTIONS } from "./types";
 import type { ProfileStepData } from "./types";
 
 import styles from "../page.module.css";
@@ -33,6 +34,7 @@ interface SchoolResult {
 interface FieldErrors {
   name?: string;
   phone?: string;
+  gender?: string;
   highSchoolName?: string;
   highSchoolType?: string;
   grade?: string;
@@ -152,10 +154,13 @@ export const ProfileStep = ({ initialData, onComplete }: ProfileStepProps) => {
     )
       ? school.type
       : "";
+    // 주소 첫 단어에서 시/도 추출 (예: "서울특별시 강남구..." → "서울특별시")
+    const region = school.address?.split(" ")[0] ?? "";
     setProfile((prev) => ({
       ...prev,
       highSchoolName: school.name,
       highSchoolType: validType,
+      highSchoolRegion: region,
     }));
     setErrors((prev) => ({
       ...prev,
@@ -170,6 +175,7 @@ export const ProfileStep = ({ initialData, onComplete }: ProfileStepProps) => {
       ...prev,
       highSchoolName: schoolQuery,
       highSchoolType: "",
+      highSchoolRegion: "",
     }));
     setErrors((prev) => ({ ...prev, highSchoolName: undefined }));
     handleCloseSchoolModal();
@@ -209,6 +215,10 @@ export const ProfileStep = ({ initialData, onComplete }: ProfileStepProps) => {
       newErrors.phone = "전화번호를 입력해주세요.";
     } else if (!/^010-\d{4}-\d{4}$/.test(profile.phone)) {
       newErrors.phone = "010-XXXX-XXXX 형식으로 입력해주세요.";
+    }
+
+    if (!profile.gender) {
+      newErrors.gender = "성별을 선택해주세요.";
     }
 
     if (!profile.highSchoolName.trim()) {
@@ -300,6 +310,28 @@ export const ProfileStep = ({ initialData, onComplete }: ProfileStepProps) => {
           </div>
 
           <div className={styles.field}>
+            <label className={styles.label}>
+              <User size={14} className={styles.labelIcon} />
+              성별 <span className={styles.required}>*</span>
+            </label>
+            <div className={styles.fieldRow}>
+              {GENDER_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`${styles.selectButton} ${profile.gender === opt.value ? styles.selectButtonActive : ""}`}
+                  onClick={() => handleChange("gender", opt.value)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {errors.gender && (
+              <span className={styles.fieldError}>{errors.gender}</span>
+            )}
+          </div>
+
+          <div className={styles.field}>
             <label htmlFor="ob-school" className={styles.label}>
               <School size={14} className={styles.labelIcon} />
               고등학교 <span className={styles.required}>*</span>
@@ -337,24 +369,48 @@ export const ProfileStep = ({ initialData, onComplete }: ProfileStepProps) => {
             )}
           </div>
 
-          <div className={styles.field}>
-            <label htmlFor="ob-schoolType" className={styles.label}>
-              <School size={14} className={styles.labelIcon} />
-              학교 유형
-            </label>
-            <select
-              id="ob-schoolType"
-              className={styles.select}
-              value={profile.highSchoolType}
-              onChange={(e) => handleChange("highSchoolType", e.target.value)}
-            >
-              <option value="">선택해주세요</option>
-              {SCHOOL_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
+          <div className={styles.fieldRow}>
+            <div className={styles.field}>
+              <label htmlFor="ob-schoolType" className={styles.label}>
+                <School size={14} className={styles.labelIcon} />
+                학교 유형
+              </label>
+              <select
+                id="ob-schoolType"
+                className={styles.select}
+                value={profile.highSchoolType}
+                onChange={(e) => handleChange("highSchoolType", e.target.value)}
+              >
+                <option value="">선택해주세요</option>
+                {SCHOOL_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="ob-schoolRegion" className={styles.label}>
+                <MapPin size={14} className={styles.labelIcon} />
+                고교 소재지
+              </label>
+              <select
+                id="ob-schoolRegion"
+                className={styles.select}
+                value={profile.highSchoolRegion}
+                onChange={(e) =>
+                  handleChange("highSchoolRegion", e.target.value)
+                }
+              >
+                <option value="">선택해주세요</option>
+                {REGION_OPTIONS.map((region) => (
+                  <option key={region} value={region}>
+                    {region}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className={styles.fieldRow}>

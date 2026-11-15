@@ -40,7 +40,7 @@ export const PartPage = ({
 
       {/* Footer */}
       <div className={styles.partFooter}>
-        <span className={styles.partFooterBrand}>SKYROAD</span>
+        <span className={styles.partFooterBrand}>시대 컨설팅</span>
       </div>
     </div>
   );

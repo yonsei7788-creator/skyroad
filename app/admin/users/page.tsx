@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Search, X, Shield, ShieldOff } from "lucide-react";
+import { Loader2, Search, Trash2, X, Shield, ShieldOff } from "lucide-react";
 
 import { Badge } from "@/app/admin/_components/Badge";
 import { DataTable } from "@/app/admin/_components/DataTable";
@@ -53,10 +53,15 @@ interface RecordSummary {
 interface OrderSummary {
   id: string;
   planId: string | null;
+  planName: string | null;
   status: string;
   amount: number;
   createdAt: string;
   reportDeliveredAt: string | null;
+  paymentMethod: string | null;
+  paymentAmount: number | null;
+  paymentStatus: string | null;
+  approvedAt: string | null;
 }
 
 interface UserDetail extends AdminUser {
@@ -83,8 +88,13 @@ const GRADE_DISPLAY: Record<string, string> = {
 };
 
 const ORDER_STATUS_DISPLAY: Record<string, string> = {
-  pending: "대기",
-  paid: "결제완료",
+  pending_payment: "결제 대기",
+  paid: "결제 완료",
+  analyzing: "분석 중",
+  analysis_complete: "분석 완료",
+  under_review: "검토 중",
+  review_complete: "검토 완료",
+  delivered: "전달 완료",
   cancelled: "취소",
   refunded: "환불",
 };
@@ -93,12 +103,19 @@ const ORDER_STATUS_DISPLAY: Record<string, string> = {
    Helpers
    ============================================ */
 
+// SSR 서버는 UTC라 getFullYear/getMonth 등 로컬 메서드는 UTC로 찍힌다.
+// Asia/Seoul 을 명시해서 서버·클라이언트 모두 KST로 포맷하도록 강제한다.
+const KST_DATE_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
 const formatDate = (dateStr: string): string => {
-  const d = new Date(dateStr);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}.${month}.${day}`;
+  const parts = KST_DATE_FORMATTER.formatToParts(new Date(dateStr));
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("year")}.${get("month")}.${get("day")}`;
 };
 
 const formatCurrency = (amount: number): string => {
@@ -133,6 +150,10 @@ const AdminUsersPage = () => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [pendingRole, setPendingRole] = useState<"user" | "admin" | null>(null);
   const [isRoleChanging, setIsRoleChanging] = useState(false);
+
+  // Delete
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -267,6 +288,41 @@ const AdminUsersPage = () => {
     setPendingRole(null);
   }, []);
 
+  // Delete user
+  const handleDeleteClick = useCallback(() => {
+    setIsDeleteConfirmOpen(true);
+  }, []);
+
+  const handleCancelDelete = useCallback(() => {
+    setIsDeleteConfirmOpen(false);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!selectedUserId) return;
+
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch(`/api/admin/users/${selectedUserId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.error ?? "계정 삭제에 실패했습니다.");
+        return;
+      }
+
+      setIsDeleteConfirmOpen(false);
+      handleCloseDetail();
+      await fetchUsers();
+    } catch {
+      alert("계정 삭제에 실패했습니다.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [selectedUserId, handleCloseDetail, fetchUsers]);
+
   // Filter handlers
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -395,27 +451,29 @@ const AdminUsersPage = () => {
           />
         </div>
 
-        <select
-          className={styles.filterSelect}
-          value={roleFilter}
-          onChange={handleRoleFilterChange}
-        >
-          <option value="">전체 역할</option>
-          <option value="admin">관리자</option>
-          <option value="user">사용자</option>
-        </select>
+        <div className={styles.filterRow}>
+          <select
+            className={styles.filterSelect}
+            value={roleFilter}
+            onChange={handleRoleFilterChange}
+          >
+            <option value="">전체 역할</option>
+            <option value="admin">관리자</option>
+            <option value="user">사용자</option>
+          </select>
 
-        <select
-          className={styles.filterSelect}
-          value={gradeFilter}
-          onChange={handleGradeFilterChange}
-        >
-          <option value="">전체 학년</option>
-          <option value="high1">1학년</option>
-          <option value="high2">2학년</option>
-          <option value="high3">3학년</option>
-          <option value="graduate">졸업</option>
-        </select>
+          <select
+            className={styles.filterSelect}
+            value={gradeFilter}
+            onChange={handleGradeFilterChange}
+          >
+            <option value="">전체 학년</option>
+            <option value="high1">1학년</option>
+            <option value="high2">2학년</option>
+            <option value="high3">3학년</option>
+            <option value="graduate">졸업</option>
+          </select>
+        </div>
       </div>
 
       {/* Error */}
@@ -428,22 +486,43 @@ const AdminUsersPage = () => {
         </div>
       )}
 
-      {/* Data Table */}
+      {/* Data Table (desktop) + Card List (mobile) */}
       {!errorMessage && (
         <>
-          <DataTable
-            columns={columns}
-            data={users}
-            keyExtractor={(user) => user.id}
-            onRowClick={handleRowClick}
-            isLoading={isLoading}
-            loadingContent={
+          <div className={styles.tableHide}>
+            <DataTable
+              columns={columns}
+              data={users}
+              keyExtractor={(user) => user.id}
+              onRowClick={handleRowClick}
+              isLoading={isLoading}
+              loadingContent={
+                <div className={styles.loadingWrapper}>
+                  <Loader2 size={20} className={styles.spinner} />
+                  <span>불러오는 중...</span>
+                </div>
+              }
+              emptyContent={
+                <EmptyState
+                  title="사용자가 없습니다"
+                  description={
+                    debouncedSearch || roleFilter || gradeFilter
+                      ? "검색 조건에 맞는 사용자가 없습니다."
+                      : "아직 등록된 사용자가 없습니다."
+                  }
+                />
+              }
+            />
+          </div>
+
+          {/* Mobile card list */}
+          <div className={styles.cardList}>
+            {isLoading ? (
               <div className={styles.loadingWrapper}>
                 <Loader2 size={20} className={styles.spinner} />
                 <span>불러오는 중...</span>
               </div>
-            }
-            emptyContent={
+            ) : users.length === 0 ? (
               <EmptyState
                 title="사용자가 없습니다"
                 description={
@@ -452,8 +531,63 @@ const AdminUsersPage = () => {
                     : "아직 등록된 사용자가 없습니다."
                 }
               />
-            }
-          />
+            ) : (
+              users.map((user) => (
+                <div
+                  key={user.id}
+                  className={styles.card}
+                  onClick={() => handleRowClick(user)}
+                >
+                  <div className={styles.cardTop}>
+                    <span className={styles.cardName}>
+                      {user.name ?? "미입력"}
+                    </span>
+                    <Badge variant={user.role === "admin" ? "info" : "neutral"}>
+                      {user.role === "admin" ? "관리자" : "사용자"}
+                    </Badge>
+                  </div>
+                  <div className={styles.cardEmail}>{user.email}</div>
+                  <div className={styles.cardDivider} />
+                  <div className={styles.cardMeta}>
+                    <span>{user.highSchoolName ?? "-"}</span>
+                    <span className={styles.cardMetaDot} />
+                    <span>
+                      {user.grade
+                        ? (GRADE_DISPLAY[user.grade] ?? user.grade)
+                        : "-"}
+                    </span>
+                    <span className={styles.cardMetaDot} />
+                    <span>
+                      {user.onboardingCompleted ? (
+                        <span className={styles.onboardingYes}>
+                          온보딩 완료
+                        </span>
+                      ) : (
+                        <span className={styles.onboardingNo}>미완료</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className={styles.cardBottom}>
+                    <div className={styles.cardStats}>
+                      <span className={styles.cardStatItem}>
+                        <span className={styles.cardStatLabel}>생기부</span>
+                        <span className={styles.cardStatValue}>
+                          {user.recordCount}
+                        </span>
+                      </span>
+                      <span className={styles.cardStatItem}>
+                        <span className={styles.cardStatLabel}>주문</span>
+                        <span className={styles.cardStatValue}>
+                          {user.orderCount}
+                        </span>
+                      </span>
+                    </div>
+                    <span>{formatDate(user.createdAt)}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
 
           {!isLoading && users.length > 0 && (
             <Pagination
@@ -623,37 +757,56 @@ const AdminUsersPage = () => {
                       )}
                     </div>
 
-                    {/* Orders */}
+                    {/* Orders & Payments */}
                     <div className={styles.detailSection}>
                       <h3 className={styles.detailSectionTitle}>
-                        주문 ({userDetail.orders.length})
+                        주문 / 결제 ({userDetail.orders.length})
                       </h3>
                       {userDetail.orders.length > 0 ? (
                         <div className={styles.summaryList}>
-                          {userDetail.orders.map((o) => (
-                            <div key={o.id} className={styles.summaryItem}>
-                              <span className={styles.summaryItemLabel}>
-                                {formatCurrency(o.amount)}{" "}
-                                <Badge
-                                  variant={
-                                    o.status === "paid"
-                                      ? "success"
-                                      : o.status === "pending"
-                                        ? "warning"
-                                        : o.status === "cancelled" ||
-                                            o.status === "refunded"
-                                          ? "error"
-                                          : "neutral"
-                                  }
-                                >
-                                  {ORDER_STATUS_DISPLAY[o.status] ?? o.status}
-                                </Badge>
-                              </span>
-                              <span className={styles.summaryItemValue}>
-                                {formatDate(o.createdAt)}
-                              </span>
-                            </div>
-                          ))}
+                          {userDetail.orders.map((o) => {
+                            const statusVariant =
+                              o.status === "delivered" ||
+                              o.status === "review_complete"
+                                ? "success"
+                                : o.status === "pending_payment"
+                                  ? "warning"
+                                  : o.status === "cancelled" ||
+                                      o.status === "refunded"
+                                    ? "error"
+                                    : "info";
+
+                            return (
+                              <div key={o.id} className={styles.orderItem}>
+                                <div className={styles.orderItemHeader}>
+                                  <span className={styles.orderItemPlan}>
+                                    {o.planName ?? "플랜 없음"}
+                                  </span>
+                                  <Badge variant={statusVariant}>
+                                    {ORDER_STATUS_DISPLAY[o.status] ?? o.status}
+                                  </Badge>
+                                </div>
+                                <div className={styles.orderItemDetails}>
+                                  <span>
+                                    {o.paymentAmount != null
+                                      ? formatCurrency(o.paymentAmount)
+                                      : formatCurrency(o.amount)}
+                                  </span>
+                                  {o.paymentMethod && (
+                                    <span className={styles.orderItemSep}>
+                                      · {o.paymentMethod}
+                                    </span>
+                                  )}
+                                  <span className={styles.orderItemSep}>
+                                    ·{" "}
+                                    {o.approvedAt
+                                      ? formatDate(o.approvedAt)
+                                      : formatDate(o.createdAt)}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       ) : (
                         <p className={styles.noData}>주문 내역이 없습니다.</p>
@@ -683,6 +836,23 @@ const AdminUsersPage = () => {
                         </button>
                       )}
                     </div>
+
+                    {/* Delete account */}
+                    <div className={styles.roleChangeSection}>
+                      <h3 className={styles.detailSectionTitle}>계정 삭제</h3>
+                      <p className={styles.deleteWarning}>
+                        계정을 삭제하면 생기부, 주문, 리포트 등 모든 데이터가
+                        영구적으로 삭제됩니다.
+                      </p>
+                      <button
+                        className={`${styles.roleChangeButton} ${styles.deleteButton}`}
+                        onClick={handleDeleteClick}
+                        disabled={isDeleting}
+                      >
+                        <Trash2 size={16} />
+                        계정 삭제
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <div className={styles.modalLoading}>
@@ -691,6 +861,56 @@ const AdminUsersPage = () => {
                     </p>
                   </div>
                 )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Dialog */}
+      <AnimatePresence>
+        {isDeleteConfirmOpen && (
+          <motion.div
+            className={styles.confirmOverlay}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={handleCancelDelete}
+          >
+            <motion.div
+              className={styles.confirmDialog}
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className={styles.confirmTitle}>계정 삭제 확인</h3>
+              <p className={styles.confirmMessage}>
+                {userDetail?.name ?? "이 사용자"}의 계정을 삭제하시겠습니까?
+                생기부, 주문, 리포트 등 모든 데이터가 영구적으로 삭제되며 복구할
+                수 없습니다.
+              </p>
+              <div className={styles.confirmActions}>
+                <button
+                  className={styles.confirmCancel}
+                  onClick={handleCancelDelete}
+                  disabled={isDeleting}
+                >
+                  취소
+                </button>
+                <button
+                  className={`${styles.confirmSubmit} ${styles.confirmSubmitDanger}`}
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <Loader2 size={14} className={styles.spinner} />
+                  ) : (
+                    "삭제"
+                  )}
+                </button>
               </div>
             </motion.div>
           </motion.div>

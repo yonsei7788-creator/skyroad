@@ -18,29 +18,50 @@ interface LiteReportProps {
   data: ReportContent;
 }
 
-const PART_CONFIG = [
+const buildPartConfig = (isGraduate?: boolean) => [
   {
     partNumber: "PART 1",
     title: "진단",
-    description: "생기부 전체를 기반으로 한 학생 유형 분류 및 역량 점수",
-    sectionIds: ["studentProfile", "competencyScore"],
+    description: "학생 유형 분류 및 역량 점수",
+    color: "#4f46e5",
+    sectionIds: ["studentProfile", "competencyScore", "competitiveProfiling"],
   },
   {
     partNumber: "PART 2",
-    title: "분석",
-    description: "성적 분석, 창체 활동, 세특 분석",
-    sectionIds: ["academicAnalysis", "activityAnalysis", "subjectAnalysis"],
+    title: "정밀 분석",
+    description: isGraduate
+      ? "학업 분석, 출결, 활동, 과목별 분석, 행동특성 분석"
+      : "학업 분석, 과목 적합도, 출결, 활동, 과목별 분석, 행동특성 분석",
+    color: "#4338ca",
+    sectionIds: [
+      "academicAnalysis",
+      ...(isGraduate ? [] : ["courseAlignment"]),
+      "attendanceAnalysis",
+      "activityAnalysis",
+      "subjectAnalysis",
+      "behaviorAnalysis",
+    ],
   },
   {
     partNumber: "PART 3",
-    title: "전략",
-    description: "부족한 부분 보완 전략, 세특 주제 추천, 면접 대비, 입시 전략",
-    sectionIds: [
-      "weaknessAnalysis",
-      "topicRecommendation",
-      "interviewPrep",
-      "admissionStrategy",
-    ],
+    title: "전략 & 실행",
+    description: "면접 준비, 비교과 경쟁력 분석",
+    color: "#5b4bd6",
+    sectionIds: ["interviewPrep"],
+  },
+  {
+    partNumber: "부록",
+    title: "부록",
+    description: "학과 탐색",
+    color: "#6366f1",
+    sectionIds: ["majorExploration"],
+  },
+  {
+    partNumber: "총평",
+    title: "전임 컨설턴트 총평",
+    description: "종합 평가 및 전략 방향",
+    color: "#4f46e5",
+    sectionIds: ["consultantReview"],
   },
 ];
 
@@ -76,9 +97,10 @@ export const LiteReport = ({ data }: LiteReportProps) => {
             .filter((s): s is ReportSection => s !== undefined)}
           plan="lite"
           studentName={meta.studentInfo.name}
+          isGraduate={meta.studentInfo.isGraduate}
         />
 
-        {PART_CONFIG.map((part) => {
+        {buildPartConfig(meta.studentInfo.isGraduate).map((part) => {
           const partSections = part.sectionIds
             .map((id) => sectionMap.get(id))
             .filter((s): s is ReportSection => s !== undefined);
@@ -93,8 +115,12 @@ export const LiteReport = ({ data }: LiteReportProps) => {
             };
           });
 
+          const partStyle = {
+            "--report-accent": part.color,
+          } as React.CSSProperties;
+
           return (
-            <div key={part.partNumber}>
+            <div key={part.partNumber} style={partStyle}>
               <PartPage
                 partNumber={part.partNumber}
                 title={part.title}
@@ -115,6 +141,7 @@ export const LiteReport = ({ data }: LiteReportProps) => {
                     section={item.section}
                     plan="lite"
                     sectionNumber={item.num}
+                    isGraduate={meta.studentInfo.isGraduate}
                   />
                 </AutoPaginatedSection>
               ))}

@@ -3,9 +3,8 @@ import type {
   ReportPlan,
 } from "@/libs/report/types";
 
-import { ReportBadge } from "./ReportBadge";
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface AdmissionPredictionRendererProps {
@@ -17,13 +16,15 @@ interface AdmissionPredictionRendererProps {
 const TYPE_LABEL: Record<string, string> = {
   학종: "학생부종합전형",
   교과: "학생부교과전형",
-  정시: "수능(정시)전형",
+  논술: "논술전형",
+  고른기회: "고른기회전형",
 };
 
 const FULL_TYPE_NAME: Record<string, string> = {
   학종: "학생부종합전형",
   교과: "학생부교과전형",
-  정시: "수능(정시)전형",
+  논술: "논술전형",
+  고른기회: "고른기회전형",
 };
 
 export const AdmissionPredictionRenderer = ({
@@ -46,10 +47,17 @@ export const AdmissionPredictionRenderer = ({
       ? styles.admissionCardStandard
       : styles.admissionCard;
 
-  const mainCards = (data.predictions ?? []).filter(
+  const allPredictions = (data.predictions ?? []).filter(
+    (p) => (p.admissionType as string) !== "정시"
+  );
+  const hasAnyUniversityPredictions = allPredictions.some(
     (p) => p.universityPredictions && p.universityPredictions.length > 0
   );
-  const simpleCards = (data.predictions ?? []).filter(
+
+  const mainCards = allPredictions.filter(
+    (p) => p.universityPredictions && p.universityPredictions.length > 0
+  );
+  const simpleCards = allPredictions.filter(
     (p) => !p.universityPredictions || p.universityPredictions.length === 0
   );
 
@@ -57,7 +65,7 @@ export const AdmissionPredictionRenderer = ({
 
   return (
     <>
-      {/* Block 1: Header + Banner + first prediction card */}
+      {/* Block 1: Header + Banner */}
       <div>
         <SectionHeader number={sectionNumber} title={data.title} />
 
@@ -70,62 +78,20 @@ export const AdmissionPredictionRenderer = ({
           </div>
         </div>
 
-        <div className={styles.admissionSectionLabel}>전형별 합격 예측</div>
-
-        {allCards.length > 0 &&
-          (() => {
-            const [pred] = allCards;
-            return (
-              <div className={cardClass}>
-                <div className={styles.admissionCardHeader}>
-                  <span className={styles.admissionCardType}>
-                    {FULL_TYPE_NAME[pred.admissionType] ?? pred.admissionType}
-                  </span>
-                  <span className={styles.admissionCardRate}>
-                    {pred.passRateLabel}
-                  </span>
-                </div>
-                <p className={styles.admissionCardAnalysis}>
-                  {safeText(pred.analysis)}
-                </p>
-                {pred.universityPredictions &&
-                  pred.universityPredictions.length > 0 && (
-                    <div className={styles.admissionUniList}>
-                      {pred.universityPredictions.map((up) => (
-                        <div
-                          key={`${up.university}-${up.department}`}
-                          className={styles.admissionUniRow}
-                        >
-                          <span className={styles.admissionUniName}>
-                            {up.university}
-                          </span>
-                          <span className={styles.admissionUniDept}>
-                            {up.department}
-                          </span>
-                          <ReportBadge chance={up.chance} />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-              </div>
-            );
-          })()}
+        <div className={styles.admissionSectionLabel}>전형별 희망학과 판단</div>
       </div>
 
-      {/* Remaining prediction cards — each as its own block */}
-      {allCards.slice(1).map((pred, idx) => (
+      {/* Each prediction card as its own block for page splitting */}
+      {allCards.map((pred, idx) => (
         <div key={pred.admissionType ?? idx}>
           <div className={cardClass}>
             <div className={styles.admissionCardHeader}>
               <span className={styles.admissionCardType}>
                 {FULL_TYPE_NAME[pred.admissionType] ?? pred.admissionType}
               </span>
-              <span className={styles.admissionCardRate}>
-                {pred.passRateLabel}
-              </span>
             </div>
             <p className={styles.admissionCardAnalysis}>
-              {safeText(pred.analysis)}
+              {renderInsightMarkers(pred.analysis)}
             </p>
             {pred.universityPredictions &&
               pred.universityPredictions.length > 0 && (
@@ -141,7 +107,6 @@ export const AdmissionPredictionRenderer = ({
                       <span className={styles.admissionUniDept}>
                         {up.department}
                       </span>
-                      <ReportBadge chance={up.chance} />
                     </div>
                   ))}
                 </div>
@@ -150,14 +115,28 @@ export const AdmissionPredictionRenderer = ({
         </div>
       ))}
 
+      {/* 실기 예체능 안내 */}
+      {!hasAnyUniversityPredictions && (
+        <div>
+          <div className={styles.card}>
+            <p className={styles.small}>
+              실기 전형이 포함된 예체능 학과는 실기 성적에 따라 합격 여부가 크게
+              달라지므로, 추천 대학을 제공하지 않습니다.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Final block: AI commentary */}
       <div>
         <div className={styles.aiCommentary}>
           <div className={styles.aiCommentaryIcon}>✦</div>
           <div className={styles.aiCommentaryContent}>
-            <div className={styles.aiCommentaryLabel}>종합 코멘트</div>
+            <div className={styles.aiCommentaryLabel}>
+              <span className={styles.markerSky}>종합 코멘트</span>
+            </div>
             <div className={styles.aiCommentaryText}>
-              {safeText(data.overallComment)}
+              {renderInsightMarkers(data.overallComment)}
             </div>
           </div>
         </div>

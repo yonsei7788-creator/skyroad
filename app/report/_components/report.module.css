@@ -20,6 +20,20 @@
   --report-primary-800: #3730a3;
   --report-primary-900: #312e81;
 
+  /* -- Competitive Profiling Level Colors -- */
+  --cp-high-fg: #059669;
+  --cp-high-bg: #ecfdf5;
+  --cp-high-border: #a7f3d0;
+  --cp-high-accent: #10b981;
+  --cp-mid-fg: #d97706;
+  --cp-mid-bg: #fffbeb;
+  --cp-mid-border: #fde68a;
+  --cp-mid-accent: #f59e0b;
+  --cp-low-fg: #dc2626;
+  --cp-low-bg: #fef2f2;
+  --cp-low-border: #fecaca;
+  --cp-low-accent: #ef4444;
+
   /* -- Plan Accent (default: Lite = Indigo) -- */
   --report-accent: #4f46e5;
   --report-accent-light: #eef2ff;
@@ -84,8 +98,8 @@
   --report-bg: #ffffff;
   --report-bg-secondary: #f8fafc;
   --report-fg: #0f172a;
-  --report-fg-secondary: #475569;
-  --report-fg-tertiary: #94a3b8;
+  --report-fg-secondary: #1e293b;
+  --report-fg-tertiary: #334155;
   --report-border: #e2e8f0;
   --report-border-strong: #cbd5e1;
 
@@ -163,7 +177,10 @@
     0 6px 24px rgb(0 0 0 / 0.06);
   border-radius: 2px;
   overflow: visible;
+  overflow-x: hidden;
   counter-increment: page-counter;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .page:last-child {
@@ -227,8 +244,7 @@
 .overline {
   font-size: var(--report-fs-overline);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
   color: var(--report-fg-tertiary);
   line-height: 1.4;
 }
@@ -241,6 +257,63 @@
 .highlight {
   font-weight: 600;
   padding: 0 2px;
+}
+
+/* ── 형광펜 효과 (실제 마커펜처럼 텍스트 하단만 칠해지는 느낌) ── */
+/* background-position + background-size로 자연스러운 마커 표현 */
+.markerYellow {
+  background: linear-gradient(
+    104deg,
+    rgba(250, 204, 21, 0) 0.9%,
+    rgba(250, 204, 21, 0.52) 2.4%,
+    rgba(250, 204, 21, 0.38) 5.8%,
+    rgba(250, 204, 21, 0.52) 93%,
+    rgba(250, 204, 21, 0.38) 96%,
+    rgba(250, 204, 21, 0) 98%
+  );
+  background-position: 0 82%;
+  background-size: 100% 60%;
+  background-repeat: no-repeat;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 2px 4px 1px;
+}
+
+/* 섹션 헤더 제목용 — 더 넓고 선명한 마커 */
+.markerYellowTitle {
+  background: linear-gradient(
+    104deg,
+    rgba(250, 204, 21, 0) 0.9%,
+    rgba(250, 204, 21, 0.58) 2.4%,
+    rgba(250, 204, 21, 0.42) 5.8%,
+    rgba(250, 204, 21, 0.58) 93%,
+    rgba(250, 204, 21, 0.42) 96%,
+    rgba(250, 204, 21, 0) 98%
+  );
+  background-position: 0 80%;
+  background-size: 100% 64%;
+  background-repeat: no-repeat;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 3px 5px 2px;
+}
+
+.markerSky {
+  background: linear-gradient(
+    104deg,
+    rgba(56, 189, 248, 0) 0.9%,
+    rgba(56, 189, 248, 0.48) 2.4%,
+    rgba(56, 189, 248, 0.34) 5.8%,
+    rgba(56, 189, 248, 0.48) 93%,
+    rgba(56, 189, 248, 0.34) 96%,
+    rgba(56, 189, 248, 0) 98%
+  );
+  background-position: 0 82%;
+  background-size: 100% 60%;
+  background-repeat: no-repeat;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 2px 4px 1px;
 }
 
 .textStrength {
@@ -493,16 +566,19 @@
   position: relative;
   z-index: 1;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
 }
 
 .coverBrand {
-  font-size: var(--report-fs-overline);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.25em;
-  color: var(--report-accent);
+  font-size: 1.375rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+}
+
+.coverBrandAccent {
+  color: #4f46e5;
 }
 
 .coverPlanBadge {
@@ -570,7 +646,7 @@
   font-weight: 400;
   color: var(--report-fg-secondary);
   line-height: 1.7;
-  max-width: 380px;
+  word-break: keep-all;
 }
 
 /* --- Student info (left-border accent list) --- */
@@ -857,7 +933,10 @@
   color: var(--report-fg);
   border-bottom: 1px solid var(--report-border);
   vertical-align: top;
+  font-variant-numeric: tabular-nums;
 }
+
+/* th, td에 .tableAlignCenter를 함께 적용하면 칼럼 전체 정렬이 일치됨 */
 
 /* Zebra striping */
 .table tbody tr:nth-child(even) {
@@ -1023,14 +1102,14 @@
 .ratingGood {
   composes: ratingBadge;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   border: 1px solid #e2e8f0;
 }
 
 .ratingAverage {
   composes: ratingBadge;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   border: 1px solid #e2e8f0;
 }
 
@@ -1056,21 +1135,21 @@
 .strategyReach {
   composes: strategyBadge;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   white-space: nowrap;
 }
 
 .strategyMatch {
   composes: strategyBadge;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   white-space: nowrap;
 }
 
 .strategySafety {
   composes: strategyBadge;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   white-space: nowrap;
 }
 
@@ -1105,7 +1184,7 @@
 .chanceMedium {
   composes: chanceBadge;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   white-space: nowrap;
 }
 
@@ -1125,6 +1204,14 @@
   white-space: nowrap;
 }
 
+.chanceUnavailable {
+  composes: chanceBadge;
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: #e2e8f0;
+  white-space: nowrap;
+}
+
 /* -- Category Tag -- */
 .categoryTag {
   display: inline-flex;
@@ -1139,13 +1226,13 @@
 .categorySubject {
   composes: categoryTag;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
 }
 
 .categoryActivity {
   composes: categoryTag;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
 }
 
 /* ============================================
@@ -1174,7 +1261,7 @@
   height: 24px;
   border-radius: 50%;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   font-size: var(--report-fs-caption);
   font-weight: 700;
   margin-bottom: var(--report-space-sm);
@@ -1203,7 +1290,7 @@
   padding: 2px 10px;
   border-radius: 50px;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   font-size: var(--report-fs-overline);
   font-weight: 600;
   margin-top: var(--report-space-sm);
@@ -1274,8 +1361,14 @@
 .tagAccent {
   composes: tag;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   border-color: #e2e8f0;
+}
+
+.tagAccentWrap {
+  composes: tagAccent;
+  white-space: normal;
+  word-break: keep-all;
 }
 
 .tagStrength {
@@ -1295,14 +1388,14 @@
 .tagTrendUp {
   composes: tag;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   border-color: #e2e8f0;
 }
 
 .tagTrendDown {
   composes: tag;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   border-color: #e2e8f0;
 }
 
@@ -1320,6 +1413,8 @@
   border-radius: 8px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .calloutIcon {
@@ -1334,6 +1429,8 @@
   font-size: var(--report-fs-body);
   color: var(--report-fg);
   line-height: 1.65;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .calloutStrength {
@@ -1383,7 +1480,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: #334155;
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -1395,9 +1492,8 @@
 .aiCommentaryLabel {
   font-size: var(--report-fs-overline);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #94a3b8;
+  letter-spacing: 0.02em;
+  color: #334155;
   margin-bottom: 6px;
 }
 
@@ -1566,27 +1662,24 @@
 
 .pageFooter {
   position: absolute;
-  bottom: 15mm;
+  bottom: 8mm;
   left: 18mm;
   right: 18mm;
   display: flex;
-  align-items: center;
   justify-content: space-between;
   padding-top: 12px;
   border-top: 1px solid var(--report-border);
 }
 
 .pageFooterText {
-  font-size: 0.625rem;
+  font-size: var(--report-fs-caption);
   color: var(--report-fg-tertiary);
-  letter-spacing: 0.02em;
 }
 
 .pageNumber {
   font-size: var(--report-fs-caption);
   font-weight: 600;
   color: var(--report-fg-tertiary);
-  font-variant-numeric: tabular-nums;
 }
 
 .pageNumber::after {
@@ -1753,9 +1846,13 @@
 .tocTitle {
   font-weight: 500;
   color: var(--report-fg);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+}
+
+.tocUpgrade {
+  box-shadow: inset 0 -0.55em 0 #fde68a;
+  padding: 0 2px;
 }
 
 .tocDots {
@@ -2018,7 +2115,7 @@
   height: 32px;
   border-radius: 50%;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   border: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
@@ -2040,7 +2137,7 @@
   padding: 2px 10px;
   border-radius: 4px;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   font-size: var(--report-fs-caption);
   font-weight: 600;
   margin-bottom: 12px;
@@ -2184,6 +2281,7 @@
   .chanceMedium,
   .chanceLow,
   .chanceVeryLow,
+  .chanceUnavailable,
   .categoryTag,
   .categorySubject,
   .categoryActivity,
@@ -2601,7 +2699,7 @@
   font-size: var(--report-fs-small);
   font-weight: 600;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   border: 1px solid #e2e8f0;
 }
 
@@ -2640,6 +2738,111 @@
   background: var(--report-bg);
 }
 
+/* --- Recommendation summary (admission type + strategy) --- */
+.profileRecommendation {
+  margin-top: 16px;
+  padding: 18px 22px;
+  border-radius: var(--report-radius-md);
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 추천 전형 행: 라벨(좌) + 칩(우)
+   첫 번째 영역으로 들어가면 아래에 dashed divider 노출 */
+.profileRecommendationRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* 전략 영역: 라벨 위, 리스트 아래 */
+.profileRecommendationRowStack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 두 영역이 모두 있을 때만 사이에 dashed divider + 간격 */
+.profileRecommendationRow + .profileRecommendationRowStack {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--report-border);
+}
+
+/* 라벨: 작고 차분한 overline 스타일 */
+.profileRecommendationLabel {
+  flex-shrink: 0;
+  font-size: var(--report-fs-overline);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--report-fg-tertiary);
+}
+
+/* 추천 전형 값: accent 배경 pill chip — 모노그램 톤과 호응 */
+.profileRecommendationValue {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--report-accent);
+  color: #ffffff;
+  font-size: var(--report-fs-small);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  /* 인쇄 시 배경색 유지 */
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+/* 전략 리스트: counter 기반 자동 번호 매김 */
+.profileStrategyList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  counter-reset: strategy-counter;
+}
+
+.profileStrategyItem {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  align-items: start;
+  gap: 10px;
+  font-size: var(--report-fs-body);
+  font-weight: 500;
+  color: var(--report-fg);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  counter-increment: strategy-counter;
+}
+
+.profileStrategyItem::before {
+  content: counter(strategy-counter);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: var(--report-accent);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid #e2e8f0;
+  margin-top: 2px;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
 /* ============================================
    Competency Score (redesigned)
    ============================================ */
@@ -2665,8 +2868,7 @@
 .competencyHeroOverline {
   font-size: var(--report-fs-overline);
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
   color: var(--report-accent);
   margin-bottom: 4px;
 }
@@ -2742,6 +2944,154 @@
   font-size: var(--report-fs-caption);
   font-weight: 500;
   color: var(--report-fg-tertiary);
+}
+
+/* --- 5축 세분화 레이더 (신규 리포트 v5+) --- */
+.competencyRadarPanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 16px 20px;
+  margin-bottom: 18px;
+  background: #ffffff;
+  border: 1px solid var(--report-border);
+  border-radius: 12px;
+}
+
+.competencyRadarLabel {
+  align-self: flex-start;
+  font-size: var(--report-fs-caption);
+  font-weight: 700;
+  color: var(--report-fg-tertiary);
+  letter-spacing: 0.02em;
+}
+
+.competencyRadarSvg {
+  width: 320px;
+  max-width: 100%;
+  height: auto;
+}
+
+.competencyAxisLegend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.competencyAxisChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: var(--report-fs-caption);
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.competencyAxisChipStrength {
+  color: #047857;
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.competencyAxisChipWeak {
+  color: #b45309;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+/* --- 데이터 기반 강점·보완 항목 (신규 리포트 v5+) --- */
+.competencyHighlights {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+@media print {
+  .competencyHighlights {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.competencyHighlightCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid var(--report-border);
+  border-radius: 10px;
+}
+
+.competencyHighlightHeading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--report-fs-small);
+  font-weight: 700;
+  color: var(--report-fg);
+}
+
+.competencyHighlightDotStrength,
+.competencyHighlightDotWeak {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.competencyHighlightDotStrength {
+  background: #059669;
+}
+
+.competencyHighlightDotWeak {
+  background: #d97706;
+}
+
+.competencyHighlightItem {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border-radius: 7px;
+}
+
+.competencyHighlightItemHead {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.competencyHighlightItemName {
+  font-size: var(--report-fs-caption);
+  font-weight: 700;
+  color: var(--report-fg);
+}
+
+.competencyHighlightItemMeta {
+  font-size: var(--report-fs-caption);
+  color: var(--report-fg-tertiary);
+}
+
+.competencyHighlightGain {
+  font-size: var(--report-fs-caption);
+  font-weight: 700;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.competencyHighlightReason {
+  font-size: var(--report-fs-caption);
+  line-height: 1.6;
+  color: var(--report-fg-secondary);
 }
 
 /* --- Section sub-label with dash --- */
@@ -3050,8 +3400,7 @@
 .competencyGrowthLabel {
   font-size: var(--report-fs-overline);
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   color: var(--report-fg-tertiary);
 }
 
@@ -3220,7 +3569,7 @@
   font-size: var(--report-fs-overline);
   font-weight: 600;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   border: 1px solid #e2e8f0;
 }
 
@@ -3261,6 +3610,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.admissionUniType {
+  font-size: var(--report-fs-caption);
+  color: var(--report-fg-primary);
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ============================================
@@ -3349,7 +3706,7 @@
   height: 22px;
   border-radius: 50%;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   font-size: var(--report-fs-caption);
   font-weight: 700;
   margin-top: 2px;
@@ -3425,8 +3782,7 @@
 .storyMainQuoteLabel {
   font-size: var(--report-fs-overline);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
   color: var(--report-fg-tertiary);
   margin-bottom: 8px;
 }
@@ -3539,7 +3895,7 @@
   height: 28px;
   border-radius: 50%;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   font-size: 0.875rem;
   font-weight: 700;
   border: 1px solid #e2e8f0;
@@ -4005,7 +4361,7 @@
   padding: 3px 12px;
   border-radius: 50px;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   font-size: var(--report-fs-caption);
   font-weight: 600;
   white-space: nowrap;
@@ -4050,8 +4406,7 @@
 .diagCompLabel {
   font-size: var(--report-fs-overline);
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   color: var(--report-fg-secondary);
   margin-bottom: 8px;
 }
@@ -4314,7 +4669,7 @@
   padding: 2px 8px;
   border-radius: 100px;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
   white-space: nowrap;
   flex-shrink: 0;
   border: 1px solid #e2e8f0;
@@ -4378,13 +4733,13 @@
 .ceGradeA {
   composes: ceGradeBadge;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
 }
 
 .ceGradeB {
   composes: ceGradeBadge;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
 }
 
 .ceGradeC {
@@ -4469,7 +4824,7 @@
 .gradeComment {
   font-size: 11px;
   line-height: 1.6;
-  color: #475569;
+  color: #1e293b;
   margin: 0;
 }
 
@@ -4477,7 +4832,7 @@
 .ratingRationale {
   font-size: var(--report-fs-small);
   line-height: 1.7;
-  color: #475569;
+  color: #1e293b;
   margin: 6px 0 0;
   padding: 8px 12px;
   background: #f8fafc;
@@ -4523,4 +4878,114 @@
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   vertical-align: middle;
+}
+
+/* ============================================
+   Competitive Profiling Section
+   ============================================ */
+
+/* -- Level Badges -- */
+.cpBadgeHigh {
+  composes: ratingBadge;
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.cpBadgeMid {
+  composes: ratingBadge;
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.cpBadgeLow {
+  composes: ratingBadge;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+/* -- Level Verdict Banners -- */
+.cpVerdictHigh {
+  composes: verdict;
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.cpVerdictMid {
+  composes: verdict;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.cpVerdictLow {
+  composes: verdict;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+/* -- Step UI -- */
+.cpStep {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.cpStep + .cpStep {
+  border-top: 1px dashed var(--report-border);
+}
+
+.cpStepNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--report-accent);
+  color: #fff;
+  font-size: var(--report-fs-caption);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.cpStepContent {
+  flex: 1;
+}
+
+.cpStepTitle {
+  font-size: var(--report-fs-small);
+  font-weight: 600;
+  color: var(--report-fg);
+  margin-bottom: 4px;
+}
+
+.cpStepBody {
+  font-size: var(--report-fs-caption);
+  color: var(--report-fg-secondary);
+  line-height: 1.5;
+}
+
+/* -- Meta Row (level + connectivity) -- */
+.cpMetaRow {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+.cpMetaItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--report-fs-caption);
+  color: var(--report-fg-secondary);
+}
+
+/* -- Level Card (dynamic border-left) -- */
+.cpLevelCard {
+  composes: card;
+  border-left: 3px solid var(--report-accent);
 }

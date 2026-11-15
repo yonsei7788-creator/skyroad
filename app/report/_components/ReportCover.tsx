@@ -29,6 +29,7 @@ export const ReportCover = ({ meta }: ReportCoverProps) => {
         isPremium ? styles.coverPremiumBg : ""
       } ${isStandard ? styles.coverStandardBg : ""}`}
       data-page
+      data-cover
     >
       {/* Geometric corner decorations */}
       <div className={styles.coverCornerTR} />
@@ -38,7 +39,9 @@ export const ReportCover = ({ meta }: ReportCoverProps) => {
 
       {/* Header: brand + plan badge */}
       <div className={styles.coverHeader}>
-        <div className={styles.coverBrand}>SKYROAD</div>
+        <div className={styles.coverBrand}>
+          시대 <span className={styles.coverBrandAccent}>컨설팅</span>
+        </div>
         <div
           className={`${styles.coverPlanBadge} ${
             isPremium ? styles.coverBadgePremium : ""
@@ -86,7 +89,8 @@ export const ReportCover = ({ meta }: ReportCoverProps) => {
         <div className={styles.coverStudentRow}>
           <span className={styles.coverStudentLabel}>학년 / 계열</span>
           <span className={styles.coverStudentValue}>
-            {studentInfo.grade}학년 / {studentInfo.track}
+            {studentInfo.isGraduate ? "졸업생" : `${studentInfo.grade}학년`} /{" "}
+            {studentInfo.track}
           </span>
         </div>
         {studentInfo.targetUniversity && (

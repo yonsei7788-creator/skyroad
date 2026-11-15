@@ -2,8 +2,39 @@ import type { AdmissionStrategySection, ReportPlan } from "@/libs/report/types";
 
 import { ReportBadge } from "./ReportBadge";
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
+
+/**
+ * AI가 string[] 필드에 객체를 반환하는 경우를 대비한 방어 로직.
+ * 문자열이 아니면 알려진 텍스트 필드를 추출하고, 최종 fallback으로 빈 문자열 반환.
+ */
+const toStringItem = (v: unknown): string => {
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  if (v && typeof v === "object") {
+    const obj = v as Record<string, unknown>;
+    const candidates = [
+      obj.keyword,
+      obj.text,
+      obj.name,
+      obj.label,
+      obj.value,
+      obj.title,
+      obj.item,
+      obj.content,
+    ];
+    for (const c of candidates) {
+      if (typeof c === "string" && c.trim()) return c;
+    }
+  }
+  return "";
+};
+
+const normalizeStringArray = (v: unknown): string[] => {
+  if (!Array.isArray(v)) return [];
+  return v.map(toStringItem).filter((s) => s.length > 0);
+};
 
 interface AdmissionStrategyRendererProps {
   data: AdmissionStrategySection;
@@ -24,90 +55,131 @@ export const AdmissionStrategyRenderer = ({
 
         <div className={styles.cardAccent}>
           <div className={styles.cardHeader}>
-            <div className={styles.cardTitle}>추천 입시 경로</div>
+            <div className={styles.cardTitle}>
+              <span className={styles.markerSky}>추천 입시 경로</span>
+            </div>
+            {data.recommendedAdmissionType && (
+              <span className={styles.profileRecommendationValue}>
+                {renderInsightMarkers(data.recommendedAdmissionType)}
+              </span>
+            )}
           </div>
           <p className={`${styles.small} ${styles.mt6}`}>
-            {safeText(data.recommendedPath)}
+            {renderInsightMarkers(data.recommendedPath)}
           </p>
         </div>
       </div>
 
-      {/* Block 2: Recommendations — tierGrouped: each group its own block */}
-      {data.tierGroupedRecommendations ? (
-        data.tierGroupedRecommendations.map((group) => (
-          <div key={group.tierGroup}>
-            <div className={`${styles.h3} ${styles.mb8}`}>
-              추천 대학 — {group.tierGroup} 조합
+      {/* Block 2: 대학 추천 (단일 테이블) */}
+      {(() => {
+        const allCards =
+          data.simulations
+            ?.flatMap((sim) => sim.cards ?? [])
+            .filter(
+              (card, idx, arr) =>
+                arr.findIndex(
+                  (c) =>
+                    c.university === card.university &&
+                    c.department === card.department
+                ) === idx
+            ) ?? [];
+        const desc = data.simulations?.[0]?.description;
+        if (allCards.length === 0) {
+          return desc ? (
+            <div>
+              <div className={`${styles.h3} ${styles.mb8}`}>대학 추천</div>
+              <div className={styles.card}>
+                <p className={styles.small}>
+                  실기 전형이 포함된 예체능 학과는 실기 성적에 따라 합격 여부가
+                  크게 달라지므로, 추천 대학을 제공하지 않습니다.
+                </p>
+              </div>
             </div>
+          ) : null;
+        }
+        // 새 구조: recommendedAdmissionType이 있으면 추천 전형 표시
+        const isNewFormat = allCards.some(
+          (card) => card.recommendedAdmissionType
+        );
+        console.log(allCards);
+
+        return (
+          <div>
+            <div className={`${styles.h3} ${styles.mb8}`}>대학 추천</div>
+            {isNewFormat && (
+              <p className={`${styles.small} ${styles.mb12}`}>
+                <span className={styles.markerYellow}>
+                  추천된 학교, 학과, 전형은 합격 가능성이 있거나 인재상에
+                  부합하는 최적의 선택지만 선별했습니다.(가능성의 높낮이를
+                  따지지 않음)
+                </span>
+              </p>
+            )}
+            {!isNewFormat && desc && (
+              <p className={`${styles.small} ${styles.mb12}`}>
+                {renderInsightMarkers(desc)}
+              </p>
+            )}
             <table className={styles.compactTable}>
               <thead>
                 <tr>
                   <th>대학</th>
                   <th>학과</th>
-                  <th>전형</th>
-                  <th className={styles.tableAlignCenter}>전략</th>
-                  {(group.recommendations ?? []).some((r) => r.chance) && (
-                    <th className={styles.tableAlignCenter}>가능성</th>
+                  {isNewFormat ? (
+                    <th>추천 전형</th>
+                  ) : (
+                    <>
+                      <th>학종</th>
+                      <th>교과</th>
+                    </>
                   )}
                 </tr>
               </thead>
+
               <tbody>
-                {(group.recommendations ?? []).map((rec, idx) => (
+                {allCards.map((card, idx) => (
                   <tr key={idx}>
-                    <td className={styles.tableCellBold}>{rec.university}</td>
-                    <td className={styles.small}>{rec.department}</td>
-                    <td className={styles.small}>{rec.admissionType}</td>
-                    <td className={styles.tableAlignCenter}>
-                      <ReportBadge strategy={rec.tier} />
-                    </td>
-                    {(group.recommendations ?? []).some((r) => r.chance) && (
-                      <td className={styles.tableAlignCenter}>
-                        {rec.chance ? <ReportBadge chance={rec.chance} /> : "—"}
+                    <td className={styles.tableCellBold}>{card.university}</td>
+                    <td className={styles.small}>{card.department}</td>
+                    {isNewFormat ? (
+                      <td className={styles.small}>
+                        {["학생부종합전형", "학종"].includes(
+                          card.recommendedAdmissionType ?? ""
+                        )
+                          ? "학생부종합"
+                          : ["학생부교과전형", "교과"].includes(
+                                card.recommendedAdmissionType ?? ""
+                              )
+                            ? "학생부교과"
+                            : "—"}
                       </td>
+                    ) : (
+                      <>
+                        <td className={styles.tableAlignCenter}>
+                          {card.comprehensive?.chance ? (
+                            <ReportBadge chance={card.comprehensive.chance} />
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className={styles.tableAlignCenter}>
+                          {card.subject?.chance ? (
+                            <ReportBadge chance={card.subject.chance} />
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                      </>
                     )}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        ))
-      ) : (
-        <div>
-          <div className={`${styles.h3} ${styles.mb12}`}>추천 대학</div>
-          <table className={styles.compactTable}>
-            <thead>
-              <tr>
-                <th>대학</th>
-                <th>학과</th>
-                <th>전형</th>
-                <th className={styles.tableAlignCenter}>전략</th>
-                {(data.recommendations ?? []).some((r) => r.chance) && (
-                  <th className={styles.tableAlignCenter}>가능성</th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {(data.recommendations ?? []).map((rec, idx) => (
-                <tr key={idx}>
-                  <td className={styles.tableCellBold}>{rec.university}</td>
-                  <td className={styles.small}>{rec.department}</td>
-                  <td className={styles.small}>{rec.admissionType}</td>
-                  <td className={styles.tableAlignCenter}>
-                    <ReportBadge strategy={rec.tier} />
-                  </td>
-                  {(data.recommendations ?? []).some((r) => r.chance) && (
-                    <td className={styles.tableAlignCenter}>
-                      {rec.chance ? <ReportBadge chance={rec.chance} /> : "—"}
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        );
+      })()}
 
-      {/* Next semester strategy — separate block */}
+      {/* Next semester strategy */}
       {data.nextSemesterStrategy && (
         <div>
           <div className={styles.cardAccent}>
@@ -115,72 +187,35 @@ export const AdmissionStrategyRenderer = ({
               <div className={styles.cardTitle}>다음 학기 전략</div>
             </div>
             <p className={`${styles.small} ${styles.mt6}`}>
-              {safeText(data.nextSemesterStrategy)}
+              {renderInsightMarkers(data.nextSemesterStrategy)}
             </p>
           </div>
         </div>
       )}
 
-      {/* Block 3: Chance rationale */}
-      {(data.recommendations ?? []).some((r) => r.chanceRationale) && (
-        <div>
-          <div className={`${styles.h3} ${styles.mb12}`}>
-            대학별 합격 가능성 분석
+      {/* Block 4: Type strategies — 제목은 첫 카드에 포함 */}
+      {(data.typeStrategies ?? []).map((ts, tsIdx) => (
+        <div key={`type-${tsIdx}`}>
+          {tsIdx === 0 && (
+            <div className={`${styles.h3} ${styles.mb12}`}>
+              <span className={styles.markerSky}>전형별 전략</span>
+            </div>
+          )}
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardTitle}>{ts.type}</div>
+              <span className={styles.tag}>{ts.suitability}</span>
+            </div>
+            <p className={`${styles.small} ${styles.mt6}`}>{ts.analysis}</p>
+            <p
+              className={`${styles.caption} ${styles.mt4}`}
+              style={{ fontWeight: 700 }}
+            >
+              <span className={styles.markerYellow}>근거: {ts.reason}</span>
+            </p>
           </div>
-          <table className={styles.compactTable}>
-            <thead>
-              <tr>
-                <th>대학 · 학과</th>
-                <th>분석</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(data.recommendations ?? [])
-                .filter((r) => r.chanceRationale)
-                .map((rec, idx) => (
-                  <tr key={idx}>
-                    <td className={styles.tableCellBold}>
-                      {rec.university} {rec.department}
-                    </td>
-                    <td className={styles.small}>{rec.chanceRationale}</td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
         </div>
-      )}
-
-      {/* Block 4: Type strategies */}
-      {data.typeStrategies && data.typeStrategies.length > 0 && (
-        <div>
-          <div className={`${styles.h3} ${styles.mb12}`}>전형별 전략</div>
-          <table className={styles.compactTable}>
-            <thead>
-              <tr>
-                <th>전형</th>
-                <th className={styles.tableAlignCenter}>적합도</th>
-                <th>분석</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.typeStrategies.map((ts) => (
-                <tr key={ts.type}>
-                  <td className={styles.tableCellBold}>{ts.type}</td>
-                  <td className={styles.tableAlignCenter}>
-                    <span className={styles.tag}>{ts.suitability}</span>
-                  </td>
-                  <td>
-                    <p className={styles.small}>{ts.analysis}</p>
-                    <p className={`${styles.caption} ${styles.mt4}`}>
-                      <span className={styles.emphasis}>근거:</span> {ts.reason}
-                    </p>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      ))}
 
       {/* Block 5: School type analysis */}
       {data.schoolTypeAnalysis && (
@@ -188,157 +223,127 @@ export const AdmissionStrategyRenderer = ({
           <div className={`${styles.h3} ${styles.mb8}`}>학교 유형 분석</div>
           <p className={styles.small}>{data.schoolTypeAnalysis.rationale}</p>
           <div className={`${styles.tagGroup} ${styles.mt8}`}>
-            {(data.schoolTypeAnalysis.advantageTypes ?? []).map((t) => (
-              <span key={t} className={styles.tag}>
-                유리: {t}
-              </span>
-            ))}
-            {(data.schoolTypeAnalysis.cautionTypes ?? []).map((t) => (
-              <span key={t} className={styles.tag}>
-                주의: {t}
-              </span>
-            ))}
+            {normalizeStringArray(data.schoolTypeAnalysis.advantageTypes).map(
+              (t, aIdx) => (
+                <span key={`advantage-${aIdx}`} className={styles.tag}>
+                  유리: {t}
+                </span>
+              )
+            )}
+            {normalizeStringArray(data.schoolTypeAnalysis.cautionTypes).map(
+              (t, cIdx) => (
+                <span key={`caution-${cIdx}`} className={styles.tag}>
+                  주의: {t}
+                </span>
+              )
+            )}
           </div>
         </div>
       )}
 
-      {/* Block 6: CSAT minimum strategy */}
-      {data.csatMinimumStrategy && (
-        <div>
-          <div className={`${styles.h3} ${styles.mb8}`}>수능 최저 전략</div>
-          <p className={styles.small}>{safeText(data.csatMinimumStrategy)}</p>
-        </div>
-      )}
-
-      {/* Block 7: Application simulation */}
-      {data.applicationSimulation && (
-        <div>
-          <div className={`${styles.h3} ${styles.mb8}`}>
-            지원 조합 시뮬레이션
-          </div>
-          <p className={`${styles.small} ${styles.mb12}`}>
-            {data.applicationSimulation.description}
-          </p>
-          <table className={styles.compactTable}>
-            <thead>
-              <tr>
-                <th>전형</th>
-                <th className={styles.tableAlignCenter}>지원 수</th>
-                <th>목표 대학</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(data.applicationSimulation.details ?? []).map((detail, idx) => (
-                <tr key={idx}>
-                  <td className={styles.tableCellBold}>
-                    {detail.admissionType}
-                  </td>
-                  <td className={styles.tableAlignCenter}>{detail.count}</td>
-                  <td className={styles.small}>
-                    {(detail.targetUniversities ?? []).join(", ")}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Block 8: University guide matching */}
+      {/* Block 6: University guide matching — 1대학 1카드 (태그+분석 통합) */}
       {data.universityGuideMatching &&
-        data.universityGuideMatching.length > 0 && (
-          <div>
-            <div className={`${styles.h3} ${styles.mb12}`}>
-              대학별 인재상 매칭
-            </div>
-            <table className={styles.compactTable}>
-              <thead>
-                <tr>
-                  <th style={{ whiteSpace: "nowrap" }}>대학</th>
-                  <th>핵심 키워드</th>
-                  <th>강점 매칭</th>
-                  <th style={{ minWidth: 120 }}>보완 필요</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.universityGuideMatching.map((match, idx) => (
-                  <tr key={idx}>
-                    <td className={styles.tableCellBold}>{match.university}</td>
-                    <td>
-                      <div className={styles.tagGroup}>
-                        {(Array.isArray(match.emphasisKeywords)
-                          ? match.emphasisKeywords
-                          : []
-                        ).map((kw) => (
-                          <span key={kw} className={styles.tag}>
-                            {kw}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td>
-                      <div className={styles.tagGroup}>
-                        {(Array.isArray(match.studentStrengthMatch)
-                          ? match.studentStrengthMatch
-                          : []
-                        ).map((s) => (
-                          <span key={s} className={styles.tag}>
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td style={{ minWidth: 120, overflow: "visible" }}>
-                      <div className={styles.tagGroup}>
-                        {(Array.isArray(match.studentWeaknessMatch)
-                          ? match.studentWeaknessMatch
-                          : []
-                        ).map((w) => (
-                          <span key={w} className={styles.tag}>
-                            {w}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        data.universityGuideMatching.length > 0 &&
+        data.universityGuideMatching.map((match, idx) => {
+          const m = match as any;
+          const keywords: string[] = normalizeStringArray(
+            m.emphasisKeywords ?? m.matchingKeywords ?? m.keywords
+          );
+          const strengths: string[] = normalizeStringArray(
+            m.studentStrengthMatch
+          );
+          const weaknesses: string[] = normalizeStringArray(
+            m.studentWeaknessMatch
+          );
+          const analysis: string | undefined =
+            typeof m.analysis === "string"
+              ? m.analysis
+              : typeof m.matchingAnalysis === "string"
+                ? m.matchingAnalysis
+                : undefined;
 
-      {/* Block 9: Risk bands (v4) — hidden for premium */}
-      {plan !== "premium" &&
-        data.universityRiskBands &&
-        data.universityRiskBands.length > 0 && (
-          <div>
-            <div className={`${styles.h3} ${styles.mb12}`}>
-              대학별 리스크 밴드
+          if (
+            keywords.length === 0 &&
+            strengths.length === 0 &&
+            weaknesses.length === 0 &&
+            !analysis
+          )
+            return null;
+
+          const title = `${m.university} ${m.department ?? ""}`;
+
+          return (
+            <div key={`guide-${idx}`} className={styles.card}>
+              <div className={styles.cardHeader}>
+                <div className={styles.cardTitle}>{title}</div>
+              </div>
+              {keywords.length > 0 && (
+                <div className={styles.mt8}>
+                  <div className={`${styles.overline} ${styles.mb4}`}>
+                    핵심 키워드
+                  </div>
+                  <div className={styles.tagGroup}>
+                    {keywords.map((kw, kIdx) => (
+                      <span
+                        key={`guide-${idx}-kw-${kIdx}`}
+                        className={styles.tagAccent}
+                      >
+                        {kw}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {strengths.length > 0 && (
+                <div className={styles.mt12}>
+                  <div className={`${styles.overline} ${styles.mb4}`}>
+                    강점 매칭
+                  </div>
+                  <div className={styles.tagGroup}>
+                    {strengths.map((s, sIdx) => (
+                      <span
+                        key={`guide-${idx}-strength-${sIdx}`}
+                        className={styles.tagStrength}
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {weaknesses.length > 0 && (
+                <div className={styles.mt12}>
+                  <div className={`${styles.overline} ${styles.mb4}`}>
+                    보완 필요
+                  </div>
+                  <div className={styles.tagGroup}>
+                    {weaknesses.map((w, wIdx) => (
+                      <span
+                        key={`guide-${idx}-weakness-${wIdx}`}
+                        className={styles.tagWeakness}
+                      >
+                        {w}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {analysis && (
+                <div
+                  className={styles.mt8}
+                  style={{
+                    paddingTop: 8,
+                    borderTop: "1px solid var(--report-border)",
+                  }}
+                >
+                  <p className={styles.small}>
+                    {renderInsightMarkers(analysis)}
+                  </p>
+                </div>
+              )}
             </div>
-            <table className={styles.compactTable}>
-              <thead>
-                <tr>
-                  <th>대학</th>
-                  <th>학과</th>
-                  <th className={styles.tableAlignCenter}>리스크</th>
-                  <th>근거</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.universityRiskBands.map((rb, idx) => (
-                  <tr key={idx}>
-                    <td className={styles.tableCellBold}>{rb.university}</td>
-                    <td className={styles.small}>{rb.department}</td>
-                    <td className={styles.tableAlignCenter}>
-                      <span className={styles.tag}>{rb.band}</span>
-                    </td>
-                    <td className={styles.small}>{rb.rationale}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+          );
+        })}
     </>
   );
 };

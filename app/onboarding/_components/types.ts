@@ -8,18 +8,28 @@ export interface OnboardingState {
   universityCompleted: boolean;
 }
 
+/** 성별 */
+export const GENDER_OPTIONS = [
+  { value: "male", label: "남성" },
+  { value: "female", label: "여성" },
+] as const;
+
+export type Gender = "male" | "female";
+
 /** Step 1: 입시 정보 */
 export interface ProfileStepData {
   name: string;
   phone: string;
+  gender: Gender | "";
   highSchoolName: string;
   highSchoolType: string;
+  highSchoolRegion: string;
   grade: string;
   admissionYear: number | null;
 }
 
 /** Step 3: 목표 대학 (1~3지망) */
-export type UniversityPriority = 1 | 2 | 3;
+export type UniversityPriority = 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface TargetUniversity {
   id?: string;
@@ -51,11 +61,34 @@ export const SCHOOL_TYPES = [
 
 export type SchoolType = (typeof SCHOOL_TYPES)[number];
 
+/** 고교 소재지 (시/도) */
+export const REGION_OPTIONS = [
+  "서울특별시",
+  "부산광역시",
+  "대구광역시",
+  "인천광역시",
+  "광주광역시",
+  "대전광역시",
+  "울산광역시",
+  "세종특별자치시",
+  "경기도",
+  "강원특별자치도",
+  "충청북도",
+  "충청남도",
+  "전북특별자치도",
+  "전라남도",
+  "경상북도",
+  "경상남도",
+  "제주특별자치도",
+] as const;
+
+export type Region = (typeof REGION_OPTIONS)[number];
+
 /** 전형 유형 */
 export const ADMISSION_TYPES = [
   "학생부종합",
   "학생부교과",
-  "논술",
+  "고른기회",
   "실기/실적",
   "기타",
 ] as const;

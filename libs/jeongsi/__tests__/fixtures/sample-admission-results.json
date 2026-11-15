@@ -1,0 +1,7811 @@
+[
+  {
+    "planKey": "서울대학교-경영대학-가",
+    "admissionYear": 2024,
+    "university": "서울대학교",
+    "department": "경영대학",
+    "group": "가",
+    "quota": 120,
+    "competitionRate": 3.98,
+    "additionalPassCount": 93,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 566.87
+    }
+  },
+  {
+    "planKey": "서울대학교-경영대학-가",
+    "admissionYear": 2025,
+    "university": "서울대학교",
+    "department": "경영대학",
+    "group": "가",
+    "quota": 125,
+    "competitionRate": 3.19,
+    "additionalPassCount": 69,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 559.91
+    }
+  },
+  {
+    "planKey": "서울대학교-경영대학-가",
+    "admissionYear": 2026,
+    "university": "서울대학교",
+    "department": "경영대학",
+    "group": "가",
+    "quota": 127,
+    "competitionRate": 2.87,
+    "additionalPassCount": 137,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 569.61
+    }
+  },
+  {
+    "planKey": "서울대학교-경제학부-가",
+    "admissionYear": 2024,
+    "university": "서울대학교",
+    "department": "경제학부",
+    "group": "가",
+    "quota": 124,
+    "competitionRate": 5.19,
+    "additionalPassCount": 106,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 569.61
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 575.09
+    }
+  },
+  {
+    "planKey": "서울대학교-경제학부-가",
+    "admissionYear": 2025,
+    "university": "서울대학교",
+    "department": "경제학부",
+    "group": "가",
+    "quota": 128,
+    "competitionRate": 5.74,
+    "additionalPassCount": 100,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 561.81
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 566.87
+    }
+  },
+  {
+    "planKey": "서울대학교-경제학부-가",
+    "admissionYear": 2026,
+    "university": "서울대학교",
+    "department": "경제학부",
+    "group": "가",
+    "quota": 125,
+    "competitionRate": 4.62,
+    "additionalPassCount": 108,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 564.13
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 569.61
+    }
+  },
+  {
+    "planKey": "서울대학교-국어국문학과-가",
+    "admissionYear": 2024,
+    "university": "서울대학교",
+    "department": "국어국문학과",
+    "group": "가",
+    "quota": 15,
+    "competitionRate": 5.57,
+    "additionalPassCount": 6,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 559.91
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 564.13
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 565.5
+    }
+  },
+  {
+    "planKey": "서울대학교-국어국문학과-가",
+    "admissionYear": 2025,
+    "university": "서울대학교",
+    "department": "국어국문학과",
+    "group": "가",
+    "quota": 15,
+    "competitionRate": 4.85,
+    "additionalPassCount": 17,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 554.21
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 558.01
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 558.96
+    }
+  },
+  {
+    "planKey": "서울대학교-국어국문학과-가",
+    "admissionYear": 2026,
+    "university": "서울대학교",
+    "department": "국어국문학과",
+    "group": "가",
+    "quota": 10,
+    "competitionRate": 3.75,
+    "additionalPassCount": 6,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 559.91
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 564.13
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 565.5
+    }
+  },
+  {
+    "planKey": "서울대학교-정치외교학부-가",
+    "admissionYear": 2025,
+    "university": "서울대학교",
+    "department": "정치외교학부",
+    "group": "가",
+    "quota": 27,
+    "competitionRate": 3.65,
+    "additionalPassCount": 36,
+    "cut70": {
+      "metric": "percentile",
+      "value": 97.6
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 98.1
+    }
+  },
+  {
+    "planKey": "서울대학교-정치외교학부-가",
+    "admissionYear": 2026,
+    "university": "서울대학교",
+    "department": "정치외교학부",
+    "group": "가",
+    "quota": 30,
+    "competitionRate": 4.74,
+    "additionalPassCount": 29,
+    "cut70": {
+      "metric": "percentile",
+      "value": 98.2
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 98.7
+    }
+  },
+  {
+    "planKey": "서울대학교-자유전공학부-가",
+    "admissionYear": 2024,
+    "university": "서울대학교",
+    "department": "자유전공학부",
+    "group": "가",
+    "quota": 46,
+    "competitionRate": 2.88,
+    "additionalPassCount": 53,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 562.76
+    }
+  },
+  {
+    "planKey": "서울대학교-자유전공학부-가",
+    "admissionYear": 2025,
+    "university": "서울대학교",
+    "department": "자유전공학부",
+    "group": "가",
+    "quota": 49,
+    "competitionRate": 2.58,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 559.91
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 564.13
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 565.5
+    }
+  },
+  {
+    "planKey": "서울대학교-자유전공학부-가",
+    "admissionYear": 2026,
+    "university": "서울대학교",
+    "department": "자유전공학부",
+    "group": "가",
+    "quota": 50,
+    "competitionRate": 5.46,
+    "additionalPassCount": 53,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 565.5
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 570.98
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 572.35
+    }
+  },
+  {
+    "planKey": "서울대학교-컴퓨터공학부-가",
+    "admissionYear": 2024,
+    "university": "서울대학교",
+    "department": "컴퓨터공학부",
+    "group": "가",
+    "quota": 29,
+    "competitionRate": 4.56,
+    "additionalPassCount": 40,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 576.46
+    }
+  },
+  {
+    "planKey": "서울대학교-컴퓨터공학부-가",
+    "admissionYear": 2025,
+    "university": "서울대학교",
+    "department": "컴퓨터공학부",
+    "group": "가",
+    "quota": 29,
+    "competitionRate": 3.39,
+    "additionalPassCount": 20,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 568.24
+    }
+  },
+  {
+    "planKey": "서울대학교-컴퓨터공학부-가",
+    "admissionYear": 2026,
+    "university": "서울대학교",
+    "department": "컴퓨터공학부",
+    "group": "가",
+    "quota": 31,
+    "competitionRate": 5,
+    "additionalPassCount": 14,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 573.72
+    }
+  },
+  {
+    "planKey": "서울대학교-전기·정보공학부-가",
+    "admissionYear": 2024,
+    "university": "서울대학교",
+    "department": "전기·정보공학부",
+    "group": "가",
+    "quota": 55,
+    "competitionRate": 5.74,
+    "additionalPassCount": 55,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 570.98
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 576.46
+    }
+  },
+  {
+    "planKey": "서울대학교-전기·정보공학부-가",
+    "admissionYear": 2025,
+    "university": "서울대학교",
+    "department": "전기·정보공학부",
+    "group": "가",
+    "quota": 58,
+    "competitionRate": 3.91,
+    "additionalPassCount": 50,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 568.24
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 573.72
+    }
+  },
+  {
+    "planKey": "서울대학교-전기·정보공학부-가",
+    "admissionYear": 2026,
+    "university": "서울대학교",
+    "department": "전기·정보공학부",
+    "group": "가",
+    "quota": 56,
+    "competitionRate": 5.03,
+    "additionalPassCount": 38,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 569.61
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 575.09
+    }
+  },
+  {
+    "planKey": "서울대학교-기계공학부-가",
+    "admissionYear": 2024,
+    "university": "서울대학교",
+    "department": "기계공학부",
+    "group": "가",
+    "quota": 44,
+    "competitionRate": 3.15,
+    "additionalPassCount": 51,
+    "cut70": {
+      "metric": "percentile",
+      "value": 98.6
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 99
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 99.1
+    }
+  },
+  {
+    "planKey": "서울대학교-기계공학부-가",
+    "admissionYear": 2025,
+    "university": "서울대학교",
+    "department": "기계공학부",
+    "group": "가",
+    "quota": 43,
+    "competitionRate": 2.95,
+    "additionalPassCount": 20,
+    "cut70": {
+      "metric": "percentile",
+      "value": 97.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 98.3
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 98.4
+    }
+  },
+  {
+    "planKey": "서울대학교-기계공학부-가",
+    "admissionYear": 2026,
+    "university": "서울대학교",
+    "department": "기계공학부",
+    "group": "가",
+    "quota": 39,
+    "competitionRate": 3.43,
+    "additionalPassCount": 49,
+    "cut70": {
+      "metric": "percentile",
+      "value": 98
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 98.4
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 98.5
+    }
+  },
+  {
+    "planKey": "서울대학교-의예과-가",
+    "admissionYear": 2025,
+    "university": "서울대학교",
+    "department": "의예과",
+    "group": "가",
+    "quota": 41,
+    "competitionRate": 5.12,
+    "additionalPassCount": 15,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 580.89
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 591.95
+    }
+  },
+  {
+    "planKey": "서울대학교-의예과-가",
+    "admissionYear": 2026,
+    "university": "서울대학교",
+    "department": "의예과",
+    "group": "가",
+    "quota": 40,
+    "competitionRate": 3.19,
+    "additionalPassCount": 56,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 591.95
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 596.37
+    }
+  },
+  {
+    "planKey": "연세대학교-경영학과-나",
+    "admissionYear": 2024,
+    "university": "연세대학교",
+    "department": "경영학과",
+    "group": "나",
+    "quota": 108,
+    "competitionRate": 2.97,
+    "additionalPassCount": 124,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 952.18
+    }
+  },
+  {
+    "planKey": "연세대학교-경영학과-나",
+    "admissionYear": 2025,
+    "university": "연세대학교",
+    "department": "경영학과",
+    "group": "나",
+    "quota": 110,
+    "competitionRate": 5.51,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 947.05
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 952.18
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 953.46
+    }
+  },
+  {
+    "planKey": "연세대학교-경영학과-나",
+    "admissionYear": 2026,
+    "university": "연세대학교",
+    "department": "경영학과",
+    "group": "나",
+    "quota": 108,
+    "competitionRate": 3.13,
+    "additionalPassCount": 84,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 953.46
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 958.6
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 960.46
+    }
+  },
+  {
+    "planKey": "연세대학교-경제학부-나",
+    "admissionYear": 2024,
+    "university": "연세대학교",
+    "department": "경제학부",
+    "group": "나",
+    "quota": 88,
+    "competitionRate": 5.74,
+    "additionalPassCount": 101,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 952.18
+    }
+  },
+  {
+    "planKey": "연세대학교-경제학부-나",
+    "admissionYear": 2025,
+    "university": "연세대학교",
+    "department": "경제학부",
+    "group": "나",
+    "quota": 92,
+    "competitionRate": 5.22,
+    "additionalPassCount": 61,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 944.48
+    }
+  },
+  {
+    "planKey": "연세대학교-경제학부-나",
+    "admissionYear": 2026,
+    "university": "연세대학교",
+    "department": "경제학부",
+    "group": "나",
+    "quota": 91,
+    "competitionRate": 3.78,
+    "additionalPassCount": 46,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 944.48
+    }
+  },
+  {
+    "planKey": "연세대학교-영어영문학과-나",
+    "admissionYear": 2024,
+    "university": "연세대학교",
+    "department": "영어영문학과",
+    "group": "나",
+    "quota": 31,
+    "competitionRate": 3.91,
+    "additionalPassCount": 36,
+    "cut70": {
+      "metric": "percentile",
+      "value": 96.4
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 96.8
+    }
+  },
+  {
+    "planKey": "연세대학교-영어영문학과-나",
+    "admissionYear": 2025,
+    "university": "연세대학교",
+    "department": "영어영문학과",
+    "group": "나",
+    "quota": 32,
+    "competitionRate": 3.44,
+    "additionalPassCount": 20,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 96.3
+    }
+  },
+  {
+    "planKey": "연세대학교-영어영문학과-나",
+    "admissionYear": 2026,
+    "university": "연세대학교",
+    "department": "영어영문학과",
+    "group": "나",
+    "quota": 31,
+    "competitionRate": 3.67,
+    "additionalPassCount": 10,
+    "cut70": {
+      "metric": "percentile",
+      "value": 96.2
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 96.6
+    }
+  },
+  {
+    "planKey": "연세대학교-심리학과-나",
+    "admissionYear": 2024,
+    "university": "연세대학교",
+    "department": "심리학과",
+    "group": "나",
+    "quota": 17,
+    "competitionRate": 4.54,
+    "additionalPassCount": 8,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 945.77
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 950.9
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 952.18
+    }
+  },
+  {
+    "planKey": "연세대학교-심리학과-나",
+    "admissionYear": 2025,
+    "university": "연세대학교",
+    "department": "심리학과",
+    "group": "나",
+    "quota": 22,
+    "competitionRate": 4.48,
+    "additionalPassCount": 28,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 938.07
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 943.2
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 944.48
+    }
+  },
+  {
+    "planKey": "연세대학교-심리학과-나",
+    "admissionYear": 2026,
+    "university": "연세대학교",
+    "department": "심리학과",
+    "group": "나",
+    "quota": 22,
+    "competitionRate": 4.84,
+    "additionalPassCount": 19,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 948.33
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 953.46
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 954.75
+    }
+  },
+  {
+    "planKey": "연세대학교-언론홍보영상학부-나",
+    "admissionYear": 2025,
+    "university": "연세대학교",
+    "department": "언론홍보영상학부",
+    "group": "나",
+    "quota": 30,
+    "competitionRate": 2.79,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 940.64
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 947.05
+    }
+  },
+  {
+    "planKey": "연세대학교-언론홍보영상학부-나",
+    "admissionYear": 2026,
+    "university": "연세대학교",
+    "department": "언론홍보영상학부",
+    "group": "나",
+    "quota": 29,
+    "competitionRate": 4.53,
+    "additionalPassCount": 15,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 939.35
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 945.77
+    }
+  },
+  {
+    "planKey": "연세대학교-컴퓨터과학과-나",
+    "admissionYear": 2024,
+    "university": "연세대학교",
+    "department": "컴퓨터과학과",
+    "group": "나",
+    "quota": 34,
+    "competitionRate": 5.73,
+    "additionalPassCount": 26,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 952.87
+    }
+  },
+  {
+    "planKey": "연세대학교-컴퓨터과학과-나",
+    "admissionYear": 2025,
+    "university": "연세대학교",
+    "department": "컴퓨터과학과",
+    "group": "나",
+    "quota": 34,
+    "competitionRate": 3.55,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 942.61
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 948.47
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 949.94
+    }
+  },
+  {
+    "planKey": "연세대학교-컴퓨터과학과-나",
+    "admissionYear": 2026,
+    "university": "연세대학교",
+    "department": "컴퓨터과학과",
+    "group": "나",
+    "quota": 31,
+    "competitionRate": 5.81,
+    "additionalPassCount": 27,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 949.94
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 956.42
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 958.5
+    }
+  },
+  {
+    "planKey": "연세대학교-전기전자공학부-나",
+    "admissionYear": 2024,
+    "university": "연세대학교",
+    "department": "전기전자공학부",
+    "group": "나",
+    "quota": 65,
+    "competitionRate": 3.66,
+    "additionalPassCount": 84,
+    "cut70": {
+      "metric": "percentile",
+      "value": 97.6
+    }
+  },
+  {
+    "planKey": "연세대학교-전기전자공학부-나",
+    "admissionYear": 2025,
+    "university": "연세대학교",
+    "department": "전기전자공학부",
+    "group": "나",
+    "quota": 66,
+    "competitionRate": 5.34,
+    "additionalPassCount": 84,
+    "cut70": {
+      "metric": "percentile",
+      "value": 97.4
+    }
+  },
+  {
+    "planKey": "연세대학교-전기전자공학부-나",
+    "admissionYear": 2026,
+    "university": "연세대학교",
+    "department": "전기전자공학부",
+    "group": "나",
+    "quota": 64,
+    "competitionRate": 3.83,
+    "additionalPassCount": 29,
+    "cut70": {
+      "metric": "percentile",
+      "value": 97.2
+    }
+  },
+  {
+    "planKey": "연세대학교-화공생명공학부-나",
+    "admissionYear": 2024,
+    "university": "연세대학교",
+    "department": "화공생명공학부",
+    "group": "나",
+    "quota": 43,
+    "competitionRate": 5.56,
+    "additionalPassCount": 40,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 948.47
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 954.33
+    }
+  },
+  {
+    "planKey": "연세대학교-화공생명공학부-나",
+    "admissionYear": 2025,
+    "university": "연세대학교",
+    "department": "화공생명공학부",
+    "group": "나",
+    "quota": 42,
+    "competitionRate": 4.16,
+    "additionalPassCount": 55,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 942.61
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 948.47
+    }
+  },
+  {
+    "planKey": "연세대학교-화공생명공학부-나",
+    "admissionYear": 2026,
+    "university": "연세대학교",
+    "department": "화공생명공학부",
+    "group": "나",
+    "quota": 38,
+    "competitionRate": 4.36,
+    "additionalPassCount": 28,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 944.07
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 949.94
+    }
+  },
+  {
+    "planKey": "연세대학교-의예과-나",
+    "admissionYear": 2024,
+    "university": "연세대학교",
+    "department": "의예과",
+    "group": "나",
+    "quota": 43,
+    "competitionRate": 5.09,
+    "additionalPassCount": 49,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 998.46
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 1005.1
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 1005.1
+    }
+  },
+  {
+    "planKey": "연세대학교-의예과-나",
+    "admissionYear": 2025,
+    "university": "연세대학교",
+    "department": "의예과",
+    "group": "나",
+    "quota": 43,
+    "competitionRate": 2.52,
+    "additionalPassCount": 47,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 985.16
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 998.46
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 1001.78
+    }
+  },
+  {
+    "planKey": "연세대학교-의예과-나",
+    "admissionYear": 2026,
+    "university": "연세대학교",
+    "department": "의예과",
+    "group": "나",
+    "quota": 43,
+    "competitionRate": 4.79,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 981.83
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 995.13
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 998.46
+    }
+  },
+  {
+    "planKey": "고려대학교-경영대학-나",
+    "admissionYear": 2025,
+    "university": "고려대학교",
+    "department": "경영대학",
+    "group": "나",
+    "quota": 108,
+    "competitionRate": 4.78,
+    "additionalPassCount": 88,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 922.64
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 930.32
+    }
+  },
+  {
+    "planKey": "고려대학교-경영대학-나",
+    "admissionYear": 2026,
+    "university": "고려대학교",
+    "department": "경영대학",
+    "group": "나",
+    "quota": 104,
+    "competitionRate": 5.9,
+    "additionalPassCount": 77,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 931.85
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 939.5
+    }
+  },
+  {
+    "planKey": "고려대학교-경제학과-나",
+    "admissionYear": 2024,
+    "university": "고려대학교",
+    "department": "경제학과",
+    "group": "나",
+    "quota": 80,
+    "competitionRate": 5.43,
+    "additionalPassCount": 54,
+    "cut70": {
+      "metric": "percentile",
+      "value": 97
+    }
+  },
+  {
+    "planKey": "고려대학교-경제학과-나",
+    "admissionYear": 2025,
+    "university": "고려대학교",
+    "department": "경제학과",
+    "group": "나",
+    "quota": 74,
+    "competitionRate": 5.15,
+    "cut70": {
+      "metric": "percentile",
+      "value": 96.8
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 97.2
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 97.3
+    }
+  },
+  {
+    "planKey": "고려대학교-경제학과-나",
+    "admissionYear": 2026,
+    "university": "고려대학교",
+    "department": "경제학과",
+    "group": "나",
+    "quota": 78,
+    "competitionRate": 3.98,
+    "additionalPassCount": 67,
+    "cut70": {
+      "metric": "percentile",
+      "value": 97.2
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 97.6
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 97.7
+    }
+  },
+  {
+    "planKey": "고려대학교-사회학과-나",
+    "admissionYear": 2024,
+    "university": "고려대학교",
+    "department": "사회학과",
+    "group": "나",
+    "quota": 21,
+    "competitionRate": 4.63,
+    "additionalPassCount": 12,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 919.51
+    }
+  },
+  {
+    "planKey": "고려대학교-사회학과-나",
+    "admissionYear": 2025,
+    "university": "고려대학교",
+    "department": "사회학과",
+    "group": "나",
+    "quota": 23,
+    "competitionRate": 3.38,
+    "additionalPassCount": 15,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 910.12
+    }
+  },
+  {
+    "planKey": "고려대학교-사회학과-나",
+    "admissionYear": 2026,
+    "university": "고려대학교",
+    "department": "사회학과",
+    "group": "나",
+    "quota": 22,
+    "competitionRate": 2.54,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 921.08
+    }
+  },
+  {
+    "planKey": "고려대학교-미디어학부-나",
+    "admissionYear": 2024,
+    "university": "고려대학교",
+    "department": "미디어학부",
+    "group": "나",
+    "quota": 26,
+    "competitionRate": 3.6,
+    "additionalPassCount": 23,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 925.74
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 931.85
+    }
+  },
+  {
+    "planKey": "고려대학교-미디어학부-나",
+    "admissionYear": 2025,
+    "university": "고려대학교",
+    "department": "미디어학부",
+    "group": "나",
+    "quota": 23,
+    "competitionRate": 3.68,
+    "additionalPassCount": 23,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 921.08
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 927.26
+    }
+  },
+  {
+    "planKey": "고려대학교-미디어학부-나",
+    "admissionYear": 2026,
+    "university": "고려대학교",
+    "department": "미디어학부",
+    "group": "나",
+    "quota": 28,
+    "competitionRate": 3.91,
+    "additionalPassCount": 18,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 924.21
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 930.32
+    }
+  },
+  {
+    "planKey": "고려대학교-행정학과-나",
+    "admissionYear": 2024,
+    "university": "고려대학교",
+    "department": "행정학과",
+    "group": "나",
+    "quota": 23,
+    "competitionRate": 3.8,
+    "additionalPassCount": 13,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 927.26
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 933.38
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 934.91
+    }
+  },
+  {
+    "planKey": "고려대학교-행정학과-나",
+    "admissionYear": 2025,
+    "university": "고려대학교",
+    "department": "행정학과",
+    "group": "나",
+    "quota": 21,
+    "competitionRate": 5.3,
+    "additionalPassCount": 19,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 916.38
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 922.64
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 924.21
+    }
+  },
+  {
+    "planKey": "고려대학교-행정학과-나",
+    "admissionYear": 2026,
+    "university": "고려대학교",
+    "department": "행정학과",
+    "group": "나",
+    "quota": 19,
+    "competitionRate": 5.82,
+    "additionalPassCount": 22,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 917.95
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 924.21
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 925.74
+    }
+  },
+  {
+    "planKey": "고려대학교-컴퓨터학과-나",
+    "admissionYear": 2025,
+    "university": "고려대학교",
+    "department": "컴퓨터학과",
+    "group": "나",
+    "quota": 39,
+    "competitionRate": 4.11,
+    "additionalPassCount": 14,
+    "cut70": {
+      "metric": "percentile",
+      "value": 97.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 98
+    }
+  },
+  {
+    "planKey": "고려대학교-컴퓨터학과-나",
+    "admissionYear": 2026,
+    "university": "고려대학교",
+    "department": "컴퓨터학과",
+    "group": "나",
+    "quota": 34,
+    "competitionRate": 4.67,
+    "additionalPassCount": 14,
+    "cut70": {
+      "metric": "percentile",
+      "value": 97.6
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 98.1
+    }
+  },
+  {
+    "planKey": "고려대학교-전기전자공학부-나",
+    "admissionYear": 2024,
+    "university": "고려대학교",
+    "department": "전기전자공학부",
+    "group": "나",
+    "quota": 57,
+    "competitionRate": 3.79,
+    "additionalPassCount": 28,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 938.03
+    }
+  },
+  {
+    "planKey": "고려대학교-전기전자공학부-나",
+    "admissionYear": 2025,
+    "university": "고려대학교",
+    "department": "전기전자공학부",
+    "group": "나",
+    "quota": 54,
+    "competitionRate": 2.83,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 927.21
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 933.39
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 934.94
+    }
+  },
+  {
+    "planKey": "고려대학교-전기전자공학부-나",
+    "admissionYear": 2026,
+    "university": "고려대학교",
+    "department": "전기전자공학부",
+    "group": "나",
+    "quota": 56,
+    "competitionRate": 4.6,
+    "additionalPassCount": 52,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 933.39
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 939.57
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 941.79
+    }
+  },
+  {
+    "planKey": "고려대학교-기계공학부-나",
+    "admissionYear": 2024,
+    "university": "고려대학교",
+    "department": "기계공학부",
+    "group": "나",
+    "quota": 45,
+    "competitionRate": 4.89,
+    "additionalPassCount": 20,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 924.12
+    }
+  },
+  {
+    "planKey": "고려대학교-기계공학부-나",
+    "admissionYear": 2025,
+    "university": "고려대학교",
+    "department": "기계공학부",
+    "group": "나",
+    "quota": 42,
+    "competitionRate": 3.22,
+    "additionalPassCount": 22,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 916.19
+    }
+  },
+  {
+    "planKey": "고려대학교-기계공학부-나",
+    "admissionYear": 2026,
+    "university": "고려대학교",
+    "department": "기계공학부",
+    "group": "나",
+    "quota": 43,
+    "competitionRate": 5.22,
+    "additionalPassCount": 14,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 925.66
+    }
+  },
+  {
+    "planKey": "고려대학교-생명공학부-나",
+    "admissionYear": 2024,
+    "university": "고려대학교",
+    "department": "생명공학부",
+    "group": "나",
+    "quota": 31,
+    "competitionRate": 3.27,
+    "additionalPassCount": 28,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 922.53
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 928.75
+    }
+  },
+  {
+    "planKey": "고려대학교-생명공학부-나",
+    "admissionYear": 2025,
+    "university": "고려대학교",
+    "department": "생명공학부",
+    "group": "나",
+    "quota": 31,
+    "competitionRate": 3.75,
+    "additionalPassCount": 31,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 914.61
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 920.95
+    }
+  },
+  {
+    "planKey": "고려대학교-생명공학부-나",
+    "admissionYear": 2026,
+    "university": "고려대학교",
+    "department": "생명공학부",
+    "group": "나",
+    "quota": 33,
+    "competitionRate": 5.02,
+    "additionalPassCount": 22,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 920.95
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 927.21
+    }
+  },
+  {
+    "planKey": "서강대학교-경영학부-나",
+    "admissionYear": 2024,
+    "university": "서강대학교",
+    "department": "경영학부",
+    "group": "나",
+    "quota": 87,
+    "competitionRate": 5.29,
+    "additionalPassCount": 113,
+    "cut70": {
+      "metric": "percentile",
+      "value": 96.4
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 96.8
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 96.9
+    }
+  },
+  {
+    "planKey": "서강대학교-경영학부-나",
+    "admissionYear": 2025,
+    "university": "서강대학교",
+    "department": "경영학부",
+    "group": "나",
+    "quota": 92,
+    "competitionRate": 5.54,
+    "additionalPassCount": 103,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95.6
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 96
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 96.1
+    }
+  },
+  {
+    "planKey": "서강대학교-경영학부-나",
+    "admissionYear": 2026,
+    "university": "서강대학교",
+    "department": "경영학부",
+    "group": "나",
+    "quota": 94,
+    "competitionRate": 4.7,
+    "additionalPassCount": 69,
+    "cut70": {
+      "metric": "percentile",
+      "value": 96.1
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 96.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 96.6
+    }
+  },
+  {
+    "planKey": "서강대학교-경제학부-나",
+    "admissionYear": 2025,
+    "university": "서강대학교",
+    "department": "경제학부",
+    "group": "나",
+    "quota": 63,
+    "competitionRate": 5.69,
+    "additionalPassCount": 60,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 912.34
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 919.32
+    }
+  },
+  {
+    "planKey": "서강대학교-경제학부-나",
+    "admissionYear": 2026,
+    "university": "서강대학교",
+    "department": "경제학부",
+    "group": "나",
+    "quota": 61,
+    "competitionRate": 2.68,
+    "additionalPassCount": 47,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 910.93
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 917.94
+    }
+  },
+  {
+    "planKey": "서강대학교-인문학부-나",
+    "admissionYear": 2024,
+    "university": "서강대학교",
+    "department": "인문학부",
+    "group": "나",
+    "quota": 47,
+    "competitionRate": 3.6,
+    "additionalPassCount": 48,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 909.52
+    }
+  },
+  {
+    "planKey": "서강대학교-인문학부-나",
+    "admissionYear": 2025,
+    "university": "서강대학교",
+    "department": "인문학부",
+    "group": "나",
+    "quota": 43,
+    "competitionRate": 4.67,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 899.76
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 903.89
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 905.3
+    }
+  },
+  {
+    "planKey": "서강대학교-인문학부-나",
+    "admissionYear": 2026,
+    "university": "서강대학교",
+    "department": "인문학부",
+    "group": "나",
+    "quota": 46,
+    "competitionRate": 2.94,
+    "additionalPassCount": 56,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 906.7
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 912.34
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 913.74
+    }
+  },
+  {
+    "planKey": "서강대학교-사회과학부-나",
+    "admissionYear": 2024,
+    "university": "서강대학교",
+    "department": "사회과학부",
+    "group": "나",
+    "quota": 37,
+    "competitionRate": 3.08,
+    "additionalPassCount": 21,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 913.74
+    }
+  },
+  {
+    "planKey": "서강대학교-사회과학부-나",
+    "admissionYear": 2025,
+    "university": "서강대학교",
+    "department": "사회과학부",
+    "group": "나",
+    "quota": 38,
+    "competitionRate": 3.73,
+    "additionalPassCount": 48,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 906.7
+    }
+  },
+  {
+    "planKey": "서강대학교-사회과학부-나",
+    "admissionYear": 2026,
+    "university": "서강대학교",
+    "department": "사회과학부",
+    "group": "나",
+    "quota": 39,
+    "competitionRate": 2.73,
+    "additionalPassCount": 33,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 909.52
+    }
+  },
+  {
+    "planKey": "서강대학교-컴퓨터공학과-나",
+    "admissionYear": 2024,
+    "university": "서강대학교",
+    "department": "컴퓨터공학과",
+    "group": "나",
+    "quota": 35,
+    "competitionRate": 5.69,
+    "additionalPassCount": 44,
+    "cut70": {
+      "metric": "percentile",
+      "value": 97
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 97.4
+    }
+  },
+  {
+    "planKey": "서강대학교-컴퓨터공학과-나",
+    "admissionYear": 2025,
+    "university": "서강대학교",
+    "department": "컴퓨터공학과",
+    "group": "나",
+    "quota": 35,
+    "competitionRate": 5.1,
+    "additionalPassCount": 12,
+    "cut70": {
+      "metric": "percentile",
+      "value": 96.4
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 96.8
+    }
+  },
+  {
+    "planKey": "서강대학교-컴퓨터공학과-나",
+    "admissionYear": 2026,
+    "university": "서강대학교",
+    "department": "컴퓨터공학과",
+    "group": "나",
+    "quota": 34,
+    "competitionRate": 4.62,
+    "additionalPassCount": 35,
+    "cut70": {
+      "metric": "percentile",
+      "value": 96.7
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 97.1
+    }
+  },
+  {
+    "planKey": "서강대학교-전자공학과-나",
+    "admissionYear": 2024,
+    "university": "서강대학교",
+    "department": "전자공학과",
+    "group": "나",
+    "quota": 34,
+    "competitionRate": 5.42,
+    "additionalPassCount": 31,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 920.7
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 926.23
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 927.61
+    }
+  },
+  {
+    "planKey": "서강대학교-전자공학과-나",
+    "admissionYear": 2025,
+    "university": "서강대학교",
+    "department": "전자공학과",
+    "group": "나",
+    "quota": 33,
+    "competitionRate": 5.42,
+    "additionalPassCount": 37,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 909.52
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 915.15
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 916.56
+    }
+  },
+  {
+    "planKey": "서강대학교-전자공학과-나",
+    "admissionYear": 2026,
+    "university": "서강대학교",
+    "department": "전자공학과",
+    "group": "나",
+    "quota": 31,
+    "competitionRate": 2.81,
+    "additionalPassCount": 30,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 920.7
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 926.23
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 927.61
+    }
+  },
+  {
+    "planKey": "성균관대학교-경영학과-나",
+    "admissionYear": 2025,
+    "university": "성균관대학교",
+    "department": "경영학과",
+    "group": "나",
+    "quota": 121,
+    "competitionRate": 2.7,
+    "additionalPassCount": 125,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 922.26
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 929.43
+    }
+  },
+  {
+    "planKey": "성균관대학교-경영학과-나",
+    "admissionYear": 2026,
+    "university": "성균관대학교",
+    "department": "경영학과",
+    "group": "나",
+    "quota": 116,
+    "competitionRate": 5.58,
+    "additionalPassCount": 52,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 922.26
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 929.43
+    }
+  },
+  {
+    "planKey": "성균관대학교-글로벌경제학과-나",
+    "admissionYear": 2024,
+    "university": "성균관대학교",
+    "department": "글로벌경제학과",
+    "group": "나",
+    "quota": 43,
+    "competitionRate": 2.79,
+    "additionalPassCount": 39,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 926.56
+    }
+  },
+  {
+    "planKey": "성균관대학교-글로벌경제학과-나",
+    "admissionYear": 2025,
+    "university": "성균관대학교",
+    "department": "글로벌경제학과",
+    "group": "나",
+    "quota": 42,
+    "competitionRate": 3.91,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 916.52
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 922.26
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 923.69
+    }
+  },
+  {
+    "planKey": "성균관대학교-글로벌경제학과-나",
+    "admissionYear": 2026,
+    "university": "성균관대학교",
+    "department": "글로벌경제학과",
+    "group": "나",
+    "quota": 38,
+    "competitionRate": 4.08,
+    "additionalPassCount": 23,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 925.12
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 930.86
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 932.3
+    }
+  },
+  {
+    "planKey": "성균관대학교-사회과학계열-나",
+    "admissionYear": 2024,
+    "university": "성균관대학교",
+    "department": "사회과학계열",
+    "group": "나",
+    "quota": 115,
+    "competitionRate": 5.22,
+    "additionalPassCount": 121,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95.5
+    }
+  },
+  {
+    "planKey": "성균관대학교-사회과학계열-나",
+    "admissionYear": 2025,
+    "university": "성균관대학교",
+    "department": "사회과학계열",
+    "group": "나",
+    "quota": 118,
+    "competitionRate": 3.5,
+    "additionalPassCount": 71,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95
+    }
+  },
+  {
+    "planKey": "성균관대학교-사회과학계열-나",
+    "admissionYear": 2026,
+    "university": "성균관대학교",
+    "department": "사회과학계열",
+    "group": "나",
+    "quota": 113,
+    "competitionRate": 4.74,
+    "additionalPassCount": 92,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95.7
+    }
+  },
+  {
+    "planKey": "성균관대학교-교육학과-가",
+    "admissionYear": 2024,
+    "university": "성균관대학교",
+    "department": "교육학과",
+    "group": "가",
+    "quota": 19,
+    "competitionRate": 4.72,
+    "additionalPassCount": 11,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 925.12
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 930.86
+    }
+  },
+  {
+    "planKey": "성균관대학교-교육학과-가",
+    "admissionYear": 2025,
+    "university": "성균관대학교",
+    "department": "교육학과",
+    "group": "가",
+    "quota": 19,
+    "competitionRate": 3.56,
+    "additionalPassCount": 17,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 916.52
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 922.26
+    }
+  },
+  {
+    "planKey": "성균관대학교-교육학과-가",
+    "admissionYear": 2026,
+    "university": "성균관대학교",
+    "department": "교육학과",
+    "group": "가",
+    "quota": 17,
+    "competitionRate": 4.36,
+    "additionalPassCount": 17,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 919.39
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 925.12
+    }
+  },
+  {
+    "planKey": "성균관대학교-소프트웨어학과-나",
+    "admissionYear": 2024,
+    "university": "성균관대학교",
+    "department": "소프트웨어학과",
+    "group": "나",
+    "quota": 38,
+    "competitionRate": 4.58,
+    "additionalPassCount": 42,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 937.8
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 943.67
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 945.14
+    }
+  },
+  {
+    "planKey": "성균관대학교-소프트웨어학과-나",
+    "admissionYear": 2025,
+    "university": "성균관대학교",
+    "department": "소프트웨어학과",
+    "group": "나",
+    "quota": 40,
+    "competitionRate": 5.47,
+    "additionalPassCount": 47,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 931.92
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 937.8
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 939.27
+    }
+  },
+  {
+    "planKey": "성균관대학교-소프트웨어학과-나",
+    "admissionYear": 2026,
+    "university": "성균관대학교",
+    "department": "소프트웨어학과",
+    "group": "나",
+    "quota": 40,
+    "competitionRate": 2.69,
+    "additionalPassCount": 39,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 939.27
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 945.14
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 946.61
+    }
+  },
+  {
+    "planKey": "성균관대학교-반도체시스템공학과-나",
+    "admissionYear": 2025,
+    "university": "성균관대학교",
+    "department": "반도체시스템공학과",
+    "group": "나",
+    "quota": 27,
+    "competitionRate": 5.56,
+    "additionalPassCount": 15,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 928.99
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 936.33
+    }
+  },
+  {
+    "planKey": "성균관대학교-반도체시스템공학과-나",
+    "admissionYear": 2026,
+    "university": "성균관대학교",
+    "department": "반도체시스템공학과",
+    "group": "나",
+    "quota": 34,
+    "competitionRate": 5.47,
+    "additionalPassCount": 21,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 930.46
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 937.8
+    }
+  },
+  {
+    "planKey": "성균관대학교-공학계열-나",
+    "admissionYear": 2024,
+    "university": "성균관대학교",
+    "department": "공학계열",
+    "group": "나",
+    "quota": 151,
+    "competitionRate": 5.72,
+    "additionalPassCount": 157,
+    "cut70": {
+      "metric": "percentile",
+      "value": 96.4
+    }
+  },
+  {
+    "planKey": "성균관대학교-공학계열-나",
+    "admissionYear": 2025,
+    "university": "성균관대학교",
+    "department": "공학계열",
+    "group": "나",
+    "quota": 147,
+    "competitionRate": 3.09,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95.5
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 95.9
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 96
+    }
+  },
+  {
+    "planKey": "성균관대학교-공학계열-나",
+    "admissionYear": 2026,
+    "university": "성균관대학교",
+    "department": "공학계열",
+    "group": "나",
+    "quota": 149,
+    "competitionRate": 3.54,
+    "additionalPassCount": 126,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 96.3
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 96.4
+    }
+  },
+  {
+    "planKey": "성균관대학교-의예과-가",
+    "admissionYear": 2024,
+    "university": "성균관대학교",
+    "department": "의예과",
+    "group": "가",
+    "quota": 25,
+    "competitionRate": 5.8,
+    "additionalPassCount": 18,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 984.97
+    }
+  },
+  {
+    "planKey": "성균관대학교-의예과-가",
+    "admissionYear": 2025,
+    "university": "성균관대학교",
+    "department": "의예과",
+    "group": "가",
+    "quota": 27,
+    "competitionRate": 4.64,
+    "additionalPassCount": 24,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 981.62
+    }
+  },
+  {
+    "planKey": "성균관대학교-의예과-가",
+    "admissionYear": 2026,
+    "university": "성균관대학교",
+    "department": "의예과",
+    "group": "가",
+    "quota": 28,
+    "competitionRate": 4.08,
+    "additionalPassCount": 21,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 988.32
+    }
+  },
+  {
+    "planKey": "한양대학교-경영학부-가",
+    "admissionYear": 2024,
+    "university": "한양대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 93,
+    "competitionRate": 3.61,
+    "additionalPassCount": 118,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 922.92
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 928.72
+    }
+  },
+  {
+    "planKey": "한양대학교-경영학부-가",
+    "admissionYear": 2025,
+    "university": "한양대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 98,
+    "competitionRate": 2.82,
+    "additionalPassCount": 116,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 917.12
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 922.92
+    }
+  },
+  {
+    "planKey": "한양대학교-경영학부-가",
+    "admissionYear": 2026,
+    "university": "한양대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 98,
+    "competitionRate": 5.2,
+    "additionalPassCount": 78,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 915.67
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 921.47
+    }
+  },
+  {
+    "planKey": "한양대학교-경제금융학부-가",
+    "admissionYear": 2024,
+    "university": "한양대학교",
+    "department": "경제금융학부",
+    "group": "가",
+    "quota": 45,
+    "competitionRate": 5.1,
+    "additionalPassCount": 32,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 917.12
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 922.92
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 924.37
+    }
+  },
+  {
+    "planKey": "한양대학교-경제금융학부-가",
+    "admissionYear": 2025,
+    "university": "한양대학교",
+    "department": "경제금융학부",
+    "group": "가",
+    "quota": 51,
+    "competitionRate": 2.56,
+    "additionalPassCount": 44,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 914.21
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 920.02
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 921.47
+    }
+  },
+  {
+    "planKey": "한양대학교-경제금융학부-가",
+    "admissionYear": 2026,
+    "university": "한양대학교",
+    "department": "경제금융학부",
+    "group": "가",
+    "quota": 48,
+    "competitionRate": 4.49,
+    "additionalPassCount": 42,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 915.67
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 921.47
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 922.92
+    }
+  },
+  {
+    "planKey": "한양대학교-정책학과-가",
+    "admissionYear": 2025,
+    "university": "한양대학교",
+    "department": "정책학과",
+    "group": "가",
+    "quota": 28,
+    "competitionRate": 4.44,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.9
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 95.4
+    }
+  },
+  {
+    "planKey": "한양대학교-정책학과-가",
+    "admissionYear": 2026,
+    "university": "한양대학교",
+    "department": "정책학과",
+    "group": "가",
+    "quota": 27,
+    "competitionRate": 5.12,
+    "additionalPassCount": 15,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95.3
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 95.8
+    }
+  },
+  {
+    "planKey": "한양대학교-미디어커뮤니케이션학과-가",
+    "admissionYear": 2024,
+    "university": "한양대학교",
+    "department": "미디어커뮤니케이션학과",
+    "group": "가",
+    "quota": 23,
+    "competitionRate": 3.24,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 918.57
+    }
+  },
+  {
+    "planKey": "한양대학교-미디어커뮤니케이션학과-가",
+    "admissionYear": 2025,
+    "university": "한양대학교",
+    "department": "미디어커뮤니케이션학과",
+    "group": "가",
+    "quota": 18,
+    "competitionRate": 2.85,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 908.8
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 914.21
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 915.67
+    }
+  },
+  {
+    "planKey": "한양대학교-미디어커뮤니케이션학과-가",
+    "admissionYear": 2026,
+    "university": "한양대학교",
+    "department": "미디어커뮤니케이션학과",
+    "group": "가",
+    "quota": 18,
+    "competitionRate": 2.71,
+    "additionalPassCount": 14,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 909.86
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 915.67
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 917.12
+    }
+  },
+  {
+    "planKey": "한양대학교-컴퓨터소프트웨어학부-가",
+    "admissionYear": 2024,
+    "university": "한양대학교",
+    "department": "컴퓨터소프트웨어학부",
+    "group": "가",
+    "quota": 54,
+    "competitionRate": 2.99,
+    "additionalPassCount": 69,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 937.31
+    }
+  },
+  {
+    "planKey": "한양대학교-컴퓨터소프트웨어학부-가",
+    "admissionYear": 2025,
+    "university": "한양대학교",
+    "department": "컴퓨터소프트웨어학부",
+    "group": "가",
+    "quota": 51,
+    "competitionRate": 3.93,
+    "additionalPassCount": 42,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 925.44
+    }
+  },
+  {
+    "planKey": "한양대학교-컴퓨터소프트웨어학부-가",
+    "admissionYear": 2026,
+    "university": "한양대학교",
+    "department": "컴퓨터소프트웨어학부",
+    "group": "가",
+    "quota": 56,
+    "competitionRate": 2.92,
+    "additionalPassCount": 44,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 931.38
+    }
+  },
+  {
+    "planKey": "한양대학교-융합전자공학부-가",
+    "admissionYear": 2024,
+    "university": "한양대학교",
+    "department": "융합전자공학부",
+    "group": "가",
+    "quota": 61,
+    "competitionRate": 4.09,
+    "additionalPassCount": 79,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 925.44
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 931.38
+    }
+  },
+  {
+    "planKey": "한양대학교-융합전자공학부-가",
+    "admissionYear": 2025,
+    "university": "한양대학교",
+    "department": "융합전자공학부",
+    "group": "가",
+    "quota": 60,
+    "competitionRate": 2.91,
+    "additionalPassCount": 63,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 922.48
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 928.41
+    }
+  },
+  {
+    "planKey": "한양대학교-융합전자공학부-가",
+    "admissionYear": 2026,
+    "university": "한양대학교",
+    "department": "융합전자공학부",
+    "group": "가",
+    "quota": 58,
+    "competitionRate": 5.66,
+    "additionalPassCount": 60,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 923.96
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 929.89
+    }
+  },
+  {
+    "planKey": "한양대학교-기계공학부-가",
+    "admissionYear": 2024,
+    "university": "한양대학교",
+    "department": "기계공학부",
+    "group": "가",
+    "quota": 53,
+    "competitionRate": 5.18,
+    "additionalPassCount": 50,
+    "cut70": {
+      "metric": "percentile",
+      "value": 96.2
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 96.6
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 96.7
+    }
+  },
+  {
+    "planKey": "한양대학교-기계공학부-가",
+    "admissionYear": 2025,
+    "university": "한양대학교",
+    "department": "기계공학부",
+    "group": "가",
+    "quota": 58,
+    "competitionRate": 3.63,
+    "additionalPassCount": 31,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95.6
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 96
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 96.1
+    }
+  },
+  {
+    "planKey": "한양대학교-기계공학부-가",
+    "admissionYear": 2026,
+    "university": "한양대학교",
+    "department": "기계공학부",
+    "group": "가",
+    "quota": 57,
+    "competitionRate": 5.41,
+    "additionalPassCount": 47,
+    "cut70": {
+      "metric": "percentile",
+      "value": 96.1
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 96.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 96.6
+    }
+  },
+  {
+    "planKey": "중앙대학교-경영학부-가",
+    "admissionYear": 2024,
+    "university": "중앙대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 129,
+    "competitionRate": 5.15,
+    "additionalPassCount": 131,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95.3
+    }
+  },
+  {
+    "planKey": "중앙대학교-경영학부-가",
+    "admissionYear": 2025,
+    "university": "중앙대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 126,
+    "competitionRate": 3.66,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.5
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 94.9
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 95
+    }
+  },
+  {
+    "planKey": "중앙대학교-경영학부-가",
+    "admissionYear": 2026,
+    "university": "중앙대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 132,
+    "competitionRate": 3.14,
+    "additionalPassCount": 56,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 95.4
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 95.5
+    }
+  },
+  {
+    "planKey": "중앙대학교-경제학부-나",
+    "admissionYear": 2024,
+    "university": "중앙대학교",
+    "department": "경제학부",
+    "group": "나",
+    "quota": 58,
+    "competitionRate": 5.54,
+    "additionalPassCount": 40,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95
+    }
+  },
+  {
+    "planKey": "중앙대학교-경제학부-나",
+    "admissionYear": 2025,
+    "university": "중앙대학교",
+    "department": "경제학부",
+    "group": "나",
+    "quota": 57,
+    "competitionRate": 4.16,
+    "additionalPassCount": 51,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.2
+    }
+  },
+  {
+    "planKey": "중앙대학교-경제학부-나",
+    "admissionYear": 2026,
+    "university": "중앙대학교",
+    "department": "경제학부",
+    "group": "나",
+    "quota": 59,
+    "competitionRate": 5.21,
+    "additionalPassCount": 19,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.7
+    }
+  },
+  {
+    "planKey": "중앙대학교-미디어커뮤니케이션학부-다",
+    "admissionYear": 2024,
+    "university": "중앙대학교",
+    "department": "미디어커뮤니케이션학부",
+    "group": "다",
+    "quota": 29,
+    "competitionRate": 4.17,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95.2
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 95.6
+    }
+  },
+  {
+    "planKey": "중앙대학교-미디어커뮤니케이션학부-다",
+    "admissionYear": 2025,
+    "university": "중앙대학교",
+    "department": "미디어커뮤니케이션학부",
+    "group": "다",
+    "quota": 26,
+    "competitionRate": 4.1,
+    "additionalPassCount": 24,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.5
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 94.9
+    }
+  },
+  {
+    "planKey": "중앙대학교-미디어커뮤니케이션학부-다",
+    "admissionYear": 2026,
+    "university": "중앙대학교",
+    "department": "미디어커뮤니케이션학부",
+    "group": "다",
+    "quota": 30,
+    "competitionRate": 2.81,
+    "additionalPassCount": 27,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 95.3
+    }
+  },
+  {
+    "planKey": "중앙대학교-심리학과-나",
+    "admissionYear": 2024,
+    "university": "중앙대학교",
+    "department": "심리학과",
+    "group": "나",
+    "quota": 21,
+    "competitionRate": 3.49,
+    "additionalPassCount": 8,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.8
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 95.2
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 95.3
+    }
+  },
+  {
+    "planKey": "중앙대학교-심리학과-나",
+    "admissionYear": 2025,
+    "university": "중앙대학교",
+    "department": "심리학과",
+    "group": "나",
+    "quota": 19,
+    "competitionRate": 4.12,
+    "additionalPassCount": 13,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.5
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 94.9
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 95
+    }
+  },
+  {
+    "planKey": "중앙대학교-심리학과-나",
+    "admissionYear": 2026,
+    "university": "중앙대학교",
+    "department": "심리학과",
+    "group": "나",
+    "quota": 23,
+    "competitionRate": 5.9,
+    "additionalPassCount": 31,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.4
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 94.8
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 94.9
+    }
+  },
+  {
+    "planKey": "중앙대학교-사회복지학부-다",
+    "admissionYear": 2025,
+    "university": "중앙대학교",
+    "department": "사회복지학부",
+    "group": "다",
+    "quota": 26,
+    "competitionRate": 5.39,
+    "additionalPassCount": 15,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.8
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 94.3
+    }
+  },
+  {
+    "planKey": "중앙대학교-사회복지학부-다",
+    "admissionYear": 2026,
+    "university": "중앙대학교",
+    "department": "사회복지학부",
+    "group": "다",
+    "quota": 26,
+    "competitionRate": 3.55,
+    "additionalPassCount": 32,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.9
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 94.4
+    }
+  },
+  {
+    "planKey": "중앙대학교-소프트웨어학부-가",
+    "admissionYear": 2024,
+    "university": "중앙대학교",
+    "department": "소프트웨어학부",
+    "group": "가",
+    "quota": 52,
+    "competitionRate": 3.84,
+    "additionalPassCount": 27,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 934.2
+    }
+  },
+  {
+    "planKey": "중앙대학교-소프트웨어학부-가",
+    "admissionYear": 2025,
+    "university": "중앙대학교",
+    "department": "소프트웨어학부",
+    "group": "가",
+    "quota": 50,
+    "competitionRate": 5.78,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 926.65
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 931.68
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 932.94
+    }
+  },
+  {
+    "planKey": "중앙대학교-소프트웨어학부-가",
+    "admissionYear": 2026,
+    "university": "중앙대학교",
+    "department": "소프트웨어학부",
+    "group": "가",
+    "quota": 50,
+    "competitionRate": 3.29,
+    "additionalPassCount": 46,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 932.94
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 937.97
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 939.22
+    }
+  },
+  {
+    "planKey": "중앙대학교-전자전기공학부-가",
+    "admissionYear": 2024,
+    "university": "중앙대학교",
+    "department": "전자전기공학부",
+    "group": "가",
+    "quota": 68,
+    "competitionRate": 5.08,
+    "additionalPassCount": 22,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95.3
+    }
+  },
+  {
+    "planKey": "중앙대학교-전자전기공학부-가",
+    "admissionYear": 2025,
+    "university": "중앙대학교",
+    "department": "전자전기공학부",
+    "group": "가",
+    "quota": 73,
+    "competitionRate": 4.66,
+    "additionalPassCount": 51,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.9
+    }
+  },
+  {
+    "planKey": "중앙대학교-전자전기공학부-가",
+    "admissionYear": 2026,
+    "university": "중앙대학교",
+    "department": "전자전기공학부",
+    "group": "가",
+    "quota": 70,
+    "competitionRate": 4.79,
+    "additionalPassCount": 98,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95.2
+    }
+  },
+  {
+    "planKey": "중앙대학교-화학공학과-나",
+    "admissionYear": 2024,
+    "university": "중앙대학교",
+    "department": "화학공학과",
+    "group": "나",
+    "quota": 28,
+    "competitionRate": 3.9,
+    "additionalPassCount": 30,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 925.4
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 930.42
+    }
+  },
+  {
+    "planKey": "중앙대학교-화학공학과-나",
+    "admissionYear": 2025,
+    "university": "중앙대학교",
+    "department": "화학공학과",
+    "group": "나",
+    "quota": 33,
+    "competitionRate": 3.76,
+    "additionalPassCount": 43,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 921.22
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 925.4
+    }
+  },
+  {
+    "planKey": "중앙대학교-화학공학과-나",
+    "admissionYear": 2026,
+    "university": "중앙대학교",
+    "department": "화학공학과",
+    "group": "나",
+    "quota": 27,
+    "competitionRate": 3.6,
+    "additionalPassCount": 24,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 922.05
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 926.65
+    }
+  },
+  {
+    "planKey": "중앙대학교-약학부-다",
+    "admissionYear": 2024,
+    "university": "중앙대학교",
+    "department": "약학부",
+    "group": "다",
+    "quota": 34,
+    "competitionRate": 5.01,
+    "additionalPassCount": 27,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 967.87
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 975.15
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 976.97
+    }
+  },
+  {
+    "planKey": "중앙대학교-약학부-다",
+    "admissionYear": 2025,
+    "university": "중앙대학교",
+    "department": "약학부",
+    "group": "다",
+    "quota": 26,
+    "competitionRate": 5.68,
+    "additionalPassCount": 23,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 959.34
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 966.05
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 967.87
+    }
+  },
+  {
+    "planKey": "중앙대학교-약학부-다",
+    "admissionYear": 2026,
+    "university": "중앙대학교",
+    "department": "약학부",
+    "group": "다",
+    "quota": 27,
+    "competitionRate": 5.42,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 967.87
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 975.15
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 976.97
+    }
+  },
+  {
+    "planKey": "중앙대학교-에너지시스템공학부-다",
+    "admissionYear": 2025,
+    "university": "중앙대학교",
+    "department": "에너지시스템공학부",
+    "group": "다",
+    "quota": 38,
+    "competitionRate": 5.1,
+    "additionalPassCount": 23,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 926.65
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 932.94
+    }
+  },
+  {
+    "planKey": "중앙대학교-에너지시스템공학부-다",
+    "admissionYear": 2026,
+    "university": "중앙대학교",
+    "department": "에너지시스템공학부",
+    "group": "다",
+    "quota": 33,
+    "competitionRate": 4.27,
+    "additionalPassCount": 18,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 924.14
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 930.42
+    }
+  },
+  {
+    "planKey": "중앙대학교-간호학과-다",
+    "admissionYear": 2024,
+    "university": "중앙대학교",
+    "department": "간호학과",
+    "group": "다",
+    "quota": 40,
+    "competitionRate": 3.11,
+    "additionalPassCount": 20,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95
+    }
+  },
+  {
+    "planKey": "중앙대학교-간호학과-다",
+    "admissionYear": 2025,
+    "university": "중앙대학교",
+    "department": "간호학과",
+    "group": "다",
+    "quota": 40,
+    "competitionRate": 3.58,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.4
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 94.8
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 94.9
+    }
+  },
+  {
+    "planKey": "중앙대학교-간호학과-다",
+    "admissionYear": 2026,
+    "university": "중앙대학교",
+    "department": "간호학과",
+    "group": "다",
+    "quota": 40,
+    "competitionRate": 5.29,
+    "additionalPassCount": 42,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 95.3
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 95.4
+    }
+  },
+  {
+    "planKey": "경희대학교-경영학과-나",
+    "admissionYear": 2024,
+    "university": "경희대학교",
+    "department": "경영학과",
+    "group": "나",
+    "quota": 86,
+    "competitionRate": 3.94,
+    "additionalPassCount": 66,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 729.39
+    }
+  },
+  {
+    "planKey": "경희대학교-경영학과-나",
+    "admissionYear": 2025,
+    "university": "경희대학교",
+    "department": "경영학과",
+    "group": "나",
+    "quota": 86,
+    "competitionRate": 5.67,
+    "additionalPassCount": 50,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 726.62
+    }
+  },
+  {
+    "planKey": "경희대학교-경영학과-나",
+    "admissionYear": 2026,
+    "university": "경희대학교",
+    "department": "경영학과",
+    "group": "나",
+    "quota": 85,
+    "competitionRate": 3.46,
+    "additionalPassCount": 33,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 728.67
+    }
+  },
+  {
+    "planKey": "경희대학교-국제학과-가",
+    "admissionYear": 2024,
+    "university": "경희대학교",
+    "department": "국제학과",
+    "group": "가",
+    "quota": 28,
+    "competitionRate": 4.46,
+    "additionalPassCount": 24,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 730.83
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 733.71
+    }
+  },
+  {
+    "planKey": "경희대학교-국제학과-가",
+    "admissionYear": 2025,
+    "university": "경희대학교",
+    "department": "국제학과",
+    "group": "가",
+    "quota": 30,
+    "competitionRate": 4.58,
+    "additionalPassCount": 22,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 727.23
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 730.11
+    }
+  },
+  {
+    "planKey": "경희대학교-국제학과-가",
+    "admissionYear": 2026,
+    "university": "경희대학교",
+    "department": "국제학과",
+    "group": "가",
+    "quota": 31,
+    "competitionRate": 5.22,
+    "additionalPassCount": 15,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 730.11
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 732.99
+    }
+  },
+  {
+    "planKey": "경희대학교-행정학과-나",
+    "admissionYear": 2024,
+    "university": "경희대학교",
+    "department": "행정학과",
+    "group": "나",
+    "quota": 27,
+    "competitionRate": 5.07,
+    "additionalPassCount": 24,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 725.66
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 728.67
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 729.39
+    }
+  },
+  {
+    "planKey": "경희대학교-행정학과-나",
+    "admissionYear": 2025,
+    "university": "경희대학교",
+    "department": "행정학과",
+    "group": "나",
+    "quota": 29,
+    "competitionRate": 3.42,
+    "additionalPassCount": 31,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 725.05
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 727.95
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 728.67
+    }
+  },
+  {
+    "planKey": "경희대학교-행정학과-나",
+    "admissionYear": 2026,
+    "university": "경희대학교",
+    "department": "행정학과",
+    "group": "나",
+    "quota": 28,
+    "competitionRate": 5.02,
+    "additionalPassCount": 14,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 727.95
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 730.83
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 731.55
+    }
+  },
+  {
+    "planKey": "경희대학교-영어영문학과-가",
+    "admissionYear": 2025,
+    "university": "경희대학교",
+    "department": "영어영문학과",
+    "group": "가",
+    "quota": 27,
+    "competitionRate": 5.6,
+    "additionalPassCount": 9,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.9
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.4
+    }
+  },
+  {
+    "planKey": "경희대학교-영어영문학과-가",
+    "admissionYear": 2026,
+    "university": "경희대학교",
+    "department": "영어영문학과",
+    "group": "가",
+    "quota": 26,
+    "competitionRate": 3.35,
+    "additionalPassCount": 28,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 94
+    }
+  },
+  {
+    "planKey": "경희대학교-컴퓨터공학부-가",
+    "admissionYear": 2024,
+    "university": "경희대학교",
+    "department": "컴퓨터공학부",
+    "group": "가",
+    "quota": 46,
+    "competitionRate": 3.97,
+    "additionalPassCount": 48,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 735.28
+    }
+  },
+  {
+    "planKey": "경희대학교-컴퓨터공학부-가",
+    "admissionYear": 2025,
+    "university": "경희대학교",
+    "department": "컴퓨터공학부",
+    "group": "가",
+    "quota": 46,
+    "competitionRate": 3.34,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 733.4
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 737.51
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 738.62
+    }
+  },
+  {
+    "planKey": "경희대학교-컴퓨터공학부-가",
+    "admissionYear": 2026,
+    "university": "경희대학교",
+    "department": "컴퓨터공학부",
+    "group": "가",
+    "quota": 43,
+    "competitionRate": 5.8,
+    "additionalPassCount": 57,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 736.4
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 740.85
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 741.96
+    }
+  },
+  {
+    "planKey": "경희대학교-기계공학과-나",
+    "admissionYear": 2024,
+    "university": "경희대학교",
+    "department": "기계공학과",
+    "group": "나",
+    "quota": 37,
+    "competitionRate": 5.61,
+    "additionalPassCount": 44,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 731.1
+    }
+  },
+  {
+    "planKey": "경희대학교-기계공학과-나",
+    "admissionYear": 2025,
+    "university": "경희대학교",
+    "department": "기계공학과",
+    "group": "나",
+    "quota": 39,
+    "competitionRate": 4.6,
+    "additionalPassCount": 30,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 724.92
+    }
+  },
+  {
+    "planKey": "경희대학교-기계공학과-나",
+    "admissionYear": 2026,
+    "university": "경희대학교",
+    "department": "기계공학과",
+    "group": "나",
+    "quota": 40,
+    "competitionRate": 3.51,
+    "additionalPassCount": 31,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 728.81
+    }
+  },
+  {
+    "planKey": "경희대학교-생명과학과-나",
+    "admissionYear": 2024,
+    "university": "경희대학교",
+    "department": "생명과학과",
+    "group": "나",
+    "quota": 18,
+    "competitionRate": 5.58,
+    "additionalPassCount": 13,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 729.57
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 732.64
+    }
+  },
+  {
+    "planKey": "경희대학교-생명과학과-나",
+    "admissionYear": 2025,
+    "university": "경희대학교",
+    "department": "생명과학과",
+    "group": "나",
+    "quota": 17,
+    "competitionRate": 3.84,
+    "additionalPassCount": 18,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 724.28
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 727.27
+    }
+  },
+  {
+    "planKey": "경희대학교-생명과학과-나",
+    "admissionYear": 2026,
+    "university": "경희대학교",
+    "department": "생명과학과",
+    "group": "나",
+    "quota": 20,
+    "competitionRate": 3.34,
+    "additionalPassCount": 18,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 724.28
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 727.27
+    }
+  },
+  {
+    "planKey": "경희대학교-한의예과-가",
+    "admissionYear": 2024,
+    "university": "경희대학교",
+    "department": "한의예과",
+    "group": "가",
+    "quota": 34,
+    "competitionRate": 5.82,
+    "additionalPassCount": 40,
+    "cut70": {
+      "metric": "percentile",
+      "value": 99
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 99.4
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 99.5
+    }
+  },
+  {
+    "planKey": "경희대학교-한의예과-가",
+    "admissionYear": 2025,
+    "university": "경희대학교",
+    "department": "한의예과",
+    "group": "가",
+    "quota": 33,
+    "competitionRate": 4.49,
+    "additionalPassCount": 35,
+    "cut70": {
+      "metric": "percentile",
+      "value": 98.3
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 98.7
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 98.8
+    }
+  },
+  {
+    "planKey": "경희대학교-한의예과-가",
+    "admissionYear": 2026,
+    "university": "경희대학교",
+    "department": "한의예과",
+    "group": "가",
+    "quota": 31,
+    "competitionRate": 2.79,
+    "additionalPassCount": 13,
+    "cut70": {
+      "metric": "percentile",
+      "value": 98.4
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 98.8
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 98.9
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-영어학부-나",
+    "admissionYear": 2025,
+    "university": "한국외국어대학교",
+    "department": "영어학부",
+    "group": "나",
+    "quota": 52,
+    "competitionRate": 2.6,
+    "additionalPassCount": 32,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.7
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 94.2
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-영어학부-나",
+    "admissionYear": 2026,
+    "university": "한국외국어대학교",
+    "department": "영어학부",
+    "group": "나",
+    "quota": 49,
+    "competitionRate": 5.84,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.9
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 94.4
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-중국언어문화학부-나",
+    "admissionYear": 2024,
+    "university": "한국외국어대학교",
+    "department": "중국언어문화학부",
+    "group": "나",
+    "quota": 33,
+    "competitionRate": 3.66,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.6
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-중국언어문화학부-나",
+    "admissionYear": 2025,
+    "university": "한국외국어대학교",
+    "department": "중국언어문화학부",
+    "group": "나",
+    "quota": 35,
+    "competitionRate": 2.88,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93.3
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.4
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-중국언어문화학부-나",
+    "admissionYear": 2026,
+    "university": "한국외국어대학교",
+    "department": "중국언어문화학부",
+    "group": "나",
+    "quota": 34,
+    "competitionRate": 4.62,
+    "additionalPassCount": 34,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.2
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93.6
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.7
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-프랑스어학부-가",
+    "admissionYear": 2024,
+    "university": "한국외국어대학교",
+    "department": "프랑스어학부",
+    "group": "가",
+    "quota": 20,
+    "competitionRate": 3.71,
+    "additionalPassCount": 25,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-프랑스어학부-가",
+    "admissionYear": 2025,
+    "university": "한국외국어대학교",
+    "department": "프랑스어학부",
+    "group": "가",
+    "quota": 23,
+    "competitionRate": 4.31,
+    "additionalPassCount": 18,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.9
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-프랑스어학부-가",
+    "admissionYear": 2026,
+    "university": "한국외국어대학교",
+    "department": "프랑스어학부",
+    "group": "가",
+    "quota": 22,
+    "competitionRate": 3.79,
+    "additionalPassCount": 7,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.9
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-국제통상학과-나",
+    "admissionYear": 2024,
+    "university": "한국외국어대학교",
+    "department": "국제통상학과",
+    "group": "나",
+    "quota": 41,
+    "competitionRate": 5.04,
+    "additionalPassCount": 31,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.2
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 94.6
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-국제통상학과-나",
+    "admissionYear": 2025,
+    "university": "한국외국어대학교",
+    "department": "국제통상학과",
+    "group": "나",
+    "quota": 36,
+    "competitionRate": 4.76,
+    "additionalPassCount": 28,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 94.3
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-국제통상학과-나",
+    "admissionYear": 2026,
+    "university": "한국외국어대학교",
+    "department": "국제통상학과",
+    "group": "나",
+    "quota": 44,
+    "competitionRate": 4.57,
+    "additionalPassCount": 58,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.3
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 94.7
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-Language&Diplomacy학부-가",
+    "admissionYear": 2024,
+    "university": "한국외국어대학교",
+    "department": "Language&Diplomacy학부",
+    "group": "가",
+    "quota": 18,
+    "competitionRate": 5.02,
+    "additionalPassCount": 8,
+    "cut70": {
+      "metric": "percentile",
+      "value": 95.1
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 95.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 95.6
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-Language&Diplomacy학부-가",
+    "admissionYear": 2025,
+    "university": "한국외국어대학교",
+    "department": "Language&Diplomacy학부",
+    "group": "가",
+    "quota": 21,
+    "competitionRate": 4.25,
+    "additionalPassCount": 15,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.5
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 94.9
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 95
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-Language&Diplomacy학부-가",
+    "admissionYear": 2026,
+    "university": "한국외국어대학교",
+    "department": "Language&Diplomacy학부",
+    "group": "가",
+    "quota": 20,
+    "competitionRate": 5.62,
+    "additionalPassCount": 25,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.8
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 95.2
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 95.3
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-컴퓨터공학부-나",
+    "admissionYear": 2025,
+    "university": "한국외국어대학교",
+    "department": "컴퓨터공학부",
+    "group": "나",
+    "quota": 31,
+    "competitionRate": 4.17,
+    "additionalPassCount": 39,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.4
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.9
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-컴퓨터공학부-나",
+    "admissionYear": 2026,
+    "university": "한국외국어대학교",
+    "department": "컴퓨터공학부",
+    "group": "나",
+    "quota": 27,
+    "competitionRate": 4.02,
+    "additionalPassCount": 26,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.7
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 94.2
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-수학과-가",
+    "admissionYear": 2024,
+    "university": "한국외국어대학교",
+    "department": "수학과",
+    "group": "가",
+    "quota": 15,
+    "competitionRate": 4.94,
+    "additionalPassCount": 7,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.9
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-수학과-가",
+    "admissionYear": 2025,
+    "university": "한국외국어대학교",
+    "department": "수학과",
+    "group": "가",
+    "quota": 14,
+    "competitionRate": 2.56,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.6
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.1
+    }
+  },
+  {
+    "planKey": "한국외국어대학교-수학과-가",
+    "admissionYear": 2026,
+    "university": "한국외국어대학교",
+    "department": "수학과",
+    "group": "가",
+    "quota": 13,
+    "competitionRate": 3.12,
+    "additionalPassCount": 8,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.7
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93.1
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.2
+    }
+  },
+  {
+    "planKey": "서울시립대학교-경영학부-나",
+    "admissionYear": 2024,
+    "university": "서울시립대학교",
+    "department": "경영학부",
+    "group": "나",
+    "quota": 68,
+    "competitionRate": 4.5,
+    "additionalPassCount": 45,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.1
+    }
+  },
+  {
+    "planKey": "서울시립대학교-경영학부-나",
+    "admissionYear": 2025,
+    "university": "서울시립대학교",
+    "department": "경영학부",
+    "group": "나",
+    "quota": 66,
+    "competitionRate": 5.88,
+    "additionalPassCount": 54,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.6
+    }
+  },
+  {
+    "planKey": "서울시립대학교-경영학부-나",
+    "admissionYear": 2026,
+    "university": "서울시립대학교",
+    "department": "경영학부",
+    "group": "나",
+    "quota": 67,
+    "competitionRate": 5.49,
+    "additionalPassCount": 37,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94
+    }
+  },
+  {
+    "planKey": "서울시립대학교-경제학부-가",
+    "admissionYear": 2024,
+    "university": "서울시립대학교",
+    "department": "경제학부",
+    "group": "가",
+    "quota": 42,
+    "competitionRate": 3.33,
+    "additionalPassCount": 22,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 903.1
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 907.27
+    }
+  },
+  {
+    "planKey": "서울시립대학교-경제학부-가",
+    "admissionYear": 2025,
+    "university": "서울시립대학교",
+    "department": "경제학부",
+    "group": "가",
+    "quota": 37,
+    "competitionRate": 4.09,
+    "additionalPassCount": 43,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 901.01
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 905.19
+    }
+  },
+  {
+    "planKey": "서울시립대학교-경제학부-가",
+    "admissionYear": 2026,
+    "university": "서울시립대학교",
+    "department": "경제학부",
+    "group": "가",
+    "quota": 39,
+    "competitionRate": 5.46,
+    "additionalPassCount": 14,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 903.1
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 907.27
+    }
+  },
+  {
+    "planKey": "서울시립대학교-행정학과-나",
+    "admissionYear": 2024,
+    "university": "서울시립대학교",
+    "department": "행정학과",
+    "group": "나",
+    "quota": 30,
+    "competitionRate": 5.8,
+    "additionalPassCount": 33,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 905.19
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 909.36
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 910.19
+    }
+  },
+  {
+    "planKey": "서울시립대학교-행정학과-나",
+    "admissionYear": 2025,
+    "university": "서울시립대학교",
+    "department": "행정학과",
+    "group": "나",
+    "quota": 31,
+    "competitionRate": 2.69,
+    "additionalPassCount": 22,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 902.27
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 906.44
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 907.27
+    }
+  },
+  {
+    "planKey": "서울시립대학교-행정학과-나",
+    "admissionYear": 2026,
+    "university": "서울시립대학교",
+    "department": "행정학과",
+    "group": "나",
+    "quota": 26,
+    "competitionRate": 4.81,
+    "additionalPassCount": 24,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 902.27
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 906.44
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 907.27
+    }
+  },
+  {
+    "planKey": "서울시립대학교-국어국문학과-가",
+    "admissionYear": 2025,
+    "university": "서울시립대학교",
+    "department": "국어국문학과",
+    "group": "가",
+    "quota": 20,
+    "competitionRate": 5.9,
+    "additionalPassCount": 20,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 891.84
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 896.84
+    }
+  },
+  {
+    "planKey": "서울시립대학교-국어국문학과-가",
+    "admissionYear": 2026,
+    "university": "서울시립대학교",
+    "department": "국어국문학과",
+    "group": "가",
+    "quota": 21,
+    "competitionRate": 5.09,
+    "additionalPassCount": 25,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 891.84
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 896.84
+    }
+  },
+  {
+    "planKey": "서울시립대학교-컴퓨터과학부-나",
+    "admissionYear": 2024,
+    "university": "서울시립대학교",
+    "department": "컴퓨터과학부",
+    "group": "나",
+    "quota": 36,
+    "competitionRate": 3.08,
+    "additionalPassCount": 49,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.9
+    }
+  },
+  {
+    "planKey": "서울시립대학교-컴퓨터과학부-나",
+    "admissionYear": 2025,
+    "university": "서울시립대학교",
+    "department": "컴퓨터과학부",
+    "group": "나",
+    "quota": 38,
+    "competitionRate": 3.81,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.1
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 94.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 94.6
+    }
+  },
+  {
+    "planKey": "서울시립대학교-컴퓨터과학부-나",
+    "admissionYear": 2026,
+    "university": "서울시립대학교",
+    "department": "컴퓨터과학부",
+    "group": "나",
+    "quota": 33,
+    "competitionRate": 4.33,
+    "additionalPassCount": 13,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.4
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 94.8
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 94.9
+    }
+  },
+  {
+    "planKey": "서울시립대학교-전자전기컴퓨터공학부-가",
+    "admissionYear": 2024,
+    "university": "서울시립대학교",
+    "department": "전자전기컴퓨터공학부",
+    "group": "가",
+    "quota": 67,
+    "competitionRate": 5.51,
+    "additionalPassCount": 81,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 910.29
+    }
+  },
+  {
+    "planKey": "서울시립대학교-전자전기컴퓨터공학부-가",
+    "admissionYear": 2025,
+    "university": "서울시립대학교",
+    "department": "전자전기컴퓨터공학부",
+    "group": "가",
+    "quota": 73,
+    "competitionRate": 5.02,
+    "additionalPassCount": 80,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 907.37
+    }
+  },
+  {
+    "planKey": "서울시립대학교-전자전기컴퓨터공학부-가",
+    "admissionYear": 2026,
+    "university": "서울시립대학교",
+    "department": "전자전기컴퓨터공학부",
+    "group": "가",
+    "quota": 67,
+    "competitionRate": 3.16,
+    "additionalPassCount": 65,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 908.2
+    }
+  },
+  {
+    "planKey": "서울시립대학교-도시공학과-나",
+    "admissionYear": 2024,
+    "university": "서울시립대학교",
+    "department": "도시공학과",
+    "group": "나",
+    "quota": 23,
+    "competitionRate": 3.78,
+    "additionalPassCount": 31,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 905.29
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 909.46
+    }
+  },
+  {
+    "planKey": "서울시립대학교-도시공학과-나",
+    "admissionYear": 2025,
+    "university": "서울시립대학교",
+    "department": "도시공학과",
+    "group": "나",
+    "quota": 27,
+    "competitionRate": 4.62,
+    "additionalPassCount": 17,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 896.94
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 901.11
+    }
+  },
+  {
+    "planKey": "서울시립대학교-도시공학과-나",
+    "admissionYear": 2026,
+    "university": "서울시립대학교",
+    "department": "도시공학과",
+    "group": "나",
+    "quota": 21,
+    "competitionRate": 3.45,
+    "additionalPassCount": 26,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 899.86
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 904.03
+    }
+  },
+  {
+    "planKey": "건국대학교-경영학과-가",
+    "admissionYear": 2024,
+    "university": "건국대학교",
+    "department": "경영학과",
+    "group": "가",
+    "quota": 74,
+    "competitionRate": 5.26,
+    "additionalPassCount": 94,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.1
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.6
+    }
+  },
+  {
+    "planKey": "건국대학교-경영학과-가",
+    "admissionYear": 2025,
+    "university": "건국대학교",
+    "department": "경영학과",
+    "group": "가",
+    "quota": 73,
+    "competitionRate": 2.87,
+    "additionalPassCount": 63,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.7
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93.1
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.2
+    }
+  },
+  {
+    "planKey": "건국대학교-경영학과-가",
+    "admissionYear": 2026,
+    "university": "건국대학교",
+    "department": "경영학과",
+    "group": "가",
+    "quota": 70,
+    "competitionRate": 4.79,
+    "additionalPassCount": 35,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.1
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.6
+    }
+  },
+  {
+    "planKey": "건국대학교-경제학과-나",
+    "admissionYear": 2025,
+    "university": "건국대학교",
+    "department": "경제학과",
+    "group": "나",
+    "quota": 39,
+    "competitionRate": 2.89,
+    "additionalPassCount": 46,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93
+    }
+  },
+  {
+    "planKey": "건국대학교-경제학과-나",
+    "admissionYear": 2026,
+    "university": "건국대학교",
+    "department": "경제학과",
+    "group": "나",
+    "quota": 39,
+    "competitionRate": 5.27,
+    "additionalPassCount": 29,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.5
+    }
+  },
+  {
+    "planKey": "건국대학교-미디어커뮤니케이션학과-가",
+    "admissionYear": 2024,
+    "university": "건국대학교",
+    "department": "미디어커뮤니케이션학과",
+    "group": "가",
+    "quota": 21,
+    "competitionRate": 3.8,
+    "additionalPassCount": 11,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.5
+    }
+  },
+  {
+    "planKey": "건국대학교-미디어커뮤니케이션학과-가",
+    "admissionYear": 2025,
+    "university": "건국대학교",
+    "department": "미디어커뮤니케이션학과",
+    "group": "가",
+    "quota": 24,
+    "competitionRate": 3.93,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93.3
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.4
+    }
+  },
+  {
+    "planKey": "건국대학교-미디어커뮤니케이션학과-가",
+    "admissionYear": 2026,
+    "university": "건국대학교",
+    "department": "미디어커뮤니케이션학과",
+    "group": "가",
+    "quota": 19,
+    "competitionRate": 4.67,
+    "additionalPassCount": 22,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.8
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93.2
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.3
+    }
+  },
+  {
+    "planKey": "건국대학교-철학과-나",
+    "admissionYear": 2024,
+    "university": "건국대학교",
+    "department": "철학과",
+    "group": "나",
+    "quota": 15,
+    "competitionRate": 5.65,
+    "additionalPassCount": 13,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.2
+    }
+  },
+  {
+    "planKey": "건국대학교-철학과-나",
+    "admissionYear": 2025,
+    "university": "건국대학교",
+    "department": "철학과",
+    "group": "나",
+    "quota": 15,
+    "competitionRate": 5.65,
+    "additionalPassCount": 9,
+    "cut70": {
+      "metric": "percentile",
+      "value": 91.5
+    }
+  },
+  {
+    "planKey": "건국대학교-철학과-나",
+    "admissionYear": 2026,
+    "university": "건국대학교",
+    "department": "철학과",
+    "group": "나",
+    "quota": 14,
+    "competitionRate": 5.61,
+    "additionalPassCount": 7,
+    "cut70": {
+      "metric": "percentile",
+      "value": 91.9
+    }
+  },
+  {
+    "planKey": "건국대학교-컴퓨터공학부-가",
+    "admissionYear": 2024,
+    "university": "건국대학교",
+    "department": "컴퓨터공학부",
+    "group": "가",
+    "quota": 48,
+    "competitionRate": 5.18,
+    "additionalPassCount": 20,
+    "cut70": {
+      "metric": "percentile",
+      "value": 94.3
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 94.7
+    }
+  },
+  {
+    "planKey": "건국대학교-컴퓨터공학부-가",
+    "admissionYear": 2025,
+    "university": "건국대학교",
+    "department": "컴퓨터공학부",
+    "group": "가",
+    "quota": 52,
+    "competitionRate": 5.39,
+    "additionalPassCount": 68,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.4
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93.8
+    }
+  },
+  {
+    "planKey": "건국대학교-컴퓨터공학부-가",
+    "admissionYear": 2026,
+    "university": "건국대학교",
+    "department": "컴퓨터공학부",
+    "group": "가",
+    "quota": 51,
+    "competitionRate": 2.8,
+    "additionalPassCount": 60,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.7
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 94.1
+    }
+  },
+  {
+    "planKey": "건국대학교-화학공학부-나",
+    "admissionYear": 2024,
+    "university": "건국대학교",
+    "department": "화학공학부",
+    "group": "나",
+    "quota": 37,
+    "competitionRate": 4.29,
+    "additionalPassCount": 45,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.7
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 94.1
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 94.2
+    }
+  },
+  {
+    "planKey": "건국대학교-화학공학부-나",
+    "admissionYear": 2025,
+    "university": "건국대학교",
+    "department": "화학공학부",
+    "group": "나",
+    "quota": 40,
+    "competitionRate": 2.9,
+    "additionalPassCount": 29,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.1
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.6
+    }
+  },
+  {
+    "planKey": "건국대학교-화학공학부-나",
+    "admissionYear": 2026,
+    "university": "건국대학교",
+    "department": "화학공학부",
+    "group": "나",
+    "quota": 36,
+    "competitionRate": 5.82,
+    "additionalPassCount": 36,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93.4
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.5
+    }
+  },
+  {
+    "planKey": "건국대학교-수의예과-가",
+    "admissionYear": 2025,
+    "university": "건국대학교",
+    "department": "수의예과",
+    "group": "가",
+    "quota": 25,
+    "competitionRate": 4.04,
+    "additionalPassCount": 20,
+    "cut70": {
+      "metric": "percentile",
+      "value": 97.9
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 98.4
+    }
+  },
+  {
+    "planKey": "건국대학교-수의예과-가",
+    "admissionYear": 2026,
+    "university": "건국대학교",
+    "department": "수의예과",
+    "group": "가",
+    "quota": 22,
+    "competitionRate": 5.78,
+    "additionalPassCount": 27,
+    "cut70": {
+      "metric": "percentile",
+      "value": 97.7
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 98.2
+    }
+  },
+  {
+    "planKey": "동국대학교-경영학과-가",
+    "admissionYear": 2024,
+    "university": "동국대학교",
+    "department": "경영학과",
+    "group": "가",
+    "quota": 57,
+    "competitionRate": 4.43,
+    "additionalPassCount": 37,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.3
+    }
+  },
+  {
+    "planKey": "동국대학교-경영학과-가",
+    "admissionYear": 2025,
+    "university": "동국대학교",
+    "department": "경영학과",
+    "group": "가",
+    "quota": 64,
+    "competitionRate": 3,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93.4
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.5
+    }
+  },
+  {
+    "planKey": "동국대학교-경영학과-가",
+    "admissionYear": 2026,
+    "university": "동국대학교",
+    "department": "경영학과",
+    "group": "가",
+    "quota": 56,
+    "competitionRate": 5.14,
+    "additionalPassCount": 51,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93.3
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.4
+    }
+  },
+  {
+    "planKey": "동국대학교-경제학과-나",
+    "admissionYear": 2024,
+    "university": "동국대학교",
+    "department": "경제학과",
+    "group": "나",
+    "quota": 31,
+    "competitionRate": 5.63,
+    "additionalPassCount": 21,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.4
+    }
+  },
+  {
+    "planKey": "동국대학교-경제학과-나",
+    "admissionYear": 2025,
+    "university": "동국대학교",
+    "department": "경제학과",
+    "group": "나",
+    "quota": 31,
+    "competitionRate": 3.06,
+    "additionalPassCount": 40,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92
+    }
+  },
+  {
+    "planKey": "동국대학교-경제학과-나",
+    "admissionYear": 2026,
+    "university": "동국대학교",
+    "department": "경제학과",
+    "group": "나",
+    "quota": 31,
+    "competitionRate": 5.87,
+    "additionalPassCount": 27,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.4
+    }
+  },
+  {
+    "planKey": "동국대학교-광고홍보학과-다",
+    "admissionYear": 2024,
+    "university": "동국대학교",
+    "department": "광고홍보학과",
+    "group": "다",
+    "quota": 24,
+    "competitionRate": 4.85,
+    "additionalPassCount": 10,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93.4
+    }
+  },
+  {
+    "planKey": "동국대학교-광고홍보학과-다",
+    "admissionYear": 2025,
+    "university": "동국대학교",
+    "department": "광고홍보학과",
+    "group": "다",
+    "quota": 18,
+    "competitionRate": 2.68,
+    "additionalPassCount": 10,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.4
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 92.8
+    }
+  },
+  {
+    "planKey": "동국대학교-광고홍보학과-다",
+    "admissionYear": 2026,
+    "university": "동국대학교",
+    "department": "광고홍보학과",
+    "group": "다",
+    "quota": 18,
+    "competitionRate": 4.87,
+    "additionalPassCount": 14,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93.3
+    }
+  },
+  {
+    "planKey": "동국대학교-사학과-나",
+    "admissionYear": 2024,
+    "university": "동국대학교",
+    "department": "사학과",
+    "group": "나",
+    "quota": 17,
+    "competitionRate": 5.39,
+    "additionalPassCount": 19,
+    "cut70": {
+      "metric": "percentile",
+      "value": 91.7
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 92.1
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 92.2
+    }
+  },
+  {
+    "planKey": "동국대학교-사학과-나",
+    "admissionYear": 2025,
+    "university": "동국대학교",
+    "department": "사학과",
+    "group": "나",
+    "quota": 13,
+    "competitionRate": 2.88,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "percentile",
+      "value": 91
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 91.4
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 91.5
+    }
+  },
+  {
+    "planKey": "동국대학교-사학과-나",
+    "admissionYear": 2026,
+    "university": "동국대학교",
+    "department": "사학과",
+    "group": "나",
+    "quota": 19,
+    "competitionRate": 4.89,
+    "additionalPassCount": 24,
+    "cut70": {
+      "metric": "percentile",
+      "value": 91.3
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 91.7
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 91.8
+    }
+  },
+  {
+    "planKey": "동국대학교-컴퓨터공학전공-가",
+    "admissionYear": 2025,
+    "university": "동국대학교",
+    "department": "컴퓨터공학전공",
+    "group": "가",
+    "quota": 45,
+    "competitionRate": 2.73,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.3
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.8
+    }
+  },
+  {
+    "planKey": "동국대학교-컴퓨터공학전공-가",
+    "admissionYear": 2026,
+    "university": "동국대학교",
+    "department": "컴퓨터공학전공",
+    "group": "가",
+    "quota": 42,
+    "competitionRate": 4.04,
+    "additionalPassCount": 24,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93.4
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.9
+    }
+  },
+  {
+    "planKey": "동국대학교-산업시스템공학과-나",
+    "admissionYear": 2024,
+    "university": "동국대학교",
+    "department": "산업시스템공학과",
+    "group": "나",
+    "quota": 27,
+    "competitionRate": 5.19,
+    "additionalPassCount": 29,
+    "cut70": {
+      "metric": "percentile",
+      "value": 93
+    }
+  },
+  {
+    "planKey": "동국대학교-산업시스템공학과-나",
+    "admissionYear": 2025,
+    "university": "동국대학교",
+    "department": "산업시스템공학과",
+    "group": "나",
+    "quota": 31,
+    "competitionRate": 3.69,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.4
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 92.8
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 92.9
+    }
+  },
+  {
+    "planKey": "동국대학교-산업시스템공학과-나",
+    "admissionYear": 2026,
+    "university": "동국대학교",
+    "department": "산업시스템공학과",
+    "group": "나",
+    "quota": 32,
+    "competitionRate": 5.37,
+    "additionalPassCount": 44,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 93.3
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 93.4
+    }
+  },
+  {
+    "planKey": "동국대학교-식품생명공학과-다",
+    "admissionYear": 2024,
+    "university": "동국대학교",
+    "department": "식품생명공학과",
+    "group": "다",
+    "quota": 23,
+    "competitionRate": 4.51,
+    "additionalPassCount": 25,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.5
+    }
+  },
+  {
+    "planKey": "동국대학교-식품생명공학과-다",
+    "admissionYear": 2025,
+    "university": "동국대학교",
+    "department": "식품생명공학과",
+    "group": "다",
+    "quota": 21,
+    "competitionRate": 5.26,
+    "additionalPassCount": 18,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.4
+    }
+  },
+  {
+    "planKey": "동국대학교-식품생명공학과-다",
+    "admissionYear": 2026,
+    "university": "동국대학교",
+    "department": "식품생명공학과",
+    "group": "다",
+    "quota": 19,
+    "competitionRate": 3.3,
+    "additionalPassCount": 21,
+    "cut70": {
+      "metric": "percentile",
+      "value": 92.5
+    }
+  },
+  {
+    "planKey": "인하대학교-경영학과-나",
+    "admissionYear": 2024,
+    "university": "인하대학교",
+    "department": "경영학과",
+    "group": "나",
+    "quota": 79,
+    "competitionRate": 3.95,
+    "additionalPassCount": 70,
+    "cut70": {
+      "metric": "percentile",
+      "value": 91.2
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 91.6
+    }
+  },
+  {
+    "planKey": "인하대학교-경영학과-나",
+    "admissionYear": 2025,
+    "university": "인하대학교",
+    "department": "경영학과",
+    "group": "나",
+    "quota": 77,
+    "competitionRate": 4.59,
+    "additionalPassCount": 50,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.6
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 91
+    }
+  },
+  {
+    "planKey": "인하대학교-경영학과-나",
+    "admissionYear": 2026,
+    "university": "인하대학교",
+    "department": "경영학과",
+    "group": "나",
+    "quota": 81,
+    "competitionRate": 4.27,
+    "additionalPassCount": 70,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.6
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 91
+    }
+  },
+  {
+    "planKey": "인하대학교-경제학과-가",
+    "admissionYear": 2024,
+    "university": "인하대학교",
+    "department": "경제학과",
+    "group": "가",
+    "quota": 38,
+    "competitionRate": 4.58,
+    "additionalPassCount": 43,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.6
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 91
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 91.1
+    }
+  },
+  {
+    "planKey": "인하대학교-경제학과-가",
+    "admissionYear": 2025,
+    "university": "인하대학교",
+    "department": "경제학과",
+    "group": "가",
+    "quota": 39,
+    "competitionRate": 6.12,
+    "additionalPassCount": 27,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89.8
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 90.2
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 90.3
+    }
+  },
+  {
+    "planKey": "인하대학교-경제학과-가",
+    "admissionYear": 2026,
+    "university": "인하대학교",
+    "department": "경제학과",
+    "group": "가",
+    "quota": 34,
+    "competitionRate": 4.65,
+    "additionalPassCount": 18,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.1
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 90.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 90.6
+    }
+  },
+  {
+    "planKey": "인하대학교-국제통상학과-다",
+    "admissionYear": 2025,
+    "university": "인하대학교",
+    "department": "국제통상학과",
+    "group": "다",
+    "quota": 28,
+    "competitionRate": 5.12,
+    "additionalPassCount": 10,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89.8
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 90.3
+    }
+  },
+  {
+    "planKey": "인하대학교-국제통상학과-다",
+    "admissionYear": 2026,
+    "university": "인하대학교",
+    "department": "국제통상학과",
+    "group": "다",
+    "quota": 31,
+    "competitionRate": 4.74,
+    "additionalPassCount": 23,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89.8
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 90.3
+    }
+  },
+  {
+    "planKey": "인하대학교-영어영문학과-나",
+    "admissionYear": 2024,
+    "university": "인하대학교",
+    "department": "영어영문학과",
+    "group": "나",
+    "quota": 21,
+    "competitionRate": 3.91,
+    "additionalPassCount": 26,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89.4
+    }
+  },
+  {
+    "planKey": "인하대학교-영어영문학과-나",
+    "admissionYear": 2025,
+    "university": "인하대학교",
+    "department": "영어영문학과",
+    "group": "나",
+    "quota": 21,
+    "competitionRate": 4.18,
+    "cut70": {
+      "metric": "percentile",
+      "value": 88.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 89.3
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 89.4
+    }
+  },
+  {
+    "planKey": "인하대학교-영어영문학과-나",
+    "admissionYear": 2026,
+    "university": "인하대학교",
+    "department": "영어영문학과",
+    "group": "나",
+    "quota": 26,
+    "competitionRate": 3.57,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89.3
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 89.7
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 89.8
+    }
+  },
+  {
+    "planKey": "인하대학교-컴퓨터공학과-가",
+    "admissionYear": 2024,
+    "university": "인하대학교",
+    "department": "컴퓨터공학과",
+    "group": "가",
+    "quota": 55,
+    "competitionRate": 3.39,
+    "additionalPassCount": 24,
+    "cut70": {
+      "metric": "percentile",
+      "value": 91.9
+    }
+  },
+  {
+    "planKey": "인하대학교-컴퓨터공학과-가",
+    "admissionYear": 2025,
+    "university": "인하대학교",
+    "department": "컴퓨터공학과",
+    "group": "가",
+    "quota": 58,
+    "competitionRate": 3.62,
+    "additionalPassCount": 49,
+    "cut70": {
+      "metric": "percentile",
+      "value": 91.7
+    }
+  },
+  {
+    "planKey": "인하대학교-컴퓨터공학과-가",
+    "admissionYear": 2026,
+    "university": "인하대학교",
+    "department": "컴퓨터공학과",
+    "group": "가",
+    "quota": 52,
+    "competitionRate": 6.37,
+    "additionalPassCount": 29,
+    "cut70": {
+      "metric": "percentile",
+      "value": 91.6
+    }
+  },
+  {
+    "planKey": "인하대학교-전기공학과-나",
+    "admissionYear": 2024,
+    "university": "인하대학교",
+    "department": "전기공학과",
+    "group": "나",
+    "quota": 47,
+    "competitionRate": 4.67,
+    "additionalPassCount": 22,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 91.3
+    }
+  },
+  {
+    "planKey": "인하대학교-전기공학과-나",
+    "admissionYear": 2025,
+    "university": "인하대학교",
+    "department": "전기공학과",
+    "group": "나",
+    "quota": 43,
+    "competitionRate": 5.67,
+    "additionalPassCount": 31,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.4
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 90.8
+    }
+  },
+  {
+    "planKey": "인하대학교-전기공학과-나",
+    "admissionYear": 2026,
+    "university": "인하대학교",
+    "department": "전기공학과",
+    "group": "나",
+    "quota": 46,
+    "competitionRate": 6.09,
+    "additionalPassCount": 54,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 91.3
+    }
+  },
+  {
+    "planKey": "인하대학교-기계공학과-가",
+    "admissionYear": 2024,
+    "university": "인하대학교",
+    "department": "기계공학과",
+    "group": "가",
+    "quota": 64,
+    "competitionRate": 3.42,
+    "additionalPassCount": 42,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.6
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 91
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 91.1
+    }
+  },
+  {
+    "planKey": "인하대학교-기계공학과-가",
+    "admissionYear": 2025,
+    "university": "인하대학교",
+    "department": "기계공학과",
+    "group": "가",
+    "quota": 62,
+    "competitionRate": 6.23,
+    "additionalPassCount": 78,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.6
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 91
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 91.1
+    }
+  },
+  {
+    "planKey": "인하대학교-기계공학과-가",
+    "admissionYear": 2026,
+    "university": "인하대학교",
+    "department": "기계공학과",
+    "group": "가",
+    "quota": 64,
+    "competitionRate": 4.86,
+    "additionalPassCount": 63,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.8
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 91.2
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 91.3
+    }
+  },
+  {
+    "planKey": "인하대학교-간호학과-다",
+    "admissionYear": 2025,
+    "university": "인하대학교",
+    "department": "간호학과",
+    "group": "다",
+    "quota": 28,
+    "competitionRate": 5.07,
+    "additionalPassCount": 28,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.1
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 90.6
+    }
+  },
+  {
+    "planKey": "인하대학교-간호학과-다",
+    "admissionYear": 2026,
+    "university": "인하대학교",
+    "department": "간호학과",
+    "group": "다",
+    "quota": 32,
+    "competitionRate": 4.16,
+    "additionalPassCount": 10,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.3
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 90.8
+    }
+  },
+  {
+    "planKey": "아주대학교-경영학과-나",
+    "admissionYear": 2024,
+    "university": "아주대학교",
+    "department": "경영학과",
+    "group": "나",
+    "quota": 52,
+    "competitionRate": 6.17,
+    "additionalPassCount": 50,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.5
+    }
+  },
+  {
+    "planKey": "아주대학교-경영학과-나",
+    "admissionYear": 2025,
+    "university": "아주대학교",
+    "department": "경영학과",
+    "group": "나",
+    "quota": 57,
+    "competitionRate": 4.03,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.2
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 90.6
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 90.7
+    }
+  },
+  {
+    "planKey": "아주대학교-경영학과-나",
+    "admissionYear": 2026,
+    "university": "아주대학교",
+    "department": "경영학과",
+    "group": "나",
+    "quota": 52,
+    "competitionRate": 4.24,
+    "additionalPassCount": 64,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.5
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 90.9
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 91
+    }
+  },
+  {
+    "planKey": "아주대학교-경제학과-다",
+    "admissionYear": 2024,
+    "university": "아주대학교",
+    "department": "경제학과",
+    "group": "다",
+    "quota": 27,
+    "competitionRate": 6.28,
+    "additionalPassCount": 25,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89.8
+    }
+  },
+  {
+    "planKey": "아주대학교-경제학과-다",
+    "admissionYear": 2025,
+    "university": "아주대학교",
+    "department": "경제학과",
+    "group": "다",
+    "quota": 30,
+    "competitionRate": 3.35,
+    "additionalPassCount": 23,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89.3
+    }
+  },
+  {
+    "planKey": "아주대학교-경제학과-다",
+    "admissionYear": 2026,
+    "university": "아주대학교",
+    "department": "경제학과",
+    "group": "다",
+    "quota": 29,
+    "competitionRate": 4.7,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89.8
+    }
+  },
+  {
+    "planKey": "아주대학교-사회학과-나",
+    "admissionYear": 2024,
+    "university": "아주대학교",
+    "department": "사회학과",
+    "group": "나",
+    "quota": 21,
+    "competitionRate": 4.54,
+    "additionalPassCount": 18,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 89.4
+    }
+  },
+  {
+    "planKey": "아주대학교-사회학과-나",
+    "admissionYear": 2025,
+    "university": "아주대학교",
+    "department": "사회학과",
+    "group": "나",
+    "quota": 22,
+    "competitionRate": 3.57,
+    "additionalPassCount": 18,
+    "cut70": {
+      "metric": "percentile",
+      "value": 88.6
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 89
+    }
+  },
+  {
+    "planKey": "아주대학교-사회학과-나",
+    "admissionYear": 2026,
+    "university": "아주대학교",
+    "department": "사회학과",
+    "group": "나",
+    "quota": 17,
+    "competitionRate": 3.67,
+    "additionalPassCount": 23,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89.1
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 89.5
+    }
+  },
+  {
+    "planKey": "아주대학교-소프트웨어학과-나",
+    "admissionYear": 2024,
+    "university": "아주대학교",
+    "department": "소프트웨어학과",
+    "group": "나",
+    "quota": 40,
+    "competitionRate": 4.23,
+    "additionalPassCount": 44,
+    "cut70": {
+      "metric": "percentile",
+      "value": 91.5
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 91.9
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 92
+    }
+  },
+  {
+    "planKey": "아주대학교-소프트웨어학과-나",
+    "admissionYear": 2025,
+    "university": "아주대학교",
+    "department": "소프트웨어학과",
+    "group": "나",
+    "quota": 37,
+    "competitionRate": 6.42,
+    "additionalPassCount": 12,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.8
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 91.2
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 91.3
+    }
+  },
+  {
+    "planKey": "아주대학교-소프트웨어학과-나",
+    "admissionYear": 2026,
+    "university": "아주대학교",
+    "department": "소프트웨어학과",
+    "group": "나",
+    "quota": 37,
+    "competitionRate": 5.88,
+    "additionalPassCount": 39,
+    "cut70": {
+      "metric": "percentile",
+      "value": 91.7
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 92.1
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 92.2
+    }
+  },
+  {
+    "planKey": "아주대학교-전자공학과-다",
+    "admissionYear": 2025,
+    "university": "아주대학교",
+    "department": "전자공학과",
+    "group": "다",
+    "quota": 47,
+    "competitionRate": 5.64,
+    "additionalPassCount": 28,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.1
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 90.6
+    }
+  },
+  {
+    "planKey": "아주대학교-전자공학과-다",
+    "admissionYear": 2026,
+    "university": "아주대학교",
+    "department": "전자공학과",
+    "group": "다",
+    "quota": 46,
+    "competitionRate": 4.73,
+    "additionalPassCount": 44,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 91
+    }
+  },
+  {
+    "planKey": "아주대학교-화학공학과-나",
+    "admissionYear": 2024,
+    "university": "아주대학교",
+    "department": "화학공학과",
+    "group": "나",
+    "quota": 30,
+    "competitionRate": 5.1,
+    "additionalPassCount": 35,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.4
+    }
+  },
+  {
+    "planKey": "아주대학교-화학공학과-나",
+    "admissionYear": 2025,
+    "university": "아주대학교",
+    "department": "화학공학과",
+    "group": "나",
+    "quota": 27,
+    "competitionRate": 5.07,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.1
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 90.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 90.6
+    }
+  },
+  {
+    "planKey": "아주대학교-화학공학과-나",
+    "admissionYear": 2026,
+    "university": "아주대학교",
+    "department": "화학공학과",
+    "group": "나",
+    "quota": 29,
+    "competitionRate": 3.95,
+    "additionalPassCount": 32,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.3
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 90.7
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 90.8
+    }
+  },
+  {
+    "planKey": "아주대학교-간호학과-다",
+    "admissionYear": 2024,
+    "university": "아주대학교",
+    "department": "간호학과",
+    "group": "다",
+    "quota": 25,
+    "competitionRate": 3.76,
+    "additionalPassCount": 20,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.1
+    }
+  },
+  {
+    "planKey": "아주대학교-간호학과-다",
+    "admissionYear": 2025,
+    "university": "아주대학교",
+    "department": "간호학과",
+    "group": "다",
+    "quota": 29,
+    "competitionRate": 4.53,
+    "additionalPassCount": 17,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89.9
+    }
+  },
+  {
+    "planKey": "아주대학교-간호학과-다",
+    "admissionYear": 2026,
+    "university": "아주대학교",
+    "department": "간호학과",
+    "group": "다",
+    "quota": 29,
+    "competitionRate": 4.28,
+    "additionalPassCount": 38,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89.8
+    }
+  },
+  {
+    "planKey": "가천대학교-경영학부-가",
+    "admissionYear": 2024,
+    "university": "가천대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 71,
+    "competitionRate": 3.62,
+    "additionalPassCount": 83,
+    "cut70": {
+      "metric": "percentile",
+      "value": 86.6
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 87
+    }
+  },
+  {
+    "planKey": "가천대학교-경영학부-가",
+    "admissionYear": 2025,
+    "university": "가천대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 71,
+    "competitionRate": 4.98,
+    "additionalPassCount": 22,
+    "cut70": {
+      "metric": "percentile",
+      "value": 86.2
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 86.6
+    }
+  },
+  {
+    "planKey": "가천대학교-경영학부-가",
+    "admissionYear": 2026,
+    "university": "가천대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 68,
+    "competitionRate": 5.03,
+    "additionalPassCount": 94,
+    "cut70": {
+      "metric": "percentile",
+      "value": 86.3
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 86.7
+    }
+  },
+  {
+    "planKey": "가천대학교-미디어커뮤니케이션학과-나",
+    "admissionYear": 2024,
+    "university": "가천대학교",
+    "department": "미디어커뮤니케이션학과",
+    "group": "나",
+    "quota": 23,
+    "competitionRate": 3.61,
+    "additionalPassCount": 14,
+    "cut70": {
+      "metric": "percentile",
+      "value": 86.2
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 86.6
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 86.7
+    }
+  },
+  {
+    "planKey": "가천대학교-미디어커뮤니케이션학과-나",
+    "admissionYear": 2025,
+    "university": "가천대학교",
+    "department": "미디어커뮤니케이션학과",
+    "group": "나",
+    "quota": 30,
+    "competitionRate": 5.96,
+    "additionalPassCount": 35,
+    "cut70": {
+      "metric": "percentile",
+      "value": 85.6
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 86
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 86.1
+    }
+  },
+  {
+    "planKey": "가천대학교-미디어커뮤니케이션학과-나",
+    "admissionYear": 2026,
+    "university": "가천대학교",
+    "department": "미디어커뮤니케이션학과",
+    "group": "나",
+    "quota": 29,
+    "competitionRate": 6.5,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "percentile",
+      "value": 86.1
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 86.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 86.6
+    }
+  },
+  {
+    "planKey": "가천대학교-사회복지학과-다",
+    "admissionYear": 2025,
+    "university": "가천대학교",
+    "department": "사회복지학과",
+    "group": "다",
+    "quota": 23,
+    "competitionRate": 5.01,
+    "additionalPassCount": 30,
+    "cut70": {
+      "metric": "percentile",
+      "value": 84.6
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 85.1
+    }
+  },
+  {
+    "planKey": "가천대학교-사회복지학과-다",
+    "admissionYear": 2026,
+    "university": "가천대학교",
+    "department": "사회복지학과",
+    "group": "다",
+    "quota": 21,
+    "competitionRate": 4.95,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "percentile",
+      "value": 85
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 85.5
+    }
+  },
+  {
+    "planKey": "가천대학교-컴퓨터공학과-가",
+    "admissionYear": 2024,
+    "university": "가천대학교",
+    "department": "컴퓨터공학과",
+    "group": "가",
+    "quota": 47,
+    "competitionRate": 4.75,
+    "additionalPassCount": 44,
+    "cut70": {
+      "metric": "percentile",
+      "value": 87.8
+    }
+  },
+  {
+    "planKey": "가천대학교-컴퓨터공학과-가",
+    "admissionYear": 2025,
+    "university": "가천대학교",
+    "department": "컴퓨터공학과",
+    "group": "가",
+    "quota": 49,
+    "competitionRate": 4.48,
+    "cut70": {
+      "metric": "percentile",
+      "value": 87.4
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 87.8
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 87.9
+    }
+  },
+  {
+    "planKey": "가천대학교-컴퓨터공학과-가",
+    "admissionYear": 2026,
+    "university": "가천대학교",
+    "department": "컴퓨터공학과",
+    "group": "가",
+    "quota": 47,
+    "competitionRate": 4.59,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "percentile",
+      "value": 87.3
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 87.7
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 87.8
+    }
+  },
+  {
+    "planKey": "가천대학교-전자공학과-나",
+    "admissionYear": 2024,
+    "university": "가천대학교",
+    "department": "전자공학과",
+    "group": "나",
+    "quota": 38,
+    "competitionRate": 6.03,
+    "additionalPassCount": 15,
+    "cut70": {
+      "metric": "percentile",
+      "value": 87
+    }
+  },
+  {
+    "planKey": "가천대학교-전자공학과-나",
+    "admissionYear": 2025,
+    "university": "가천대학교",
+    "department": "전자공학과",
+    "group": "나",
+    "quota": 39,
+    "competitionRate": 6.21,
+    "additionalPassCount": 30,
+    "cut70": {
+      "metric": "percentile",
+      "value": 86.2
+    }
+  },
+  {
+    "planKey": "가천대학교-전자공학과-나",
+    "admissionYear": 2026,
+    "university": "가천대학교",
+    "department": "전자공학과",
+    "group": "나",
+    "quota": 43,
+    "competitionRate": 5.95,
+    "additionalPassCount": 29,
+    "cut70": {
+      "metric": "percentile",
+      "value": 86.9
+    }
+  },
+  {
+    "planKey": "가천대학교-간호학과-다",
+    "admissionYear": 2024,
+    "university": "가천대학교",
+    "department": "간호학과",
+    "group": "다",
+    "quota": 37,
+    "competitionRate": 4.31,
+    "additionalPassCount": 34,
+    "cut70": {
+      "metric": "percentile",
+      "value": 88
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 88.4
+    }
+  },
+  {
+    "planKey": "가천대학교-간호학과-다",
+    "admissionYear": 2025,
+    "university": "가천대학교",
+    "department": "간호학과",
+    "group": "다",
+    "quota": 37,
+    "competitionRate": 3.78,
+    "additionalPassCount": 27,
+    "cut70": {
+      "metric": "percentile",
+      "value": 87.7
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 88.1
+    }
+  },
+  {
+    "planKey": "가천대학교-간호학과-다",
+    "admissionYear": 2026,
+    "university": "가천대학교",
+    "department": "간호학과",
+    "group": "다",
+    "quota": 34,
+    "competitionRate": 5.11,
+    "additionalPassCount": 23,
+    "cut70": {
+      "metric": "percentile",
+      "value": 87.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 88.3
+    }
+  },
+  {
+    "planKey": "부산대학교-경영학과-나",
+    "admissionYear": 2025,
+    "university": "부산대학교",
+    "department": "경영학과",
+    "group": "나",
+    "quota": 59,
+    "competitionRate": 4.34,
+    "additionalPassCount": 75,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 867.54
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 870.57
+    }
+  },
+  {
+    "planKey": "부산대학교-경영학과-나",
+    "admissionYear": 2026,
+    "university": "부산대학교",
+    "department": "경영학과",
+    "group": "나",
+    "quota": 58,
+    "competitionRate": 5.34,
+    "additionalPassCount": 42,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 870.57
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 883.2
+    }
+  },
+  {
+    "planKey": "부산대학교-경제학부-가",
+    "admissionYear": 2024,
+    "university": "부산대학교",
+    "department": "경제학부",
+    "group": "가",
+    "quota": 41,
+    "competitionRate": 7.09,
+    "additionalPassCount": 50,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89.3
+    }
+  },
+  {
+    "planKey": "부산대학교-경제학부-가",
+    "admissionYear": 2025,
+    "university": "부산대학교",
+    "department": "경제학부",
+    "group": "가",
+    "quota": 42,
+    "competitionRate": 6.94,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 89.4
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 89.5
+    }
+  },
+  {
+    "planKey": "부산대학교-경제학부-가",
+    "admissionYear": 2026,
+    "university": "부산대학교",
+    "department": "경제학부",
+    "group": "가",
+    "quota": 40,
+    "competitionRate": 6.38,
+    "additionalPassCount": 52,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89.2
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 89.6
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 89.7
+    }
+  },
+  {
+    "planKey": "부산대학교-국어국문학과-나",
+    "admissionYear": 2024,
+    "university": "부산대학교",
+    "department": "국어국문학과",
+    "group": "나",
+    "quota": 21,
+    "competitionRate": 6.44,
+    "additionalPassCount": 27,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 861.88
+    }
+  },
+  {
+    "planKey": "부산대학교-국어국문학과-나",
+    "admissionYear": 2025,
+    "university": "부산대학교",
+    "department": "국어국문학과",
+    "group": "나",
+    "quota": 20,
+    "competitionRate": 6.7,
+    "additionalPassCount": 11,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 855.83
+    }
+  },
+  {
+    "planKey": "부산대학교-국어국문학과-나",
+    "admissionYear": 2026,
+    "university": "부산대학교",
+    "department": "국어국문학과",
+    "group": "나",
+    "quota": 22,
+    "competitionRate": 6.74,
+    "additionalPassCount": 22,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 861.51
+    }
+  },
+  {
+    "planKey": "부산대학교-행정학과-가",
+    "admissionYear": 2024,
+    "university": "부산대학교",
+    "department": "행정학과",
+    "group": "가",
+    "quota": 24,
+    "competitionRate": 6.12,
+    "additionalPassCount": 8,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 865.28
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 867.54
+    }
+  },
+  {
+    "planKey": "부산대학교-행정학과-가",
+    "admissionYear": 2025,
+    "university": "부산대학교",
+    "department": "행정학과",
+    "group": "가",
+    "quota": 22,
+    "competitionRate": 6.62,
+    "additionalPassCount": 29,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 865.28
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 867.54
+    }
+  },
+  {
+    "planKey": "부산대학교-행정학과-가",
+    "admissionYear": 2026,
+    "university": "부산대학교",
+    "department": "행정학과",
+    "group": "가",
+    "quota": 23,
+    "competitionRate": 5.74,
+    "additionalPassCount": 15,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 864.15
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 866.41
+    }
+  },
+  {
+    "planKey": "부산대학교-정보컴퓨터공학부-가",
+    "admissionYear": 2024,
+    "university": "부산대학교",
+    "department": "정보컴퓨터공학부",
+    "group": "가",
+    "quota": 53,
+    "competitionRate": 7.48,
+    "additionalPassCount": 63,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 910.12
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 912.45
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 912.84
+    }
+  },
+  {
+    "planKey": "부산대학교-정보컴퓨터공학부-가",
+    "admissionYear": 2025,
+    "university": "부산대학교",
+    "department": "정보컴퓨터공학부",
+    "group": "가",
+    "quota": 54,
+    "competitionRate": 6.95,
+    "additionalPassCount": 19,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 904.29
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 906.62
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 907
+    }
+  },
+  {
+    "planKey": "부산대학교-정보컴퓨터공학부-가",
+    "admissionYear": 2026,
+    "university": "부산대학교",
+    "department": "정보컴퓨터공학부",
+    "group": "가",
+    "quota": 51,
+    "competitionRate": 5.69,
+    "additionalPassCount": 26,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 908.17
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 910.5
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 911.29
+    }
+  },
+  {
+    "planKey": "부산대학교-전기전자공학부-나",
+    "admissionYear": 2025,
+    "university": "부산대학교",
+    "department": "전기전자공학부",
+    "group": "나",
+    "quota": 65,
+    "competitionRate": 5.36,
+    "additionalPassCount": 60,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89.6
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 90.1
+    }
+  },
+  {
+    "planKey": "부산대학교-전기전자공학부-나",
+    "admissionYear": 2026,
+    "university": "부산대학교",
+    "department": "전기전자공학부",
+    "group": "나",
+    "quota": 63,
+    "competitionRate": 7.25,
+    "additionalPassCount": 19,
+    "cut70": {
+      "metric": "percentile",
+      "value": 90.2
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 90.7
+    }
+  },
+  {
+    "planKey": "부산대학교-기계공학부-가",
+    "admissionYear": 2024,
+    "university": "부산대학교",
+    "department": "기계공학부",
+    "group": "가",
+    "quota": 69,
+    "competitionRate": 7.36,
+    "additionalPassCount": 94,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 890.01
+    }
+  },
+  {
+    "planKey": "부산대학교-기계공학부-가",
+    "admissionYear": 2025,
+    "university": "부산대학교",
+    "department": "기계공학부",
+    "group": "가",
+    "quota": 66,
+    "competitionRate": 4.78,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 887.29
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 889.62
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 890.01
+    }
+  },
+  {
+    "planKey": "부산대학교-기계공학부-가",
+    "admissionYear": 2026,
+    "university": "부산대학교",
+    "department": "기계공학부",
+    "group": "가",
+    "quota": 69,
+    "competitionRate": 5.38,
+    "additionalPassCount": 35,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 890.79
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 903.12
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 903.51
+    }
+  },
+  {
+    "planKey": "부산대학교-의예과-나",
+    "admissionYear": 2024,
+    "university": "부산대학교",
+    "department": "의예과",
+    "group": "나",
+    "quota": 32,
+    "competitionRate": 4.37,
+    "additionalPassCount": 34,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 1003.96
+    }
+  },
+  {
+    "planKey": "부산대학교-의예과-나",
+    "admissionYear": 2025,
+    "university": "부산대학교",
+    "department": "의예과",
+    "group": "나",
+    "quota": 29,
+    "competitionRate": 7.25,
+    "additionalPassCount": 28,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 998.53
+    }
+  },
+  {
+    "planKey": "부산대학교-의예과-나",
+    "admissionYear": 2026,
+    "university": "부산대학교",
+    "department": "의예과",
+    "group": "나",
+    "quota": 34,
+    "competitionRate": 6.25,
+    "additionalPassCount": 11,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 1006.68
+    }
+  },
+  {
+    "planKey": "경북대학교-경영학부-가",
+    "admissionYear": 2024,
+    "university": "경북대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 55,
+    "competitionRate": 5.64,
+    "additionalPassCount": 49,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 859.76
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 863.01
+    }
+  },
+  {
+    "planKey": "경북대학교-경영학부-가",
+    "admissionYear": 2025,
+    "university": "경북대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 59,
+    "competitionRate": 5.82,
+    "additionalPassCount": 70,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 853.24
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 856.5
+    }
+  },
+  {
+    "planKey": "경북대학교-경영학부-가",
+    "admissionYear": 2026,
+    "university": "경북대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 56,
+    "competitionRate": 7.26,
+    "additionalPassCount": 70,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 858.13
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 861.39
+    }
+  },
+  {
+    "planKey": "경북대학교-경제통상학부-나",
+    "admissionYear": 2024,
+    "university": "경북대학교",
+    "department": "경제통상학부",
+    "group": "나",
+    "quota": 46,
+    "competitionRate": 5.06,
+    "additionalPassCount": 15,
+    "cut70": {
+      "metric": "percentile",
+      "value": 88.2
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 88.6
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 88.7
+    }
+  },
+  {
+    "planKey": "경북대학교-경제통상학부-나",
+    "admissionYear": 2025,
+    "university": "경북대학교",
+    "department": "경제통상학부",
+    "group": "나",
+    "quota": 43,
+    "competitionRate": 7.02,
+    "additionalPassCount": 25,
+    "cut70": {
+      "metric": "percentile",
+      "value": 88
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 88.4
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 88.5
+    }
+  },
+  {
+    "planKey": "경북대학교-경제통상학부-나",
+    "admissionYear": 2026,
+    "university": "경북대학교",
+    "department": "경제통상학부",
+    "group": "나",
+    "quota": 42,
+    "competitionRate": 5.38,
+    "additionalPassCount": 35,
+    "cut70": {
+      "metric": "percentile",
+      "value": 88.3
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 88.7
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 88.8
+    }
+  },
+  {
+    "planKey": "경북대학교-사회복지학부-가",
+    "admissionYear": 2025,
+    "university": "경북대학교",
+    "department": "사회복지학부",
+    "group": "가",
+    "quota": 20,
+    "competitionRate": 6.09,
+    "additionalPassCount": 9,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 836.96
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 841.03
+    }
+  },
+  {
+    "planKey": "경북대학교-사회복지학부-가",
+    "admissionYear": 2026,
+    "university": "경북대학교",
+    "department": "사회복지학부",
+    "group": "가",
+    "quota": 24,
+    "competitionRate": 4.91,
+    "additionalPassCount": 32,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 841.03
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 845.1
+    }
+  },
+  {
+    "planKey": "경북대학교-영어영문학과-나",
+    "admissionYear": 2024,
+    "university": "경북대학교",
+    "department": "영어영문학과",
+    "group": "나",
+    "quota": 28,
+    "competitionRate": 7.03,
+    "additionalPassCount": 17,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 846.73
+    }
+  },
+  {
+    "planKey": "경북대학교-영어영문학과-나",
+    "admissionYear": 2025,
+    "university": "경북대학교",
+    "department": "영어영문학과",
+    "group": "나",
+    "quota": 29,
+    "competitionRate": 5.02,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 841.84
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 845.1
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 845.91
+    }
+  },
+  {
+    "planKey": "경북대학교-영어영문학과-나",
+    "admissionYear": 2026,
+    "university": "경북대학교",
+    "department": "영어영문학과",
+    "group": "나",
+    "quota": 24,
+    "competitionRate": 5.45,
+    "additionalPassCount": 11,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 844.29
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 847.54
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 848.36
+    }
+  },
+  {
+    "planKey": "경북대학교-컴퓨터학부-가",
+    "admissionYear": 2024,
+    "university": "경북대학교",
+    "department": "컴퓨터학부",
+    "group": "가",
+    "quota": 63,
+    "competitionRate": 6.76,
+    "additionalPassCount": 76,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 880.84
+    }
+  },
+  {
+    "planKey": "경북대학교-컴퓨터학부-가",
+    "admissionYear": 2025,
+    "university": "경북대학교",
+    "department": "컴퓨터학부",
+    "group": "가",
+    "quota": 57,
+    "competitionRate": 7.22,
+    "additionalPassCount": 29,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 876.7
+    }
+  },
+  {
+    "planKey": "경북대학교-컴퓨터학부-가",
+    "admissionYear": 2026,
+    "university": "경북대학교",
+    "department": "컴퓨터학부",
+    "group": "가",
+    "quota": 61,
+    "competitionRate": 6.68,
+    "additionalPassCount": 55,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 887.5
+    }
+  },
+  {
+    "planKey": "경북대학교-전자공학부-나",
+    "admissionYear": 2024,
+    "university": "경북대학교",
+    "department": "전자공학부",
+    "group": "나",
+    "quota": 81,
+    "competitionRate": 6.11,
+    "additionalPassCount": 78,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89.5
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 89.9
+    }
+  },
+  {
+    "planKey": "경북대학교-전자공학부-나",
+    "admissionYear": 2025,
+    "university": "경북대학교",
+    "department": "전자공학부",
+    "group": "나",
+    "quota": 76,
+    "competitionRate": 5.71,
+    "additionalPassCount": 25,
+    "cut70": {
+      "metric": "percentile",
+      "value": 88.8
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 89.2
+    }
+  },
+  {
+    "planKey": "경북대학교-전자공학부-나",
+    "admissionYear": 2026,
+    "university": "경북대학교",
+    "department": "전자공학부",
+    "group": "나",
+    "quota": 76,
+    "competitionRate": 4.8,
+    "additionalPassCount": 92,
+    "cut70": {
+      "metric": "percentile",
+      "value": 89.2
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 89.6
+    }
+  },
+  {
+    "planKey": "경북대학교-신소재공학부-가",
+    "admissionYear": 2024,
+    "university": "경북대학교",
+    "department": "신소재공학부",
+    "group": "가",
+    "quota": 37,
+    "competitionRate": 5.63,
+    "additionalPassCount": 43,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 869.24
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 872.56
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 873.39
+    }
+  },
+  {
+    "planKey": "경북대학교-신소재공학부-가",
+    "admissionYear": 2025,
+    "university": "경북대학교",
+    "department": "신소재공학부",
+    "group": "가",
+    "quota": 44,
+    "competitionRate": 6.47,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 863.44
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 866.76
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 867.59
+    }
+  },
+  {
+    "planKey": "경북대학교-신소재공학부-가",
+    "admissionYear": 2026,
+    "university": "경북대학교",
+    "department": "신소재공학부",
+    "group": "가",
+    "quota": 40,
+    "competitionRate": 5.83,
+    "additionalPassCount": 52,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 866.76
+    },
+    "cut50": {
+      "metric": "convertedScore",
+      "value": 870.07
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 870.9
+    }
+  },
+  {
+    "planKey": "경북대학교-의예과-가",
+    "admissionYear": 2025,
+    "university": "경북대학교",
+    "department": "의예과",
+    "group": "가",
+    "quota": 37,
+    "competitionRate": 6.1,
+    "additionalPassCount": 36,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 981.86
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 990.79
+    }
+  },
+  {
+    "planKey": "경북대학교-의예과-가",
+    "admissionYear": 2026,
+    "university": "경북대학교",
+    "department": "의예과",
+    "group": "가",
+    "quota": 35,
+    "competitionRate": 7.06,
+    "additionalPassCount": 12,
+    "cut70": {
+      "metric": "convertedScore",
+      "value": 993.53
+    },
+    "average": {
+      "metric": "convertedScore",
+      "value": 1007.24
+    }
+  },
+  {
+    "planKey": "전남대학교-경영학부-가",
+    "admissionYear": 2024,
+    "university": "전남대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 68,
+    "competitionRate": 6.06,
+    "additionalPassCount": 54,
+    "cut70": {
+      "metric": "percentile",
+      "value": 85
+    }
+  },
+  {
+    "planKey": "전남대학교-경영학부-가",
+    "admissionYear": 2025,
+    "university": "전남대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 65,
+    "competitionRate": 5.77,
+    "cut70": {
+      "metric": "percentile",
+      "value": 84.1
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 84.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 84.6
+    }
+  },
+  {
+    "planKey": "전남대학교-경영학부-가",
+    "admissionYear": 2026,
+    "university": "전남대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 64,
+    "competitionRate": 6.46,
+    "additionalPassCount": 42,
+    "cut70": {
+      "metric": "percentile",
+      "value": 84.7
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 85.1
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 85.2
+    }
+  },
+  {
+    "planKey": "전남대학교-경제학부-나",
+    "admissionYear": 2024,
+    "university": "전남대학교",
+    "department": "경제학부",
+    "group": "나",
+    "quota": 37,
+    "competitionRate": 6.75,
+    "additionalPassCount": 15,
+    "cut70": {
+      "metric": "percentile",
+      "value": 84.1
+    }
+  },
+  {
+    "planKey": "전남대학교-경제학부-나",
+    "admissionYear": 2025,
+    "university": "전남대학교",
+    "department": "경제학부",
+    "group": "나",
+    "quota": 39,
+    "competitionRate": 4.7,
+    "additionalPassCount": 21,
+    "cut70": {
+      "metric": "percentile",
+      "value": 83.3
+    }
+  },
+  {
+    "planKey": "전남대학교-경제학부-나",
+    "admissionYear": 2026,
+    "university": "전남대학교",
+    "department": "경제학부",
+    "group": "나",
+    "quota": 42,
+    "competitionRate": 6.11,
+    "additionalPassCount": 15,
+    "cut70": {
+      "metric": "percentile",
+      "value": 83.8
+    }
+  },
+  {
+    "planKey": "전남대학교-국어국문학과-다",
+    "admissionYear": 2024,
+    "university": "전남대학교",
+    "department": "국어국문학과",
+    "group": "다",
+    "quota": 18,
+    "competitionRate": 6.59,
+    "additionalPassCount": 9,
+    "cut70": {
+      "metric": "percentile",
+      "value": 82.6
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 83
+    }
+  },
+  {
+    "planKey": "전남대학교-국어국문학과-다",
+    "admissionYear": 2025,
+    "university": "전남대학교",
+    "department": "국어국문학과",
+    "group": "다",
+    "quota": 24,
+    "competitionRate": 5.56,
+    "additionalPassCount": 32,
+    "cut70": {
+      "metric": "percentile",
+      "value": 82.5
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 82.9
+    }
+  },
+  {
+    "planKey": "전남대학교-국어국문학과-다",
+    "admissionYear": 2026,
+    "university": "전남대학교",
+    "department": "국어국문학과",
+    "group": "다",
+    "quota": 20,
+    "competitionRate": 4.58,
+    "additionalPassCount": 22,
+    "cut70": {
+      "metric": "percentile",
+      "value": 82.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 83.3
+    }
+  },
+  {
+    "planKey": "전남대학교-행정학과-나",
+    "admissionYear": 2024,
+    "university": "전남대학교",
+    "department": "행정학과",
+    "group": "나",
+    "quota": 26,
+    "competitionRate": 4.91,
+    "additionalPassCount": 14,
+    "cut70": {
+      "metric": "percentile",
+      "value": 84.5
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 84.9
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 85
+    }
+  },
+  {
+    "planKey": "전남대학교-행정학과-나",
+    "admissionYear": 2025,
+    "university": "전남대학교",
+    "department": "행정학과",
+    "group": "나",
+    "quota": 22,
+    "competitionRate": 5.53,
+    "additionalPassCount": 9,
+    "cut70": {
+      "metric": "percentile",
+      "value": 83.5
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 83.9
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 84
+    }
+  },
+  {
+    "planKey": "전남대학교-행정학과-나",
+    "admissionYear": 2026,
+    "university": "전남대학교",
+    "department": "행정학과",
+    "group": "나",
+    "quota": 21,
+    "competitionRate": 6.63,
+    "additionalPassCount": 26,
+    "cut70": {
+      "metric": "percentile",
+      "value": 83.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 84.3
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 84.4
+    }
+  },
+  {
+    "planKey": "전남대학교-전산학과-가",
+    "admissionYear": 2025,
+    "university": "전남대학교",
+    "department": "전산학과",
+    "group": "가",
+    "quota": 45,
+    "competitionRate": 6.38,
+    "additionalPassCount": 42,
+    "cut70": {
+      "metric": "percentile",
+      "value": 85.4
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 85.9
+    }
+  },
+  {
+    "planKey": "전남대학교-전산학과-가",
+    "admissionYear": 2026,
+    "university": "전남대학교",
+    "department": "전산학과",
+    "group": "가",
+    "quota": 44,
+    "competitionRate": 6.38,
+    "additionalPassCount": 25,
+    "cut70": {
+      "metric": "percentile",
+      "value": 85.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 86
+    }
+  },
+  {
+    "planKey": "전남대학교-전기공학과-나",
+    "admissionYear": 2024,
+    "university": "전남대학교",
+    "department": "전기공학과",
+    "group": "나",
+    "quota": 43,
+    "competitionRate": 5.36,
+    "additionalPassCount": 53,
+    "cut70": {
+      "metric": "percentile",
+      "value": 85
+    }
+  },
+  {
+    "planKey": "전남대학교-전기공학과-나",
+    "admissionYear": 2025,
+    "university": "전남대학교",
+    "department": "전기공학과",
+    "group": "나",
+    "quota": 41,
+    "competitionRate": 4.98,
+    "cut70": {
+      "metric": "percentile",
+      "value": 84.3
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 84.7
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 84.8
+    }
+  },
+  {
+    "planKey": "전남대학교-전기공학과-나",
+    "admissionYear": 2026,
+    "university": "전남대학교",
+    "department": "전기공학과",
+    "group": "나",
+    "quota": 43,
+    "competitionRate": 6.7,
+    "additionalPassCount": 17,
+    "cut70": {
+      "metric": "percentile",
+      "value": 84.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 85.3
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 85.4
+    }
+  },
+  {
+    "planKey": "전남대학교-수의예과-가",
+    "admissionYear": 2024,
+    "university": "전남대학교",
+    "department": "수의예과",
+    "group": "가",
+    "quota": 26,
+    "competitionRate": 6.7,
+    "additionalPassCount": 25,
+    "cut70": {
+      "metric": "percentile",
+      "value": 96.8
+    }
+  },
+  {
+    "planKey": "전남대학교-수의예과-가",
+    "admissionYear": 2025,
+    "university": "전남대학교",
+    "department": "수의예과",
+    "group": "가",
+    "quota": 24,
+    "competitionRate": 6.72,
+    "additionalPassCount": 9,
+    "cut70": {
+      "metric": "percentile",
+      "value": 96.5
+    }
+  },
+  {
+    "planKey": "전남대학교-수의예과-가",
+    "admissionYear": 2026,
+    "university": "전남대학교",
+    "department": "수의예과",
+    "group": "가",
+    "quota": 25,
+    "competitionRate": 6.11,
+    "additionalPassCount": 17,
+    "cut70": {
+      "metric": "percentile",
+      "value": 96.9
+    }
+  },
+  {
+    "planKey": "전남대학교-원예생명공학과-다",
+    "admissionYear": 2024,
+    "university": "전남대학교",
+    "department": "원예생명공학과",
+    "group": "다",
+    "quota": 21,
+    "competitionRate": 4.88,
+    "additionalPassCount": 28,
+    "cut70": {
+      "metric": "percentile",
+      "value": 80.5
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 80.9
+    }
+  },
+  {
+    "planKey": "전남대학교-원예생명공학과-다",
+    "admissionYear": 2025,
+    "university": "전남대학교",
+    "department": "원예생명공학과",
+    "group": "다",
+    "quota": 20,
+    "competitionRate": 5.5,
+    "additionalPassCount": 14,
+    "cut70": {
+      "metric": "percentile",
+      "value": 80.1
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 80.5
+    }
+  },
+  {
+    "planKey": "전남대학교-원예생명공학과-다",
+    "admissionYear": 2026,
+    "university": "전남대학교",
+    "department": "원예생명공학과",
+    "group": "다",
+    "quota": 24,
+    "competitionRate": 5.78,
+    "additionalPassCount": 13,
+    "cut70": {
+      "metric": "percentile",
+      "value": 80.5
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 80.9
+    }
+  },
+  {
+    "planKey": "충남대학교-경영학부-가",
+    "admissionYear": 2024,
+    "university": "충남대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 57,
+    "competitionRate": 7.44,
+    "additionalPassCount": 60,
+    "cut70": {
+      "metric": "percentile",
+      "value": 86.3
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 86.7
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 86.8
+    }
+  },
+  {
+    "planKey": "충남대학교-경영학부-가",
+    "admissionYear": 2025,
+    "university": "충남대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 61,
+    "competitionRate": 6,
+    "additionalPassCount": 68,
+    "cut70": {
+      "metric": "percentile",
+      "value": 86
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 86.4
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 86.5
+    }
+  },
+  {
+    "planKey": "충남대학교-경영학부-가",
+    "admissionYear": 2026,
+    "university": "충남대학교",
+    "department": "경영학부",
+    "group": "가",
+    "quota": 57,
+    "competitionRate": 5.31,
+    "additionalPassCount": 28,
+    "cut70": {
+      "metric": "percentile",
+      "value": 86.4
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 86.8
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 86.9
+    }
+  },
+  {
+    "planKey": "충남대학교-경제학과-나",
+    "admissionYear": 2025,
+    "university": "충남대학교",
+    "department": "경제학과",
+    "group": "나",
+    "quota": 31,
+    "competitionRate": 5.94,
+    "additionalPassCount": 34,
+    "cut70": {
+      "metric": "percentile",
+      "value": 85.6
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 86.1
+    }
+  },
+  {
+    "planKey": "충남대학교-경제학과-나",
+    "admissionYear": 2026,
+    "university": "충남대학교",
+    "department": "경제학과",
+    "group": "나",
+    "quota": 37,
+    "competitionRate": 7.04,
+    "additionalPassCount": 26,
+    "cut70": {
+      "metric": "percentile",
+      "value": 85.6
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 86.1
+    }
+  },
+  {
+    "planKey": "충남대학교-사회학과-가",
+    "admissionYear": 2024,
+    "university": "충남대학교",
+    "department": "사회학과",
+    "group": "가",
+    "quota": 21,
+    "competitionRate": 7.31,
+    "additionalPassCount": 15,
+    "cut70": {
+      "metric": "percentile",
+      "value": 84.7
+    }
+  },
+  {
+    "planKey": "충남대학교-사회학과-가",
+    "admissionYear": 2025,
+    "university": "충남대학교",
+    "department": "사회학과",
+    "group": "가",
+    "quota": 20,
+    "competitionRate": 4.21,
+    "cut70": {
+      "metric": "percentile",
+      "value": 84.5
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 84.9
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 85
+    }
+  },
+  {
+    "planKey": "충남대학교-사회학과-가",
+    "admissionYear": 2026,
+    "university": "충남대학교",
+    "department": "사회학과",
+    "group": "가",
+    "quota": 20,
+    "competitionRate": 6.49,
+    "additionalPassCount": 13,
+    "cut70": {
+      "metric": "percentile",
+      "value": 84.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 85.3
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 85.4
+    }
+  },
+  {
+    "planKey": "충남대학교-컴퓨터융합학부-가",
+    "admissionYear": 2024,
+    "university": "충남대학교",
+    "department": "컴퓨터융합학부",
+    "group": "가",
+    "quota": 48,
+    "competitionRate": 6.75,
+    "additionalPassCount": 27,
+    "cut70": {
+      "metric": "percentile",
+      "value": 87.8
+    }
+  },
+  {
+    "planKey": "충남대학교-컴퓨터융합학부-가",
+    "admissionYear": 2025,
+    "university": "충남대학교",
+    "department": "컴퓨터융합학부",
+    "group": "가",
+    "quota": 43,
+    "competitionRate": 7.48,
+    "additionalPassCount": 50,
+    "cut70": {
+      "metric": "percentile",
+      "value": 87.1
+    }
+  },
+  {
+    "planKey": "충남대학교-컴퓨터융합학부-가",
+    "admissionYear": 2026,
+    "university": "충남대학교",
+    "department": "컴퓨터융합학부",
+    "group": "가",
+    "quota": 42,
+    "competitionRate": 6.44,
+    "additionalPassCount": 56,
+    "cut70": {
+      "metric": "percentile",
+      "value": 87.6
+    }
+  },
+  {
+    "planKey": "충남대학교-기계공학부-나",
+    "admissionYear": 2024,
+    "university": "충남대학교",
+    "department": "기계공학부",
+    "group": "나",
+    "quota": 52,
+    "competitionRate": 6.33,
+    "additionalPassCount": 35,
+    "cut70": {
+      "metric": "percentile",
+      "value": 86.6
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 87
+    }
+  },
+  {
+    "planKey": "충남대학교-기계공학부-나",
+    "admissionYear": 2025,
+    "university": "충남대학교",
+    "department": "기계공학부",
+    "group": "나",
+    "quota": 49,
+    "competitionRate": 4.88,
+    "additionalPassCount": 63,
+    "cut70": {
+      "metric": "percentile",
+      "value": 86.1
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 86.5
+    }
+  },
+  {
+    "planKey": "충남대학교-기계공학부-나",
+    "admissionYear": 2026,
+    "university": "충남대학교",
+    "department": "기계공학부",
+    "group": "나",
+    "quota": 52,
+    "competitionRate": 5.09,
+    "additionalPassCount": 35,
+    "cut70": {
+      "metric": "percentile",
+      "value": 86.5
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 86.9
+    }
+  },
+  {
+    "planKey": "충남대학교-간호학과-가",
+    "admissionYear": 2024,
+    "university": "충남대학교",
+    "department": "간호학과",
+    "group": "가",
+    "quota": 42,
+    "competitionRate": 4.63,
+    "additionalPassCount": 55,
+    "cut70": {
+      "metric": "percentile",
+      "value": 87.4
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 87.8
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 87.9
+    }
+  },
+  {
+    "planKey": "충남대학교-간호학과-가",
+    "admissionYear": 2025,
+    "university": "충남대학교",
+    "department": "간호학과",
+    "group": "가",
+    "quota": 37,
+    "competitionRate": 5.82,
+    "additionalPassCount": 40,
+    "cut70": {
+      "metric": "percentile",
+      "value": 87
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 87.4
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 87.5
+    }
+  },
+  {
+    "planKey": "충남대학교-간호학과-가",
+    "admissionYear": 2026,
+    "university": "충남대학교",
+    "department": "간호학과",
+    "group": "가",
+    "quota": 40,
+    "competitionRate": 5.77,
+    "additionalPassCount": 30,
+    "cut70": {
+      "metric": "percentile",
+      "value": 87
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 87.4
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 87.5
+    }
+  },
+  {
+    "planKey": "강원대학교-경영학과-가",
+    "admissionYear": 2024,
+    "university": "강원대학교",
+    "department": "경영학과",
+    "group": "가",
+    "quota": 48,
+    "competitionRate": 6.58,
+    "additionalPassCount": 47,
+    "cut70": {
+      "metric": "percentile",
+      "value": 80.6
+    }
+  },
+  {
+    "planKey": "강원대학교-경영학과-가",
+    "admissionYear": 2025,
+    "university": "강원대학교",
+    "department": "경영학과",
+    "group": "가",
+    "quota": 47,
+    "competitionRate": 6.92,
+    "cut70": {
+      "metric": "percentile",
+      "value": 80.2
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 80.6
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 80.7
+    }
+  },
+  {
+    "planKey": "강원대학교-경영학과-가",
+    "admissionYear": 2026,
+    "university": "강원대학교",
+    "department": "경영학과",
+    "group": "가",
+    "quota": 44,
+    "competitionRate": 7.08,
+    "additionalPassCount": 14,
+    "cut70": {
+      "metric": "percentile",
+      "value": 80.3
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 80.7
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 80.8
+    }
+  },
+  {
+    "planKey": "강원대학교-경제·정보통계학부-나",
+    "admissionYear": 2024,
+    "university": "강원대학교",
+    "department": "경제·정보통계학부",
+    "group": "나",
+    "quota": 26,
+    "competitionRate": 4.66,
+    "additionalPassCount": 9,
+    "cut70": {
+      "metric": "percentile",
+      "value": 79.9
+    }
+  },
+  {
+    "planKey": "강원대학교-경제·정보통계학부-나",
+    "admissionYear": 2025,
+    "university": "강원대학교",
+    "department": "경제·정보통계학부",
+    "group": "나",
+    "quota": 28,
+    "competitionRate": 4.17,
+    "additionalPassCount": 33,
+    "cut70": {
+      "metric": "percentile",
+      "value": 79.4
+    }
+  },
+  {
+    "planKey": "강원대학교-경제·정보통계학부-나",
+    "admissionYear": 2026,
+    "university": "강원대학교",
+    "department": "경제·정보통계학부",
+    "group": "나",
+    "quota": 30,
+    "competitionRate": 7.19,
+    "additionalPassCount": 39,
+    "cut70": {
+      "metric": "percentile",
+      "value": 79.8
+    }
+  },
+  {
+    "planKey": "강원대학교-영어영문학과-다",
+    "admissionYear": 2024,
+    "university": "강원대학교",
+    "department": "영어영문학과",
+    "group": "다",
+    "quota": 22,
+    "competitionRate": 4.24,
+    "additionalPassCount": 30,
+    "cut70": {
+      "metric": "percentile",
+      "value": 78.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 79.3
+    }
+  },
+  {
+    "planKey": "강원대학교-영어영문학과-다",
+    "admissionYear": 2025,
+    "university": "강원대학교",
+    "department": "영어영문학과",
+    "group": "다",
+    "quota": 22,
+    "competitionRate": 7.16,
+    "additionalPassCount": 11,
+    "cut70": {
+      "metric": "percentile",
+      "value": 78.2
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 78.6
+    }
+  },
+  {
+    "planKey": "강원대학교-영어영문학과-다",
+    "admissionYear": 2026,
+    "university": "강원대학교",
+    "department": "영어영문학과",
+    "group": "다",
+    "quota": 26,
+    "competitionRate": 5.48,
+    "additionalPassCount": 12,
+    "cut70": {
+      "metric": "percentile",
+      "value": 78.5
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 78.9
+    }
+  },
+  {
+    "planKey": "강원대학교-컴퓨터공학과-가",
+    "admissionYear": 2024,
+    "university": "강원대학교",
+    "department": "컴퓨터공학과",
+    "group": "가",
+    "quota": 43,
+    "competitionRate": 6.94,
+    "additionalPassCount": 25,
+    "cut70": {
+      "metric": "percentile",
+      "value": 82.4
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 82.8
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 82.9
+    }
+  },
+  {
+    "planKey": "강원대학교-컴퓨터공학과-가",
+    "admissionYear": 2025,
+    "university": "강원대학교",
+    "department": "컴퓨터공학과",
+    "group": "가",
+    "quota": 37,
+    "competitionRate": 7.19,
+    "additionalPassCount": 26,
+    "cut70": {
+      "metric": "percentile",
+      "value": 81.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 82.3
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 82.4
+    }
+  },
+  {
+    "planKey": "강원대학교-컴퓨터공학과-가",
+    "admissionYear": 2026,
+    "university": "강원대학교",
+    "department": "컴퓨터공학과",
+    "group": "가",
+    "quota": 41,
+    "competitionRate": 6.49,
+    "additionalPassCount": 28,
+    "cut70": {
+      "metric": "percentile",
+      "value": 82.1
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 82.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 82.6
+    }
+  },
+  {
+    "planKey": "강원대학교-기계의용·메카트로닉스공학부-나",
+    "admissionYear": 2025,
+    "university": "강원대학교",
+    "department": "기계의용·메카트로닉스공학부",
+    "group": "나",
+    "quota": 46,
+    "competitionRate": 4.36,
+    "additionalPassCount": 46,
+    "cut70": {
+      "metric": "percentile",
+      "value": 80.5
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 81
+    }
+  },
+  {
+    "planKey": "강원대학교-기계의용·메카트로닉스공학부-나",
+    "admissionYear": 2026,
+    "university": "강원대학교",
+    "department": "기계의용·메카트로닉스공학부",
+    "group": "나",
+    "quota": 47,
+    "competitionRate": 5.79,
+    "additionalPassCount": 43,
+    "cut70": {
+      "metric": "percentile",
+      "value": 80.9
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 81.4
+    }
+  },
+  {
+    "planKey": "강원대학교-간호학과-가",
+    "admissionYear": 2024,
+    "university": "강원대학교",
+    "department": "간호학과",
+    "group": "가",
+    "quota": 37,
+    "competitionRate": 5.41,
+    "additionalPassCount": 48,
+    "cut70": {
+      "metric": "percentile",
+      "value": 85.2
+    }
+  },
+  {
+    "planKey": "강원대학교-간호학과-가",
+    "admissionYear": 2025,
+    "university": "강원대학교",
+    "department": "간호학과",
+    "group": "가",
+    "quota": 33,
+    "competitionRate": 4.72,
+    "cut70": {
+      "metric": "percentile",
+      "value": 84.9
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 85.3
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 85.4
+    }
+  },
+  {
+    "planKey": "강원대학교-간호학과-가",
+    "admissionYear": 2026,
+    "university": "강원대학교",
+    "department": "간호학과",
+    "group": "가",
+    "quota": 37,
+    "competitionRate": 6.93,
+    "additionalPassCount": 24,
+    "cut70": {
+      "metric": "percentile",
+      "value": 85
+    },
+    "cut50": {
+      "metric": "percentile",
+      "value": 85.4
+    },
+    "average": {
+      "metric": "percentile",
+      "value": 85.5
+    }
+  },
+  {
+    "planKey": "강원대학교-산림과학부-다",
+    "admissionYear": 2024,
+    "university": "강원대학교",
+    "department": "산림과학부",
+    "group": "다",
+    "quota": 31,
+    "competitionRate": 6.83,
+    "additionalPassCount": 16,
+    "cut70": {
+      "metric": "percentile",
+      "value": 76.4
+    }
+  },
+  {
+    "planKey": "강원대학교-산림과학부-다",
+    "admissionYear": 2025,
+    "university": "강원대학교",
+    "department": "산림과학부",
+    "group": "다",
+    "quota": 29,
+    "competitionRate": 4.47,
+    "additionalPassCount": 19,
+    "cut70": {
+      "metric": "percentile",
+      "value": 76.1
+    }
+  },
+  {
+    "planKey": "강원대학교-산림과학부-다",
+    "admissionYear": 2026,
+    "university": "강원대학교",
+    "department": "산림과학부",
+    "group": "다",
+    "quota": 32,
+    "competitionRate": 5.8,
+    "additionalPassCount": 17,
+    "cut70": {
+      "metric": "percentile",
+      "value": 76.6
+    }
+  }
+]

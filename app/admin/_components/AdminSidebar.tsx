@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, FileText, ClipboardCheck } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  FileText,
+  ClipboardCheck,
+  Gift,
+  CreditCard,
+  LineChart,
+} from "lucide-react";
 
 import { useSidebar } from "./AdminLayoutClient";
 import styles from "./AdminSidebar.module.css";
@@ -27,6 +35,21 @@ const MENU_ITEMS = [
     label: "리포트 관리",
     href: "/admin/reports",
     icon: ClipboardCheck,
+  },
+  {
+    label: "정시 분석",
+    href: "/admin/jeongsi",
+    icon: LineChart,
+  },
+  {
+    label: "결제 관리",
+    href: "/admin/payments",
+    icon: CreditCard,
+  },
+  {
+    label: "추천인 코드",
+    href: "/admin/referral-codes",
+    icon: Gift,
   },
 ] as const;
 

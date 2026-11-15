@@ -30,7 +30,7 @@ const RecordPage = async () => {
     .from("records")
     .select("id, submission_type, text_verified, created_at, updated_at")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   const { data: generalSubjects } = record
     ? await supabase
@@ -42,6 +42,17 @@ const RecordPage = async () => {
         .order("year")
         .order("semester")
     : { data: null };
+
+  const hasPaidOrder = record
+    ? await supabase
+        .from("orders")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("record_id", record.id)
+        .neq("status", "pending_payment")
+        .limit(1)
+        .then(({ data }) => (data?.length ?? 0) > 0)
+    : false;
 
   return (
     <>
@@ -82,6 +93,7 @@ const RecordPage = async () => {
               gradeRank: g.grade_rank,
             })) ?? []
           }
+          hasPaidOrder={hasPaidOrder}
         />
       </main>
       <Footer />

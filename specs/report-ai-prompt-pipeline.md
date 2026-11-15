@@ -1036,7 +1036,7 @@ AI 프롬프트 생성 시 아래 양적 기준을 준수하여 경쟁사 수준
 
 - **Lite**: 공통 항목 + 간단 해석 (3~5줄)
 - **Standard**: + 과목별 원점수-평균-표준편차 실질 위치 분석 (subjectStatAnalyses), 과목 간 편차 리스크 (gradeDeviationAnalysis), 전공 관련 교과 이수 노력/성취도 (majorRelevanceAnalysis), 고교 유형별 환산 (schoolTypeAdjustment), 등급 변화 가능성 (gradeChangeAnalysis), 진로선택과목 분석 (careerSubjectAnalyses), 소인수 과목 분석 (smallClassSubjectAnalyses), 성적 인플레이션 맥락 (gradeInflationContext)
-- **Premium**: Standard 전체 + 5등급제 전환 시뮬레이션 (fiveGradeSimulation: 5등급제 등급별 비율 1등급 10%/2등급 24%/3등급 32%/4등급 24%/5등급 10% 기준으로 환산), 대학별 반영 방법 시뮬레이션 (universityGradeSimulations: 해석 부분 **최소 3~4줄**), 성적 개선 우선순위 (improvementPriority)
+- **Premium**: Standard 전체 + 5등급제 전환 시뮬레이션 (fiveGradeSimulation: 5등급제 등급별 비율 1등급 10%/2등급 24%/3등급 32%/4등급 24%/5등급 10% 기준으로 환산), 성적 개선 우선순위 (improvementPriority)
   - **주의**: Premium은 하위 플랜보다 분석 과목 수가 더 많아야 합니다.
   - **표준편차 표현 주의**: "표준편차보다 높다/낮다"는 표현 금지. "원점수가 평균보다 N점 높음" 등으로 표현
   - **5등급제 등급 표기**: "상위 10%"는 "상위 10% 내" 또는 "상위 10% 위치"로 오해 소지 없이 표기
@@ -1591,7 +1591,7 @@ AI 프롬프트 생성 시 아래 양적 기준을 준수하여 경쟁사 수준
 
 ### 4.17 섹션 17: 입시 전략 + 대학 추천 (admissionStrategy)
 
-**조건**: 고2 이상 생기부 포함 시에만 생성. 고1만 있는 경우 directionGuide로 대체.
+**조건**: 고1 이상 학기가 하나라도 포함되면 생성. 학년에 따른 대체 섹션은 없다.
 
 **의존**: Group 4 결과 (weaknessAnalysis, admissionPrediction 등)
 
@@ -1635,7 +1635,7 @@ AI 프롬프트 생성 시 아래 양적 기준을 준수하여 경쟁사 수준
 
 - **Lite**: 추천 전형 방향(recommendedPath, 3~5줄) + 대학 추천(recommendations: **상향 2개 + 안정 2개 + 하향 2개 = 총 6개**, 대학명+학과+전형명+티어). **6개를 초과하지 않습니다.**
 - **Standard**: Lite + 전형별 상세 전략(typeStrategies: 학생부종합전형/학생부교과전형/정시(수능전형)) + 대학별 합격 가능성(chance+chanceRationale, **최소 3~4줄**) + 입시 데이터(admissionData) + 주의/유리 학교 유형(schoolTypeAnalysis)
-- **Premium**: Standard + 수능 최저 전략(csatMinimumStrategy) + 6장 카드 배분 시뮬레이션(applicationSimulation: **수시 6개 대학을 꽉 채워 추천 + 정시 1개 대학 추천**) + 대학별 학생부종합전형 가이드북 키워드 매칭(universityGuideMatching) + **대학 추천 총 18개** (상향 위주 조합 6개 + 안정 위주 조합 6개 + 하향 위주 조합 6개, **조합별 그룹핑하여 표시**)
+- **Premium**: Standard + 수능 최저 전략(csatMinimumStrategy) + 6장 카드 배분 시뮬레이션(applicationSimulation: **수시 6개 대학을 꽉 채워 추천 + 정시 1개 대학 추천**) + 대학별 학생부종합전형 가이드북 키워드 매칭(universityGuideMatching) + **대학 추천 총 18개** (상향 위주 조합 6개 + 안정 위주 조합 6개 + 하향 위주 조합 6개, **조합별 그룹핑하여 표시**, 후보군 최대 6개)
 
 > **서울대 학생부교과전형 금지**: 서울대는 학생부교과전형을 운영하지 않습니다. 대학 추천 시 "서울대 학생부교과전형"을 절대 생성하지 마세요.
 > **전형 명칭**: 모든 전형은 정식 명칭으로 표시합니다. (학생부종합전형, 학생부교과전형, 정시(수능전형))
@@ -1664,21 +1664,6 @@ AI 프롬프트 생성 시 아래 양적 기준을 준수하여 경쟁사 수준
 {recommendedCourseMatch}
 → 학생의 목표 계열 대비 권장과목 이수율을 입시 전략에 반영하세요.
 → 미이수 과목이 있다면 이것이 지원 시 불리할 수 있음을 안내하세요.
-```
-
-**고1 전용 대체 프롬프트 (directionGuide)**:
-
-```
-## 작업 (고1 전용)
-학생의 생기부에서 드러나는 관심 분야를 분석하여 방향 설정 가이드를 작성하세요.
-
-출력:
-- 적합한 계열/학과 방향 (recommendedTracks: 2~3개, 근거 포함)
-- 2학년 선택과목 추천 (subjectSelectionGuide: 과목명 + 선택 이유)
-  - 목표 계열에 따른 2028학년도 계열별 권장 선택과목 데이터를 활용하세요.
-  - 메디컬 지망 시 대학별 필수 과목(수학·과학)을 구체적으로 사전 안내하세요.
-  - 참조 데이터: {recommendedCourseMatch}
-- 향후 탐구 방향 제안 (preparationAdvice)
 ```
 
 ---
@@ -2446,7 +2431,6 @@ libs/report/
 
 | 조건                 | 영향                                                                                                                             |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| 고1 생기부만         | admissionStrategy를 directionGuide로 대체, 대학 추천 미제공                                                                      |
 | 모의고사 데이터 없음 | 정시 전략 미제공, "데이터 부족" 표시                                                                                             |
 | 목표 학과 미정       | 생기부 기반 학과 추천으로 대체, 전공 관련 분석은 추론 기반                                                                       |
 | 과목 수 > 12         | subjectAnalysis 배치 분할 호출                                                                                                   |

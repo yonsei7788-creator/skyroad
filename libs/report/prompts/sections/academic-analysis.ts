@@ -1,69 +1,180 @@
 /** 섹션 6: 성적 분석 (academicAnalysis) */
 
 import type { ReportPlan } from "../../types.ts";
+import { getMajorGroupLabel } from "../../constants/major-evaluation-criteria.ts";
 
 export interface AcademicAnalysisPromptInput {
   quantitativeAnalysis: string;
   preprocessedAcademicData: string;
   studentProfile: string;
+  gradingSystem: "5등급제" | "9등급제";
+  studentGrade: number;
+  isGraduate?: boolean;
+  /** Phase 2에서 감지된 생기부 기반 강점 계열 (예: "예체능교육", "의생명") */
+  detectedMajorGroup?: string;
+  /** 학년별 이수 완료 과목 요약 (이수 완료 과목 성적 개선 권고 방지용) */
+  completedSubjectsByYear?: string;
+  /** 학생이 입력한 수강 예정 과목 텍스트 */
+  plannedSubjects?: string;
+  isGyogwaOnly?: boolean;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 간략
-- 공통 항목(전과목 평균, 학년별 평균, 교과 조합별 평균, 등급 추이, 과목별 등급, 해석)을 출력합니다.
-- 간단 해석 (2~3줄)만 포함합니다.
-- subjectGrades는 **주요 5과목만** 출력합니다. 나머지 과목은 생략합니다.
-- subjectStatAnalyses, careerSubjectAnalyses, gradeInflationContext, gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 등 Standard+ 전용 필드는 출력하지 않습니다.
-
-⚠️ **분량 제한**: 이 섹션은 A4 1페이지 이내로 작성합니다.`,
+- 공통 항목(전과목 평균, 학년별 평균, 교과 조합별 평균, 등급 추이, 해석)을 출력합니다.
+- 해석은 **200자 이내**로 작성합니다.
+- subjectGrades 필드는 출력하지 마세요. 후처리에서 자동 주입됩니다.
+- subjectStatAnalyses, gradeInflationContext, gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis, schoolTypeAdjustment, careerSubjectAnalyses 등 Standard+ 전용 필드는 출력하지 않습니다.`,
   standard: `## 플랜별 출력: 상세
 공통 항목에 추가로 **아래 핵심 3개 필드만 반드시 출력**합니다:
 
-1. **gradeDeviationAnalysis** (필수): 과목 간 편차 리스크
-   형식: {"highestSubject": "영어", "lowestSubject": "수학", "deviationRange": 3, "riskAssessment": "과목 간 편차가 3등급으로..."}
+1. **gradeDeviationAnalysis** (필수): 과목 간 편차에 대한 **입학사정관 관점 해석**
+   형식: {"highestSubject": "영어", "lowestSubject": "수학", "deviationRange": 3, "riskAssessment": "입학사정관 해석..."}
+   ⚠️ riskAssessment에 단순히 "N등급 차이가 있다"로 끝내면 안 됩니다. 생기부를 보면 알 수 있는 사실입니다.
+   반드시 **입학사정관이 이 편차를 어떻게 해석하는지** 서술하세요:
+   - 예: "국수영 간 2등급 편차는 사정관이 '특정 교과 편중 학습'으로 판단할 수 있으며, 학종에서 학업역량의 균형성 평가에서 감점 요인입니다."
+   - 예: "수학-과학 간 편차가 작고 둘 다 상위 등급이므로, 사정관은 이공계 학업 기초가 탄탄하다고 판단할 것입니다."
 2. **majorRelevanceAnalysis** (필수): 전공 관련 교과 이수 노력/성취도
    형식: {"enrollmentEffort": "...", "achievement": "...", "recommendedSubjects": ["과목1", "과목2"]}
+   - ⚠️ recommendedSubjects의 각 항목은 반드시 **20자 이내**로 작성합니다. 20자 초과 금지.
 3. **gradeChangeAnalysis** (필수): 등급 변화 가능성
-   형식: {"currentTrend": "상승|유지|하락", "prediction": "...", "actionItems": ["항목1", "항목2"], "actionItemPriorities": ["high", "medium"]}
+   형식: {"currentTrend": "상승|유지|하락", "prediction": "...", "actionItems": ["목표+이유+기대효과를 담은 실행 항목 문장1", "...문장2"], "actionItemPriorities": ["high", "medium"]}
    - **actionItems는 반드시 1~3개의 구체적 실행 항목을 포함**해야 합니다. 빈 배열 금지.
-   - 상승 추세 → 유지/강화 전략, 하락 추세 → 반등 전략, 유지 → 다음 단계 전략을 제시하세요.
+   - ⛔ **actionItems는 string[] 형식만 허용.** object 배열 절대 금지. 올바른 예: ["전략1", "전략2"]. 잘못된 예: [{"item": "전략1", "note": "참고"}]
+   - 상승 추세 → 유지/강화 전략, 하락 추세 → 반등 전략, 유지 → 다음 단계 전략을 제시하되, **각 actionItem은 위 "컨설팅 서술 구조"에 따라 그 과목/영역을 선택한 이유와 기대 효과를 함께 담습니다.** "3등급 확보" 같은 목표 한 문장으로 끝내지 마세요.
+   - ⚠️ prediction은 위 "컨설팅 서술 구조"의 4단 흐름(현재 상태→문제 원인→개선 이유→기대 효과)으로 작성합니다. 성적 추이는 **발전가능성 역량의 직접 증거**이므로, "상승 추세는 사정관이 발전가능성을 높게 평가하는 핵심 근거", "하락 추세는 학업 태도에 대한 의문으로 이어질 수 있다" 등 대학 평가 관점의 의미를 반드시 포함하세요.
+   - prediction에서 학년 평균 수치를 인용할 때는 입력 데이터의 학기 등급(예: 1-1, 1-2)을 산술/가중평균하여 학년 평균을 계산해 사용합니다. 단일 학기 등급(예: 1학년 1학기 2.44)을 "1학년 평균"으로 표기하지 않습니다. 학년 평균을 계산하기 어려우면 "1학년 1학기" 같은 학기 단위로 정확히 명시하거나, 학년 추세는 "1학년 → 2학년에서 하락" 같이 수치 없이 추세만 서술합니다.
+   - actionItems는 학생이 앞으로 실행 가능한 것만 제시하세요. "이수 완료 과목 정보"에 나열된 과목은 확정된 성적이므로 조언 대상에서 제외하세요.
+     - ✅ "국어 교과 영역에서 2학년 선택과목 성적을 높이세요" (향후 이수 가능한 과목)
+     - ✅ "사회탐구 영역에서 사회와 문화, 윤리와 사상 등 선택과목 성적 확보가 중요합니다" (향후 이수 가능)
+   - 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis **3개 필드만** 출력합니다. 이 3개 외 추가 분석 필드는 절대 출력하지 마세요.
-- 각 필드의 텍스트(riskAssessment, enrollmentEffort, achievement, prediction 등)는 반드시 **200자 이내**로 작성합니다. 200자 초과 금지.
-- careerSubjectAnalyses는 **최대 3개**만 출력하며, 각 interpretation은 **100자 이내**로 작성합니다.
-- smallClassSubjectAnalyses, schoolTypeAdjustment, gradeInflationContext는 출력하지 않습니다.`,
+- 각 필드의 텍스트(riskAssessment, enrollmentEffort, achievement 등)는 반드시 **200자 이내**로 작성합니다. 단, gradeChangeAnalysis.prediction은 4단 서술 구조를 담기 위해 **300자 이내**까지 허용합니다.
+- careerSubjectAnalyses, smallClassSubjectAnalyses, schoolTypeAdjustment, gradeInflationContext는 출력하지 않습니다.
+- ⚠️ schoolTypeAdjustment는 절대 출력하지 마세요.`,
   premium: `## 플랜별 출력: 정밀
 Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 포함)**을 반드시 출력하고 (actionItems 빈 배열 금지), 추가로 다음을 출력합니다:
-- 5등급제 전환 시뮬레이션 (fiveGradeSimulation): **주요 5과목만** 배열 형태로 출력
-  - **subject, currentGrade, simulatedGrade 필드는 필수입니다. 절대 빈값이면 안 됩니다.**
-  - currentGrade: 학생의 현재 9등급제 등급 (정수)
-  - simulatedGrade: 5등급제 전환 시 등급 (정수)
-  - 전환 기준: 1등급→1, 2~3등급→2, 4~5등급→3, 6~7등급→4, 8~9등급→5
-  - 예시: {"subject": "국어", "currentGrade": 6, "simulatedGrade": 4, "interpretation": "5등급제 전환 시 6등급은 4등급으로 변환"}
-- 대학별 반영 방법 시뮬레이션 (universityGradeSimulations): **목표 대학 상위 3개만** 출력
-  - **모든 필드(university, department, reflectionMethod, calculatedScore, interpretation)에 값이 있어야 합니다. 빈 문자열 금지.**
-  - reflectionMethod: "학생부교과 등급 반영", "교과 평균 등급", "Z점수 환산" 등 구체적 방법
-  - calculatedScore: 실제 수치 또는 등급 (예: "2.85", "상위 30%")
-  - ⚠️ interpretation은 반드시 **80자 이내**로 핵심만 작성합니다 (테이블 셀이므로 간결해야 함).
-  - 데이터 부족으로 정밀 시뮬이 불가능하면 이 필드를 아예 생략하세요 (빈 배열 출력).
-- 성적 개선 우선순위 (improvementPriority): **3개 이내** 문자열 배열 형태, 각 항목 **50자 이내**
-  예시: "improvementPriority": ["수학 등급 개선 (현 3등급 → 2등급 목표)", "과학탐구 과목 성적 안정화"]
+- 5등급제 전환 시뮬레이션 (fiveGradeSimulation):
+  - ⚠️ **고1·고2 학생(5등급제 적용)** 만 출력. **고3/졸업생(9등급제 적용)** 은 빈 배열([])로 출력하세요.
+    - 9등급제 학생은 9등급제 입시 환경에서 평가받으므로 5등급제 환산값이 의사결정에 무관합니다. 출력하지 않습니다.
+  - 5등급제 학생 출력 형식:
+    - currentGrade: 학생의 현재 5등급제 등급 (정수, 1~5)
+    - simulatedGrade: currentGrade와 동일 값
+    - interpretation: 5등급제 환경에서의 해당 등급의 의미 해석 (예: "5등급제 1등급(상위 10%)으로, 동일 등급 내 동점자가 많아 원점수와 세특으로 차별화 필요")
+  - 5등급제 학생인 경우 **주요 5과목만** 배열 형태로 출력
+  - 5등급제 학생인 경우 **subject, currentGrade, simulatedGrade 필드는 필수**
+- 성적 개선 우선순위 (improvementPriority): **3개 이내** 문자열 배열 형태, 각 항목 **60~110자**
+  - 각 항목은 위 "컨설팅 서술 구조"에 따라 **그 과목/영역을 해당 순위로 선정한 근거**(반영 비중·전공 관련성·현재 약점/개선 여지)와 **기대 효과**를 함께 제시합니다. 목표만 나열하지 마세요. AI가 왜 이 과목을 우선으로 두는지 학생이 납득할 수 있어야 합니다.
+  ⛔ 이수 완료 과목의 성적 향상을 우선순위로 제시하면 안 됩니다. 반드시 향후 이수 가능한 과목/영역 기준으로 작성하세요.
+  - 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.
+  - ❌ "사회탐구 영역 선택과목 2등급 확보" (목표만 — 근거·기대효과 없음)
+  - ✅ "사회탐구 선택과목 2등급 확보 — 전공 강점 계열의 핵심 반영 교과이면서 현재 평균보다 낮아 개선 여지가 가장 크고, 끌어올리면 전체 평균과 전공 적합성을 동시에 높일 수 있어 1순위입니다."
+
+⚠️ **schoolTypeAdjustment 출력 금지.**
 
 ⚠️ **분량 제한 (반드시 준수)**:
-- 모든 필드 출력 가능하지만, 각 분석 텍스트(riskAssessment, enrollmentEffort, achievement, prediction 등)는 반드시 **200자 이내**로 작성합니다. 200자 초과 금지.
-- universityGradeSimulations의 interpretation은 **80자 이내**로 작성합니다 (테이블 내 간결 표시).
-- careerSubjectAnalyses는 **최대 5개**만 출력합니다. 5개 초과 금지.
+- 모든 필드 출력 가능하지만, 각 분석 텍스트(riskAssessment, enrollmentEffort, achievement 등)는 반드시 **200자 이내**로 작성합니다. 단, gradeChangeAnalysis.prediction은 4단 서술 구조를 담기 위해 **300자 이내**까지 허용합니다.
+- careerSubjectAnalyses 필드는 출력하지 않습니다.
 - subjectStatAnalyses 등 해석 필드도 각 **150자 이내**로 간결하게 서술합니다.
-- ⚠️ 이 섹션의 대학별 반영 방법 시뮬레이션 + 성적 개선 우선순위는 **A4 1페이지 이내**에 들어와야 합니다.`,
+- ⚠️ 이 섹션의 성적 개선 우선순위는 **A4 1페이지 이내**에 들어와야 합니다.`,
 };
 
-export const buildAcademicAnalysisPrompt = (
+// ── 교과전형 전용 플랜별 출력 (추세/편차/사정관 해석 개념 없음) ──
+const GYOGWA_PLAN_SPECIFIC: Record<ReportPlan, string> = {
+  lite: `## 플랜별 출력: 간략
+- 공통 항목(전과목 평균, 학년별 평균, 등급 추이, 해석)을 출력합니다.
+- 해석은 **200자 이내**로 작성합니다.
+- subjectGrades 필드는 출력하지 마세요. 후처리에서 자동 주입됩니다.`,
+  standard: `## 플랜별 출력: 상세
+공통 항목에 추가로 **아래 핵심 3개 필드만 반드시 출력**합니다:
+
+1. **gradeDeviationAnalysis** (필수): 최고/최저 과목과 최종 평균의 합격선 대비 위치
+   형식: {"highestSubject": "통합사회", "lowestSubject": "영어 I", "deviationRange": 3, "riskAssessment": "..."}
+   riskAssessment 작성법: "최종 평균 N등급은 합격선 대비 ~한 위치입니다" 형식으로만 작성하세요.
+   - 모범 예시: "최종 평균 2.55등급으로, 2학년 1학기 하락 이후 반등에 성공한 점은 긍정적입니다. 전체 평균을 끌어올리는 것이 핵심입니다."
+2. **majorRelevanceAnalysis** (필수): 전공 관련 교과 이수 현황
+   형식: {"enrollmentEffort": "...", "achievement": "...", "recommendedSubjects": ["과목1", "과목2"]}
+   - ⚠️ recommendedSubjects의 각 항목은 반드시 **20자 이내**로 작성합니다. 20자 초과 금지.
+3. **gradeChangeAnalysis** (필수): **합격선 도달을 위한 남은 학기 목표**
+   형식: {"currentTrend": "상승|유지|하락", "prediction": "...", "actionItems": ["구체적 실행 항목1", "구체적 실행 항목2"], "actionItemPriorities": ["high", "medium"]}
+   - **actionItems는 반드시 1~3개의 구체적 실행 항목을 포함.** 빈 배열 금지.
+   - ⛔ **actionItems는 string[] 형식만 허용.** object 배열 절대 금지.
+   - 각 actionItem은 위 "컨설팅 서술 구조"에 따라 그 과목/영역이 전체 평균에 미치는 영향과 기대 효과를 함께 담습니다. "3등급 확보" 같은 목표만 제시하지 마세요.
+   - prediction: 위 "컨설팅 서술 구조"의 4단 흐름으로, 학생 입력의 마지막 학기 정보를 보고, 아직 이수하지 않은 가장 가까운 학기에서 평균 N등급을 달성하면 최종 평균이 X등급이 되어 합격선 도달 가능 형태로 작성. 졸업생이거나 모든 학기 이수 완료 시에는 "현재 평균 X등급은 합격선 대비 ~한 위치" 형태로 작성. 특정 학년·학기 표현은 학생 프로필의 "현재 시점", "입력된 마지막 학기" 정보와 일치하는 시점만 사용합니다.
+   - actionItems는 학생이 앞으로 실행 가능한 것만 제시하세요. "~를 보완하세요" 대신 남은 학기에 무엇을 어떻게 해야 전체 평균이 합격선에 도달하는지로 작성하세요.
+
+⚠️ **분량 제한 (반드시 준수)**:
+- 위 3개 필드만 출력. 추가 분석 필드 절대 출력 금지.
+- 각 텍스트 필드는 **200자 이내**.`,
+  premium: `## 플랜별 출력: 정밀
+Standard의 **모든 필수 항목(gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 포함)**을 Standard와 동일한 규칙으로 출력하고, 추가로:
+- 5등급제 전환 시뮬레이션 (fiveGradeSimulation): **고1·고2 학생만** 주요 5과목 배열로 출력. **고3/졸업생은 빈 배열([])로 출력**.
+- 성적 개선 우선순위 (improvementPriority): 3개 이내 문자열 배열, 각 60~110자
+  - 각 항목은 위 "컨설팅 서술 구조"에 따라 그 영역을 해당 순위로 선정한 근거(반영 비중·개선 여지)와 기대 효과(전체 평균 상승)를 함께 제시합니다. 목표만 나열하지 마세요.
+  ⛔ 이수 완료 과목 성적 향상을 우선순위로 제시하면 안 됩니다.
+  - 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.
+
+⚠️ **schoolTypeAdjustment 출력 금지.**
+⚠️ 각 분석 텍스트는 **200자 이내**.
+⚠️ gradeDeviationAnalysis.riskAssessment, gradeChangeAnalysis.prediction은 "최종 평균 N등급은 합격선 대비 ~" 형식으로만 작성하세요.`,
+};
+
+/**
+ * 교과전형 전용 성적 분석 프롬프트.
+ * 추세/편차의 유불리 해석, 사정관 관점, 발전가능성 개념이 존재하지 않음.
+ * 최종 등급과 합격선 비교 중심.
+ */
+export const buildGyogwaAcademicAnalysisPrompt = (
   input: AcademicAnalysisPromptInput,
   plan: ReportPlan
 ): string => {
-  return `## 작업
-정량 분석 결과를 바탕으로 학생의 교과 성적에 대한 해석과 전략적 분석을 작성하세요.
+  const gradingSystemWarning =
+    input.gradingSystem === "5등급제"
+      ? `⚠️⚠️⚠️ **최우선 규칙: 이 학생은 5등급제 적용 학생입니다 (고1·고2, 2022 개정 교육과정)**
+- 이 학생의 등급은 1~5 범위입니다. 절대 6~9등급이 존재하지 않습니다.
+- fiveGradeSimulation 출력 시: currentGrade = 학생의 실제 5등급제 등급, simulatedGrade = currentGrade와 동일 값
+- 5등급제 비율: 1등급(상위 10%), 2등급(상위 34%), 3등급(상위 66%), 4등급(상위 90%), 5등급(하위 10%)`
+      : `⚠️ 이 학생은 9등급제 적용 학생입니다 (고3/졸업생, 2015 개정 교육과정)
+- 이 학생의 등급은 1~9 범위입니다.
+- fiveGradeSimulation 출력 시: 9등급→5등급 전환 시뮬레이션을 수행하세요.`;
+
+  return `${gradingSystemWarning}
+
+## ⚠️ 환산 등급 노출 금지 (필수)
+- "환산 등급", "보정 등급", "환산 내신", "보정 내신" 등의 표현을 절대 사용하지 마세요.
+- schoolTypeAdjustment 필드를 출력하지 마세요.
+
+## 데이터 시점 사용 원칙 (필수)
+- 학생 프로필의 "입력된 마지막 학기" 정보까지의 등급만 사실로 서술합니다.
+- overallAverageGrade(전체 평균)는 입력된 모든 학기의 합산 평균이며 특정 학기의 등급이 아닙니다. interpretation, riskAssessment, prediction 등에서 전체 평균을 특정 학기의 등급(예: "3학년 1학기 평균이 X")으로 표현하지 않습니다.
+- 입력에 없는 학기의 등급을 사실인 것처럼 서술하지 않습니다. 그 이후 학기는 "남은 학기", "앞으로의 기간" 등 미래형 표현만 사용합니다.
+
+## 작업
+이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.
+
+이 학생은 모든 희망대학이 **학생부교과전형**입니다.
+정량 분석 결과를 바탕으로, **최종 등급과 합격선 비교** 중심의 성적 분석을 작성하세요.
+
+## 서술 관점: 데이터 분석가
+이 섹션은 **수치와 추이 중심**으로 서술합니다. 등급 변화량, 편차, 패턴을 강조하세요.
+
+## ⛔ 다른 섹션과의 역할 경계 (필수)
+이 섹션은 **성적 데이터의 정량 해석을 담당하는 유일한 섹션**입니다. 다른 섹션에서 등급 수치를 상세히 다루지 않으므로, 여기서 충분히 서술하세요.
+단, 아래 내용은 다른 섹션의 영역이므로 **절대 언급하지 마세요**:
+- ❌ 약점 진단/보완 방향 (예: "~가 부족하므로 ~를 보완해야 한다") → weaknessAnalysis에서 다룸
+- ❌ 합격 가능성 판단 (예: "~대학 합격이 어렵다/가능하다") → admissionPrediction에서 다룸
+- ❌ 입시 전략 제안 (예: "~전형이 유리하다") → admissionStrategy에서 다룸
+- ❌ 세특 내용 평가 (예: "탐구 깊이가 부족하다") → subjectAnalysis에서 다룸
+- ✅ 이 섹션에서 할 것: 등급 수치, 추세, 편차, 과목별 성적 패턴의 **사실적 해석**
+
+## 교과전형 성적 분석 핵심 원칙
+- 교과전형은 **최종 평균 등급**으로만 합격 여부가 결정됩니다.
+- 성적 분석은 "최종 평균 등급이 합격선 대비 어디에 위치하는가"에 집중하세요.
+- interpretation 작성 시 최종 평균 등급과 대학 합격선 비교만 서술하세요.
+- ✅ 좋은 예시: "최종 평균 2.41등급으로, 전공 핵심 과목 평균이 전체 평균보다 0.5등급 높아 전공 적합성이 강점입니다."
+- ✅ 좋은 예시: "전교과 평균 2.41등급은 광운대·명지대 합격선에 여유가 있습니다."
 
 ## 입력 데이터
 
@@ -76,6 +187,163 @@ ${input.preprocessedAcademicData}
 ### 학생 프로필
 ${input.studentProfile}
 
+${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}` : ""}
+
+${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}` : ""}
+
+## 출력 JSON 스키마
+
+중요: gradesByYear, subjectGrades 배열의 각 요소는 반드시 완전한 객체여야 합니다. gradeTrend는 반드시 "상승", "유지", "하락" 중 하나여야 합니다.
+
+{
+  "sectionId": "academicAnalysis",
+  "title": "학업 분석",
+  "overallAverageGrade": "<전처리 overallAverage 값 그대로 (number)>",
+  "gradesByYear": "<전처리 averageByGrade 배열 그대로 (array of {year, semester, averageGrade})>",
+  "gradeTrend": "<전처리 gradeTrend.direction 한글 변환 (상승|유지|하락)>",
+  "subjectGrades": "<후처리 자동 주입, 빈 배열로 두어도 됨>",
+  "interpretation": "<학생의 실제 최종 평균 등급(전처리 overallAverage)으로 시작하여 교과전형 합격선 대비 위치를 서술. 환산/보정 표현 금지. 200자 이내>"
+}
+Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다 (아래 플랜별 출력 참조).
+⚠️ subjectCombinations, subjectGrades 필드는 출력하지 마세요. 후처리에서 자동 주입됩니다.
+
+## 데이터 출처 구분 (필수 준수)
+
+⚠️ **아래 필드는 코드에서 확정된 수치입니다. 절대 직접 계산하거나 다른 값을 출력하지 마세요.**
+후처리에서 코드값으로 강제 덮어쓰기되므로, AI가 다른 값을 출력해도 무시됩니다.
+
+- **코드 전처리 → 그대로 복사**:
+  - overallAverageGrade: 전처리 결과의 "overallAverage" 값을 그대로 복사
+  - gradesByYear: 전처리 결과의 "averageByGrade" 배열을 그대로 복사
+  - gradeTrend: 전처리 결과의 "gradeTrend.direction"을 한글로 변환 (ascending→상승, stable→유지, descending→하락)
+- **AI 해석 → 생성**: interpretation, gradeDeviationAnalysis, majorRelevanceAnalysis, gradeChangeAnalysis 등
+
+⚠️ **데이터 부족 시**: 빈 문자열 출력 금지. 가용 정보를 활용해 작성하세요.
+
+## 비핵심 과목 구분
+
+아래 과목은 교과전형에서도 전 과목 반영 시 포함되지만, 핵심 변별 과목이 아닙니다:
+- 기술·가정, 정보, 제2외국어, 한문, 교양
+- 체육, 음악, 미술 (예체능 지원자 제외)
+이 과목의 성적이 낮더라도 "핵심 약점"으로 지목하지 마세요.
+핵심 과목: 국어, 수학, 영어, 사회탐구, 과학탐구.
+
+## 생기부 기반 강점 계열
+
+**이 학생의 생기부 기반 강점 계열: "${getMajorGroupLabel(input.detectedMajorGroup ?? "미확정")}"**
+- "희망 전공", "희망 학과" 등 희망학과를 전제로 한 표현을 사용하지 마세요.
+- 위 강점 계열 기준으로 서술하세요.
+
+## 출력 지시
+
+### 전 플랜 공통
+- 전과목 평균 등급 (overallAverageGrade)
+- 학년/학기별 평균 등급 (gradesByYear)
+- 학년별 등급 추이 (gradeTrend: 상승/유지/하락)
+- 과목별 등급 요약 테이블 (subjectGrades)
+- 해석 (interpretation): **최종 평균 등급이 교과전형 합격선 대비 어디에 위치하는지만** 서술.
+  - ✅ "최종 평균 2.55등급으로, 전공 핵심 과목 평균이 전체 평균보다 우수하여 전공 적합성이 강점입니다."
+  - ✅ "전교과 평균 2.41등급으로, 광운대·명지대 교과전형에서 합격 가능성이 있습니다."
+  - ✅ "국영수사과 평균 2.45등급, 전교과 평균 2.41등급으로, 교과 조합별 평균이 전체 평균보다 높아 주요 과목 학습이 탄탄합니다."
+3. improvementPriority에 "반영 과목에서 높은 등급" 같은 조언이 있지 않은가? → "전체 평균 등급을 끌어올리는 것이 최우선"으로 대체
+
+## 컨설팅 서술 구조 (필수) — gradeChangeAnalysis와 improvementPriority에 적용
+
+학생이 이미 아는 사실의 반복(예: "성적을 올려야 합니다", "3등급 확보")은 컨설팅 가치가 없습니다. 교과전형 조언은 아래 4단 흐름을 담아 작성하세요.
+
+1. **현재 상태** — 최종 평균 등급과 합격선 대비 위치
+2. **문제 원인** — 평균을 끌어내린 과목/학기 등 구조적 원인
+3. **개선 이유** — 그 영역을 개선해야 하는 이유를 **합격선 도달 관점**에서 설명 (해당 영역이 전체 평균에 미치는 영향)
+4. **기대 효과** — 개선 시 최종 평균·합격 가능성이 어떻게 달라지는지 (가능하면 수치로)
+
+- **prediction**: 아직 이수하지 않은 가장 가까운 학기에서 평균 N등급 달성 시 최종 평균이 X등급이 되어 목표 합격선에 도달하는 경로를 위 흐름으로 서술합니다.
+- **actionItems**: 각 항목에 "무엇을 한다"와 함께 **그 과목/영역이 전체 평균에 미치는 영향(왜 이 영역인지)과 기대 효과**를 담습니다. "3등급 확보" 같은 목표 한 문장으로 끝내지 마세요.
+- **improvementPriority**: 각 항목에 **그 영역을 해당 순위로 선정한 근거**(반영 비중·개선 여지)와 기대 효과(전체 평균 상승폭)를 함께 제시합니다.
+
+${GYOGWA_PLAN_SPECIFIC[plan]}`;
+};
+
+export const buildAcademicAnalysisPrompt = (
+  input: AcademicAnalysisPromptInput,
+  plan: ReportPlan
+): string => {
+  const gradingSystemWarning =
+    input.gradingSystem === "5등급제"
+      ? `⚠️⚠️⚠️ **최우선 규칙: 이 학생은 5등급제 적용 학생입니다 (고1·고2, 2022 개정 교육과정)**
+- 이 학생의 등급은 1~5 범위입니다. 절대 6~9등급이 존재하지 않습니다.
+- "9등급제 N등급은 5등급제 N등급으로 변환" 같은 표현을 사용하면 안 됩니다.
+- fiveGradeSimulation 출력 시: currentGrade = 학생의 실제 5등급제 등급, simulatedGrade = currentGrade와 동일 값
+- interpretation: "5등급제 N등급(상위 X%)" 형태로 5등급제 환경에서의 의미를 해석하세요.
+- 5등급제 비율: 1등급(상위 10%), 2등급(상위 34%), 3등급(상위 66%), 4등급(상위 90%), 5등급(하위 10%)
+
+### 5등급제 성적 분석 심화 원칙 (반드시 적용)
+1. **원점수 기반 실질 위치 분석**: 5등급제는 등급 구간이 넓어 동일 등급 내 학생 수가 많습니다. 따라서 등급만으로 평가하지 말고, 반드시 원점수가 과목 평균 대비 어느 위치인지, 표준편차 대비 몇 시그마 위인지를 분석하세요. 예: "2등급이지만 원점수 87점은 평균(66.4) 대비 +20.6점으로, 2등급 내에서도 상위권에 해당합니다."
+2. **성적 인플레이션 맥락**: 5등급제 도입 후 고1 주요 5과목 평균이 70.1점(전년 67.1점 대비 3점 상승)으로 1등급 학생 수가 증가했습니다. 이로 인해 동일 등급 내 동점자가 많아져 실질적 경쟁이 심화되고 있으므로, "N등급은 우수합니다" 같은 단순 평가가 아니라 원점수·수강자수·세특 차별화 관점에서 해석하세요.
+3. **수강자 수와 경쟁 신뢰도**: 수강자 수가 많을수록(200명+) 해당 등급의 신뢰도가 높습니다. 소수 선택과목(5명 이하)은 소인수 과목으로 성취도+등급 병기 대상이므로 맥락적으로 해석하세요.
+4. **교과전형 변화 반영**: 5등급제 도입으로 교과전형에서도 서류종합평가를 부분 반영하는 대학이 확대되고 있습니다(동국대 등). 등급만으로 변별이 어려워져 세특·선택과목 이수 현황이 추가 평가 요소로 활용됩니다.`
+      : `⚠️ 이 학생은 9등급제 적용 학생입니다 (고3/졸업생, 2015 개정 교육과정)
+- 이 학생의 등급은 1~9 범위입니다.
+- fiveGradeSimulation 출력 시: 9등급→5등급 전환 시뮬레이션을 수행하세요.`;
+
+  const gyogwaOnlyContext = input.isGyogwaOnly
+    ? `## ⛔ 교과전형 전용 (이 규칙이 다른 모든 지시보다 우선)
+이 학생은 모든 희망대학이 학생부교과전형입니다.
+- "학종", "학생부종합전형", "사정관이 ~로 판단" 등의 표현을 사용하지 마세요.
+- 성적 분석은 최종 등급과 교과 조합 평균 중심으로 작성하세요.
+- 교과전형 평가는 최종 평균 등급과 합격선 비교가 전부입니다. 개별 과목이나 학기별 등급 변동은 교과전형 평가에 영향을 주지 않습니다.
+
+`
+    : "";
+
+  return `${gyogwaOnlyContext}${gradingSystemWarning}
+
+## ⚠️ 환산 등급 노출 금지 (필수)
+- ⚠️ **"환산 등급", "보정 등급", "환산 내신", "보정 내신" 등의 표현을 리포트 텍스트에 절대 사용하지 마세요.**
+- ⚠️ **schoolTypeAdjustment 필드를 출력하지 마세요.**
+- 리포트에 노출되는 모든 수치(overallAverageGrade, gradesByYear 등)는 원래 등급을 그대로 사용하세요.
+
+## 데이터 시점 사용 원칙 (필수)
+- 학생 프로필의 "입력된 마지막 학기" 정보까지의 등급·세특·활동만 사실로 서술합니다.
+- 그 이후 학기(예: 다음 학기, 내년)는 "남은 학기", "앞으로의 기간" 등 미래형 표현만 사용합니다.
+- overallAverageGrade(전체 평균)는 입력된 모든 학기의 합산 평균이며 특정 학기의 등급이 아닙니다. interpretation, gradeChangeAnalysis.prediction 등에서 전체 평균을 특정 학기의 등급(예: "3학년 1학기 평균이 X")으로 표현하지 않습니다.
+- subjectStatAnalyses에서 학기별 등급을 인용할 때는 입력 데이터에 실제 존재하는 학기만 사용합니다. 입력에 없는 학기의 등급(예: "3학년 1학기 X등급으로 회복했다")을 사실인 것처럼 서술하지 않습니다.
+
+## 작업
+정량 분석 결과를 바탕으로 학생의 교과 성적에 대한 해석과 전략적 분석을 작성하세요.
+
+## 이 섹션의 역할
+이 학생은 현재 **${input.studentGrade}학년**입니다. 이 학년에 맞는 분석과 제안을 하세요.
+
+**성적 수치 기반의 추이·편차·변화 패턴**을 분석합니다.
+세특 내용 분석은 subjectAnalysis, 과목 이수 구조는 courseAlignment, 활동 분석은 activityAnalysis에서 각각 다루므로, 여기서는 등급·점수 데이터에 기반한 정량 분석에 집중합니다.
+## 서술 관점: 데이터 분석가
+이 섹션은 **수치와 추이 중심**으로 서술합니다. 등급 변화량, 편차, 패턴을 강조하세요.
+- 같은 성적 사실도 "N등급에서 N등급으로 X점 변동", "평균 대비 ±N등급 편차" 등 정량적 표현을 사용하세요.
+
+## ⛔ 다른 섹션과의 역할 경계 (필수)
+이 섹션은 **성적 데이터의 정량 해석을 담당하는 유일한 섹션**입니다. 다른 섹션에서 등급 수치를 상세히 다루지 않으므로, 여기서 충분히 서술하세요.
+단, 아래 내용은 다른 섹션의 영역이므로 **절대 언급하지 마세요**:
+- ❌ 약점 진단/보완 방향 (예: "~가 부족하므로 ~를 보완해야 한다") → weaknessAnalysis에서 다룸
+- ❌ 합격 가능성 판단 (예: "~대학 합격이 어렵다/가능하다") → admissionPrediction에서 다룸
+- ❌ 입시 전략 제안 (예: "~전형이 유리하다") → admissionStrategy에서 다룸
+- ❌ 세특 내용 평가 (예: "탐구 깊이가 부족하다") → subjectAnalysis에서 다룸
+- ✅ 이 섹션에서 할 것: 등급 수치, 추세, 편차, 과목별 성적 패턴의 **사실적 해석**
+
+## 입력 데이터
+
+### 정량 분석 결과
+${input.quantitativeAnalysis}
+
+### 성적 전처리 결과 (코드 계산 완료)
+${input.preprocessedAcademicData}
+
+### 학생 프로필
+${input.studentProfile}
+
+${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}` : ""}
+
+${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}` : ""}
+
 ## 출력 JSON 스키마
 
 중요: gradesByYear, subjectCombinations, subjectGrades 배열의 각 요소는 반드시 완전한 객체여야 합니다. gradeTrend는 반드시 "상승", "유지", "하락" 중 하나여야 합니다.
@@ -83,21 +351,12 @@ ${input.studentProfile}
 {
   "sectionId": "academicAnalysis",
   "title": "학업 분석",
-  "overallAverageGrade": 2.85,
-  "gradesByYear": [
-    {"year": 1, "semester": 1, "averageGrade": 3.20},
-    {"year": 1, "semester": 2, "averageGrade": 2.90},
-    {"year": 2, "semester": 1, "averageGrade": 2.60}
-  ],
-  "subjectCombinations": [
-    {"combination": "국수영사", "averageGrade": 2.50},
-    {"combination": "국수영과", "averageGrade": 3.10}
-  ],
-  "gradeTrend": "상승",
-  "subjectGrades": [
-    {"subject": "국어", "year": 1, "semester": 1, "grade": 3, "rawScore": 78, "classAverage": 65.2, "standardDeviation": 12.5, "studentCount": 250}
-  ],
-  "interpretation": "전체 평균 2.85등급으로 상위권에 위치하며, 학기별 등급이 점진적으로 상승하는 추세..."
+  "overallAverageGrade": "<전처리 overallAverage 값 그대로 (number)>",
+  "gradesByYear": "<전처리 averageByGrade 배열 그대로 (array of {year, semester, averageGrade})>",
+  "subjectCombinations": "<전처리 subjectCombinations 배열에서 name→combination, average→averageGrade로 매핑한 그대로>",
+  "gradeTrend": "<전처리 gradeTrend.direction 한글 변환 (상승|유지|하락)>",
+  "subjectGrades": "<후처리 자동 주입, 빈 배열로 두어도 됨>",
+  "interpretation": "<학생의 실제 최종 평균 등급(전처리 overallAverage)으로 시작하여 입학사정관 관점의 해석을 서술. 환산/보정 표현 금지>"
 }
 Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다 (아래 플랜별 출력 참조).
 
@@ -121,20 +380,24 @@ Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다
   → 이 필드들은 전처리 데이터를 바탕으로 해석하여 작성하세요.
   → interpretation에서 언급하는 평균 등급은 반드시 전처리 결과의 overallAverage 값과 동일해야 합니다.
 
-## 비핵심 과목 구분 (필수 준수)
+## 비핵심 과목 구분 (시스템 프롬프트 규칙 적용)
+- **gradeChangeAnalysis, gradeDeviationAnalysis 등에서 비핵심 과목을 핵심 약점으로 지목하지 마세요.**
+- 핵심 평가 과목은 국어, 수학, 영어, 사회탐구(한국사, ${input.gradingSystem === "5등급제" ? "사회와 문화, 정치, 법과 사회, 경제" : "사회·문화, 정치와법, 경제"} 등), 과학탐구(물리학, 화학, 생명과학, 지구과학 등)입니다.
+- 입력 데이터에는 일반선택·공통과목만 들어 있습니다. 모든 AI 생성 필드는 입력에 존재하는 과목만 사용하여 작성하세요.
+- careerSubjectAnalyses 필드는 출력하지 않습니다.
 
-⚠️ **아래 과목군은 학종 서류 평가에서 핵심 평가 대상이 아닙니다.**
-이 과목들의 성적이 낮더라도 "약점", "발목", "불리" 등으로 표현하지 마세요.
+## ⚠️ 생기부 기반 강점 계열 (필수 준수)
 
-- **성실성 확인 과목**: 기술·가정, 정보, 제2외국어(일본어, 중국어, 독일어 등), 한문, 교양, 진로와 직업
-- **예체능 과목**: 체육, 음악, 미술 (예체능 계열 지원자 제외)
+**이 학생의 생기부 기반 강점 계열: "${getMajorGroupLabel(input.detectedMajorGroup ?? "미확정")}"**
 
-이 과목들은 학종에서 "성실하게 수업에 참여했는가"를 확인하는 정도의 역할입니다.
-- 성적이 낮아도: "성실성 영역에서 참고 사항" 정도로 언급 (약점이라고 하면 안 됨)
-- 성적이 높아도: 핵심 경쟁력이라고 과대평가하지 마세요
-- **gradeChangeAnalysis, gradeDeviationAnalysis 등에서 이 과목들을 핵심 약점으로 지목하지 마세요.**
-
-핵심 평가 과목은 국어, 수학, 영어, 사회탐구(한국사, 사회·문화, 정치와법, 경제 등), 과학탐구(물리학, 화학, 생명과학, 지구과학 등)입니다.
+이 섹션의 모든 AI 생성 텍스트(interpretation, subjectStatAnalyses, gradeChangeAnalysis, gradeDeviationAnalysis, majorRelevanceAnalysis 등)에서:
+- **"희망 전공", "희망 학과", "~계열 진학 시", "~계열이라면" 등 희망학과를 전제로 한 조건부 표현을 절대 사용하지 마세요.**
+- **반드시 위에 명시된 "생기부 기반 강점 계열"을 기준으로 서술하세요.** AI가 독자적으로 계열을 추측하면 안 됩니다.
+- majorRelevanceAnalysis의 enrollmentEffort, achievement에서 반드시 "${getMajorGroupLabel(input.detectedMajorGroup ?? "미확정")}"을 기준으로 전공 관련 교과를 평가하세요.
+- ❌ BAD: "이공계열 관련 과목에서..." (생기부 강점 계열이 이공계열이 아닌데 임의로 언급)
+- ❌ BAD: "희망 전공이 공학 계열이라면 물리학 성적은 2등급 이내로 끌어올리는 것이 좋습니다"
+- ✅ GOOD: "${getMajorGroupLabel(input.detectedMajorGroup ?? "해당")} 진학을 위해, 관련 교과의 성적 보완이 필요합니다"
+- **gradeChangeAnalysis의 actionItems에서도 "${getMajorGroupLabel(input.detectedMajorGroup ?? "해당")}" 기준으로 서술하세요.**
 
 ## 출력 지시
 
@@ -144,7 +407,125 @@ Standard/Premium 플랜은 위 기본 필드에 추가 필드가 포함됩니다
 - 주요 교과 조합별 평균 (subjectCombinations: 국수영사, 국수영과 등)
 - 학년별 등급 추이 (gradeTrend: 상승/유지/하락)
 - 과목별 등급 요약 테이블 (subjectGrades)
-- 간단 해석 (interpretation: 성적 추이와 특징 요약)
+- 간단 해석 (interpretation): **단순 사실 나열이 아니라 입학사정관이 이 성적 구조를 어떻게 해석할지** 서술
+  - ❌ "전체 평균 2.42등급이며 상승 추세입니다" (사실 나열)
+  - ✅ "평균 2.42등급으로, 학종에서는 세특 품질에 따라 가능성이 열려 있습니다. 상승 추세(2.57→2.0)는 사정관이 긍정적으로 평가하는 요소입니다."
+
+## 컨설팅 서술 구조 (필수) — gradeChangeAnalysis와 improvementPriority에 적용
+
+학생이 이미 아는 사실의 반복(예: "성적을 올려야 합니다", "3등급을 확보하세요")은 컨설팅 가치가 없습니다. 성적 관련 조언은 아래 4단 흐름을 담아 **왜 중요하고 무엇을 기대할 수 있는지**까지 제시하세요.
+
+1. **현재 상태** — 데이터로 확인되는 현 위치 (등급·추세·편차)
+2. **문제 원인** — 그 상태가 만들어진 구조적 이유 또는 약점의 근원
+3. **개선 이유** — 그 부분을 개선해야 하는 이유를 **대학 평가(사정관) 관점**에서 설명 (사정관이 무엇을 보는지, 어떤 역량으로 해석되는지)
+4. **기대 효과** — 개선했을 때 평가상 생기는 구체적 이점
+
+- **prediction**: 위 4단 흐름으로 추세의 입시적 의미를 서술합니다. 추세 묘사로 끝내지 마세요.
+  - ✅ "현재 평균 2.5등급에서 3학년 들어 상승세입니다(현재 상태). 1·2학년 수학 편중 하락이 평균을 끌어내린 구조이나(원인), 상승 추세는 사정관이 발전가능성과 학업 태도를 긍정적으로 판단하는 핵심 근거입니다(개선 이유). 남은 학기 상승세를 유지하면 최종 평균이 2.3등급대로 진입해 상위 학과 지원 시 학업역량 신뢰도가 높아집니다(기대 효과)."
+- **actionItems**: 각 항목에 "무엇을 한다"와 함께 **그 과목/영역을 선택한 이유와 기대 효과**를 담습니다.
+  - ✅ "${getMajorGroupLabel(input.detectedMajorGroup ?? "해당")} 관련 사회탐구 선택과목을 2등급 이내로 확보하세요 — 사정관이 전공 적합성의 주요 근거로 보는 핵심 교과 영역이며, 여기서 상위 등급을 확보하면 전공 관련 학업역량이 뚜렷하게 부각됩니다."
+- **improvementPriority**: 각 항목에 **그 영역을 해당 순위로 선정한 근거**(반영 비중·전공 관련성·현재 약점/개선 여지)와 기대 효과를 함께 제시합니다.
+  - ✅ "사회탐구 선택과목 2등급 확보 — 전공 강점 계열의 핵심 반영 교과이면서 현재 평균보다 약 0.7등급 낮아 개선 여지가 가장 크고, 끌어올리면 전체 평균과 전공 적합성을 동시에 높일 수 있어 1순위입니다."
 
 ${PLAN_SPECIFIC[plan]}`;
+};
+
+/**
+ * 성적 확정 학생(졸업생, 또는 3학년으로 생기부가 최종 확정된 재학생) 전용
+ * academicAnalysis 프롬프트.
+ * 성적이 이미 확정되어 변경 불가하므로, 확정된 성적 데이터 자체에 대한 사실적
+ * 평가만 다룬다. 면접·서류·수능 등 정성 전형 요소 판단은 이 섹션의 범위가
+ * 아니므로 다루지 않는다(해당 판단은 admissionStrategy 등 다른 섹션 몫).
+ * 비확정 분기와 분리해 positive instruction만 사용 (Gemini 오판 방지).
+ */
+export const buildGraduateAcademicAnalysisPrompt = (
+  input: AcademicAnalysisPromptInput,
+  plan: ReportPlan
+): string => {
+  // 실제 졸업생이 아니면(3학년 재학생인데 생기부만 확정된 경우) "졸업생"이라고
+  // 부르면 사실과 다르므로, 실제 졸업 여부에 따라 표현을 분기한다.
+  const statusLabel = input.isGraduate
+    ? "졸업생"
+    : "3학년으로 생기부가 최종 확정된 재학생";
+
+  const gyogwaScope = input.isGyogwaOnly
+    ? "이 학생은 모든 희망대학이 학생부교과전형입니다. 최종 평균 등급과 합격선 비교가 평가의 전부이며, 학종 관점·사정관 해석 표현은 사용하지 않습니다."
+    : "이 학생은 학생부종합전형 중심으로 평가됩니다. 성적의 정량 해석과 함께 사정관 관점의 의미를 담아 작성합니다.";
+
+  const planAddendum =
+    plan === "premium"
+      ? `\n\n## Premium 추가 출력
+- fiveGradeSimulation: 빈 배열([])로 출력합니다. ${statusLabel}은 9등급제 환경에서 평가받으므로 5등급제 환산이 무의미합니다.
+- improvementPriority: 빈 배열([])로 출력합니다. 성적은 확정되었으므로 우선순위를 산정하지 않습니다.`
+      : "";
+
+  return `## 졸업생 전용 성적 분석 (positive instruction only)
+
+이 학생은 **${statusLabel}**입니다. 성적이 이미 확정되어 더 이상 변하지 않으므로, 이 섹션은 **확정된 성적 데이터 자체에 대한 사실적 평가**만 다룹니다.
+
+${gyogwaScope}
+
+## 분석 관점
+- 정량 분석가 관점에서 최종 평균 등급·학년별 추이·과목 편차를 객관적으로 해석합니다.
+- 모든 해석은 **확정된 성적 자체의 입시적 의미**(합격선 대비 위치, 사정관 관점의 강점·약점)로 마무리합니다.
+- 상승 추세와 하락 추세 모두, 그 추세가 보여주는 학업 역량의 의미를 사정관 관점에서 서술합니다.
+
+## 출력 JSON 스키마
+
+{
+  "sectionId": "academicAnalysis",
+  "title": "학업 분석",
+  "overallAverageGrade": "<전처리 overallAverage 값 그대로 (number)>",
+  "gradesByYear": "<전처리 averageByGrade 배열 그대로>",
+  "subjectCombinations": "<전처리 subjectCombinations 배열에서 name→combination, average→averageGrade로 매핑한 그대로>",
+  "gradeTrend": "<전처리 gradeTrend.direction 한글 변환 (상승|유지|하락)>",
+  "subjectGrades": "<후처리 자동 주입, 빈 배열로 두어도 됨>",
+  "interpretation": "<최종 평균 등급으로 시작하여 입학사정관 관점의 해석을 서술.>",
+  "gradeDeviationAnalysis": {
+    "highestSubject": "<최고 과목명>",
+    "lowestSubject": "<최저 과목명>",
+    "deviationRange": "<편차 등급 수>",
+    "riskAssessment": "<편차의 입시적 의미를 사정관 관점에서 서술. 예: '국수영 간 2등급 편차는 사정관이 특정 교과 편중 학습으로 해석할 수 있습니다.'>"
+  },
+  "majorRelevanceAnalysis": {
+    "enrollmentEffort": "<전공 관련 교과 이수 노력을 확정된 사실로 서술. '이미 ~을 이수하여' 톤.>",
+    "achievement": "<이수한 전공 관련 교과의 성취도를 사실 그대로 평가>",
+    "recommendedSubjects": []
+  },
+  "gradeChangeAnalysis": {
+    "currentTrend": "상승|유지|하락",
+    "prediction": "<'최종 평균 X등급은 합격선 대비 ~한 위치입니다' 형식으로, 추세가 보여주는 학업 역량의 의미를 사정관 관점에서 서술.>",
+    "actionItems": [],
+    "actionItemPriorities": []
+  }${planAddendum}
+}
+
+## 작성 어조 (반드시 준수)
+- 모든 서술은 **이미 확정된 성적 데이터 자체에 대한 평가**로 작성합니다.
+- 권장 표현: "~로 평가될 수 있습니다", "확정된 ~ 성취는 ~ 관점에서 강점으로 해석됩니다", "~ 추세는 ~ 역량을 보여줍니다".
+- gradeChangeAnalysis.actionItems와 actionItemPriorities는 빈 배열([])로 출력합니다 — 성적이 확정되어 추가로 실행할 항목이 없습니다.
+- recommendedSubjects는 빈 배열([])로 출력합니다 — ${statusLabel}에게 추천 과목 개념이 적용되지 않습니다.
+
+## 데이터 시점 사용 원칙
+- overallAverageGrade(전체 평균)는 입력된 모든 학기의 합산 평균이며 특정 학기의 등급이 아닙니다.
+- 학기별 등급을 인용할 때는 입력 데이터에 실제 존재하는 학기만 사용합니다.
+
+## ⚠️ 환산 등급 노출 금지
+- "환산 등급", "보정 등급", "환산 내신", "보정 내신" 표현을 리포트에 노출하지 마세요.
+- schoolTypeAdjustment 필드를 출력하지 마세요.
+
+${input.detectedMajorGroup ? `## 생기부 기반 강점 계열\n이 학생의 강점 계열: **${getMajorGroupLabel(input.detectedMajorGroup)}**\n- majorRelevanceAnalysis의 enrollmentEffort/achievement는 위 강점 계열을 기준으로 평가합니다.\n` : ""}
+
+## 입력 데이터
+
+### 정량 분석 결과
+${input.quantitativeAnalysis}
+
+### 성적 전처리 결과 (코드 계산 완료)
+${input.preprocessedAcademicData}
+
+### 학생 프로필
+${input.studentProfile}
+
+${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}` : ""}`;
 };

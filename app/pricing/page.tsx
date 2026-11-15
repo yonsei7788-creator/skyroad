@@ -10,19 +10,19 @@ import { PricingFaq } from "./_components/PricingFaq";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "이용권",
+  title: "이용권 · 수시컨설팅 플랜",
   description:
-    "SKYROAD 생기부 분석 리포트 이용권을 확인하세요. Lite, Standard, Premium 3가지 플랜으로 나에게 맞는 분석을 선택할 수 있습니다.",
+    "SKYROAD 수시컨설팅·생기부컨설팅 이용권을 확인하세요. Lite, Standard, Premium 3가지 플랜으로 나에게 맞는 생기부 분석을 선택할 수 있습니다.",
   alternates: {
     canonical: "/pricing",
   },
 };
 
 const TRUST_STATS = [
-  { value: "1,000+", label: "누적 분석" },
+  { value: "1,800+", label: "누적 분석" },
   { value: "4.99", label: "만족도" },
   { value: "100%", label: "전문가 검수" },
-  { value: "38시간", label: "평균 전달" },
+  { value: "70시간", label: "평균 전달" },
 ];
 
 export default function PricingPage() {
@@ -38,7 +38,13 @@ export default function PricingPage() {
                 생기부 분석, 딱 맞는 플랜을 골라보세요
               </h1>
               <p className={styles.heroSubtitle}>
-                AI 정밀 분석 + 전임 컨설턴트 검수 · 48시간 내 리포트 전달
+                <strong className={styles.heroBold}>
+                  자체 개발 고도화 AI 정밀 분석
+                </strong>
+                {" + "}
+                <strong className={styles.heroHighlight}>
+                  전문 입시 컨설턴트 2차 검수
+                </strong>
               </p>
             </FadeIn>
 

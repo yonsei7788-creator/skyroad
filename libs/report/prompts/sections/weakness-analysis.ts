@@ -1,31 +1,75 @@
 /** 섹션 13: 부족한 부분 + 보완 전략 (weaknessAnalysis) */
 
 import type { ReportPlan } from "../../types.ts";
+import { getMajorGroupLabel } from "../../constants/major-evaluation-criteria.ts";
 
 export interface WeaknessAnalysisPromptInput {
   competencyExtraction: string;
   academicAnalysis: string;
   studentProfile: string;
+  isMedical?: boolean;
+  gradingSystem?: "5등급제" | "9등급제";
+  isGyogwaOnly?: boolean;
+  /** 생기부 기반 감지된 강점 계열 (예: "인문", "자연과학", "의생명") */
+  detectedMajorGroup?: string;
+  /** 학과별 평가 기준 텍스트 (핵심과목, riskFactors 등) */
+  majorEvaluationContext?: string;
+  /** 학생이 입력한 수강 예정 과목 텍스트 */
+  plannedSubjects?: string;
+  /**
+   * 학년별 이수 완료 과목 텍스트.
+   * 졸업생인 경우 학생 입력 수강예정 과목이 "추가 이수 완료"로 합쳐져 있음.
+   * 3학년은 수강 예정 과목이 별도 plannedSubjects로 제공되므로
+   * 이 목록에는 포함되지 않음.
+   */
+  completedSubjectsByYear?: string;
+  /**
+   * 코드가 확정한 권장과목 이수 매칭 결과(RecommendedCourseMatch JSON).
+   * courseAlignment 표를 강제로 덮어쓰는 값과 동일한 데이터이므로, 이 값을
+   * 미이수 판정의 유일한 근거로 삼아야 표와 약점 서술이 엇갈리지 않는다.
+   */
+  recommendedCourseMatch?: string;
+  studentGrade?: number;
+  isGraduate?: boolean;
+  /**
+   * 생기부가 더 이상 바뀔 수 없는 상태 — 졸업생이거나, 3학년 1학기까지만
+   * 데이터가 있고 7월 이후(1학기 기말고사 종료)인 경우 true.
+   * isGraduate와 OR 조건으로 "졸업생 규칙"을 적용할 때 사용한다.
+   */
+  isRecordFinalized?: boolean;
+  /**
+   * competencyScore 섹션 결과 — 약점 evidence 정합성 검증용.
+   * 채점에서 만점/근사 만점으로 평가된 subcategory의 활동을 약점 evidence로
+   * 사용하지 않아야 동일 활동에 대한 양극단 평가 모순을 방지할 수 있다.
+   */
+  competencyScoreResult?: string;
+  /**
+   * competencyScore의 만점근사 (maxScore - score ≤ 5) subcategory만
+   * 추출한 텍스트. AI가 강점 영역을 명시적으로 인지하여 약점 evidence
+   * 작성 시 키워드 충돌을 피할 수 있도록 별도 강조 블록으로 제공.
+   */
+  competencyStrengthAreas?: string;
 }
 
 const PLAN_SPECIFIC: Record<ReportPlan, string> = {
   lite: `## 플랜별 출력: 간략
 - **3개** 부족 영역을 출력합니다.
-- 각 영역: area + description(**2줄 이내**) + suggestedActivities(**1개만**)
-- evidence, competencyTag, priority 필드는 출력하지 않습니다.
-
-## 분량 가이드
-- 핵심 약점 3개. A4 1페이지 이내.`,
+- 각 영역: area + description(**150자 이내**) + suggestedActivities(**250자 이내**, **1개만**)
+- evidence, competencyTag, priority 필드는 출력하지 않습니다.`,
   standard: `## 플랜별 출력: 상세
-- 각 영역: area + description + suggestedActivities + evidence(상세 근거) + competencyTag(역량 매핑) + priority(보완 우선순위 high/medium/low)
+- 각 영역: area + description + suggestedActivities + evidence(상세 근거) + competencyTag(역량 매핑) + priority(**반드시 "high" | "medium" | "low" 중 하나. 빈 문자열/한글 금지**)
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - areas 배열은 **최대 3개**입니다. 4개 이상 절대 출력하지 마세요.
-- 각 description은 반드시 **100자 이내**로 작성합니다. 100자 초과 금지.
-- 각 suggestedActivities의 항목은 **150자 이내**로 작성합니다.
-- evidence는 **100자 이내**로 작성합니다.`,
+- 각 description은 반드시 **150자 이내**로 작성합니다. 150자 초과 금지.
+- 각 suggestedActivities의 항목은 **250자 이내**로 작성합니다.
+- evidence는 **150자 이내**로 작성합니다.`,
   premium: `## 플랜별 출력: 정밀
-- Standard의 모든 항목 + urgency(시급도) + effectiveness(효과도) 매트릭스 + executionStrategy(실행 전략, 2줄 이내) + subjectLinkStrategy(진로-선택과목 연계 전략, 1줄)
+- Standard의 모든 항목에 추가로 다음 필드를 **반드시** 출력합니다:
+  - urgency: 시급도 — **반드시 "high" | "medium" | "low" 중 하나**. 빈 문자열이나 한글 값 금지.
+  - effectiveness: 효과도 — **반드시 "high" | "medium" | "low" 중 하나**. 빈 문자열이나 한글 값 금지.
+  - executionStrategy: 실행 전략 (2줄 이내)
+  - subjectLinkStrategy: 진로-선택과목 연계 전략 (1줄)
 
 ⚠️ **분량 제한 (반드시 준수)**:
 - areas 배열은 **최대 5개**입니다. 6개 이상 절대 출력하지 마세요.
@@ -38,8 +82,89 @@ export const buildWeaknessAnalysisPrompt = (
   input: WeaknessAnalysisPromptInput,
   plan: ReportPlan
 ): string => {
-  return `## 작업
+  // 졸업생이거나, 3학년으로 생기부가 최종 확정된 재학생이면 동일하게
+  // "생기부 수정 불가" 규칙을 적용한다. 실제 졸업 여부에 따라 표현만 분기.
+  const isLocked = input.isGraduate || input.isRecordFinalized;
+  const statusLabel = input.isGraduate
+    ? "졸업생"
+    : "생기부가 최종 확정된 3학년 재학생";
+  const medicalWeaknessContext = input.isMedical
+    ? `## ⚠️ 의·치·한·약·수 계열 약점 분석 기준 (반드시 적용)
+
+이 학생은 의·치·한·약·수 계열(의·치·한·약·수) 지원 학생입니다.
+
+### 의·치·한·약·수 특화 약점 체크리스트 (해당 시 반드시 포함)
+- **영어 2등급 이하**: 의·치·한·약·수에서 영어 1등급은 사실상 필수. 2등급 이하이면 priority "high"로 반드시 포함.
+- **수학·과학 핵심 과목 미이수 또는 저성적**: 미적분(2015)/미적분Ⅰ·Ⅱ(2022), 생명과학Ⅱ/화학Ⅱ(2015) 또는 대응 2022 과목 미이수 시 priority "high". 미이수 여부는 아래 "권장과목 이수 매칭 결과"의 missingCourses로 판정합니다.
+- **과학 세특의 탐구 깊이 부족**: 실험 기반 탐구(가설→실험→결과→한계인식)가 아닌 단순 조사 수준이면 약점으로 식별.
+- **영어 등급 미충족**: 의·치·한·약·수는 영어 1등급이 사실상 필수. 영어 등급이 부족하면 약점으로 식별.
+- **진로 변경 이력 미설명**: 의·치·한·약·수→비의·치·한·약·수 또는 비의·치·한·약·수→의·치·한·약·수 변경 시 학생부에 변경 계기 설명이 없으면 약점.
+
+`
+    : "";
+
+  const gyogwaOnlyContext = input.isGyogwaOnly
+    ? `## ⛔ 교과전형 전용 (이 규칙이 다른 모든 지시보다 우선)
+이 학생은 모든 희망대학이 학생부교과전형입니다.
+- "학종에서 약점" 등의 표현 대신 "교과전형 관점에서 보완이 필요한 부분"으로 작성하세요.
+- 부족한 부분 분석은 최종 등급 향상과 교과 성적 개선 관점에서 제시합니다.
+
+`
+    : "";
+
+  return `${gyogwaOnlyContext}${medicalWeaknessContext}## 작업
 학생의 생기부에서 부족한 부분을 구체적으로 식별하고 보완 방향을 제시하세요.
+
+## 이 섹션의 역할
+생기부에서 드러나는 **역량별 부족 지점을 진단**하고 보완 방향을 제시합니다.
+강점 서술은 다른 섹션에서 다루므로, 여기서는 부족한 점과 그 보완에 집중합니다. 구체적 탐구 주제 제안은 topicRecommendation에서 다룹니다.
+
+## 서술 관점: 보완 전략가
+이 섹션은 **부족점 진단과 구체적 개선 방안**에 집중합니다. 약점을 정확히 짚고 실행 가능한 보완 방향을 제시하세요.
+- "~가 부족하며, ~를 통해 보완할 수 있다", "~영역의 증거가 빈약하므로 ~가 필요하다" 등 진단-처방 어투를 사용하세요.
+
+## ✅ 학생 학년별 시점 가이드 (executionStrategy · suggestedActivities 등 모든 보완 전략 필드 공통)
+${
+  isLocked
+    ? `- 이 학생은 **${statusLabel}**입니다. 생기부 수정 불가 — 보완 전략은 면접·수능·지원 전략 관점에서만 서술합니다.`
+    : input.studentGrade === 1
+      ? `- 이 학생은 **1학년**입니다. 보완 전략은 "**남은 1학년 학기와 2·3학년 동안**"으로 시작합니다.
+- ✅ 권장 어휘: "남은 학기동안", "앞으로의 기간 동안", "2·3학년에 걸쳐", "2학년부터", "3학년에서"
+- ✅ 시점 표현 예시: "남은 학기동안 ~ 보완", "2학년부터 ~ 심화", "3학년에서 ~ 정리"`
+      : input.studentGrade === 2
+        ? `- 이 학생은 **2학년**입니다. 보완 전략은 "**남은 2학년 학기와 3학년 동안**"으로 시작합니다.
+- ✅ 권장 어휘: "남은 학기동안", "앞으로의 기간 동안", "2학년 잔여 학기", "3학년에서"
+- ✅ 시점 표현 예시: "남은 2학년 학기와 3학년 1학기에 걸쳐 ~ 보완", "앞으로의 기간 동안 ~ 심화"
+- 특정 학기를 단일하게 지칭(예: "3학년 1학기 세특에서만")하지 않고, 학생이 활용할 수 있는 학기 범위를 함께 제시합니다.`
+        : `- 이 학생은 **3학년**입니다. 보완 전략은 "**남은 3학년 학기 동안**" 실행 가능한 활동만 제시합니다.
+- ✅ 권장 어휘: "남은 학기동안", "남은 3학년 1학기 동안", "면접 대비 시점에"
+- 이미 지난 학기는 보완 대상이 아닙니다.`
+}
+
+${
+  isLocked
+    ? `## ⚠️ 생기부 확정 규칙 (최우선)
+이 학생은 **${statusLabel}**입니다. 생기부를 더 이상 수정할 수 없습니다.
+- suggestedActivities에서 "탐구 보고서 작성", "동아리 활동 확대", "세특 보완", "~를 보완하세요" 같은 **활동/학업 관련 제안을 절대 하지 마세요**.
+- suggestedActivities는 **면접에서 이 부족한 부분을 어떤 관점으로 설명하면 효과적인지** 방향으로 작성하세요.
+- executionStrategy도 면접에서의 설명 전략 관점에서 작성하세요.
+- 예: "이 부분은 2학년 동아리에서의 심화 탐구 경험과 연결하여 설명하면, 탐구 깊이의 부족함보다 성장 과정이 부각되어 효과적입니다."
+- 예: "이 약점은 '당시에는 ~했지만 이 경험을 통해 ~를 배웠다'는 성장 관점으로 설명하면 오히려 발전가능성을 어필할 수 있습니다."
+
+`
+    : ""
+}## ⛔ 다른 섹션과의 역할 경계 (필수)
+이 섹션은 **역량 기반 부족 지점 진단**만 담당합니다. 아래 내용은 다른 섹션에서 다루므로 **절대 언급하지 마세요**:
+- ❌ 등급 수치의 입시적 의미 해석 (예: "N등급이라 합격이 어렵다", "N점대라 약점으로 작용할 것이다", "N등급은 경쟁력이 낮다") → academicAnalysis·admissionPrediction에서 다룸
+- ❌ 합격 가능성 판단 (예: "~대학 지원이 어렵다") → admissionPrediction에서 다룸
+- ❌ 전형 유불리 분석 (예: "학종에서 불리하다") → admissionStrategy에서 다룸
+- ❌ 구체적 탐구 주제 제안 → topicRecommendation에서 다룸
+- ✅ 이 섹션에서 할 것: **역량 관점의 부족 진단** (탐구 깊이, 활동 연결성, 스토리 일관성, 세특 표현 수준 등)
+- ❌ "교과 성적을 N등급으로 올려야 한다", "내신 등급을 개선해야 한다", "N등급 이내로 끌어올려야 한다" 등 성적 향상 목표 제시 → academicAnalysis·consultantReview에서 다룸
+- ⚠️ 이 금지는 **description, executionStrategy, suggestedActivities, subjectLinkStrategy 등 모든 출력 필드**에 적용됩니다.
+- ✅ 이 섹션에서는 역량 기반 부족 지점만 진단하고, 성적 향상 목표가 아닌 역량 보완 활동(세특 심화, 탐구 확장, 교과 연계 등)을 제시하세요.
+- ✅ evidence에 등급을 인용하는 것은 허용하되, description에서 그 등급이 입시에서 어떤 의미인지 해석하지 마세요.
+- ⚠️ **표현 차별화**: 약점을 서술할 때 "역량 진단" 관점으로만 표현하세요. 예: ❌ "영어 5등급으로 합격이 어렵습니다" (입시 판단) → ✅ "핵심 과목 세특에서 탐구 깊이가 부족하여 학업역량 어필이 약합니다" (역량 진단)
 
 ## 단계별 분석 절차
 1. **역량 추출 결과에서 "미흡"/"부족" 평가 항목 식별**: 4대 역량(학업/진로/공동체/발전가능성) 각각에서 점수가 낮거나 부족 판정을 받은 하위항목을 나열합니다.
@@ -59,19 +184,30 @@ export const buildWeaknessAnalysisPrompt = (
     {
       "area": "탐구 깊이 부족",
       "description": "세특에서 '조사함', '발표함'으로 끝나는 기록이 다수 발견되며...",
-      "suggestedActivities": ["탐구 보고서 작성 시 가설-실험-결론 구조를 갖추기", "교과 내 소논문 작성"],
+      "suggestedActivities": ["탐구 보고서 작성 시 가설-실험-결론 구조를 갖춰 작성해주세요", "교과 내 소논문 작성에 도전하면 좋겠습니다"],
       "evidence": "2학년 사회·문화 세특에서 '복지 정책을 조사하고 발표함'이라고만...",
       "competencyTag": {"category": "academic", "subcategory": "탐구력"},
-      "priority": "high",
-      "urgency": "high",
-      "effectiveness": "high",
-      "executionStrategy": "3학년 1학기 세특에서 탐구 과정을 구체적으로...",
-      "subjectLinkStrategy": "사회·문화와 정치와법 연계 탐구..."
+      "priority": "high (enum: 'high' | 'medium' | 'low' 중 반드시 하나)",
+      "urgency": "high (enum: 'high' | 'medium' | 'low' 중 반드시 하나)",
+      "effectiveness": "high (enum: 'high' | 'medium' | 'low' 중 반드시 하나)",
+      "executionStrategy": "남은 학기 동안 탐구 보고서 작성 시 가설 설정부터 결과 분석·한계점 도출까지 구조화하여 작성해주세요. 교과 수업과 연계한 심화 탐구 기회를 적극 활용하면 좋겠습니다.",
+      "subjectLinkStrategy": "사회·문화와 정치와법에서 연계 주제를 선정해 심화 탐구로 발전시켜주세요."
     }
   ]
 }
 
 플랜별로 불필요한 필드는 생략하되, areas의 각 요소는 반드시 위와 같은 객체여야 합니다.
+
+## ✅ 학생 권장 필드 톤 가이드 (suggestedActivities · executionStrategy · subjectLinkStrategy 공통)
+
+학생에게 활동·전략을 제시하는 필드는 **정중한 권유형 종결어미**로 작성합니다.
+- ✅ 권장 종결어미: "~해주세요", "~하면 좋겠습니다", "~하시면 좋습니다", "~를 권합니다", "~로 발전시켜주세요", "~에 도전하면 좋겠습니다"
+- 권장 형태 예시:
+  - "탐구 보고서 작성 시 가설-실험-결론 구조를 갖춰 작성해주세요" (단정형 "갖춥니다" 대신 권유형)
+  - "소논문 작성에 도전하면 좋겠습니다" (선언형 "도전합니다" 대신 권유형)
+  - "남은 학기 동안 ~를 적극 활용하면 좋겠습니다" (지시형 "활용하세요" 대신 권유형)
+  - "사회·문화와 연계 탐구로 발전시켜주세요"
+- description·evidence처럼 분석·평가 서술 필드는 기존 단정형 "~입니다", "~됩니다" 유지합니다 (학생에게 권유하는 필드가 아니므로).
 
 ## 비핵심 과목 제외 규칙 (필수 준수)
 
@@ -81,6 +217,25 @@ export const buildWeaknessAnalysisPrompt = (
 
 이 과목들은 성실성 확인 수준이며, 사정관이 이 과목 성적으로 감점하지 않습니다.
 약점 분석은 핵심 교과(국수영 + 전공 관련 탐구과목)에 집중하세요.
+${
+  input.majorEvaluationContext
+    ? `
+## 학과별 평가 기준 (약점 판단 시 반드시 참고)
+
+${input.majorEvaluationContext}
+
+⚠️ **위 평가 기준의 핵심과목(keySubjects)과 riskFactors를 기준으로 약점을 판단하세요.**
+- 핵심과목에 해당하지 않는 과목의 성적 부진은 "전공적합성" 약점으로 분류하지 마세요.
+- 예: 사회과학계열 학생의 수학 성적이 낮더라도 전공적합성과 무관합니다. 수학은 "학업역량" 관점에서만 언급할 수 있습니다.
+- riskFactors에 명시된 항목을 우선적으로 약점에 포함하세요.
+`
+    : ""
+}
+## ⛔ 사실 검증 원칙 (최우선 규칙)
+- 약점을 식별할 때 **반드시 제공된 성적 데이터(preprocessedAcademicData, rawAcademicData)에서 실제 등급/점수를 확인**한 후에만 언급하세요.
+- **성적 데이터에 없는 정보를 추측하거나 일반화하면 안 됩니다.** 예: 수학 관련 과목 중 일부만 3등급인데 "수학 과목이 3~4등급"이라고 일반화하면 안 됩니다.
+- evidence 필드에는 **실제 과목명과 등급/점수를 구체적으로 인용**하세요. 예 (⚠️ 아래 과목명·등급은 형식을 보여주기 위한 placeholder입니다. 실제 출력에는 이 학생의 preprocessedAcademicData/rawAcademicData에 실재하는 과목명과 등급으로 반드시 교체하고, 이 예시의 과목명을 그대로 베끼지 마세요): "<이 학생이 실제 이수한 과목명> <학년>학년 <학기>학기 <실제 등급>등급, <다음 학기> <실제 등급>등급"
+- 제공된 데이터에서 확인할 수 없는 약점은 절대 포함하지 마세요.
 
 ## 부족 유형 체크리스트
 다음 유형의 약점이 존재하는지 확인하고, 해당되는 경우 포함하세요:
@@ -94,7 +249,12 @@ export const buildWeaknessAnalysisPrompt = (
 | 전공 부적합 | 진로와 관련 없는 활동이 과다, 전공 연관성 부족 |
 | 성적-세특 불일치 | 성적은 낮은데 세특은 우수하다고 서술되는 모순 |
 | 과목다운 세특 부재 | 과목 본질과 무관한 소재만 활용, 교과 특성이 드러나지 않음 |
-| 주제 반복 without 심화 | 같은 주제가 여러 과목에서 반복되지만 깊이가 동일 수준에 머무름 |
+| 주제 반복(심화 없음) | 같은 주제가 여러 과목에서 반복되지만 깊이가 동일 수준에 머무름 |
+| 핵심 권장과목 미이수 | "권장과목 이수 매칭 결과"의 missingCourses에 핵심 권장과목이 존재 | priority: "high" |
+| 세특 표현 깊이 부족 | "~알게 됨", "~하고 싶다" 수준 표현이 과반 | priority: "medium" |
+| 스토리 단절 | 학년별 관심 분야나 탐구 방향이 일관되지 않고 매년 변경됨. 사정관은 "진로 미결정 학생"으로 판단 | priority: "high" |
+| 학업 태도 증거 부족 | 세특에서 수업 참여, 질문, 토론, 자기주도 학습 등 학업 태도 근거가 약함. 사정관이 중시하는 "학업 과정"이 보이지 않음 | priority: "medium" |
+| 탐구 확장 패턴 부재 | 세특 탐구와 창체 활동이 서로 연결되지 않고 독립적으로 존재. "수업 탐구→동아리 심화→산출물 완성"의 확장 흐름이 없음 | priority: "medium" |
 
 ## 성적-세특 교차분석 규칙
 - 성적이 낮은데 세특 평가가 우수한 경우: 사정관이 의구심을 가질 수 있음을 지적
@@ -108,18 +268,37 @@ export const buildWeaknessAnalysisPrompt = (
 - 예시 (BAD): "탐구 깊이가 부족합니다."
 - 예시 (GOOD): "세특이 '조사함, 발표함'으로 끝나는 경우, 사정관은 '수업 시간에 주어진 과제만 수행한 학생'으로 해석할 수 있어 탐구력 평가에서 감점 요인이 됩니다."
 
-## 외부 활동 보완 제안 금지 (절대 준수)
-- suggestedActivities에 다음을 절대 포함하지 마세요:
-  - 학원, 과외, 인터넷 강의, 온라인 강의, 온라인 강좌
-  - 외부 대회, 사설 프로그램, 캠프
-  - "~학습 (온라인 강의 활용)" 등 외부 학습 수단 언급
-- 보완 활동은 반드시 교과 수업, 창체, 교내 활동 범위 내에서만 제안합니다.
-- 예: "파이썬 기초 학습 (온라인 강의 활용)" → 금지
-- 예: "수학 교과 시간에 프로그래밍적 사고를 활용한 문제풀이 보고서 작성" → 허용
+## 수강 예정 과목 범위 제한
+- 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.
+
+## 외부 활동 보완 제안 금지
+- 시스템 프롬프트의 외부활동/수상경력 반영 불가 규칙을 적용합니다. suggestedActivities는 교과 수업, 창체, 교내 활동 범위 내에서만 제안하세요.
 
 ## 우선순위 정렬 규칙
 - areas 배열은 반드시 priority 기준 내림차순으로 정렬합니다: high → medium → low 순서.
 - 입시 영향도가 높은 약점이 먼저 노출되어야 합니다.
+
+## ⛔ 내부 데이터 노출 금지 (절대 준수)
+- description, evidence, suggestedActivities, executionStrategy 등 **모든 출력 필드에 내부 데이터 형식을 절대 포함하지 마세요.**
+- 금지 예시:
+  - JSON 키-값: \`"overallAverage": 2.5\`, \`{"category": "academic", "score": 72}\`
+  - 변수명/필드명: \`competencyScore\`, \`fillRate\`, \`gradeRank\`, \`rawScore\`
+  - 배열/객체 리터럴: \`[1, 2, 3]\`, \`{key: value}\`
+  - 기술적 수치: \`1500바이트\`, \`fillRate 45%\`
+- evidence에는 "<이 학생이 실제 이수한 과목명> <학년>학년 <학기>학기 <실제 등급>등급"(⚠️ 과목명·등급은 반드시 이 학생의 실제 데이터로 교체), "세특에서 '조사함'으로 마무리" 등 **자연어로 풀어 쓴 근거**만 작성하세요.
+- 입력 데이터의 JSON 구조나 필드명을 그대로 복사하면 품질 실패입니다.
+
+## ✅ competencyScore 채점 결과와의 정합성 (필수 준수)
+
+competencyScore 섹션은 학업역량/진로역량/공동체역량 + 발전가능성을 4축으로 채점하며, 각 subcategory마다 score(획득점수)/maxScore(만점)/comment(차감 사유 또는 만점 근거)를 출력합니다. weaknessAnalysis는 동일 학생 데이터를 다루므로 채점 결과와 모순되는 약점 evidence를 만들지 않아야 합니다.
+
+✅ **강점으로 평가된 영역의 활동을 약점 evidence로 사용하지 않습니다.** subcategory의 \`maxScore - score ≤ 5\`(만점 또는 근사 만점)이면 그 영역은 강점으로 확정된 영역입니다. 이 영역의 comment에서 인용된 활동(예: comment에 "리튬 이온 전지 탐구 등 깊이 있는 탐구 과정이 구체적으로 서술되어 만점")이 그대로 약점 evidence로 등장하면 안 됩니다.
+
+✅ **약점 area는 competencyScore에서 차감이 발생한 영역과 일치하도록 설계합니다.** 예: competencyScore에서 학업역량.학업태도가 -2점, 진로역량.교과이수노력이 -20점 차감됐다면, weaknessAnalysis area는 "학업태도 보완", "심화 과목 이수" 같은 차감 영역에서 도출합니다.
+
+✅ **evidence는 차감 사유와 같은 방향으로 일관되게 인용합니다.** competencyScore comment에서 "심화 과목 미이수로 -20점"이라고 했다면, weaknessAnalysis evidence도 "미적분Ⅱ·기하·물리학 등 핵심 권장과목 미이수"처럼 같은 사실을 짚습니다. 같은 활동을 한쪽에서는 강점, 다른 쪽에서는 약점으로 평가하지 않습니다.
+
+✅ **competencyScore 결과가 입력으로 제공되지 않으면 본 정합성 규칙을 적용할 수 없으므로 일반 약점 분석 절차를 따릅니다.**
 
 ## 입력 데이터
 
@@ -131,6 +310,159 @@ ${input.academicAnalysis}
 
 ### 학생 프로필
 ${input.studentProfile}
+
+${input.competencyScoreResult ? `### competencyScore 채점 결과 (정합성 검증용)\n${input.competencyScoreResult}\n\n→ 위 채점 결과의 score/maxScore/comment를 확인하고, 만점·근사 만점 영역의 활동을 약점 evidence로 인용하지 않습니다. 약점 area는 차감이 발생한 영역에서 도출합니다.` : ""}
+
+${input.competencyStrengthAreas ? `### ⛔ 강점 영역 (만점근사 — 약점 evidence 사용 금지)\n아래 subcategory는 competencyScore에서 만점근사(maxScore - score ≤ 5)로 평가된 강점 영역입니다. 각 comment에 인용된 활동·탐구 주제·과목명·키워드는 **약점 evidence로 사용하면 안 됩니다.** 같은 활동을 강점/약점 양극단으로 평가하면 리포트 신뢰도가 무너집니다.\n\n${input.competencyStrengthAreas}\n\n약점 evidence 작성 시 위 강점 comment의 활동(예: "리튬 이온 전지", "수질 정화", "무선 전력 전송" 등 따옴표·강조된 활동명·탐구 주제) 키워드와 단어 단위로 겹치지 않도록 다른 활동/측면을 evidence로 선택하세요.` : ""}
+
+## ✅ 출력 전 자가 점검 (필수 — 모든 area 작성 후 수행)
+
+각 area 작성 직후 evidence를 다음 절차로 검증합니다:
+
+1. evidence에 등장한 **활동명·탐구 주제·따옴표 안 키워드**를 추출합니다 (예: "리튬 이온 전지의 위험성 해결 방안", "수질 정화 미디어 블록").
+2. 위 "강점 영역 (만점근사)" 블록의 comment에서 인용된 활동/탐구 주제 키워드와 비교합니다.
+3. 키워드가 **단어 단위로 겹치면** evidence를 다른 활동/측면으로 교체합니다. 예: 강점 영역 comment에 "리튬 이온 전지 안정성"이 있으면, 약점 evidence는 리튬 이온 전지가 아닌 다른 활동(예: "AI 뉴스 비교 분석", "탄소중립 포스터")을 인용하거나, 같은 영역의 구조적 약점(예: "1학년 활동 간 연결 부재")을 evidence로 사용합니다.
+4. 교체할 evidence가 없는 경우, 그 area는 "약점"으로 부적합하므로 area 자체를 다른 영역으로 변경합니다 (강점 영역과 충돌 없는 차감 영역에서 area 도출).
+
+${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n→ 위 목록은 평가 대상 주요 과목입니다. 약점 근거로 삼을 과목을 고를 때 사용합니다.` : ""}
+${input.recommendedCourseMatch ? `### 권장과목 이수 매칭 결과 (코드 확정값 — 미이수 판정 기준)\n${input.recommendedCourseMatch}\n→ "권장과목 미이수"를 약점으로 잡을 때는 위 JSON의 missingCourses 배열에 있는 과목을 사용합니다.\n→ takenCourses는 이수 완료, plannedCourses는 이수 예정으로 확정된 과목입니다.\n→ 이 값은 리포트의 교과 이수 현황 표(courseAlignment)와 같은 데이터이므로, 이 값을 기준으로 서술하면 표와 본문이 일치합니다.` : ""}
+${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}` : ""}
+${
+  input.detectedMajorGroup
+    ? `
+### 감지된 강점 계열
+${getMajorGroupLabel(input.detectedMajorGroup ?? "")}
+`
+    : ""
+}
+${PLAN_SPECIFIC[plan]}`;
+};
+
+/**
+ * 교과전형 전용 약점 분석 프롬프트.
+ * 학종/진로역량/세특 품질/발전가능성/사정관 해석 개념이 존재하지 않음.
+ * "교과전형 합격선 도달을 위한 보완 영역" 관점.
+ */
+export const buildGyogwaWeaknessAnalysisPrompt = (
+  input: WeaknessAnalysisPromptInput,
+  plan: ReportPlan
+): string => {
+  // 졸업생이거나, 3학년으로 생기부가 최종 확정된 재학생이면 동일하게
+  // "생기부 수정 불가" 규칙을 적용한다. 실제 졸업 여부에 따라 표현만 분기.
+  const isLocked = input.isGraduate || input.isRecordFinalized;
+  const statusLabel = input.isGraduate
+    ? "졸업생"
+    : "생기부가 최종 확정된 3학년 재학생";
+  return `## 작업
+이 학생은 모든 지원 대학이 **학생부교과전형**입니다.
+교과전형 합격선 도달을 위해 보완이 필요한 영역을 식별하고 구체적인 개선 방향을 제시하세요.
+
+## 서술 관점: 보완 전략가
+이 섹션은 **부족점 진단과 구체적 개선 방안**에 집중합니다.
+- "~가 부족하며, ~를 통해 보완할 수 있다" 등 진단-처방 어투를 사용하세요.
+
+## ✅ 학생 학년별 시점 가이드 (executionStrategy · suggestedActivities 등 모든 보완 전략 필드 공통)
+${
+  isLocked
+    ? `- 이 학생은 **${statusLabel}**입니다. 보완 전략은 확정된 최종 평균 등급의 합격선 대비 정량 기준 적합도 관점에서만 서술합니다.`
+    : input.studentGrade === 1
+      ? `- 이 학생은 **1학년**입니다. 보완 전략은 "**남은 1학년 학기와 2·3학년 동안**"으로 시작합니다. 권장 어휘: "남은 학기동안", "2학년부터", "3학년에서".`
+      : input.studentGrade === 2
+        ? `- 이 학생은 **2학년**입니다. 보완 전략은 "**남은 2학년 학기와 3학년 동안**"으로 시작합니다. 권장 어휘: "남은 학기동안", "2학년 잔여 학기", "3학년에서". 특정 학기를 단일하게 지칭(예: "3학년 1학기"만)하지 않고 학생이 활용할 수 있는 학기 범위를 함께 제시합니다.`
+        : `- 이 학생은 **3학년**입니다. 보완 전략은 "**남은 3학년 학기 동안**" 실행 가능한 활동만 제시합니다. 이미 지난 학기는 보완 대상이 아닙니다.`
+}
+
+## ⛔ 다른 섹션과의 역할 경계 (필수)
+- ❌ 등급 수치의 입시적 의미 해석 (예: "N등급이라 합격이 어렵다", "N점대라 약점으로 작용할 것이다") → academicAnalysis·admissionPrediction에서 다룸
+- ❌ 합격 가능성 판단, 전형 유불리 분석 → admissionPrediction·admissionStrategy에서 다룸
+- ✅ 이 섹션에서 할 것: 교과전형 관점에서 **성적 개선이 필요한 영역 진단과 구체적 보완 방안**
+
+## 교과전형 약점 분석 원칙
+- 교과전형은 **최종 평균 등급**으로만 합격 여부가 결정됩니다.
+- 약점 분석은 "최종 평균 등급이 희망 대학 합격선에 도달하는가"에 집중하세요.
+- 최종 평균이 합격선에 미달하는 경우, 합격선 도달을 위한 전략을 제시하세요.
+- 수능 최저학력기준 충족 여부도 약점이 될 수 있습니다.
+
+## 출력 JSON 스키마
+
+{
+  "sectionId": "weaknessAnalysis",
+  "title": "부족한 부분 + 보완 전략",
+  "areas": [
+    {
+      "area": "최종 평균 등급이 상위권 대학 합격선에 미달",
+      "description": "전교과 평균 2.41등급으로 인서울 상위권 교과전형 합격선(1.5~2.0등급)에 미달합니다. 인서울 중위권 대학(광운대, 명지대급)에서는 경쟁력이 있습니다.",
+      "suggestedActivities": ["합격선에 맞춰 지원 대학 풀을 재설정해주세요", "수능 최저학력기준 충족 준비에 집중하면 좋겠습니다"],
+      "evidence": "전교과 평균 2.41등급",
+      "competencyTag": {"category": "academic", "subcategory": "학업성취도"},
+      "priority": "high",
+      "urgency": "high",
+      "effectiveness": "high",
+      "executionStrategy": "최종 평균 등급에 맞춰 현실적인 지원 전략을 수립해주세요. 합격선과의 격차가 큰 대학보다 안정·적정 대학 중심으로 정비하면 좋겠습니다.",
+      "subjectLinkStrategy": "교과전형은 최종 평균 등급이 핵심 변수이므로 합격선에 맞는 대학을 선택해주세요."
+    }
+  ]
+}
+
+## ✅ 학생 권장 필드 톤 가이드 (suggestedActivities · executionStrategy · subjectLinkStrategy 공통)
+
+학생에게 활동·전략을 제시하는 필드는 **정중한 권유형 종결어미**로 작성합니다.
+- ✅ 권장 종결어미: "~해주세요", "~하면 좋겠습니다", "~하시면 좋습니다", "~를 권합니다", "~로 정비하면 좋겠습니다"
+- 권장 형태 예시:
+  - "합격선에 맞춰 지원 대학 풀을 재설정해주세요"
+  - "수능 최저학력기준 충족 준비에 집중하면 좋겠습니다"
+  - "합격선과의 격차가 큰 대학보다 안정·적정 대학 중심으로 정비하면 좋겠습니다"
+- description·evidence처럼 분석·평가 서술 필드는 기존 단정형 "~입니다", "~됩니다" 유지합니다.
+
+## 사실 검증 원칙
+- 약점 식별은 **제공된 성적 데이터에서 실제 등급/점수를 확인**한 후에만 언급하세요.
+- evidence에는 실제 과목명과 등급을 구체적으로 인용하세요.
+
+## 비핵심 과목 제외
+기술·가정, 정보, 제2외국어, 한문, 교양, 체육, 음악, 미술 등의 성적 부진은 핵심 약점으로 포함하지 마세요.
+핵심 과목: 국어, 수학, 영어, 사회탐구, 과학탐구.
+
+## 외부 활동 보완 제안 금지
+- 시스템 프롬프트의 외부활동 반영 불가 규칙을 적용합니다.
+
+## 내부 데이터 노출 금지
+JSON 키-값, 변수명, 배열 리터럴 등을 출력하지 마세요.
+
+## ✅ competencyScore 채점 결과와의 정합성 (필수 준수)
+
+competencyScore 섹션은 학업역량/진로역량/공동체역량 + 발전가능성을 4축으로 채점하며, 각 subcategory마다 score(획득점수)/maxScore(만점)/comment(차감 사유 또는 만점 근거)를 출력합니다. 동일 학생 데이터를 다루므로 채점 결과와 모순되는 약점 evidence를 만들지 않아야 합니다.
+
+✅ subcategory의 \`maxScore - score ≤ 5\`(만점 또는 근사 만점)이면 그 영역은 강점으로 확정된 영역이므로, comment에서 인용된 활동을 약점 evidence로 사용하지 않습니다.
+✅ 약점 area는 competencyScore에서 차감이 발생한 영역(예: -20점, -11점)과 일치하도록 도출합니다.
+✅ evidence는 차감 사유와 같은 사실을 짚도록 일관되게 인용합니다.
+
+## 입력 데이터
+
+### 역량 추출 결과
+${input.competencyExtraction}
+
+### 성적 분석 결과
+${input.academicAnalysis}
+
+### 학생 프로필
+${input.studentProfile}
+
+${input.competencyScoreResult ? `### competencyScore 채점 결과 (정합성 검증용)\n${input.competencyScoreResult}\n\n→ 위 채점 결과의 score/maxScore/comment를 확인하고, 만점·근사 만점 영역의 활동을 약점 evidence로 인용하지 않습니다. 약점 area는 차감이 발생한 영역에서 도출합니다.` : ""}
+
+${input.competencyStrengthAreas ? `### ⛔ 강점 영역 (만점근사 — 약점 evidence 사용 금지)\n아래 subcategory는 competencyScore에서 만점근사(maxScore - score ≤ 5)로 평가된 강점 영역입니다. 각 comment에 인용된 활동·탐구 주제·과목명·키워드는 **약점 evidence로 사용하면 안 됩니다.** 같은 활동을 강점/약점 양극단으로 평가하면 리포트 신뢰도가 무너집니다.\n\n${input.competencyStrengthAreas}\n\n약점 evidence 작성 시 위 강점 comment의 활동(예: 따옴표·강조된 활동명·탐구 주제) 키워드와 단어 단위로 겹치지 않도록 다른 활동/측면을 evidence로 선택하세요.` : ""}
+
+## ✅ 출력 전 자가 점검 (필수 — 모든 area 작성 후 수행)
+
+각 area 작성 직후 evidence를 다음 절차로 검증합니다:
+1. evidence에 등장한 활동명·탐구 주제·따옴표 안 키워드를 추출합니다.
+2. 위 "강점 영역 (만점근사)" 블록의 comment에서 인용된 활동/탐구 주제 키워드와 비교합니다.
+3. 키워드가 단어 단위로 겹치면 evidence를 다른 활동/측면으로 교체합니다.
+4. 교체할 evidence가 없는 경우, 그 area는 "약점"으로 부적합하므로 area 자체를 차감이 발생한 다른 영역으로 변경합니다.
+
+${input.completedSubjectsByYear ? `### 이수 완료 과목 정보\n${input.completedSubjectsByYear}\n→ 위 목록은 평가 대상 주요 과목입니다. 약점 근거로 삼을 과목을 고를 때 사용합니다.` : ""}
+${input.recommendedCourseMatch ? `### 권장과목 이수 매칭 결과 (코드 확정값 — 미이수 판정 기준)\n${input.recommendedCourseMatch}\n→ "권장과목 미이수"를 약점으로 잡을 때는 위 JSON의 missingCourses 배열에 있는 과목을 사용합니다.\n→ takenCourses는 이수 완료, plannedCourses는 이수 예정으로 확정된 과목입니다.\n→ 이 값은 리포트의 교과 이수 현황 표(courseAlignment)와 같은 데이터이므로, 이 값을 기준으로 서술하면 표와 본문이 일치합니다.` : ""}
+
+${input.plannedSubjects ? `### 수강 예정 과목 정보\n${input.plannedSubjects}\n→ 학생이 수강 예정 과목을 입력한 경우, 성적 향상·과목 추천·탐구 주제 제안은 해당 과목 범위 내에서만 하세요. 수강 예정 과목에 없는 과목의 이수나 성적 향상을 권고하지 마세요.` : ""}
 
 ${PLAN_SPECIFIC[plan]}`;
 };

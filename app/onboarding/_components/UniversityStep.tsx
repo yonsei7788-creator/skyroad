@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  type ReactNode,
+} from "react";
 import {
   GraduationCap,
   Plus,
@@ -13,10 +19,13 @@ import {
   Check,
   ArrowLeft,
   ArrowRight,
+  AlertTriangle,
 } from "lucide-react";
 
 import { ADMISSION_TYPES } from "./types";
 import type { TargetUniversity, UniversityPriority } from "./types";
+
+import { SearchableSelect } from "@/app/_components/SearchableSelect";
 
 import styles from "../page.module.css";
 
@@ -44,7 +53,7 @@ const createEmptyTarget = (priority: UniversityPriority): TargetUniversity => ({
 const isTargetFilled = (t: TargetUniversity): boolean =>
   !!(t.universityName.trim() && t.admissionType && t.department.trim());
 
-const PRIORITY_LABELS = ["1지망", "2지망", "3지망"];
+const PRIORITY_LABELS = ["1지망", "2지망", "3지망", "4지망", "5지망", "6지망"];
 
 const highlightMatch = (text: string, query: string): ReactNode => {
   if (!query) return text;
@@ -83,6 +92,67 @@ export const UniversityStep = ({
     useState<UniversityPriority>(1);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Department options per university
+  const [departmentMap, setDepartmentMap] = useState<Record<string, string[]>>(
+    {}
+  );
+
+  // Art-sport warning per priority: { isArtSport, isArtSportPractical }
+  const [artSportWarnings, setArtSportWarnings] = useState<
+    Record<number, { isArtSport: boolean; isArtSportPractical: boolean }>
+  >({});
+
+  const checkArtSport = useCallback(
+    async (department: string, priority: number) => {
+      if (!department) {
+        setArtSportWarnings((prev) => ({
+          ...prev,
+          [priority]: { isArtSport: false, isArtSportPractical: false },
+        }));
+        return;
+      }
+      try {
+        const res = await fetch(
+          `/api/universities/check-art-sport?department=${encodeURIComponent(department)}`
+        );
+        const data: {
+          isArtSport: boolean;
+          isArtSportPractical: boolean;
+        } = await res.json();
+        setArtSportWarnings((prev) => ({ ...prev, [priority]: data }));
+      } catch {
+        setArtSportWarnings((prev) => ({
+          ...prev,
+          [priority]: { isArtSport: false, isArtSportPractical: false },
+        }));
+      }
+    },
+    []
+  );
+
+  const fetchDepartments = useCallback(
+    async (universityName: string) => {
+      if (!universityName || departmentMap[universityName]) return;
+      try {
+        const res = await fetch(
+          `/api/universities/departments?university=${encodeURIComponent(universityName)}`
+        );
+        const data: string[] = await res.json();
+        setDepartmentMap((prev) => ({ ...prev, [universityName]: data }));
+      } catch {
+        setDepartmentMap((prev) => ({ ...prev, [universityName]: [] }));
+      }
+    },
+    [departmentMap]
+  );
+
+  useEffect(() => {
+    initialData.forEach((t) => {
+      if (t.universityName) fetchDepartments(t.universityName);
+      if (t.department) checkArtSport(t.department, t.priority);
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Debounced university search
   useEffect(() => {
@@ -154,6 +224,10 @@ export const UniversityStep = ({
   };
 
   const handleSelectUniversity = (university: UniversityResult) => {
+    const prev = getTarget(searchingPriority);
+    if (prev.universityName !== university.name) {
+      handleFieldChange(searchingPriority, "department", "");
+    }
     handleFieldChange(searchingPriority, "universityName", university.name);
     const errorKey = `${searchingPriority}-universityName`;
     if (errors[errorKey]) {
@@ -163,11 +237,17 @@ export const UniversityStep = ({
         return next;
       });
     }
+    fetchDepartments(university.name);
     handleCloseModal();
   };
 
   const handleManualSelect = () => {
+    const prev = getTarget(searchingPriority);
+    if (prev.universityName !== searchQuery) {
+      handleFieldChange(searchingPriority, "department", "");
+    }
     handleFieldChange(searchingPriority, "universityName", searchQuery);
+    fetchDepartments(searchQuery);
     handleCloseModal();
   };
 
@@ -201,6 +281,10 @@ export const UniversityStep = ({
         return next;
       });
     }
+
+    if (field === "department") {
+      checkArtSport(value, priority);
+    }
   };
 
   const getTarget = (priority: UniversityPriority): TargetUniversity =>
@@ -208,7 +292,7 @@ export const UniversityStep = ({
 
   const handleAddSlot = () => {
     const nextPriority = (targets.length + 1) as UniversityPriority;
-    if (nextPriority > 3) return;
+    if (nextPriority > 6) return;
     setTargets((prev) => [...prev, createEmptyTarget(nextPriority)]);
   };
 
@@ -233,16 +317,28 @@ export const UniversityStep = ({
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    const primary = getTarget(1);
+    const labels = ["1지망", "2지망", "3지망", "4지망", "5지망", "6지망"];
 
-    if (!primary.universityName.trim()) {
-      newErrors["1-universityName"] = "1지망 대학명을 입력해주세요.";
-    }
-    if (!primary.admissionType) {
-      newErrors["1-admissionType"] = "1지망 전형을 선택해주세요.";
-    }
-    if (!primary.department.trim()) {
-      newErrors["1-department"] = "1지망 모집단위를 입력해주세요.";
+    for (const target of targets) {
+      const p = target.priority;
+      const label = labels[p - 1];
+      const hasAnyData =
+        target.universityName.trim() ||
+        target.admissionType ||
+        target.department.trim();
+
+      // 1지망은 항상 필수, 2~6지망은 데이터가 하나라도 있으면 필수
+      if (p === 1 || hasAnyData) {
+        if (!target.universityName.trim()) {
+          newErrors[`${p}-universityName`] = `${label} 대학명을 입력해주세요.`;
+        }
+        if (!target.admissionType) {
+          newErrors[`${p}-admissionType`] = `${label} 전형을 선택해주세요.`;
+        }
+        if (!target.department.trim()) {
+          newErrors[`${p}-department`] = `${label} 모집단위를 입력해주세요.`;
+        }
+      }
     }
 
     setErrors(newErrors);
@@ -284,7 +380,7 @@ export const UniversityStep = ({
         <div className={styles.stepHeader}>
           <h2 className={styles.stepTitle}>목표 대학을 설정해주세요</h2>
           <p className={styles.stepDesc}>
-            1지망은 필수이며, 2~3지망은 선택입니다
+            1지망은 필수이며, 2~6지망은 선택입니다
           </p>
         </div>
 
@@ -309,9 +405,9 @@ export const UniversityStep = ({
                   <div className={styles.targetBadge}>
                     <GraduationCap size={14} />
                     {PRIORITY_LABELS[priority - 1]}
-                    {isRequired && (
-                      <span className={styles.requiredBadge}>필수</span>
-                    )}
+                    <span className={styles.requiredBadge}>
+                      {isRequired ? "필수" : "선택"}
+                    </span>
                   </div>
                   <div className={styles.targetHeaderActions}>
                     {isCollapsed && (
@@ -346,9 +442,7 @@ export const UniversityStep = ({
                     <div className={styles.field}>
                       <label className={styles.label}>
                         대학명
-                        {isRequired && (
-                          <span className={styles.required}>*</span>
-                        )}
+                        <span className={styles.required}>*</span>
                       </label>
                       <div className={styles.schoolInputRow}>
                         <input
@@ -385,9 +479,7 @@ export const UniversityStep = ({
                     <div className={styles.field}>
                       <label className={styles.label}>
                         전형
-                        {isRequired && (
-                          <span className={styles.required}>*</span>
-                        )}
+                        <span className={styles.required}>*</span>
                       </label>
                       <select
                         className={`${styles.select} ${errors[`${priority}-admissionType`] ? styles.inputError : ""}`}
@@ -418,23 +510,45 @@ export const UniversityStep = ({
                       <div className={styles.field}>
                         <label className={styles.label}>
                           모집단위
-                          {isRequired && (
-                            <span className={styles.required}>*</span>
-                          )}
+                          <span className={styles.required}>*</span>
                         </label>
-                        <input
-                          type="text"
-                          className={`${styles.input} ${errors[`${priority}-department`] ? styles.inputError : ""}`}
-                          placeholder="예: 컴퓨터공학과"
-                          value={target.department}
-                          onChange={(e) =>
-                            handleFieldChange(
-                              priority,
-                              "department",
-                              e.target.value
-                            )
-                          }
-                        />
+                        {(() => {
+                          const depts = departmentMap[target.universityName];
+                          const hasDepts = depts && depts.length > 0;
+                          const noUniv = !target.universityName;
+
+                          return hasDepts ? (
+                            <SearchableSelect
+                              options={depts}
+                              value={target.department}
+                              onChange={(val) =>
+                                handleFieldChange(priority, "department", val)
+                              }
+                              placeholder="모집단위를 선택해주세요"
+                              hasError={!!errors[`${priority}-department`]}
+                              allowCustom
+                            />
+                          ) : (
+                            <input
+                              type="text"
+                              className={`${styles.input} ${errors[`${priority}-department`] ? styles.inputError : ""}`}
+                              placeholder={
+                                noUniv
+                                  ? "대학교를 먼저 선택해주세요"
+                                  : "예: 컴퓨터공학과"
+                              }
+                              value={target.department}
+                              disabled={noUniv}
+                              onChange={(e) =>
+                                handleFieldChange(
+                                  priority,
+                                  "department",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          );
+                        })()}
                         {errors[`${priority}-department`] && (
                           <span className={styles.fieldError}>
                             {errors[`${priority}-department`]}
@@ -459,13 +573,26 @@ export const UniversityStep = ({
                         />
                       </div>
                     </div>
+
+                    {artSportWarnings[priority]?.isArtSport && (
+                      <div className={styles.artSportNotice}>
+                        <AlertTriangle size={15} />
+                        <div>
+                          <strong>예체능계열 학과 안내</strong>
+                          <p>
+                            예체능계열 학과는 실기 전형이 포함될 수 있어, 합격
+                            예측 및 추천 대학 분석이 제공되지 않을 수 있습니다.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             );
           })}
 
-          {targets.length < 3 && (
+          {targets.length < 6 && (
             <button
               type="button"
               className={styles.addTargetBtn}

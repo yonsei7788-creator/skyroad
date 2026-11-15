@@ -11,6 +11,7 @@ interface PlanFeature {
 
 interface Plan {
   name: string;
+  slug: "lite" | "standard" | "premium";
   subtitle: string;
   price: string;
   pages: string;
@@ -23,65 +24,66 @@ interface Plan {
 const PLANS: Plan[] = [
   {
     name: "Lite Report",
+    slug: "lite",
     subtitle: "기본 진단형",
-    price: "59,000",
-    pages: "10~12페이지",
+    price: "490,000",
+    pages: "18~20페이지",
     popular: false,
     point: "내 생기부 현재 위치, 빠르게 파악하기",
     cta: "Lite 선택하기",
     features: [
-      { text: "한줄 총평 + 핵심 키워드 3개", included: true },
-      { text: "전체 요약 분석 (강점/약점)", included: true },
-      { text: "세특 분석 (창체 + 과목별)", included: true },
-      { text: "부족한 부분 분석 + 보완 활동", included: true },
-      { text: "탐구 주제 추천 3개", included: true },
-      { text: "예상 면접 질문 8~10개", included: true },
-      { text: "내신 + 모의고사 분석", included: true },
-      { text: "대학 지원 조합 (고2 이상)", included: true },
-      { text: "등급 변화 가능성 분석", included: false },
-      { text: "대학별 합격 가능성 표시", included: false },
+      { text: "학생 유형 분류 + 역량 점수", included: true },
+      { text: "성적 분석 + 권장과목 이수 분석", included: true },
+      { text: "출결 · 창체 · 행동특성 분석", included: true },
+      { text: "교과 세특 분석", included: true },
+      { text: "예상 면접 질문 3개", included: true },
+      { text: "학과 추천", included: true },
+      { text: "전임 컨설턴트 2차 검수", included: true },
+      { text: "희망 학교·학과 판단", included: false },
+      { text: "세특 주제 추천", included: false },
+      { text: "부족한 부분 + 보완 전략", included: false },
     ],
   },
   {
     name: "Standard Report",
+    slug: "standard",
     subtitle: "실전 전략형",
-    price: "99,000",
-    pages: "15~18페이지",
-    popular: true,
-    point: "합격 가능성 분석 + 지원 전략까지",
+    price: "590,000",
+    pages: "40~50페이지",
+    popular: false,
+    point: "맞춤형 생기부 분석 + 지원 전략까지",
     cta: "Standard 선택하기",
     features: [
       { text: "Lite Report 전체 포함", included: true },
-      { text: "세특 분석 강화 (상세 평가)", included: true },
-      { text: "등급 변화 가능성 분석", included: true },
-      { text: "대학 지원 전략 (2P)", included: true },
-      { text: "대학별 합격 가능성 표시", included: true },
-      { text: "상향/안정/하향 전략", included: true },
-      { text: "생기부 스토리 구조 분석", included: false },
-      { text: "컨설팅급 보완 전략", included: false },
-      { text: "탐구 주제 + 활동 설계", included: false },
-      { text: "면접 심화 대비 + 모범 답변", included: false },
+      { text: "교과 세특 분석 확장 (7과목)", included: true },
+      { text: "희망 학교·학과 판단 (학종/교과/정시)", included: true },
+      { text: "세특 주제 추천 3개", included: true },
+      { text: "예상 면접 질문 5개 + 출제 의도", included: true },
+      { text: "전임 컨설턴트 2차 검수", included: true },
+      { text: "부족한 부분 + 보완 전략", included: false },
+      { text: "입시 전략 + 지원 조합 추천", included: false },
+      { text: "실행 로드맵", included: false },
+      { text: "면접 모범 답변 + 꼬리 질문", included: false },
     ],
   },
   {
     name: "Premium Report",
+    slug: "premium",
     subtitle: "프리미엄 설계형",
-    price: "199,000",
-    pages: "20~25페이지",
+    price: "690,000",
+    pages: "50~60페이지",
     popular: false,
     point: "오프라인 컨설팅 수준, 온라인 가격으로",
     cta: "Premium 선택하기",
     features: [
       { text: "Standard Report 전체 포함", included: true },
-      { text: "세특 문장 단위 정밀 분석", included: true },
-      { text: "생기부 스토리 구조 분석", included: true },
-      { text: "컨설팅급 보완 전략", included: true },
-      { text: "진로 + 선택과목 연계 전략", included: true },
-      { text: "탐구 주제 + 활동 설계", included: true },
-      { text: "면접 심화 대비 + 모범 답변", included: true },
-      { text: "중요도 % + 평가 영향도", included: true },
-      { text: "핵심 문장 하이라이트", included: true },
-      { text: "구체적 실행 로드맵", included: true },
+      { text: "교과 세특 정밀 분석 (10과목+)", included: true },
+      { text: "부족한 부분 + 보완 전략", included: true },
+      { text: "입시 전략 + 지원 조합 추천", included: true },
+      { text: "실행 로드맵 (학기별 계획)", included: true },
+      { text: "세특 주제 추천 5개 + 활동 설계", included: true },
+      { text: "면접 모범 답변 + 꼬리 질문", included: true },
+      { text: "전임 컨설턴트 2차 검수", included: true },
     ],
   },
 ];
@@ -102,7 +104,7 @@ export const PricingSection = () => {
           {PLANS.map((plan, index) => (
             <FadeIn key={plan.name} delay={index * 0.12}>
               <div
-                className={`${styles.card} ${plan.popular ? styles.cardPopular : ""}`}
+                className={`${styles.card} ${plan.popular ? styles.cardPopular : ""} ${styles[`card_${plan.slug}`] ?? ""}`}
               >
                 {plan.popular && (
                   <div className={styles.popularBadge}>
@@ -114,9 +116,11 @@ export const PricingSection = () => {
                 <div className={styles.cardHeader}>
                   <p className={styles.cardSubtitle}>{plan.subtitle}</p>
                   <h3 className={styles.cardName}>{plan.name}</h3>
-                  <div className={styles.cardPrice}>
-                    <span className={styles.priceValue}>{plan.price}</span>
-                    <span className={styles.priceUnit}>원</span>
+                  <div className={styles.priceBlock}>
+                    <div className={styles.priceRow}>
+                      <span className={styles.priceValue}>{plan.price}</span>
+                      <span className={styles.priceUnit}>원</span>
+                    </div>
                   </div>
                   <p className={styles.cardPages}>{plan.pages}</p>
                 </div>

@@ -23,9 +23,8 @@ const TASK_LABELS: Record<string, string> = {
   weaknessAnalysis: "약점 분석",
   topicRecommendation: "주제 추천",
   interviewPrep: "면접 준비",
-  admissionPrediction: "합격 예측",
+  admissionPrediction: "희망 학교·학과 판단",
   admissionStrategy: "입시 전략",
-  directionGuide: "방향 가이드",
   storyAnalysis: "스토리 분석",
   actionRoadmap: "실행 로드맵",
   majorExploration: "학과 탐색",
@@ -35,6 +34,7 @@ const GeneratingContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
+  const isAdmin = searchParams.get("from") === "admin";
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);
@@ -44,11 +44,55 @@ const GeneratingContent = () => {
   const [exhausted, setExhausted] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
+  const reportIdRef = useRef<string | null>(null);
+  const terminalReceivedRef = useRef(false);
+
+  /**
+   * SSE 스트림이 completed/error 이벤트 없이 끊긴 경우,
+   * DB의 실제 ai_status를 확인해 안전하게 성공/실패 판정.
+   * (Vercel 타임아웃, Gemini 503, 네트워크 끊김 등으로 서버 catch가 실행되지 못한 케이스 방어)
+   */
+  const verifyFinalStatus = async (): Promise<void> => {
+    const reportId = reportIdRef.current;
+    if (!reportId) {
+      setPhase("error");
+      setError("서버 응답이 중단되었습니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/reports/${reportId}/status`, {
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        setPhase("error");
+        setError("상태 확인에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+        return;
+      }
+      const body = (await res.json()) as {
+        status: string;
+        error?: string | null;
+      };
+      if (body.status === "completed" || body.status === "deferred") {
+        setPhase("completed");
+        setProgress(100);
+        setCurrentSection(null);
+      } else {
+        setPhase("error");
+        setError(
+          body.error ??
+            "리포트 생성이 중단되었습니다. 잠시 후 다시 시도해 주세요."
+        );
+      }
+    } catch {
+      setPhase("error");
+      setError("상태 확인 중 오류가 발생했습니다.");
+    }
+  };
 
   useEffect(() => {
     if (!orderId) {
       setPhase("error");
-      setError("주문 정보가 없습니다. 결제 내역에서 다시 시도해 주세요.");
+      setError("주문 정보가 없습니다. 컨설팅 내역에서 다시 시도해 주세요.");
       return;
     }
 
@@ -59,19 +103,20 @@ const GeneratingContent = () => {
       setPhase("running");
       setError(null);
       setProgress(0);
+      terminalReceivedRef.current = false;
 
       try {
         const res = await fetch("/api/reports/run-pipeline", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId }),
+          body: JSON.stringify({ orderId, force: isAdmin }),
           signal: controller.signal,
         });
 
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
           if (res.status === 409 && body.error?.includes("완료")) {
-            router.replace("/profile/consulting");
+            router.replace(isAdmin ? "/admin/reports" : "/profile/consulting");
             return;
           }
           setPhase("error");
@@ -107,15 +152,25 @@ const GeneratingContent = () => {
             try {
               const data = JSON.parse(dataLine.slice(6));
 
-              if (data.type === "progress") {
+              if (data.type === "init") {
+                reportIdRef.current = data.reportId;
+              } else if (data.type === "progress") {
                 setProgress(data.progress);
                 const label = TASK_LABELS[data.section] ?? data.section;
                 setCurrentSection(label);
               } else if (data.type === "completed") {
+                terminalReceivedRef.current = true;
+                setPhase("completed");
+                setProgress(100);
+                setCurrentSection(null);
+              } else if (data.type === "deferred") {
+                // 과부하로 지연 — 사용자에게는 성공으로 표시
+                terminalReceivedRef.current = true;
                 setPhase("completed");
                 setProgress(100);
                 setCurrentSection(null);
               } else if (data.type === "error") {
+                terminalReceivedRef.current = true;
                 setPhase("error");
                 setError(data.error);
               }
@@ -125,8 +180,10 @@ const GeneratingContent = () => {
           }
         }
 
-        // 스트림 종료 후 phase가 아직 running이면 완료 처리
-        setPhase((prev) => (prev === "running" ? "completed" : prev));
+        // 스트림이 completed/error 없이 끝났으면 DB 상태로 확정
+        if (!terminalReceivedRef.current) {
+          await verifyFinalStatus();
+        }
       } catch (err) {
         if (controller.signal.aborted) return;
         setPhase("error");
@@ -172,13 +229,14 @@ const GeneratingContent = () => {
     setPhase("running");
     setError(null);
     setProgress(0);
+    terminalReceivedRef.current = false;
 
     const run = async () => {
       try {
         const res = await fetch("/api/reports/run-pipeline", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId }),
+          body: JSON.stringify({ orderId, force: isAdmin }),
           signal: controller.signal,
         });
 
@@ -212,14 +270,24 @@ const GeneratingContent = () => {
             if (!dataLine.startsWith("data: ")) continue;
             try {
               const data = JSON.parse(dataLine.slice(6));
-              if (data.type === "progress") {
+              if (data.type === "init") {
+                reportIdRef.current = data.reportId;
+              } else if (data.type === "progress") {
                 setProgress(data.progress);
                 setCurrentSection(TASK_LABELS[data.section] ?? data.section);
               } else if (data.type === "completed") {
+                terminalReceivedRef.current = true;
+                setPhase("completed");
+                setProgress(100);
+                setCurrentSection(null);
+              } else if (data.type === "deferred") {
+                // 과부하로 지연 — 사용자에게는 성공으로 표시
+                terminalReceivedRef.current = true;
                 setPhase("completed");
                 setProgress(100);
                 setCurrentSection(null);
               } else if (data.type === "error") {
+                terminalReceivedRef.current = true;
                 setPhase("error");
                 setError(data.error);
               }
@@ -229,7 +297,9 @@ const GeneratingContent = () => {
           }
         }
 
-        setPhase((prev) => (prev === "running" ? "completed" : prev));
+        if (!terminalReceivedRef.current) {
+          await verifyFinalStatus();
+        }
       } catch (err) {
         if (controller.signal.aborted) return;
         setPhase("error");
@@ -250,10 +320,10 @@ const GeneratingContent = () => {
             <div className={styles.checkIcon} aria-hidden="true">
               &#10003;
             </div>
-            <h1 className={styles.title}>분석이 완료되었습니다</h1>
+            <h1 className={styles.title}>컨설턴트에게 자료가 전송되었습니다</h1>
             <p className={styles.description}>
-              리포트 검수 후 <strong>48시간 내에 이메일로 발송</strong>해
-              드립니다.
+              전문 컨설턴트의 검수를 거쳐{" "}
+              <strong>72시간 이내에 이메일로 결과물이 발송</strong>됩니다.
             </p>
             <p className={styles.warning}>
               발송 완료 시 가입하신 이메일로 안내 드리겠습니다.
@@ -262,9 +332,11 @@ const GeneratingContent = () => {
               type="button"
               className={styles.retryButton}
               style={{ marginTop: 24 }}
-              onClick={() => router.push("/profile/consulting")}
+              onClick={() =>
+                router.push(isAdmin ? "/admin/reports" : "/profile/consulting")
+              }
             >
-              컨설팅 내역으로 이동
+              {isAdmin ? "리포트 관리로 이동" : "컨설팅 내역으로 이동"}
             </button>
           </>
         ) : phase === "running" ? (
@@ -291,7 +363,7 @@ const GeneratingContent = () => {
               </div>
             )}
             <p className={styles.description}>
-              잠시만 기다려 주세요. 분석에 5~10분 정도 소요됩니다.
+              잠시만 기다려 주세요. 생기부 추출에 2~3분 정도 소요됩니다.
             </p>
             <div className={styles.noticeBox}>
               <p className={styles.noticeText}>
@@ -301,7 +373,7 @@ const GeneratingContent = () => {
               </p>
             </div>
             <p className={styles.warning}>
-              분석 완료 후 리포트는 검수를 거쳐 48시간 내에 이메일로 발송됩니다.
+              분석 완료 후 리포트는 검수를 거쳐 72시간 내에 이메일로 발송됩니다.
             </p>
           </>
         ) : phase === "error" ? (

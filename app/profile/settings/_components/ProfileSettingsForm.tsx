@@ -17,19 +17,27 @@ import {
   Phone,
   School,
   CalendarDays,
+  MapPin,
   X,
   AlertCircle,
 } from "lucide-react";
 
 import { createClient } from "@/libs/supabase/client";
 
+import {
+  REGION_OPTIONS,
+  GENDER_OPTIONS,
+} from "@/app/onboarding/_components/types";
+
 import styles from "../page.module.css";
 
 interface ProfileData {
   name: string;
   phone: string;
+  gender: "" | "male" | "female";
   highSchoolName: string;
   highSchoolType: string;
+  highSchoolRegion: string;
   admissionYear: number | null;
   grade: string;
 }
@@ -107,6 +115,7 @@ export const ProfileSettingsForm = ({
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [profile, setProfile] = useState<ProfileData>(initialProfile);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<ToastData | null>(null);
 
   // School search modal
@@ -200,11 +209,25 @@ export const ProfileSettingsForm = ({
   };
 
   const handleSelectSchool = (school: SchoolResult) => {
+    const validType = SCHOOL_TYPES.includes(
+      school.type as (typeof SCHOOL_TYPES)[number]
+    )
+      ? school.type
+      : "";
+    // 주소 첫 단어에서 시/도 추출 (예: "서울특별시 강남구..." → "서울특별시")
+    const region = school.address?.split(" ")[0] ?? "";
     setProfile((prev) => ({
       ...prev,
       highSchoolName: school.name,
-      highSchoolType: school.type,
+      highSchoolType: validType,
+      highSchoolRegion: region,
     }));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.highSchoolName;
+      delete next.highSchoolType;
+      return next;
+    });
     handleCloseSchoolModal();
   };
 
@@ -214,6 +237,11 @@ export const ProfileSettingsForm = ({
       highSchoolName: schoolQuery,
       highSchoolType: "",
     }));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.highSchoolName;
+      return next;
+    });
     handleCloseSchoolModal();
   };
 
@@ -228,18 +256,50 @@ export const ProfileSettingsForm = ({
     value: string | number | null
   ) => {
     setProfile((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
+
+  const validateAcademic = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!profile.highSchoolName?.trim()) {
+      newErrors.highSchoolName = "고등학교를 선택해주세요.";
+    }
+    if (!profile.highSchoolType) {
+      newErrors.highSchoolType = "학교 유형을 선택해주세요.";
+    }
+    if (!profile.admissionYear) {
+      newErrors.admissionYear = "입학년도를 선택해주세요.";
+    }
+    if (!profile.grade) {
+      newErrors.grade = "학년을 선택해주세요.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (activeTab === "academic" && !validateAcademic()) {
+      return;
+    }
+
     setIsLoading(true);
 
     const supabase = createClient();
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (!user) {
+    if (!session?.user) {
       showToast("로그인이 필요합니다.", "error");
       setIsLoading(false);
       return;
@@ -250,13 +310,18 @@ export const ProfileSettingsForm = ({
       .update({
         name: profile.name || null,
         phone: profile.phone || null,
+        gender:
+          profile.gender === "male" || profile.gender === "female"
+            ? profile.gender
+            : null,
         high_school_name: profile.highSchoolName || null,
         high_school_type: profile.highSchoolType || null,
+        high_school_region: profile.highSchoolRegion || null,
         admission_year: profile.admissionYear,
         grade: profile.grade || null,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", user.id);
+      .eq("id", session.user.id);
 
     setIsLoading(false);
 
@@ -371,6 +436,25 @@ export const ProfileSettingsForm = ({
                     />
                   </div>
                 </div>
+
+                <div className={styles.field}>
+                  <label className={styles.label}>
+                    <User size={14} className={styles.labelIcon} />
+                    성별
+                  </label>
+                  <div className={styles.fieldRow}>
+                    {GENDER_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={`${styles.selectButton} ${profile.gender === opt.value ? styles.selectButtonActive : ""}`}
+                        onClick={() => handleChange("gender", opt.value)}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -388,12 +472,13 @@ export const ProfileSettingsForm = ({
                   <label htmlFor="school" className={styles.label}>
                     <School size={14} className={styles.labelIcon} />
                     고등학교
+                    <span className={styles.required}>*</span>
                   </label>
                   <div className={styles.schoolInputRow}>
                     <input
                       id="school"
                       type="text"
-                      className={styles.inputDisabled}
+                      className={`${styles.inputDisabled} ${errors.highSchoolName ? styles.inputError : ""}`}
                       value={profile.highSchoolName || ""}
                       placeholder="학교를 검색해주세요"
                       disabled
@@ -407,11 +492,18 @@ export const ProfileSettingsForm = ({
                       검색
                     </button>
                   </div>
-                  {profile.highSchoolName && (
-                    <span className={styles.fieldSuccess}>
-                      <Check size={12} />
-                      {profile.highSchoolName} 선택됨
+                  {errors.highSchoolName ? (
+                    <span className={styles.fieldError}>
+                      <AlertCircle size={12} />
+                      {errors.highSchoolName}
                     </span>
+                  ) : (
+                    profile.highSchoolName && (
+                      <span className={styles.fieldSuccess}>
+                        <Check size={12} />
+                        {profile.highSchoolName} 선택됨
+                      </span>
+                    )
                   )}
                 </div>
 
@@ -419,10 +511,11 @@ export const ProfileSettingsForm = ({
                   <label htmlFor="schoolType" className={styles.label}>
                     <School size={14} className={styles.labelIcon} />
                     학교 유형
+                    <span className={styles.required}>*</span>
                   </label>
                   <select
                     id="schoolType"
-                    className={styles.select}
+                    className={`${styles.select} ${errors.highSchoolType ? styles.inputError : ""}`}
                     value={profile.highSchoolType}
                     onChange={(e) =>
                       handleChange("highSchoolType", e.target.value)
@@ -435,6 +528,37 @@ export const ProfileSettingsForm = ({
                       </option>
                     ))}
                   </select>
+                  {errors.highSchoolType && (
+                    <span className={styles.fieldError}>
+                      <AlertCircle size={12} />
+                      {errors.highSchoolType}
+                    </span>
+                  )}
+                </div>
+
+                <div className={styles.field}>
+                  <label htmlFor="schoolRegion" className={styles.label}>
+                    <MapPin size={14} className={styles.labelIcon} />
+                    고교 소재지
+                  </label>
+                  <select
+                    id="schoolRegion"
+                    className={styles.select}
+                    value={profile.highSchoolRegion}
+                    onChange={(e) =>
+                      handleChange("highSchoolRegion", e.target.value)
+                    }
+                  >
+                    <option value="">선택해주세요</option>
+                    {REGION_OPTIONS.map((region) => (
+                      <option key={region} value={region}>
+                        {region}
+                      </option>
+                    ))}
+                  </select>
+                  <span className={styles.fieldHint}>
+                    학교 검색 시 자동 설정되며, 직접 변경할 수도 있습니다
+                  </span>
                 </div>
 
                 <div className={styles.fieldRow}>
@@ -442,10 +566,11 @@ export const ProfileSettingsForm = ({
                     <label htmlFor="admissionYear" className={styles.label}>
                       <CalendarDays size={14} className={styles.labelIcon} />
                       입학년도
+                      <span className={styles.required}>*</span>
                     </label>
                     <select
                       id="admissionYear"
-                      className={styles.select}
+                      className={`${styles.select} ${errors.admissionYear ? styles.inputError : ""}`}
                       value={profile.admissionYear ?? ""}
                       onChange={(e) =>
                         handleChange(
@@ -461,16 +586,23 @@ export const ProfileSettingsForm = ({
                         </option>
                       ))}
                     </select>
+                    {errors.admissionYear && (
+                      <span className={styles.fieldError}>
+                        <AlertCircle size={12} />
+                        {errors.admissionYear}
+                      </span>
+                    )}
                   </div>
 
                   <div className={styles.field}>
                     <label htmlFor="grade" className={styles.label}>
                       <GraduationCap size={14} className={styles.labelIcon} />
                       학년
+                      <span className={styles.required}>*</span>
                     </label>
                     <select
                       id="grade"
-                      className={styles.select}
+                      className={`${styles.select} ${errors.grade ? styles.inputError : ""}`}
                       value={profile.grade}
                       onChange={(e) => handleChange("grade", e.target.value)}
                     >
@@ -481,6 +613,12 @@ export const ProfileSettingsForm = ({
                         </option>
                       ))}
                     </select>
+                    {errors.grade && (
+                      <span className={styles.fieldError}>
+                        <AlertCircle size={12} />
+                        {errors.grade}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

@@ -3,3 +3,6 @@ node_modules
 out
 build
 *.min.js
+
+# 정시 정규화 원본 — 한 줄 한 레코드 형식 유지 (scripts/jeongsi/normalize-excel.py 생성물)
+libs/jeongsi/data/source/

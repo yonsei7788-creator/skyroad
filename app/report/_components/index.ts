@@ -20,28 +20,26 @@ export { ReportProgress, ReportComparisonBar } from "./ReportProgress";
 export { StudentProfileRenderer } from "./StudentProfileRenderer";
 export { CompetencyScoreRenderer } from "./CompetencyScoreRenderer";
 export { AdmissionPredictionRenderer } from "./AdmissionPredictionRenderer";
-export { DiagnosticRenderer } from "./DiagnosticRenderer";
 
 // Section renderers -- Part 2: 분석
-export { CompetencyEvaluationRenderer } from "./CompetencyEvaluationRenderer";
 export { AcademicAnalysisRenderer } from "./AcademicAnalysisRenderer";
 export { CourseAlignmentRenderer } from "./CourseAlignmentRenderer";
 export { AttendanceAnalysisRenderer } from "./AttendanceAnalysisRenderer";
 export { ActivityAnalysisRenderer } from "./ActivityAnalysisRenderer";
 export { SubjectAnalysisRenderer } from "./SubjectAnalysisRenderer";
 export { BehaviorAnalysisRenderer } from "./BehaviorAnalysisRenderer";
-export { OverallAssessmentRenderer } from "./OverallAssessmentRenderer";
 
 // Section renderers -- Part 3: 전략
 export { WeaknessAnalysisRenderer } from "./WeaknessAnalysisRenderer";
 export { TopicRecommendationRenderer } from "./TopicRecommendationRenderer";
 export { InterviewPrepRenderer } from "./InterviewPrepRenderer";
 export { AdmissionStrategyRenderer } from "./AdmissionStrategyRenderer";
-export { DirectionGuideRenderer } from "./DirectionGuideRenderer";
 export { StoryAnalysisRenderer } from "./StoryAnalysisRenderer";
 export { ActionRoadmapRenderer } from "./ActionRoadmapRenderer";
+export { CompetitiveProfilingRenderer } from "./CompetitiveProfilingRenderer";
+
+// Section renderers -- 전임 컨설턴트 총평
+export { ConsultantReviewRenderer } from "./ConsultantReviewRenderer";
 
 // Section renderers -- 부록
-export { BookRecommendationRenderer } from "./BookRecommendationRenderer";
 export { MajorExplorationRenderer } from "./MajorExplorationRenderer";
-export { WordCloudRenderer } from "./WordCloudRenderer";

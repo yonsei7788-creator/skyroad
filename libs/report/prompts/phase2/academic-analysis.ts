@@ -4,12 +4,22 @@ export interface AcademicContextAnalysisInput {
   preprocessedAcademicData: string;
   rawAcademicData: string;
   studentProfile: string;
+  gradingSystem?: "5등급제" | "9등급제";
 }
 
 export const buildAcademicContextAnalysisPrompt = (
   input: AcademicContextAnalysisInput
 ): string => {
-  return `당신은 고등학교 교과 성적 데이터를 해석하는 입시 전문가입니다.
+  const fiveGradeNote =
+    input.gradingSystem === "5등급제"
+      ? `\n\n⚠️ 이 학생은 **5등급제**(2022 개정 교육과정) 적용 학생입니다.
+- 등급 범위: 1~5 (6~9등급 없음)
+- 5등급제 1등급=상위10%, 2등급=상위34%, 3등급=상위66%
+- 등급 해석 시 9등급제와 혼동하지 마세요. 5등급제 2등급(평균 1.33~1.89)은 9등급 2.0~3.0 수준입니다 (5등급 1.33=9등급 2.0, 5등급 1.89=9등급 3.0).
+- 등급 변별력이 약하므로 원점수, 평균, 표준편차, 수강자수 기반 실질 위치 분석이 더 중요합니다.`
+      : "";
+
+  return `당신은 고등학교 교과 성적 데이터를 해석하는 입시 전문가입니다.${fiveGradeNote}
 
 ## 작업
 아래 성적 분석 결과(코드에서 사전 계산됨)를 바탕으로 학생의 성적 특성을 해석하세요.
@@ -21,11 +31,13 @@ export const buildAcademicContextAnalysisPrompt = (
 
 ## 해석 항목
 1. **등급 추이 해석**: 학년별 등급 변화의 의미 (상승이면 왜 긍정적인지, 하락이면 어떤 리스크인지)
-2. **과목별 실질 위치 해석**: Z-score와 수강자수를 종합한 각 과목의 실질 경쟁력 분석
-3. **과목 간 편차 해석**: 학종에서의 리스크 + 편차가 큰 이유 추론
-4. **전공 관련 교과 해석**: 전공 관련 과목 성적이 전체 대비 어떤 의미인지
-5. **고교 유형 환산 해석**: 환산 등급이 의미하는 대학 경쟁력
-6. **진로선택과목 해석**: 성취도 분포 기반 실질 위치 분석
+2. **과목별 실질 위치 해석**: Z-score와 수강자수를 종합한 각 과목의 실질 경쟁력 분석 (일반선택·공통과목 한정)
+3. **과목 간 편차 해석**: 학종에서의 리스크 + 편차가 큰 이유 추론 (일반선택·공통과목 한정)
+4. **전공 관련 교과 해석**: 전공 관련 과목 성적이 전체 대비 어떤 의미인지 (일반선택·공통과목 한정)
+5. **진로선택과목 해석**: **진로 탐색 의지 + 이수 성실도** 관점만 분석.
+   - 어떤 진로 영역과 연결되는 과목을 선택했는지, 학기별 진로 관심사가 어떻게 이어지는지
+   - 학생이 진로와 관련된 과목을 끝까지 성실히 이수했는지
+   - 성취도(A/B/C)는 사실 정보로만 인용하고, 성취도 우열·분포 변별력·학업 우수성 평가 근거로는 활용하지 않습니다.
 
 ## 해석 항목 → JSON 키 매핑
 | 해석 항목 | JSON 키 |
@@ -34,8 +46,7 @@ export const buildAcademicContextAnalysisPrompt = (
 | 2. 과목별 실질 위치 해석 | subjectInterpretations (array) |
 | 3. 과목 간 편차 해석 | varianceInterpretation (object) |
 | 4. 전공 관련 교과 해석 | majorRelevanceInterpretation (object) |
-| 5. 고교 유형 환산 해석 | convertedGradeInterpretation (object) |
-| 6. 진로선택과목 해석 | careerSubjectInterpretations (array) |
+| 5. 진로선택과목 해석 | careerSubjectInterpretations (array) |
 | (종합) | overallAssessment (string) |
 
 ## 경쟁력(competitiveness) 판정 기준
@@ -80,14 +91,10 @@ export const buildAcademicContextAnalysisPrompt = (
     "strengths": ["string (전공 관련 강점 과목)"],
     "weaknesses": ["string (전공 관련 약점 과목)"]
   },
-  "convertedGradeInterpretation": {
-    "universityLine": "string (환산 등급이 의미하는 대학 수준)",
-    "competitivenessAnalysis": "string (대학별 경쟁력 분석)"
-  },
   "careerSubjectInterpretations": [
     {
       "subject": "string (진로선택과목명)",
-      "interpretation": "string (성취도 분포 기반 실질 위치 분석)"
+      "interpretation": "string. 진로 탐색 의지 + 이수 성실도 관점만 서술. 예: '경제 분야 진로와 연결되는 「경제 수학」을 2학기에 걸쳐 꾸준히 이수했습니다 (성취도 A·A). 1학년 통합사회 → 2학년 경제 수학으로 진로 관심사가 정량 분석 영역까지 확장되는 흐름이 보입니다.' 성취도(A/B/C)는 사실 정보로만 인용하고, 'A의 변별력이 낮다·높다', 'A 비율이 낮아 경쟁력이 높다', '학업 우수성의 근거' 같은 학업 역량 우열 판단은 작성하지 않습니다."
     }
   ],
   "overallAssessment": "string (성적 전반에 대한 종합 평가)"
@@ -122,10 +129,6 @@ export interface AcademicContextAnalysisOutput {
     comparison: string;
     strengths: string[];
     weaknesses: string[];
-  };
-  convertedGradeInterpretation: {
-    universityLine: string;
-    competitivenessAnalysis: string;
   };
   careerSubjectInterpretations: {
     subject: string;

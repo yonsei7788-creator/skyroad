@@ -197,6 +197,16 @@ export const CareerSubjectRowForm = ({
         }
       />
     </div>
+    <div className={styles.gradeRowField}>
+      <label className={styles.gradeRowLabel}>비고</label>
+      <input
+        type="text"
+        className={styles.gradeRowInput}
+        placeholder="예: 공동, 타기관"
+        value={row.note}
+        onChange={(e) => onChange(row.id, "note", e.target.value)}
+      />
+    </div>
   </RowShell>
 );
 
@@ -543,6 +553,22 @@ export const AwardRowForm = ({
         {YEAR_OPTIONS.map((y) => (
           <option key={y} value={y}>
             {y}학년
+          </option>
+        ))}
+      </select>
+    </div>
+    <div className={styles.gradeRowField}>
+      <label className={styles.gradeRowLabel}>학기</label>
+      <select
+        className={styles.gradeRowSelect}
+        value={row.semester}
+        onChange={(e) =>
+          onChange(row.id, "semester", parseInt(e.target.value, 10))
+        }
+      >
+        {SEMESTER_OPTIONS.map((s) => (
+          <option key={s} value={s}>
+            {s}학기
           </option>
         ))}
       </select>

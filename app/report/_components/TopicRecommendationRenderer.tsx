@@ -1,7 +1,7 @@
 import type { TopicRecommendationSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface TopicRecommendationRendererProps {
@@ -23,7 +23,7 @@ export const TopicRecommendationRenderer = ({
           <thead>
             <tr>
               <th>주제</th>
-              <th className={styles.tableAlignCenter}>관련 과목</th>
+              <th className={styles.tableAlignCenter}>엮으면 좋은 과목 영역</th>
               {(data.topics ?? [])[0]?.difficulty && (
                 <th className={styles.tableAlignCenter}>난이도</th>
               )}
@@ -43,9 +43,12 @@ export const TopicRecommendationRenderer = ({
                       : typeof topic.relatedSubjects === "string"
                         ? [topic.relatedSubjects]
                         : []
-                    ).map((s) => (
-                      <span key={s} className={styles.tag}>
-                        {s}
+                    ).map((s, sIdx) => (
+                      <span
+                        key={`topic-${idx}-sub-${sIdx}`}
+                        className={styles.tag}
+                      >
+                        {String(s)}
                       </span>
                     ))}
                   </div>
@@ -75,11 +78,6 @@ export const TopicRecommendationRenderer = ({
         <div key={idx}>
           <div className={`${styles.h3} ${styles.mb6}`}>
             {String(idx + 1).padStart(2, "0")}. {topic.topic}
-            {topic.estimatedDuration && (
-              <span className={`${styles.caption} ${styles.ml8}`}>
-                {topic.estimatedDuration}
-              </span>
-            )}
             {topic.importance && (
               <span
                 className={
@@ -92,7 +90,7 @@ export const TopicRecommendationRenderer = ({
                   ? "★ 중요"
                   : topic.importance === "medium"
                     ? "● 보통"
-                    : "○ 참고"}
+                    : ""}
               </span>
             )}
           </div>
@@ -103,51 +101,53 @@ export const TopicRecommendationRenderer = ({
               : typeof topic.relatedSubjects === "string"
                 ? [topic.relatedSubjects]
                 : []
-            ).map((s) => (
-              <span key={s} className={styles.tag}>
-                {s}
+            ).map((s, sIdx) => (
+              <span key={`detail-${idx}-sub-${sIdx}`} className={styles.tag}>
+                {String(s)}
               </span>
             ))}
-            {topic.keywordSuggestions?.map((kw) => (
-              <span key={kw} className={styles.tag}>
-                {kw}
+            {topic.keywordSuggestions?.map((kw, kIdx) => (
+              <span key={`detail-${idx}-kw-${kIdx}`} className={styles.tag}>
+                {String(kw)}
               </span>
             ))}
           </div>
 
-          <p className={styles.small}>{safeText(topic.description)}</p>
+          <p className={styles.small}>
+            {renderInsightMarkers(topic.description)}
+          </p>
 
           {topic.rationale && (
             <p className={`${styles.caption} ${styles.mt6}`}>
               <span className={styles.emphasis}>선정 이유:</span>{" "}
-              {safeText(topic.rationale)}
+              {renderInsightMarkers(topic.rationale)}
             </p>
           )}
 
           {topic.existingConnection && (
             <p className={`${styles.caption} ${styles.mt4}`}>
               <span className={styles.emphasis}>기존 탐구 연결:</span>{" "}
-              {safeText(topic.existingConnection)}
+              {renderInsightMarkers(topic.existingConnection)}
             </p>
           )}
 
           {topic.activityDesign && (
             <div className={styles.mt12}>
-              <div className={`${styles.overline} ${styles.mb6}`}>
-                활동 설계
-                {topic.activityDesign.duration &&
-                  ` (${topic.activityDesign.duration.replace(/\s*\(예상\)\s*/, "")})`}
+              <div className={`${styles.small} ${styles.mb6}`}>
+                <span className={styles.markerSky} style={{ fontWeight: 600 }}>
+                  활동 설계
+                </span>
               </div>
-              <div className={styles.body}>
+              <div className={styles.small}>
                 {(topic.activityDesign.steps ?? []).map((step, sIdx) => (
                   <p key={sIdx} className={sIdx > 0 ? styles.mt4 : undefined}>
                     {step}
                   </p>
                 ))}
               </div>
-              <p className={`${styles.body} ${styles.mt6}`}>
+              <p className={`${styles.small} ${styles.mt6}`}>
                 <span className={styles.emphasis}>예상 결과물:</span>{" "}
-                {safeText(topic.activityDesign.expectedResult)}
+                {renderInsightMarkers(topic.activityDesign.expectedResult)}
               </p>
             </div>
           )}
@@ -156,7 +156,7 @@ export const TopicRecommendationRenderer = ({
             <div className={`${styles.callout} ${styles.mt12}`}>
               <div className={styles.calloutContent}>
                 <span className={styles.emphasis}>세특 서술 예시:</span>{" "}
-                {safeText(topic.sampleEvaluation)}
+                {renderInsightMarkers(topic.sampleEvaluation)}
               </div>
             </div>
           )}

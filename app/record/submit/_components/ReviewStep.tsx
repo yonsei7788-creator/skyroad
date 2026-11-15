@@ -1,4 +1,6 @@
-import type { InputMethod, SchoolRecord } from "./types";
+import { AlertCircle } from "lucide-react";
+
+import type { InputMethod, SchoolRecord, ValidationError } from "./types";
 import { SECTION_TABS, REQUIRED_SECTION_KEYS } from "./types";
 
 import styles from "../page.module.css";
@@ -6,22 +8,36 @@ import styles from "../page.module.css";
 interface ReviewStepProps {
   method: InputMethod;
   record: SchoolRecord;
+  validationErrors?: ValidationError[];
 }
 
-export const ReviewStep = ({ record }: ReviewStepProps) => (
+export const ReviewStep = ({
+  record,
+  validationErrors = [],
+}: ReviewStepProps) => (
   <div className={styles.reviewStep}>
+    {validationErrors.length > 0 && (
+      <div className={styles.parseErrorBox}>
+        <AlertCircle size={16} />
+        <div>
+          {validationErrors.map((e, i) => (
+            <p key={i}>{e.message}</p>
+          ))}
+        </div>
+      </div>
+    )}
     <TextReview record={record} />
   </div>
 );
 
 const TextReview = ({ record }: { record: SchoolRecord }) => {
   const totalItems = Object.values(record).reduce(
-    (sum, arr) => sum + arr.length,
+    (sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0),
     0
   );
 
   const filledSections = SECTION_TABS.filter(
-    (tab) => record[tab.key].length > 0
+    (tab) => (record[tab.key] ?? []).length > 0
   );
 
   return (
@@ -167,6 +183,7 @@ const GeneralSubjectsTable = ({
           <th scope="col">평균</th>
           <th scope="col">표준편차</th>
           <th scope="col">등급</th>
+          <th scope="col">비고</th>
         </tr>
       </thead>
       <tbody>
@@ -184,6 +201,7 @@ const GeneralSubjectsTable = ({
             <td>{g.average ?? "-"}</td>
             <td>{g.standardDeviation ?? "-"}</td>
             <td>{g.gradeRank ?? "-"}</td>
+            <td>{g.note || "-"}</td>
           </tr>
         ))}
       </tbody>
@@ -209,6 +227,7 @@ const CareerSubjectsTable = ({
           <th scope="col">평균</th>
           <th scope="col">성취도</th>
           <th scope="col">분포비율</th>
+          <th scope="col">비고</th>
         </tr>
       </thead>
       <tbody>
@@ -226,6 +245,7 @@ const CareerSubjectsTable = ({
             <td>{g.average ?? "-"}</td>
             <td>{g.achievement || "-"}</td>
             <td>{g.achievementDistribution || "-"}</td>
+            <td>{g.note || "-"}</td>
           </tr>
         ))}
       </tbody>

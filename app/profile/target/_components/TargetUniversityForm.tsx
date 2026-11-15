@@ -7,7 +7,6 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { useRouter } from "next/navigation";
 import {
   GraduationCap,
   Plus,
@@ -19,15 +18,18 @@ import {
   X,
   Check,
   AlertCircle,
+  AlertTriangle,
   Target,
   Sparkles,
 } from "lucide-react";
+
+import { SearchableSelect } from "@/app/_components/SearchableSelect";
 
 import styles from "../page.module.css";
 
 // ─── Types ───
 
-type UniversityPriority = 1 | 2 | 3;
+type UniversityPriority = 1 | 2 | 3 | 4 | 5 | 6;
 
 interface TargetUniversity {
   id?: string;
@@ -53,7 +55,7 @@ interface ToastData {
 const ADMISSION_TYPES = [
   "학생부종합",
   "학생부교과",
-  "논술",
+  "고른기회",
   "실기/실적",
   "기타",
 ] as const;
@@ -66,6 +68,9 @@ const PRIORITY_META: {
   { label: "1지망", sublabel: "최우선 목표", color: "primary" },
   { label: "2지망", sublabel: "차선 목표", color: "secondary" },
   { label: "3지망", sublabel: "안전 목표", color: "tertiary" },
+  { label: "4지망", sublabel: "추가 목표", color: "tertiary" },
+  { label: "5지망", sublabel: "추가 목표", color: "tertiary" },
+  { label: "6지망", sublabel: "추가 목표", color: "tertiary" },
 ];
 
 // ─── Helpers ───
@@ -105,7 +110,6 @@ interface TargetUniversityFormProps {
 export const TargetUniversityForm = ({
   initialTargets,
 }: TargetUniversityFormProps) => {
-  const router = useRouter();
   const [targets, setTargets] = useState<TargetUniversity[]>(() =>
     initialTargets.length > 0 ? initialTargets : [createEmptyTarget(1)]
   );
@@ -129,6 +133,68 @@ export const TargetUniversityForm = ({
     useState<UniversityPriority>(1);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Department options per university
+  const [departmentMap, setDepartmentMap] = useState<Record<string, string[]>>(
+    {}
+  );
+
+  // Art-sport warning per priority: { isArtSport, isArtSportPractical }
+  const [artSportWarnings, setArtSportWarnings] = useState<
+    Record<number, { isArtSport: boolean; isArtSportPractical: boolean }>
+  >({});
+
+  const checkArtSport = useCallback(
+    async (department: string, priority: number) => {
+      if (!department) {
+        setArtSportWarnings((prev) => ({
+          ...prev,
+          [priority]: { isArtSport: false, isArtSportPractical: false },
+        }));
+        return;
+      }
+      try {
+        const res = await fetch(
+          `/api/universities/check-art-sport?department=${encodeURIComponent(department)}`
+        );
+        const data: {
+          isArtSport: boolean;
+          isArtSportPractical: boolean;
+        } = await res.json();
+        setArtSportWarnings((prev) => ({ ...prev, [priority]: data }));
+      } catch {
+        setArtSportWarnings((prev) => ({
+          ...prev,
+          [priority]: { isArtSport: false, isArtSportPractical: false },
+        }));
+      }
+    },
+    []
+  );
+
+  const fetchDepartments = useCallback(
+    async (universityName: string) => {
+      if (!universityName || departmentMap[universityName]) return;
+      try {
+        const res = await fetch(
+          `/api/universities/departments?university=${encodeURIComponent(universityName)}`
+        );
+        const data: string[] = await res.json();
+        setDepartmentMap((prev) => ({ ...prev, [universityName]: data }));
+      } catch {
+        setDepartmentMap((prev) => ({ ...prev, [universityName]: [] }));
+      }
+    },
+    [departmentMap]
+  );
+
+  // 초기 로드 시 이미 설정된 대학교의 학과 목록 fetch + 예체능 실기 체크
+  useEffect(() => {
+    initialTargets.forEach((t) => {
+      if (t.universityName) fetchDepartments(t.universityName);
+      if (t.department) checkArtSport(t.department, t.priority);
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const showToast = useCallback(
     (message: string, type: "success" | "error" = "success") => {
@@ -211,13 +277,23 @@ export const TargetUniversityForm = ({
   };
 
   const handleSelectUniversity = (university: UniversityResult) => {
+    const prev = getTarget(searchingPriority);
+    if (prev.universityName !== university.name) {
+      handleFieldChange(searchingPriority, "department", "");
+    }
     handleFieldChange(searchingPriority, "universityName", university.name);
     clearError(`${searchingPriority}-universityName`);
+    fetchDepartments(university.name);
     handleCloseModal();
   };
 
   const handleManualSelect = () => {
+    const prev = getTarget(searchingPriority);
+    if (prev.universityName !== searchQuery) {
+      handleFieldChange(searchingPriority, "department", "");
+    }
     handleFieldChange(searchingPriority, "universityName", searchQuery);
+    fetchDepartments(searchQuery);
     handleCloseModal();
   };
 
@@ -251,6 +327,10 @@ export const TargetUniversityForm = ({
       return updated;
     });
     clearError(`${priority}-${field}`);
+
+    if (field === "department") {
+      checkArtSport(value, priority);
+    }
   };
 
   const getTarget = (priority: UniversityPriority): TargetUniversity =>
@@ -258,7 +338,7 @@ export const TargetUniversityForm = ({
 
   const handleAddSlot = () => {
     const nextPriority = (targets.length + 1) as UniversityPriority;
-    if (nextPriority > 3) return;
+    if (nextPriority > 6) return;
     setTargets((prev) => [...prev, createEmptyTarget(nextPriority)]);
   };
 
@@ -283,17 +363,28 @@ export const TargetUniversityForm = ({
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    const primary = getTarget(1);
 
-    if (!primary.universityName.trim()) {
-      newErrors["1-universityName"] = "1지망 대학명을 입력해주세요.";
-    }
-    if (!primary.admissionType) {
-      newErrors["1-admissionType"] = "1지망 전형을 선택해주세요.";
-    }
-    if (!primary.department.trim()) {
-      newErrors["1-department"] = "1지망 모집단위를 입력해주세요.";
-    }
+    targets.forEach((target) => {
+      const p = target.priority;
+      const { label } = PRIORITY_META[p - 1];
+      const hasAnyData =
+        target.universityName.trim() ||
+        target.admissionType ||
+        target.department.trim();
+
+      // 1지망은 항상 필수, 2·3지망은 데이터가 하나라도 있으면 필수
+      if (p === 1 || hasAnyData) {
+        if (!target.universityName.trim()) {
+          newErrors[`${p}-universityName`] = `${label} 대학명을 입력해주세요.`;
+        }
+        if (!target.admissionType) {
+          newErrors[`${p}-admissionType`] = `${label} 전형을 선택해주세요.`;
+        }
+        if (!target.department.trim()) {
+          newErrors[`${p}-department`] = `${label} 모집단위를 입력해주세요.`;
+        }
+      }
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -321,7 +412,16 @@ export const TargetUniversityForm = ({
       }
 
       showToast("목표 대학이 저장되었습니다.");
-      setTimeout(() => router.push("/profile/settings"), 1200);
+      // 저장 후 동일 페이지 유지 — 접힌 상태로 갱신
+      setCollapsed(
+        filledTargets.reduce(
+          (acc, t) => {
+            if (isTargetFilled(t)) acc[t.priority] = true;
+            return acc;
+          },
+          {} as Record<number, boolean>
+        )
+      );
     } catch {
       showToast("네트워크 오류가 발생했습니다.", "error");
     } finally {
@@ -341,7 +441,7 @@ export const TargetUniversityForm = ({
             <span className={styles.sectionLabel}>Target University</span>
             <h1 className={styles.pageTitle}>목표 대학 설정</h1>
             <p className={styles.pageSubtitle}>
-              AI 리포트의 합격 예측 및 입시 전략에 활용됩니다
+              AI 리포트의 희망학과 판단 및 입시 전략에 활용됩니다
             </p>
           </div>
         </div>
@@ -368,7 +468,7 @@ export const TargetUniversityForm = ({
               const priority = (idx + 1) as UniversityPriority;
               const target = getTarget(priority);
               const meta = PRIORITY_META[priority - 1];
-              const isRequired = priority === 1;
+              const isPrimary = priority === 1;
               const isCollapsed = collapsed[priority] && isTargetFilled(target);
               const filled = isTargetFilled(target);
 
@@ -388,7 +488,7 @@ export const TargetUniversityForm = ({
                       >
                         {meta.label}
                       </span>
-                      {isRequired && (
+                      {isPrimary && (
                         <span className={styles.requiredTag}>필수</span>
                       )}
                       {isCollapsed && (
@@ -403,7 +503,7 @@ export const TargetUniversityForm = ({
                           <Check size={12} />
                         </span>
                       )}
-                      {!isRequired && (
+                      {!isPrimary && (
                         <button
                           type="button"
                           className={styles.targetRemoveBtn}
@@ -434,9 +534,7 @@ export const TargetUniversityForm = ({
                             className={styles.labelIcon}
                           />
                           대학명
-                          {isRequired && (
-                            <span className={styles.required}>*</span>
-                          )}
+                          <span className={styles.required}>*</span>
                         </label>
                         <div className={styles.searchInputRow}>
                           <input
@@ -475,9 +573,7 @@ export const TargetUniversityForm = ({
                       <div className={styles.field}>
                         <label className={styles.label}>
                           전형
-                          {isRequired && (
-                            <span className={styles.required}>*</span>
-                          )}
+                          <span className={styles.required}>*</span>
                         </label>
                         <select
                           className={`${styles.select} ${errors[`${priority}-admissionType`] ? styles.inputError : ""}`}
@@ -510,23 +606,45 @@ export const TargetUniversityForm = ({
                         <div className={styles.field}>
                           <label className={styles.label}>
                             모집단위
-                            {isRequired && (
-                              <span className={styles.required}>*</span>
-                            )}
+                            <span className={styles.required}>*</span>
                           </label>
-                          <input
-                            type="text"
-                            className={`${styles.input} ${errors[`${priority}-department`] ? styles.inputError : ""}`}
-                            placeholder="예: 컴퓨터공학과"
-                            value={target.department}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                priority,
-                                "department",
-                                e.target.value
-                              )
-                            }
-                          />
+                          {(() => {
+                            const depts = departmentMap[target.universityName];
+                            const hasDepts = depts && depts.length > 0;
+                            const noUniv = !target.universityName;
+
+                            return hasDepts ? (
+                              <SearchableSelect
+                                options={depts}
+                                value={target.department}
+                                onChange={(val) =>
+                                  handleFieldChange(priority, "department", val)
+                                }
+                                placeholder="모집단위를 선택해주세요"
+                                hasError={!!errors[`${priority}-department`]}
+                                allowCustom
+                              />
+                            ) : (
+                              <input
+                                type="text"
+                                className={`${styles.input} ${errors[`${priority}-department`] ? styles.inputError : ""}`}
+                                placeholder={
+                                  noUniv
+                                    ? "대학교를 먼저 선택해주세요"
+                                    : "예: 컴퓨터공학과"
+                                }
+                                value={target.department}
+                                disabled={noUniv}
+                                onChange={(e) =>
+                                  handleFieldChange(
+                                    priority,
+                                    "department",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            );
+                          })()}
                           {errors[`${priority}-department`] && (
                             <span className={styles.fieldError}>
                               <AlertCircle size={12} />
@@ -551,13 +669,27 @@ export const TargetUniversityForm = ({
                           />
                         </div>
                       </div>
+
+                      {artSportWarnings[priority]?.isArtSport && (
+                        <div className={styles.artSportNotice}>
+                          <AlertTriangle size={15} />
+                          <div>
+                            <strong>예체능계열 학과 안내</strong>
+                            <p>
+                              예체능계열 학과는 실기 전형이 포함될 수 있어, 합격
+                              예측 및 추천 대학 분석이 제공되지 않을 수
+                              있습니다.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               );
             })}
 
-            {targets.length < 3 && (
+            {targets.length < 6 && (
               <button
                 type="button"
                 className={styles.addTargetBtn}

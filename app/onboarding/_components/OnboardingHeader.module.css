@@ -42,6 +42,10 @@
   flex-shrink: 0;
 }
 
+.logoAccent {
+  color: var(--color-primary-600);
+}
+
 .logoutButton {
   display: inline-flex;
   align-items: center;

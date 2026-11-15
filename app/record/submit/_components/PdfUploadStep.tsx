@@ -1,4 +1,5 @@
-import { FileText } from "lucide-react";
+import { useState } from "react";
+import { FileText, Info } from "lucide-react";
 
 import { DropZone } from "./DropZone";
 
@@ -15,11 +16,22 @@ export const PdfUploadStep = ({
   pdfFileName,
   onPdfChange,
 }: PdfUploadStepProps) => {
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const [sizeError, setSizeError] = useState<string | null>(null);
+
   const handleFiles = (files: File[]) => {
     const [file] = files;
-    if (file && file.type === "application/pdf") {
-      onPdfChange(file, file.name);
+    if (!file || file.type !== "application/pdf") return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      setSizeError(
+        "파일 크기가 5MB를 초과합니다. 카카오톡·네이버 전자증명서 또는 정부24 앱에서 발급한 정식 생활기록부 PDF로 다시 시도해 주세요."
+      );
+      return;
     }
+
+    setSizeError(null);
+    onPdfChange(file, file.name);
   };
 
   return (
@@ -31,13 +43,29 @@ export const PdfUploadStep = ({
         </p>
       </div>
 
+      <div className={styles.pdfGuideCard} role="note">
+        <Info size={16} className={styles.pdfGuideCardIcon} aria-hidden />
+        <div className={styles.pdfGuideCardBody}>
+          <p className={styles.pdfGuideCardText}>
+            <strong>정부24 앱·카카오톡·네이버</strong>에서 발급한 정식
+            생활기록부 PDF만 등록 가능합니다.
+            <br />
+            개인정보 보호를 위해 캡처 또는 인쇄 방식으로 생성된 파일은 접수되지
+            않습니다.
+          </p>
+        </div>
+      </div>
+
       {!pdfFile && (
-        <DropZone
-          accept=".pdf,application/pdf"
-          label="PDF 파일을 드래그하거나 클릭하여 업로드"
-          hint="PDF 파일만 지원됩니다"
-          onFiles={handleFiles}
-        />
+        <>
+          <DropZone
+            accept=".pdf,application/pdf"
+            label="PDF 파일을 드래그하거나 클릭하여 업로드"
+            hint="PDF 파일만 지원됩니다 (최대 5MB)"
+            onFiles={handleFiles}
+          />
+          {sizeError && <p className={styles.pdfSizeError}>{sizeError}</p>}
+        </>
       )}
 
       {pdfFile && (

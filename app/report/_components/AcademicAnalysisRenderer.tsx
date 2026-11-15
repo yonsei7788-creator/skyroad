@@ -1,7 +1,7 @@
 import type { AcademicAnalysisSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface AcademicAnalysisRendererProps {
@@ -40,6 +40,20 @@ const hasRawScore = (grades: AcademicAnalysisSection["subjectGrades"]) =>
 
 const hasClassAvg = (grades: AcademicAnalysisSection["subjectGrades"]) =>
   (grades ?? []).some((g) => g.classAverage !== undefined);
+
+/** Safely convert an action item (string or {item, detail} object) to a string */
+const toText = (v: unknown): string => {
+  if (typeof v === "string") return v;
+  if (v && typeof v === "object") {
+    const obj = v as Record<string, unknown>;
+    if (typeof obj.item === "string") {
+      return typeof obj.detail === "string"
+        ? `${obj.item}: ${obj.detail}`
+        : obj.item;
+    }
+  }
+  return String(v ?? "");
+};
 
 /** Check if an object has at least one non-empty value */
 const hasContent = (obj: unknown): boolean => {
@@ -213,92 +227,87 @@ export const AcademicAnalysisRenderer = ({
         <div className={styles.aiCommentary}>
           <div className={styles.aiCommentaryIcon}>✦</div>
           <div className={styles.aiCommentaryContent}>
-            <div className={styles.aiCommentaryLabel}>성적 분석</div>
+            <div className={styles.aiCommentaryLabel}>
+              <span className={styles.markerSky}>성적 분석</span>
+            </div>
             <div className={styles.aiCommentaryText}>
-              {safeText(data.interpretation)}
+              {renderInsightMarkers(data.interpretation)}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Block 4: Deviation + Major relevance + School type */}
-      {(hasContent(data.gradeDeviationAnalysis) ||
-        hasContent(data.majorRelevanceAnalysis) ||
-        data.schoolTypeAdjustment) && (
-        <div>
-          {hasContent(data.gradeDeviationAnalysis) && (
-            <div className={styles.card}>
-              <div className={styles.cardHeader}>
-                <div className={styles.cardTitle}>과목 간 편차 분석</div>
-              </div>
-              <div className={`${styles.cardGridThree} ${styles.mt12}`}>
-                <div className={styles.miniStat}>
-                  <span className={styles.miniStatValue}>
-                    {data.gradeDeviationAnalysis!.highestSubject || "—"}
-                  </span>
-                  <span className={styles.miniStatLabel}>최고 과목</span>
-                </div>
-                <div className={styles.miniStat}>
-                  <span className={styles.miniStatValue}>
-                    {data.gradeDeviationAnalysis!.lowestSubject || "—"}
-                  </span>
-                  <span className={styles.miniStatLabel}>최저 과목</span>
-                </div>
-                <div className={styles.miniStat}>
-                  <span className={styles.miniStatValue}>
-                    {data.gradeDeviationAnalysis!.deviationRange ?? "—"}
-                  </span>
-                  <span className={styles.miniStatLabel}>편차 범위</span>
-                </div>
-              </div>
-              {data.gradeDeviationAnalysis!.riskAssessment && (
-                <p className={`${styles.body} ${styles.mt12}`}>
-                  {safeText(data.gradeDeviationAnalysis!.riskAssessment)}
-                </p>
-              )}
+      {/* Block 4a: Grade deviation analysis */}
+      {hasContent(data.gradeDeviationAnalysis) && (
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardTitle}>과목 간 편차 분석</div>
+          </div>
+          <div className={`${styles.cardGridThree} ${styles.mt12}`}>
+            <div className={styles.miniStat}>
+              <span className={styles.miniStatValue}>
+                {data.gradeDeviationAnalysis!.highestSubject || "—"}
+              </span>
+              <span className={styles.miniStatLabel}>최고 과목</span>
             </div>
+            <div className={styles.miniStat}>
+              <span className={styles.miniStatValue}>
+                {data.gradeDeviationAnalysis!.lowestSubject || "—"}
+              </span>
+              <span className={styles.miniStatLabel}>최저 과목</span>
+            </div>
+            <div className={styles.miniStat}>
+              <span className={styles.miniStatValue}>
+                {data.gradeDeviationAnalysis!.deviationRange ?? "—"}
+              </span>
+              <span className={styles.miniStatLabel}>편차 범위</span>
+            </div>
+          </div>
+          {data.gradeDeviationAnalysis!.riskAssessment && (
+            <p className={`${styles.body} ${styles.mt12}`}>
+              {renderInsightMarkers(
+                data.gradeDeviationAnalysis!.riskAssessment
+              )}
+            </p>
           )}
+        </div>
+      )}
 
-          {hasContent(data.majorRelevanceAnalysis) && (
-            <div className={`${styles.card} ${styles.mt12}`}>
-              <div className={styles.cardHeader}>
-                <div className={styles.cardTitle}>전공 관련 교과 분석</div>
-              </div>
-              {data.majorRelevanceAnalysis!.enrollmentEffort && (
-                <p className={`${styles.small} ${styles.mt8}`}>
-                  <span className={styles.emphasis}>이수 노력:</span>{" "}
-                  {safeText(data.majorRelevanceAnalysis!.enrollmentEffort)}
-                </p>
+      {/* Block 4b: Major relevance analysis */}
+      {hasContent(data.majorRelevanceAnalysis) && (
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardTitle}>전공 관련 교과 분석</div>
+          </div>
+          {data.majorRelevanceAnalysis!.enrollmentEffort && (
+            <p className={`${styles.small} ${styles.mt8}`}>
+              <span className={styles.emphasis}>이수 노력:</span>{" "}
+              {renderInsightMarkers(
+                data.majorRelevanceAnalysis!.enrollmentEffort
               )}
-              {data.majorRelevanceAnalysis!.achievement && (
-                <p className={`${styles.small} ${styles.mt8}`}>
-                  <span className={styles.emphasis}>성취도:</span>{" "}
-                  {safeText(data.majorRelevanceAnalysis!.achievement)}
-                </p>
-              )}
-              {data.majorRelevanceAnalysis!.recommendedSubjects &&
-                data.majorRelevanceAnalysis!.recommendedSubjects.length > 0 && (
-                  <div className={`${styles.tagGroup} ${styles.mt12}`}>
-                    {data.majorRelevanceAnalysis!.recommendedSubjects.map(
-                      (sub) => (
-                        <span key={sub} className={styles.tagAccent}>
-                          {sub}
-                        </span>
-                      )
-                    )}
-                  </div>
+            </p>
+          )}
+          {data.majorRelevanceAnalysis!.achievement && (
+            <p className={`${styles.small} ${styles.mt8}`}>
+              <span className={styles.emphasis}>성취도:</span>{" "}
+              {renderInsightMarkers(data.majorRelevanceAnalysis!.achievement)}
+            </p>
+          )}
+          {Array.isArray(data.majorRelevanceAnalysis!.recommendedSubjects) &&
+            data.majorRelevanceAnalysis!.recommendedSubjects.length > 0 && (
+              <div className={`${styles.tagGroup} ${styles.mt12}`}>
+                {data.majorRelevanceAnalysis!.recommendedSubjects.map(
+                  (sub, i) => (
+                    <span
+                      key={typeof sub === "string" ? sub : i}
+                      className={styles.tagAccentWrap}
+                    >
+                      {typeof sub === "string" ? sub : String(sub)}
+                    </span>
+                  )
                 )}
-            </div>
-          )}
-
-          {data.schoolTypeAdjustment && (
-            <div className={`${styles.callout} ${styles.mt12}`}>
-              <div className={styles.calloutContent}>
-                <span className={styles.emphasis}>학교 유형 보정:</span>{" "}
-                {safeText(data.schoolTypeAdjustment)}
               </div>
-            </div>
-          )}
+            )}
         </div>
       )}
 
@@ -317,21 +326,26 @@ export const AcademicAnalysisRenderer = ({
                 )}
               </div>
               {gca.prediction && (
-                <p className={styles.body}>{safeText(gca.prediction)}</p>
+                <p className={styles.body}>
+                  {renderInsightMarkers(gca.prediction)}
+                </p>
               )}
               {(gca.actionItems ?? []).length > 0 && (
                 <>
                   <hr className={styles.dividerDotted} />
                   <div className={`${styles.overline} ${styles.mb8}`}>
-                    실행 항목
+                    <span className={styles.markerSky}>실행 항목</span>
                   </div>
                   <ol className={styles.numberedList}>
                     {gca.actionItems!.map((item, idx) => (
-                      <li key={item} className={styles.numberedListItem}>
+                      <li
+                        key={`action-${idx}`}
+                        className={styles.numberedListItem}
+                      >
                         <span className={styles.numberedListNumber}>
                           {idx + 1}
                         </span>
-                        {item}
+                        {toText(item)}
                         {gca.actionItemPriorities?.[idx] && (
                           <span
                             className={
@@ -345,7 +359,7 @@ export const AcademicAnalysisRenderer = ({
                               ? "★ 중요"
                               : gca.actionItemPriorities[idx] === "medium"
                                 ? "● 보통"
-                                : "○ 참고"}
+                                : ""}
                           </span>
                         )}
                       </li>
@@ -387,7 +401,7 @@ export const AcademicAnalysisRenderer = ({
                       {item.achievement || "—"}
                     </td>
                     <td className={styles.small}>
-                      {safeText(item.interpretation)}
+                      {renderInsightMarkers(item.interpretation)}
                     </td>
                   </tr>
                 ))}
@@ -427,7 +441,7 @@ export const AcademicAnalysisRenderer = ({
                           {sc.grade && ` (${sc.grade}등급)`}
                         </td>
                         <td className={styles.small}>
-                          {safeText(sc.interpretation)}
+                          {renderInsightMarkers(sc.interpretation)}
                         </td>
                       </tr>
                     ))}
@@ -442,143 +456,34 @@ export const AcademicAnalysisRenderer = ({
             >
               <div className={styles.calloutContent}>
                 <span className={styles.emphasis}>등급 인플레이션:</span>{" "}
-                {safeText(data.gradeInflationContext)}
+                {renderInsightMarkers(data.gradeInflationContext)}
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Block 7: Five grade simulation */}
-      {Array.isArray(data.fiveGradeSimulation) &&
-        data.fiveGradeSimulation.filter(
-          (s) => s.currentGrade && s.simulatedGrade
-        ).length > 0 &&
-        (() => {
-          const fgSim = data.fiveGradeSimulation.filter(
-            (s) => s.currentGrade && s.simulatedGrade
-          );
-          const showPercentile = fgSim.some(
-            (sim) => sim.percentileCumulative !== undefined
-          );
-          return (
-            <div>
-              <div className={styles.ceSubheading}>5등급제 전환 시뮬레이션</div>
-              <table className={styles.compactTable}>
-                <thead>
-                  <tr>
-                    <th>교과</th>
-                    <th className={styles.tableAlignCenter}>현재 등급</th>
-                    <th className={styles.tableAlignCenter}>전환 등급</th>
-                    {showPercentile && (
-                      <th className={styles.tableAlignCenter}>누적 백분위</th>
-                    )}
-                    <th>해석</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fgSim.map((sim) => (
-                    <tr key={sim.subject}>
-                      <td className={styles.tableCellBold}>{sim.subject}</td>
-                      <td className={styles.tableAlignCenter}>
-                        {sim.currentGrade}
-                      </td>
-                      <td className={styles.tableAlignCenter}>
-                        {sim.simulatedGrade}
-                      </td>
-                      {showPercentile && (
-                        <td className={styles.tableAlignCenter}>
-                          {sim.percentileCumulative !== undefined
-                            ? `${sim.percentileCumulative}%`
-                            : "—"}
-                        </td>
-                      )}
-                      <td className={styles.small}>
-                        {safeText(sim.interpretation)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {/* Block 7: Five grade simulation — 피드백 반영: 등급 변환 표시 제거
+          5등급제 생기부는 5등급제 기준으로, 9등급제 생기부는 9등급제 기준으로 각 평가.
+          변환 등급을 알려줄 필요 없음 */}
+
+      {/* Block 8: Improvement priority */}
+      {Array.isArray(data.improvementPriority) &&
+        data.improvementPriority.length > 0 && (
+          <div className={styles.cardHighlight}>
+            <div className={styles.cardTitle}>
+              <span className={styles.markerSky}>성적 개선 우선순위</span>
             </div>
-          );
-        })()}
-
-      {/* Block 8: University simulations + Improvement priority */}
-      {((Array.isArray(data.universityGradeSimulations) &&
-        data.universityGradeSimulations.length > 0) ||
-        (Array.isArray(data.improvementPriority) &&
-          data.improvementPriority.length > 0)) && (
-        <div>
-          {Array.isArray(data.universityGradeSimulations) &&
-            data.universityGradeSimulations.length > 0 && (
-              <>
-                <div className={styles.ceSubheading}>
-                  대학별 반영 방법 시뮬레이션
-                </div>
-                <table className={`${styles.table} ${styles.mb16}`}>
-                  <thead>
-                    <tr>
-                      <th style={{ whiteSpace: "nowrap" }}>대학</th>
-                      <th style={{ whiteSpace: "nowrap", minWidth: 80 }}>
-                        학과
-                      </th>
-                      <th className={styles.tableAlignCenter}>반영 방법</th>
-                      <th
-                        className={styles.tableAlignCenter}
-                        style={{ whiteSpace: "nowrap" }}
-                      >
-                        환산 점수
-                      </th>
-                      <th>해석</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.universityGradeSimulations.map((sim) => (
-                      <tr key={`${sim.university}-${sim.department}`}>
-                        <td
-                          className={styles.tableCellBold}
-                          style={{ whiteSpace: "nowrap" }}
-                        >
-                          {sim.university}
-                        </td>
-                        <td style={{ whiteSpace: "nowrap" }}>
-                          {sim.department}
-                        </td>
-                        <td className={styles.tableAlignCenter}>
-                          {sim.reflectionMethod}
-                        </td>
-                        <td className={styles.tableAlignCenter}>
-                          {sim.calculatedScore}
-                        </td>
-                        <td className={styles.small}>
-                          {safeText(sim.interpretation)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </>
-            )}
-
-          {Array.isArray(data.improvementPriority) &&
-            data.improvementPriority.length > 0 && (
-              <div className={styles.cardHighlight}>
-                <div className={styles.cardTitle}>성적 개선 우선순위</div>
-                <ol className={`${styles.numberedList} ${styles.mt12}`}>
-                  {data.improvementPriority.map((item, idx) => (
-                    <li key={item} className={styles.numberedListItem}>
-                      <span className={styles.numberedListNumber}>
-                        {idx + 1}
-                      </span>
-                      {item}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
-        </div>
-      )}
+            <ol className={`${styles.numberedList} ${styles.mt12}`}>
+              {data.improvementPriority.map((item, idx) => (
+                <li key={`priority-${idx}`} className={styles.numberedListItem}>
+                  <span className={styles.numberedListNumber}>{idx + 1}</span>
+                  {toText(item)}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
     </>
   );
 };

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   Menu,
@@ -12,26 +11,32 @@ import {
   ChevronDown,
   FileText,
   UserCog,
-  Receipt,
   LogOut,
   ClipboardList,
   GraduationCap,
   Shield,
+  BookOpen,
+  FilePlus,
+  HelpCircle,
+  MessageSquareHeart,
 } from "lucide-react";
 
 import { useAuthStore } from "@/libs/store/auth-provider";
 import { createClient } from "@/libs/supabase/client";
 
-import { AuthModal } from "./AuthModal";
 import styles from "./Header.module.css";
 
-const NAV_ITEMS = [{ label: "서비스 소개", href: "/about" }];
+const NAV_ITEMS = [
+  { label: "서비스 소개", href: "/about", icon: BookOpen },
+  { label: "후기", href: "/#reviews", icon: MessageSquareHeart },
+  { label: "생기부 등록 가이드", href: "/guide/record", icon: HelpCircle },
+];
 
 const PROFILE_MENU_ITEMS = [
   { label: "컨설팅 내역", href: "/profile/consulting", icon: FileText },
   { label: "목표 대학 수정", href: "/profile/target", icon: GraduationCap },
+  { label: "추천인 코드", href: "/profile/referral", icon: Ticket },
   { label: "내 정보 수정", href: "/profile/settings", icon: UserCog },
-  { label: "구매 내역", href: "/profile/orders", icon: Receipt },
 ] as const;
 
 export const Header = () => {
@@ -41,10 +46,20 @@ export const Header = () => {
   const user = useAuthStore((s) => s.user);
   const role = useAuthStore((s) => s.role);
   const onboardingCompleted = useAuthStore((s) => s.onboardingCompleted);
-  const openAuthModal = useAuthStore((s) => s.openAuthModal);
+  const hasRecord = useAuthStore((s) => s.hasRecord);
 
+  const isProfileLoaded = useAuthStore((s) => s.isProfileLoaded);
   const isLoggedIn = !!user;
   const showRecordLink = isLoggedIn && onboardingCompleted;
+  const showAdmin = isLoggedIn && isProfileLoaded && role === "admin";
+
+  // 생기부 등록 여부에 따라 메뉴 라벨/링크 토글:
+  // 미등록 → /record/submit (신규 등록), 등록됨 → /record/submit?mode=edit (수정)
+  const recordSubmitMenu = {
+    label: hasRecord ? "생기부 수정" : "생기부 등록",
+    href: hasRecord ? "/record/submit?mode=edit" : "/record/submit",
+    icon: FilePlus,
+  };
 
   const closeDropdown = useCallback(() => {
     setIsDropdownOpen(false);
@@ -76,14 +91,33 @@ export const Header = () => {
     };
   }, [isDropdownOpen, closeDropdown]);
 
-  const handleOpenAuthModal = () => {
-    openAuthModal();
+  const closeMobileMenu = useCallback(() => {
     setIsMobileMenuOpen(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileMenuOpen]);
 
   const handleSignOut = async () => {
     const supabase = createClient();
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      // signOut 실패 시 쿠키를 수동으로 비우고 강제 이동
+      document.cookie.split(";").forEach((c) => {
+        const name = c.split("=")[0].trim();
+        if (name.startsWith("sb-")) {
+          document.cookie = `${name}=;expires=${new Date(0).toUTCString()};path=/`;
+        }
+      });
+    }
     window.location.href = "/";
   };
 
@@ -93,12 +127,7 @@ export const Header = () => {
         <div className={styles.inner}>
           <div className={styles.left}>
             <Link href="/" className={styles.logo}>
-              <Image
-                src="/images/skyroad-logo.png"
-                alt="SKYROAD"
-                width={150}
-                height={60}
-              />
+              SKY<span className={styles.logoAccent}>ROAD</span>
             </Link>
 
             <nav className={styles.desktopNav}>
@@ -125,7 +154,7 @@ export const Header = () => {
           </div>
 
           <div className={styles.desktopRight}>
-            {role === "admin" && (
+            {showAdmin && (
               <Link href="/admin/dashboard" className={styles.adminButton}>
                 <Shield size={14} />
                 어드민
@@ -155,6 +184,14 @@ export const Header = () => {
                 </button>
                 {isDropdownOpen && (
                   <div className={styles.dropdown}>
+                    <Link
+                      href={recordSubmitMenu.href}
+                      className={styles.dropdownItem}
+                      onClick={closeDropdown}
+                    >
+                      <recordSubmitMenu.icon size={16} />
+                      {recordSubmitMenu.label}
+                    </Link>
                     {PROFILE_MENU_ITEMS.map((item) => (
                       <Link
                         key={item.href}
@@ -179,14 +216,10 @@ export const Header = () => {
                 )}
               </div>
             ) : (
-              <button
-                type="button"
-                className={styles.authButton}
-                onClick={handleOpenAuthModal}
-              >
+              <Link href="/login" className={styles.authButton}>
                 로그인
                 <ArrowRight size={16} />
-              </button>
+              </Link>
             )}
           </div>
 
@@ -200,100 +233,127 @@ export const Header = () => {
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
+      </header>
 
-        {isMobileMenuOpen && (
-          <div className={styles.mobileMenu}>
-            <nav className={styles.mobileNav}>
-              {showRecordLink && (
-                <Link
-                  href="/record"
-                  className={styles.mobileLinkAccent}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
+      {/* Mobile Overlay — header 밖에 배치 (backdrop-filter containing block 회피) */}
+      <div
+        className={`${styles.mobileOverlay} ${isMobileMenuOpen ? styles.open : ""}`}
+        onClick={closeMobileMenu}
+        aria-hidden="true"
+      />
+
+      {/* Mobile Menu */}
+      <div
+        className={`${styles.mobileMenu} ${isMobileMenuOpen ? styles.open : ""}`}
+      >
+        <nav className={styles.mobileNav}>
+          {/* Group 1: Navigation */}
+          <div className={styles.mobileGroup}>
+            <div className={styles.mobileGroupLabel}>메뉴</div>
+            {showRecordLink && (
+              <Link
+                href="/record"
+                className={styles.mobileLinkAccent}
+                onClick={closeMobileMenu}
+              >
+                <span className={styles.mobileLinkIcon}>
                   <ClipboardList size={16} />
-                  생기부 분석
-                </Link>
-              )}
-              {isLoggedIn && (
-                <Link
-                  href="/profile/consulting"
-                  className={styles.mobileLink}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <FileText size={16} />
-                  컨설팅 내역
-                </Link>
-              )}
-              {NAV_ITEMS.map((item) => (
+                </span>
+                생기부 분석
+              </Link>
+            )}
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={styles.mobileLink}
+                onClick={closeMobileMenu}
+              >
+                <span className={styles.mobileLinkIcon}>
+                  <item.icon size={16} />
+                </span>
+                {item.label}
+              </Link>
+            ))}
+          </div>
+
+          {/* Group 2: Account (logged in) */}
+          {isLoggedIn && (
+            <div className={styles.mobileGroup}>
+              <div className={styles.mobileGroupLabel}>내 계정</div>
+              <Link
+                href={recordSubmitMenu.href}
+                className={styles.mobileLink}
+                onClick={closeMobileMenu}
+              >
+                <span className={styles.mobileLinkIcon}>
+                  <recordSubmitMenu.icon size={16} />
+                </span>
+                {recordSubmitMenu.label}
+              </Link>
+              {PROFILE_MENU_ITEMS.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={styles.mobileLink}
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={closeMobileMenu}
                 >
+                  <span className={styles.mobileLinkIcon}>
+                    <item.icon size={16} />
+                  </span>
                   {item.label}
                 </Link>
               ))}
-              <div className={styles.mobileBottom}>
-                <Link
-                  href="/pricing"
-                  className={styles.mobileTicket}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <Ticket size={16} className={styles.ticketIcon} />
-                  이용권
-                </Link>
-                {!isLoggedIn && (
-                  <button
-                    type="button"
-                    className={styles.mobileCta}
-                    onClick={handleOpenAuthModal}
-                  >
-                    로그인
-                    <ArrowRight size={16} />
-                  </button>
-                )}
-              </div>
-              {isLoggedIn && (
-                <div className={styles.mobileProfileMenu}>
-                  {role === "admin" && (
-                    <Link
-                      href="/admin/dashboard"
-                      className={styles.mobileProfileLink}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <Shield size={16} />
-                      어드민
-                    </Link>
-                  )}
-                  {PROFILE_MENU_ITEMS.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={styles.mobileProfileLink}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <item.icon size={16} />
-                      {item.label}
-                    </Link>
-                  ))}
-                  <button
-                    type="button"
-                    className={styles.mobileProfileLink}
-                    onClick={handleSignOut}
-                  >
-                    <LogOut size={16} />
-                    로그아웃
-                  </button>
-                </div>
-              )}
-            </nav>
-          </div>
-        )}
-      </header>
-      <div className={styles.spacer} />
+              <div className={styles.mobileGroupDivider} />
+              <button
+                type="button"
+                className={styles.mobileLogout}
+                onClick={handleSignOut}
+              >
+                <span className={styles.mobileLinkIcon}>
+                  <LogOut size={16} />
+                </span>
+                로그아웃
+              </button>
+            </div>
+          )}
 
-      <AuthModal />
+          {/* CTA Area */}
+          <div className={styles.mobileCta}>
+            <Link
+              href="/pricing"
+              className={styles.mobileTicket}
+              onClick={closeMobileMenu}
+            >
+              <Ticket size={16} className={styles.ticketIcon} />
+              이용권 구매
+            </Link>
+            {!isLoggedIn && (
+              <Link
+                href="/login"
+                className={styles.mobileAuthButton}
+                onClick={closeMobileMenu}
+              >
+                로그인
+                <ArrowRight size={16} />
+              </Link>
+            )}
+          </div>
+
+          {/* Admin Link */}
+          {showAdmin && (
+            <Link
+              href="/admin/dashboard"
+              className={styles.mobileAdminLink}
+              onClick={closeMobileMenu}
+            >
+              <Shield size={14} />
+              어드민
+            </Link>
+          )}
+        </nav>
+      </div>
+      <div className={styles.spacer} />
     </>
   );
 };

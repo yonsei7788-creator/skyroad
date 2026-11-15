@@ -69,6 +69,10 @@
   letter-spacing: -0.02em;
 }
 
+.mobileBreak {
+  display: none;
+}
+
 @media (min-width: 1024px) {
   .headline {
     font-size: 2.5rem;
@@ -82,6 +86,14 @@
   font-size: 1.0625rem;
   line-height: 1.6;
   color: rgb(255 255 255 / 0.6);
+  text-align: center;
+}
+
+@media (min-width: 1024px) {
+  .subtext {
+    max-width: none;
+    white-space: nowrap;
+  }
 }
 
 .ctaButton {
@@ -122,4 +134,39 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* ---- Mobile Optimization ---- */
+@media (max-width: 639px) {
+  .section {
+    padding: 64px 0;
+  }
+
+  .card {
+    padding: 56px 20px;
+    border-radius: 20px;
+  }
+
+  .headline {
+    font-size: 1.625rem;
+  }
+
+  .mobileBreak {
+    display: inline;
+  }
+
+  .subtext {
+    font-size: 0.9375rem;
+  }
+
+  .ctaButton {
+    padding: 16px 36px;
+    font-size: 1rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .subtext {
+    word-break: keep-all;
+  }
 }

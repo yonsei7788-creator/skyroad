@@ -26,6 +26,8 @@ interface RunTaskResponse {
 
 const TASK_LABELS: Record<string, string> = {
   phase2: "기초 분석",
+  phase2Extract: "기초 분석",
+  phase2Classify: "학생 유형 분류",
   studentProfile: "학생 프로필",
   competencyScore: "역량 점수",
   academicAnalysis: "학업 분석",
@@ -37,9 +39,8 @@ const TASK_LABELS: Record<string, string> = {
   weaknessAnalysis: "약점 분석",
   topicRecommendation: "주제 추천",
   interviewPrep: "면접 준비",
-  admissionPrediction: "합격 예측",
+  admissionPrediction: "희망 학교·학과 판단",
   admissionStrategy: "입시 전략",
-  directionGuide: "방향 가이드",
   storyAnalysis: "스토리 분석",
   actionRoadmap: "실행 로드맵",
   majorExploration: "학과 탐색",
@@ -50,6 +51,7 @@ const GeneratingContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
+  const isFromAdmin = searchParams.get("from") === "admin";
 
   const [phase, setPhase] = useState<
     "idle" | "initializing" | "running" | "completed" | "error"
@@ -71,7 +73,7 @@ const GeneratingContent = () => {
     const run = async () => {
       if (!orderId) {
         setPhase("error");
-        setError("주문 정보가 없습니다. 결제 내역에서 다시 시도해 주세요.");
+        setError("주문 정보가 없습니다. 컨설팅 내역에서 다시 시도해 주세요.");
         return;
       }
 
@@ -84,7 +86,7 @@ const GeneratingContent = () => {
         const initRes = await fetch("/api/reports/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId }),
+          body: JSON.stringify({ orderId, force: isFromAdmin }),
           signal: controller.signal,
         });
 
@@ -208,10 +210,10 @@ const GeneratingContent = () => {
             <div className={styles.checkIcon} aria-hidden="true">
               &#10003;
             </div>
-            <h1 className={styles.title}>분석이 완료되었습니다</h1>
+            <h1 className={styles.title}>컨설턴트에게 자료가 전송되었습니다</h1>
             <p className={styles.description}>
-              리포트 검수 후 <strong>48시간 내에 이메일로 발송</strong>해
-              드립니다.
+              전문 컨설턴트의 검수를 거쳐{" "}
+              <strong>72시간 이내에 이메일로 결과물이 발송</strong>됩니다.
             </p>
             <p className={styles.warning}>
               발송 완료 시 가입하신 이메일로 안내 드리겠습니다.
@@ -220,9 +222,13 @@ const GeneratingContent = () => {
               type="button"
               className={styles.retryButton}
               style={{ marginTop: 24 }}
-              onClick={() => router.push("/profile/consulting")}
+              onClick={() =>
+                router.push(
+                  isFromAdmin ? "/admin/reports" : "/profile/consulting"
+                )
+              }
             >
-              컨설팅 내역으로 이동
+              {isFromAdmin ? "리포트 관리로 이동" : "컨설팅 내역으로 이동"}
             </button>
           </>
         ) : isWorking ? (
@@ -249,7 +255,7 @@ const GeneratingContent = () => {
               </div>
             )}
             <p className={styles.description}>
-              잠시만 기다려 주세요. 분석에 5~10분 정도 소요됩니다.
+              잠시만 기다려 주세요. 생기부 추출에 2~3분 정도 소요됩니다.
             </p>
             <div className={styles.noticeBox}>
               <p className={styles.noticeText}>
@@ -259,7 +265,7 @@ const GeneratingContent = () => {
               </p>
             </div>
             <p className={styles.warning}>
-              분석 완료 후 리포트는 검수를 거쳐 48시간 내에 이메일로 발송됩니다.
+              분석 완료 후 리포트는 검수를 거쳐 72시간 내에 이메일로 발송됩니다.
             </p>
           </>
         ) : phase === "error" ? (

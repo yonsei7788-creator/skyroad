@@ -125,3 +125,27 @@
   line-height: 1.7;
   color: var(--color-fg-secondary);
 }
+
+/* ---- Mobile Optimization ---- */
+@media (max-width: 639px) {
+  .section {
+    padding: 72px 0;
+  }
+
+  .sectionTitle {
+    font-size: 1.625rem;
+  }
+
+  .faqList {
+    margin-top: 40px;
+    border-radius: 16px;
+  }
+
+  .accordionTrigger {
+    padding: 18px 0;
+  }
+
+  .accordionQuestion {
+    font-size: 0.9375rem;
+  }
+}

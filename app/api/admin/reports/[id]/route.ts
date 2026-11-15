@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 import { createClient } from "@/libs/supabase/server";
 import { createAdminClient } from "@/libs/supabase/admin";
-import type { ReportDetail } from "@/app/admin/types";
+import type { AiStatus, ReportDetail } from "@/app/admin/types";
 
 import { verifyAdmin, deriveReportStatus } from "../helpers";
 
@@ -22,8 +22,14 @@ export const GET = async (
     .select(
       `
       id,
+      created_at,
       content,
       ai_generated_at,
+      ai_status,
+      ai_progress,
+      ai_current_section,
+      ai_error,
+      ai_retry_count,
       reviewed_at,
       delivered_at,
       review_notes,
@@ -103,13 +109,59 @@ export const GET = async (
       reviewed_at: row.reviewed_at,
       delivered_at: row.delivered_at,
     }),
+    createdAt: row.created_at || new Date().toISOString(),
     content: row.content,
     reviewNotes: row.review_notes,
     aiGeneratedAt: row.ai_generated_at,
+    aiStatus: (row.ai_status as AiStatus) ?? "pending",
+    aiProgress: (row.ai_progress as number) ?? 0,
+    aiCurrentSection: (row.ai_current_section as string | null) ?? null,
+    aiError: (row.ai_error as string | null) ?? null,
+    aiRetryCount: (row.ai_retry_count as number) ?? 0,
     reviewedBy: (reviewer?.name as string) || null,
     reviewedAt: row.reviewed_at,
     deliveredAt: row.delivered_at,
   };
 
   return NextResponse.json(detail);
+};
+
+export const DELETE = async (
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  const { id } = await params;
+  const supabase = await createClient();
+
+  const { error: authError } = await verifyAdmin(supabase);
+  if (authError) return authError;
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return NextResponse.json(
+      { error: "관리자 권한이 필요합니다." },
+      { status: 500 }
+    );
+  }
+
+  const { error: deleteError, count } = await adminClient
+    .from("reports")
+    .delete({ count: "exact" })
+    .eq("id", id);
+
+  if (deleteError) {
+    return NextResponse.json(
+      { error: deleteError.message || "리포트 삭제에 실패했습니다." },
+      { status: 500 }
+    );
+  }
+
+  if (!count) {
+    return NextResponse.json(
+      { error: "삭제할 리포트를 찾을 수 없습니다." },
+      { status: 404 }
+    );
+  }
+
+  return NextResponse.json({ success: true });
 };

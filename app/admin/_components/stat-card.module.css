@@ -85,3 +85,50 @@
   composes: statChange;
   color: var(--color-fg-tertiary);
 }
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .statCard {
+    padding: 16px;
+    gap: 8px;
+  }
+
+  .statIcon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+  }
+
+  .statValue {
+    font-size: 1.375rem;
+  }
+
+  .statLabel {
+    font-size: 0.8125rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .statCard {
+    padding: 14px;
+    gap: 6px;
+  }
+
+  .statIcon {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+  }
+
+  .statValue {
+    font-size: 1.25rem;
+  }
+
+  .statSuffix {
+    font-size: 0.75rem;
+  }
+
+  .statChange {
+    font-size: 0.75rem;
+  }
+}

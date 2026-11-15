@@ -69,7 +69,8 @@ export const ReviewSection = () => {
           <p className={styles.sectionLabel}>Reviews</p>
           <h2 className={styles.sectionTitle}>이용자 후기</h2>
           <p className={styles.sectionSubtitle}>
-            AI 분석 + 전문가 검수 리포트를 받아본 분들의 후기입니다
+            자체 개발 고도화 AI 분석 + 전문가 검수 리포트를 받아본 분들의
+            후기입니다
           </p>
         </FadeIn>
 

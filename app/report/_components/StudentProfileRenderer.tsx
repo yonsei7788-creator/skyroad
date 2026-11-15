@@ -1,7 +1,7 @@
 import type { ReportPlan, StudentProfileSection } from "@/libs/report/types";
 
 import styles from "./report.module.css";
-import { safeText } from "./safe-text";
+import { renderInsightMarkers } from "./insight-marker";
 import { SectionHeader } from "./SectionHeader";
 
 interface StudentProfileRendererProps {
@@ -56,7 +56,7 @@ export const StudentProfileRenderer = ({
         <div className={styles.profileTypeInfo}>
           <div className={styles.profileTypeName}>{data.typeName}</div>
           <p className={styles.profileTypeDesc}>
-            {safeText(data.typeDescription)}
+            {renderInsightMarkers(data.typeDescription)}
           </p>
         </div>
       </div>
@@ -98,9 +98,9 @@ export const StudentProfileRenderer = ({
 
       {/* Tags */}
       <div className={styles.profileTags}>
-        {(data.tags ?? []).map((tag) => (
-          <span key={tag} className={styles.profileTag}>
-            {tag}
+        {(data.tags ?? []).map((tag, idx) => (
+          <span key={`tag-${idx}`} className={styles.profileTag}>
+            {String(tag)}
           </span>
         ))}
       </div>
@@ -114,9 +114,41 @@ export const StudentProfileRenderer = ({
         }
       >
         <span className={styles.profileCatchPhraseText}>
-          {safeText(data.catchPhrase)}
+          {renderInsightMarkers(data.catchPhrase)}
         </span>
       </div>
+
+      {/* Recommendation summary: 추천 전형 + 전략 */}
+      {(data.recommendedAdmissionType ||
+        (data.strategy && data.strategy.length > 0)) && (
+        <div className={styles.profileRecommendation}>
+          {data.recommendedAdmissionType && (
+            <div className={styles.profileRecommendationRow}>
+              <span className={styles.profileRecommendationLabel}>
+                추천 전형
+              </span>
+              <span className={styles.profileRecommendationValue}>
+                {renderInsightMarkers(data.recommendedAdmissionType)}
+              </span>
+            </div>
+          )}
+          {data.strategy && data.strategy.length > 0 && (
+            <div className={styles.profileRecommendationRowStack}>
+              <span className={styles.profileRecommendationLabel}>전략</span>
+              <ul className={styles.profileStrategyList}>
+                {data.strategy.map((item, idx) => (
+                  <li
+                    key={`strategy-${idx}`}
+                    className={styles.profileStrategyItem}
+                  >
+                    {renderInsightMarkers(String(item))}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -1,0 +1,20 @@
+{
+  "sourceFile": "정시_입시자료.xlsx",
+  "sourceSha256": "ebf5b1feb942d6604f806179059dcb40fb26966d3b0658a171f9ae34854746f8",
+  "generatedAt": "2026-10-26",
+  "admissionYear": 2027,
+  "counts": {
+    "universities": 217,
+    "units": 15160,
+    "formulas": 2519,
+    "english-tables": 758,
+    "history-tables": 478,
+    "converted-standard-tables": 72,
+    "bonuses": 1076,
+    "grade-score-tables": 47,
+    "competitions": 24524,
+    "result-scores": 26226,
+    "changes": 2425,
+    "sources": 9305
+  }
+}
