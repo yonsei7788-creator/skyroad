@@ -13,6 +13,7 @@ import {
   sanitizeJeongsiTone,
   stripLeadingSubject,
   stripTopicLabel,
+  findInternalTerms,
   findOverclaims,
   findYearCountMentions,
 } from "../commentary-guards";
@@ -428,25 +429,25 @@ describe("정시 해설 보정 — 뜻이 뒤집히는 표현과 학과명 주�
   });
 });
 
-describe("countByTier·normalizeTierCounts - 스나이핑", () => {
-  it("스나이핑 곳 수도 세어 문장의 곳 수를 실제 값으로 둔다", () => {
+describe("countByTier·normalizeTierCounts - 소신", () => {
+  it("소신 곳 수도 세어 문장의 곳 수를 실제 값으로 둔다", () => {
     // Arrange
     const counts = countByTier([
       { tier: "상향" },
       { tier: "적정" },
-      { tier: "스나이핑" },
+      { tier: "소신" },
     ]);
 
     // Act
     const text = normalizeTierCounts(
-      "상향 1곳, 적정 1곳, 스나이핑 0곳으로 구성됩니다.",
+      "상향 1곳, 적정 1곳, 소신 0곳으로 구성됩니다.",
       counts,
       "균형"
     );
 
     // Assert
-    expect(counts.get("스나이핑")).toBe(1);
-    expect(text).toBe("상향 1곳, 적정 1곳, 스나이핑 1곳으로 구성됩니다.");
+    expect(counts.get("소신")).toBe(1);
+    expect(text).toBe("상향 1곳, 적정 1곳, 소신 1곳으로 구성됩니다.");
   });
 });
 
@@ -458,6 +459,7 @@ describe("findOverclaims", () => {
       "가군 적정 원서에 국립한국교통대학교 철도전기정보공학과를 두어, 대학 선호도를 우선하며 합격 가능성을 확보합니다.",
       "이 대학은 합격이 보장됩니다.",
       "안정적인 지원이 가능합니다.",
+      "가군 안정 원서에 백석대학교 치위생학과를 두어, 합격 가능성이 높은 선택지를 먼저 확보합니다.",
     ];
 
     // Act & Assert
@@ -508,5 +510,15 @@ describe("findYearCountMentions", () => {
     for (const sentence of sentences) {
       expect(findYearCountMentions(sentence)).toEqual([]);
     }
+  });
+});
+
+describe("findInternalTerms", () => {
+  it("내부 기법 이름이 나오면 소신으로 부르게 한다", () => {
+    // Arrange & Act & Assert
+    expect(findInternalTerms("가군 스나이핑 원서로 둡니다.")).toEqual([
+      '추천 범위 바로 아래 구분은 "소신"으로 부릅니다',
+    ]);
+    expect(findInternalTerms("가군 소신 원서로 둡니다.")).toEqual([]);
   });
 });

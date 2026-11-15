@@ -573,7 +573,7 @@ describe("buildJeongsiSystemPrefix", () => {
 
     // Assert
     expect(prefix).toContain("희망 학과: 컴퓨터공학과");
-    expect(prefix).toContain("희망 지역: 서울");
+    expect(prefix).not.toContain("희망 지역");
     expect(prefix).toContain("지원 성향: 안정");
     expect(prefix).toContain("적정 2장, 안정 1장의 배분");
   });

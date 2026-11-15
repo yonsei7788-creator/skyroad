@@ -38,7 +38,7 @@ export const JEONGSI_BANNED_WORDS = [
   "중위권",
   "하위권",
   "안전판",
-  "소신",
+  // "소신"은 추천 범위 바로 아래 구분의 이름이라 막지 않는다(사용자 결정 2026-11-15)
   "카드",
   "든든",
   "안전한",
@@ -215,7 +215,7 @@ export const composeMeasuredChanceSentence = (
  * 판정 기준을 밝힌다.
  */
 export interface ChanceBasis {
-  tier: "상향" | "적정" | "안정" | "스나이핑";
+  tier: "상향" | "적정" | "안정" | "소신";
   /** 안정 구간인데 적정으로 둔 사유. 해당 없으면 null */
   capReason: string | null;
 }
