@@ -234,6 +234,8 @@ export const admissionPlanSchema = z.object({
   group: z.enum(["가", "나", "다"]),
   quota: z.number().int().nonnegative(),
   suneungWeight: z.number().positive().lt(100).optional(),
+  selectionNote: z.string().min(1).optional(),
+  finalQuota: z.number().int().positive().optional(),
   statedRatios: z.string().min(1).optional(),
   areaSharesEstimated: z.literal(true).optional(),
   formula: conversionFormulaSchema,

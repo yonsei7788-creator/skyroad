@@ -21,6 +21,7 @@ import {
   MIN_GRADE,
   PREFERRED_REGION_OPTIONS,
   RISK_APPETITE_OPTIONS,
+  STUDENT_GENDER_OPTIONS,
   SUNEUNG_GRADE_OPTIONS,
 } from "./options";
 
@@ -103,6 +104,10 @@ const JeongsiPreferenceSchema = z.object({
 export const JeongsiInputSchema = z.object({
   score: SuneungScoreSchema,
   preference: JeongsiPreferenceSchema,
+  // 남학생은 여자대학교에 지원할 수 없어 추천에서 빼야 하므로 새 입력은 필수다
+  gender: z.enum(STUDENT_GENDER_OPTIONS, {
+    error: "학생 성별을 선택해주세요.",
+  }),
 });
 
 /**

@@ -86,17 +86,24 @@ describe("expandableCategories", () => {
     expect(expanded.size).toBe(FIELD_GROUPS["의약"].length);
   });
 
-  it("보건과 화학·생명은 양방향으로 확대를 허용한다", () => {
+  it("보건(면허 트랙)과 화학·생명은 서로 넓혀 섞지 않는다", () => {
     // Arrange & Act
     const fromNursing = expandableCategories("간호학");
     const fromBio = expandableCategories("생명과학");
 
     // Assert
-    expect(fromNursing.has("생명과학")).toBe(true);
-    expect(fromBio.has("간호학")).toBe(true);
+    // 간호 희망 학생에게 생명과학을 안정 원서로 추천하면 지원 판단에 쓸 수 없다(specs/014)
+    expect(fromNursing.has("생명과학")).toBe(false);
+    expect(fromBio.has("간호학")).toBe(false);
     // 보건은 의약과 섞이지 않는다
     expect(fromNursing.has("의학")).toBe(false);
     expect(fromBio.has("의학")).toBe(false);
+  });
+
+  it("보건 트랙이 이름에 드러난 계열무관 모집단위는 보건 희망 학생에게만 맞다", () => {
+    // Arrange & Act & Assert
+    expect(matchesNeutralPlanField("보건계열", "전자공학")).toBe(false);
+    expect(matchesNeutralPlanField("보건계열", "간호학")).toBe(true);
   });
 
   it("교육 계열은 사범 안에서만 확대하고 어문 계열을 섞지 않는다", () => {

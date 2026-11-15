@@ -17,7 +17,19 @@ import type {
   GeminiCallResult,
 } from "../../report/pipeline/gemini-client.ts";
 import { findFieldGroup, type FieldGroupName } from "../engine/field-groups.ts";
-import { resolveAreaRatios } from "../engine/convert-score.ts";
+import {
+  FINAL_QUOTA_SIGNAL_PASS_RATES,
+  FINAL_QUOTA_SIGNAL_RATIO,
+  GAP_BANDS,
+  GAP_BAND_PASS_RATES,
+  SNIPING_MIN_GAP,
+  SNIPING_PASS_RATE_MIN,
+} from "../engine/classify.ts";
+import {
+  calcEnglishLoss,
+  convertScore,
+  resolveAreaRatios,
+} from "../engine/convert-score.ts";
 import {
   JEONGSI_SECTION_ORDER,
   type AdvantageItem,
@@ -34,6 +46,8 @@ import {
   type JeongsiUniversityDetailSection,
   type JeongsiUniversityMatchSection,
   type RecommendationItem,
+  type ScoreBreakdown,
+  type UnitJudgement,
   type UniversityDetailItem,
 } from "../report-types.ts";
 import type {
@@ -66,6 +80,7 @@ import {
   buildCombinationPrompt,
   composeCombinationStrategy,
   composeFullyDistinctSentence,
+  SINGLE_COMBINATION_SENTENCE,
   collectAreaRatios,
   findDistinctSlots,
   collectCautionItems,
@@ -89,6 +104,7 @@ import {
 } from "./prompts.ts";
 import {
   countByTier,
+  findOverclaims,
   formatCardAllocation,
   formatTierCounts,
   normalizeCardAllocation,
@@ -116,6 +132,8 @@ import {
   listMatchFacts,
   describeAreaLevel,
   judgeScoreOverall,
+  percentileSpreadOf,
+  WIDE_SPREAD,
   type JudgedFact,
   type StudentContext,
 } from "./judged-facts.ts";
@@ -123,6 +141,7 @@ import {
   chanceMeaningsOf,
   collectNumbers,
   composeChanceSentence,
+  composeMeasuredChanceSentence,
   ensureUniqueSentences,
   findTextViolations,
   findForeignUniversityNames,
@@ -150,11 +169,27 @@ import {
   JEONGSI_COMMON_SYSTEM_PROMPT,
   buildJeongsiSystemPrefix,
 } from "./system-prompt.ts";
+import { findReportInconsistencies } from "./consistency.ts";
+import { removeInterpunctsFromContent } from "./interpunct.ts";
+import {
+  composeAreaEffectSentence,
+  composeMatchOverall,
+  composeScoreReasons,
+} from "./score-effects.ts";
+import type { ScoreReasonInput } from "./score-effects.ts";
+import {
+  composeRecommendedCombinationNote,
+  composeRecommendedSlotReasons,
+} from "./combination-reasons.ts";
+import { describePastGroups, describeSafeCapReasons } from "./safe-cap.ts";
+import type { ChanceBasis } from "./commentary-validation.ts";
+import { gapValueOf, roundGapForDisplay } from "./cut-format.ts";
+import type { GapValue } from "./cut-format.ts";
 
 // ─── 상수 ───
 
 /** jeongsi_reports.content 스키마 버전 */
-export const JEONGSI_REPORT_VERSION = 1;
+export const JEONGSI_REPORT_VERSION = 2;
 
 /** PART 2 에 싣는 유리한 대학 수. 토큰과 지면을 함께 고려한 상한 */
 const MAX_ADVANTAGE_ITEMS = 5;
@@ -164,6 +199,7 @@ const RECOMMENDATION_TIER_ORDER: RecommendationTier[] = [
   "상향",
   "적정",
   "안정",
+  "스나이핑",
 ];
 
 /** 표 표시용 영역 순서 */
@@ -180,8 +216,8 @@ const CUT_HISTORY_YEARS = 3;
 const SECTION_TITLE: Record<JeongsiSectionId, string> = {
   jeongsiScoreAnalysis: "성적 종합 분석",
   jeongsiUniversityMatch: "나에게 유리한 대학 분석",
-  jeongsiRecommendation: "지원 가능 대학·학과",
-  jeongsiCombination: "가·나·다군 지원 조합",
+  jeongsiRecommendation: "지원 가능 대학과 학과",
+  jeongsiCombination: "군별 지원 조합",
   jeongsiUniversityDetail: "대학별 상세 분석",
 };
 
@@ -213,7 +249,7 @@ const METRIC_LABEL: Record<ScoreMetric, string> = {
 const GRADE_SAMPLE: SuneungGrade[] = [1, 2, 3];
 
 const formatGradeTable = (table: GradeScoreTable): string =>
-  GRADE_SAMPLE.map((grade) => `${grade}등급 ${table[grade]}`).join(" · ");
+  GRADE_SAMPLE.map((grade) => `${grade}등급 ${table[grade]}`).join(", ");
 
 /**
  * 가중치형 대학(고려대·경북대 등)은 반영비율이 계수에서 역산돼
@@ -244,16 +280,16 @@ export const formatRatioSummary = (
     return (Object.keys(AREA_SHORT_LABEL) as ScoreArea[])
       .filter((area) => area !== "english" || ratios.english > 0)
       .map((area) => `${AREA_SHORT_LABEL[area]}${formatRatio(ratios[area])}`)
-      .join("·");
+      .join(", ");
   }
   const fixed = (Object.keys(AREA_SHORT_LABEL) as ScoreArea[])
     .filter((area) => !selection.areas.includes(area) && ratios[area] > 0)
     .map((area) => `${AREA_SHORT_LABEL[area]}${formatRatio(ratios[area])}`)
-    .join("·");
+    .join(", ");
   const targets = selection.areas
     .map((area) => AREA_SHORT_LABEL[area])
-    .join("·");
-  const rule = `${targets} 중 상위순 ${selection.rankRatios.map(formatRatio).join("·")}`;
+    .join(", ");
+  const rule = `${targets} 중 상위순 ${selection.rankRatios.map(formatRatio).join(", ")}`;
   return fixed ? `${fixed} / ${rule}` : rule;
 };
 
@@ -336,7 +372,7 @@ export const formatRestrictionSummary = (
 
   const parts: string[] = [];
   if (restrictions.math && restrictions.math.length > 0) {
-    parts.push(`수학 ${restrictions.math.join("·")} 중 응시 필수`);
+    parts.push(`수학 ${restrictions.math.join(", ")} 중 응시 필수`);
   }
   if (restrictions.inquiry && restrictions.inquiry !== "제한없음") {
     parts.push(`탐구 ${restrictions.inquiry}`);
@@ -358,7 +394,7 @@ const resolveSubjectName = (
     return score.math.elective;
   }
   if (area === "inquiry") {
-    return `${score.inquiry1.subject}·${score.inquiry2.subject}`;
+    return `${score.inquiry1.subject}, ${score.inquiry2.subject}`;
   }
   return null;
 };
@@ -418,7 +454,10 @@ export const buildAdvantageItems = (
         evaluation,
         analysis.input.score
       );
+      const tier = asRecommendableTier(evaluation.tier);
+      const judgement = tier ? buildUnitJudgement(evaluation, tier) : null;
       return {
+        unitKey: evaluation.plan.id,
         university: evaluation.plan.university,
         department: evaluation.plan.department,
         group: evaluation.plan.group,
@@ -428,6 +467,8 @@ export const buildAdvantageItems = (
           evaluation.plan.formula.inquiryCount
         ),
         advantageScore: evaluation.advantageScore,
+        breakdown: buildScoreBreakdown(evaluation, analysis.input.score),
+        ...(judgement ? { judgement } : {}),
         ...(applied ? { appliedRatioSummary: applied } : {}),
       };
     });
@@ -441,7 +482,10 @@ export const flattenRecommendations = (
   analysis: JeongsiAnalysis
 ): { tier: RecommendationTier; evaluation: PlanEvaluation }[] =>
   RECOMMENDATION_TIER_ORDER.flatMap((tier) =>
-    (analysis.recommendations[tier] ?? []).map((evaluation) => ({
+    (tier === "스나이핑"
+      ? (analysis.sniping ?? [])
+      : (analysis.recommendations[tier] ?? [])
+    ).map((evaluation) => ({
       tier,
       evaluation,
     }))
@@ -524,7 +568,7 @@ const toRecommendationEntry = (
   evaluation: PlanEvaluation
 ): RecommendationPromptEntry => ({
   tier,
-  percentileGap: evaluation.percentileGap,
+  gap: gapValueOf(evaluation),
   university: evaluation.plan.university,
   department: evaluation.plan.department,
   group: evaluation.plan.group,
@@ -536,8 +580,15 @@ const toRecommendationEntry = (
   ...(evaluation.plan.suneungWeight
     ? { suneungWeight: evaluation.plan.suneungWeight }
     : {}),
+  ...(evaluation.plan.selectionNote
+    ? { selectionNote: evaluation.plan.selectionNote }
+    : {}),
   cutTrend: formatCutTrend(evaluation),
   chance: evaluation.chance,
+  ...(() => {
+    const judgement = buildUnitJudgement(evaluation, tier);
+    return judgement ? { judgement } : {};
+  })(),
   // 적정이 비어 다른 구분에서 끌어온 항목은 실제 판정을 따로 싣는다.
   // 칸 이름(적정)을 그 대학의 구분처럼 쓰면 틀린 정보다(실측: 안정 판정인
   // 경희대 자율전공학부를 "가군 적정 원서로"라고 씀).
@@ -551,6 +602,92 @@ const actualTierOf = (
   evaluation: PlanEvaluation,
   band: RecommendationTier
 ): RecommendationTier => asRecommendableTier(evaluation.tier) ?? band;
+
+/**
+ * 모집단위 판정 근거. PART 2·3·5 가 이 값을 그대로 싣는다(specs/014 A2).
+ * 입결이 없으면 null — 그런 모집단위는 추천 목록에 들어오지 않는다.
+ */
+export const buildUnitJudgement = (
+  evaluation: PlanEvaluation,
+  band: RecommendationTier
+): UnitJudgement | null => {
+  const comparison = buildCutComparison(evaluation);
+  if (
+    comparison === null ||
+    evaluation.gapRatio === null ||
+    evaluation.gapPoints === null
+  ) {
+    return null;
+  }
+  return {
+    unitKey: evaluation.plan.id,
+    tier: actualTierOf(evaluation, band),
+    chance: evaluation.chance,
+    metric: comparison.metric,
+    studentValue: comparison.studentValue,
+    referenceCut: comparison.referenceCut,
+    gapPoints: evaluation.gapPoints,
+    gapRatio: evaluation.gapRatio,
+    totalScore: evaluation.plan.formula.totalScore,
+    resultYears: evaluation.resultYears,
+    safeCapped: evaluation.safeCapped,
+    safeCapReasons: evaluation.safeCapReasons,
+    pastGroups: evaluation.pastGroups,
+    finalQuotaChange: evaluation.finalQuotaChange,
+    quotaChange: evaluation.quotaChange,
+    additionalPass: evaluation.additionalPass,
+    historicalPassRate: evaluation.historicalPassRate,
+    latestAdmitCuts: evaluation.latestAdmitCuts,
+  };
+};
+
+/** 실측 비율이 없을 때 판단 문장이 밝힐 판정 근거 */
+const chanceBasisOf = (evaluation: PlanEvaluation): ChanceBasis => ({
+  // 적정 칸을 채우려 끌어온 항목도 실제 구분으로 밝힌다
+  tier: evaluation.tier === "지원불가" ? "상향" : evaluation.tier,
+  capReason: evaluation.safeCapped ? describeSafeCapReasons(evaluation) : null,
+});
+
+/** PART 2 대학별 실제 점수. 환산식을 학생 성적에 그대로 적용한 값이다 */
+export const buildScoreBreakdown = (
+  evaluation: PlanEvaluation,
+  score: JeongsiAnalysis["input"]["score"]
+): ScoreBreakdown => {
+  const { formula } = evaluation.plan;
+  const conversion = convertScore(score, formula);
+  const ratios = resolveAreaRatios(score, formula);
+  const areaOrder: ScoreArea[] =
+    formula.english.type === "ratioIncluded"
+      ? ["korean", "math", "english", "inquiry"]
+      : ["korean", "math", "inquiry"];
+  const areas = areaOrder
+    .filter((area) => ratios[area] > 0)
+    .map((area) => ({
+      area,
+      ratio: round3(ratios[area]),
+      earned: round3(conversion.areaScores[area]),
+      max: round3((ratios[area] / 100) * formula.totalScore),
+    }));
+  const englishVsFirstGrade =
+    formula.english.type === "ratioIncluded" ||
+    formula.english.type === "add" ||
+    formula.english.type === "subtract"
+      ? // calcEnglishLoss 는 만점 대비 % 라 점수로 되돌린다
+        -round3(
+          (calcEnglishLoss(formula, score.english.grade, ratios.english) *
+            formula.totalScore) /
+            100
+        )
+      : null;
+  return {
+    areas,
+    englishVsFirstGrade,
+    historyAdjustment: round3(conversion.historyAdjustment),
+    bonusAdjustment: round3(conversion.bonusAdjustment),
+    convertedScore: evaluation.convertedScore,
+    totalScore: formula.totalScore,
+  };
+};
 
 // ─── PART 5 상세 항목 ───
 
@@ -586,8 +723,15 @@ const buildDetailItem = (
     ...(evaluation.plan.suneungWeight
       ? { suneungWeight: evaluation.plan.suneungWeight }
       : {}),
+    ...(evaluation.plan.selectionNote
+      ? { selectionNote: evaluation.plan.selectionNote }
+      : {}),
     tier,
     chance: evaluation.chance,
+    ...(() => {
+      const judgement = buildUnitJudgement(evaluation, tier);
+      return judgement ? { judgement } : {};
+    })(),
   };
 };
 
@@ -772,7 +916,7 @@ const buildBlockedNotice = (
   targetLabel: string
 ): string => {
   const { score } = analysis.input;
-  const takenSubjects = `수학 ${score.math.elective}, 탐구 ${score.inquiry1.subject}·${score.inquiry2.subject}`;
+  const takenSubjects = `수학 ${score.math.elective}, 탐구 ${score.inquiry1.subject}, ${score.inquiry2.subject}`;
   const requirement = buildRequirementSentence(analysis.ineligiblePlans);
 
   return [
@@ -805,7 +949,7 @@ const FIELD_GROUP_DISPLAY: Partial<
     examples: ["국어교육", "초등교육", "유아교육"],
   },
   "컴퓨터·IT": {
-    label: "컴퓨터·IT 계열",
+    label: "컴퓨터와 IT 계열",
     examples: ["컴퓨터공학", "소프트웨어", "인공지능"],
   },
   전기전자: {
@@ -813,21 +957,21 @@ const FIELD_GROUP_DISPLAY: Partial<
     examples: ["전자공학", "전기공학", "반도체공학"],
   },
   "기계·건설": {
-    label: "기계·건설계열",
+    label: "기계와 건설 계열",
     examples: ["기계공학", "산업공학", "토목공학"],
   },
   "화학·생명": {
-    label: "화학·생명계열",
+    label: "화학과 생명 계열",
     examples: ["화학공학", "생명공학", "생명과학"],
   },
   "수리·자연": {
-    label: "수리·자연계열",
+    label: "수리와 자연 계열",
     examples: ["수학", "물리학", "통계학"],
   },
   의약: { label: "의약계열", examples: ["치의학", "한의학", "약학"] },
   보건: { label: "보건계열", examples: ["간호학", "재활학", "보건학"] },
   "예체능·디자인": {
-    label: "예체능·디자인계열",
+    label: "예체능과 디자인 계열",
     examples: ["디자인", "의류학", "체육학"],
   },
 };
@@ -863,7 +1007,7 @@ const buildPoolStageNotice = (
     .slice(0, EXAMPLE_COUNT);
   const scope =
     examples.length > 0
-      ? `${display.label}(${examples.join("·")} 등)`
+      ? `${display.label}(${examples.join(", ")} 등)`
       : display.label;
 
   return `희망하신 ${targetLabel} 외에 ${scope}까지 함께 비교했습니다. ${reason}`;
@@ -878,8 +1022,68 @@ const buildPoolStageNotice = (
 const MODERATE_SUBSTITUTED_NOTICE =
   "현재 성적에 정확히 '적정'으로 분류되는 곳이 많지 않아, 기준컷과의 격차가 적정에 가장 가까운 곳을 함께 담았습니다. 함께 담은 대학의 실제 구분은 코멘트와 대학별 상세 분석에 적었습니다.";
 
+/** 조합 구성(원서 장수)을 셀 때의 구분 */
+const COMPOSITION_TIERS: RecommendationTier[] = [
+  "상향",
+  "적정",
+  "안정",
+  "스나이핑",
+];
+
+/**
+ * 스나이핑 안내. 구간·실측 통과율·고른 순서를 엔진 상수 그대로 쓴다.
+ * 최종 모집인원 신호는 원문에 2027 최종 인원이 있을 때만 쓰였다고 밝힌다.
+ */
+export const composeSnipingNotice = (sniping: PlanEvaluation[]): string => {
+  const band = `기준컷 대비 ${formatBand(SNIPING_MIN_GAP)} ~ ${formatBand(GAP_BANDS.상향하한)}`;
+  const rate = `${Math.round(SNIPING_PASS_RATE_MIN * 100)}~${Math.round(GAP_BAND_PASS_RATES.상향하한 * 100)}%`;
+  const signaled = sniping.filter(
+    (evaluation) =>
+      evaluation.finalQuotaChange !== null &&
+      evaluation.finalQuotaChange.ratio >= FINAL_QUOTA_SIGNAL_RATIO
+  );
+  const signalGap = Math.abs(FINAL_QUOTA_SIGNAL_PASS_RATES.gap).toFixed(1);
+  const signalRate = `${Math.round(FINAL_QUOTA_SIGNAL_PASS_RATES.withSignal * 100)}%`;
+  const otherRate = `${Math.round(FINAL_QUOTA_SIGNAL_PASS_RATES.withoutSignal * 100)}%`;
+  const announced = sniping.some(
+    (evaluation) => evaluation.finalQuotaChange !== null
+  );
+  const signalSentence = signaled.length
+    ? `${withTopicParticle(
+        signaled
+          .map(
+            (evaluation) =>
+              `${evaluation.plan.university} ${evaluation.plan.department}`
+          )
+          .join(", ")
+      )} 2027 최종 모집인원이 직전 입결 학년도보다 ${Math.round(FINAL_QUOTA_SIGNAL_RATIO * 100)}% 이상 늘어 먼저 골랐습니다(2025→2026 실측에서 최종 모집인원이 그만큼 는 곳은 기준컷보다 ${signalGap} 낮은 학생도 ${signalRate}가 다음 해 컷을 넘었습니다).`
+    : announced
+      ? `최종 모집인원이 ${Math.round(FINAL_QUOTA_SIGNAL_RATIO * 100)}% 이상 늘어난 곳은 없어, 희망 학과에 가깝고 기준컷에 가까운 곳부터 골랐습니다.`
+      : `2027 최종 모집인원(수시 이월 반영)이 아직 발표되지 않아, 희망 학과에 가깝고 기준컷에 가까운 곳부터 골랐습니다. 최종 모집인원이 발표되면 인원이 ${Math.round(FINAL_QUOTA_SIGNAL_RATIO * 100)}% 이상 늘어난 곳을 우선합니다(2025→2026 실측에서 그런 곳은 기준컷보다 ${signalGap} 낮은 학생도 ${signalRate}가 다음 해 컷을 넘었고, 나머지는 ${otherRate}였습니다).`;
+  return `스나이핑은 추천 범위 바로 아래(${band})라 합격 가능성은 매우 낮지만(같은 여유였던 곳이 다음 해 컷을 넘은 비율 ${rate}), 원서 한 장을 걸고 예상외 합격을 노려 볼 수 있는 곳입니다. ${signalSentence}`;
+};
+
+/**
+ * "다군 안정 원서에 세종대학교"처럼 군과 구분을 함께 말한 표현이 그 조합의 실제
+ * 칸 구분과 다른지. 실측: 적정인 칸을 모델이 "안정 원서"로 썼다(2026-11-15).
+ */
+export const findWrongSlotTier = (
+  item: Pick<CombinationItem, "slots">,
+  text: string
+): string[] => {
+  const wrong = [
+    ...text.matchAll(/([가나다])군\s*(상향|적정|안정|스나이핑)\s*원서/g),
+  ].flatMap(([, group, tier]) => {
+    const slot = item.slots.find((candidate) => candidate.group === group);
+    return slot && slot.tier !== tier ? [`${group}군 ${slot.tier}`] : [];
+  });
+  return wrong.length > 0
+    ? [`칸 구분은 실제 구분대로 씁니다: ${wrong.join(", ")}`]
+    : [];
+};
+
 /** 적정이 비었을 때 대안을 가리킬 밴드와 그 언급 순서 */
-const MODERATE_ALTERNATIVE_TIERS: RecommendationTier[] = ["상향", "안정"];
+const MODERATE_ALTERNATIVE_TIERS: ("상향" | "안정")[] = ["상향", "안정"];
 
 /**
  * 적정이 빈 경우의 안내.
@@ -904,7 +1108,7 @@ const buildModerateEmptyNotice = (
     return head;
   }
 
-  return `${head} 가장 가까운 선택지는 아래 ${filled.join("·")} 목록에서 확인해 주세요.`;
+  return `${head} 가장 가까운 선택지는 아래 ${filled.join(", ")} 목록에서 확인해 주세요.`;
 };
 
 /**
@@ -914,6 +1118,10 @@ const buildModerateEmptyNotice = (
  * AI 는 이 문구를 읽어 총평의 톤만 맞춘다. 같은 사실을 양쪽이 각자
  * 서술하면 리포트 안에서 두 설명이 어긋난다.
  */
+/** 구간 경계 표기. 예) "+6.1", "−0.4" */
+const formatBand = (value: number): string =>
+  `${value > 0 ? "+" : value < 0 ? "−" : ""}${Math.abs(value).toFixed(1)}`;
+
 export const buildRecommendationNotices = (
   analysis: JeongsiAnalysis
 ): string[] => {
@@ -931,13 +1139,61 @@ export const buildRecommendationNotices = (
     return [buildBlockedNotice(analysis, targetLabel)];
   }
 
-  // 확대·대체 안내는 모두 "목록에 담긴 것"을 설명하는 문구다.
-  // 목록이 비면 설명할 대상이 없으므로 내보내지 않는다.
-  if (flattenRecommendations(analysis).length === 0) {
-    return [];
+  // 목록이 비면 확대·대체 안내 대신, 왜 비었는지(추천 범위 밖으로 뺀 곳의 수)를 밝힌다.
+  const flattened = flattenRecommendations(analysis);
+  if (flattened.length === 0) {
+    const { tooHigh = 0, tooLow = 0 } = selection.outOfRange ?? {};
+    const parts = [
+      tooHigh > 0 ? `합격선이 성적보다 높은 곳 ${tooHigh}곳` : null,
+      tooLow > 0 ? `합격선이 성적보다 크게 낮은 곳 ${tooLow}곳` : null,
+    ].filter((part): part is string => part !== null);
+    return [
+      `희망 조건(${targetLabel}, ${analysis.input.preference.region})에서 기준컷 대비 추천 범위(기준컷 대비 ${formatBand(GAP_BANDS.상향하한)} ~ ${formatBand(GAP_BANDS.안정상한)}) 안에 드는 모집단위가 없습니다.${
+        parts.length > 0
+          ? ` 같은 조건에서 ${parts.join(", ")}은 추천 범위를 벗어나 넣지 않았습니다.`
+          : ""
+      } 희망 지역이나 계열을 넓혀 다시 분석해 보세요.`,
+    ];
   }
 
   const notices: string[] = [];
+
+  // 근거가 부족한 곳(1개년 입결·모집군 변경·백분위 입결)은 여유가 커도 안정으로
+  // 단정하지 않는다(사용자 결정 2026-11-14, specs/014 3차 검토)
+  const capped = flattened.filter(({ evaluation }) => evaluation.safeCapped);
+  if (capped.length > 0) {
+    const names = capped
+      .map(
+        ({ evaluation }) =>
+          `${evaluation.plan.university} ${evaluation.plan.department}(${describeSafeCapReasons(evaluation)})`
+      )
+      .join(", ");
+    notices.push(
+      `기준컷보다 여유가 안정 구간만큼 있지만 근거가 부족해 '안정'이 아닌 '적정'으로 표시한 곳: ${names}.`
+    );
+  }
+
+  // 스나이핑 칸이 무엇이고 어떤 근거로 골랐는지 밝힌다(specs/014 마지막 피드백)
+  if ((analysis.sniping ?? []).length > 0) {
+    notices.push(composeSnipingNotice(analysis.sniping));
+  }
+
+  // 모집군이 바뀐 곳은 구분과 관계없이 원문 군을 밝힌다(specs/014 A3)
+  const regrouped = flattened.filter(
+    ({ evaluation }) =>
+      !evaluation.safeCapped && evaluation.pastGroups.length > 0
+  );
+  if (regrouped.length > 0) {
+    const names = regrouped
+      .map(
+        ({ evaluation }) =>
+          `${evaluation.plan.university} ${evaluation.plan.department}(2027 ${evaluation.plan.group}군, ${describePastGroups(evaluation.pastGroups)})`
+      )
+      .join(", ");
+    notices.push(
+      `과거 입결이 다른 모집군에서 나온 곳: ${names}. 군이 바뀌면 함께 지원하는 대학이 달라져 합격선이 달라질 수 있습니다.`
+    );
+  }
 
   if (selection.poolStage !== 1) {
     notices.push(
@@ -982,6 +1238,7 @@ export const buildCombinationItems = (
         continue;
       }
       slots.push({
+        unitKey: evaluation.plan.id,
         group,
         university: evaluation.plan.university,
         department: evaluation.plan.department,
@@ -990,7 +1247,13 @@ export const buildCombinationItems = (
       });
     }
 
-    return { id: combination.id, label: combination.label, slots };
+    return {
+      id: combination.id,
+      label: combination.label,
+      slots,
+      recommended: combination.recommended,
+      matchesRiskAllocation: combination.matchesRiskAllocation,
+    };
   });
 
 // ─── 진행률 ───
@@ -1110,7 +1373,8 @@ const TEXT_RULE = {
   matchOverall: { sentences: 3, maxChars: 250 },
   matchReason: { sentences: 2, maxChars: 120 },
   recommendationOverall: { sentences: 3, maxChars: 300 },
-  recommendationComment: { sentences: 1, maxChars: 110 },
+  // 실측 통과율 절이 들어가 길어졌다(코드가 쓰는 문장, specs/014 B2)
+  recommendationComment: { sentences: 1, maxChars: 170 },
   combinationOverall: { sentences: 3, maxChars: 250 },
   combinationDifference: { sentences: 1, maxChars: 90 },
   detailSentence: { sentences: 1, maxChars: DETAIL_SENTENCE_MAX_CHARS },
@@ -1146,6 +1410,7 @@ const createSlot = ({
     finalize,
     extraCheck: (text) => [
       ...checkNumbers(text),
+      ...findOverclaims(text),
       ...(extraCheck?.(text) ?? []),
     ],
   };
@@ -1191,6 +1456,7 @@ const createFieldSlot = (
       const problems = [
         ...findTextViolations(kept, rule),
         ...checkNumbers(kept),
+        ...findOverclaims(kept),
         ...(extraCheck?.(kept) ?? []),
       ];
       return problems.length === 0 ? kept : fallback;
@@ -1209,7 +1475,8 @@ const formatSigned = (value: number): string => {
 export const composeAreaCommentFallback = (
   row: AreaScoreRow | undefined,
   role: "강점" | "약점",
-  level?: string
+  level?: string,
+  narrowSpread?: number
 ): string | null => {
   if (!row) return null;
   const { label } = row;
@@ -1220,9 +1487,18 @@ export const composeAreaCommentFallback = (
   const position = level ? `(${level})` : "";
   const score = `${label} 백분위 ${row.percentile}점${position}`;
   const deviation = `평균 대비 ${formatSigned(row.deviation)}점`;
+  // 영역 간 차이가 작으면 PART 1 총평과 같게 "격차로 먼저 좁히라"고 쓴다.
+  // 실측: 총평은 격차를 먼저 보라 하고 강점 해설은 국어 비중 큰 대학을 우선하라 해 엇갈렸다.
+  if (narrowSpread !== undefined) {
+    const head =
+      role === "강점"
+        ? `${score}은 국어, 수학, 탐구 중 ${row.rank}순위로, ${deviation} 앞선 강점입니다.`
+        : `${score}은 국어, 수학, 탐구 중 ${row.rank}순위로, ${deviation} 뒤처진 약점입니다.`;
+    return `${head} 다만 영역 간 백분위 차이가 ${narrowSpread}점으로 작아 반영비율이 환산점수를 크게 바꾸지 않으므로, ${label} 비중은 기준컷 대비 차이가 비슷한 대학 사이에서 고르는 기준으로 쓰는 편이 합리적입니다.`;
+  }
   return role === "강점"
-    ? `${score}은 국어·수학·탐구 중 ${row.rank}순위로, ${deviation} 앞선 강점입니다. ${label} 반영비율이 높은 대학에서 환산점수가 유리하게 잡히므로, ${label} 비중이 큰 대학을 원서 후보로 먼저 살피는 편이 합리적입니다.`
-    : `${score}은 국어·수학·탐구 중 ${row.rank}순위로, ${deviation} 뒤처진 약점입니다. ${label} 반영비율이 높은 대학에서는 환산 손실이 생기므로, ${label} 비중이 작은 대학을 우선 살피는 편이 합리적입니다.`;
+    ? `${score}은 국어, 수학, 탐구 중 ${row.rank}순위로, ${deviation} 앞선 강점입니다. ${label} 반영비율이 높은 대학에서 환산점수가 유리하게 잡히므로, ${label} 비중이 큰 대학을 원서 후보로 먼저 살피는 편이 합리적입니다.`
+    : `${score}은 국어, 수학, 탐구 중 ${row.rank}순위로, ${deviation} 뒤처진 약점입니다. ${label} 반영비율이 높은 대학에서는 환산 손실이 생기므로, ${label} 비중이 작은 대학을 우선 살피는 편이 합리적입니다.`;
 };
 
 const AVERAGE_SCOPE =
@@ -1240,7 +1516,7 @@ export const findWrongAverageScope = (text: string): string[] => {
     return areas.size < 3;
   });
   return wrong
-    ? ["평균 대비 편차는 국·수·탐 평균(세 영역) 기준이라고 씁니다"]
+    ? ["평균 대비 편차는 국어, 수학, 탐구 평균(세 영역) 기준이라고 씁니다"]
     : [];
 };
 
@@ -1265,9 +1541,7 @@ export const findUnsupportedSoleClaim = (
       (sentence) => sentence !== undefined && SOLE_CLAIM.test(sentence)
     )
   );
-  return supported
-    ? []
-    : ["목록에서 하나뿐이라는 말은 재료에 그 판정이 있을 때만 씁니다"];
+  return supported ? [] : ["목록 안에서의 위치는 재료의 판정대로 씁니다"];
 };
 
 const ENGLISH_PERCENTILE = /영어(?:\s*영역)?(?:의)?\s*(?:백분위|표준점수)/;
@@ -1342,6 +1616,10 @@ const composeDifferenceFallback = (
 
 // ─── 조립 ───
 
+/** 조합이 지원 성향에 맞는다는 주장. 기본 배분을 채운 조합이 없으면 쓰지 않는다 */
+const RISK_FIT_CLAIM =
+  /성향에\s*(맞|부합)|성향대로|성향을\s*(그대로\s*)?(따르|반영)/;
+
 export const buildJeongsiReport = async (
   analysis: JeongsiAnalysis,
   options: BuildJeongsiReportOptions
@@ -1371,7 +1649,7 @@ export const buildJeongsiReport = async (
   const detailPromptItems: UniversityDetailPromptItem[] = detailItems.map(
     (item, index) => ({
       ...item,
-      percentileGap: flattened[index].evaluation.percentileGap,
+      gap: gapValueOf(flattened[index].evaluation),
     })
   );
 
@@ -1425,6 +1703,9 @@ export const buildJeongsiReport = async (
     },
     gapRanges: formatTierGapRanges(recommendationEntries),
     allocation: formatCardAllocation(preference.risk),
+    allocationAvailable: analysis.combinations.some(
+      (combination) => combination.matchesRiskAllocation
+    ),
     risk: preference.risk,
     cautions: collectCautionItems(recommendationEntries),
   };
@@ -1492,7 +1773,7 @@ export const buildJeongsiReport = async (
     preference.risk
   );
   const combinationOverallFallback = [
-    "가·나·다군에서 한 장씩 쓰는 정시 구조라, 조합은 군마다 어떤 구분의 원서를 두느냐로 성격이 갈립니다.",
+    "가군, 나군, 다군에서 한 장씩 쓰는 정시 구조라, 조합은 군마다 어떤 구분의 원서를 두느냐로 성격이 갈립니다.",
     composeFactSentence(allocationFact),
     "조합 사이에서 고민된다면 희망 학과, 대학 선호, 합격 여유 중 무엇을 앞세울지를 먼저 정하는 편이 합리적입니다.",
   ].join(" ");
@@ -1521,20 +1802,82 @@ export const buildJeongsiReport = async (
       : [];
   };
 
+  /**
+   * 기본 배분과 같은 조합이 없는데 "균형 성향에 맞춰 상향 1장, 적정 2장"처럼 조합이
+   * 성향에 맞는다고 쓰면 대표 조합 안내("기본 배분을 모두 지키는 조합이 없어")와
+   * 모순이다(2026-11-15 3차 생성 실측: 컴공·경영 2명).
+   */
+  const checkRiskFitClaim = (text: string): string[] =>
+    allocationMatches.length === 0 &&
+    splitSentences(text).some((sentence) => RISK_FIT_CLAIM.test(sentence))
+      ? [
+          `조합과 성향의 관계는 재료의 판단대로 씁니다: ${allocationFact.meaning}`,
+        ]
+      : [];
+
+  /**
+   * "모든 조합은 상향 1장, 적정 1장, 안정 1장으로 구성"처럼 조합 전체의 구성을
+   * 말하는 문장은 실제 칸 구분과 같아야 한다. 안정 원서가 없는 학생에게 모델이
+   * 성향의 기본 배분을 그대로 옮겨 썼다(2026-11-14 실측).
+   */
+  const ALL_COMBINATIONS =
+    /모든\s*조합|조합\s*모두|조합은\s*모두|(?:두|세|네|다섯)\s*조합\s*모두/;
+  const TIER_CARD = /(상향|적정|안정|스나이핑)\s*(\d)\s*장/g;
+  const tierCountsOf = (tiers: RecommendationTier[]) =>
+    COMPOSITION_TIERS.map(
+      (tier) => tiers.filter((item) => item === tier).length
+    );
+  const actualCompositions = allocationInputs.map((input) =>
+    tierCountsOf(input.tiers)
+  );
+  const describeCompositions = (): string =>
+    allocationInputs
+      .map(
+        (input) =>
+          `${input.label} ${
+            COMPOSITION_TIERS.map((tier, index) => {
+              const count = tierCountsOf(input.tiers)[index];
+              return count > 0 ? `${tier} ${count}장` : null;
+            })
+              .filter((part): part is string => part !== null)
+              .join(", ") || "원서 없음"
+          }`
+      )
+      .join(", ");
+  const checkCompositionClaim = (text: string): string[] =>
+    splitSentences(text).some((sentence) => {
+      if (!ALL_COMBINATIONS.test(sentence)) return false;
+      const claims = [...sentence.matchAll(TIER_CARD)];
+      if (claims.length === 0) return false;
+      return claims.some(([, tier, count]) => {
+        const index = COMPOSITION_TIERS.indexOf(tier as RecommendationTier);
+        return actualCompositions.some(
+          (composition) => composition[index] !== Number(count)
+        );
+      });
+    })
+      ? [`조합 구성은 실제 칸 구분대로만 씁니다: ${describeCompositions()}`]
+      : [];
+
   // PART 1 강점·약점 칸: 폴백은 그 영역의 실제 성적으로 쓴다
   const rowOf = (areas: ScoreArea[]) =>
     rows.find((row) => row.area === areas[0]);
+  const spread = percentileSpreadOf(rows);
+  // 영역 간 차이가 작으면 강점·약점 해설은 코드 문장으로 쓴다(PART 1 총평과 같은 판단)
+  const narrowSpread = spread < WIDE_SPREAD ? spread : undefined;
   const strengthFallback =
     composeAreaCommentFallback(
       rowOf(analysis.diagnosis.strengths),
       "강점",
-      areaLevels[analysis.diagnosis.strengths[0]]
+      areaLevels[analysis.diagnosis.strengths[0]],
+      narrowSpread
     ) ?? JEONGSI_COMMENTARY_FALLBACK.scoreStrength;
   const weaknessFallback =
     composeAreaCommentFallback(
       rowOf(analysis.diagnosis.weaknesses),
       "약점",
-      areaLevels[analysis.diagnosis.weaknesses[0]]
+      areaLevels[analysis.diagnosis.weaknesses[0]],
+      narrowSpread
     ) ?? JEONGSI_COMMENTARY_FALLBACK.scoreWeakness;
   // PART 3 총평은 신중히 볼 곳을 이름으로 밝혀야 한다(실측: 이름을 빼고
   // "이 대학들에 원서를 쓸 때는"으로 써 가리키는 대상이 없었다).
@@ -1542,7 +1885,7 @@ export const buildJeongsiReport = async (
     (entry) =>
       entry.chance === "낮음" ||
       entry.chance === "매우낮음" ||
-      (entry.percentileGap !== null && entry.percentileGap < 0)
+      (entry.gap !== null && roundGapForDisplay(entry.gap.points) < 0)
   );
 
   // 목록이 빈 파트의 총평은 코드가 쓴다. 비어 있는 목록을 모델에 맡기자
@@ -1560,9 +1903,28 @@ export const buildJeongsiReport = async (
     ? "현재 응시 과목 조건"
     : `현재 조건(희망 지역 ${preference.region}, 희망 학과 ${preference.target})`;
   const retryAdvice = blocked ? "응시 과목 조건이 맞는 대학으로" : widenAdvice;
+  // PART 2 총평은 대학별 실제 점수로 코드가 쓴다(모델 호출 없음, specs/014 D1)
+  const scoreReasonInputsForOverall = advantageItems.map((item) =>
+    item.breakdown
+      ? {
+          university: item.university,
+          breakdown: item.breakdown,
+          judgement: item.judgement,
+        }
+      : null
+  );
+  const codeMatchOverall =
+    advantageItems.length > 0 &&
+    scoreReasonInputsForOverall.every((input) => input !== null)
+      ? composeMatchOverall(
+          scoreReasonInputsForOverall as ScoreReasonInput[],
+          analysis.input.score.english.grade
+        )
+      : null;
   const emptyOverall = {
     jeongsiUniversityMatch:
-      advantageItems.length === 0
+      codeMatchOverall ??
+      (advantageItems.length === 0
         ? [
             `${reasonLabel}으로는 지원 가능한 대학이 없어, 반영방식을 비교할 대학 목록도 비어 있습니다.`,
             strengthLabel
@@ -1570,7 +1932,7 @@ export const buildJeongsiReport = async (
               : "영역별 반영비율에 따라 같은 성적의 환산 결과가 달라진다는 점은 그대로입니다.",
             `${retryAdvice} 다시 확인할 때, 반영비율을 먼저 보는 편이 합리적입니다.`,
           ].join(" ")
-        : null,
+        : null),
     jeongsiRecommendation:
       recommendationEntries.length === 0
         ? [
@@ -1584,7 +1946,7 @@ export const buildJeongsiReport = async (
     jeongsiCombination:
       combinationItems.length === 0
         ? [
-            "지원 가능한 대학이 없어 가·나·다군 조합을 구성하지 못했습니다.",
+            "지원 가능한 대학이 없어 가군, 나군, 다군 조합을 구성하지 못했습니다.",
             `${blocked ? "응시 과목 조건이 맞는" : `${widenAdvice} 지원 가능한`} 대학이 생기면, 군마다 한 장씩 ${formatCardAllocation(preference.risk)}을 기본으로 조합을 구성할 수 있습니다.`,
             "그때는 희망 학과, 대학 선호, 합격 여유 중 무엇을 앞세울지를 먼저 정하는 편이 합리적입니다.",
           ].join(" ")
@@ -1748,8 +2110,9 @@ export const buildJeongsiReport = async (
       ),
       createFieldSlot(
         "strengthComment",
-        scoreCommentary.strengthComment ===
-          JEONGSI_COMMENTARY_FALLBACK.scoreStrength
+        narrowSpread !== undefined ||
+          scoreCommentary.strengthComment ===
+            JEONGSI_COMMENTARY_FALLBACK.scoreStrength
           ? strengthFallback
           : scoreCommentary.strengthComment,
         TEXT_RULE.scoreStrength,
@@ -1760,8 +2123,9 @@ export const buildJeongsiReport = async (
       ),
       createFieldSlot(
         "weaknessComment",
-        scoreCommentary.weaknessComment ===
-          JEONGSI_COMMENTARY_FALLBACK.scoreWeakness
+        narrowSpread !== undefined ||
+          scoreCommentary.weaknessComment ===
+            JEONGSI_COMMENTARY_FALLBACK.scoreWeakness
           ? weaknessFallback
           : scoreCommentary.weaknessComment,
         TEXT_RULE.scoreWeakness,
@@ -1778,7 +2142,10 @@ export const buildJeongsiReport = async (
         TEXT_RULE.matchOverall,
         emptyOverall.jeongsiUniversityMatch ??
           JEONGSI_COMMENTARY_FALLBACK.matchOverall,
-        checkAgainst(advantageItems, matchFacts)
+        // 코드가 실제 점수로 쓴 총평(composeMatchOverall)은 모델 문장용 수치 대조를 하지 않는다
+        emptyOverall.jeongsiUniversityMatch !== undefined
+          ? () => []
+          : checkAgainst(advantageItems, matchFacts)
       ),
       ...advantageItems.map((item, index) =>
         createSlot({
@@ -1824,12 +2191,20 @@ export const buildJeongsiReport = async (
             tierCounts,
             preference.risk
           ),
-        (text) =>
-          firstCaution && !text.includes(firstCaution.university)
+        (text) => [
+          ...(firstCaution && !text.includes(firstCaution.university)
             ? [
                 `신중히 볼 곳은 ${firstCaution.university}처럼 대학 이름으로 밝혀 씁니다`,
               ]
-            : []
+            : []),
+          // PART 4 와 같은 판정: 배분을 채운 조합이 없으면 성향대로 둘 수 있다고 쓰지 않는다
+          ...(!recommendationOverallInput.allocationAvailable &&
+          splitSentences(text).some((sentence) => RISK_FIT_CLAIM.test(sentence))
+            ? [
+                `성향 배분 문장은 재료의 판단대로 씁니다: ${composeFactSentence(recommendationFacts[1])}`,
+              ]
+            : []),
+        ]
       ),
     ]),
     resolveSection("jeongsiCombination", combinationRaw, [
@@ -1848,7 +2223,11 @@ export const buildJeongsiReport = async (
           allocationFact
         ),
         (raw) => normalizeCardAllocation(raw, preference.risk),
-        checkAllocationClaim
+        (text) => [
+          ...checkAllocationClaim(text),
+          ...checkRiskFitClaim(text),
+          ...checkCompositionClaim(text),
+        ]
       ),
       ...differenceIndexes.map((index) =>
         createSlot({
@@ -1865,16 +2244,24 @@ export const buildJeongsiReport = async (
               combinationItems[index],
               combinationItems
             ),
-          extraCheck: (text) =>
-            namesEverySlot(combinationItems[index], text)
+          extraCheck: (text) => [
+            ...(namesEverySlot(combinationItems[index], text)
               ? ["다른 조합과 달라지는 칸만 짚습니다"]
-              : [],
+              : []),
+            ...findWrongSlotTier(combinationItems[index], text),
+          ],
         })
       ),
     ]),
   ]);
 
-  const detailSentences = detailFacts.map(composeDetailFallback);
+  // PART 5 추천 이유 첫 문장: 반영비율 때문에 이 대학에서 더 받거나 덜 받는 실제 점수
+  // (specs/014 D1). 영역 강점·약점 서술을 되풀이하지 않는다.
+  const detailSentences = flattened.map(({ evaluation }) =>
+    composeAreaEffectSentence(
+      buildScoreBreakdown(evaluation, analysis.input.score)
+    )
+  );
 
   // 4) 섹션 안에서 똑같은 문장이 두 번 나오지 않게 한다. 같은 단어를 다시
   //    쓰는 것은 괜찮고, 문장 전체가 같을 때만 그 칸의 다른 판정 문장으로
@@ -1886,12 +2273,19 @@ export const buildJeongsiReport = async (
       )
     );
   const chanceAlternatives = (
-    gap: number | null,
+    gap: GapValue | null,
     chance: PassChance,
-    prefixes: string[] = []
+    prefixes: string[] = [],
+    passRate: number | null = null,
+    basis?: ChanceBasis
   ): string[] =>
     JEONGSI_CHANCE_PHRASES[chance].meanings.flatMap((meaning) => {
-      const sentence = composeChanceSentence(gap, meaning);
+      const sentence = composeMeasuredChanceSentence(
+        gap,
+        passRate,
+        meaning,
+        basis
+      );
       return [sentence, ...prefixes.map((prefix) => `${prefix} ${sentence}`)];
     });
 
@@ -1943,8 +2337,10 @@ export const buildJeongsiReport = async (
   const recommendationComments = recommendationEntries.map((entry, index) =>
     composeRecommendationComment(
       recommendationOpenings[index],
-      entry.percentileGap,
-      recommendationMeanings[index]
+      entry.gap,
+      recommendationMeanings[index],
+      entry.judgement?.historicalPassRate ?? null,
+      chanceBasisOf(flattened[index].evaluation)
     )
   );
   const [uniqueRecommendationOverall, ...uniqueRecommendationComments] = unique(
@@ -1960,10 +2356,16 @@ export const buildJeongsiReport = async (
             requiredAnyOf: chanceMeaningsOf(entry.chance),
           },
           alternatives: [
-            chanceAlternatives(entry.percentileGap, entry.chance, [
-              `${entry.group}군 ${entry.tier} 원서로`,
-              `${entry.quota}명을 뽑는 모집단위로`,
-            ]),
+            chanceAlternatives(
+              entry.gap,
+              entry.chance,
+              [
+                `${entry.group}군 ${entry.tier} 원서로`,
+                `${entry.quota}명을 뽑는 모집단위로`,
+              ],
+              entry.judgement?.historicalPassRate ?? null,
+              chanceBasisOf(flattened[index].evaluation)
+            ),
           ],
         };
       }),
@@ -1975,7 +2377,9 @@ export const buildJeongsiReport = async (
     const noDistinctSlot =
       findDistinctSlots(item, combinationItems).length === 0;
     const difference = distinctCombinations[index]
-      ? composeFullyDistinctSentence(item.label, item.slots.length)
+      ? combinationItems.length === 1
+        ? SINGLE_COMBINATION_SENTENCE
+        : composeFullyDistinctSentence(item.label, item.slots.length)
       : noDistinctSlot
         ? (composeOverlapSentence(item, combinationItems) ??
           combinationDifferences[differenceIndexes.indexOf(index)])
@@ -2000,26 +2404,39 @@ export const buildJeongsiReport = async (
   const detailReasons = unique(
     "jeongsiUniversityDetail",
     detailItems.map((_item, index) => {
-      const { percentileGap } = detailPromptItems[index];
+      const { gap } = detailPromptItems[index];
+      const passRate = flattened[index].evaluation.historicalPassRate;
       return {
-        text: `${detailSentences[index]} ${composeChanceSentence(
-          percentileGap,
-          detailMeanings[index]
+        text: `${detailSentences[index]} ${composeMeasuredChanceSentence(
+          gap,
+          passRate,
+          detailMeanings[index],
+          chanceBasisOf(flattened[index].evaluation)
         )} ${detailAdvice[index]}`,
         rule: TEXT_RULE.detailReason,
+        // 같은 문장이 겹치면 같은 점수 득실의 다른 표현으로 바꾼다(영역 강점·약점
+        // 판정 문장으로 돌아가지 않게 한다, specs/014 D1)
         alternatives: [
-          detailFactPools[index].flatMap((fact) =>
-            [
-              composeDetailFallback(fact),
-              ...(fact.alternate ? [fact.alternate.sentence] : []),
-            ].filter((sentence) => sentence.length <= DETAIL_SENTENCE_MAX_CHARS)
+          [1, 2].map((variant) =>
+            composeAreaEffectSentence(
+              buildScoreBreakdown(
+                flattened[index].evaluation,
+                analysis.input.score
+              ),
+              variant
+            )
           ),
           // 격차가 같은 대학이 셋 이상이면 표현 두 가지로 모자라 문장이
           // 지워졌다(실측: +2.8 세 곳). 모집군·모집인원 머리말로 표현을 더 둔다.
-          chanceAlternatives(percentileGap, detailItems[index].chance, [
-            `${detailItems[index].group}군 ${detailItems[index].tier} 원서로`,
-            `${detailItems[index].quota}명을 뽑는 모집단위로`,
-          ]),
+          chanceAlternatives(
+            gap,
+            detailItems[index].chance,
+            [
+              `${detailItems[index].group}군 ${detailItems[index].tier} 원서로`,
+              `${detailItems[index].quota}명을 뽑는 모집단위로`,
+            ],
+            passRate
+          ),
         ],
       };
     })
@@ -2038,23 +2455,45 @@ export const buildJeongsiReport = async (
     weaknessComment: uniqueScoreWeakness,
   };
 
+  const scoreReasonInputs = advantageItems.map((item) =>
+    item.breakdown
+      ? {
+          university: item.university,
+          breakdown: item.breakdown,
+          judgement: item.judgement,
+        }
+      : null
+  );
+  const scoreReasons: (string | undefined)[] = scoreReasonInputs.every(
+    (input) => input !== null
+  )
+    ? composeScoreReasons(
+        scoreReasonInputs as ScoreReasonInput[],
+        analysis.input.score.english.grade
+      )
+    : [];
   const matchSection: JeongsiUniversityMatchSection = {
     sectionId: "jeongsiUniversityMatch",
     title: SECTION_TITLE.jeongsiUniversityMatch,
-    // 근거 두 문장 뒤에 컨설턴트 판단 문장을 코드가 붙인다(composeMatchVerdicts)
+    // 대학별 설명은 환산식을 그대로 적용한 실제 점수로 코드가 쓴다(specs/014 D1·D2).
+    // 영역 강점·약점 서술 대신 내 점수·기준컷 대비 차이·반영비율 득실·영어 손실을
+    // 점수로 적고, 끝에 컨설턴트 판단 문장을 붙인다(composeMatchVerdicts).
     items: advantageItems.map(({ appliedRatioSummary, ...item }, index) => ({
       ...item,
-      reason: `${uniqueMatchReasons[index]} ${matchVerdicts[index]}`,
+      // 점수 설명이 있으면 판단 문장도 점수 비교로 쓴다(composeGainVerdicts)
+      reason:
+        scoreReasons[index] ??
+        `${uniqueMatchReasons[index]} ${matchVerdicts[index]}`,
     })),
     overallComment: uniqueMatchOverall,
   };
 
   const recommendationItems: RecommendationItem[] = recommendationEntries.map(
     (entry, index) => {
-      // tier 는 그룹 키로, percentileGap 은 프롬프트 전용 척도로만 쓴다.
+      // tier 는 그룹 키로, gap 은 프롬프트 전용으로만 쓴다.
       const {
         tier: _tier,
-        percentileGap: _percentileGap,
+        gap: _gap,
         cutTrend: _cutTrend,
         substitutedFrom: _substitutedFrom,
         ...rest
@@ -2066,12 +2505,14 @@ export const buildJeongsiReport = async (
   const recommendationSection: JeongsiRecommendationSection = {
     sectionId: "jeongsiRecommendation",
     title: SECTION_TITLE.jeongsiRecommendation,
+    // 상향·적정·안정은 비어도 칸을 둔다(비었다는 것이 정보다). 스나이핑은
+    // 고를 후보가 있을 때만 싣는다.
     groups: RECOMMENDATION_TIER_ORDER.map((tier) => ({
       tier,
       items: recommendationItems.filter(
         (_item, index) => recommendationEntries[index].tier === tier
       ),
-    })),
+    })).filter((group) => group.tier !== "스나이핑" || group.items.length > 0),
     overallComment: uniqueRecommendationOverall,
     notices,
   };
@@ -2080,10 +2521,30 @@ export const buildJeongsiReport = async (
     sectionId: "jeongsiCombination",
     title: SECTION_TITLE.jeongsiCombination,
     risk: preference.risk,
-    combinations: combinationItems.map((item, index) => ({
-      ...item,
-      strategy: uniqueCombinationStrategies[index],
-    })),
+    combinations: combinationItems.map((item, index) => {
+      const slotReasons = composeRecommendedSlotReasons(
+        analysis.combinations[index],
+        analysis
+      );
+      return {
+        ...item,
+        ...(slotReasons.length > 0 ? { slotReasons } : {}),
+        strategy: uniqueCombinationStrategies[index],
+      };
+    }),
+    ...(() => {
+      const recommended = analysis.combinations.find(
+        (combination) => combination.recommended
+      );
+      return recommended
+        ? {
+            recommendationNote: composeRecommendedCombinationNote(
+              recommended,
+              preference.risk
+            ),
+          }
+        : {};
+    })(),
     overallComment: uniqueCombinationOverall,
   };
 
@@ -2105,16 +2566,46 @@ export const buildJeongsiReport = async (
     jeongsiUniversityDetail: detailSection,
   };
 
-  return {
-    meta: {
-      reportId,
-      input: analysis.input,
-      createdAt: options.createdAt ?? new Date().toISOString(),
-      version: JEONGSI_REPORT_VERSION,
+  // 가운데 점으로 잇는 말투는 쓰지 않는다. 원문 고유명(대학·학과)의 점만 남긴다.
+  const content = removeInterpunctsFromContent(
+    {
+      meta: {
+        reportId,
+        input: analysis.input,
+        createdAt: options.createdAt ?? new Date().toISOString(),
+        version: JEONGSI_REPORT_VERSION,
+      },
+      sections: JEONGSI_SECTION_ORDER.map(
+        (sectionId) => sectionById[sectionId]
+      ),
     },
-    sections: JEONGSI_SECTION_ORDER.map((sectionId) => sectionById[sectionId]),
-  };
+    analysis.ineligiblePlans.flatMap(({ plan }) => [
+      plan.university,
+      plan.department,
+    ])
+  );
+
+  // 페이지 간 대학명·모집단위·모집군·구분·가능성·지원 자격이 하나라도 어긋나면
+  // 저장하지 않는다(specs/014 A2). 유료 리포트라 제공 전에 걸러야 한다.
+  const inconsistencies = findReportInconsistencies(content, analysis);
+  if (inconsistencies.length > 0) {
+    throw new JeongsiReportConsistencyError(inconsistencies);
+  }
+  return content;
 };
+
+/** 리포트 페이지 간 불일치. 생성 실패로 처리해 저장하지 않는다 */
+export class JeongsiReportConsistencyError extends Error {
+  readonly problems: string[];
+
+  constructor(problems: string[]) {
+    super(
+      `리포트 페이지 간 정보가 일치하지 않아 저장하지 않았습니다: ${problems.join(" / ")}`
+    );
+    this.name = "JeongsiReportConsistencyError";
+    this.problems = problems;
+  }
+}
 
 /** 캐시 없이 정시 리포트용 Gemini 클라이언트를 만들 때 쓰는 공통 프롬프트 */
 export { JEONGSI_COMMON_SYSTEM_PROMPT };

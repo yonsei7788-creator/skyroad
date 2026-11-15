@@ -11,7 +11,7 @@ import type { ResultMetric } from "../types";
 
 /** 컷 지표 이름 */
 export const CUT_METRIC_LABEL: Record<ResultMetric, string> = {
-  percentile: "국·수·탐 평균 백분위",
+  percentile: "국어, 수학, 탐구 평균 백분위",
   convertedScore: "대학 환산점수",
 };
 
@@ -41,4 +41,63 @@ export const formatCutDifference = (comparison: CutComparison): string => {
   const sign = diff > 0 ? "+" : diff < 0 ? "−" : "±";
   const unit = comparison.metric === "percentile" ? "백분위점" : "점";
   return `${sign}${Math.abs(diff).toFixed(1)}${unit}`;
+};
+
+// ─── 판정 격차 표기 ───
+//
+// 판정 격차는 판정 지표의 단위로 말한다(specs/014 B1·D1). 환산점수 입결이면
+// "환산점수 12.3점", 백분위 입결이면 "평균 백분위 1.3점"이다. 대학 사이의
+// 정렬·구간 판정에는 단위를 맞춘 ratio(만점 대비 % 또는 백분위점)를 쓴다.
+
+/** 모집단위 하나의 판정 격차 */
+export interface GapValue {
+  /** 판정 격차 (구간 판정 단위: 만점 대비 % 또는 백분위점) */
+  ratio: number;
+  /** 판정 지표 단위의 차이 (환산점수 점 또는 백분위점) */
+  points: number;
+  metric: ResultMetric;
+}
+
+/** 소수 첫째 자리 반올림 (화면과 같은 자릿수) */
+export const roundGapForDisplay = (value: number): number =>
+  Math.round(value * 10) / 10;
+
+/** 엔진 평가에서 판정 격차를 꺼낸다. 입결이 없으면 null */
+export const gapValueOf = (evaluation: {
+  gapRatio: number | null;
+  gapPoints: number | null;
+  referenceCut: { metric: ResultMetric } | null;
+}): GapValue | null =>
+  evaluation.gapRatio === null ||
+  evaluation.gapPoints === null ||
+  evaluation.referenceCut === null
+    ? null
+    : {
+        ratio: evaluation.gapRatio,
+        points: evaluation.gapPoints,
+        metric: evaluation.referenceCut.metric,
+      };
+
+/** 격차 크기 표기. 예) "환산점수 12.3점", "평균 백분위 1.3점" */
+export const formatGapAmount = (gap: GapValue): string => {
+  const magnitude = Math.abs(roundGapForDisplay(gap.points)).toFixed(1);
+  return gap.metric === "percentile"
+    ? `평균 백분위 ${magnitude}점`
+    : `환산점수 ${magnitude}점`;
+};
+
+/** 부호 있는 격차 표기. 예) "환산점수 +12.3점", "평균 백분위 −1.3점" */
+export const formatSignedGap = (gap: GapValue): string => {
+  const rounded = roundGapForDisplay(gap.points);
+  const sign = rounded > 0 ? "+" : rounded < 0 ? "−" : "±";
+  const magnitude = Math.abs(rounded).toFixed(1);
+  return gap.metric === "percentile"
+    ? `평균 백분위 ${sign}${magnitude}점`
+    : `환산점수 ${sign}${magnitude}점`;
+};
+
+/** 판정 격차 단위 이름 */
+export const GAP_RATIO_UNIT: Record<ResultMetric, string> = {
+  percentile: "백분위점",
+  convertedScore: "% (만점 대비)",
 };

@@ -2,6 +2,7 @@ import {
   collectNumbers,
   composeChanceSentence,
   composeGapClause,
+  composeMeasuredChanceSentence,
   ensureUniqueSentences,
   findForeignUniversityNames,
   findMismatchedAreaScores,
@@ -45,7 +46,7 @@ describe("findTextViolations", () => {
       "문장 1개로 씁니다",
       "20자 이내로 씁니다",
       "담백한 표현(도움이 됩니다, 유리하게 작용합니다, 보완합니다 등)으로 씁니다",
-      "소재 이름 없이 값으로 문장을 시작합니다",
+      "문장은 인용할 값으로 시작합니다",
       '"당해 지원자 분포에 따라 결과가 갈리는 구조입니다"로 문장을 맺습니다',
     ]);
   });
@@ -63,13 +64,23 @@ describe("findTextViolations", () => {
 });
 
 describe("composeGapClause", () => {
-  it("격차 부호에 맞춰 넘겨·모자라를 쓰고 소수 첫째 자리로 적는다", () => {
+  it("판정 지표의 단위로 넘겨·모자라를 쓰고 소수 첫째 자리로 적는다", () => {
     // Arrange & Act & Assert
-    expect(composeGapClause(4.24)).toBe("기준컷을 4.2백분위점 넘겨");
-    expect(composeGapClause(-1.26)).toBe("기준컷에 1.3백분위점 모자라");
-    expect(composeGapClause(0.02)).toBe("기준컷과 같은 수준으로");
+    expect(
+      composeGapClause({
+        ratio: 1.224,
+        points: 12.24,
+        metric: "convertedScore",
+      })
+    ).toBe("기준컷을 환산점수 12.2점 넘겨");
+    expect(
+      composeGapClause({ ratio: -1.26, points: -1.26, metric: "percentile" })
+    ).toBe("기준컷에 평균 백분위 1.3점 모자라");
+    expect(
+      composeGapClause({ ratio: 0.002, points: 0.02, metric: "convertedScore" })
+    ).toBe("기준컷과 같은 수준으로");
     expect(composeGapClause(null)).toBe(
-      "공개 기준컷이 없어 반영방식과 모집 규모로 판단한 구분으로"
+      "공개 기준컷이 없어 비교하지 못한 곳으로"
     );
   });
 
@@ -77,11 +88,11 @@ describe("composeGapClause", () => {
     // Arrange & Act & Assert
     expect(
       composeChanceSentence(
-        -0.4,
+        { ratio: -0.4, points: -0.4, metric: "percentile" },
         "지원은 가능하나 결과를 단정하기 어려운 라인입니다"
       )
     ).toBe(
-      "기준컷에 0.4백분위점 모자라, 지원은 가능하나 결과를 단정하기 어려운 라인입니다."
+      "기준컷에 평균 백분위 0.4점 모자라, 지원은 가능하나 결과를 단정하기 어려운 라인입니다."
     );
   });
 });
@@ -362,5 +373,45 @@ describe("findForeignUniversityNames", () => {
         "건국대학교 국민대학교와 같은 반영비율"
       )
     ).toEqual([]);
+  });
+});
+
+describe("composeMeasuredChanceSentence - 안정 제한 사유", () => {
+  const gap = { metric: "convertedScore" as const, points: 29, ratio: 2.9 };
+
+  it("실측 비율이 높아도 안정에서 낮춘 곳은 그 사유를 밝힌다", () => {
+    // Arrange
+    const basis = { tier: "적정" as const, capReason: "입결이 2026 한 해뿐" };
+
+    // Act
+    const sentence = composeMeasuredChanceSentence(gap, 0.88, "의미", basis);
+
+    // Assert
+    expect(sentence).toBe(
+      "기준컷보다 환산점수 29.0점 높고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 88%지만, 입결이 2026 한 해뿐이라 안정 대신 적정으로 판단해, 의미."
+    );
+  });
+
+  it("실측 비율이 없는 상향은 판정 기준을 근거로 밝힌다", () => {
+    // Arrange
+    const percentileGap = {
+      metric: "percentile" as const,
+      points: 0.8,
+      ratio: 0.8,
+    };
+
+    // Act
+    const sentence = composeMeasuredChanceSentence(
+      percentileGap,
+      null,
+      "의미",
+      {
+        tier: "상향",
+        capReason: null,
+      }
+    );
+
+    // Assert
+    expect(sentence).toContain("높지만 판정 기준상 상향 구간이라");
   });
 });

@@ -14,6 +14,8 @@
 // ============================================================
 
 import type { PassChance } from "../types.ts";
+import { formatGapAmount, roundGapForDisplay } from "./cut-format";
+import type { GapValue } from "./cut-format";
 
 import { JEONGSI_CHANCE_PHRASES } from "./system-prompt.ts";
 
@@ -99,7 +101,7 @@ export const findTextViolations = (text: string, rule: TextRule): string[] => {
     problems.push("원서 선택과 지원 판단으로 문장을 맺습니다");
   }
   if (TOPIC_LABEL_START.test(text)) {
-    problems.push("소재 이름 없이 값으로 문장을 시작합니다");
+    problems.push("문장은 인용할 값으로 시작합니다");
   }
   if (
     rule.requiredAnyOf &&
@@ -161,25 +163,88 @@ export const findWeaknessCalledStrength = (
 
 /**
  * 기준컷 대비 격차 절. 격차의 방향·크기는 코드값이므로 문장도 코드가 쓴다.
- * 예) 4.2 → "기준컷을 4.2백분위점 넘겨" / -1.3 → "기준컷에 1.3백분위점 모자라"
+ * 판정 지표의 단위로 쓴다(환산점수 입결이면 환산점수 점, 백분위 입결이면 평균 백분위 점).
+ * 예) "기준컷을 환산점수 12.3점 넘겨" / "기준컷에 평균 백분위 1.3점 모자라"
  */
-export const composeGapClause = (gap: number | null): string => {
+export const composeGapClause = (gap: GapValue | null): string => {
   if (gap === null) {
-    return "공개 기준컷이 없어 반영방식과 모집 규모로 판단한 구분으로";
+    return "공개 기준컷이 없어 비교하지 못한 곳으로";
   }
-  const rounded = Math.round(gap * 10) / 10;
+  const rounded = roundGapForDisplay(gap.points);
   if (rounded === 0) {
     return "기준컷과 같은 수준으로";
   }
-  const magnitude = Math.abs(rounded).toFixed(1);
   return rounded > 0
-    ? `기준컷을 ${magnitude}백분위점 넘겨`
-    : `기준컷에 ${magnitude}백분위점 모자라`;
+    ? `기준컷을 ${formatGapAmount(gap)} 넘겨`
+    : `기준컷에 ${formatGapAmount(gap)} 모자라`;
+};
+
+/**
+ * 실측 통과율을 함께 쓴 합격 가능성 문장. 판정 구간이 실측 기반이라 기준컷보다
+ * 높아도 상향·적정일 수 있으므로, 그 이유(같은 여유였던 곳의 다음 해 통과 비율)를
+ * 같은 문장에서 밝힌다. 예)
+ *   "기준컷보다 환산점수 13.9점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 31%라, …"
+ */
+export const composeMeasuredChanceSentence = (
+  gap: GapValue | null,
+  passRate: number | null | undefined,
+  meaning: string,
+  basis?: ChanceBasis
+): string => {
+  if (gap === null || passRate === null || passRate === undefined) {
+    return composeRuleChanceSentence(gap, meaning, basis);
+  }
+  const rounded = roundGapForDisplay(gap.points);
+  const percent = Math.round(passRate * 100);
+  const measured = `같은 여유였던 곳이 다음 해 컷을 넘은 비율이 ${percent}%`;
+  // 안정 구간인데 근거가 부족해 적정으로 둔 곳은, 비율이 높아도 왜 적정인지 밝힌다
+  if (basis?.capReason && rounded > 0) {
+    return `기준컷보다 ${formatGapAmount(gap)} 높고 ${measured}지만, ${basis.capReason}이라 안정 대신 적정으로 판단해, ${meaning}.`;
+  }
+  if (rounded === 0) {
+    return `기준컷과 같은 수준이고 ${measured}라, ${meaning}.`;
+  }
+  const amount = formatGapAmount(gap);
+  return rounded > 0
+    ? `기준컷보다 ${amount} 높${percent < 75 ? "지만" : "고"} ${measured}라, ${meaning}.`
+    : `기준컷보다 ${amount} 낮고 ${measured}라, ${meaning}.`;
+};
+
+/**
+ * 실측 비율이 없을 때(평균 백분위로 비교한 대학) 판단 근거. 실측 대신 적용한
+ * 판정 기준을 밝힌다.
+ */
+export interface ChanceBasis {
+  tier: "상향" | "적정" | "안정" | "스나이핑";
+  /** 안정 구간인데 적정으로 둔 사유. 해당 없으면 null */
+  capReason: string | null;
+}
+
+/**
+ * 기준컷보다 높은데 상향·적정인 곳은 "높은데 왜 낮음·보통인가"가 모순처럼
+ * 읽힌다. 실측 비율이 없으면 적용한 판정 기준(구간 또는 안정 제한 사유)을 밝힌다.
+ */
+const composeRuleChanceSentence = (
+  gap: GapValue | null,
+  meaning: string,
+  basis?: ChanceBasis
+): string => {
+  if (gap === null || !basis || roundGapForDisplay(gap.points) <= 0) {
+    return composeChanceSentence(gap, meaning);
+  }
+  const amount = formatGapAmount(gap);
+  if (basis.capReason) {
+    return `기준컷보다 ${amount} 높지만 ${basis.capReason}이라 안정 대신 적정으로 판단해, ${meaning}.`;
+  }
+  if (basis.tier !== "상향") {
+    return composeChanceSentence(gap, meaning);
+  }
+  return `기준컷보다 ${amount} 높지만 판정 기준상 상향 구간이라, ${meaning}.`;
 };
 
 /** 격차 절 + 정해진 합격 가능성 해석 문구로 된 한 문장 */
 export const composeChanceSentence = (
-  gap: number | null,
+  gap: GapValue | null,
   meaning: string
 ): string => `${composeGapClause(gap)}, ${meaning}.`;
 
@@ -420,7 +485,7 @@ export const findMismatchedAreaScores = (
           ? []
           : [
               actual === null
-                ? `${label}는 ${kind} 대신 등급과 반영비율로 씁니다`
+                ? `${label}는 등급과 반영비율로 씁니다`
                 : `${label} ${kind}는 ${numberKey(Math.round(actual * 10) / 10)} 그대로 씁니다`,
             ];
       });

@@ -167,12 +167,12 @@ const judgeRatio = (
     const value = describeAreaWeight(strength, ratioSummary, ratios[strength]);
     return {
       value,
-      meaning: `강점 영역인 ${AREA_LABEL[strength]}의 비중이 국어·수학·탐구 중 가장 커, 백분위 ${percentile ?? "-"}점의 강점이 환산점수에서 유리하게 작용합니다.`,
-      sentence: `${value} 반영으로 국어·수학·탐구 중 강점인 ${AREA_LABEL[strength]}의 비중이 가장 커, 환산점수에서 유리하게 작용합니다.`,
+      meaning: `강점 영역인 ${AREA_LABEL[strength]}의 비중이 국어, 수학, 탐구 중 가장 커, 백분위 ${percentile ?? "-"}점의 강점이 환산점수에서 유리하게 작용합니다.`,
+      sentence: `${value} 반영으로 국어, 수학, 탐구 중 강점인 ${AREA_LABEL[strength]}의 비중이 가장 커, 환산점수에서 유리하게 작용합니다.`,
       // 같은 비율의 대학이 둘이면 같은 문장이 된다(실측: 동국대·광운대 수학 35%)
       alternate: {
-        meaning: `국어·수학·탐구 가운데 ${value} 반영이 가장 커, 강점이 환산점수를 끌어올립니다.`,
-        sentence: `국어·수학·탐구 가운데 ${value} 반영이 가장 커, 강점인 ${AREA_LABEL[strength]}${SUBJECT_PARTICLE[AREA_LABEL[strength]]} 환산점수를 끌어올립니다.`,
+        meaning: `국어, 수학, 탐구 가운데 ${value} 반영이 가장 커, 강점이 환산점수를 끌어올립니다.`,
+        sentence: `국어, 수학, 탐구 가운데 ${value} 반영이 가장 커, 강점인 ${AREA_LABEL[strength]}${SUBJECT_PARTICLE[AREA_LABEL[strength]]} 환산점수를 끌어올립니다.`,
       },
     };
   }
@@ -192,11 +192,11 @@ const judgeRatio = (
     const value = describeAreaWeight(weakness, ratioSummary, ratios[weakness]);
     return {
       value,
-      meaning: `약점 영역인 ${AREA_LABEL[weakness]}의 비중이 국어·수학·탐구 중 가장 작아, 환산 손실이 줄어듭니다.`,
-      sentence: `${value} 반영으로 국어·수학·탐구 중 약점인 ${AREA_LABEL[weakness]}의 비중이 가장 작아, 환산 손실이 줄어듭니다.`,
+      meaning: `약점 영역인 ${AREA_LABEL[weakness]}의 비중이 국어, 수학, 탐구 중 가장 작아, 환산 손실이 줄어듭니다.`,
+      sentence: `${value} 반영으로 국어, 수학, 탐구 중 약점인 ${AREA_LABEL[weakness]}의 비중이 가장 작아, 환산 손실이 줄어듭니다.`,
       alternate: {
-        meaning: `국어·수학·탐구 가운데 약점을 가장 적게 반영해, 환산 손실이 줄어듭니다.`,
-        sentence: `국어·수학·탐구 가운데 약점인 ${AREA_LABEL[weakness]}${OBJECT_PARTICLE[AREA_LABEL[weakness]]} 가장 적게(${value}) 반영해, 환산 손실이 줄어듭니다.`,
+        meaning: `국어, 수학, 탐구 가운데 약점을 가장 적게 반영해, 환산 손실이 줄어듭니다.`,
+        sentence: `국어, 수학, 탐구 가운데 약점인 ${AREA_LABEL[weakness]}${OBJECT_PARTICLE[AREA_LABEL[weakness]]} 가장 적게(${value}) 반영해, 환산 손실이 줄어듭니다.`,
       },
     };
   }
@@ -204,11 +204,11 @@ const judgeRatio = (
     const value = describeAreaWeight(weakness, ratioSummary, ratios[weakness]);
     return {
       value,
-      meaning: `약점 영역인 ${AREA_LABEL[weakness]}의 비중이 국어·수학·탐구 중 가장 커, 환산 손실이 생길 수 있는 점을 함께 살필 부분입니다.`,
-      sentence: `${value} 반영으로 국어·수학·탐구 중 약점인 ${AREA_LABEL[weakness]}의 비중이 가장 커, 환산 손실을 함께 살필 부분입니다.`,
+      meaning: `약점 영역인 ${AREA_LABEL[weakness]}의 비중이 국어, 수학, 탐구 중 가장 커, 환산 손실이 생길 수 있는 점을 함께 살필 부분입니다.`,
+      sentence: `${value} 반영으로 국어, 수학, 탐구 중 약점인 ${AREA_LABEL[weakness]}의 비중이 가장 커, 환산 손실을 함께 살필 부분입니다.`,
       alternate: {
-        meaning: `국어·수학·탐구 가운데 약점을 가장 크게 반영해, 환산 손실을 함께 살필 부분입니다.`,
-        sentence: `국어·수학·탐구 가운데 약점인 ${AREA_LABEL[weakness]}${OBJECT_PARTICLE[AREA_LABEL[weakness]]} 가장 크게(${value}) 반영해, 환산 손실을 함께 살필 부분입니다.`,
+        meaning: `국어, 수학, 탐구 가운데 약점을 가장 크게 반영해, 환산 손실을 함께 살필 부분입니다.`,
+        sentence: `국어, 수학, 탐구 가운데 약점인 ${AREA_LABEL[weakness]}${OBJECT_PARTICLE[AREA_LABEL[weakness]]} 가장 크게(${value}) 반영해, 환산 손실을 함께 살필 부분입니다.`,
       },
     };
   }
@@ -216,7 +216,7 @@ const judgeRatio = (
 };
 
 /**
- * 약점 비중이 국어·수학·탐구 중 중간이면 손실이 크지 않다는 판정.
+ * 약점 비중이 국어, 수학, 탐구 중 중간이면 손실이 크지 않다는 판정.
  * 강점이 영어인 학생은 다른 소재 후보가 적어 같은 문장이 5곳에 반복됐다
  * (실측). 정보가 적은 소재라 다른 소재가 모두 쓰인 뒤에 고른다.
  */
@@ -240,11 +240,11 @@ const judgeMiddleWeakness = (
   const value = describeAreaWeight(weakness, ratioSummary, ratios[weakness]);
   return {
     value,
-    meaning: `약점 영역인 ${AREA_LABEL[weakness]}의 비중이 국어·수학·탐구 중 중간이라, 환산 손실은 크지 않습니다.`,
-    sentence: `${value} 반영으로 약점인 ${AREA_LABEL[weakness]}의 비중이 국어·수학·탐구 중 중간이라, 환산 손실은 크지 않습니다.`,
+    meaning: `약점 영역인 ${AREA_LABEL[weakness]}의 비중이 국어, 수학, 탐구 중 중간이라, 환산 손실은 크지 않습니다.`,
+    sentence: `${value} 반영으로 약점인 ${AREA_LABEL[weakness]}의 비중이 국어, 수학, 탐구 중 중간이라, 환산 손실은 크지 않습니다.`,
     alternate: {
-      meaning: `약점 반영이 국어·수학·탐구 가운데 중간이라, 손실이 크지 않습니다.`,
-      sentence: `약점인 ${AREA_LABEL[weakness]} 반영(${value})이 국어·수학·탐구 가운데 중간이라, 손실이 크지 않습니다.`,
+      meaning: `약점 반영이 국어, 수학, 탐구 가운데 중간이라, 손실이 크지 않습니다.`,
+      sentence: `약점인 ${AREA_LABEL[weakness]} 반영(${value})이 국어, 수학, 탐구 가운데 중간이라, 손실이 크지 않습니다.`,
     },
   };
 };
@@ -269,19 +269,25 @@ const lossFromTable = (
 };
 
 /**
- * 등급 손실을 백분위점으로 환산한다. 엔진이 격차를 백분위점으로 바꿀 때와 같은
- * 식(환산 총점 대비 % ÷ 백분위 1점당 변화율)이라, 같은 대학의 기준컷 대비
- * 격차와 바로 견줄 수 있다. 만점이 대학마다 달라 점수 그대로는 비교할 수 없다.
+ * 등급 손실을 이 대학의 판정 격차와 같은 단위로 바꾼다.
+ * - 환산점수 입결 대학: 손실(환산점수 점)을 그대로 쓴다. 기준컷 대비 차이도
+ *   환산점수 점이라 바로 견줄 수 있다.
+ * - 백분위 입결 대학: 손실을 백분위점으로 환산한다(환산 총점 대비 % ÷ 백분위
+ *   1점당 변화율). 표준점수 반영 대학은 민감도가 원문에 없어 null 이다.
  */
-const lossInPercentile = (
+const lossInGapPoints = (
   loss: number,
   evaluation: PlanEvaluation
-): number | null => {
+): { value: number; amount: string } | null => {
+  const metric = evaluation.referenceCut?.metric;
+  if (metric === "convertedScore") {
+    return { value: loss, amount: `환산점수 ${formatNumber(loss)}점` };
+  }
   const { totalScore } = evaluation.plan.formula;
-  // 표준점수 반영 대학은 민감도를 원문만으로 구할 수 없어(null) 환산하지 않는다
   const { sensitivity } = evaluation;
   if (totalScore <= 0 || sensitivity === null || sensitivity <= 0) return null;
-  return ((loss / totalScore) * 100) / sensitivity;
+  const value = ((loss / totalScore) * 100) / sensitivity;
+  return { value, amount: `평균 백분위 약 ${formatNumber(value)}점` };
 };
 
 /**
@@ -312,11 +318,11 @@ const judgeGradeLoss = (
           : `영어 ${grade}등급도 1등급과 점수 차이가 없어, 영어 부담 없이 다른 영역으로 승부합니다.`,
     };
   }
-  const percentile = lossInPercentile(loss, evaluation);
-  if (percentile === null) return null;
-  const gap = evaluation.percentileGap;
-  const small = gap === null ? percentile < 1 : percentile < Math.abs(gap);
-  const amount = `백분위 약 ${formatNumber(percentile)}점`;
+  const converted = lossInGapPoints(loss, evaluation);
+  if (converted === null) return null;
+  const gap = evaluation.gapPoints;
+  const small = gap !== null && converted.value < Math.abs(gap);
+  const { amount } = converted;
   const head = `${subject} ${grade}등급 손실`;
   // 같은 판정이 여러 대학에 이어지면 문장 틀이 반복된다(실측: 9곳 중 5곳이
   // "…지원 판단을 바꿀 정도는 아닙니다"). 같은 뜻의 두 문장을 번갈아 쓴다.
@@ -768,7 +774,7 @@ const judgeMatchWeight = (
     others.length > 0 &&
     others.every(([, value]) => value < own)
   ) {
-    const compared = others.map(([key]) => AREA_BY_SHORT_LABEL[key]).join("·");
+    const compared = others.map(([key]) => AREA_BY_SHORT_LABEL[key]).join(", ");
     const meaning = `${strengthLabel} 가중치 ${formatNumber(own)}${topicAfterAmount(String(own))} 같은 ${ownMetric ?? "지표"}로 반영하는 ${compared}보다 커, 강점인 ${strengthLabel}${SUBJECT_PARTICLE[strengthLabel]} 환산점수에 더 크게 들어갑니다.`;
     return {
       value: `${strengthLabel} 가중치 ${formatNumber(own)}`,
@@ -829,22 +835,22 @@ const metricFactOf = (
       ? `강점인 ${strengthLabel}${TOPIC_PARTICLE[strengthLabel]} 대학 변환표준점수로 반영되어, 백분위에 따라 정해진 점수가 환산에 들어갑니다.`
       : strengthLabel && ownMetric === "백분위"
         ? `강점인 ${strengthLabel}${TOPIC_PARTICLE[strengthLabel]} 백분위로 반영되어, 백분위 순위대로 환산에 들어갑니다.`
-        : "국어·수학·탐구를 영역마다 다른 지표로 반영해, 지표별 점수가 그대로 환산에 들어갑니다.";
+        : "국어, 수학, 탐구를 영역마다 다른 지표로 반영해, 지표별 점수가 그대로 환산에 들어갑니다.";
   return { value: metricSummary, meaning, sentence: meaning };
 };
 
 // ─── PART 5 원서 운용 조언 ───
 
 export interface DetailAdviceInput {
-  tier: "상향" | "적정" | "안정";
+  tier: "상향" | "적정" | "안정" | "스나이핑";
   chance: string;
   group: "가" | "나" | "다";
 }
 
 const OTHER_GROUPS: Record<DetailAdviceInput["group"], string> = {
-  가: "나·다",
-  나: "가·다",
-  다: "가·나",
+  가: "나군과 다군",
+  나: "가군과 다군",
+  다: "가군과 나군",
 };
 
 /** 구분·합격 가능성별 조언 문장. 코드가 이미 판정한 구분과 모집군만 쓴다 */
@@ -854,17 +860,24 @@ const detailAdviceSentences = ({
   group,
 }: DetailAdviceInput): string[] => {
   const others = OTHER_GROUPS[group];
+  if (tier === "스나이핑") {
+    return [
+      `${group}군 스나이핑 원서는 합격을 기대하기보다 예상외 결과를 노리는 시도이므로, ${others} 원서로 결과를 받쳐 두어야 합니다.`,
+      `${group}군에 쓴다면 원서 한 장을 걸고 시도하는 카드이므로, ${others}에는 적정이나 안정 원서를 두는 편이 안전합니다.`,
+      `${group}군 스나이핑 카드로만 검토하고, 원서 접수 직전의 최종 모집인원과 경쟁률을 확인한 뒤 결정하는 편이 좋습니다.`,
+    ];
+  }
   if (tier === "상향") {
     return chance === "매우낮음"
       ? [
-          `${group}군에 둔다면 사실상 도전 원서이므로, 나머지 ${others}군은 합격 여유가 있는 곳으로 채워야 합니다.`,
-          `${group}군 도전 카드로만 검토하고, ${others}군 원서로 결과를 확실히 받쳐 두는 편이 안전합니다.`,
-          `${group}군에 쓰더라도 결과를 기대하기보다 도전의 의미가 크므로, ${others}군 원서의 안정성을 먼저 확보해야 합니다.`,
+          `${group}군에 둔다면 사실상 도전 원서이므로, 나머지 ${others}은 합격 여유가 있는 곳으로 채워야 합니다.`,
+          `${group}군 도전 카드로만 검토하고, ${others} 원서로 결과를 확실히 받쳐 두는 편이 안전합니다.`,
+          `${group}군에 쓰더라도 결과를 기대하기보다 도전의 의미가 크므로, ${others} 원서의 안정성을 먼저 확보해야 합니다.`,
         ]
       : [
-          `${group}군 상향 원서로 둔다면, 나머지 ${others}군에는 적정·안정 원서를 두어 결과를 받쳐야 합니다.`,
-          `${group}군에서 도전해 볼 만한 원서로, ${others}군은 합격 여유가 있는 곳으로 고르는 편이 안전합니다.`,
-          `${group}군 상향 카드로 검토할 수 있으며, 이때 ${others}군 중 한 곳 이상은 안정 원서로 두는 편이 합리적입니다.`,
+          `${group}군 상향 원서로 둔다면, 나머지 ${others}에는 적정이나 안정 원서를 두어 결과를 받쳐야 합니다.`,
+          `${group}군에서 도전해 볼 만한 원서로, ${others}은 합격 여유가 있는 곳으로 고르는 편이 안전합니다.`,
+          `${group}군 상향 카드로 검토할 수 있으며, 이때 ${others} 중 한 곳 이상은 안정 원서로 두는 편이 합리적입니다.`,
         ];
   }
   if (tier === "적정") {
@@ -876,16 +889,16 @@ const detailAdviceSentences = ({
         ]
       : [
           `${group}군 적정 원서로 두되, 같은 군의 다른 후보와 기준컷 여유를 비교해 고르는 편이 좋습니다.`,
-          `${group}군에 둘 수 있는 원서지만 결과가 당해 경쟁에 따라 갈릴 수 있어, ${others}군에 안정 원서를 함께 두는 편이 좋습니다.`,
+          `${group}군에 둘 수 있는 원서지만 결과가 당해 경쟁에 따라 갈릴 수 있어, ${others}에 안정 원서를 함께 두는 편이 좋습니다.`,
           `${group}군 적정 후보로 검토하되, 원서 접수 직전의 경쟁률 흐름을 함께 보고 확정하는 편이 좋습니다.`,
         ];
   }
   return [
-    `${group}군 안정 원서로 두면, ${others}군에서 상향을 시도할 여지가 생깁니다.`,
+    `${group}군 안정 원서로 두면, ${others}에서 상향을 시도할 여지가 생깁니다.`,
     `${group}군에서 결과를 받쳐 주는 원서로, 세 장 중 한 장을 안정적으로 두고 싶을 때 적합합니다.`,
     `${group}군 안정 카드로 쓰면 원서 전체의 위험을 낮춰 줍니다.`,
     `${group}군에 두면 다른 군 원서를 과감하게 고를 수 있게 받쳐 주는 원서입니다.`,
-    `${group}군 안정 후보 중 하나로, 같은 군의 다른 안정 후보와 희망 학과·대학 선호를 비교해 고르면 됩니다.`,
+    `${group}군 안정 후보 중 하나로, 같은 군의 다른 안정 후보와 희망 학과와 대학 선호를 비교해 고르면 됩니다.`,
   ];
 };
 
@@ -1112,7 +1125,19 @@ export const assignMatchFacts = (
 // ─── PART 1 성적 총평: 세 문장의 판정 ───
 
 /** 영역 간 백분위 차이가 이 값 이상이면 반영방식에 따라 환산 결과가 크게 갈린다고 본다 */
-const WIDE_SPREAD = 5;
+export const WIDE_SPREAD = 5;
+
+/** 국어·수학·탐구 백분위의 최고·최저 차이 (소수 첫째 자리) */
+export const percentileSpreadOf = (
+  rows: { percentile: number | null }[]
+): number => {
+  const values = rows
+    .map((row) => row.percentile)
+    .filter((value): value is number => value !== null);
+  return values.length > 0
+    ? Math.round((Math.max(...values) - Math.min(...values)) * 10) / 10
+    : 0;
+};
 
 /**
  * 백분위가 뜻하는 응시자 중 위치. 백분위는 "그 점수보다 낮은 응시자의 비율"이라
@@ -1123,12 +1148,13 @@ export const describeAreaLevel = (
   score: SuneungScore,
   area: ScoreArea
 ): string | null => {
+  // 백분위 100 은 "상위 약 0%"가 아니라 최상위다
   const top = (percentile: number) =>
-    `상위 약 ${formatNumber(100 - percentile)}%`;
+    percentile >= 100 ? "최상위" : `상위 약 ${formatNumber(100 - percentile)}%`;
   if (area === "korean") return top(score.korean.percentile);
   if (area === "math") return top(score.math.percentile);
   if (area === "inquiry") {
-    return `${score.inquiry1.subject} ${top(score.inquiry1.percentile)} · ${score.inquiry2.subject} ${top(score.inquiry2.percentile)}`;
+    return `${score.inquiry1.subject} ${top(score.inquiry1.percentile)}, ${score.inquiry2.subject} ${top(score.inquiry2.percentile)}`;
   }
   return null;
 };
@@ -1183,11 +1209,11 @@ export const judgeScoreOverall = (
   };
   const describe = (area: ScoreArea) =>
     `${AREA_LABEL[area]} 백분위 ${percentileOf(context, area) ?? "-"}점(평균 대비 ${deviationOf(area)})`;
-  const averageValue = `국·수·탐 평균 백분위 ${formatNumber(averagePercentile)}점, 표준점수 합 ${formatNumber(totalStandardScore)}점`;
+  const averageValue = `국어, 수학, 탐구 평균 백분위 ${formatNumber(averagePercentile)}점, 표준점수 합 ${formatNumber(totalStandardScore)}점`;
   const lowest = lowestPercentile(context.score);
   const englishGrade = context.score.english.grade;
 
-  const levelMeaning = `국어·수학·탐구 모두 응시자 상위 약 ${formatNumber(100 - lowest)}% 안(백분위 ${formatNumber(lowest)} 이상)에 드는 성적이며, 영어는 ${englishGrade}등급입니다.`;
+  const levelMeaning = `국어, 수학, 탐구 모두 응시자 상위 약 ${formatNumber(100 - lowest)}% 안(백분위 ${formatNumber(lowest)} 이상)에 드는 성적이며, 영어는 ${englishGrade}등급입니다.`;
   const first: JudgedFact = {
     value: averageValue,
     meaning: levelMeaning,
@@ -1203,7 +1229,7 @@ export const judgeScoreOverall = (
       {
         value: `영역 간 백분위 차이 ${formatNumber(spread)}점`,
         meaning: spreadMeaning,
-        sentence: `국어·수학·탐구의 백분위 차이가 ${spreadTail}`,
+        sentence: `국어, 수학, 탐구의 백분위 차이가 ${spreadTail}`,
       },
       {
         value: "기준컷 대비 격차",
@@ -1255,6 +1281,12 @@ export interface RecommendationOverallInput {
   gapRanges: string;
   /** "상향 1장, 적정 1장, 안정 1장" */
   allocation: string;
+  /**
+   * PART 4 조합 중 기본 배분을 그대로 채운 조합이 있는지(engine matchesRiskAllocation).
+   * 없으면 PART 3 도 "배분대로 둘 수 있다"고 쓰지 않는다 — 앞뒤가 달라진다
+   * (2026-11-15 3차 생성 실측: 경영 학생 PART 3 "상향 2장 … 배치할 경우" vs PART 4 "같은 조합 없음").
+   */
+  allocationAvailable: boolean;
   risk: RiskAppetite;
   /** 신중히 볼 대학. 예) "고려대학교 컴퓨터학과(-1.3백분위점)" */
   cautions: string[];
@@ -1275,19 +1307,23 @@ export const judgeRecommendationOverall = (
     ? `${empty.tier} 선택지가 없어, 그 자리는 다른 구분의 원서로 채워야 하는 구성입니다.`
     : single
       ? `${single.tier}은 1곳뿐이라 그 자리는 선택의 폭이 좁고, 나머지 구분에서 원서를 고를 여지가 큰 구성입니다.`
-      : "세 구분에 선택지가 고루 있어, 성향에 맞춰 원서를 배분하기 수월한 구성입니다.";
+      : input.allocationAvailable
+        ? "세 구분에 선택지가 고루 있어, 성향에 맞춰 원서를 배분하기 수월한 구성입니다."
+        : "세 구분에 선택지가 고루 있지만, 모집군이 겹쳐 성향의 기본 배분을 그대로 채운 조합은 나오지 않는 구성입니다.";
+  const allocationMeaning = input.allocationAvailable
+    ? RISK_ALLOCATION_MEANING[input.risk]
+    : "지원 가능 목록으로는 이 배분을 그대로 채울 수 없어, 원서 조합에서는 가장 가까운 구성을 대표로 보여 드립니다.";
 
   const shown = input.listedCautions ?? 2;
   const listed =
     input.cautions.length > shown
       ? `${input.cautions.slice(0, shown).join(", ")} 외 ${input.cautions.length - shown}곳`
       : input.cautions.join(", ");
-  const reachLabel = JEONGSI_CHANCE_PHRASES.매우낮음.label;
 
   const noCautionMeaning =
     "목록의 모든 대학이 기준컷 이상이라, 배분 안에서 희망 학과와 대학 선호로 고르는 편이 합리적입니다.";
   const cautionMeaning =
-    "기준컷에 못 미치거나 합격 가능성이 낮은 곳이라, 원서로 둘 때는 나머지 두 장으로 결과를 받쳐 두는 편이 합리적입니다.";
+    "합격 가능성이 낮게 나온 곳(같은 여유였던 곳이 다음 해 컷을 넘은 비율 40% 미만)이라, 원서로 둘 때는 나머지 두 장으로 결과를 받쳐 두는 편이 합리적입니다.";
   return [
     {
       value: input.gapRanges
@@ -1298,12 +1334,14 @@ export const judgeRecommendationOverall = (
     },
     {
       value: `${input.risk} 성향의 기본 배분 ${input.allocation}`,
-      meaning: RISK_ALLOCATION_MEANING[input.risk],
-      sentence: `${input.risk} 성향의 기본 배분은 ${input.allocation}으로, ${RISK_ALLOCATION_MEANING[input.risk]}`,
+      meaning: allocationMeaning,
+      sentence: input.allocationAvailable
+        ? `${input.risk} 성향의 기본 배분은 ${input.allocation}으로, ${allocationMeaning}`
+        : `${input.risk} 성향의 기본 배분은 ${input.allocation}이지만, ${allocationMeaning}`,
     },
     input.cautions.length === 0
       ? {
-          value: `'${reachLabel}' 0곳`,
+          value: "합격 가능성 낮음 또는 매우낮음 0곳",
           meaning: noCautionMeaning,
           sentence: noCautionMeaning,
         }
@@ -1322,7 +1360,7 @@ export interface CombinationAllocationInput {
   tiers: string[];
 }
 
-const ALLOCATION_TIERS = ["상향", "적정", "안정"] as const;
+const ALLOCATION_TIERS = ["상향", "적정", "안정", "스나이핑"] as const;
 
 /** "(다군 지원처 없음)" 같은 꼬리를 뗀 조합 라벨 */
 export const coreCombinationLabel = (label: string): string =>
@@ -1362,9 +1400,9 @@ export const judgeCombinationAllocation = (
     return { value: `모든 조합이 ${allocation}`, meaning, sentence: meaning };
   }
   if (matches.length > 0) {
-    const meaning = `기본 배분(${allocation})과 같은 조합은 ${matches.join("·")}이라, 성향을 그대로 따르려면 이 조합부터 살피는 편이 합리적입니다.`;
+    const meaning = `기본 배분(${allocation})과 같은 조합은 ${matches.join(", ")}이라, 성향을 그대로 따르려면 이 조합부터 살피는 편이 합리적입니다.`;
     return {
-      value: `${allocation}과 같은 조합: ${matches.join("·")}`,
+      value: `${allocation}과 같은 조합: ${matches.join(", ")}`,
       meaning,
       sentence: meaning,
     };
@@ -1376,7 +1414,7 @@ export const judgeCombinationAllocation = (
       combinations.map((combination) =>
         ALLOCATION_TIERS.filter((tier) =>
           combination.tiers.includes(tier)
-        ).join("·")
+        ).join(", ")
       )
     ),
   ];

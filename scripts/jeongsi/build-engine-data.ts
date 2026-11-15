@@ -33,6 +33,7 @@ import type {
   SourceUnit,
 } from "../../libs/jeongsi/source-types.ts";
 import type {
+  AdmissionGroup,
   AreaSelectionRule,
   BonusPolicy,
   ConversionFormula,
@@ -1576,11 +1577,15 @@ const collectResultRows = (
     }
   }
 
-  if (percentileRows.length > 0) {
-    return { metric: "percentile", rows: percentileRows };
-  }
+  // 판정은 대학 환산점수 입결을 먼저 쓴다(사용자 결정 2026-11-14, specs/014 B1).
+  // 대학마다 반영비율·영어 감점이 달라 평균 백분위 입결로는 이 학생의 실제
+  // 위치를 알 수 없다. 2027과 같은 환산식인 해의 환산점수 컷만 모았으므로
+  // 학생 환산점수와 같은 척도다. 환산점수 입결이 없을 때만 백분위 입결을 쓴다.
   if (convertedRows.length > 0) {
     return { metric: "convertedScore", rows: convertedRows };
+  }
+  if (percentileRows.length > 0) {
+    return { metric: "percentile", rows: percentileRows };
   }
   return { metric: null, rows: [] };
 };
@@ -1597,6 +1602,9 @@ const quotaForYear = (unit: SourceUnit, year: number): number | null => {
   const quota = unit.quotas.find((entry) => entry.year === year);
   return toNumber(quota?.finalQuota) ?? toNumber(quota?.initialQuota);
 };
+
+const isAdmissionGroup = (value: unknown): value is AdmissionGroup =>
+  value === "가" || value === "나" || value === "다";
 
 const buildResults = (
   unit: SourceUnit,
@@ -1620,6 +1628,11 @@ const buildResults = (
     if (!cut70) {
       continue;
     }
+    // 원문 모집군이 없으면 그 해 입결을 쓰지 않는다(추정하지 않음).
+    const sourceGroup = row.group;
+    if (!isAdmissionGroup(sourceGroup)) {
+      continue;
+    }
     const competition = pickRow(
       competitionsByUnit.get(`${unit.unitId}|${year}`) ?? [],
       unit
@@ -1632,7 +1645,9 @@ const buildResults = (
       admissionYear: year,
       university: plan.university,
       department: plan.department,
-      group: plan.group,
+      // 그 학년도 원문 모집군. 2027 과 다르면 판정에서 안정을 쓰지 않는다
+      // (specs/014 A3).
+      group: sourceGroup,
       quota,
       ...(competitionRate !== null ? { competitionRate } : {}),
       ...(additionalPassCount !== null && Number.isInteger(additionalPassCount)
@@ -1646,6 +1661,27 @@ const buildResults = (
     });
   }
   return entries;
+};
+
+/**
+ * 수능 외 전형 요소 원문 표기 (specs/014 E1). 학생부·서류·면접 비율과 원문 비고
+ * (예: "학교폭력 조치사항 감점", "학생부 출결 10%")를 그대로 옮긴다. 없으면 undefined.
+ */
+const selectionNoteOf = (unit: SourceUnit): string | undefined => {
+  const weights = unit.selectionWeights;
+  if (!weights) return undefined;
+  const parts: string[] = [];
+  const schoolRecord = toNumber(weights.schoolRecord);
+  const other = toNumber(weights.other);
+  if (schoolRecord !== null && schoolRecord > 0)
+    parts.push(`학생부 ${schoolRecord}%`);
+  if (other !== null && other > 0) parts.push(`기타 ${other}%`);
+  const note =
+    typeof weights.otherNote === "string" ? weights.otherNote.trim() : "";
+  if (note && note !== "해당없음" && note !== "없음" && note !== "면접 없음") {
+    parts.push(note);
+  }
+  return parts.length > 0 ? parts.join(" · ") : undefined;
 };
 
 // ─── 모집단위 ───
@@ -1742,6 +1778,10 @@ const toCandidate = (unit: SourceUnit): Outcome<Candidate> => {
   if (quota === null || quota <= 0 || !Number.isInteger(quota)) {
     return fail(REASON.quota);
   }
+  // 수시 이월을 반영한 최종 모집인원. 원문이 "발표전"이면 없다(스나이핑 신호, specs/014).
+  const finalQuota = toNumber(
+    unit.quotas.find((entry) => entry.year === ADMISSION_YEAR)?.finalQuota
+  );
   const category = resolveCategory(unit.department);
   if (!category) {
     return fail(REASON.category);
@@ -1763,7 +1803,11 @@ const toCandidate = (unit: SourceUnit): Outcome<Candidate> => {
     region: unit.region,
     group,
     quota,
+    ...(finalQuota !== null && finalQuota > 0 && Number.isInteger(finalQuota)
+      ? { finalQuota }
+      : {}),
     ...(suneungWeight < 100 ? { suneungWeight } : {}),
+    ...(selectionNoteOf(unit) ? { selectionNote: selectionNoteOf(unit) } : {}),
     ...(converted.value.statedRatios
       ? { statedRatios: converted.value.statedRatios }
       : {}),

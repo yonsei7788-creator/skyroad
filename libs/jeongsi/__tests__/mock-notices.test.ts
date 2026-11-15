@@ -215,7 +215,7 @@ describe("mock-data 의 notices 는 생성 함수 출력과 일치해야 한다"
    * 극단 픽스처는 우회 없이 표준 경로로 검사해야 한다.
    */
   it(
-    "극단 픽스처의 입력은 추천이 비어 생성 함수가 빈 배열을 돌려준다",
+    "극단 픽스처의 입력은 추천이 비어 생성 함수가 비어 있는 이유 하나만 돌려준다",
     async () => {
       const analysis = await analyzeJeongsi(
         cloneInput(JEONGSI_MOCK_REPORT_EDGE.meta.input)
@@ -227,7 +227,10 @@ describe("mock-data 의 notices 는 생성 함수 출력과 일치해야 한다"
         analysis.recommendations.안정.length;
 
       expect(total).toBe(0);
-      expect(buildRecommendationNotices(analysis)).toEqual([]);
+      // 목록이 비면 확대·대체 안내 대신 추천 범위 안에 든 곳이 없다는 사실만 알린다
+      const notices = buildRecommendationNotices(analysis);
+      expect(notices).toHaveLength(1);
+      expect(notices[0]).toContain("추천 범위");
     },
     TIMEOUT_MS
   );

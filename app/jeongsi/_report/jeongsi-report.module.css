@@ -25,6 +25,10 @@
   --tier-safety-bg: #ecfdf5;
   --tier-safety-border: #a7f3d0;
   --tier-safety-bar: #10b981;
+  --tier-snipe-fg: #b45309;
+  --tier-snipe-bg: #fffbeb;
+  --tier-snipe-border: #fde68a;
+  --tier-snipe-bar: #f59e0b;
 
   --js-ink: #0f172a;
   --js-ink-2: #1e293b;
@@ -914,6 +918,45 @@
   padding: 3px 8px;
 }
 
+.scoreTable {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.scoreCell {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 9px;
+  border-radius: 6px;
+  background: var(--js-soft);
+  min-width: 72px;
+}
+
+.scoreCellTotal {
+  background: #ffffff;
+  border: 1px solid var(--js-line);
+}
+
+.scoreCellLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--js-muted);
+}
+
+.scoreCellValue {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.scoreCellMax {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--js-muted);
+}
+
 .rankReason {
   margin: 0;
   font-size: 12.5px;
@@ -974,7 +1017,7 @@
 .recHeadRow,
 .recRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 28px 36px 64px 184px 64px;
+  grid-template-columns: minmax(0, 1fr) 24px 56px 56px 176px 56px;
   align-items: center;
   column-gap: 6px;
 }
@@ -1089,6 +1132,101 @@
 .axisNote {
   margin-top: 6px;
   font-size: 10.5px;
+  color: var(--js-muted);
+}
+
+/* 판정 지표·입결 학년도 (대학명 아래 한 줄) */
+.recBasis {
+  display: block;
+  margin-top: 2px;
+  font-size: 10.5px;
+  color: var(--js-muted) !important;
+}
+
+/* 모든 대학 공통 축(상향 하한 ~ 안정 상한) 위의 내 위치 */
+.bandTrack {
+  position: relative;
+  width: 112px;
+  height: 12px;
+  border-radius: 3px;
+  overflow: visible;
+  flex-shrink: 0;
+}
+
+.bandZone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.bandSnipe {
+  background: var(--tier-snipe-bg);
+  border-radius: 3px 0 0 3px;
+}
+
+.bandReach {
+  background: var(--tier-reach-bg);
+}
+
+.bandMatch {
+  background: var(--tier-match-bg);
+}
+
+.bandSafety {
+  background: var(--tier-safety-bg);
+  border-radius: 0 3px 3px 0;
+}
+
+.bandMarker {
+  position: absolute;
+  top: -2px;
+  width: 10px;
+  height: 16px;
+  margin-left: -5px;
+  border-radius: 3px;
+  background: var(--tone-bar);
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+/* 판정 기준 표 */
+.criteriaBox {
+  padding: 12px 14px;
+  border: 1px solid var(--js-line);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.criteriaTitle {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.criteriaGrid {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) minmax(0, 1fr);
+  row-gap: 4px;
+  column-gap: 12px;
+  font-size: 11.5px;
+  color: var(--js-ink-2);
+}
+
+.criteriaHead {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--js-muted);
+}
+
+.criteriaRow {
+  display: contents;
+}
+
+.criteriaNote {
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 1.6;
   color: var(--js-muted);
 }
 
@@ -1212,6 +1350,72 @@
   margin: 0;
   font-size: 11.5px;
   line-height: 1.65;
+  color: var(--js-ink-2);
+}
+
+/* 대표 조합 */
+.recommendedBadge {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--report-accent);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.recommendedBox {
+  padding: 16px 18px;
+  border: 2px solid var(--report-accent);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recommendedTitle {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--report-accent);
+}
+
+.recommendedNote {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--js-ink-3);
+}
+
+.recommendedSlots {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recommendedSlot {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  column-gap: 10px;
+  row-gap: 3px;
+  padding-top: 8px;
+  border-top: 1px solid var(--js-line);
+}
+
+.recommendedSlot > :not(.recommendedGroup) {
+  grid-column: 2;
+}
+
+.recommendedGroup {
+  grid-row: span 3;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.recommendedReason {
+  margin: 2px 0 0 0;
+  font-size: 11.5px;
+  line-height: 1.6;
   color: var(--js-ink-2);
 }
 
@@ -1437,6 +1641,68 @@
 .specLabel {
   color: var(--js-muted);
   font-weight: 600;
+}
+
+.judgementBlock {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 210px;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--js-line);
+  border-radius: 10px;
+}
+
+.judgementFacts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.judgementRow {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 8px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--js-ink);
+}
+
+.judgementLabel {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--js-muted);
+  margin-bottom: 2px;
+}
+
+.judgementDecision {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 12px;
+  border-left: 1px solid var(--js-line);
+}
+
+.judgementText {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--tone-fg);
+}
+
+.judgementSub {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--js-muted);
+}
+
+.passRate {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--js-muted);
 }
 
 .profileReason {

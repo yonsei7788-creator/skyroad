@@ -21,17 +21,22 @@ import type {
   PlanEvaluation,
 } from "../../types";
 
-// 기준 학생(baseScore)의 국·수·탐 평균 백분위 93.833, σ 하한(모집인원 30명) = 1.0
+// 기준 학생(baseScore)의 국·수·탐 평균 백분위 93.833.
 // 표준점수 환산식은 민감도를 원문만으로 구할 수 없어(환산점수 입결 비교 불가)
 // 입결은 백분위 컷으로 둔다. 아래 "기준 점수"는 예전 환산점수 표기를 그대로
-// 쓰고, 같은 격차의 백분위 컷으로 바꾼다(환산 899.167, 1 백분위점 = 10.01점).
-//   870 → +2.91 백분위점 → 안정
-//   893 → +0.62 백분위점 → 적정
-//   908 → -0.88 백분위점 → 상향
-//   950 → -5.08 백분위점 → 지원불가
+// 쓰고, 같은 격차에 2.0 을 더한 백분위 컷으로 바꾼다(판정 구간이 실측 기반으로
+// 올라간 만큼 픽스처의 구분이 그대로 유지되게).
+//   870 → +4.91 → 안정 / 893 → +2.62 → 적정 / 908 → +1.12 → 상향 / 950 → -3.08 → 지원불가
 const STUDENT_PERCENTILE = 93.833;
+const FIXTURE_GAP_SHIFT = 2.0;
 const toPercentileCut = (points: number): number =>
-  Math.round((STUDENT_PERCENTILE - (899.167 - points) / 10.01) * 1000) / 1000;
+  Math.round(
+    (STUDENT_PERCENTILE - (899.167 - points) / 10.01 - FIXTURE_GAP_SHIFT) * 1000
+  ) / 1000;
+// 안정은 환산점수 입결만 될 수 있다(백분위 입결은 실측 근거가 없어 적정까지).
+// 그래서 구분 픽스처는 환산점수 컷(만점 1000)으로 둔다: 같은 격차에 2.0 을 더한 컷.
+const toConvertedCut = (points: number): number =>
+  Math.round((points - FIXTURE_GAP_SHIFT * 10) * 1000) / 1000;
 const plans: JeongsiAdmissionPlan[] = [
   makePlan({
     id: "상향대학교-컴퓨터공학과-가",
@@ -101,7 +106,7 @@ const cutOf = (
     planKey,
     university,
     group,
-    cut70: { metric: "percentile", value: toPercentileCut(value) },
+    cut70: { metric: "convertedScore", value: toConvertedCut(value) },
   });
 
 const results: JeongsiResultEntry[] = [
@@ -114,13 +119,29 @@ const results: JeongsiResultEntry[] = [
   cutOf("신설대학교-기계공학과-가", "신설대학교", "가", 893),
 ];
 
+/** 같은 컷의 2025·2026 입결 (1개년이면 안정으로 매기지 않으므로) */
+const twoYears = (entry: JeongsiResultEntry): JeongsiResultEntry[] => [
+  { ...entry, admissionYear: 2025 },
+  entry,
+];
+
 const useFixtureData = (
   planData: JeongsiAdmissionPlan[] = plans,
   resultData: JeongsiResultEntry[] = results
 ): void => {
+  // 입결이 1개년이면 안정으로 매기지 않으므로(specs/014 B4), 단년 입결 픽스처는
+  // 같은 컷의 2025 입결을 함께 둬 2개년으로 만든다.
+  const twoYearData = resultData.flatMap((entry) =>
+    entry.admissionYear === 2026 &&
+    !resultData.some(
+      (other) => other.planKey === entry.planKey && other.admissionYear === 2025
+    )
+      ? [entry, { ...entry, admissionYear: 2025 as const }]
+      : [entry]
+  );
   setJeongsiDataSource({
     readAdmissionPlans: async () => planData,
-    readAdmissionResults: async () => resultData,
+    readAdmissionResults: async () => twoYearData,
   });
 };
 
@@ -226,6 +247,64 @@ describe("analyzeJeongsi", () => {
     expect(analysis.diagnosis.areas).toHaveLength(4);
   });
 
+  describe("여자대학교", () => {
+    const womensPlan = makePlan({
+      id: "가나여자대학교-컴퓨터공학과-나",
+      university: "가나여자대학교",
+      region: "서울",
+      group: "나",
+    });
+    const womensCut = cutOf(
+      "가나여자대학교-컴퓨터공학과-나",
+      "가나여자대학교",
+      "나",
+      893
+    );
+    beforeEach(() => {
+      clearJeongsiDataCache();
+      useFixtureData([...plans, womensPlan], [...results, womensCut]);
+    });
+
+    const analysisFor = async (
+      gender: JeongsiInput["gender"]
+    ): Promise<string[]> => {
+      const analysis = await analyzeJeongsi({ ...makeInput(), gender });
+      return [
+        ...allRecommended(analysis.recommendations),
+        ...analysis.sniping,
+        ...analysis.combinations.flatMap((combination) =>
+          [combination.가, combination.나, combination.다].filter(
+            (slot): slot is PlanEvaluation => slot !== null
+          )
+        ),
+      ].map((evaluation) => evaluation.plan.university);
+    };
+
+    it("남학생이면 여자대학교를 목록·스나이핑·조합 어디에도 넣지 않는다", async () => {
+      // Arrange & Act
+      const universities = await analysisFor("male");
+
+      // Assert
+      expect(universities).not.toContain("가나여자대학교");
+    });
+
+    it("여학생이면 여자대학교도 추천한다", async () => {
+      // Arrange & Act
+      const universities = await analysisFor("female");
+
+      // Assert
+      expect(universities).toContain("가나여자대학교");
+    });
+
+    it("성별이 없는 예전 입력은 여자대학교를 빼지 않는다", async () => {
+      // Arrange & Act
+      const universities = await analysisFor(undefined);
+
+      // Assert
+      expect(universities).toContain("가나여자대학교");
+    });
+  });
+
   it("입결 대비 위치로 상향·적정·안정을 분류한다", async () => {
     // Arrange & Act
     const analysis = await analyzeJeongsi(makeInput());
@@ -324,8 +403,8 @@ describe("analyzeJeongsi", () => {
     // Assert
     const [withCut] = analysis.recommendations.안정;
     expect(withCut.competitionRate).toBe(4.2);
-    expect(withCut.cutHistory).toHaveLength(3);
-    expect(withCut.referenceCut?.metric).toBe("percentile");
+    expect(withCut.cutHistory).toHaveLength(2);
+    expect(withCut.referenceCut?.metric).toBe("convertedScore");
   });
 
   it("구분별 추천은 3개를 넘지 않고 같은 대학이 중복되지 않는다", async () => {
@@ -679,8 +758,8 @@ describe("collectCandidatePlans - 후보 풀 단계 확대", () => {
     // Assert
     const universities = pool.plans.map((entry) => entry.plan.university);
     expect(universities).toContain("간호대");
-    // 화학·생명은 companion 이라 Stage 2 에서 허용된다
-    expect(universities).toContain("화학대");
+    // 보건은 면허 트랙이라 화학·생명으로도 넓히지 않는다(specs/014)
+    expect(universities).not.toContain("화학대");
     expect(universities).not.toContain("전자대");
     // 면허 트랙이라 3단계로 가지 않는다
     expect(pool.stage).toBe(2);
@@ -780,7 +859,7 @@ describe("analyzeJeongsi - 빈 밴드 처리", () => {
     plans: JeongsiAdmissionPlan[];
     results: JeongsiResultEntry[];
   } => {
-    const cuts = [866, 870, 874, 878];
+    const cuts = [875, 876, 877, 878, 879];
     return {
       plans: cuts.map((cut) =>
         makePlan({
@@ -805,11 +884,11 @@ describe("analyzeJeongsi - 빈 밴드 처리", () => {
     const analysis = await analyzeJeongsi(makeInput());
 
     // Assert
-    expect(analysis.recommendations.안정).toHaveLength(3);
+    // 안정은 안정 하한에 가까운(격차가 작은) 네 곳을 담고, 남은 한 곳을 적정 칸에 끌어온다
+    expect(analysis.recommendations.안정).toHaveLength(4);
     expect(analysis.recommendations.적정).toHaveLength(1);
     const [substituted] = analysis.recommendations.적정;
-    // 적정 밴드 경계에 가장 가까운(컷이 가장 높은) 곳이 끌려온다
-    expect(substituted.plan.university).toBe("안정878대학교");
+    expect(substituted.plan.university).toBe("안정875대학교");
     // 끌어온 항목의 tier 는 덮어쓰지 않는다 (거짓 정보가 되므로)
     expect(substituted.tier).toBe("안정");
   });
@@ -856,9 +935,9 @@ describe("analyzeJeongsi - 빈 밴드 처리", () => {
     expect(analysis.selection.moderateBandSubstituted).toBe(false);
   });
 
-  it("밴드에서 1.5σ 넘게 떨어진 항목은 끌어오지 않는다", async () => {
+  it("적정 구간에서 1.0 넘게 떨어진 항목은 끌어오지 않는다", async () => {
     // Arrange
-    // 컷 855 → 격차 4.4σ, 적정 상한(2.0σ)에서 2.4σ 떨어져 상한 초과
+    // 컷 862 → 격차 3.71, 적정 구간 상한(+1.5)에서 2.21 떨어져 대체 거리 초과
     const farOnly = [
       makePlan({
         id: "아주안정대학교-컴퓨터공학과-가",
@@ -868,7 +947,7 @@ describe("analyzeJeongsi - 빈 밴드 처리", () => {
       }),
     ];
     useFixtureData(farOnly, [
-      cutOf("아주안정대학교-컴퓨터공학과-가", "아주안정대학교", "가", 855),
+      cutOf("아주안정대학교-컴퓨터공학과-가", "아주안정대학교", "가", 862),
     ]);
 
     // Act
@@ -912,7 +991,7 @@ describe("countFilledBands", () => {
       classifyForStudent(
         baseScore,
         makePlan({ id: "A-컴퓨터공학과-가", university: "A대학교" }),
-        [cutOf("A-컴퓨터공학과-가", "A대학교", "가", 870)]
+        twoYears(cutOf("A-컴퓨터공학과-가", "A대학교", "가", 870))
       ),
       classifyForStudent(
         baseScore,
@@ -921,7 +1000,7 @@ describe("countFilledBands", () => {
           university: "A대학교",
           group: "나",
         }),
-        [cutOf("A-컴퓨터공학부-나", "A대학교", "나", 870)]
+        twoYears(cutOf("A-컴퓨터공학부-나", "A대학교", "나", 870))
       ),
       classifyForStudent(
         baseScore,
@@ -930,7 +1009,7 @@ describe("countFilledBands", () => {
           university: "B대학교",
           group: "다",
         }),
-        [cutOf("B-컴퓨터공학과-다", "B대학교", "다", 870)]
+        twoYears(cutOf("B-컴퓨터공학과-다", "B대학교", "다", 870))
       ),
     ];
 
@@ -1196,8 +1275,8 @@ describe("analyzeJeongsi - selection 메타정보", () => {
 
   it("적정 밴드를 대체했으면 표시한다", async () => {
     // Arrange
-    // 안정 4개 → 3개는 안정 버킷, 남은 1개가 적정으로 대체 투입
-    const cuts = [866, 870, 874, 878];
+    // 안정 5개 → 4개는 안정 버킷, 남은 1개가 적정으로 대체 투입
+    const cuts = [875, 876, 877, 878, 879];
     useFixtureData(
       cuts.map((cut) =>
         makePlan({
@@ -1256,16 +1335,18 @@ describe("analyzeJeongsi - selection 메타정보", () => {
     expect(restricted?.advantageScore).toBe(0);
   });
 
-  it("분류 근거(percentileGap·민감도·σ)를 평가에 싣는다", async () => {
+  it("판정 근거(격차·입결 학년도·민감도)를 평가에 싣는다", async () => {
     // Arrange & Act
     const analysis = await analyzeJeongsi(makeInput());
 
     // Assert
     const [stable] = analysis.recommendations.안정;
-    expect(stable.percentileGap).not.toBeNull();
+    expect(stable.gapRatio).not.toBeNull();
+    expect(stable.gapPoints).not.toBeNull();
+    expect(stable.resultYears).toEqual([2025, 2026]);
+    expect(stable.withinRecommendRange).toBe(true);
     // 표준점수 환산식은 백분위 1점의 표준점수 변화가 원문에 없어 민감도가 없다
     expect(stable.sensitivity).toBeNull();
-    expect(stable.cutVolatility).toBeGreaterThan(0);
     expect(stable.simpleAveragePercentile).toBe(93.833);
   });
 
@@ -1288,5 +1369,143 @@ describe("analyzeJeongsi - selection 메타정보", () => {
 
     // Assert
     expect(allRecommended(analysis.recommendations)).toEqual([]);
+  });
+});
+
+describe("analyzeJeongsi - 스나이핑", () => {
+  afterEach(() => {
+    resetJeongsiDataSource();
+    clearJeongsiDataCache();
+  });
+
+  // 환산점수 컷 909.2 → 격차 (899.167 − 909.2)/10 = −1.0 (스나이핑 구간)
+  const snipingPlan = (
+    id: string,
+    university: string,
+    group: "가" | "나" | "다"
+  ) => makePlan({ id, university, region: "서울", group });
+  const convertedCut = (
+    planKey: string,
+    university: string,
+    group: "가" | "나" | "다",
+    value: number
+  ): JeongsiResultEntry =>
+    makeResult({
+      planKey,
+      university,
+      group,
+      cut70: { metric: "convertedScore", value },
+    });
+
+  it("추천 범위 바로 아래 환산점수 입결 모집단위를 스나이핑으로 고르고 추천 목록에는 넣지 않는다", async () => {
+    // Arrange
+    useFixtureData(
+      [...plans, snipingPlan("스나대학교-컴퓨터공학과-가", "스나대학교", "가")],
+      [
+        ...results,
+        convertedCut("스나대학교-컴퓨터공학과-가", "스나대학교", "가", 909.2),
+      ]
+    );
+
+    // Act
+    const analysis = await analyzeJeongsi(makeInput());
+
+    // Assert
+    expect(universitiesOf(analysis.sniping)).toEqual(["스나대학교"]);
+    const [picked] = analysis.sniping;
+    expect(picked.tier).toBe("스나이핑");
+    expect(picked.chance).toBe("매우낮음");
+    expect(picked.historicalPassRate).not.toBeNull();
+    expect(
+      universitiesOf(allRecommended(analysis.recommendations))
+    ).not.toContain("스나대학교");
+  });
+
+  it("희망 학과와 같은 분류가 아닌 모집단위는 스나이핑으로 고르지 않는다", async () => {
+    // Arrange
+    // 학과명에 희망 학과가 들어 있을 뿐 분류가 다른 곳(적합도 FIT_PARTIAL)
+    const partialPlan = makePlan({
+      id: "부분대학교-컴퓨터공학과융합전공-가",
+      university: "부분대학교",
+      department: "컴퓨터공학과융합전공",
+      category: "융합전공",
+      region: "서울",
+      group: "가",
+    });
+    useFixtureData(
+      [...plans, partialPlan],
+      [
+        ...results,
+        convertedCut(
+          "부분대학교-컴퓨터공학과융합전공-가",
+          "부분대학교",
+          "가",
+          909.2
+        ),
+      ]
+    );
+
+    // Act
+    const analysis = await analyzeJeongsi(makeInput());
+
+    // Assert
+    expect(universitiesOf(analysis.sniping)).not.toContain("부분대학교");
+  });
+
+  it("백분위 입결이나 과거 모집군이 다른 곳은 스나이핑으로 고르지 않는다", async () => {
+    // Arrange
+    const percentileCut = makeResult({
+      planKey: "백분위대학교-컴퓨터공학과-가",
+      university: "백분위대학교",
+      group: "가",
+      cut70: { metric: "percentile", value: 94.8 },
+    });
+    useFixtureData(
+      [
+        ...plans,
+        snipingPlan("백분위대학교-컴퓨터공학과-가", "백분위대학교", "가"),
+        snipingPlan("군변경대학교-컴퓨터공학과-가", "군변경대학교", "가"),
+      ],
+      [
+        ...results,
+        percentileCut,
+        { ...percentileCut, admissionYear: 2025 },
+        convertedCut(
+          "군변경대학교-컴퓨터공학과-가",
+          "군변경대학교",
+          "다",
+          909.2
+        ),
+      ]
+    );
+
+    // Act
+    const analysis = await analyzeJeongsi(makeInput());
+
+    // Assert
+    expect(analysis.sniping).toEqual([]);
+  });
+
+  it("공격 성향이면 스나이핑을 넣은 조합을 하나 더 보인다", async () => {
+    // Arrange
+    useFixtureData(
+      [...plans, snipingPlan("스나대학교-컴퓨터공학과-가", "스나대학교", "가")],
+      [
+        ...results,
+        convertedCut("스나대학교-컴퓨터공학과-가", "스나대학교", "가", 909.2),
+      ]
+    );
+
+    // Act
+    const analysis = await analyzeJeongsi(makeInput({ risk: "공격" }));
+
+    // Assert
+    const withSniping = analysis.combinations.filter((combination) =>
+      (["가", "나", "다"] as const).some(
+        (group) => combination[group]?.tier === "스나이핑"
+      )
+    );
+    expect(withSniping).toHaveLength(1);
+    expect(withSniping[0].recommended).toBe(false);
   });
 });

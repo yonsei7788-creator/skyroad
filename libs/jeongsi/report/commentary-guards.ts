@@ -7,6 +7,8 @@
 
 import { RISK_TIER_MATRIX } from "../engine/combination.ts";
 import type { PassChance, RiskAppetite } from "../types.ts";
+import { formatGapAmount, roundGapForDisplay } from "./cut-format";
+import type { GapValue } from "./cut-format";
 
 const TOTAL_CARDS = 3;
 
@@ -23,7 +25,7 @@ export const formatCardAllocation = (risk: RiskAppetite): string =>
     .join(", ");
 
 const CARD_RUN =
-  /(?:상향|적정|안정)\s*\d장(?:\s*(?:,|·|과|와|및)?\s*(?:상향|적정|안정)\s*\d장)*/g;
+  /(?:상향|적정|안정|스나이핑)\s*\d장(?:\s*(?:,|·|과|와|및)?\s*(?:상향|적정|안정|스나이핑)\s*\d장)*/g;
 
 /** 합이 3장이 아닌 원서 배분 표현을 성향의 배분으로 바꾼다 */
 export const normalizeCardAllocation = (
@@ -38,14 +40,17 @@ export const normalizeCardAllocation = (
     return total === TOTAL_CARDS ? run : formatCardAllocation(risk);
   });
 
-type DisplayTier = (typeof TIER_DISPLAY_ORDER)[number];
+/** 목록 곳 수를 세는 구분. 스나이핑은 원서 배분에는 없지만 목록에는 있다 */
+const COUNT_TIER_ORDER = ["상향", "적정", "안정", "스나이핑"] as const;
+
+type DisplayTier = (typeof COUNT_TIER_ORDER)[number];
 
 /** 구간별 항목 수 */
 export const countByTier = (
   items: { tier: string }[]
 ): Map<DisplayTier, number> =>
   new Map(
-    TIER_DISPLAY_ORDER.map((tier) => [
+    COUNT_TIER_ORDER.map((tier) => [
       tier,
       items.filter((item) => item.tier === tier).length,
     ])
@@ -59,7 +64,7 @@ export const formatTierCounts = (counts: Map<DisplayTier, number>): string =>
     .join(", ");
 
 const LIST_RUN =
-  /(?:상향|적정|안정)\s*\d+곳(?:\s*(?:,|·|과|와|및)?\s*(?:상향|적정|안정)\s*\d+곳)*/g;
+  /(?:상향|적정|안정|스나이핑)\s*\d+곳(?:\s*(?:,|·|과|와|및)?\s*(?:상향|적정|안정|스나이핑)\s*\d+곳)*/g;
 
 /** 대학 수 표현 바로 뒤 이 글자 수 안에 "원서" 가 오면 원서 배분을 말한 것으로 본다 */
 const CARD_CONTEXT_WINDOW = 15;
@@ -82,7 +87,7 @@ export const normalizeTierCounts = (
     return following.includes("원서")
       ? formatCardAllocation(risk)
       : run.replace(
-          /(상향|적정|안정)(\s*)\d+곳/g,
+          /(상향|적정|안정|스나이핑)(\s*)\d+곳/g,
           (_match, tier: DisplayTier, space: string) =>
             `${tier}${space}${counts.get(tier) ?? 0}곳`
         );
@@ -125,26 +130,31 @@ const GAP_VERBS = [
   ...Object.keys(BELOW_TO_ABOVE),
 ].sort((a, b) => b.length - a.length);
 
+/**
+ * 기준컷 대비 격차 구절. 단위는 "백분위점", "점", 앞에 "환산점수"·"평균 백분위"·
+ * "백분위"가 붙은 형태를 모두 잡는다.
+ */
 const GAP_PHRASE = new RegExp(
-  `기준컷(\\s*대비|을|에|보다)?(\\s*)(\\d+(?:\\.\\d+)?)(\\s*백분위점\\s*)(${GAP_VERBS.join("|")})`,
+  `기준컷(\\s*대비|을|에|보다)?(\\s*)(?:(?:환산점수|평균\\s*백분위|백분위)\\s*)?(\\d+(?:\\.\\d+)?)\\s*(?:백분위점|점)\\s*(${GAP_VERBS.join("|")})`,
   "g"
 );
 
 /**
- * 기준컷 대비 격차의 방향·크기를 코드값에 맞춘다.
- * 예) 격차 -1.3 인데 "기준컷을 1.3백분위점 넘겨" → "기준컷에 1.3백분위점 모자라"
+ * 기준컷 대비 격차의 방향·크기·단위를 코드값에 맞춘다.
+ * 예) 환산점수 격차 −12.3 인데 "기준컷을 12.3백분위점 넘겨"
+ *     → "기준컷에 환산점수 12.3점 모자라"
  */
 export const normalizeGapDirection = (
   text: string,
-  gap: number | null
+  gap: GapValue | null
 ): string => {
   if (gap === null) return text;
   // "기준컷을 -1.3백분위점 모자라"처럼 부호를 붙여 쓴 격차는 크기만 남긴다(실측)
   const unsigned = text.replace(/(기준컷(?:을|에|보다)?\s*)[+-](?=\d)/g, "$1");
-  const rounded = Math.round(gap * 10) / 10;
+  const rounded = roundGapForDisplay(gap.points);
   if (rounded === 0) return unsigned;
   const isAbove = rounded > 0;
-  const magnitude = Math.abs(rounded).toFixed(1);
+  const amount = formatGapAmount(gap);
   return unsigned.replace(
     GAP_PHRASE,
     (
@@ -152,7 +162,6 @@ export const normalizeGapDirection = (
       particle: string | undefined,
       space: string,
       _value: string,
-      unit: string,
       verb: string
     ) => {
       const flipped = isAbove
@@ -164,7 +173,7 @@ export const normalizeGapDirection = (
         particle === "을" || particle === "에"
           ? objectParticle
           : (particle ?? "");
-      return `기준컷${fixedParticle}${space}${magnitude}${unit}${flipped}`;
+      return `기준컷${fixedParticle}${space || " "}${amount} ${flipped}`;
     }
   );
 };
@@ -480,3 +489,37 @@ export const stripLeadingSubject = (
   );
   return text.replace(subject, "").replace(heading, "");
 };
+
+// ─── 합격 가능성 단정 표현 (수시 admissionPrediction 과 같은 기준) ───
+
+/**
+ * 결과를 단정하는 서술. 수시 admission-prediction.ts "합격 가능성 단정 표현 회피"의
+ * 회피 목록("안정적인 지원이 가능합니다", "합격이 보장됩니다", "합격선 대비 여유가
+ * 있다")을 정시 실측 문장으로 넓혔다(2026-11-15: "어떤 조합을 선택하든 원서 배치
+ * 자체의 안정성은 확보됩니다", "합격 가능성을 확보합니다").
+ * "합격 안정성 확보 중 무엇을 우선할지"처럼 선택 기준을 말하는 명사형은 잡지 않는다.
+ */
+const OVERCLAIM_PATTERNS: RegExp[] = [
+  /(안정성|안정권|가능성|합격|결과|여유)\s*(은|는|이|가|을|를)?\s*(충분히\s*|모두\s*)?(확보|보장|담보|확정)(됩|합니|할\s*수\s*있|된다|돼|되어|해\s*줍)/,
+  /보장(됩|합니|된다)/,
+  /(확실히|무조건|반드시|틀림없이)\s*(합격|붙|결과를)/,
+  /안정적(으로|인)\s*(지원|합격)(이|을)?\s*(가능|할\s*수\s*있)/,
+  /합격선\s*대비\s*여유가?\s*있/,
+  /(어떤|어느)\s*조합[^.]{0,20}(든|도)[^.]{0,30}(안전|안정성|확보|문제없)/,
+  /(떨어질|불합격할)\s*(염려|걱정|일)(은|이)?\s*(없|적)/,
+];
+
+/**
+ * 합격을 보장하는 듯한 문장이 있으면 고칠 점을 돌려준다.
+ * 다시 쓰기 요청에 잘못된 문장을 보여 주지 않으므로 고칠 방향만 적는다.
+ */
+export const findOverclaims = (text: string): string[] =>
+  text
+    .split(/(?<=[.!?])\s+/)
+    .some((sentence) =>
+      OVERCLAIM_PATTERNS.some((pattern) => pattern.test(sentence))
+    )
+    ? [
+        '합격 가능성은 라벨 정의와 같은 강도로, 기준컷 대비 격차와 "결과를 받쳐 주는 구성입니다", "~편이 합리적입니다" 같은 판단으로 씁니다',
+      ]
+    : [];

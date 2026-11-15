@@ -15,6 +15,7 @@ import type {
   JeongsiInput,
   PassChance,
   ResultMetric,
+  SafeCapReason,
   ScoreArea,
 } from "./types";
 
@@ -57,9 +58,91 @@ export interface JeongsiScoreAnalysisSection extends JeongsiBaseSection {
   weaknessComment: string;
 }
 
+// ─── 모집단위 판정 근거 (PART 2·3·4·5 공통) ───
+
+/**
+ * 모집단위 하나의 판정 근거. 엔진 평가 하나에서 만들어 PART 3·5 가 같은 값을
+ * 싣는다(specs/014 A2). unitKey 로 PART 2·4 의 항목과 이어진다.
+ * 이 필드가 생기기 전(2026-11-14)에 저장된 리포트에는 없다.
+ */
+export interface UnitJudgement {
+  /** 모집단위 키 (시행계획 id). 페이지 간 같은 모집단위를 잇는다 */
+  unitKey: string;
+  /** 실제 구분 (적정 칸을 채우려고 끌어온 항목도 원래 구분) */
+  tier: Exclude<AdmissionTier, "지원불가">;
+  chance: PassChance;
+  /** 판정 지표: 대학 환산점수 입결 또는 국·수·탐 평균 백분위 입결 */
+  metric: ResultMetric;
+  /** 판정 지표로 본 학생 값 */
+  studentValue: number;
+  /** 판정 기준컷 (학년도 가중평균 + 모집인원 보정) */
+  referenceCut: number;
+  /** 학생 값 − 기준컷 (지표 단위) */
+  gapPoints: number;
+  /** 구간 판정에 쓴 격차 (환산점수면 만점 대비 %, 백분위면 백분위점) */
+  gapRatio: number;
+  /** 환산 만점 (가산점 제외) */
+  totalScore: number;
+  /** 기준컷에 쓴 입결 학년도 */
+  resultYears: number[];
+  /** 격차는 안정 구간이지만 safeCapReasons 때문에 적정으로 낮췄는지 */
+  safeCapped: boolean;
+  /** 안정으로 매기지 않는 사유 (이전 버전 리포트에는 없다) */
+  safeCapReasons?: SafeCapReason[];
+  /** 기준컷에 쓴 입결 중 2027 과 모집군이 다른 학년도 (원문 군) */
+  pastGroups?: { year: number; group: AdmissionGroup }[];
+  /** 2027 최종 모집인원(수시 이월 반영)과 최신 입결 학년도 모집인원. 발표 전이면 null */
+  finalQuotaChange?: {
+    previousYear: number;
+    previousQuota: number;
+    finalQuota: number;
+    ratio: number;
+  } | null;
+  /** 모집인원 변화와 기준컷 보정 (지표 단위) */
+  quotaChange: {
+    currentQuota: number;
+    pastAverageQuota: number;
+    cutAdjustment: number;
+  } | null;
+  /** 최신 입결 학년도 추가합격 인원 (판정에 쓰지 않는다) */
+  additionalPass: { year: number; quota: number; count: number } | null;
+  /** 같은 격차였던 학생이 다음 해 컷을 넘은 실측 비율 (0~1, 2025→2026). 없으면 null */
+  historicalPassRate?: number | null;
+  /** 최신 입결 학년도 합격자 50%·70% 컷 (지표 단위, 원문 값). 없으면 null */
+  latestAdmitCuts?: {
+    year: number;
+    cut50: number | null;
+    cut70: number;
+  } | null;
+}
+
+/** PART 2 대학별 실제 점수 — 환산식을 그대로 적용한 값만 싣는다 */
+export interface ScoreBreakdown {
+  /** 영역별 반영. 영어는 반영비율에 포함하는 대학만 */
+  areas: {
+    area: ScoreArea;
+    /** 이 학생에게 적용된 반영비율 (%) */
+    ratio: number;
+    /** 이 영역에서 받은 환산점수 */
+    earned: number;
+    /** 이 영역 만점 (반영비율 × 만점) */
+    max: number;
+  }[];
+  /** 영어 등급으로 1등급 대비 달라진 점수 (0 이하). 영어 미반영이면 null */
+  englishVsFirstGrade: number | null;
+  /** 한국사 가감 점수 */
+  historyAdjustment: number;
+  /** 가산점 */
+  bonusAdjustment: number;
+  convertedScore: number;
+  totalScore: number;
+}
+
 // ─── PART 2. 나에게 유리한 대학 분석 ───
 
 export interface AdvantageItem {
+  /** 모집단위 키 — PART 3 항목과 같은 값 */
+  unitKey?: string;
   university: string;
   department: string;
   group: AdmissionGroup;
@@ -69,6 +152,10 @@ export interface AdvantageItem {
   metricSummary: string;
   /** 0~100. 학생 강점과 반영방식의 적합도 */
   advantageScore: number;
+  /** 대학 환산식을 적용한 실제 점수 */
+  breakdown?: ScoreBreakdown;
+  /** 판정 근거 (PART 3 과 같은 값) */
+  judgement?: UnitJudgement;
   /** AI: 왜 유리한지 한두 문장 */
   reason: string;
 }
@@ -95,7 +182,7 @@ export interface CutComparison {
   metric: ResultMetric;
   /** 컷과 같은 지표로 본 학생 값 (백분위면 국·수·탐 평균 백분위) */
   studentValue: number;
-  /** 3개년 기준컷 — 분류에 쓴 값 */
+  /** 판정 기준컷 — 분류에 쓴 값 */
   referenceCut: number;
   /** 가장 최근 학년도의 실제 70% 컷 */
   previousYear: { year: number; cut: number } | null;
@@ -116,7 +203,11 @@ export interface RecommendationItem {
   cutComparison?: CutComparison | null;
   /** 전형 총점 중 수능 비율(%). 수능 100% 전형이면 없다 */
   suneungWeight?: number;
+  /** 수능 외 전형 요소 원문 표기. 없으면 생략 */
+  selectionNote?: string;
   chance: PassChance;
+  /** 판정 근거 (PART 5 와 같은 값) */
+  judgement?: UnitJudgement;
   /** AI: 한 줄 코멘트 */
   comment: string;
 }
@@ -142,6 +233,8 @@ export interface JeongsiRecommendationSection extends JeongsiBaseSection {
 // ─── PART 4. 가·나·다군 지원 조합 ───
 
 export interface CombinationSlot {
+  /** 모집단위 키 — PART 3 항목과 같은 값 */
+  unitKey?: string;
   group: AdmissionGroup;
   university: string;
   department: string;
@@ -154,6 +247,12 @@ export interface CombinationItem {
   /** 조합 성격 라벨 (예: "균형 조합") */
   label: string;
   slots: CombinationSlot[];
+  /** 대표 조합 (리포트에 "추천"으로 표시). 하나만 true */
+  recommended?: boolean;
+  /** 세 칸의 구분이 성향의 기본 배분과 같은지 */
+  matchesRiskAllocation?: boolean;
+  /** 대표 조합의 칸별 선택 이유 (코드 작성). 대표 조합에만 있다 */
+  slotReasons?: { group: AdmissionGroup; reason: string }[];
   /** AI: 이 조합의 전략 설명 */
   strategy: string;
 }
@@ -163,6 +262,8 @@ export interface JeongsiCombinationSection extends JeongsiBaseSection {
   /** 학생이 고른 지원 성향 */
   risk: JeongsiInput["preference"]["risk"];
   combinations: CombinationItem[];
+  /** 대표 조합을 고른 규칙 한 문장 (코드 작성). 대표 조합이 없으면 없다 */
+  recommendationNote?: string;
   /** AI: 조합 선택 가이드 */
   overallComment: string;
 }
@@ -188,14 +289,18 @@ export interface UniversityDetailItem {
   convertedScore: number;
   totalScore: number;
   referenceCut: number | null;
-  /** 최근 3개년 컷 추이 (cutComparison.metric 과 같은 지표) */
+  /** 학년도별 70%컷 (cutComparison.metric 과 같은 지표) */
   cutHistory: { year: number; cut: number | null }[];
   /** 컷과 같은 축의 비교값. 입결이 없으면 null */
   cutComparison?: CutComparison | null;
   /** 전형 총점 중 수능 비율(%). 수능 100% 전형이면 없다 */
   suneungWeight?: number;
+  /** 수능 외 전형 요소 원문 표기. 없으면 생략 */
+  selectionNote?: string;
   tier: Exclude<AdmissionTier, "지원불가">;
   chance: PassChance;
+  /** 판정 근거 (PART 3 과 같은 값) */
+  judgement?: UnitJudgement;
   /** AI: 추천 이유 */
   reason: string;
 }

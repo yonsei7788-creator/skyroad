@@ -90,7 +90,10 @@ const evaluation = (
 ): PlanEvaluation =>
   ({
     plan: { formula: { ...baseFormula, ...formula } },
-    percentileGap,
+    // 백분위 입결로 판정한 대학 (격차는 백분위점)
+    referenceCut: { metric: "percentile", value: 90 },
+    gapRatio: percentileGap,
+    gapPoints: percentileGap,
     // 백분위 1점당 환산 총점의 1% — 손실 10점(1000점 만점)이 백분위 1점 상당
     sensitivity: 1,
   }) as unknown as PlanEvaluation;
@@ -136,10 +139,10 @@ describe("judgeScoreOverall", () => {
 
     // Assert
     expect(facts[0].value).toBe(
-      "국·수·탐 평균 백분위 94.8점, 표준점수 합 401점"
+      "국어, 수학, 탐구 평균 백분위 94.8점, 표준점수 합 401점"
     );
     expect(facts[0].meaning).toBe(
-      "국어·수학·탐구 모두 응시자 상위 약 12% 안(백분위 88 이상)에 드는 성적이며, 영어는 2등급입니다."
+      "국어, 수학, 탐구 모두 응시자 상위 약 12% 안(백분위 88 이상)에 드는 성적이며, 영어는 2등급입니다."
     );
   });
 });
@@ -149,7 +152,7 @@ describe("describeAreaLevel", () => {
     // Act & Assert
     expect(describeAreaLevel(score, "korean")).toBe("상위 약 4%");
     expect(describeAreaLevel(score, "inquiry")).toBe(
-      "물리학I 상위 약 7% · 지구과학I 상위 약 12%"
+      "물리학I 상위 약 7%, 지구과학I 상위 약 12%"
     );
     expect(describeAreaLevel(score, "english")).toBeNull();
   });
@@ -418,6 +421,7 @@ describe("judgeRecommendationOverall", () => {
     counts: { 상향: 1, 적정: 3, 안정: 3 },
     gapRanges: "상향 -1.3백분위점",
     allocation: "상향 1장, 적정 1장, 안정 1장",
+    allocationAvailable: true,
     risk: "균형" as const,
     cautions: ["가대학교 컴퓨터학과(-1.3백분위점)"],
   };
@@ -430,7 +434,7 @@ describe("judgeRecommendationOverall", () => {
     expect(facts[0].meaning).toContain("상향은 1곳뿐이라");
     expect(facts[1].meaning).toContain("도전과 안정 사이의 균형");
     expect(composeFactSentence(facts[2])).toBe(
-      "신중히 볼 곳은 가대학교 컴퓨터학과(-1.3백분위점)이며, 기준컷에 못 미치거나 합격 가능성이 낮은 곳이라, 원서로 둘 때는 나머지 두 장으로 결과를 받쳐 두는 편이 합리적입니다."
+      "신중히 볼 곳은 가대학교 컴퓨터학과(-1.3백분위점)이며, 합격 가능성이 낮게 나온 곳(같은 여유였던 곳이 다음 해 컷을 넘은 비율 40% 미만)이라, 원서로 둘 때는 나머지 두 장으로 결과를 받쳐 두는 편이 합리적입니다."
     );
   });
 
@@ -446,6 +450,21 @@ describe("judgeRecommendationOverall", () => {
     // Assert
     expect(facts[0].meaning).toContain("상향 선택지가 없어");
     expect(facts[2].meaning).toContain("목록의 모든 대학이 기준컷 이상");
+  });
+
+  it("기본 배분을 채운 조합이 없으면 배분대로 둘 수 있다고 쓰지 않는다 (PART 4 와 같은 판정)", () => {
+    // Arrange / Act
+    const facts = judgeRecommendationOverall({
+      ...input,
+      counts: { 상향: 2, 적정: 3, 안정: 3 },
+      allocationAvailable: false,
+    });
+
+    // Assert
+    expect(composeFactSentence(facts[1])).toContain(
+      "지원 가능 목록으로는 이 배분을 그대로 채울 수 없어"
+    );
+    expect(facts[0].meaning).not.toContain("성향에 맞춰");
   });
 });
 
@@ -533,7 +552,7 @@ describe("assignDetailFacts", () => {
     );
 
     // Assert
-    expect(small.value).toBe("영어 2등급 감점 5점(백분위 약 0.5점 상당)");
+    expect(small.value).toBe("영어 2등급 감점 5점(평균 백분위 약 0.5점 상당)");
     expect(small.meaning).toContain("격차보다 작아");
     // 큰 손실 판정 (두 문장 틀 중 하나)
     expect(large.meaning).toMatch(
@@ -631,7 +650,7 @@ describe("judgeCombinationAllocation", () => {
     );
 
     // Assert
-    expect(fact.meaning).toContain("모든 조합이 적정·안정 원서로 구성되어");
+    expect(fact.meaning).toContain("모든 조합이 적정, 안정 원서로 구성되어");
     expect(fact.meaning).not.toContain("1장, 안정");
   });
 });
@@ -717,7 +736,7 @@ describe("composeDetailAdvice", () => {
 
     // Assert
     expect(advice[0]).toBe(
-      "가군 상향 원서로 둔다면, 나머지 나·다군에는 적정·안정 원서를 두어 결과를 받쳐야 합니다."
+      "가군 상향 원서로 둔다면, 나머지 나군과 다군에는 적정이나 안정 원서를 두어 결과를 받쳐야 합니다."
     );
     expect(advice[1]).not.toBe(advice[2]);
   });

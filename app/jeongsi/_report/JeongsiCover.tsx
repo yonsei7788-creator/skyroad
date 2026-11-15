@@ -28,23 +28,23 @@ const buildScoreCells = (meta: JeongsiReportMeta): ScoreCell[] => {
 
   return [
     {
-      label: `국어 · ${korean.elective}`,
+      label: `국어 (${korean.elective})`,
       value: `${korean.standardScore}`,
       sub: `백분위 ${korean.percentile}`,
     },
     {
-      label: `수학 · ${math.elective}`,
+      label: `수학 (${math.elective})`,
       value: `${math.standardScore}`,
       sub: `백분위 ${math.percentile}`,
     },
     {
-      label: `탐구 · ${inquiry1.subject} · ${inquiry2.subject}`,
-      value: `${inquiry1.standardScore} · ${inquiry2.standardScore}`,
-      sub: `백분위 ${inquiry1.percentile} · ${inquiry2.percentile}`,
+      label: `탐구 (${inquiry1.subject}, ${inquiry2.subject})`,
+      value: `${inquiry1.standardScore} / ${inquiry2.standardScore}`,
+      sub: `백분위 ${inquiry1.percentile} / ${inquiry2.percentile}`,
     },
     {
-      label: "영어 · 한국사",
-      value: `${english.grade} · ${history.grade}등급`,
+      label: "영어와 한국사",
+      value: `${english.grade} / ${history.grade}등급`,
       sub: "절대평가",
     },
   ];
@@ -72,20 +72,23 @@ export const JeongsiCover = ({
     day: "numeric",
   });
 
+  // 스나이핑은 고른 곳이 있을 때만 보이고, 추천(상향·적정·안정) 곳 수에는 넣지 않는다
   const tierCounts = TIER_ORDER.map((tier) => ({
     tier,
     count:
       recommendation?.groups.find((group) => group.tier === tier)?.items
         .length ?? 0,
-  }));
-  const totalCount = tierCounts.reduce((sum, item) => sum + item.count, 0);
+  })).filter(({ tier, count }) => tier !== "스나이핑" || count > 0);
+  const totalCount = tierCounts
+    .filter(({ tier }) => tier !== "스나이핑")
+    .reduce((sum, item) => sum + item.count, 0);
 
   const strengthRows =
     score?.rows.filter((row) => score.strengthAreas.includes(row.area)) ?? [];
   const weaknessRows =
     score?.rows.filter((row) => score.weaknessAreas.includes(row.area)) ?? [];
   const labelsOf = (items: typeof strengthRows): string =>
-    items.map((row) => row.label).join("·") || "—";
+    items.map((row) => row.label).join(", ") || "—";
   const areaDeviations = [...strengthRows, ...weaknessRows]
     .map((row) => row.deviation)
     .filter((value): value is number => value !== null)
@@ -113,12 +116,12 @@ export const JeongsiCover = ({
 
         <div className={styles.coverTitleBlock}>
           <span className={styles.coverOverline}>
-            JEONGSI ADMISSION REPORT · 2027학년도
+            JEONGSI ADMISSION REPORT / 2027학년도
           </span>
           <h1 className={styles.coverTitle}>정시 지원 분석 리포트</h1>
           <p className={styles.coverSubtitle}>
-            수능 성적을 대학별 환산식으로 다시 계산하고, 3개년 공개 입결과
-            비교해
+            수능 성적을 대학별 환산식으로 다시 계산하고, 공개된 2025년, 2026년
+            입결과 비교해
             <br />
             {preference.target} 지원 전략을 설계했습니다.
           </p>
@@ -158,7 +161,7 @@ export const JeongsiCover = ({
         <div className={styles.summaryCards}>
           <div className={styles.summaryCard}>
             <span className={styles.summaryCardLabel}>
-              국·수·탐 평균 백분위
+              국어, 수학, 탐구 평균 백분위
             </span>
             <span className={styles.summaryCardValue}>
               {score ? score.averagePercentile.toFixed(1) : "—"}
@@ -190,19 +193,19 @@ export const JeongsiCover = ({
           </div>
 
           <div className={styles.summaryCard}>
-            <span className={styles.summaryCardLabel}>강점 · 약점 영역</span>
+            <span className={styles.summaryCardLabel}>강점과 약점 영역</span>
             <span className={styles.summaryCardValueSmall}>
               <span className={styles.summaryStrength}>
                 {labelsOf(strengthRows)}
               </span>
-              {" · "}
+              {" / "}
               <span className={styles.summaryWeakness}>
                 {labelsOf(weaknessRows)}
               </span>
             </span>
             {areaDeviations.length > 0 && (
               <span className={styles.summaryCardNote}>
-                평균 대비 {areaDeviations.join(" · ")}
+                평균 대비 {areaDeviations.join(", ")}
               </span>
             )}
           </div>
