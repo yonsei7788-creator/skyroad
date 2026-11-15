@@ -236,6 +236,15 @@ export const admissionPlanSchema = z.object({
   suneungWeight: z.number().positive().lt(100).optional(),
   selectionNote: z.string().min(1).optional(),
   finalQuota: z.number().int().positive().optional(),
+  recentCompetitions: z
+    .array(
+      z.object({
+        year: z.union([z.literal(2025), z.literal(2026)]),
+        competitionRate: z.number().nonnegative().optional(),
+        additionalPassRate: z.number().nonnegative().optional(),
+      })
+    )
+    .optional(),
   statedRatios: z.string().min(1).optional(),
   areaSharesEstimated: z.literal(true).optional(),
   formula: conversionFormulaSchema,

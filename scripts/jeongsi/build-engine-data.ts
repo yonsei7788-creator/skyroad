@@ -1786,6 +1786,25 @@ const toCandidate = (unit: SourceUnit): Outcome<Candidate> => {
   if (!category) {
     return fail(REASON.category);
   }
+  // 최근 두 입결 학년도의 경쟁률·충원율(원문). 스나이핑 우선순위 신호에만 쓴다.
+  const recentCompetitions = ([2025, 2026] as const).flatMap((year) => {
+    const row = pickRow(
+      competitionsByUnit.get(`${unit.unitId}|${year}`) ?? [],
+      unit
+    );
+    const competitionRate = toNumber(row?.competitionRate);
+    const additionalPassRate = toNumber(row?.additionalPassRate);
+    if (competitionRate === null && additionalPassRate === null) {
+      return [];
+    }
+    return [
+      {
+        year,
+        ...(competitionRate !== null ? { competitionRate } : {}),
+        ...(additionalPassRate !== null ? { additionalPassRate } : {}),
+      },
+    ];
+  });
 
   const isMain = mainCampusCode.get(unit.university) === unit.universityCode;
   const campus = isMain ? undefined : unit.campus;
@@ -1806,6 +1825,7 @@ const toCandidate = (unit: SourceUnit): Outcome<Candidate> => {
     ...(finalQuota !== null && finalQuota > 0 && Number.isInteger(finalQuota)
       ? { finalQuota }
       : {}),
+    ...(recentCompetitions.length > 0 ? { recentCompetitions } : {}),
     ...(suneungWeight < 100 ? { suneungWeight } : {}),
     ...(selectionNoteOf(unit) ? { selectionNote: selectionNoteOf(unit) } : {}),
     ...(converted.value.statedRatios
