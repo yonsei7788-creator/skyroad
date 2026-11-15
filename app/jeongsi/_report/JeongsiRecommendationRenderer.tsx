@@ -168,7 +168,7 @@ export const JeongsiRecommendationRenderer = ({
     orderedGroups.find((group) => group.tier === tier)?.items.length ?? 0;
   // 스나이핑 칸은 고른 곳이 있을 때만 요약에 보인다
   const summaryTiers = TIER_ORDER.filter(
-    (tier) => tier !== "스나이핑" || countOf(tier) > 0
+    (tier) => tier !== "소신" || countOf(tier) > 0
   );
 
   const hasJudgement = orderedGroups.some((group) =>
@@ -184,9 +184,8 @@ export const JeongsiRecommendationRenderer = ({
           title={data.title}
           lead={
             <>
-              대학 환산점수 입결이 있는 대학은 <b>내 환산점수</b>로, 없는 대학은{" "}
-              <b>국어, 수학, 탐구 평균 백분위</b>로 기준컷과 비교해 모든 대학에
-              같은 기준으로 상향, 적정, 안정을 나눴습니다.
+              모든 대학을 <b>내 대학별 환산점수</b>와 그 대학의 환산점수 입결로
+              비교해, 같은 기준으로 상향, 적정, 안정을 나눴습니다.
             </>
           }
         />
@@ -252,7 +251,7 @@ export const JeongsiRecommendationRenderer = ({
                 <span className={styles.alignCenter}>군</span>
                 <span className={styles.alignRight}>내 값</span>
                 <span className={styles.alignRight}>기준컷</span>
-                <span>기준컷 대비 (스나이핑, 상향, 적정, 안정)</span>
+                <span>기준컷 대비 (소신, 상향, 적정, 안정)</span>
                 <span className={styles.alignRight}>합격 가능성</span>
               </div>
               <div className={styles.recTierLabel}>{group.tier}</div>

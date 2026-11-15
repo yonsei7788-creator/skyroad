@@ -37,7 +37,7 @@
             "risk": "균형"
           }
         },
-        "createdAt": "2026-11-15T09:19:59.675Z",
+        "createdAt": "2026-11-15T10:42:37.903Z",
         "version": 2
       },
       "sections": [
@@ -99,13 +99,58 @@
           "title": "나에게 유리한 대학 분석",
           "items": [
             {
+              "unitKey": "국립경국대학교-컴퓨터교육과-나",
+              "university": "국립경국대학교",
+              "department": "컴퓨터교육과",
+              "group": "나",
+              "ratioSummary": "국, 수, 영, 탐 중 상위순 50, 50",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 1과목",
+              "advantageScore": 90,
+              "breakdown": {
+                "areas": [
+                  { "area": "math", "ratio": 50, "earned": 490, "max": 500 },
+                  { "area": "english", "ratio": 50, "earned": 485, "max": 500 }
+                ],
+                "englishVsFirstGrade": -15,
+                "historyAdjustment": 3,
+                "bonusAdjustment": 0,
+                "convertedScore": 978,
+                "totalScore": 1000
+              },
+              "judgement": {
+                "unitKey": "국립경국대학교-컴퓨터교육과-나",
+                "tier": "적정",
+                "chance": "보통",
+                "metric": "convertedScore",
+                "studentValue": 978,
+                "referenceCut": 935.4,
+                "gapPoints": 42.6,
+                "gapRatio": 4.26,
+                "totalScore": 1000,
+                "resultYears": [2026],
+                "safeCapped": true,
+                "safeCapReasons": ["1개년 입결"],
+                "pastGroups": [],
+                "finalQuotaChange": null,
+                "quotaChange": {
+                  "currentQuota": 4,
+                  "pastAverageQuota": 5,
+                  "cutAdjustment": 2.4
+                },
+                "additionalPass": { "year": 2026, "quota": 5, "count": 5 },
+                "historicalPassRate": 0.781,
+                "latestAdmitCuts": { "year": 2026, "cut50": 943, "cut70": 933 }
+              },
+              "reason": "이 대학 환산식으로 내 점수는 978점(만점 1000점)입니다. 기준컷과 비교하면 환산점수 +42.6점으로 적정에 해당합니다. 영역별 반영비율로 더 받거나 덜 받는 점수가 거의 없어, 영역 구성이 점수를 크게 바꾸지 않는 대학입니다. 영어 2등급이라 1등급보다 15점 낮게 환산되며, 목록에서 영어로 잃는 점수가 가장 큰 대학입니다. 반영비율로 더 받는 점수가 목록에서 가장 작아, 반영방식보다 기준컷 대비 차이를 보고 고를 대학입니다."
+            },
+            {
               "unitKey": "세종대학교-자유전공학부-다",
               "university": "세종대학교",
               "department": "자유전공학부",
               "group": "다",
               "ratioSummary": "국35, 수35, 영20, 탐10",
               "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
-              "advantageScore": 66,
+              "advantageScore": 68,
               "breakdown": {
                 "areas": [
                   {
@@ -166,7 +211,7 @@
               "group": "가",
               "ratioSummary": "국30, 수40, 영10, 탐20",
               "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
-              "advantageScore": 60,
+              "advantageScore": 62,
               "breakdown": {
                 "areas": [
                   {
@@ -223,72 +268,16 @@
                   "cut70": 669.97
                 }
               },
-              "reason": "이 대학 환산식으로 내 점수는 697.4점(만점 1000점)입니다. 기준컷과 비교하면 환산점수 +23.2점으로 적정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 40% 반영으로 7.8점을 더 받고, 탐구 20% 반영으로 4.7점을 덜 받습니다. 영어 2등급이라 1등급보다 1.5점 낮게 환산됩니다."
+              "reason": "이 대학 환산식으로 내 점수는 697.4점(만점 1000점)입니다. 기준컷과 비교하면 환산점수 +23.2점으로 적정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 40% 반영으로 7.8점을 더 받고, 탐구 20% 반영으로 4.7점을 덜 받습니다. 영어 2등급이라 1등급보다 1.5점 낮게 환산되며, 목록에서 영어로 잃는 점수가 가장 작은 대학입니다."
             },
             {
-              "unitKey": "경희대학교-빅데이터응용학과-가",
-              "university": "경희대학교",
-              "department": "빅데이터응용학과",
+              "unitKey": "부산대학교-자유전공학부-가",
+              "university": "부산대학교",
+              "department": "자유전공학부",
               "group": "가",
-              "ratioSummary": "국35, 수35, 탐30",
+              "ratioSummary": "국30, 수30, 영20, 탐20",
               "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
-              "advantageScore": 55,
-              "breakdown": {
-                "areas": [
-                  {
-                    "area": "korean",
-                    "ratio": 35,
-                    "earned": 137.55,
-                    "max": 210
-                  },
-                  { "area": "math", "ratio": 35, "earned": 143.85, "max": 210 },
-                  {
-                    "area": "inquiry",
-                    "ratio": 30,
-                    "earned": 115.542,
-                    "max": 180
-                  }
-                ],
-                "englishVsFirstGrade": 0,
-                "historyAdjustment": 0,
-                "bonusAdjustment": 0,
-                "convertedScore": 396.942,
-                "totalScore": 600
-              },
-              "judgement": {
-                "unitKey": "경희대학교-빅데이터응용학과-가",
-                "tier": "적정",
-                "chance": "보통",
-                "metric": "percentile",
-                "studentValue": 94.833,
-                "referenceCut": 92,
-                "gapPoints": 2.833,
-                "gapRatio": 2.833,
-                "totalScore": 600,
-                "resultYears": [2026],
-                "safeCapped": false,
-                "safeCapReasons": ["1개년 입결", "백분위 입결"],
-                "pastGroups": [],
-                "finalQuotaChange": null,
-                "quotaChange": {
-                  "currentQuota": 12,
-                  "pastAverageQuota": 12,
-                  "cutAdjustment": 0
-                },
-                "additionalPass": { "year": 2026, "quota": 12, "count": 8 },
-                "historicalPassRate": null,
-                "latestAdmitCuts": { "year": 2026, "cut50": null, "cut70": 92 }
-              },
-              "reason": "이 대학 환산식으로 내 점수는 396.9점(만점 600점)입니다. 기준컷과 비교하면 평균 백분위 +2.8점으로 적정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 35% 반영으로 4.9점을 더 받고, 탐구 30% 반영으로 3.5점을 덜 받습니다. 영어 2등급도 1등급과 같은 점수로 환산됩니다."
-            },
-            {
-              "unitKey": "중앙대학교-산업보안학과(자연)-나",
-              "university": "중앙대학교",
-              "department": "산업보안학과(자연)",
-              "group": "나",
-              "ratioSummary": "국30, 수35, 탐35",
-              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
-              "advantageScore": 55,
+              "advantageScore": 58,
               "breakdown": {
                 "areas": [
                   {
@@ -297,45 +286,50 @@
                     "earned": 196.5,
                     "max": 300
                   },
-                  { "area": "math", "ratio": 35, "earned": 239.75, "max": 350 },
+                  { "area": "math", "ratio": 30, "earned": 205.5, "max": 300 },
+                  { "area": "english", "ratio": 20, "earned": 198, "max": 200 },
                   {
                     "area": "inquiry",
-                    "ratio": 35,
-                    "earned": 231.665,
-                    "max": 350
+                    "ratio": 20,
+                    "earned": 128.374,
+                    "max": 200
                   }
                 ],
                 "englishVsFirstGrade": -2,
                 "historyAdjustment": 10,
-                "bonusAdjustment": 11.583,
-                "convertedScore": 787.498,
+                "bonusAdjustment": 0,
+                "convertedScore": 738.374,
                 "totalScore": 1000
               },
               "judgement": {
-                "unitKey": "중앙대학교-산업보안학과(자연)-나",
+                "unitKey": "부산대학교-자유전공학부-가",
                 "tier": "적정",
                 "chance": "보통",
-                "metric": "percentile",
-                "studentValue": 94.833,
-                "referenceCut": 91.52,
-                "gapPoints": 3.313,
-                "gapRatio": 3.313,
+                "metric": "convertedScore",
+                "studentValue": 738.37,
+                "referenceCut": 703.72,
+                "gapPoints": 34.654,
+                "gapRatio": 3.465,
                 "totalScore": 1000,
                 "resultYears": [2026],
                 "safeCapped": false,
-                "safeCapReasons": ["1개년 입결", "백분위 입결"],
+                "safeCapReasons": ["1개년 입결"],
                 "pastGroups": [],
                 "finalQuotaChange": null,
                 "quotaChange": {
-                  "currentQuota": 28,
-                  "pastAverageQuota": 16,
-                  "cutAdjustment": -0.48
+                  "currentQuota": 40,
+                  "pastAverageQuota": 41,
+                  "cutAdjustment": 0
                 },
-                "additionalPass": { "year": 2026, "quota": 16, "count": 13 },
-                "historicalPassRate": null,
-                "latestAdmitCuts": { "year": 2026, "cut50": 92, "cut70": 92 }
+                "additionalPass": { "year": 2026, "quota": 41, "count": 26 },
+                "historicalPassRate": 0.685,
+                "latestAdmitCuts": {
+                  "year": 2026,
+                  "cut50": 704.81,
+                  "cut70": 703.72
+                }
               },
-              "reason": "이 대학 환산식으로 내 점수는 787.5점(만점 1000점)입니다. 기준컷과 비교하면 평균 백분위 +3.3점으로 적정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 35% 반영으로 6점을 더 받고, 국어 30% 반영으로 3.9점을 덜 받습니다. 중앙대학교도 영어 2등급이라 1등급보다 2점 낮게 환산됩니다. 반영비율로 더 받는 점수가 목록에서 가장 작아, 반영방식보다 기준컷 대비 차이를 보고 고를 대학입니다."
+              "reason": "이 대학 환산식으로 내 점수는 738.4점(만점 1000점)입니다. 기준컷과 비교하면 환산점수 +34.7점으로 적정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 30% 반영으로 6.6점을 더 받고, 탐구 20% 반영으로 4.2점을 덜 받습니다. 부산대학교도 영어 2등급이라 1등급보다 2점 낮게 환산됩니다."
             },
             {
               "unitKey": "고려대학교-데이터과학과-가",
@@ -344,7 +338,7 @@
               "group": "가",
               "ratioSummary": "국100, 수120, 탐100(탐구 과목별 합) 가중합",
               "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
-              "advantageScore": 50,
+              "advantageScore": 51,
               "breakdown": {
                 "areas": [
                   {
@@ -400,10 +394,10 @@
                   "cut70": 655.11
                 }
               },
-              "reason": "이 대학 환산식으로 내 점수는 659.1점(만점 1000점)입니다. 기준컷과 비교하면 환산점수 +2.8점으로 상향에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 37.5% 반영으로 8.7점을 더 받고, 탐구 31.3% 반영으로 6.6점을 덜 받습니다. 영어 2등급이라 1등급보다 3점 낮게 환산되며, 목록에서 영어로 잃는 점수가 가장 큰 대학입니다. 반영비율로 더 받는 점수가 목록에서 가장 커, 같은 성적이 가장 유리하게 환산되는 대학입니다."
+              "reason": "이 대학 환산식으로 내 점수는 659.1점(만점 1000점)입니다. 기준컷과 비교하면 환산점수 +2.8점으로 상향에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 37.5% 반영으로 8.7점을 더 받고, 탐구 31.3% 반영으로 6.6점을 덜 받습니다. 영어 2등급이라 1등급보다 3점 낮게 환산됩니다. 반영비율로 더 받는 점수가 목록에서 가장 커, 같은 성적이 가장 유리하게 환산되는 대학입니다."
             }
           ],
-          "overallComment": "목록 5곳 중 반영비율로 더 받는 점수가 가장 큰 곳은 고려대학교(8.7점)이고, 가장 작은 곳은 중앙대학교(6점)입니다. 영어 2등급으로 1등급보다 낮게 환산되는 점수는 고려대학교가 3점으로 가장 크고, 경희대학교가 0점으로 가장 작습니다. 이 득실은 기준컷 대비 차이(PART 3)와 함께 보고, 기준컷 대비 차이가 비슷한 대학 사이에서 고르는 기준으로 쓰는 편이 합리적입니다."
+          "overallComment": "목록 5곳 중 반영비율로 더 받는 점수가 가장 큰 곳은 고려대학교(8.7점)이고, 가장 작은 곳은 국립경국대학교(0점)입니다. 영어 2등급으로 1등급보다 낮게 환산되는 점수는 국립경국대학교가 15점으로 가장 크고, 건국대학교가 1.5점으로 가장 작습니다. 이 득실은 기준컷 대비 차이(PART 3)와 함께 보고, 기준컷 대비 차이가 비슷한 대학 사이에서 고르는 기준으로 쓰는 편이 합리적입니다."
         },
         {
           "sectionId": "jeongsiRecommendation",
@@ -512,49 +506,49 @@
                   "comment": "적정 4곳 중 여유가 가장 작은 곳으로 기준컷보다 환산점수 23.2점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 55%라, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다."
                 },
                 {
-                  "university": "경희대학교",
-                  "department": "빅데이터응용학과",
-                  "group": "가",
-                  "quota": 12,
-                  "convertedScore": 396.942,
-                  "referenceCut": 92,
-                  "gapRatio": 2.833,
+                  "university": "국립경국대학교",
+                  "department": "컴퓨터교육과",
+                  "group": "나",
+                  "quota": 4,
+                  "convertedScore": 978,
+                  "referenceCut": 935.4,
+                  "gapRatio": 4.26,
                   "cutComparison": {
-                    "metric": "percentile",
-                    "studentValue": 94.833,
-                    "referenceCut": 92,
-                    "previousYear": { "year": 2026, "cut": 92 }
+                    "metric": "convertedScore",
+                    "studentValue": 978,
+                    "referenceCut": 935.4,
+                    "previousYear": { "year": 2026, "cut": 933 }
                   },
                   "chance": "보통",
                   "judgement": {
-                    "unitKey": "경희대학교-빅데이터응용학과-가",
+                    "unitKey": "국립경국대학교-컴퓨터교육과-나",
                     "tier": "적정",
                     "chance": "보통",
-                    "metric": "percentile",
-                    "studentValue": 94.833,
-                    "referenceCut": 92,
-                    "gapPoints": 2.833,
-                    "gapRatio": 2.833,
-                    "totalScore": 600,
+                    "metric": "convertedScore",
+                    "studentValue": 978,
+                    "referenceCut": 935.4,
+                    "gapPoints": 42.6,
+                    "gapRatio": 4.26,
+                    "totalScore": 1000,
                     "resultYears": [2026],
-                    "safeCapped": false,
-                    "safeCapReasons": ["1개년 입결", "백분위 입결"],
+                    "safeCapped": true,
+                    "safeCapReasons": ["1개년 입결"],
                     "pastGroups": [],
                     "finalQuotaChange": null,
                     "quotaChange": {
-                      "currentQuota": 12,
-                      "pastAverageQuota": 12,
-                      "cutAdjustment": 0
+                      "currentQuota": 4,
+                      "pastAverageQuota": 5,
+                      "cutAdjustment": 2.4
                     },
-                    "additionalPass": { "year": 2026, "quota": 12, "count": 8 },
-                    "historicalPassRate": null,
+                    "additionalPass": { "year": 2026, "quota": 5, "count": 5 },
+                    "historicalPassRate": 0.781,
                     "latestAdmitCuts": {
                       "year": 2026,
-                      "cut50": null,
-                      "cut70": 92
+                      "cut50": 943,
+                      "cut70": 933
                     }
                   },
-                  "comment": "가군 적정 원서로 기준컷을 평균 백분위 2.8점 넘겨, 지원은 가능하나 결과를 단정하기 어려운 라인입니다."
+                  "comment": "나군 적정 원서로 기준컷보다 환산점수 42.6점 높고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 78%지만, 공개 입결이 적은 곳이라 안정 대신 적정으로 판단해, 지원은 가능하나 결과를 단정하기 어려운 라인입니다."
                 },
                 {
                   "university": "세종대학교",
@@ -606,61 +600,59 @@
                   "comment": "40명을 뽑는 모집단위로 기준컷보다 환산점수 29.6점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 66%라, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다."
                 },
                 {
-                  "university": "중앙대학교",
-                  "department": "산업보안학과(자연)",
-                  "group": "나",
-                  "quota": 28,
-                  "convertedScore": 787.498,
-                  "referenceCut": 91.52,
-                  "gapRatio": 3.313,
+                  "university": "부산대학교",
+                  "department": "자유전공학부",
+                  "group": "가",
+                  "quota": 40,
+                  "convertedScore": 738.374,
+                  "referenceCut": 703.72,
+                  "gapRatio": 3.465,
                   "cutComparison": {
-                    "metric": "percentile",
-                    "studentValue": 94.833,
-                    "referenceCut": 91.52,
-                    "previousYear": { "year": 2026, "cut": 92 }
+                    "metric": "convertedScore",
+                    "studentValue": 738.37,
+                    "referenceCut": 703.72,
+                    "previousYear": { "year": 2026, "cut": 703.72 }
                   },
-                  "suneungWeight": 90,
-                  "selectionNote": "학생부 10%, 비교과(출결) 10%(미인정 결석 일수 환산)",
                   "chance": "보통",
                   "judgement": {
-                    "unitKey": "중앙대학교-산업보안학과(자연)-나",
+                    "unitKey": "부산대학교-자유전공학부-가",
                     "tier": "적정",
                     "chance": "보통",
-                    "metric": "percentile",
-                    "studentValue": 94.833,
-                    "referenceCut": 91.52,
-                    "gapPoints": 3.313,
-                    "gapRatio": 3.313,
+                    "metric": "convertedScore",
+                    "studentValue": 738.37,
+                    "referenceCut": 703.72,
+                    "gapPoints": 34.654,
+                    "gapRatio": 3.465,
                     "totalScore": 1000,
                     "resultYears": [2026],
                     "safeCapped": false,
-                    "safeCapReasons": ["1개년 입결", "백분위 입결"],
+                    "safeCapReasons": ["1개년 입결"],
                     "pastGroups": [],
                     "finalQuotaChange": null,
                     "quotaChange": {
-                      "currentQuota": 28,
-                      "pastAverageQuota": 16,
-                      "cutAdjustment": -0.48
+                      "currentQuota": 40,
+                      "pastAverageQuota": 41,
+                      "cutAdjustment": 0
                     },
                     "additionalPass": {
                       "year": 2026,
-                      "quota": 16,
-                      "count": 13
+                      "quota": 41,
+                      "count": 26
                     },
-                    "historicalPassRate": null,
+                    "historicalPassRate": 0.685,
                     "latestAdmitCuts": {
                       "year": 2026,
-                      "cut50": 92,
-                      "cut70": 92
+                      "cut50": 704.81,
+                      "cut70": 703.72
                     }
                   },
-                  "comment": "적정 4곳 중 여유가 가장 큰 곳으로 기준컷을 평균 백분위 3.3점 넘겨, 지원은 가능하나 결과를 단정하기 어려운 라인입니다."
+                  "comment": "적정 4곳 중 여유가 2번째인 곳으로 기준컷보다 환산점수 34.7점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 69%라, 지원은 가능하나 결과를 단정하기 어려운 라인입니다."
                 }
               ]
             },
             { "tier": "안정", "items": [] },
             {
-              "tier": "스나이핑",
+              "tier": "소신",
               "items": [
                 {
                   "university": "고려대학교",
@@ -679,7 +671,7 @@
                   "chance": "매우낮음",
                   "judgement": {
                     "unitKey": "고려대학교-컴퓨터학과-가",
-                    "tier": "스나이핑",
+                    "tier": "소신",
                     "chance": "매우낮음",
                     "metric": "convertedScore",
                     "studentValue": 659.13,
@@ -709,16 +701,16 @@
                       "cut70": 659.82
                     }
                   },
-                  "comment": "가군 스나이핑 원서로 기준컷보다 환산점수 5.5점 낮고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 9%라, 합격 가능성은 매우 낮지만 원서 한 장을 걸고 예상외 결과를 노려 볼 수 있는 라인입니다."
+                  "comment": "가군 소신 원서로 기준컷보다 환산점수 5.5점 낮고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 9%라, 합격 가능성은 매우 낮지만 원서 한 장을 걸고 예상외 결과를 노려 볼 수 있는 라인입니다."
                 }
               ]
             }
           ],
-          "overallComment": "지원 가능 대학은 상향 1곳, 적정 4곳, 스나이핑 1곳으로, 안정 선택지가 없어, 그 자리는 다른 구분의 원서로 채워야 하는 구성입니다. 균형 성향의 기본 배분은 상향 1장, 적정 1장, 안정 1장이지만, 지원 가능 목록으로는 이 배분을 그대로 채울 수 없어, 원서 조합에서는 가장 가까운 구성을 대표로 보여 드립니다. 신중히 볼 곳은 고려대학교 데이터과학과(환산점수 +2.8점), 고려대학교 컴퓨터학과(환산점수 −5.5점)이며, 합격 가능성이 낮게 나온 곳(같은 여유였던 곳이 다음 해 컷을 넘은 비율 40% 미만)이라, 원서로 둘 때는 나머지 두 장으로 결과를 받쳐 두는 편이 합리적입니다.",
+          "overallComment": "지원 가능 대학은 상향 1곳, 적정 4곳, 소신 1곳으로, 안정 선택지가 없어, 그 자리는 다른 구분의 원서로 채워야 하는 구성입니다. 균형 성향의 기본 배분은 상향 1장, 적정 1장, 안정 1장이지만, 지원 가능 목록으로는 이 배분을 그대로 채울 수 없어, 원서 조합에서는 가장 가까운 구성을 대표로 보여 드립니다. 신중히 볼 곳은 고려대학교 데이터과학과(환산점수 +2.8점), 고려대학교 컴퓨터학과(환산점수 −5.5점)이며, 합격 가능성이 낮게 나온 곳(같은 여유였던 곳이 다음 해 컷을 넘은 비율 40% 미만)이라, 원서로 둘 때는 나머지 두 장으로 결과를 받쳐 두는 편이 합리적입니다.",
           "notices": [
-            "스나이핑은 추천 범위 바로 아래(기준컷 대비 −2.0 ~ −0.4)라 합격 가능성은 매우 낮지만(같은 여유였던 곳이 다음 해 컷을 넘은 비율 4~10%), 원서 한 장을 걸고 예상외 합격을 노려 볼 수 있는 곳입니다. 2027 최종 모집인원(수시 이월 반영)이 아직 발표되지 않아, 희망 학과에 가깝고 기준컷에 가까운 곳부터 골랐습니다. 최종 모집인원이 발표되면 인원이 20% 이상 늘어난 곳을 우선합니다(2025→2026 실측에서 그런 곳은 기준컷보다 1.0 낮은 학생도 23%가 다음 해 컷을 넘었고, 나머지는 4%였습니다).",
+            "기준컷보다 여유가 안정 구간만큼 있지만 근거가 부족해 '안정'이 아닌 '적정'으로 표시한 곳: 국립경국대학교 컴퓨터교육과(공개 입결이 적은 곳).",
             "과거 입결이 다른 모집군에서 나온 곳: 건국대학교 컴퓨터공학과(2027 가군, 2026 입결은 다군 모집 때 값). 군이 바뀌면 함께 지원하는 대학이 달라져 합격선이 달라질 수 있습니다.",
-            "희망하신 컴퓨터공학과 외에 컴퓨터와 IT 계열(소프트웨어, 인공지능 등)까지 함께 비교했습니다. 희망 지역(서울)의 컴퓨터공학과만으로는 현재 성적에 맞는 지원처를 고루 찾기 어려워 비교 범위를 넓혔습니다."
+            "희망하신 컴퓨터공학과 외에 컴퓨터와 IT 계열(소프트웨어, 인공지능 등)까지 함께 비교했습니다. 희망 학과와 같은 분류만으로는 현재 성적에 맞는 지원처를 고루 찾기 어려워 비교 범위를 넓혔습니다."
           ]
         },
         {
@@ -739,10 +731,10 @@
                   "chance": "낮음"
                 },
                 {
-                  "unitKey": "중앙대학교-산업보안학과(자연)-나",
+                  "unitKey": "국립경국대학교-컴퓨터교육과-나",
                   "group": "나",
-                  "university": "중앙대학교",
-                  "department": "산업보안학과(자연)",
+                  "university": "국립경국대학교",
+                  "department": "컴퓨터교육과",
                   "tier": "적정",
                   "chance": "보통"
                 },
@@ -764,7 +756,7 @@
                 },
                 {
                   "group": "나",
-                  "reason": "합격을 목표로 하는 원서로, 기준컷 대비 평균 백분위 +3.3점입니다. 중앙대학교는 희망 학과와 같은 계열의 모집단위이며, 추천 목록에서 나군 적정 후보는 이곳뿐입니다."
+                  "reason": "합격을 목표로 하는 원서로, 기준컷 대비 환산점수 +42.6점, 같은 여유였던 곳이 다음 해 컷을 넘은 비율은 78%입니다. 국립경국대학교는 희망 학과와 같은 분야이며, 추천 목록에서 나군 적정 후보는 이곳뿐입니다."
                 },
                 {
                   "group": "다",
@@ -774,7 +766,7 @@
               "strategy": "희망 학과나 계열에 가장 가까운 학과를 먼저 고른 조합입니다. 추천 목록으로 만들 수 있는 조합이 이것 하나라, 견줄 다른 조합이 없습니다. 원하는 전공으로 진학할 가능성을 얻는 대신, 대학 선호도나 합격 여유는 덜 따지는 선택입니다."
             }
           ],
-          "recommendationNote": "균형 성향의 기본 배분(상향, 적정, 안정)을 모두 지키는 조합이 없어, 원서를 가장 많이 채운 조합 중 구분 구성이 기본 배분에 가장 가깝고, 그다음 희망 학과에 가장 가까운 조합을 대표로 골랐습니다.",
+          "recommendationNote": "균형 성향의 기본 배분(상향, 적정, 안정)을 그대로 채울 안정 후보가 없어, 기준컷 대비 여유는 안정 구간이지만 근거가 부족해 적정으로 표시한 곳을 안정 원서 자리에 넣었습니다. 그 가운데 희망 학과에 가장 가까운 조합을 대표로 골랐습니다.",
           "overallComment": "가군, 나군, 다군에서 한 장씩 쓰는 정시 구조라, 조합은 군마다 어떤 구분의 원서를 두느냐로 성격이 갈립니다. 기본 배분(상향 1장, 적정 1장, 안정 1장)과 같은 조합은 없고 모든 조합이 상향, 적정 원서로 구성되어, 성향보다 지원 가능한 원서 안에서 고르는 구성입니다. 조합 사이에서 고민된다면 희망 학과, 대학 선호, 합격 여유 중 무엇을 앞세울지를 먼저 정하는 편이 합리적입니다."
         },
         {
@@ -894,56 +886,56 @@
               "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 40% 반영으로 7.8점을 더 받고, 탐구 20% 반영으로 4.7점을 덜 받습니다. 기준컷보다 환산점수 23.2점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 55%라, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다. 가군 적정 원서로 두되, 같은 군의 다른 후보와 기준컷 여유를 비교해 고르는 편이 좋습니다."
             },
             {
-              "university": "경희대학교",
-              "department": "빅데이터응용학과",
-              "group": "가",
-              "quota": 12,
-              "competitionRate": 4.67,
-              "ratioSummary": "국35, 수35, 탐30",
-              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
-              "englishHistorySummary": "영어 감산(1등급 0, 2등급 0, 3등급 2) / 한국사 감산(1등급 0, 2등급 0, 3등급 0)",
+              "university": "국립경국대학교",
+              "department": "컴퓨터교육과",
+              "group": "나",
+              "quota": 4,
+              "competitionRate": 7,
+              "ratioSummary": "국, 수, 영, 탐 중 상위순 50, 50",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 1과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 100, 2등급 97, 3등급 94) / 한국사 가산(1등급 3, 2등급 3, 3등급 3)",
               "bonusSummary": null,
               "restrictionSummary": null,
-              "convertedScore": 396.942,
-              "totalScore": 600,
-              "referenceCut": 92,
+              "convertedScore": 978,
+              "totalScore": 1000,
+              "referenceCut": 935.4,
               "cutHistory": [
                 { "year": 2025, "cut": null },
-                { "year": 2026, "cut": 92 }
+                { "year": 2026, "cut": 933 }
               ],
               "cutComparison": {
-                "metric": "percentile",
-                "studentValue": 94.833,
-                "referenceCut": 92,
-                "previousYear": { "year": 2026, "cut": 92 }
+                "metric": "convertedScore",
+                "studentValue": 978,
+                "referenceCut": 935.4,
+                "previousYear": { "year": 2026, "cut": 933 }
               },
               "tier": "적정",
               "chance": "보통",
               "judgement": {
-                "unitKey": "경희대학교-빅데이터응용학과-가",
+                "unitKey": "국립경국대학교-컴퓨터교육과-나",
                 "tier": "적정",
                 "chance": "보통",
-                "metric": "percentile",
-                "studentValue": 94.833,
-                "referenceCut": 92,
-                "gapPoints": 2.833,
-                "gapRatio": 2.833,
-                "totalScore": 600,
+                "metric": "convertedScore",
+                "studentValue": 978,
+                "referenceCut": 935.4,
+                "gapPoints": 42.6,
+                "gapRatio": 4.26,
+                "totalScore": 1000,
                 "resultYears": [2026],
-                "safeCapped": false,
-                "safeCapReasons": ["1개년 입결", "백분위 입결"],
+                "safeCapped": true,
+                "safeCapReasons": ["1개년 입결"],
                 "pastGroups": [],
                 "finalQuotaChange": null,
                 "quotaChange": {
-                  "currentQuota": 12,
-                  "pastAverageQuota": 12,
-                  "cutAdjustment": 0
+                  "currentQuota": 4,
+                  "pastAverageQuota": 5,
+                  "cutAdjustment": 2.4
                 },
-                "additionalPass": { "year": 2026, "quota": 12, "count": 8 },
-                "historicalPassRate": null,
-                "latestAdmitCuts": { "year": 2026, "cut50": null, "cut70": 92 }
+                "additionalPass": { "year": 2026, "quota": 5, "count": 5 },
+                "historicalPassRate": 0.781,
+                "latestAdmitCuts": { "year": 2026, "cut50": 943, "cut70": 933 }
               },
-              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 35% 반영으로 4.9점을 더 받고, 탐구 30% 반영으로 3.5점을 덜 받습니다. 기준컷을 평균 백분위 2.8점 넘겨, 지원은 가능하나 결과를 단정하기 어려운 라인입니다. 가군에 둘 수 있는 원서지만 결과가 당해 경쟁에 따라 갈릴 수 있어, 나군과 다군에 안정 원서를 함께 두는 편이 좋습니다."
+              "reason": "영역별 반영비율로 더 받거나 덜 받는 점수가 거의 없어, 영역 구성이 점수를 크게 바꾸지 않는 대학입니다. 기준컷보다 환산점수 42.6점 높고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 78%지만, 공개 입결이 적은 곳이라 안정 대신 적정으로 판단해, 지원은 가능하나 결과를 단정하기 어려운 라인입니다. 나군에 둘 수 있는 원서지만 결과가 당해 경쟁에 따라 갈릴 수 있어, 가군과 다군에 안정 원서를 함께 두는 편이 좋습니다."
             },
             {
               "university": "세종대학교",
@@ -1002,58 +994,60 @@
               "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 35% 반영으로 6.5점을 더 받고, 국어 35% 반영으로 4점을 덜 받습니다. 기준컷보다 환산점수 29.6점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 66%라, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다. 다군 적정 후보로 검토하되, 원서 접수 직전의 경쟁률 흐름을 함께 보고 확정하는 편이 좋습니다."
             },
             {
-              "university": "중앙대학교",
-              "department": "산업보안학과(자연)",
-              "group": "나",
-              "quota": 28,
-              "competitionRate": 4.69,
-              "ratioSummary": "국30, 수35, 탐35",
+              "university": "부산대학교",
+              "department": "자유전공학부",
+              "group": "가",
+              "quota": 40,
+              "competitionRate": 5.2,
+              "ratioSummary": "국30, 수30, 영20, 탐20",
               "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
-              "englishHistorySummary": "영어 가산(1등급 100, 2등급 98, 3등급 95) / 한국사 가산(1등급 10, 2등급 10, 3등급 10)",
-              "bonusSummary": "과탐 과목별 +5%",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 200, 2등급 198, 3등급 195) / 한국사 가산(1등급 10, 2등급 10, 3등급 10)",
+              "bonusSummary": null,
               "restrictionSummary": null,
-              "convertedScore": 787.498,
+              "convertedScore": 738.374,
               "totalScore": 1000,
-              "referenceCut": 91.52,
+              "referenceCut": 703.72,
               "cutHistory": [
                 { "year": 2025, "cut": null },
-                { "year": 2026, "cut": 92 }
+                { "year": 2026, "cut": 703.72 }
               ],
               "cutComparison": {
-                "metric": "percentile",
-                "studentValue": 94.833,
-                "referenceCut": 91.52,
-                "previousYear": { "year": 2026, "cut": 92 }
+                "metric": "convertedScore",
+                "studentValue": 738.37,
+                "referenceCut": 703.72,
+                "previousYear": { "year": 2026, "cut": 703.72 }
               },
-              "suneungWeight": 90,
-              "selectionNote": "학생부 10%, 비교과(출결) 10%(미인정 결석 일수 환산)",
               "tier": "적정",
               "chance": "보통",
               "judgement": {
-                "unitKey": "중앙대학교-산업보안학과(자연)-나",
+                "unitKey": "부산대학교-자유전공학부-가",
                 "tier": "적정",
                 "chance": "보통",
-                "metric": "percentile",
-                "studentValue": 94.833,
-                "referenceCut": 91.52,
-                "gapPoints": 3.313,
-                "gapRatio": 3.313,
+                "metric": "convertedScore",
+                "studentValue": 738.37,
+                "referenceCut": 703.72,
+                "gapPoints": 34.654,
+                "gapRatio": 3.465,
                 "totalScore": 1000,
                 "resultYears": [2026],
                 "safeCapped": false,
-                "safeCapReasons": ["1개년 입결", "백분위 입결"],
+                "safeCapReasons": ["1개년 입결"],
                 "pastGroups": [],
                 "finalQuotaChange": null,
                 "quotaChange": {
-                  "currentQuota": 28,
-                  "pastAverageQuota": 16,
-                  "cutAdjustment": -0.48
+                  "currentQuota": 40,
+                  "pastAverageQuota": 41,
+                  "cutAdjustment": 0
                 },
-                "additionalPass": { "year": 2026, "quota": 16, "count": 13 },
-                "historicalPassRate": null,
-                "latestAdmitCuts": { "year": 2026, "cut50": 92, "cut70": 92 }
+                "additionalPass": { "year": 2026, "quota": 41, "count": 26 },
+                "historicalPassRate": 0.685,
+                "latestAdmitCuts": {
+                  "year": 2026,
+                  "cut50": 704.81,
+                  "cut70": 703.72
+                }
               },
-              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 35% 반영으로 6점을 더 받고, 국어 30% 반영으로 3.9점을 덜 받습니다. 기준컷을 평균 백분위 3.3점 넘겨, 지원은 가능하나 결과를 단정하기 어려운 라인입니다. 나군 적정 원서로 두되, 같은 군의 다른 후보와 기준컷 여유를 비교해 고르는 편이 좋습니다."
+              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 30% 반영으로 6.6점을 더 받고, 탐구 20% 반영으로 4.2점을 덜 받습니다. 기준컷보다 환산점수 34.7점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 69%라, 지원은 가능하나 결과를 단정하기 어려운 라인입니다. 가군에 둘 수 있는 원서지만 결과가 당해 경쟁에 따라 갈릴 수 있어, 나군과 다군에 안정 원서를 함께 두는 편이 좋습니다."
             },
             {
               "university": "고려대학교",
@@ -1079,11 +1073,11 @@
                 "referenceCut": 664.62,
                 "previousYear": { "year": 2026, "cut": 659.82 }
               },
-              "tier": "스나이핑",
+              "tier": "소신",
               "chance": "매우낮음",
               "judgement": {
                 "unitKey": "고려대학교-컴퓨터학과-가",
-                "tier": "스나이핑",
+                "tier": "소신",
                 "chance": "매우낮음",
                 "metric": "convertedScore",
                 "studentValue": 659.13,
@@ -1109,7 +1103,7 @@
                   "cut70": 659.82
                 }
               },
-              "reason": "수학 37.5% 반영에서 8.7점을 더 얻고 탐구 31.3% 반영에서 6.6점을 덜 얻는 환산 구조입니다. 기준컷보다 환산점수 5.5점 낮고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 9%라, 합격 가능성은 매우 낮지만 원서 한 장을 걸고 예상외 결과를 노려 볼 수 있는 라인입니다. 가군 스나이핑 원서는 합격을 기대하기보다 예상외 결과를 노리는 시도이므로, 나군과 다군 원서로 결과를 받쳐 두어야 합니다."
+              "reason": "수학 37.5% 반영에서 8.7점을 더 얻고 탐구 31.3% 반영에서 6.6점을 덜 얻는 환산 구조입니다. 기준컷보다 환산점수 5.5점 낮고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 9%라, 합격 가능성은 매우 낮지만 원서 한 장을 걸고 예상외 결과를 노려 볼 수 있는 라인입니다. 가군 소신 원서는 합격을 기대하기보다 예상외 결과를 노리는 시도이므로, 나군과 다군 원서로 결과를 받쳐 두어야 합니다."
             }
           ]
         }
@@ -1154,7 +1148,7 @@
             "risk": "안정"
           }
         },
-        "createdAt": "2026-11-15T09:19:59.718Z",
+        "createdAt": "2026-11-15T10:42:37.948Z",
         "version": 2
       },
       "sections": [
@@ -1216,78 +1210,13 @@
           "title": "나에게 유리한 대학 분석",
           "items": [
             {
-              "unitKey": "건양대학교(메디컬캠퍼스(대전))-병원경영학과-나",
-              "university": "건양대학교",
-              "department": "병원경영학과",
-              "group": "나",
-              "ratioSummary": "국, 수, 영, 탐 중 상위순 33.3, 33.3, 33.3",
-              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 1과목",
-              "advantageScore": 82,
-              "breakdown": {
-                "areas": [
-                  {
-                    "area": "math",
-                    "ratio": 33.333,
-                    "earned": 280,
-                    "max": 333.333
-                  },
-                  {
-                    "area": "english",
-                    "ratio": 33.333,
-                    "earned": 320,
-                    "max": 333.333
-                  },
-                  {
-                    "area": "inquiry",
-                    "ratio": 33.333,
-                    "earned": 283.333,
-                    "max": 333.333
-                  }
-                ],
-                "englishVsFirstGrade": -13.33,
-                "historyAdjustment": 0,
-                "bonusAdjustment": 0,
-                "convertedScore": 883.333,
-                "totalScore": 1000
-              },
-              "judgement": {
-                "unitKey": "건양대학교(메디컬캠퍼스(대전))-병원경영학과-나",
-                "tier": "적정",
-                "chance": "보통",
-                "metric": "convertedScore",
-                "studentValue": 883.33,
-                "referenceCut": 846.67,
-                "gapPoints": 36.663,
-                "gapRatio": 3.666,
-                "totalScore": 1000,
-                "resultYears": [2026],
-                "safeCapped": false,
-                "safeCapReasons": ["1개년 입결"],
-                "pastGroups": [],
-                "finalQuotaChange": null,
-                "quotaChange": {
-                  "currentQuota": 3,
-                  "pastAverageQuota": 3,
-                  "cutAdjustment": 0
-                },
-                "additionalPass": null,
-                "historicalPassRate": 0.712,
-                "latestAdmitCuts": {
-                  "year": 2026,
-                  "cut50": 846.67,
-                  "cut70": 846.67
-                }
-              },
-              "reason": "이 대학 환산식으로 내 점수는 883.3점(만점 1000점)입니다. 기준컷과 비교하면 환산점수 +36.7점으로 적정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 33.3% 반영으로 1.7점을 더 받고, 수학 33.3% 반영으로 1.7점을 덜 받습니다. 영어 3등급이라 1등급보다 13.3점 낮게 환산됩니다. 반영비율로 더 받는 점수는 목록 중간 수준이라, 기준컷 대비 차이와 함께 판단할 대학입니다."
-            },
-            {
               "unitKey": "상명대학교(천안캠퍼스)-글로벌금융경영학부-나",
               "university": "상명대학교",
               "department": "글로벌금융경영학부",
               "group": "나",
               "ratioSummary": "탐20 / 국, 수, 영 중 상위순 40, 40",
               "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 1과목",
-              "advantageScore": 75,
+              "advantageScore": 76,
               "breakdown": {
                 "areas": [
                   { "area": "math", "ratio": 40, "earned": 336, "max": 400 },
@@ -1324,7 +1253,7 @@
                 "historicalPassRate": 0.795,
                 "latestAdmitCuts": { "year": 2026, "cut50": 862, "cut70": 854 }
               },
-              "reason": "이 대학 환산식으로 내 점수는 900점(만점 1000점)입니다. 기준컷과 비교하면 환산점수 +44.5점으로 안정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 20% 반영으로 1.3점을 더 받고, 수학 40% 반영으로 1.3점을 덜 받습니다. 영어 3등급이라 1등급보다 16점 낮게 환산됩니다. 반영비율로 더 받는 점수가 목록에서 가장 작아, 반영방식보다 기준컷 대비 차이를 보고 고를 대학입니다."
+              "reason": "이 대학 환산식으로 내 점수는 900점(만점 1000점)입니다. 기준컷과 비교하면 환산점수 +44.5점으로 안정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 20% 반영으로 1.3점을 더 받고, 수학 40% 반영으로 1.3점을 덜 받습니다. 영어 3등급이라 1등급보다 16점 낮게 환산되며, 목록에서 영어로 잃는 점수가 가장 작은 대학입니다. 반영비율로 더 받는 점수가 목록에서 가장 작아, 반영방식보다 기준컷 대비 차이를 보고 고를 대학입니다."
             },
             {
               "unitKey": "성공회대학교-경영학부-다",
@@ -1333,7 +1262,7 @@
               "group": "다",
               "ratioSummary": "영33.3, 탐33.3 / 국, 수 중 상위순 33.4",
               "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 1과목",
-              "advantageScore": 74,
+              "advantageScore": 75,
               "breakdown": {
                 "areas": [
                   {
@@ -1389,7 +1318,7 @@
                   "cut70": 445
                 }
               },
-              "reason": "이 대학 환산식으로 내 점수는 441.7점(만점 500점)입니다. 기준컷과 비교하면 환산점수 −1.1점으로 상향에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 33.3% 반영으로 0.8점을 더 받고, 수학 33.4% 반영으로 0.8점을 덜 받습니다. 영어 3등급이라 1등급보다 11.7점 낮게 환산됩니다."
+              "reason": "이 대학 환산식으로 내 점수는 441.7점(만점 500점)입니다. 기준컷과 비교하면 환산점수 −1.1점으로 상향에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 33.3% 반영으로 0.8점을 더 받고, 수학 33.4% 반영으로 0.8점을 덜 받습니다. 영어 3등급이라 1등급보다 11.7점 낮게 환산됩니다. 반영비율로 더 받는 점수는 목록 중간 수준이라, 기준컷 대비 차이와 함께 판단할 대학입니다."
             },
             {
               "unitKey": "국립한국교통대학교-경영학과-가",
@@ -1454,66 +1383,131 @@
                   "cut70": 803.33
                 }
               },
-              "reason": "이 대학 환산식으로 내 점수는 863.3점(만점 1000점)입니다. 기준컷과 비교하면 환산점수 +40.2점으로 안정에 해당합니다. 국립한국교통대학교도 탐구 33.3% 반영으로 1.7점을 더 받고, 수학 33.3% 반영으로 1.7점을 덜 받습니다. 영어 3등급이라 1등급보다 33.3점 낮게 환산되며, 목록에서 영어로 잃는 점수가 가장 큰 대학입니다."
+              "reason": "이 대학 환산식으로 내 점수는 863.3점(만점 1000점)입니다. 기준컷과 비교하면 환산점수 +40.2점으로 안정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 33.3% 반영으로 1.7점을 더 받고, 수학 33.3% 반영으로 1.7점을 덜 받습니다. 영어 3등급이라 1등급보다 33.3점 낮게 환산되며, 목록에서 영어로 잃는 점수가 가장 큰 대학입니다."
             },
             {
-              "unitKey": "인천대학교-경제학과-다",
-              "university": "인천대학교",
-              "department": "경제학과",
-              "group": "다",
-              "ratioSummary": "국35, 수30, 영10, 탐25",
-              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 2과목",
-              "advantageScore": 59,
+              "unitKey": "한밭대학교-회계세무학과-나",
+              "university": "한밭대학교",
+              "department": "회계세무학과",
+              "group": "나",
+              "ratioSummary": "국, 수, 영, 탐 중 상위순 33.3, 33.3, 33.3",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 1과목",
+              "advantageScore": 67,
               "breakdown": {
                 "areas": [
-                  { "area": "korean", "ratio": 35, "earned": 287, "max": 350 },
-                  { "area": "math", "ratio": 30, "earned": 252, "max": 300 },
-                  { "area": "english", "ratio": 10, "earned": 95, "max": 100 },
+                  {
+                    "area": "math",
+                    "ratio": 33.333,
+                    "earned": 140,
+                    "max": 166.667
+                  },
+                  {
+                    "area": "english",
+                    "ratio": 33.333,
+                    "earned": 150,
+                    "max": 166.667
+                  },
                   {
                     "area": "inquiry",
-                    "ratio": 25,
-                    "earned": 206.25,
-                    "max": 250
+                    "ratio": 33.333,
+                    "earned": 141.667,
+                    "max": 166.667
                   }
                 ],
-                "englishVsFirstGrade": -5,
+                "englishVsFirstGrade": -16.665,
                 "historyAdjustment": 0,
                 "bonusAdjustment": 0,
-                "convertedScore": 840.25,
-                "totalScore": 1000
+                "convertedScore": 431.667,
+                "totalScore": 500
               },
               "judgement": {
-                "unitKey": "인천대학교-경제학과-다",
+                "unitKey": "한밭대학교-회계세무학과-나",
                 "tier": "적정",
                 "chance": "보통",
                 "metric": "convertedScore",
-                "studentValue": 840.251,
-                "referenceCut": 806.781,
-                "gapPoints": 33.469,
-                "gapRatio": 3.347,
-                "totalScore": 1000,
-                "resultYears": [2025, 2026],
+                "studentValue": 431.665,
+                "referenceCut": 415.73,
+                "gapPoints": 15.937,
+                "gapRatio": 3.187,
+                "totalScore": 500,
+                "resultYears": [2026],
                 "safeCapped": false,
-                "safeCapReasons": [],
+                "safeCapReasons": ["1개년 입결"],
                 "pastGroups": [],
                 "finalQuotaChange": null,
                 "quotaChange": {
-                  "currentQuota": 18,
-                  "pastAverageQuota": 18,
-                  "cutAdjustment": 0
+                  "currentQuota": 3,
+                  "pastAverageQuota": 5,
+                  "cutAdjustment": 2.4
                 },
-                "additionalPass": { "year": 2026, "quota": 18, "count": 28 },
-                "historicalPassRate": 0.679,
+                "additionalPass": { "year": 2026, "quota": 5, "count": 5 },
+                "historicalPassRate": 0.669,
                 "latestAdmitCuts": {
                   "year": 2026,
-                  "cut50": 819,
-                  "cut70": 814.3
+                  "cut50": 416.67,
+                  "cut70": 413.33
                 }
               },
-              "reason": "이 대학 환산식으로 내 점수는 840.3점(만점 1000점)입니다. 기준컷과 비교하면 환산점수 +33.5점으로 적정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 30% 반영으로 3.6점을 더 받고, 국어 35% 반영으로 2.8점을 덜 받습니다. 영어 3등급이라 1등급보다 5점 낮게 환산되며, 목록에서 영어로 잃는 점수가 가장 작은 대학입니다. 반영비율로 더 받는 점수가 목록에서 가장 커, 같은 성적이 가장 유리하게 환산되는 대학입니다."
+              "reason": "이 대학 환산식으로 내 점수는 431.7점(만점 500점)입니다. 기준컷과 비교하면 환산점수 +15.9점으로 적정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 33.3% 반영으로 0.8점을 더 받고, 수학 33.3% 반영으로 0.8점을 덜 받습니다. 영어 3등급이라 1등급보다 16.7점 낮게 환산되며, 목록에서 영어로 잃는 점수가 가장 큰 대학입니다."
+            },
+            {
+              "unitKey": "서울여자대학교-경영학과-가",
+              "university": "서울여자대학교",
+              "department": "경영학과",
+              "group": "가",
+              "ratioSummary": "국, 수, 영, 탐 중 상위순 35, 30, 20, 15",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 1과목",
+              "advantageScore": 59,
+              "breakdown": {
+                "areas": [
+                  { "area": "korean", "ratio": 15, "earned": 49.2, "max": 60 },
+                  { "area": "math", "ratio": 20, "earned": 67.2, "max": 80 },
+                  {
+                    "area": "english",
+                    "ratio": 35,
+                    "earned": 130.2,
+                    "max": 140
+                  },
+                  { "area": "inquiry", "ratio": 30, "earned": 102, "max": 120 }
+                ],
+                "englishVsFirstGrade": -9.8,
+                "historyAdjustment": 5,
+                "bonusAdjustment": 0,
+                "convertedScore": 353.6,
+                "totalScore": 400
+              },
+              "judgement": {
+                "unitKey": "서울여자대학교-경영학과-가",
+                "tier": "적정",
+                "chance": "보통",
+                "metric": "convertedScore",
+                "studentValue": 353.6,
+                "referenceCut": 344,
+                "gapPoints": 9.6,
+                "gapRatio": 2.4,
+                "totalScore": 400,
+                "resultYears": [2026],
+                "safeCapped": false,
+                "safeCapReasons": ["1개년 입결"],
+                "pastGroups": [],
+                "finalQuotaChange": null,
+                "quotaChange": {
+                  "currentQuota": 30,
+                  "pastAverageQuota": 28,
+                  "cutAdjustment": 0
+                },
+                "additionalPass": { "year": 2026, "quota": 28, "count": 25 },
+                "historicalPassRate": 0.576,
+                "latestAdmitCuts": {
+                  "year": 2026,
+                  "cut50": 347.4,
+                  "cut70": 344
+                }
+              },
+              "reason": "이 대학 환산식으로 내 점수는 353.6점(만점 400점)입니다. 기준컷과 비교하면 환산점수 +9.6점으로 적정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 30% 반영으로 1.2점을 더 받고, 국어 15% 반영으로 1.2점을 덜 받습니다. 영어 3등급이라 1등급보다 9.8점 낮게 환산됩니다. 반영비율로 더 받는 점수가 목록에서 가장 커, 같은 성적이 가장 유리하게 환산되는 대학입니다."
             }
           ],
-          "overallComment": "목록 5곳 중 반영비율로 더 받는 점수가 가장 큰 곳은 인천대학교(3.6점)이고, 가장 작은 곳은 상명대학교(1.3점)입니다. 영어 3등급으로 1등급보다 낮게 환산되는 점수는 국립한국교통대학교가 33.3점으로 가장 크고, 인천대학교가 5점으로 가장 작습니다. 이 득실은 기준컷 대비 차이(PART 3)와 함께 보고, 기준컷 대비 차이가 비슷한 대학 사이에서 고르는 기준으로 쓰는 편이 합리적입니다."
+          "overallComment": "목록 5곳 중 반영비율로 더 받는 점수가 가장 큰 곳은 서울여자대학교(1.2점)이고, 가장 작은 곳은 상명대학교(1.3점)입니다. 영어 3등급으로 1등급보다 낮게 환산되는 점수는 국립한국교통대학교가 33.3점으로 가장 크고, 상명대학교가 16점으로 가장 작습니다. 이 득실은 기준컷 대비 차이(PART 3)와 함께 보고, 기준컷 대비 차이가 비슷한 대학 사이에서 고르는 기준으로 쓰는 편이 합리적입니다."
         },
         {
           "sectionId": "jeongsiRecommendation",
@@ -1761,51 +1755,6 @@
                   "comment": "적정 4곳 중 여유가 가장 작은 곳으로 기준컷보다 환산점수 9.6점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 58%라, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다."
                 },
                 {
-                  "university": "건양대학교",
-                  "department": "병원경영학과",
-                  "group": "나",
-                  "quota": 3,
-                  "convertedScore": 883.333,
-                  "referenceCut": 846.67,
-                  "gapRatio": 3.666,
-                  "cutComparison": {
-                    "metric": "convertedScore",
-                    "studentValue": 883.33,
-                    "referenceCut": 846.67,
-                    "previousYear": { "year": 2026, "cut": 846.67 }
-                  },
-                  "chance": "보통",
-                  "judgement": {
-                    "unitKey": "건양대학교(메디컬캠퍼스(대전))-병원경영학과-나",
-                    "tier": "적정",
-                    "chance": "보통",
-                    "metric": "convertedScore",
-                    "studentValue": 883.33,
-                    "referenceCut": 846.67,
-                    "gapPoints": 36.663,
-                    "gapRatio": 3.666,
-                    "totalScore": 1000,
-                    "resultYears": [2026],
-                    "safeCapped": false,
-                    "safeCapReasons": ["1개년 입결"],
-                    "pastGroups": [],
-                    "finalQuotaChange": null,
-                    "quotaChange": {
-                      "currentQuota": 3,
-                      "pastAverageQuota": 3,
-                      "cutAdjustment": 0
-                    },
-                    "additionalPass": null,
-                    "historicalPassRate": 0.712,
-                    "latestAdmitCuts": {
-                      "year": 2026,
-                      "cut50": 846.67,
-                      "cut70": 846.67
-                    }
-                  },
-                  "comment": "나군 적정 원서로 기준컷보다 환산점수 36.7점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 71%라, 지원은 가능하나 결과를 단정하기 어려운 라인입니다."
-                },
-                {
                   "university": "전북대학교",
                   "department": "인문계열",
                   "group": "가",
@@ -1852,7 +1801,52 @@
                       "cut70": 314.2
                     }
                   },
-                  "comment": "91명을 뽑는 모집단위로 기준컷보다 환산점수 14.4점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 65%라, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다."
+                  "comment": "가군 적정 원서로 기준컷보다 환산점수 14.4점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 65%라, 지원은 가능하나 결과를 단정하기 어려운 라인입니다."
+                },
+                {
+                  "university": "한밭대학교",
+                  "department": "회계세무학과",
+                  "group": "나",
+                  "quota": 3,
+                  "convertedScore": 431.667,
+                  "referenceCut": 415.73,
+                  "gapRatio": 3.187,
+                  "cutComparison": {
+                    "metric": "convertedScore",
+                    "studentValue": 431.665,
+                    "referenceCut": 415.73,
+                    "previousYear": { "year": 2026, "cut": 413.33 }
+                  },
+                  "chance": "보통",
+                  "judgement": {
+                    "unitKey": "한밭대학교-회계세무학과-나",
+                    "tier": "적정",
+                    "chance": "보통",
+                    "metric": "convertedScore",
+                    "studentValue": 431.665,
+                    "referenceCut": 415.73,
+                    "gapPoints": 15.937,
+                    "gapRatio": 3.187,
+                    "totalScore": 500,
+                    "resultYears": [2026],
+                    "safeCapped": false,
+                    "safeCapReasons": ["1개년 입결"],
+                    "pastGroups": [],
+                    "finalQuotaChange": null,
+                    "quotaChange": {
+                      "currentQuota": 3,
+                      "pastAverageQuota": 5,
+                      "cutAdjustment": 2.4
+                    },
+                    "additionalPass": { "year": 2026, "quota": 5, "count": 5 },
+                    "historicalPassRate": 0.669,
+                    "latestAdmitCuts": {
+                      "year": 2026,
+                      "cut50": 416.67,
+                      "cut70": 413.33
+                    }
+                  },
+                  "comment": "3명을 뽑는 모집단위로 기준컷보다 환산점수 15.9점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 67%라, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다."
                 },
                 {
                   "university": "인천대학교",
@@ -2099,7 +2093,7 @@
               ]
             },
             {
-              "tier": "스나이핑",
+              "tier": "소신",
               "items": [
                 {
                   "university": "단국대학교",
@@ -2118,7 +2112,7 @@
                   "chance": "매우낮음",
                   "judgement": {
                     "unitKey": "단국대학교-국제경영학과-가",
-                    "tier": "스나이핑",
+                    "tier": "소신",
                     "chance": "매우낮음",
                     "metric": "convertedScore",
                     "studentValue": 857,
@@ -2148,7 +2142,7 @@
                       "cut70": 866
                     }
                   },
-                  "comment": "스나이핑 2곳 중 기준컷에 가장 가까운 곳으로 기준컷보다 환산점수 4.5점 낮고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 10%라, 합격 가능성은 매우 낮지만 원서 한 장을 걸고 예상외 결과를 노려 볼 수 있는 라인입니다."
+                  "comment": "소신 2곳 중 기준컷에 가장 가까운 곳으로 기준컷보다 환산점수 4.5점 낮고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 10%라, 합격 가능성은 매우 낮지만 원서 한 장을 걸고 예상외 결과를 노려 볼 수 있는 라인입니다."
                 },
                 {
                   "university": "광운대학교",
@@ -2167,7 +2161,7 @@
                   "chance": "매우낮음",
                   "judgement": {
                     "unitKey": "광운대학교-경영학부 빅데이터경영전공-나",
-                    "tier": "스나이핑",
+                    "tier": "소신",
                     "chance": "매우낮음",
                     "metric": "convertedScore",
                     "studentValue": 684.44,
@@ -2193,15 +2187,14 @@
                       "cut70": 697.35
                     }
                   },
-                  "comment": "나군 스나이핑 원서로 기준컷보다 환산점수 12.9점 낮고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 6%라, 결과를 기대하기보다 다른 두 원서로 결과를 받쳐 두고 시도해 볼 수 있는 라인입니다."
+                  "comment": "나군 소신 원서로 기준컷보다 환산점수 12.9점 낮고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 6%라, 결과를 기대하기보다 다른 두 원서로 결과를 받쳐 두고 시도해 볼 수 있는 라인입니다."
                 }
               ]
             }
           ],
-          "overallComment": "지원 가능 대학은 상향 4곳, 적정 4곳, 안정 4곳, 스나이핑 2곳으로, 세 구분에 선택지가 고루 있어, 성향에 맞춰 원서를 배분하기 수월한 구성입니다. 안정 성향의 기본 배분은 적정 2장, 안정 1장으로, 결과를 받쳐 줄 원서를 두 장 이상 확보해, 한 곳의 결과에 흔들리지 않는 구조를 만드는 배분입니다. 신중히 볼 곳은 성신여자대학교 경영학과(환산점수 −0.6점), 상명대학교 글로벌경영학과(환산점수 +13.9점) 외 4곳이며, 합격 가능성이 낮게 나온 곳(같은 여유였던 곳이 다음 해 컷을 넘은 비율 40% 미만)이라, 원서로 둘 때는 나머지 두 장으로 결과를 받쳐 두는 편이 합리적입니다.",
+          "overallComment": "지원 가능 대학은 상향 4곳, 적정 4곳, 안정 4곳, 소신 2곳으로, 세 구분에 선택지가 고루 있어, 성향에 맞춰 원서를 배분하기 수월한 구성입니다. 안정 성향의 기본 배분은 적정 2장, 안정 1장으로, 결과를 받쳐 줄 원서를 두 장 이상 두어, 한 곳의 결과에 덜 흔들리는 구조를 만드는 배분입니다. 신중히 볼 곳은 성신여자대학교 경영학과(환산점수 −0.6점), 상명대학교 글로벌경영학과(환산점수 +13.9점) 외 4곳이며, 합격 가능성이 낮게 나온 곳(같은 여유였던 곳이 다음 해 컷을 넘은 비율 40% 미만)이라, 원서로 둘 때는 나머지 두 장으로 결과를 받쳐 두는 편이 합리적입니다.",
           "notices": [
-            "스나이핑은 추천 범위 바로 아래(기준컷 대비 −2.0 ~ −0.4)라 합격 가능성은 매우 낮지만(같은 여유였던 곳이 다음 해 컷을 넘은 비율 4~10%), 원서 한 장을 걸고 예상외 합격을 노려 볼 수 있는 곳입니다. 2027 최종 모집인원(수시 이월 반영)이 아직 발표되지 않아, 희망 학과에 가깝고 기준컷에 가까운 곳부터 골랐습니다. 최종 모집인원이 발표되면 인원이 20% 이상 늘어난 곳을 우선합니다(2025→2026 실측에서 그런 곳은 기준컷보다 1.0 낮은 학생도 23%가 다음 해 컷을 넘었고, 나머지는 4%였습니다).",
-            "희망하신 경영학과 외에 경상계열(경제, 회계, 무역 등)까지 함께 비교했습니다. 희망 지역(전국)의 경영학과만으로는 현재 성적에 맞는 지원처를 고루 찾기 어려워 비교 범위를 넓혔습니다."
+            "희망하신 경영학과 외에 경상계열(경제, 회계, 무역 등)까지 함께 비교했습니다. 희망 학과와 같은 분류만으로는 현재 성적에 맞는 지원처를 고루 찾기 어려워 비교 범위를 넓혔습니다."
           ]
         },
         {
@@ -2222,10 +2215,10 @@
                   "chance": "보통"
                 },
                 {
-                  "unitKey": "건양대학교(메디컬캠퍼스(대전))-병원경영학과-나",
+                  "unitKey": "한밭대학교-회계세무학과-나",
                   "group": "나",
-                  "university": "건양대학교",
-                  "department": "병원경영학과",
+                  "university": "한밭대학교",
+                  "department": "회계세무학과",
                   "tier": "적정",
                   "chance": "보통"
                 },
@@ -2247,7 +2240,7 @@
                 },
                 {
                   "group": "나",
-                  "reason": "합격을 목표로 하는 원서로, 기준컷 대비 환산점수 +36.7점, 같은 여유였던 곳이 다음 해 컷을 넘은 비율은 71%입니다. 건양대학교는 희망 학과명이 들어간 모집단위이며, 추천 목록에서 나군 적정 후보는 이곳뿐입니다."
+                  "reason": "합격을 목표로 하는 원서로, 기준컷 대비 환산점수 +15.9점, 같은 여유였던 곳이 다음 해 컷을 넘은 비율은 67%입니다. 한밭대학교는 희망 학과와 같은 계열의 모집단위이며, 추천 목록에서 나군 적정 후보는 이곳뿐입니다."
                 },
                 {
                   "group": "다",
@@ -2258,39 +2251,6 @@
             },
             {
               "id": "jeongsi-combo-2",
-              "label": "반영방식 우선형",
-              "slots": [
-                {
-                  "unitKey": "국립한국교통대학교-경영학과-가",
-                  "group": "가",
-                  "university": "국립한국교통대학교",
-                  "department": "경영학과",
-                  "tier": "안정",
-                  "chance": "높음"
-                },
-                {
-                  "unitKey": "건양대학교(메디컬캠퍼스(대전))-병원경영학과-나",
-                  "group": "나",
-                  "university": "건양대학교",
-                  "department": "병원경영학과",
-                  "tier": "적정",
-                  "chance": "보통"
-                },
-                {
-                  "unitKey": "인천대학교-경제학과-다",
-                  "group": "다",
-                  "university": "인천대학교",
-                  "department": "경제학과",
-                  "tier": "적정",
-                  "chance": "보통"
-                }
-              ],
-              "recommended": false,
-              "matchesRiskAllocation": true,
-              "strategy": "학생 성적이 유리하게 반영되는 대학을 먼저 고른 조합입니다. 가군 안정 원서(국립한국교통대학교 경영학과)가 다른 조합과 갈리는 칸이라, 이 칸의 선택이 조합의 성격을 정합니다. 환산점수상의 이점을 얻는 대신, 희망 학과와의 일치도는 덜 따지는 선택입니다."
-            },
-            {
-              "id": "jeongsi-combo-3",
               "label": "대학 우선형",
               "slots": [
                 {
@@ -2302,10 +2262,10 @@
                   "chance": "보통"
                 },
                 {
-                  "unitKey": "건양대학교(메디컬캠퍼스(대전))-병원경영학과-나",
+                  "unitKey": "한밭대학교-회계세무학과-나",
                   "group": "나",
-                  "university": "건양대학교",
-                  "department": "병원경영학과",
+                  "university": "한밭대학교",
+                  "department": "회계세무학과",
                   "tier": "적정",
                   "chance": "보통"
                 },
@@ -2321,6 +2281,39 @@
               "recommended": false,
               "matchesRiskAllocation": true,
               "strategy": "대학 선호도가 높은 곳을 먼저 고른 조합입니다. 가군 적정 원서(전북대학교 인문계열)가 다른 조합과 갈리는 칸이라, 이 칸의 선택이 조합의 성격을 정합니다. 선호도 높은 대학에 진학할 가능성을 얻는 대신, 희망 학과와의 일치도나 합격 여유는 덜 따지는 선택입니다."
+            },
+            {
+              "id": "jeongsi-combo-3",
+              "label": "합격 여유형",
+              "slots": [
+                {
+                  "unitKey": "국립한국교통대학교-경영학과-가",
+                  "group": "가",
+                  "university": "국립한국교통대학교",
+                  "department": "경영학과",
+                  "tier": "안정",
+                  "chance": "높음"
+                },
+                {
+                  "unitKey": "한밭대학교-회계세무학과-나",
+                  "group": "나",
+                  "university": "한밭대학교",
+                  "department": "회계세무학과",
+                  "tier": "적정",
+                  "chance": "보통"
+                },
+                {
+                  "unitKey": "인천대학교-경제학과-다",
+                  "group": "다",
+                  "university": "인천대학교",
+                  "department": "경제학과",
+                  "tier": "적정",
+                  "chance": "보통"
+                }
+              ],
+              "recommended": false,
+              "matchesRiskAllocation": true,
+              "strategy": "기준컷 대비 여유가 큰 곳을 먼저 고른 조합입니다. 가군 안정 원서(국립한국교통대학교 경영학과)가 다른 조합과 갈리는 칸이라, 이 칸의 선택이 조합의 성격을 정합니다. 합격 안정성을 얻는 대신, 대학과 학과 선호는 덜 따지는 선택입니다."
             }
           ],
           "recommendationNote": "안정 성향의 기본 배분(적정, 적정, 안정)을 지키는 조합 중 세 원서가 희망 학과에 가장 가깝고, 같으면 안정 원서의 여유가 큰 조합을 대표로 골랐습니다.",
@@ -2436,7 +2429,7 @@
                 "historicalPassRate": 0.338,
                 "latestAdmitCuts": { "year": 2026, "cut50": 866, "cut70": 859 }
               },
-              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 20% 반영으로 3.3점을 더 받고, 국어 35% 반영으로 4.8점을 덜 받습니다. 기준컷보다 환산점수 13.9점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 34%라, 다른 원서와 함께 신중히 검토해야 하는 라인입니다. 나군에서 도전해 볼 만한 원서로, 가군과 다군은 합격 여유가 있는 곳으로 고르는 편이 안전합니다."
+              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 20% 반영으로 3.3점을 더 받고, 국어 35% 반영으로 4.8점을 덜 받습니다. 기준컷보다 환산점수 13.9점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 34%라, 다른 원서와 함께 신중히 검토해야 하는 라인입니다. 나군에서 도전해 볼 만한 원서로, 가군과 다군은 합격 여유가 있는 곳으로 고르는 편이 합리적입니다."
             },
             {
               "university": "국립부경대학교",
@@ -2607,62 +2600,6 @@
               "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 30% 반영으로 1.2점을 더 받고, 국어 15% 반영으로 1.2점을 덜 받습니다. 기준컷보다 환산점수 9.6점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 58%라, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다. 가군 적정 원서로 두되, 같은 군의 다른 후보와 기준컷 여유를 비교해 고르는 편이 좋습니다."
             },
             {
-              "university": "건양대학교",
-              "department": "병원경영학과",
-              "group": "나",
-              "quota": 3,
-              "competitionRate": 6.67,
-              "ratioSummary": "국, 수, 영, 탐 중 상위순 33.3, 33.3, 33.3",
-              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 1과목",
-              "englishHistorySummary": "영어 반영비율 포함(1등급 100, 2등급 98, 3등급 96) / 한국사 가산(1등급 0, 2등급 0, 3등급 0)",
-              "bonusSummary": null,
-              "restrictionSummary": null,
-              "convertedScore": 883.333,
-              "totalScore": 1000,
-              "referenceCut": 846.67,
-              "cutHistory": [
-                { "year": 2025, "cut": null },
-                { "year": 2026, "cut": 846.67 }
-              ],
-              "cutComparison": {
-                "metric": "convertedScore",
-                "studentValue": 883.33,
-                "referenceCut": 846.67,
-                "previousYear": { "year": 2026, "cut": 846.67 }
-              },
-              "tier": "적정",
-              "chance": "보통",
-              "judgement": {
-                "unitKey": "건양대학교(메디컬캠퍼스(대전))-병원경영학과-나",
-                "tier": "적정",
-                "chance": "보통",
-                "metric": "convertedScore",
-                "studentValue": 883.33,
-                "referenceCut": 846.67,
-                "gapPoints": 36.663,
-                "gapRatio": 3.666,
-                "totalScore": 1000,
-                "resultYears": [2026],
-                "safeCapped": false,
-                "safeCapReasons": ["1개년 입결"],
-                "pastGroups": [],
-                "finalQuotaChange": null,
-                "quotaChange": {
-                  "currentQuota": 3,
-                  "pastAverageQuota": 3,
-                  "cutAdjustment": 0
-                },
-                "additionalPass": null,
-                "historicalPassRate": 0.712,
-                "latestAdmitCuts": {
-                  "year": 2026,
-                  "cut50": 846.67,
-                  "cut70": 846.67
-                }
-              },
-              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 33.3% 반영으로 1.7점을 더 받고, 수학 33.3% 반영으로 1.7점을 덜 받습니다. 기준컷보다 환산점수 36.7점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 71%라, 지원은 가능하나 결과를 단정하기 어려운 라인입니다. 나군에 둘 수 있는 원서지만 결과가 당해 경쟁에 따라 갈릴 수 있어, 가군과 다군에 안정 원서를 함께 두는 편이 좋습니다."
-            },
-            {
               "university": "전북대학교",
               "department": "인문계열",
               "group": "가",
@@ -2716,7 +2653,63 @@
                   "cut70": 314.2
                 }
               },
-              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 30% 반영으로 1.7점을 더 받고, 국어 40% 반영으로 1.8점을 덜 받습니다. 기준컷보다 환산점수 14.4점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 65%라, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다. 가군 적정 후보로 검토하되, 원서 접수 직전의 경쟁률 흐름을 함께 보고 확정하는 편이 좋습니다."
+              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 30% 반영으로 1.7점을 더 받고, 국어 40% 반영으로 1.8점을 덜 받습니다. 기준컷보다 환산점수 14.4점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 65%라, 지원은 가능하나 결과를 단정하기 어려운 라인입니다. 가군에 둘 수 있는 원서지만 결과가 당해 경쟁에 따라 갈릴 수 있어, 나군과 다군에 안정 원서를 함께 두는 편이 좋습니다."
+            },
+            {
+              "university": "한밭대학교",
+              "department": "회계세무학과",
+              "group": "나",
+              "quota": 3,
+              "competitionRate": 5.2,
+              "ratioSummary": "국, 수, 영, 탐 중 상위순 33.3, 33.3, 33.3",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 1과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 100, 2등급 95, 3등급 90) / 한국사 가산(1등급 0, 2등급 0, 3등급 0)",
+              "bonusSummary": null,
+              "restrictionSummary": null,
+              "convertedScore": 431.667,
+              "totalScore": 500,
+              "referenceCut": 415.73,
+              "cutHistory": [
+                { "year": 2025, "cut": null },
+                { "year": 2026, "cut": 413.33 }
+              ],
+              "cutComparison": {
+                "metric": "convertedScore",
+                "studentValue": 431.665,
+                "referenceCut": 415.73,
+                "previousYear": { "year": 2026, "cut": 413.33 }
+              },
+              "tier": "적정",
+              "chance": "보통",
+              "judgement": {
+                "unitKey": "한밭대학교-회계세무학과-나",
+                "tier": "적정",
+                "chance": "보통",
+                "metric": "convertedScore",
+                "studentValue": 431.665,
+                "referenceCut": 415.73,
+                "gapPoints": 15.937,
+                "gapRatio": 3.187,
+                "totalScore": 500,
+                "resultYears": [2026],
+                "safeCapped": false,
+                "safeCapReasons": ["1개년 입결"],
+                "pastGroups": [],
+                "finalQuotaChange": null,
+                "quotaChange": {
+                  "currentQuota": 3,
+                  "pastAverageQuota": 5,
+                  "cutAdjustment": 2.4
+                },
+                "additionalPass": { "year": 2026, "quota": 5, "count": 5 },
+                "historicalPassRate": 0.669,
+                "latestAdmitCuts": {
+                  "year": 2026,
+                  "cut50": 416.67,
+                  "cut70": 413.33
+                }
+              },
+              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 33.3% 반영으로 0.8점을 더 받고, 수학 33.3% 반영으로 0.8점을 덜 받습니다. 기준컷보다 환산점수 15.9점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 67%라, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다. 나군 적정 후보로 검토하되, 원서 접수 직전의 경쟁률 흐름을 함께 보고 확정하는 편이 좋습니다."
             },
             {
               "university": "인천대학교",
@@ -2828,7 +2821,7 @@
                   "cut70": 803.33
                 }
               },
-              "reason": "탐구 33.3% 반영에서 1.7점을 더 얻고 수학 33.3% 반영에서 1.7점을 덜 얻는 환산 구조입니다. 기준컷보다 환산점수 40.2점 높고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 75%라, 비교적 높은 확률로 결과를 기대할 수 있는 라인입니다. 가군 안정 원서로 두면, 나군과 다군에서 상향을 시도할 여지가 생깁니다."
+              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 33.3% 반영으로 1.7점을 더 받고, 수학 33.3% 반영으로 1.7점을 덜 받습니다. 기준컷보다 환산점수 40.2점 높고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 75%라, 비교적 높은 확률로 결과를 기대할 수 있는 라인입니다. 가군 안정 원서로 두면, 나군과 다군에서 상향을 시도할 여지가 생깁니다."
             },
             {
               "university": "상명대학교",
@@ -3014,11 +3007,11 @@
                 "referenceCut": 861.5,
                 "previousYear": { "year": 2026, "cut": 866 }
               },
-              "tier": "스나이핑",
+              "tier": "소신",
               "chance": "매우낮음",
               "judgement": {
                 "unitKey": "단국대학교-국제경영학과-가",
-                "tier": "스나이핑",
+                "tier": "소신",
                 "chance": "매우낮음",
                 "metric": "convertedScore",
                 "studentValue": 857,
@@ -3044,7 +3037,7 @@
                   "cut70": 866
                 }
               },
-              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 35% 반영으로 3.5점을 더 받고, 국어 25% 반영으로 2.5점을 덜 받습니다. 기준컷보다 환산점수 4.5점 낮고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 10%라, 합격 가능성은 매우 낮지만 원서 한 장을 걸고 예상외 결과를 노려 볼 수 있는 라인입니다. 가군 스나이핑 원서는 합격을 기대하기보다 예상외 결과를 노리는 시도이므로, 나군과 다군 원서로 결과를 받쳐 두어야 합니다."
+              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 35% 반영으로 3.5점을 더 받고, 국어 25% 반영으로 2.5점을 덜 받습니다. 기준컷보다 환산점수 4.5점 낮고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 10%라, 합격 가능성은 매우 낮지만 원서 한 장을 걸고 예상외 결과를 노려 볼 수 있는 라인입니다. 가군 소신 원서는 합격을 기대하기보다 예상외 결과를 노리는 시도이므로, 나군과 다군 원서로 결과를 받쳐 두어야 합니다."
             },
             {
               "university": "광운대학교",
@@ -3070,11 +3063,11 @@
                 "referenceCut": 697.35,
                 "previousYear": { "year": 2026, "cut": 697.35 }
               },
-              "tier": "스나이핑",
+              "tier": "소신",
               "chance": "매우낮음",
               "judgement": {
                 "unitKey": "광운대학교-경영학부 빅데이터경영전공-나",
-                "tier": "스나이핑",
+                "tier": "소신",
                 "chance": "매우낮음",
                 "metric": "convertedScore",
                 "studentValue": 684.44,
@@ -3100,7 +3093,7 @@
                   "cut70": 697.35
                 }
               },
-              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 20% 반영으로 2.6점을 더 받고, 국어 30% 반영으로 2.8점을 덜 받습니다. 기준컷보다 환산점수 12.9점 낮고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 6%라, 결과를 기대하기보다 다른 두 원서로 결과를 받쳐 두고 시도해 볼 수 있는 라인입니다. 나군에 쓴다면 원서 한 장을 걸고 시도하는 카드이므로, 가군과 다군에는 적정이나 안정 원서를 두는 편이 안전합니다."
+              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 탐구 20% 반영으로 2.6점을 더 받고, 국어 30% 반영으로 2.8점을 덜 받습니다. 기준컷보다 환산점수 12.9점 낮고 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 6%라, 결과를 기대하기보다 다른 두 원서로 결과를 받쳐 두고 시도해 볼 수 있는 라인입니다. 나군에 쓴다면 원서 한 장을 걸고 시도하는 카드이므로, 가군과 다군에는 적정이나 안정 원서를 두는 편이 합리적입니다."
             }
           ]
         }
@@ -3145,7 +3138,7 @@
             "risk": "공격"
           }
         },
-        "createdAt": "2026-11-15T09:19:59.744Z",
+        "createdAt": "2026-11-15T10:42:37.970Z",
         "version": 2
       },
       "sections": [
@@ -3207,123 +3200,6 @@
           "title": "나에게 유리한 대학 분석",
           "items": [
             {
-              "unitKey": "건국대학교-수의예과-가",
-              "university": "건국대학교",
-              "department": "수의예과",
-              "group": "가",
-              "ratioSummary": "국30, 수40, 영10, 탐20",
-              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
-              "advantageScore": 63,
-              "breakdown": {
-                "areas": [
-                  {
-                    "area": "korean",
-                    "ratio": 30,
-                    "earned": 208.5,
-                    "max": 300
-                  },
-                  { "area": "math", "ratio": 40, "earned": 290, "max": 400 },
-                  { "area": "english", "ratio": 10, "earned": 100, "max": 100 },
-                  {
-                    "area": "inquiry",
-                    "ratio": 20,
-                    "earned": 137.25,
-                    "max": 200
-                  }
-                ],
-                "englishVsFirstGrade": 0,
-                "historyAdjustment": 0,
-                "bonusAdjustment": 0,
-                "convertedScore": 735.75,
-                "totalScore": 1000
-              },
-              "judgement": {
-                "unitKey": "건국대학교-수의예과-가",
-                "tier": "적정",
-                "chance": "보통",
-                "metric": "convertedScore",
-                "studentValue": 735.752,
-                "referenceCut": 708.172,
-                "gapPoints": 27.578,
-                "gapRatio": 2.758,
-                "totalScore": 1000,
-                "resultYears": [2026],
-                "safeCapped": false,
-                "safeCapReasons": ["1개년 입결"],
-                "pastGroups": [],
-                "finalQuotaChange": null,
-                "quotaChange": {
-                  "currentQuota": 31,
-                  "pastAverageQuota": 39,
-                  "cutAdjustment": 2.462
-                },
-                "additionalPass": { "year": 2026, "quota": 39, "count": 64 },
-                "historicalPassRate": 0.613,
-                "latestAdmitCuts": {
-                  "year": 2026,
-                  "cut50": 706.82,
-                  "cut70": 705.71
-                }
-              },
-              "reason": "이 대학 환산식으로 내 점수는 735.8점(만점 1000점)입니다. 기준컷과 비교하면 환산점수 +27.6점으로 적정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 40% 반영으로 7.4점을 더 받고, 탐구 20% 반영으로 4점을 덜 받습니다. 영어 1등급도 1등급과 같은 점수로 환산됩니다. 반영비율로 더 받는 점수는 목록 중간 수준이라, 기준컷 대비 차이와 함께 판단할 대학입니다."
-            },
-            {
-              "unitKey": "경희대학교-의예과-나",
-              "university": "경희대학교",
-              "department": "의예과",
-              "group": "나",
-              "ratioSummary": "국25, 수40, 탐35",
-              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
-              "advantageScore": 62,
-              "breakdown": {
-                "areas": [
-                  {
-                    "area": "korean",
-                    "ratio": 25,
-                    "earned": 104.25,
-                    "max": 150
-                  },
-                  { "area": "math", "ratio": 40, "earned": 174, "max": 240 },
-                  {
-                    "area": "inquiry",
-                    "ratio": 35,
-                    "earned": 144.134,
-                    "max": 210
-                  }
-                ],
-                "englishVsFirstGrade": 0,
-                "historyAdjustment": 0,
-                "bonusAdjustment": 8.4,
-                "convertedScore": 430.784,
-                "totalScore": 600
-              },
-              "judgement": {
-                "unitKey": "경희대학교-의예과-나",
-                "tier": "상향",
-                "chance": "낮음",
-                "metric": "percentile",
-                "studentValue": 99.167,
-                "referenceCut": 98,
-                "gapPoints": 1.167,
-                "gapRatio": 1.167,
-                "totalScore": 600,
-                "resultYears": [2026],
-                "safeCapped": false,
-                "safeCapReasons": ["1개년 입결", "백분위 입결"],
-                "pastGroups": [],
-                "finalQuotaChange": null,
-                "quotaChange": {
-                  "currentQuota": 55,
-                  "pastAverageQuota": 55,
-                  "cutAdjustment": 0
-                },
-                "additionalPass": { "year": 2026, "quota": 55, "count": 32 },
-                "historicalPassRate": null,
-                "latestAdmitCuts": { "year": 2026, "cut50": 99, "cut70": 98 }
-              },
-              "reason": "이 대학 환산식으로 내 점수는 430.8점(만점 600점)입니다. 기준컷과 비교하면 평균 백분위 +1.2점으로 상향에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 40% 반영으로 5점을 더 받고, 탐구 35% 반영으로 3.7점을 덜 받습니다. 경희대학교도 영어 1등급도 1등급과 같은 점수로 환산됩니다. 반영비율로 더 받는 점수가 목록에서 가장 커, 같은 성적이 가장 유리하게 환산되는 대학입니다."
-            },
-            {
               "unitKey": "조선대학교-의예과-가",
               "university": "조선대학교",
               "department": "의예과",
@@ -3372,7 +3248,7 @@
                 "historicalPassRate": 0.238,
                 "latestAdmitCuts": { "year": 2026, "cut50": 796, "cut70": 794 }
               },
-              "reason": "이 대학 환산식으로 내 점수는 806.8점(만점 800점)입니다. 기준컷과 비교하면 환산점수 +6.6점으로 상향에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 35% 반영으로 1.5점을 더 받고, 국어 25% 반영으로 0.9점을 덜 받습니다. 조선대학교도 영어 1등급도 1등급과 같은 점수로 환산됩니다. 반영비율로 더 받는 점수가 목록에서 가장 작아, 반영방식보다 기준컷 대비 차이를 보고 고를 대학입니다."
+              "reason": "이 대학 환산식으로 내 점수는 806.8점(만점 800점)입니다. 기준컷과 비교하면 환산점수 +6.6점으로 상향에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 35% 반영으로 1.5점을 더 받고, 국어 25% 반영으로 0.9점을 덜 받습니다. 영어 1등급도 1등급과 같은 점수로 환산됩니다. 반영비율로 더 받는 점수가 목록에서 가장 작아, 반영방식보다 기준컷 대비 차이를 보고 고를 대학입니다."
             },
             {
               "unitKey": "전북대학교-의예과-나",
@@ -3432,7 +3308,7 @@
                   "cut70": 373.02
                 }
               },
-              "reason": "이 대학 환산식으로 내 점수는 387.1점(만점 500점)입니다. 기준컷과 비교하면 환산점수 +13.1점으로 적정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 40% 반영으로 4.1점을 더 받고, 탐구 30% 반영으로 2.8점을 덜 받습니다. 전북대학교도 영어 1등급도 1등급과 같은 점수로 환산됩니다."
+              "reason": "이 대학 환산식으로 내 점수는 387.1점(만점 500점)입니다. 기준컷과 비교하면 환산점수 +13.1점으로 적정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 40% 반영으로 4.1점을 더 받고, 탐구 30% 반영으로 2.8점을 덜 받습니다. 전북대학교도 영어 1등급도 1등급과 같은 점수로 환산됩니다. 반영비율로 더 받는 점수가 목록에서 가장 커, 같은 성적이 가장 유리하게 환산되는 대학입니다."
             },
             {
               "unitKey": "충남대학교-의예과-가",
@@ -3490,10 +3366,117 @@
                   "cut70": 202.7
                 }
               },
-              "reason": "이 대학 환산식으로 내 점수는 214.4점(만점 300점)입니다. 기준컷과 비교하면 환산점수 +10.8점으로 적정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 45% 반영으로 1.4점을 더 받고, 국어 25% 반영으로 1.5점을 덜 받습니다. 충남대학교도 영어 1등급도 1등급과 같은 점수로 환산됩니다."
+              "reason": "이 대학 환산식으로 내 점수는 214.4점(만점 300점)입니다. 기준컷과 비교하면 환산점수 +10.8점으로 적정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 45% 반영으로 1.4점을 더 받고, 국어 25% 반영으로 1.5점을 덜 받습니다. 충남대학교도 영어 1등급도 1등급과 같은 점수로 환산됩니다. 반영비율로 더 받는 점수는 목록 중간 수준이라, 기준컷 대비 차이와 함께 판단할 대학입니다."
+            },
+            {
+              "unitKey": "계명대학교-의예과-다",
+              "university": "계명대학교",
+              "department": "의예과",
+              "group": "다",
+              "ratioSummary": "국25, 수30, 영20, 탐25",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 2과목",
+              "advantageScore": 53,
+              "breakdown": {
+                "areas": [
+                  { "area": "korean", "ratio": 25, "earned": 99, "max": 100 },
+                  { "area": "math", "ratio": 30, "earned": 120, "max": 120 },
+                  { "area": "english", "ratio": 20, "earned": 80, "max": 80 },
+                  { "area": "inquiry", "ratio": 25, "earned": 98.5, "max": 100 }
+                ],
+                "englishVsFirstGrade": 0,
+                "historyAdjustment": 5,
+                "bonusAdjustment": 0,
+                "convertedScore": 402.5,
+                "totalScore": 400
+              },
+              "judgement": {
+                "unitKey": "계명대학교-의예과-다",
+                "tier": "적정",
+                "chance": "보통",
+                "metric": "convertedScore",
+                "studentValue": 402.5,
+                "referenceCut": 394.16,
+                "gapPoints": 8.34,
+                "gapRatio": 2.085,
+                "totalScore": 400,
+                "resultYears": [2026],
+                "safeCapped": false,
+                "safeCapReasons": ["1개년 입결"],
+                "pastGroups": [],
+                "finalQuotaChange": null,
+                "quotaChange": {
+                  "currentQuota": 12,
+                  "pastAverageQuota": 15,
+                  "cutAdjustment": 0.96
+                },
+                "additionalPass": { "year": 2026, "quota": 15, "count": 81 },
+                "historicalPassRate": 0.507,
+                "latestAdmitCuts": {
+                  "year": 2026,
+                  "cut50": 393.4,
+                  "cut70": 393.2
+                }
+              },
+              "reason": "이 대학 환산식으로 내 점수는 402.5점(만점 400점)입니다. 기준컷과 비교하면 환산점수 +8.3점으로 적정에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 30% 반영으로 0.9점을 더 받고, 탐구 25% 반영으로 0.7점을 덜 받습니다. 계명대학교도 영어 1등급도 1등급과 같은 점수로 환산됩니다."
+            },
+            {
+              "unitKey": "영남대학교-의예과-나",
+              "university": "영남대학교",
+              "department": "의예과",
+              "group": "나",
+              "ratioSummary": "국25, 수35, 영10, 탐30",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 2과목",
+              "advantageScore": 53,
+              "breakdown": {
+                "areas": [
+                  { "area": "korean", "ratio": 25, "earned": 198, "max": 200 },
+                  { "area": "math", "ratio": 35, "earned": 280, "max": 280 },
+                  { "area": "english", "ratio": 10, "earned": 80, "max": 80 },
+                  {
+                    "area": "inquiry",
+                    "ratio": 30,
+                    "earned": 236.4,
+                    "max": 240
+                  }
+                ],
+                "englishVsFirstGrade": 0,
+                "historyAdjustment": 10,
+                "bonusAdjustment": 0,
+                "convertedScore": 804.4,
+                "totalScore": 800
+              },
+              "judgement": {
+                "unitKey": "영남대학교-의예과-나",
+                "tier": "상향",
+                "chance": "낮음",
+                "metric": "convertedScore",
+                "studentValue": 804.4,
+                "referenceCut": 793.2,
+                "gapPoints": 11.2,
+                "gapRatio": 1.4,
+                "totalScore": 800,
+                "resultYears": [2026],
+                "safeCapped": false,
+                "safeCapReasons": ["1개년 입결"],
+                "pastGroups": [],
+                "finalQuotaChange": null,
+                "quotaChange": {
+                  "currentQuota": 12,
+                  "pastAverageQuota": 12,
+                  "cutAdjustment": 0
+                },
+                "additionalPass": { "year": 2026, "quota": 12, "count": 8 },
+                "historicalPassRate": 0.344,
+                "latestAdmitCuts": {
+                  "year": 2026,
+                  "cut50": 793.8,
+                  "cut70": 793.2
+                }
+              },
+              "reason": "이 대학 환산식으로 내 점수는 804.4점(만점 800점)입니다. 기준컷과 비교하면 환산점수 +11.2점으로 상향에 해당합니다. 국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 35% 반영으로 2.2점을 더 받고, 탐구 30% 반영으로 1.7점을 덜 받습니다. 영남대학교도 영어 1등급도 1등급과 같은 점수로 환산됩니다."
             }
           ],
-          "overallComment": "목록 5곳 중 반영비율로 더 받는 점수가 가장 큰 곳은 경희대학교(5점)이고, 가장 작은 곳은 조선대학교(1.5점)입니다. 영어 1등급이라 목록 대학 모두에서 영어로 잃는 점수가 없습니다. 이 득실은 기준컷 대비 차이(PART 3)와 함께 보고, 기준컷 대비 차이가 비슷한 대학 사이에서 고르는 기준으로 쓰는 편이 합리적입니다."
+          "overallComment": "목록 5곳 중 반영비율로 더 받는 점수가 가장 큰 곳은 전북대학교(4.1점)이고, 가장 작은 곳은 조선대학교(1.5점)입니다. 영어 1등급이라 목록 대학 모두에서 영어로 잃는 점수가 없습니다. 이 득실은 기준컷 대비 차이(PART 3)와 함께 보고, 기준컷 대비 차이가 비슷한 대학 사이에서 고르는 기준으로 쓰는 편이 합리적입니다."
         },
         {
           "sectionId": "jeongsiRecommendation",
@@ -3548,53 +3531,49 @@
                   "comment": "상향 4곳 중 여유가 가장 큰 곳으로 기준컷보다 환산점수 11.2점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 34%라, 단순 지원만으로는 결과를 기대하기 쉽지 않은 수준입니다."
                 },
                 {
-                  "university": "경희대학교",
+                  "university": "제주대학교",
                   "department": "의예과",
                   "group": "나",
-                  "quota": 55,
-                  "convertedScore": 430.784,
-                  "referenceCut": 98,
-                  "gapRatio": 1.167,
+                  "quota": 8,
+                  "convertedScore": 1003.5,
+                  "referenceCut": 992.137,
+                  "gapRatio": 1.136,
                   "cutComparison": {
-                    "metric": "percentile",
-                    "studentValue": 99.167,
-                    "referenceCut": 98,
-                    "previousYear": { "year": 2026, "cut": 98 }
+                    "metric": "convertedScore",
+                    "studentValue": 1003.497,
+                    "referenceCut": 992.137,
+                    "previousYear": { "year": 2026, "cut": 988.5 }
                   },
                   "chance": "낮음",
                   "judgement": {
-                    "unitKey": "경희대학교-의예과-나",
+                    "unitKey": "제주대학교-의예과-나",
                     "tier": "상향",
                     "chance": "낮음",
-                    "metric": "percentile",
-                    "studentValue": 99.167,
-                    "referenceCut": 98,
-                    "gapPoints": 1.167,
-                    "gapRatio": 1.167,
-                    "totalScore": 600,
-                    "resultYears": [2026],
+                    "metric": "convertedScore",
+                    "studentValue": 1003.497,
+                    "referenceCut": 992.137,
+                    "gapPoints": 11.363,
+                    "gapRatio": 1.136,
+                    "totalScore": 1000,
+                    "resultYears": [2025, 2026],
                     "safeCapped": false,
-                    "safeCapReasons": ["1개년 입결", "백분위 입결"],
+                    "safeCapReasons": [],
                     "pastGroups": [],
                     "finalQuotaChange": null,
                     "quotaChange": {
-                      "currentQuota": 55,
-                      "pastAverageQuota": 55,
-                      "cutAdjustment": 0
+                      "currentQuota": 8,
+                      "pastAverageQuota": 16,
+                      "cutAdjustment": 4.8
                     },
-                    "additionalPass": {
-                      "year": 2026,
-                      "quota": 55,
-                      "count": 32
-                    },
-                    "historicalPassRate": null,
+                    "additionalPass": { "year": 2026, "quota": 11, "count": 1 },
+                    "historicalPassRate": 0.301,
                     "latestAdmitCuts": {
                       "year": 2026,
-                      "cut50": 99,
-                      "cut70": 98
+                      "cut50": 989.5,
+                      "cut70": 988.5
                     }
                   },
-                  "comment": "나군 상향 원서로 기준컷보다 평균 백분위 1.2점 높지만 판정 기준상 상향 구간이라, 다른 원서와 함께 신중히 검토해야 하는 라인입니다."
+                  "comment": "나군 상향 원서로 기준컷보다 환산점수 11.4점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 30%라, 다른 원서와 함께 신중히 검토해야 하는 라인입니다."
                 },
                 {
                   "university": "조선대학교",
@@ -3642,49 +3621,49 @@
                   "comment": "8명을 뽑는 모집단위로 기준컷보다 환산점수 6.6점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 24%라, 단순 지원만으로는 결과를 기대하기 쉽지 않은 수준입니다."
                 },
                 {
-                  "university": "국립순천대학교",
-                  "department": "약학과",
-                  "group": "다",
+                  "university": "을지대학교",
+                  "department": "의예과",
+                  "group": "나",
                   "quota": 7,
-                  "convertedScore": 298.5,
-                  "referenceCut": 294.5,
-                  "gapRatio": 1.333,
+                  "convertedScore": 997.5,
+                  "referenceCut": 991.613,
+                  "gapRatio": 0.589,
                   "cutComparison": {
                     "metric": "convertedScore",
-                    "studentValue": 298.499,
-                    "referenceCut": 294.5,
-                    "previousYear": { "year": 2026, "cut": 294.5 }
+                    "studentValue": 997.503,
+                    "referenceCut": 991.613,
+                    "previousYear": { "year": 2026, "cut": 987 }
                   },
                   "chance": "낮음",
                   "judgement": {
-                    "unitKey": "국립순천대학교-약학과-다",
+                    "unitKey": "을지대학교(대전캠퍼스)-의예과-나",
                     "tier": "상향",
                     "chance": "낮음",
                     "metric": "convertedScore",
-                    "studentValue": 298.499,
-                    "referenceCut": 294.5,
-                    "gapPoints": 4,
-                    "gapRatio": 1.333,
-                    "totalScore": 300,
-                    "resultYears": [2026],
+                    "studentValue": 997.503,
+                    "referenceCut": 991.613,
+                    "gapPoints": 5.888,
+                    "gapRatio": 0.589,
+                    "totalScore": 1000,
+                    "resultYears": [2025, 2026],
                     "safeCapped": false,
-                    "safeCapReasons": ["1개년 입결"],
+                    "safeCapReasons": [],
                     "pastGroups": [],
                     "finalQuotaChange": null,
                     "quotaChange": {
                       "currentQuota": 7,
-                      "pastAverageQuota": 7,
-                      "cutAdjustment": 0
+                      "pastAverageQuota": 12.5,
+                      "cutAdjustment": 4.8
                     },
-                    "additionalPass": { "year": 2026, "quota": 7, "count": 14 },
-                    "historicalPassRate": 0.331,
+                    "additionalPass": { "year": 2026, "quota": 10, "count": 9 },
+                    "historicalPassRate": 0.195,
                     "latestAdmitCuts": {
                       "year": 2026,
-                      "cut50": 295,
-                      "cut70": 294.5
+                      "cut50": 987,
+                      "cut70": 987
                     }
                   },
-                  "comment": "상향 4곳 중 여유가 2번째인 곳으로 기준컷보다 환산점수 4.0점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 33%라, 다른 원서와 함께 신중히 검토해야 하는 라인입니다."
+                  "comment": "컷 흐름이 보합(2025 986.5 → 2026 987)인 곳으로 기준컷보다 환산점수 5.9점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 20%라, 다른 원서와 함께 신중히 검토해야 하는 라인입니다."
                 }
               ]
             },
@@ -3738,7 +3717,7 @@
                       "cut70": 373.02
                     }
                   },
-                  "comment": "나군 적정 원서로 기준컷보다 환산점수 13.1점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 60%라, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다."
+                  "comment": "적정 4곳 중 여유가 2번째인 곳으로 기준컷보다 환산점수 13.1점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 60%라, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다."
                 },
                 {
                   "university": "충남대학교",
@@ -3790,7 +3769,7 @@
                       "cut70": 202.7
                     }
                   },
-                  "comment": "적정 4곳 중 여유가 가장 큰 곳으로 기준컷보다 환산점수 10.8점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 71%라, 지원은 가능하나 결과를 단정하기 어려운 라인입니다."
+                  "comment": "가군 적정 원서로 기준컷보다 환산점수 10.8점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 71%라, 지원은 가능하나 결과를 단정하기 어려운 라인입니다."
                 },
                 {
                   "university": "계명대학교",
@@ -3839,32 +3818,32 @@
                       "cut70": 393.2
                     }
                   },
-                  "comment": "다군 적정 원서로 기준컷보다 환산점수 8.3점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 51%라, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다."
+                  "comment": "12명을 뽑는 모집단위로 기준컷보다 환산점수 8.3점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 51%라, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다."
                 },
                 {
-                  "university": "건국대학교",
-                  "department": "수의예과",
+                  "university": "건양대학교",
+                  "department": "의학과",
                   "group": "가",
-                  "quota": 31,
-                  "convertedScore": 735.75,
-                  "referenceCut": 708.172,
-                  "gapRatio": 2.758,
+                  "quota": 5,
+                  "convertedScore": 993.5,
+                  "referenceCut": 982.5,
+                  "gapRatio": 1.1,
                   "cutComparison": {
                     "metric": "convertedScore",
-                    "studentValue": 735.752,
-                    "referenceCut": 708.172,
-                    "previousYear": { "year": 2026, "cut": 705.71 }
+                    "studentValue": 993.5,
+                    "referenceCut": 982.5,
+                    "previousYear": { "year": 2026, "cut": 982.5 }
                   },
-                  "chance": "보통",
+                  "chance": "낮음",
                   "judgement": {
-                    "unitKey": "건국대학교-수의예과-가",
-                    "tier": "적정",
-                    "chance": "보통",
+                    "unitKey": "건양대학교(메디컬캠퍼스(대전))-의학과-가",
+                    "tier": "상향",
+                    "chance": "낮음",
                     "metric": "convertedScore",
-                    "studentValue": 735.752,
-                    "referenceCut": 708.172,
-                    "gapPoints": 27.578,
-                    "gapRatio": 2.758,
+                    "studentValue": 993.5,
+                    "referenceCut": 982.5,
+                    "gapPoints": 11,
+                    "gapRatio": 1.1,
                     "totalScore": 1000,
                     "resultYears": [2026],
                     "safeCapped": false,
@@ -3872,32 +3851,28 @@
                     "pastGroups": [],
                     "finalQuotaChange": null,
                     "quotaChange": {
-                      "currentQuota": 31,
-                      "pastAverageQuota": 39,
-                      "cutAdjustment": 2.462
+                      "currentQuota": 5,
+                      "pastAverageQuota": 5,
+                      "cutAdjustment": 0
                     },
-                    "additionalPass": {
-                      "year": 2026,
-                      "quota": 39,
-                      "count": 64
-                    },
-                    "historicalPassRate": 0.613,
+                    "additionalPass": null,
+                    "historicalPassRate": 0.298,
                     "latestAdmitCuts": {
                       "year": 2026,
-                      "cut50": 706.82,
-                      "cut70": 705.71
+                      "cut50": 982.5,
+                      "cut70": 982.5
                     }
                   },
-                  "comment": "31명을 뽑는 모집단위로 기준컷보다 환산점수 27.6점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 61%라, 지원은 가능하나 결과를 단정하기 어려운 라인입니다."
+                  "comment": "상향 판정이지만 적정 후보가 부족해 함께 담은 곳으로 기준컷보다 환산점수 11.0점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 30%라, 단순 지원만으로는 결과를 기대하기 쉽지 않은 수준입니다."
                 }
               ]
             },
             { "tier": "안정", "items": [] }
           ],
-          "overallComment": "지원 가능 대학은 상향 4곳, 적정 4곳으로, 안정 선택지가 없어, 그 자리는 다른 구분의 원서로 채워야 하는 구성입니다. 공격 성향의 기본 배분은 상향 2장, 적정 1장으로, 적정 한 장이 상향 두 장의 결과를 받쳐 주는 구조라, 적정 원서를 어느 군에 두느냐가 핵심입니다. 신중히 볼 곳은 영남대학교 의예과(환산점수 +11.2점) 외 3곳이며, 합격 가능성이 낮게 나온 곳(같은 여유였던 곳이 다음 해 컷을 넘은 비율 40% 미만)이라, 원서로 둘 때는 나머지 두 장으로 결과를 받쳐 두는 편이 합리적입니다.",
+          "overallComment": "지원 가능 대학은 상향 4곳, 적정 4곳으로, 안정 선택지가 없어, 그 자리는 다른 구분의 원서로 채워야 하는 구성입니다. 공격 성향의 기본 배분은 상향 2장, 적정 1장으로, 적정 한 장이 상향 두 장의 결과를 받쳐 주는 구조라, 적정 원서를 어느 군에 두느냐가 핵심입니다. 신중히 볼 곳은 영남대학교 의예과(환산점수 +11.2점) 외 4곳이며, 합격 가능성이 낮게 나온 곳(같은 여유였던 곳이 다음 해 컷을 넘은 비율 40% 미만)이라, 원서로 둘 때는 나머지 두 장으로 결과를 받쳐 두는 편이 합리적입니다.",
           "notices": [
             "과거 입결이 다른 모집군에서 나온 곳: 조선대학교 의예과(2027 가군, 2025 입결은 나군 모집 때 값), 충남대학교 의예과(2027 가군, 2025, 2026 입결은 나군 모집 때 값). 군이 바뀌면 함께 지원하는 대학이 달라져 합격선이 달라질 수 있습니다.",
-            "희망하신 의예과 외에 의약계열(치의학, 한의학, 약학 등)까지 함께 비교했습니다. 희망 지역(전국)의 의예과만으로는 현재 성적에 맞는 지원처를 고루 찾기 어려워 비교 범위를 넓혔습니다."
+            "현재 성적에 정확히 '적정'으로 분류되는 곳이 많지 않아, 기준컷과의 격차가 적정에 가장 가까운 곳을 함께 담았습니다. 함께 담은 대학의 실제 구분은 코멘트와 대학별 상세 분석에 적었습니다."
           ]
         },
         {
@@ -3918,9 +3893,9 @@
                   "chance": "낮음"
                 },
                 {
-                  "unitKey": "경희대학교-의예과-나",
+                  "unitKey": "영남대학교-의예과-나",
                   "group": "나",
-                  "university": "경희대학교",
+                  "university": "영남대학교",
                   "department": "의예과",
                   "tier": "상향",
                   "chance": "낮음"
@@ -3939,18 +3914,18 @@
               "slotReasons": [
                 {
                   "group": "가",
-                  "reason": "한 단계 위를 노리는 원서로, 기준컷 대비 환산점수 +6.6점, 같은 여유였던 곳이 다음 해 컷을 넘은 비율은 24%입니다. 조선대학교는 희망 학과와 같은 학과이며, 추천 목록에서 가군 상향 후보는 이곳뿐입니다."
+                  "reason": "한 단계 위를 노리는 원서로, 기준컷 대비 환산점수 +6.6점, 같은 여유였던 곳이 다음 해 컷을 넘은 비율은 24%입니다. 조선대학교는 희망 학과와 같은 학과이며, 추천 목록의 가군 상향 후보 2곳 중 이곳을 골랐습니다."
                 },
                 {
                   "group": "나",
-                  "reason": "한 단계 위를 노리는 원서로, 기준컷 대비 평균 백분위 +1.2점입니다. 경희대학교는 희망 학과와 같은 학과이며, 추천 목록의 나군 상향 후보 2곳 중 이곳을 골랐습니다."
+                  "reason": "한 단계 위를 노리는 원서로, 기준컷 대비 환산점수 +11.2점, 같은 여유였던 곳이 다음 해 컷을 넘은 비율은 34%입니다. 영남대학교는 희망 학과와 같은 학과이며, 추천 목록의 나군 상향 후보 3곳 중 이곳을 골랐습니다."
                 },
                 {
                   "group": "다",
                   "reason": "합격을 목표로 하는 원서로, 기준컷 대비 환산점수 +8.3점, 같은 여유였던 곳이 다음 해 컷을 넘은 비율은 51%입니다. 계명대학교는 희망 학과와 같은 학과이며, 추천 목록에서 다군 적정 후보는 이곳뿐입니다."
                 }
               ],
-              "strategy": "희망 학과나 계열에 가장 가까운 학과를 먼저 고른 조합입니다. 나군 상향 원서(경희대학교 의예과)가 다른 조합과 갈리는 칸이라, 이 칸의 선택이 조합의 성격을 정합니다. 원하는 전공으로 진학할 가능성을 얻는 대신, 대학 선호도나 합격 여유는 덜 따지는 선택입니다."
+              "strategy": "희망 학과나 계열에 가장 가까운 학과를 먼저 고른 조합입니다. 대학 우선형과 비교하면 나군(영남대학교 의예과) 칸만 다르고, 나머지 칸은 같습니다. 원하는 전공으로 진학할 가능성을 얻는 대신, 대학 선호도나 합격 여유는 덜 따지는 선택입니다."
             },
             {
               "id": "jeongsi-combo-2",
@@ -3965,37 +3940,37 @@
                   "chance": "낮음"
                 },
                 {
-                  "unitKey": "전북대학교-의예과-나",
+                  "unitKey": "을지대학교(대전캠퍼스)-의예과-나",
                   "group": "나",
-                  "university": "전북대학교",
+                  "university": "을지대학교",
+                  "department": "의예과",
+                  "tier": "상향",
+                  "chance": "낮음"
+                },
+                {
+                  "unitKey": "계명대학교-의예과-다",
+                  "group": "다",
+                  "university": "계명대학교",
                   "department": "의예과",
                   "tier": "적정",
                   "chance": "보통"
-                },
-                {
-                  "unitKey": "국립순천대학교-약학과-다",
-                  "group": "다",
-                  "university": "국립순천대학교",
-                  "department": "약학과",
-                  "tier": "상향",
-                  "chance": "낮음"
                 }
               ],
               "recommended": false,
               "matchesRiskAllocation": true,
-              "strategy": "대학 선호도가 높은 곳을 먼저 고른 조합입니다. 나군 적정 원서(전북대학교 의예과)가 다른 조합과 갈리는 칸이라, 이 칸의 선택이 조합의 성격을 정합니다. 선호도 높은 대학에 진학할 가능성을 얻는 대신, 희망 학과와의 일치도나 합격 여유는 덜 따지는 선택입니다."
+              "strategy": "대학 선호도가 높은 곳을 먼저 고른 조합입니다. 나군 상향 원서(을지대학교 의예과)가 다른 조합과 갈리는 칸이라, 이 칸의 선택이 조합의 성격을 정합니다. 선호도 높은 대학에 진학할 가능성을 얻는 대신, 희망 학과와의 일치도나 합격 여유는 덜 따지는 선택입니다."
             },
             {
               "id": "jeongsi-combo-3",
               "label": "합격 여유형",
               "slots": [
                 {
-                  "unitKey": "충남대학교-의예과-가",
+                  "unitKey": "건양대학교(메디컬캠퍼스(대전))-의학과-가",
                   "group": "가",
-                  "university": "충남대학교",
-                  "department": "의예과",
-                  "tier": "적정",
-                  "chance": "보통"
+                  "university": "건양대학교",
+                  "department": "의학과",
+                  "tier": "상향",
+                  "chance": "낮음"
                 },
                 {
                   "unitKey": "영남대학교-의예과-나",
@@ -4006,17 +3981,17 @@
                   "chance": "낮음"
                 },
                 {
-                  "unitKey": "국립순천대학교-약학과-다",
+                  "unitKey": "계명대학교-의예과-다",
                   "group": "다",
-                  "university": "국립순천대학교",
-                  "department": "약학과",
-                  "tier": "상향",
-                  "chance": "낮음"
+                  "university": "계명대학교",
+                  "department": "의예과",
+                  "tier": "적정",
+                  "chance": "보통"
                 }
               ],
               "recommended": false,
               "matchesRiskAllocation": true,
-              "strategy": "기준컷 대비 여유가 큰 곳을 먼저 고른 조합입니다. 가군 적정 원서(충남대학교 의예과)가 다른 조합과 갈리는 칸이라, 이 칸의 선택이 조합의 성격을 정합니다. 합격 안정성을 얻는 대신, 대학과 학과 선호는 덜 따지는 선택입니다."
+              "strategy": "기준컷 대비 여유가 큰 곳을 먼저 고른 조합입니다. 가군 상향 원서(건양대학교 의학과)가 다른 조합과 갈리는 칸이라, 이 칸의 선택이 조합의 성격을 정합니다. 합격 안정성을 얻는 대신, 대학과 학과 선호는 덜 따지는 선택입니다."
             }
           ],
           "recommendationNote": "공격 성향의 기본 배분(상향, 상향, 적정)을 지키는 조합 중 세 원서가 희망 학과에 가장 가깝고, 같으면 안정 원서의 여유가 큰 조합을 대표로 골랐습니다.",
@@ -4083,56 +4058,60 @@
               "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 35% 반영으로 2.2점을 더 받고, 탐구 30% 반영으로 1.7점을 덜 받습니다. 기준컷보다 환산점수 11.2점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 34%라, 단순 지원만으로는 결과를 기대하기 쉽지 않은 수준입니다. 나군 상향 원서로 둔다면, 나머지 가군과 다군에는 적정이나 안정 원서를 두어 결과를 받쳐야 합니다."
             },
             {
-              "university": "경희대학교",
+              "university": "제주대학교",
               "department": "의예과",
               "group": "나",
-              "quota": 55,
-              "competitionRate": 4.31,
-              "ratioSummary": "국25, 수40, 탐35",
-              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
-              "englishHistorySummary": "영어 감산(1등급 0, 2등급 0, 3등급 2) / 한국사 감산(1등급 0, 2등급 0, 3등급 0)",
-              "bonusSummary": "과탐 과목별 +4.2점",
-              "restrictionSummary": null,
-              "convertedScore": 430.784,
-              "totalScore": 600,
-              "referenceCut": 98,
+              "quota": 8,
+              "competitionRate": 5.45,
+              "ratioSummary": "국20, 수30, 영20, 탐30",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 2과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 100, 2등급 95, 3등급 90) / 한국사 가산(1등급 10, 2등급 10, 3등급 10)",
+              "bonusSummary": null,
+              "restrictionSummary": "수학 미적분, 기하 중 응시 필수 / 탐구 과탐필수",
+              "convertedScore": 1003.5,
+              "totalScore": 1000,
+              "referenceCut": 992.137,
               "cutHistory": [
-                { "year": 2025, "cut": null },
-                { "year": 2026, "cut": 98 }
+                { "year": 2025, "cut": 985.4 },
+                { "year": 2026, "cut": 988.5 }
               ],
               "cutComparison": {
-                "metric": "percentile",
-                "studentValue": 99.167,
-                "referenceCut": 98,
-                "previousYear": { "year": 2026, "cut": 98 }
+                "metric": "convertedScore",
+                "studentValue": 1003.497,
+                "referenceCut": 992.137,
+                "previousYear": { "year": 2026, "cut": 988.5 }
               },
               "tier": "상향",
               "chance": "낮음",
               "judgement": {
-                "unitKey": "경희대학교-의예과-나",
+                "unitKey": "제주대학교-의예과-나",
                 "tier": "상향",
                 "chance": "낮음",
-                "metric": "percentile",
-                "studentValue": 99.167,
-                "referenceCut": 98,
-                "gapPoints": 1.167,
-                "gapRatio": 1.167,
-                "totalScore": 600,
-                "resultYears": [2026],
+                "metric": "convertedScore",
+                "studentValue": 1003.497,
+                "referenceCut": 992.137,
+                "gapPoints": 11.363,
+                "gapRatio": 1.136,
+                "totalScore": 1000,
+                "resultYears": [2025, 2026],
                 "safeCapped": false,
-                "safeCapReasons": ["1개년 입결", "백분위 입결"],
+                "safeCapReasons": [],
                 "pastGroups": [],
                 "finalQuotaChange": null,
                 "quotaChange": {
-                  "currentQuota": 55,
-                  "pastAverageQuota": 55,
-                  "cutAdjustment": 0
+                  "currentQuota": 8,
+                  "pastAverageQuota": 16,
+                  "cutAdjustment": 4.8
                 },
-                "additionalPass": { "year": 2026, "quota": 55, "count": 32 },
-                "historicalPassRate": null,
-                "latestAdmitCuts": { "year": 2026, "cut50": 99, "cut70": 98 }
+                "additionalPass": { "year": 2026, "quota": 11, "count": 1 },
+                "historicalPassRate": 0.301,
+                "latestAdmitCuts": {
+                  "year": 2026,
+                  "cut50": 989.5,
+                  "cut70": 988.5
+                }
               },
-              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 40% 반영으로 5점을 더 받고, 탐구 35% 반영으로 3.7점을 덜 받습니다. 기준컷보다 평균 백분위 1.2점 높지만 판정 기준상 상향 구간이라, 다른 원서와 함께 신중히 검토해야 하는 라인입니다. 나군에서 도전해 볼 만한 원서로, 가군과 다군은 합격 여유가 있는 곳으로 고르는 편이 안전합니다."
+              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 30% 반영으로 2.4점을 더 받고, 탐구 30% 반영으로 2.1점을 덜 받습니다. 기준컷보다 환산점수 11.4점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 30%라, 다른 원서와 함께 신중히 검토해야 하는 라인입니다. 나군에서 도전해 볼 만한 원서로, 가군과 다군은 합격 여유가 있는 곳으로 고르는 편이 합리적입니다."
             },
             {
               "university": "조선대학교",
@@ -4187,60 +4166,56 @@
               "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 35% 반영으로 1.5점을 더 받고, 국어 25% 반영으로 0.9점을 덜 받습니다. 기준컷보다 환산점수 6.6점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 24%라, 단순 지원만으로는 결과를 기대하기 쉽지 않은 수준입니다. 가군 상향 카드로 검토할 수 있으며, 이때 나군과 다군 중 한 곳 이상은 안정 원서로 두는 편이 합리적입니다."
             },
             {
-              "university": "국립순천대학교",
-              "department": "약학과",
-              "group": "다",
+              "university": "을지대학교",
+              "department": "의예과",
+              "group": "나",
               "quota": 7,
-              "competitionRate": 34.71,
-              "ratioSummary": "수33.3, 탐33.3 / 국, 영 중 상위순 33.3",
+              "competitionRate": 5.5,
+              "ratioSummary": "국30, 수30, 영10, 탐30",
               "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 2과목",
-              "englishHistorySummary": "영어 반영비율 포함(1등급 100, 2등급 95, 3등급 90) / 한국사 가산(1등급 0, 2등급 0, 3등급 0)",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 100, 2등급 95, 3등급 90) / 한국사 가산(1등급 5, 2등급 5, 3등급 5)",
               "bonusSummary": null,
-              "restrictionSummary": "수학 미적분, 기하 중 응시 필수 / 탐구 과탐필수",
-              "convertedScore": 298.5,
-              "totalScore": 300,
-              "referenceCut": 294.5,
+              "restrictionSummary": "탐구 과탐필수",
+              "convertedScore": 997.5,
+              "totalScore": 1000,
+              "referenceCut": 991.613,
               "cutHistory": [
-                { "year": 2025, "cut": null },
-                { "year": 2026, "cut": 294.5 }
+                { "year": 2025, "cut": 986.5 },
+                { "year": 2026, "cut": 987 }
               ],
               "cutComparison": {
                 "metric": "convertedScore",
-                "studentValue": 298.499,
-                "referenceCut": 294.5,
-                "previousYear": { "year": 2026, "cut": 294.5 }
+                "studentValue": 997.503,
+                "referenceCut": 991.613,
+                "previousYear": { "year": 2026, "cut": 987 }
               },
               "tier": "상향",
               "chance": "낮음",
               "judgement": {
-                "unitKey": "국립순천대학교-약학과-다",
+                "unitKey": "을지대학교(대전캠퍼스)-의예과-나",
                 "tier": "상향",
                 "chance": "낮음",
                 "metric": "convertedScore",
-                "studentValue": 298.499,
-                "referenceCut": 294.5,
-                "gapPoints": 4,
-                "gapRatio": 1.333,
-                "totalScore": 300,
-                "resultYears": [2026],
+                "studentValue": 997.503,
+                "referenceCut": 991.613,
+                "gapPoints": 5.888,
+                "gapRatio": 0.589,
+                "totalScore": 1000,
+                "resultYears": [2025, 2026],
                 "safeCapped": false,
-                "safeCapReasons": ["1개년 입결"],
+                "safeCapReasons": [],
                 "pastGroups": [],
                 "finalQuotaChange": null,
                 "quotaChange": {
                   "currentQuota": 7,
-                  "pastAverageQuota": 7,
-                  "cutAdjustment": 0
+                  "pastAverageQuota": 12.5,
+                  "cutAdjustment": 4.8
                 },
-                "additionalPass": { "year": 2026, "quota": 7, "count": 14 },
-                "historicalPassRate": 0.331,
-                "latestAdmitCuts": {
-                  "year": 2026,
-                  "cut50": 295,
-                  "cut70": 294.5
-                }
+                "additionalPass": { "year": 2026, "quota": 10, "count": 9 },
+                "historicalPassRate": 0.195,
+                "latestAdmitCuts": { "year": 2026, "cut50": 987, "cut70": 987 }
               },
-              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 33.3% 반영으로 0.8점을 더 받고, 탐구 33.3% 반영으로 0.8점을 덜 받습니다. 기준컷보다 환산점수 4.0점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 33%라, 다른 원서와 함께 신중히 검토해야 하는 라인입니다. 다군 상향 원서로 둔다면, 나머지 가군과 나군에는 적정이나 안정 원서를 두어 결과를 받쳐야 합니다."
+              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 30% 반영으로 2.5점을 더 받고, 탐구 30% 반영으로 2점을 덜 받습니다. 기준컷보다 환산점수 5.9점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 20%라, 다른 원서와 함께 신중히 검토해야 하는 라인입니다. 나군 상향 카드로 검토할 수 있으며, 이때 가군과 다군 중 한 곳 이상은 안정 원서로 두는 편이 합리적입니다."
             },
             {
               "university": "전북대학교",
@@ -4414,40 +4389,40 @@
               "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 30% 반영으로 0.9점을 더 받고, 탐구 25% 반영으로 0.7점을 덜 받습니다. 기준컷보다 환산점수 8.3점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 51%라, 당해 지원자 분포에 따라 결과가 갈리는 구조입니다. 다군 적정 후보로 검토하되, 원서 접수 직전의 경쟁률 흐름을 함께 보고 확정하는 편이 좋습니다."
             },
             {
-              "university": "건국대학교",
-              "department": "수의예과",
+              "university": "건양대학교",
+              "department": "의학과",
               "group": "가",
-              "quota": 31,
-              "competitionRate": 5.36,
-              "ratioSummary": "국30, 수40, 영10, 탐20",
-              "metricSummary": "국어 표준점수 / 수학 표준점수 / 탐구 변환표준점수 2과목",
-              "englishHistorySummary": "영어 반영비율 포함(1등급 200, 2등급 197, 3등급 194) / 한국사 감산(1등급 0, 2등급 0, 3등급 0)",
+              "quota": 5,
+              "competitionRate": 11,
+              "ratioSummary": "국20, 수30, 영20, 탐30",
+              "metricSummary": "국어 백분위 / 수학 백분위 / 탐구 백분위 2과목",
+              "englishHistorySummary": "영어 반영비율 포함(1등급 100, 2등급 98, 3등급 96) / 한국사 가산(1등급 0, 2등급 0, 3등급 0)",
               "bonusSummary": null,
-              "restrictionSummary": null,
-              "convertedScore": 735.75,
+              "restrictionSummary": "탐구 과탐필수",
+              "convertedScore": 993.5,
               "totalScore": 1000,
-              "referenceCut": 708.172,
+              "referenceCut": 982.5,
               "cutHistory": [
                 { "year": 2025, "cut": null },
-                { "year": 2026, "cut": 705.71 }
+                { "year": 2026, "cut": 982.5 }
               ],
               "cutComparison": {
                 "metric": "convertedScore",
-                "studentValue": 735.752,
-                "referenceCut": 708.172,
-                "previousYear": { "year": 2026, "cut": 705.71 }
+                "studentValue": 993.5,
+                "referenceCut": 982.5,
+                "previousYear": { "year": 2026, "cut": 982.5 }
               },
-              "tier": "적정",
-              "chance": "보통",
+              "tier": "상향",
+              "chance": "낮음",
               "judgement": {
-                "unitKey": "건국대학교-수의예과-가",
-                "tier": "적정",
-                "chance": "보통",
+                "unitKey": "건양대학교(메디컬캠퍼스(대전))-의학과-가",
+                "tier": "상향",
+                "chance": "낮음",
                 "metric": "convertedScore",
-                "studentValue": 735.752,
-                "referenceCut": 708.172,
-                "gapPoints": 27.578,
-                "gapRatio": 2.758,
+                "studentValue": 993.5,
+                "referenceCut": 982.5,
+                "gapPoints": 11,
+                "gapRatio": 1.1,
                 "totalScore": 1000,
                 "resultYears": [2026],
                 "safeCapped": false,
@@ -4455,19 +4430,19 @@
                 "pastGroups": [],
                 "finalQuotaChange": null,
                 "quotaChange": {
-                  "currentQuota": 31,
-                  "pastAverageQuota": 39,
-                  "cutAdjustment": 2.462
+                  "currentQuota": 5,
+                  "pastAverageQuota": 5,
+                  "cutAdjustment": 0
                 },
-                "additionalPass": { "year": 2026, "quota": 39, "count": 64 },
-                "historicalPassRate": 0.613,
+                "additionalPass": null,
+                "historicalPassRate": 0.298,
                 "latestAdmitCuts": {
                   "year": 2026,
-                  "cut50": 706.82,
-                  "cut70": 705.71
+                  "cut50": 982.5,
+                  "cut70": 982.5
                 }
               },
-              "reason": "국어, 수학, 탐구 성적이 모두 같았을 때와 견주면 수학 40% 반영으로 7.4점을 더 받고, 탐구 20% 반영으로 4점을 덜 받습니다. 기준컷보다 환산점수 27.6점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 61%라, 지원은 가능하나 결과를 단정하기 어려운 라인입니다. 가군 적정 원서로 두되, 같은 군의 다른 후보와 기준컷 여유를 비교해 고르는 편이 좋습니다."
+              "reason": "수학 30% 반영에서 2.4점을 더 얻고 탐구 30% 반영에서 2.1점을 덜 얻는 환산 구조입니다. 기준컷보다 환산점수 11.0점 높지만 같은 여유였던 곳이 다음 해 컷을 넘은 비율이 30%라, 단순 지원만으로는 결과를 기대하기 쉽지 않은 수준입니다. 가군에서 도전해 볼 만한 원서로, 나군과 다군은 합격 여유가 있는 곳으로 고르는 편이 합리적입니다."
             }
           ]
         }

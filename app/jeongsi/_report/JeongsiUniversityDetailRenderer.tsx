@@ -234,7 +234,7 @@ const JudgementBlock = ({ judgement }: { judgement: UnitJudgement }) => {
           ] as [string, string],
         ]
       : []),
-    ...(judgement.tier === "스나이핑"
+    ...(judgement.tier === "소신"
       ? [
           [
             "최종 모집인원",

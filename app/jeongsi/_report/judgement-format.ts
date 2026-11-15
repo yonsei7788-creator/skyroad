@@ -106,7 +106,7 @@ export const JUDGEMENT_CRITERIA: {
     chance: `높음 (실측 ${percentOf(GAP_BAND_PASS_RATES.안정하한)}~${percentOf(GAP_BAND_PASS_RATES.안정상한)})`,
   },
   {
-    tier: "스나이핑",
+    tier: "소신",
     range: `${formatBound(SNIPING_MIN_GAP)} 이상 ${formatBound(GAP_BANDS.상향하한)} 미만`,
     chance: `매우낮음 (실측 ${percentOf(SNIPING_PASS_RATE_MIN)}~${percentOf(GAP_BAND_PASS_RATES.상향하한)})`,
   },
