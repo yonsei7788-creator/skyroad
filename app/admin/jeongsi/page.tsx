@@ -170,14 +170,6 @@ const JeongsiReportsPage = () => {
         ),
       },
       {
-        key: "risk",
-        header: "성향",
-        width: "110px",
-        render: (row) => (
-          <span className={listStyles.cellText}>{row.risk}</span>
-        ),
-      },
-      {
         key: "status",
         header: "상태",
         width: "120px",
