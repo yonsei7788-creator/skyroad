@@ -2,7 +2,10 @@ import {
   MAX_COMBINATIONS,
   MIN_COMBINATIONS,
   RISK_TIER_MATRIX,
+  SNIPING_COMBINATION_LABEL,
+  addSnipingCombination,
   buildCombinations,
+  markRecommendedCombination,
 } from "../combination";
 import { makePlan } from "./fixtures";
 
@@ -20,25 +23,34 @@ interface CandidateSpec {
   group: AdmissionGroup;
   tier: AdmissionTier;
   chance?: PassChance;
-  /** σ 배수. 안정 슬롯 제약(+2.5σ) 검증용 */
-  gapSigmaMultiple?: number;
+  /** 판정 격차. 미지정이면 구분의 대표값 */
+  gap?: number;
+  /** 격차는 안정 구간이지만 입결이 1개년이라 적정으로 낮춘 곳 */
+  safeCapped?: boolean;
   fit?: number;
   advantageScore?: number;
   prestige?: number;
   eligible?: boolean;
 }
 
-const SIGMA = 0.8;
+const GAP_BY_TIER: Record<AdmissionTier, number> = {
+  안정: 2.5,
+  적정: 0.5,
+  상향: -1,
+  스나이핑: -1.5,
+  지원불가: -3,
+};
 
 const CHANCE_BY_TIER: Record<AdmissionTier, PassChance> = {
   안정: "높음",
   적정: "보통",
   상향: "낮음",
+  스나이핑: "매우낮음",
   지원불가: "매우낮음",
 };
 
 const makeCandidate = (spec: CandidateSpec): CombinationCandidate => {
-  const multiple = spec.gapSigmaMultiple ?? (spec.tier === "안정" ? 3 : 0);
+  const gap = spec.gap ?? GAP_BY_TIER[spec.tier];
   const evaluation: PlanEvaluation = {
     plan: makePlan({
       id: `${spec.university}-컴퓨터공학과-${spec.group}`,
@@ -52,14 +64,22 @@ const makeCandidate = (spec: CandidateSpec): CombinationCandidate => {
     referenceCut: { metric: "convertedScore", value: 880 },
     competitionRate: 4.2,
     cutHistory: [
-      { year: 2024, cut: 870 },
       { year: 2025, cut: 875 },
       { year: 2026, cut: 880 },
     ],
-    gapRatio: 2,
-    percentileGap: multiple * SIGMA,
+    gapRatio: gap,
+    gapPoints: gap * 10,
+    resultYears: spec.safeCapped ? [2026] : [2025, 2026],
+    quotaChange: null,
+    additionalPass: null,
+    safeCapped: spec.safeCapped ?? false,
+    safeCapReasons: spec.safeCapped ? ["1개년 입결"] : [],
+    pastGroups: [],
+    finalQuotaChange: null,
+    withinRecommendRange: true,
+    historicalPassRate: null,
+    latestAdmitCuts: null,
     sensitivity: 1.001,
-    cutVolatility: SIGMA,
     tier: spec.tier,
     chance: spec.chance ?? CHANCE_BY_TIER[spec.tier],
     advantageScore: spec.advantageScore ?? 50,
@@ -68,8 +88,7 @@ const makeCandidate = (spec: CandidateSpec): CombinationCandidate => {
   return {
     evaluation,
     fit: spec.fit ?? 3,
-    percentileGap: multiple * SIGMA,
-    sigma: SIGMA,
+    gapRatio: gap,
     prestige: spec.prestige ?? 90,
   };
 };
@@ -166,15 +185,16 @@ describe("buildCombinations - 성향별 tier 구성", () => {
 });
 
 describe("buildCombinations - 슬롯 제약", () => {
-  it("안정 성향의 안정 슬롯은 +2.5σ 미만을 쓰지 않는다", () => {
+  it("안정 칸이 비면 1개년이라 적정으로 낮춘 곳을 쓰고 구분은 적정 그대로 둔다", () => {
     // Arrange
-    // 안정 후보가 +2.0σ(일반 안정 기준은 통과) 뿐인 상황
     const candidates = [
       makeCandidate({
-        university: "안정대학교",
+        university: "단년대학교",
         group: "다",
-        tier: "안정",
-        gapSigmaMultiple: 2.0,
+        tier: "적정",
+        chance: "높음",
+        gap: 2.4,
+        safeCapped: true,
       }),
       makeCandidate({ university: "적정가대학교", group: "가", tier: "적정" }),
       makeCandidate({ university: "적정나대학교", group: "나", tier: "적정" }),
@@ -184,31 +204,27 @@ describe("buildCombinations - 슬롯 제약", () => {
     const [first] = buildCombinations(candidates, "안정");
 
     // Assert
-    expect(first.다).toBeNull();
-    expect(tiersOf(first)).toEqual(["적정", "적정"]);
+    expect(first.다?.plan.university).toBe("단년대학교");
+    expect(first.다?.tier).toBe("적정");
   });
 
-  it("안정 슬롯 기준을 넘는 후보는 배정된다", () => {
+  it("1개년으로 낮춘 곳이 아니면 적정을 안정으로 바꾸지 않고, 남은 군은 적정 그대로 채운다", () => {
     // Arrange
     const candidates = [
-      makeCandidate({
-        university: "안정대학교",
-        group: "다",
-        tier: "안정",
-        gapSigmaMultiple: 2.6,
-      }),
       makeCandidate({ university: "적정가대학교", group: "가", tier: "적정" }),
       makeCandidate({ university: "적정나대학교", group: "나", tier: "적정" }),
+      makeCandidate({ university: "적정다대학교", group: "다", tier: "적정" }),
     ];
 
     // Act
     const [first] = buildCombinations(candidates, "안정");
 
     // Assert
-    expect(first.다?.plan.university).toBe("안정대학교");
+    expect(tiersOf(first)).toEqual(["적정", "적정", "적정"]);
+    expect(first.label).toBe("희망 우선형");
   });
 
-  it("공격 성향의 적정 슬롯은 합격 가능성 높음만 쓴다", () => {
+  it("공격 성향의 적정 칸은 적정 원서로 채운다 (가능성은 구분을 따라 늘 보통)", () => {
     // Arrange
     const candidates = [
       makeCandidate({ university: "상향가대학교", group: "가", tier: "상향" }),
@@ -225,8 +241,7 @@ describe("buildCombinations - 슬롯 제약", () => {
     const [first] = buildCombinations(candidates, "공격");
 
     // Assert
-    // 적정 하단(보통)은 안전판이 못 되므로 비운다
-    expect(first.다).toBeNull();
+    expect(first.다?.plan.university).toBe("적정다대학교");
   });
 
   it("균형 성향의 상향 슬롯은 매우낮음을 쓰지 않는다", () => {
@@ -283,6 +298,62 @@ describe("buildCombinations - 폴백", () => {
     expect(combinations).toEqual([]);
   });
 
+  it("성향 배분으로 못 채운 군도 목록에 그 군 후보가 있으면 채운다", () => {
+    // Arrange
+    // 균형(상향·적정·안정)인데 안정 후보가 없다. 나군에는 적정 후보가 있다
+    const candidates = [
+      makeCandidate({ university: "상향가대학교", group: "가", tier: "상향" }),
+      makeCandidate({ university: "적정다대학교", group: "다", tier: "적정" }),
+      makeCandidate({
+        university: "적정나대학교",
+        group: "나",
+        tier: "적정",
+        fit: 1,
+      }),
+    ];
+
+    // Act
+    const [first] = buildCombinations(candidates, "균형");
+
+    // Assert
+    expect(first.나?.plan.university).toBe("적정나대학교");
+    expect(first.나?.tier).toBe("적정");
+    expect(first.label).toBe("희망 우선형");
+  });
+
+  it("빈 군에 넣을 후보는 못 채운 구분에 가까운 쪽, 같으면 안전한 쪽을 고른다", () => {
+    // Arrange
+    // 공격(상향·상향·적정)에 상향이 하나뿐. 나군에 적정·안정이 있으면 적정을 넣는다
+    const candidates = [
+      makeCandidate({ university: "상향가대학교", group: "가", tier: "상향" }),
+      makeCandidate({ university: "적정다대학교", group: "다", tier: "적정" }),
+      makeCandidate({ university: "안정나대학교", group: "나", tier: "안정" }),
+      makeCandidate({ university: "적정나대학교", group: "나", tier: "적정" }),
+    ];
+
+    // Act
+    const [first] = buildCombinations(candidates, "공격");
+
+    // Assert
+    expect(first.나?.plan.university).toBe("적정나대학교");
+  });
+
+  it("그 군 후보가 모두 이미 쓴 대학이면 비우고 남은 후보 없음으로 표시한다", () => {
+    // Arrange
+    const candidates = [
+      makeCandidate({ university: "같은대학교", group: "가", tier: "상향" }),
+      makeCandidate({ university: "적정다대학교", group: "다", tier: "적정" }),
+      makeCandidate({ university: "같은대학교", group: "나", tier: "적정" }),
+    ];
+
+    // Act
+    const [first] = buildCombinations(candidates, "균형");
+
+    // Assert
+    expect(first.나).toBeNull();
+    expect(first.label).toBe("희망 우선형 (나군 남은 후보 없음)");
+  });
+
   it("채우지 못한 군을 라벨에 명시한다", () => {
     // Arrange
     const candidates = [
@@ -309,7 +380,7 @@ describe("buildCombinations - 조합 구성", () => {
         university: "중복대학교",
         group: "다",
         tier: "안정",
-        gapSigmaMultiple: 3,
+        gap: 2.5,
       }),
       makeCandidate({
         university: "다른대학교",
@@ -322,7 +393,7 @@ describe("buildCombinations - 조합 구성", () => {
         group: "다",
         tier: "안정",
         fit: 2,
-        gapSigmaMultiple: 3,
+        gap: 2.5,
       }),
     ];
 
@@ -393,7 +464,7 @@ describe("buildCombinations - 조합 구성", () => {
             university: `${group}군대학교${serial}`,
             group,
             tier: (["상향", "적정", "안정"] as AdmissionTier[])[index],
-            gapSigmaMultiple: index === 2 ? 3 : 0,
+            gap: [-1, 0.5, 2.5][index],
           })
         )
     );
@@ -425,5 +496,122 @@ describe("buildCombinations - 조합 구성", () => {
 
     // Assert
     expect(combinations).toEqual([]);
+  });
+});
+
+describe("addSnipingCombination - 공격 성향 스나이핑 조합", () => {
+  const baseCombination = (): GroupCombination => ({
+    id: "jeongsi-combo-1",
+    label: "희망 우선형",
+    가: makeCandidate({ university: "가상향대", group: "가", tier: "상향" })
+      .evaluation,
+    나: makeCandidate({ university: "나상향대", group: "나", tier: "상향" })
+      .evaluation,
+    다: makeCandidate({ university: "다적정대", group: "다", tier: "적정" })
+      .evaluation,
+    recommended: true,
+    matchesRiskAllocation: true,
+  });
+  const snipe = (group: AdmissionGroup, university: string): PlanEvaluation =>
+    makeCandidate({ university, group, tier: "스나이핑", gap: -1.2 })
+      .evaluation;
+
+  it("공격 성향이면 대표 조합의 상향 칸 하나를 스나이핑으로 바꾼 조합을 붙인다", () => {
+    // Arrange
+    const combinations = [baseCombination()];
+
+    // Act
+    const result = addSnipingCombination(
+      combinations,
+      [snipe("가", "스나이핑대")],
+      "공격"
+    );
+
+    // Assert
+    expect(result).toHaveLength(2);
+    const [, added] = result;
+    expect(added.label).toBe(SNIPING_COMBINATION_LABEL);
+    expect(added.가?.plan.university).toBe("스나이핑대");
+    expect(added.나?.plan.university).toBe("나상향대");
+    expect(added.recommended).toBe(false);
+    expect(result[0].recommended).toBe(true);
+  });
+
+  it("적정(안전판) 칸은 바꾸지 않는다", () => {
+    // Arrange
+    const combinations = [baseCombination()];
+
+    // Act
+    const result = addSnipingCombination(
+      combinations,
+      [snipe("다", "스나이핑대")],
+      "공격"
+    );
+
+    // Assert
+    expect(result).toHaveLength(1);
+  });
+
+  it("공격 성향이 아니면 조합을 더하지 않는다", () => {
+    // Arrange
+    const combinations = [baseCombination()];
+
+    // Act
+    const result = addSnipingCombination(
+      combinations,
+      [snipe("가", "스나이핑대")],
+      "균형"
+    );
+
+    // Assert
+    expect(result).toHaveLength(1);
+  });
+});
+
+describe("markRecommendedCombination - 배분을 지키는 조합이 없을 때", () => {
+  const combinationOf = (
+    id: string,
+    specs: CandidateSpec[]
+  ): GroupCombination => {
+    const combination: GroupCombination = {
+      id,
+      label: id,
+      가: null,
+      나: null,
+      다: null,
+      recommended: false,
+      matchesRiskAllocation: false,
+    };
+    for (const spec of specs) {
+      combination[spec.group] = makeCandidate(spec).evaluation;
+    }
+    return combination;
+  };
+
+  it("구분 구성이 성향 배분에 가까운 조합을 희망 일치보다 먼저 고른다", () => {
+    // Arrange
+    // 안정 성향(적정·적정·안정). 희망 일치는 상향 3장이 더 높다
+    const reachSpecs: CandidateSpec[] = [
+      { university: "상향가대학교", group: "가", tier: "상향", fit: 3 },
+      { university: "상향나대학교", group: "나", tier: "상향", fit: 3 },
+      { university: "상향다대학교", group: "다", tier: "상향", fit: 3 },
+    ];
+    const moderateSpecs: CandidateSpec[] = [
+      { university: "적정가대학교", group: "가", tier: "적정", fit: 1 },
+      { university: "적정나대학교", group: "나", tier: "적정", fit: 1 },
+      { university: "적정다대학교", group: "다", tier: "적정", fit: 1 },
+    ];
+    const combinations = [
+      combinationOf("reach", reachSpecs),
+      combinationOf("moderate", moderateSpecs),
+    ];
+    const candidates = [...reachSpecs, ...moderateSpecs].map(makeCandidate);
+
+    // Act
+    const marked = markRecommendedCombination(combinations, candidates, "안정");
+
+    // Assert
+    expect(marked.find((item) => item.recommended)?.id).toBe("moderate");
+    expect(marked.every((item) => !item.matchesRiskAllocation)).toBe(true);
   });
 });

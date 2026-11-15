@@ -325,10 +325,11 @@ export const NEUTRAL_GROUP: FieldGroupName = "계열무관";
  * 서로 확대를 허용하는 인접 그룹 (양방향).
  * 보건과 화학·생명은 컷 분포와 지망 패턴이 겹친다.
  */
-const COMPANION_GROUPS: Partial<Record<FieldGroupName, FieldGroupName[]>> = {
-  보건: ["화학·생명"],
-  "화학·생명": ["보건"],
-};
+/**
+ * 함께 넓혀 볼 그룹. 보건↔화학·생명 짝은 없앴다 — 보건은 면허 트랙이라 같은
+ * 그룹 안에서만 넓힌다(specs/014 G1: 간호 희망 학생에게 생명과학이 안정 원서로 나갔다).
+ */
+const COMPANION_GROUPS: Partial<Record<FieldGroupName, FieldGroupName[]>> = {};
 
 /** 대계열 */
 export type BroadField = "인문" | "자연";
@@ -364,7 +365,13 @@ for (const [group, categories] of Object.entries(FIELD_GROUPS)) {
 const NEUTRAL_HUMANITIES_NAME =
   /인문|사회|경상|경영|휴먼서비스|문화콘텐츠|복지|외국어/;
 const NEUTRAL_SCIENCE_NAME =
-  /자연|(?<!전)공학|공과|IT|AI|첨단|과학기술|프런티어|생명|농업|산림|보건/;
+  /자연|(?<!전)공학|공과|IT|AI|첨단|과학기술|프런티어|생명|농업|산림/;
+/**
+ * 보건 트랙(면허 연계)이 이름에 드러난 계열무관 모집단위. 보건 희망 학생에게만 맞다.
+ * 이전에는 "보건"을 자연 신호로 보아 전자공학 희망 학생에게 "상지대 보건계열"이
+ * 추천됐다(2026-11-14 실측).
+ */
+const NEUTRAL_HEALTH_NAME = /보건|간호|의료/;
 const NEUTRAL_ARTS_NAME = /예체능/;
 
 /**
@@ -376,6 +383,9 @@ export const matchesNeutralPlanField = (
   department: string,
   targetCategory: string
 ): boolean => {
+  if (NEUTRAL_HEALTH_NAME.test(department)) {
+    return findFieldGroup(targetCategory) === "보건";
+  }
   const targetField = toBroadField(targetCategory);
   if (!targetField) {
     return true;
@@ -446,6 +456,11 @@ export const expandableCategories = (targetCategory: string): Set<string> => {
   // 의약은 그룹 안에서만 본다. 계열무관(자유전공)조차 섞지 않는다.
   if (group === MEDICAL_GROUP) {
     return new Set(FIELD_GROUPS[MEDICAL_GROUP]);
+  }
+  // 면허 연계 트랙(보건·교육)도 같은 그룹 안에서만 넓힌다. 간호 희망 학생에게
+  // 생명과학·자유전공을 안정 원서로 추천하면 지원 판단에 쓸 수 없다(specs/014 G1 실측).
+  if (LICENSE_TRACK_GROUPS.includes(group)) {
+    return new Set(FIELD_GROUPS[group]);
   }
 
   const companions = COMPANION_GROUPS[group] ?? [];

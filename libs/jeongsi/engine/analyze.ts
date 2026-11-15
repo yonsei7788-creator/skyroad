@@ -14,8 +14,13 @@ import {
 
 import { loadAdmissionPlans, loadAdmissionResultIndex } from "../data";
 import { calcAdvantageScore } from "./advantage";
-import { TIER_THRESHOLDS, classifyPlan } from "./classify";
-import { buildCombinations } from "./combination";
+import { FINAL_QUOTA_SIGNAL_RATIO, GAP_BANDS, classifyPlan } from "./classify";
+import {
+  addSnipingCombination,
+  buildCombinations,
+  markRecommendedCombination,
+} from "./combination";
+import { buildCutMovement, passRateFor } from "./cut-movement";
 import {
   calcEnglishLoss,
   calcPercentileByBasis,
@@ -31,6 +36,7 @@ import { diagnoseScore } from "./diagnose";
 import {
   checkEligibility,
   excludeOtherTrackSplits,
+  excludeWomensUniversities,
   resolveApplicantTrack,
 } from "./eligibility";
 import {
@@ -42,8 +48,9 @@ import {
 } from "./field-groups";
 
 import type { AdvantageContext } from "./advantage";
-import type { CombinationCandidate } from "./combination";
+import type { CombinationCandidate, RecommendableTier } from "./combination";
 import type {
+  AdmissionGroup,
   AdmissionTier,
   JeongsiAdmissionPlan,
   JeongsiAnalysis,
@@ -59,8 +66,14 @@ import type {
 /** PART 2 에 노출할 유리한 대학 수 */
 export const ADVANTAGE_LIST_SIZE = 5;
 
-/** PART 3 구분별 추천 수 */
-export const RECOMMENDATION_SIZE = 3;
+/**
+ * PART 3 구분별 추천 수 (상한). PART 3 목록이 리포트 전체의 대학 목록이다 —
+ * 원서 조합(PART 4)·상세(PART 5)·유리한 대학(PART 2)은 이 목록 안에서만 고른다.
+ */
+export const RECOMMENDATION_SIZE = 4;
+
+/** 스나이핑 후보 수 (specs/014 마지막 피드백) */
+export const SNIPING_SIZE = 2;
 
 /** 희망 학과 적합도 점수 */
 export const FIT_EXACT = 3;
@@ -69,22 +82,16 @@ export const FIT_PARTIAL = 1;
 export const FIT_NONE = 0;
 
 /**
- * 근접 대체 거리 상한 (σ 배수).
- * 적정 밴드 경계(−0.4σ / +2.0σ)에서 이보다 멀면 끌어오지 않는다.
- * 상한이 없으면 +7.9σ 짜리까지 "가장 가까운 항목"으로 들어온다
- * (specs/013 §6.1-d 실측).
+ * 근접 대체 거리 상한 (판정 격차 단위).
+ * 적정 구간 경계에서 이보다 멀면 적정 칸을 채우려고 끌어오지 않는다.
  */
-export const SUBSTITUTE_MAX_DISTANCE_SIGMA = 1.5;
+export const SUBSTITUTE_MAX_DISTANCE = 1.0;
 
 /** 계열그룹 확대 항목의 적합도. 희망 학과 일치 항목보다 항상 낮다 */
 export const FIT_FIELD_GROUP = 0.5;
 
 /** 추천 대상 분류 (지원불가 제외) */
-const RECOMMENDATION_TIERS: Exclude<AdmissionTier, "지원불가">[] = [
-  "상향",
-  "적정",
-  "안정",
-];
+const RECOMMENDATION_TIERS: RecommendableTier[] = ["상향", "적정", "안정"];
 
 const REGION_ALLOWANCE: Record<PreferredRegion, UniversityRegion[]> = {
   서울: ["서울"],
@@ -193,10 +200,8 @@ const average = (values: number[]): number | null =>
  * 대학 서열 대리지표 계산기. 입결이 없는 모집단위의 컷은 추정하지 않는다
  * (원문 데이터에 없는 값은 만들지 않는다 — 사용자 결정 2026-11-04).
  *
- * 모든 컷을 "학생 백분위 기준 절대 위치"로 환산해 비교한다.
- *   impliedCutPercentile = 학생 국·수·탐 평균 백분위 − percentileGap
- * 환산점수 입결은 대학마다 척도가 달라 값을 직접 비교할 수 없으므로,
- * 학생을 기준점으로 삼아 백분위 축에 올린다.
+ * 이 학생 기준 판정 격차의 부호를 뒤집은 값(−gapRatio)을 쓴다. 기준컷이 높은
+ * 대학일수록 격차가 작으므로 값이 커진다. "대학 우선형" 조합의 정렬에만 쓴다.
  */
 const createCutEstimator = (
   score: SuneungScore,
@@ -205,53 +210,37 @@ const createCutEstimator = (
 ): {
   universityPrestige: (university: string) => number;
 } => {
-  const simpleAveragePercentile = calcSimpleAveragePercentile(score);
-  const impliedCache = new Map<string, number | null>();
+  const gapCache = new Map<string, number | null>();
 
-  /** 해당 모집단위 입결이 가리키는 컷의 백분위 위치 */
-  const impliedCutPercentile = (plan: JeongsiAdmissionPlan): number | null => {
-    const cached = impliedCache.get(plan.id);
+  const gapOf = (plan: JeongsiAdmissionPlan): number | null => {
+    const cached = gapCache.get(plan.id);
     if (cached !== undefined) {
       return cached;
     }
-
     const results = findResults(resultIndex, plan);
-    let implied: number | null = null;
-
+    let gap: number | null = null;
     if (results.length > 0) {
       const conversion = convertScore(score, plan.formula);
-      const classification = classifyPlan({
+      gap = classifyPlan({
         convertedScore: conversion.convertedScore,
         convertedScoreExcludingBonus: roundTo3(
           conversion.convertedScore - conversion.bonusAdjustment
         ),
         percentileByBasis: calcPercentileByBasis(score, plan),
-        sensitivity: calcSensitivity(score, plan.formula),
         totalScore: plan.formula.totalScore,
         quota: plan.quota,
         results,
-      });
-      implied =
-        classification.percentileGap === null
-          ? null
-          : simpleAveragePercentile - classification.percentileGap;
+        group: plan.group,
+        finalQuota: plan.finalQuota,
+      }).gapRatio;
     }
-
-    impliedCache.set(plan.id, implied);
-    return implied;
+    gapCache.set(plan.id, gap);
+    return gap;
   };
 
-  const impliedCutsOf = (candidates: JeongsiAdmissionPlan[]): number[] =>
-    candidates
-      .map(impliedCutPercentile)
-      .filter((value): value is number => value !== null);
-
   /**
-   * 대학 서열 대리지표 — 그 대학 전체 모집단위 컷의 중앙값.
-   *
-   * 모집단위 단위 컷은 학과 인기도가 섞여 있어(지방대 의예과가 서울
-   * 상위권 인문보다 높다) 서열 지표로 쓸 수 없다. 대학 단위로
-   * 집계해야 서울대 > 연·고대 > 서성한 순서가 나온다(specs/013 §4.5).
+   * 대학 서열 대리지표 — 그 대학 전체 모집단위 격차의 중앙값(부호 반전).
+   * 모집단위 단위 값은 학과 인기도가 섞여 서열 지표로 쓸 수 없어 대학 단위로 모은다.
    */
   const prestigeCache = new Map<string, number>();
   const universityPrestige = (university: string): number => {
@@ -259,11 +248,12 @@ const createCutEstimator = (
     if (cached !== undefined) {
       return cached;
     }
-
-    const cuts = impliedCutsOf(
-      plans.filter((plan) => plan.university === university)
-    );
-    const value = median(cuts) ?? 0;
+    const gaps = plans
+      .filter((plan) => plan.university === university)
+      .map(gapOf)
+      .filter((value): value is number => value !== null);
+    const middle = median(gaps);
+    const value = middle === null ? 0 : -middle;
     prestigeCache.set(university, value);
     return value;
   };
@@ -289,11 +279,18 @@ export interface PlanClassification {
   competitionRate: number | null;
   cutHistory: PlanEvaluation["cutHistory"];
   gapRatio: number | null;
+  gapPoints: number | null;
+  resultYears: PlanEvaluation["resultYears"];
+  quotaChange: PlanEvaluation["quotaChange"];
+  additionalPass: PlanEvaluation["additionalPass"];
+  safeCapped: boolean;
+  safeCapReasons: PlanEvaluation["safeCapReasons"];
+  pastGroups: PlanEvaluation["pastGroups"];
+  finalQuotaChange: PlanEvaluation["finalQuotaChange"];
+  withinRecommendRange: boolean;
+  latestAdmitCuts: PlanEvaluation["latestAdmitCuts"];
   tier: AdmissionTier;
   chance: PlanEvaluation["chance"];
-  /** 분류 근거. 타입 계약에 아직 필드가 없어 엔진 내부로만 전달 */
-  percentileGap: number | null;
-  sigma: number;
   sensitivity: number | null;
 }
 
@@ -324,10 +321,11 @@ export const classifyForStudent = (
       conversion.convertedScore - conversion.bonusAdjustment
     ),
     percentileByBasis: calcPercentileByBasis(score, plan),
-    sensitivity,
     totalScore: plan.formula.totalScore,
     quota: plan.quota,
     results,
+    group: plan.group,
+    finalQuota: plan.finalQuota,
   });
 
   return {
@@ -341,10 +339,18 @@ export const classifyForStudent = (
     competitionRate: classification.competitionRate,
     cutHistory: classification.cutHistory,
     gapRatio: classification.gapRatio,
+    gapPoints: classification.gapPoints,
+    resultYears: classification.resultYears,
+    quotaChange: classification.quotaChange,
+    additionalPass: classification.additionalPass,
+    safeCapped: classification.safeCapped,
+    safeCapReasons: classification.safeCapReasons,
+    pastGroups: classification.pastGroups,
+    finalQuotaChange: classification.finalQuotaChange,
+    withinRecommendRange: classification.withinRecommendRange,
+    latestAdmitCuts: classification.latestAdmitCuts,
     tier: eligibility.eligible ? classification.tier : "지원불가",
     chance: eligibility.eligible ? classification.chance : "매우낮음",
-    percentileGap: classification.percentileGap,
-    sigma: classification.sigma,
     sensitivity,
   };
 };
@@ -365,11 +371,18 @@ export const toEvaluation = (
   competitionRate: classification.competitionRate,
   cutHistory: classification.cutHistory,
   gapRatio: classification.gapRatio,
-  percentileGap: classification.percentileGap,
+  gapPoints: classification.gapPoints,
+  resultYears: classification.resultYears,
+  quotaChange: classification.quotaChange,
+  additionalPass: classification.additionalPass,
+  safeCapped: classification.safeCapped,
+  safeCapReasons: classification.safeCapReasons,
+  pastGroups: classification.pastGroups,
+  finalQuotaChange: classification.finalQuotaChange,
+  withinRecommendRange: classification.withinRecommendRange,
   sensitivity: classification.sensitivity,
-  // 격차 산출이 불가능했으면 σ 를 분류에 쓰지 않았으므로 null 이다.
-  cutVolatility:
-    classification.percentileGap === null ? null : classification.sigma,
+  historicalPassRate: null,
+  latestAdmitCuts: classification.latestAdmitCuts,
   tier: classification.tier,
   chance: classification.chance,
   // 지원 자체가 불가능한 대학의 반영방식 유리도는 의미가 없다(§5.4).
@@ -378,11 +391,9 @@ export const toEvaluation = (
     : 0,
 });
 
-/** 모집단위 하나에 대한 평가 결과 + 분류 근거 */
+/** 모집단위 하나에 대한 평가 결과 */
 export interface PlanAssessment {
   evaluation: PlanEvaluation;
-  percentileGap: number | null;
-  sigma: number;
   sensitivity: number | null;
 }
 
@@ -405,8 +416,6 @@ export const assessPlan = (
 
   return {
     evaluation: toEvaluation(score, classification, context),
-    percentileGap: classification.percentileGap,
-    sigma: classification.sigma,
     sensitivity: classification.sensitivity,
   };
 };
@@ -426,7 +435,12 @@ export const countFilledBands = (
   };
 
   for (const classification of classifications) {
-    if (!classification.eligible || classification.tier === "지원불가") {
+    if (
+      !classification.eligible ||
+      classification.tier === "지원불가" ||
+      classification.tier === "스나이핑" ||
+      !classification.withinRecommendRange
+    ) {
       continue;
     }
     universitiesByTier[classification.tier].add(classification.plan.university);
@@ -504,12 +518,25 @@ export const collectCandidatePlans = (
   const crossesMedicalBoundary = (plan: JeongsiAdmissionPlan): boolean =>
     isMedicalCategory(plan.category) !== targetIsMedical;
 
+  /**
+   * 사범계열(○○교육과)은 교원 자격 트랙이라 희망 학과가 교육 계열일 때만 넓혀
+   * 담는다. 학과 분류가 "영어교육과 → 영어영문학"처럼 교과로 묶여 있어,
+   * 국어국문 희망 학생에게 영어교육과가 추천됐다(specs/014 G1 실측).
+   */
+  const targetIsEducation = findFieldGroup(targetCategory) === "교육";
+  const crossesTeacherTrack = (plan: JeongsiAdmissionPlan): boolean =>
+    !targetIsEducation && /교육과$|교육학과$|교육학부$/.test(plan.department);
+
   const addAll = (
     predicate: (plan: JeongsiAdmissionPlan) => boolean,
     fit: number
   ): void => {
     for (const plan of inRegion) {
-      if (taken.has(plan.id) || crossesMedicalBoundary(plan)) {
+      if (
+        taken.has(plan.id) ||
+        crossesMedicalBoundary(plan) ||
+        crossesTeacherTrack(plan)
+      ) {
         continue;
       }
       if (!predicate(plan)) {
@@ -555,126 +582,145 @@ export const countTargetCandidates = (
     (matched) => matched.length > 0
   ).plans.length;
 
-/** 기준컷이 있는 모집단위인지 (70%컷이 없으면 referenceCut 이 null) */
-const hasPublishedCut = (candidate: CombinationCandidate): number =>
-  candidate.evaluation.referenceCut === null ? 0 : 1;
+/** 적정 구간에서 가장 먼저 고르는 격차 — 적정 구간의 가운데 (실측 통과율 약 60%) */
+const MODERATE_TARGET_GAP = (GAP_BANDS.적정하한 + GAP_BANDS.안정하한) / 2;
 
 /**
- * 추천 정렬. 희망 적합도가 같으면 기준컷이 있는 모집단위를 먼저 둔다
- * (specs/013 §6.1-f). 기준컷이 없으면 리포트의 "전년도 컷" 항목이 빈다.
+ * 구분 안에서 고르는 순서 (specs/014 C1). 희망 적합도가 먼저이고,
+ * 같으면 학생 성적을 최대한 살리는 쪽을 먼저 둔다.
+ *   - 상향: 적정에 가장 가까운 곳(격차가 큰 쪽)
+ *   - 적정: 합격 가능성이 높음으로 바뀌는 지점(+0.5)에 가까운 곳
+ *   - 안정: 안정 하한에 가장 가까운 곳(격차가 작은 쪽). 여유가 큰 곳부터 고르면
+ *     합격선이 크게 낮은 대학이 추천됐다(피드백: 강서대).
  */
-const byRecommendation = (
-  a: CombinationCandidate,
-  b: CombinationCandidate
-): number =>
-  b.fit - a.fit ||
-  hasPublishedCut(b) - hasPublishedCut(a) ||
-  (b.percentileGap ?? -Infinity) - (a.percentileGap ?? -Infinity) ||
-  b.evaluation.advantageScore - a.evaluation.advantageScore ||
-  a.evaluation.plan.id.localeCompare(b.evaluation.plan.id);
+const closenessInTier = (tier: RecommendableTier, gap: number): number => {
+  if (tier === "상향") return -gap;
+  if (tier === "적정") return Math.abs(gap - MODERATE_TARGET_GAP);
+  return gap;
+};
 
-/**
- * 적정 밴드까지의 거리 (백분위점).
- * 상향은 적정 하한(−0.4σ)까지, 안정은 적정 상한(+2.0σ)까지의 거리.
- */
+const byRecommendationIn =
+  (tier: RecommendableTier) =>
+  (a: CombinationCandidate, b: CombinationCandidate): number =>
+    b.fit - a.fit ||
+    closenessInTier(tier, a.gapRatio ?? Infinity) -
+      closenessInTier(tier, b.gapRatio ?? Infinity) ||
+    b.evaluation.advantageScore - a.evaluation.advantageScore ||
+    a.evaluation.plan.id.localeCompare(b.evaluation.plan.id);
+
+/** 적정 구간까지의 거리 (판정 격차 단위) */
 const distanceToModerateBand = (candidate: CombinationCandidate): number => {
-  const gap = candidate.percentileGap;
+  const gap = candidate.gapRatio;
   if (gap === null) {
     return Infinity;
   }
-
-  const lower = TIER_THRESHOLDS.적정 * candidate.sigma;
-  const upper = TIER_THRESHOLDS.안정 * candidate.sigma;
-  if (gap < lower) {
-    return lower - gap;
+  if (gap < GAP_BANDS.적정하한) {
+    return GAP_BANDS.적정하한 - gap;
   }
-  if (gap > upper) {
-    return gap - upper;
+  if (gap >= GAP_BANDS.안정하한) {
+    return gap - GAP_BANDS.안정하한;
   }
   return 0;
 };
 
+const GROUP_ORDER: AdmissionGroup[] = ["가", "나", "다"];
+
 /**
- * 분류별 추천 — 같은 대학은 한 분류에 한 번만.
+ * 한 구분에서 RECOMMENDATION_SIZE 곳을 고른다. 같은 대학은 한 번만.
  *
- * 적정이 비면 가장 가까운 항목(상향 상단 / 안정 하단)을 끌어와
- * 채운다. 세 성향 조합 모두 적정 슬롯을 포함하므로 비울 수 없다.
- * 상향·안정이 비는 것은 정보이므로 빈 배열 그대로 둔다
- * (억지로 채우면 지원불가를 상향으로 승격시키게 된다 — §6.1-d).
+ * 원서 조합이 이 목록 안에서만 만들어지므로 군이 한쪽에 몰리면 조합을
+ * 짤 수 없다. 그래서 먼저 군마다 가장 앞선 한 곳씩 담고(가·나·다), 남은
+ * 자리를 순서대로 채운다.
+ */
+const pickWithinTier = (
+  sorted: CombinationCandidate[],
+  excludedPlanIds: Set<string>
+): CombinationCandidate[] => {
+  const picked: CombinationCandidate[] = [];
+  const seenUniversities = new Set<string>();
+  const take = (candidate: CombinationCandidate): void => {
+    picked.push(candidate);
+    seenUniversities.add(candidate.evaluation.plan.university);
+  };
+  const available = (candidate: CombinationCandidate): boolean =>
+    !excludedPlanIds.has(candidate.evaluation.plan.id) &&
+    !seenUniversities.has(candidate.evaluation.plan.university) &&
+    !picked.includes(candidate);
+
+  for (const group of GROUP_ORDER) {
+    if (picked.length >= RECOMMENDATION_SIZE) break;
+    const first = sorted.find(
+      (candidate) =>
+        candidate.evaluation.plan.group === group && available(candidate)
+    );
+    if (first) take(first);
+  }
+  for (const candidate of sorted) {
+    if (picked.length >= RECOMMENDATION_SIZE) break;
+    if (available(candidate)) take(candidate);
+  }
+
+  // 화면 순서는 고른 순서가 아니라 구분 안 정렬 순서를 따른다
+  return sorted.filter((candidate) => picked.includes(candidate));
+};
+
+/**
+ * 분류별 추천. 추천 범위(상향하한 ~ 안정상한) 밖은 넣지 않는다.
+ *
+ * 적정이 비면 적정 구간 가까이(SUBSTITUTE_MAX_DISTANCE 이내)에 있는 상향·안정
+ * 항목으로 채운다. 그 항목의 구분은 바꾸지 않는다 — 리포트는 실제 구분을 함께
+ * 보인다. 상향·안정이 비는 것은 정보이므로 그대로 둔다.
  */
 const pickRecommendations = (
   candidates: CombinationCandidate[]
 ): {
-  picked: Record<"상향" | "적정" | "안정", PlanEvaluation[]>;
+  picked: Record<RecommendableTier, CombinationCandidate[]>;
   substituted: boolean;
 } => {
-  const picked: Record<"상향" | "적정" | "안정", PlanEvaluation[]> = {
+  const inRange = candidates.filter(
+    (candidate) => candidate.evaluation.withinRecommendRange
+  );
+  const picked: Record<RecommendableTier, CombinationCandidate[]> = {
     상향: [],
     적정: [],
     안정: [],
   };
-  const sorted = [...candidates].sort(byRecommendation);
 
   for (const tier of RECOMMENDATION_TIERS) {
-    const seenUniversities = new Set<string>();
-
-    for (const candidate of sorted) {
-      if (picked[tier].length >= RECOMMENDATION_SIZE) {
-        break;
-      }
-      if (candidate.evaluation.tier !== tier) {
-        continue;
-      }
-      if (seenUniversities.has(candidate.evaluation.plan.university)) {
-        continue;
-      }
-
-      seenUniversities.add(candidate.evaluation.plan.university);
-      picked[tier].push(candidate.evaluation);
-    }
+    const sorted = inRange
+      .filter((candidate) => candidate.evaluation.tier === tier)
+      .sort(byRecommendationIn(tier));
+    picked[tier] = pickWithinTier(sorted, new Set());
   }
 
-  // 적정은 세 성향 조합이 모두 요구하므로 3개까지 보충한다.
-  // 단, 밴드 경계에서 1.5σ 넘게 떨어진 항목은 끌어오지 않고 비운다.
   let substituted = false;
   if (picked.적정.length < RECOMMENDATION_SIZE) {
-    // 🔴 세 밴드 전체에서 이미 선정된 모집단위를 제외한다.
-    // 적정 버킷만 보면 안정 버킷에 담긴 모집단위를 근접 대체로 다시
-    // 끌어와, 학생이 PART 3 에서 같은 학과를 두 섹션에서 본다.
-    // 대학이 아니라 plan.id 단위로 제외한다 — 같은 대학의 다른
-    // 학과·군이 서로 다른 밴드에 오는 것은 정상이다.
+    // 세 구분 전체에서 이미 고른 모집단위는 다시 담지 않는다(같은 학과가 두 칸에 나오지 않게)
     const alreadyPicked = new Set(
       RECOMMENDATION_TIERS.flatMap((tier) =>
-        picked[tier].map((evaluation) => evaluation.plan.id)
+        picked[tier].map((candidate) => candidate.evaluation.plan.id)
       )
     );
-    const seenUniversities = new Set(
-      picked.적정.map((evaluation) => evaluation.plan.university)
-    );
-    const nearest = [...candidates]
+    const nearest = inRange
       .filter(
         (candidate) =>
-          candidate.percentileGap !== null &&
+          candidate.gapRatio !== null &&
           !alreadyPicked.has(candidate.evaluation.plan.id) &&
-          distanceToModerateBand(candidate) <=
-            SUBSTITUTE_MAX_DISTANCE_SIGMA * candidate.sigma
+          distanceToModerateBand(candidate) <= SUBSTITUTE_MAX_DISTANCE
       )
       .sort(
         (a, b) =>
           distanceToModerateBand(a) - distanceToModerateBand(b) ||
-          byRecommendation(a, b)
+          byRecommendationIn("적정")(a, b)
       );
-
+    const seenUniversities = new Set(
+      picked.적정.map((candidate) => candidate.evaluation.plan.university)
+    );
     for (const candidate of nearest) {
-      if (picked.적정.length >= RECOMMENDATION_SIZE) {
-        break;
-      }
-      if (seenUniversities.has(candidate.evaluation.plan.university)) {
-        continue;
-      }
-
+      if (picked.적정.length >= RECOMMENDATION_SIZE) break;
+      if (seenUniversities.has(candidate.evaluation.plan.university)) continue;
       seenUniversities.add(candidate.evaluation.plan.university);
-      picked.적정.push(candidate.evaluation);
+      picked.적정.push(candidate);
       substituted = true;
     }
   }
@@ -682,20 +728,68 @@ const pickRecommendations = (
   return { picked, substituted };
 };
 
+/** 2027 최종 모집인원이 신호만큼 늘었는지 (최종 인원이 아직 없으면 false) */
+const hasFinalQuotaSignal = (evaluation: PlanEvaluation): boolean =>
+  evaluation.finalQuotaChange !== null &&
+  evaluation.finalQuotaChange.ratio >= FINAL_QUOTA_SIGNAL_RATIO;
+
 /**
- * PART 2 유리한 대학 — 대학당 한 곳, 희망 범위 우선.
- * 같은 대학은 학과가 달라도 반영식이 같아 유리도가 같으므로, 묶지
- * 않으면 상위 5개가 한 대학의 모집단위로 채워진다.
+ * 스나이핑 후보 — 추천 범위 바로 아래(SNIPING_MIN_GAP ~ 상향하한) 모집단위.
+ *
+ * 실측 통과율을 함께 보여야 하므로 환산점수 입결로 판정했고 모집군이 바뀌지
+ * 않은(실측 표본과 같은 조건) 곳만 쓴다. 순서: 최종 모집인원 증가 신호가 있는 곳 →
+ * 희망 학과 적합도 → 기준컷에 가까운 곳. 대학당 한 곳, 추천 목록과 겹치지 않게.
+ *
+ * 희망 학과와 같은 분류(FIT_SAME_CATEGORY 이상)만 고른다. 수시 추천의 유사학과도
+ * 같은 분류까지다. 계열그룹으로 넓히면 약학 희망 학생에게 의예·치의예가
+ * 스나이핑으로 나왔다(사용자 결정 2026-11-15). 같은 분류에 없으면 비운다.
+ */
+const pickSniping = (
+  candidates: CombinationCandidate[],
+  recommended: CombinationCandidate[]
+): CombinationCandidate[] => {
+  const recommendedIds = new Set(
+    recommended.map((candidate) => candidate.evaluation.plan.id)
+  );
+  const sorted = candidates
+    .filter(
+      ({ evaluation }) =>
+        evaluation.eligible &&
+        evaluation.tier === "스나이핑" &&
+        evaluation.referenceCut?.metric === "convertedScore" &&
+        evaluation.pastGroups.length === 0 &&
+        evaluation.historicalPassRate !== null &&
+        !recommendedIds.has(evaluation.plan.id)
+    )
+    .filter((candidate) => candidate.fit >= FIT_SAME_CATEGORY)
+    .sort(
+      (a, b) =>
+        Number(hasFinalQuotaSignal(b.evaluation)) -
+          Number(hasFinalQuotaSignal(a.evaluation)) ||
+        b.fit - a.fit ||
+        (b.gapRatio ?? -Infinity) - (a.gapRatio ?? -Infinity) ||
+        a.evaluation.plan.id.localeCompare(b.evaluation.plan.id)
+    );
+  const picked: CombinationCandidate[] = [];
+  const seenUniversities = new Set<string>();
+  for (const candidate of sorted) {
+    if (picked.length >= SNIPING_SIZE) break;
+    if (seenUniversities.has(candidate.evaluation.plan.university)) continue;
+    seenUniversities.add(candidate.evaluation.plan.university);
+    picked.push(candidate);
+  }
+  return picked;
+};
+
+/**
+ * PART 2 유리한 대학 — 추천 목록(PART 3) 안에서, 대학당 한 곳.
+ * 리포트에 나오는 대학이 모두 PART 3 에서 분석되도록 목록 밖에서 고르지 않는다.
  */
 const pickAdvantageousPlans = (
-  applicable: CombinationCandidate[]
+  recommended: CombinationCandidate[]
 ): PlanEvaluation[] => {
-  const desired = applicable.filter(
-    (candidate) => candidate.fit >= FIT_FIELD_GROUP
-  );
   const seenUniversities = new Set<string>();
-
-  return [...(desired.length > 0 ? desired : applicable)]
+  return [...recommended]
     .sort(
       (a, b) =>
         b.evaluation.advantageScore - a.evaluation.advantageScore ||
@@ -728,7 +822,7 @@ export const analyzeJeongsi = async (
     loadAdmissionResultIndex(),
   ]);
 
-  const { score, preference } = input;
+  const { score, preference, gender } = input;
   const diagnosis = diagnoseScore(score);
 
   const { universityPrestige } = createCutEstimator(score, plans, resultIndex);
@@ -753,11 +847,12 @@ export const analyzeJeongsi = async (
   // (예: 표준점수 반영 대학의 환산점수 입결 — 민감도가 원문에 없음)는
   // 후보에서 뺀다. 기준컷 없이 구분을 매기면 추측이다(실측: 기본값 "적정"이
   // 붙은 40곳이 "공개 기준컷이 없어 … 판단한 구분"으로 추천됨).
+  // 남학생이면 여자대학교는 지원 자격이 없어 후보에 넣지 않는다.
   const studentPlans = excludeOtherTrackSplits(
-    plans.filter(
+    excludeWomensUniversities(plans, gender).filter(
       (plan) =>
         findResults(resultIndex, plan).length > 0 &&
-        classificationOf(plan).percentileGap !== null
+        classificationOf(plan).gapRatio !== null
     ),
     resolveApplicantTrack(score)
   );
@@ -786,14 +881,26 @@ export const analyzeJeongsi = async (
     ) ?? 0;
   const context: AdvantageContext = { averageEnglishLoss };
 
+  // 다음 해 컷 이동 실측 — 학생과 무관한 데이터 통계라 분석마다 한 번 만든다
+  const movement = buildCutMovement(plans, (plan) =>
+    findResults(resultIndex, plan)
+  );
+
   const candidates: CombinationCandidate[] = matched.map((entry) => {
     const classification = classificationOf(entry.plan);
+    const evaluation = toEvaluation(score, classification, context);
 
     return {
-      evaluation: toEvaluation(score, classification, context),
+      evaluation: {
+        ...evaluation,
+        historicalPassRate:
+          evaluation.gapRatio === null ||
+          evaluation.referenceCut?.metric !== "convertedScore"
+            ? null
+            : passRateFor(movement, evaluation.gapRatio),
+      },
       fit: entry.fit,
-      percentileGap: classification.percentileGap,
-      sigma: classification.sigma,
+      gapRatio: classification.gapRatio,
       prestige: universityPrestige(entry.plan.university),
     };
   });
@@ -844,6 +951,7 @@ export const analyzeJeongsi = async (
       ineligiblePlans,
       advantageousPlans: [],
       recommendations: emptyRecommendations(),
+      sniping: [],
       combinations: [],
     };
   }
@@ -854,9 +962,24 @@ export const analyzeJeongsi = async (
       candidate.evaluation.eligible && candidate.evaluation.tier !== "지원불가"
   );
 
-  const advantageousPlans = pickAdvantageousPlans(applicable);
-
   const { picked, substituted } = pickRecommendations(applicable);
+
+  // PART 3 목록이 리포트의 대학 목록이다. 유리한 대학(PART 2)·원서 조합(PART 4)·
+  // 상세(PART 5)는 모두 이 안에서만 고른다(specs/014 A1).
+  const recommended = RECOMMENDATION_TIERS.flatMap((tier) => picked[tier]);
+  const advantageousPlans = pickAdvantageousPlans(recommended);
+  const sniping = pickSniping(applicable, recommended).map(
+    (candidate) => candidate.evaluation
+  );
+  const combinations = addSnipingCombination(
+    markRecommendedCombination(
+      buildCombinations(recommended, preference.risk),
+      recommended,
+      preference.risk
+    ),
+    sniping,
+    preference.risk
+  );
 
   return {
     input,
@@ -865,10 +988,29 @@ export const analyzeJeongsi = async (
       poolStage: pool.stage,
       moderateBandSubstituted: substituted,
       blockedByRestrictions: false,
+      outOfRange: {
+        tooHigh: candidates.filter(
+          (candidate) =>
+            candidate.evaluation.eligible &&
+            candidate.gapRatio !== null &&
+            candidate.gapRatio < GAP_BANDS.상향하한
+        ).length,
+        tooLow: candidates.filter(
+          (candidate) =>
+            candidate.evaluation.eligible &&
+            candidate.gapRatio !== null &&
+            candidate.gapRatio > GAP_BANDS.안정상한
+        ).length,
+      },
     },
     ineligiblePlans,
     advantageousPlans,
-    recommendations: picked,
-    combinations: buildCombinations(applicable, preference.risk),
+    recommendations: {
+      상향: picked.상향.map((candidate) => candidate.evaluation),
+      적정: picked.적정.map((candidate) => candidate.evaluation),
+      안정: picked.안정.map((candidate) => candidate.evaluation),
+    },
+    sniping,
+    combinations,
   };
 };

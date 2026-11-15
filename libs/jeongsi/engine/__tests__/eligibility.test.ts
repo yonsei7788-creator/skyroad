@@ -1,6 +1,8 @@
 import {
   checkEligibility,
   excludeOtherTrackSplits,
+  excludeWomensUniversities,
+  isWomensUniversity,
   resolveApplicantTrack,
 } from "../eligibility";
 import { baseScore, socialScore } from "./fixtures";
@@ -153,5 +155,33 @@ describe("excludeOtherTrackSplits", () => {
   it("계열을 판정하지 못하면 그대로 둔다", () => {
     // Act & Assert
     expect(excludeOtherTrackSplits(plans, null)).toEqual(plans);
+  });
+});
+
+describe("excludeWomensUniversities", () => {
+  const plans = [
+    { university: "성신여자대학교" },
+    { university: "동덕여자대학교" },
+    { university: "건국대학교" },
+  ];
+
+  it("대학명이 여자대학교로 끝나면 여자대학교로 본다", () => {
+    // Arrange & Act & Assert
+    expect(isWomensUniversity("서울여자대학교")).toBe(true);
+    expect(isWomensUniversity("서울대학교")).toBe(false);
+  });
+
+  it("남학생이면 여자대학교를 뺀다", () => {
+    // Arrange & Act
+    const result = excludeWomensUniversities(plans, "male");
+
+    // Assert
+    expect(result.map((plan) => plan.university)).toEqual(["건국대학교"]);
+  });
+
+  it("여학생이거나 성별을 모르면 그대로 둔다", () => {
+    // Arrange & Act & Assert
+    expect(excludeWomensUniversities(plans, "female")).toHaveLength(3);
+    expect(excludeWomensUniversities(plans, undefined)).toHaveLength(3);
   });
 });

@@ -1,23 +1,22 @@
 import {
-  CHANCE_FLOOR_POINTS,
-  CHANCE_THRESHOLDS,
-  SIGMA_MAX,
-  TIER_THRESHOLDS,
+  GAP_BANDS,
+  MIN_YEARS_FOR_SAFE,
   UNKNOWN_CUT_CHANCE,
   UNKNOWN_CUT_TIER,
   buildCutHistory,
   chanceFor,
-  classifyByPercentileGap,
   classifyPlan,
+  isWithinRecommendRange,
   pickCompetitionRate,
   pickReferenceMetric,
-  sigmaMinByQuota,
+  SNIPING_MIN_GAP,
+  tierForGap,
 } from "../classify";
 import { makeResult } from "./fixtures";
 
 import type { ClassifyInput } from "../classify";
 
-/** 환산점수 기준 분류 입력. sensitivity 는 주입값이다 */
+/** 분류 입력 (만점 1000) */
 const convertedInput = (
   overrides: Partial<ClassifyInput> = {}
 ): ClassifyInput => ({
@@ -27,132 +26,55 @@ const convertedInput = (
     simpleAverage: 93.833,
     universityWeighted: 94.028,
   },
-  sensitivity: 1.179,
   totalScore: 1000,
   quota: 30,
   results: [],
+  group: "가",
   ...overrides,
 });
 
-describe("sigmaMinByQuota", () => {
-  it("모집인원이 적을수록 컷 변동성 하한이 커진다", () => {
+describe("tierForGap - 모든 대학 공통 고정 구간", () => {
+  it("안정 하한 바로 위는 안정, 바로 아래는 적정이다", () => {
     // Arrange & Act & Assert
-    expect(sigmaMinByQuota(10)).toBe(1.5);
-    expect(sigmaMinByQuota(15)).toBe(1.5);
-    expect(sigmaMinByQuota(16)).toBe(1.0);
-    expect(sigmaMinByQuota(40)).toBe(1.0);
-    expect(sigmaMinByQuota(41)).toBe(0.7);
-    expect(sigmaMinByQuota(300)).toBe(0.7);
+    expect(tierForGap(GAP_BANDS.안정하한)).toBe("안정");
+    expect(tierForGap(GAP_BANDS.안정하한 - 0.001)).toBe("적정");
+  });
+
+  it("적정 하한 바로 위는 적정, 바로 아래는 상향이다", () => {
+    // Arrange & Act & Assert
+    expect(tierForGap(GAP_BANDS.적정하한)).toBe("적정");
+    expect(tierForGap(GAP_BANDS.적정하한 - 0.001)).toBe("상향");
+  });
+
+  it("상향 하한 바로 위는 상향, 바로 아래는 스나이핑, 스나이핑 하한 아래는 지원불가다", () => {
+    // Arrange & Act & Assert
+    expect(tierForGap(GAP_BANDS.상향하한)).toBe("상향");
+    expect(tierForGap(GAP_BANDS.상향하한 - 0.001)).toBe("스나이핑");
+    expect(tierForGap(SNIPING_MIN_GAP)).toBe("스나이핑");
+    expect(tierForGap(SNIPING_MIN_GAP - 0.001)).toBe("지원불가");
+    expect(chanceFor("스나이핑")).toBe("매우낮음");
+  });
+
+  it("안정 상한을 넘으면 추천 범위 밖이다", () => {
+    // Arrange & Act & Assert
+    expect(isWithinRecommendRange(GAP_BANDS.안정상한)).toBe(true);
+    expect(isWithinRecommendRange(GAP_BANDS.안정상한 + 0.001)).toBe(false);
+    expect(isWithinRecommendRange(GAP_BANDS.상향하한 - 0.001)).toBe(false);
   });
 });
 
-describe("classifyByPercentileGap - 분류 경계값", () => {
-  const sigma = 0.8;
-
-  it("안정 임계값(+2.0σ) 바로 위는 안정, 바로 아래는 적정이다", () => {
-    // Arrange
-    const boundary = TIER_THRESHOLDS.안정 * sigma;
-
-    // Act & Assert
-    expect(classifyByPercentileGap(boundary, sigma)).toBe("안정");
-    expect(classifyByPercentileGap(boundary - 0.001, sigma)).toBe("적정");
-  });
-
-  it("적정 임계값(-0.4σ) 바로 위는 적정, 바로 아래는 상향이다", () => {
-    // Arrange
-    const boundary = TIER_THRESHOLDS.적정 * sigma;
-
-    // Act & Assert
-    expect(classifyByPercentileGap(boundary, sigma)).toBe("적정");
-    expect(classifyByPercentileGap(boundary - 0.001, sigma)).toBe("상향");
-  });
-
-  it("상향 임계값(-2.2σ) 바로 위는 상향, 바로 아래는 지원불가다", () => {
-    // Arrange
-    const boundary = TIER_THRESHOLDS.상향 * sigma;
-
-    // Act & Assert
-    expect(classifyByPercentileGap(boundary, sigma)).toBe("상향");
-    expect(classifyByPercentileGap(boundary - 0.001, sigma)).toBe("지원불가");
-  });
-
-  it("σ 가 커지면 같은 격차도 더 보수적으로 분류된다", () => {
-    // Arrange
-    // 모집인원 10명(σ=1.2)과 100명(σ=0.5)의 같은 +1.0 백분위점 격차
-    const gap = 1.0;
-
-    // Act
-    const smallQuota = classifyByPercentileGap(gap, 1.2);
-    const largeQuota = classifyByPercentileGap(gap, 0.5);
-
-    // Assert
-    expect(smallQuota).toBe("적정");
-    expect(largeQuota).toBe("안정");
-  });
-});
-
-describe("chanceFor - tier 내부 2분할", () => {
-  const sigma = 0.8;
-
-  it("적정은 +0.8σ 기준으로 높음·보통이 갈린다", () => {
-    // Arrange
-    const boundary = CHANCE_THRESHOLDS.적정상단 * sigma;
-
-    // Act & Assert
-    expect(chanceFor("적정", boundary, sigma)).toBe("높음");
-    expect(chanceFor("적정", boundary - 0.001, sigma)).toBe("보통");
-  });
-
-  it("상향은 -1.6σ 기준으로 낮음·매우낮음이 갈린다", () => {
-    // Arrange
-    const wideSigma = 1.5;
-    const boundary = CHANCE_THRESHOLDS.상향상단 * wideSigma;
-
-    // Act & Assert
-    expect(chanceFor("상향", boundary, wideSigma)).toBe("낮음");
-    expect(chanceFor("상향", boundary - 0.001, wideSigma)).toBe("매우낮음");
-  });
-
-  it("σ 가 작아도 -1.5 백분위점까지는 낮음이다", () => {
-    // Arrange: σ 0.7 이면 -1.6σ 는 -1.12 라 절대 하한이 적용된다
-    const narrowSigma = 0.7;
-
-    // Act & Assert
-    expect(chanceFor("상향", CHANCE_FLOOR_POINTS, narrowSigma)).toBe("낮음");
-    expect(chanceFor("상향", CHANCE_FLOOR_POINTS - 0.001, narrowSigma)).toBe(
-      "매우낮음"
-    );
-  });
-
-  it("컷이 크게 튄 소규모 모집단위도 σ 는 상한을 넘지 않는다", () => {
-    // Arrange: 66.66 → 83 처럼 한 해 튄 입결, 백분위 지표
-    const metric = "percentile" as const;
-    const results = [
-      makeResult({ admissionYear: 2024, cut70: { metric, value: 66.66 } }),
-      makeResult({ admissionYear: 2026, cut70: { metric, value: 83 } }),
-    ];
-
-    // Act
-    const result = classifyPlan(convertedInput({ quota: 8, results }));
-
-    // Assert
-    expect(result.sigma).toBe(SIGMA_MAX);
-    expect(result.tier).toBe("안정");
-  });
-
-  it("안정은 항상 높음, 지원불가는 항상 매우낮음이다", () => {
+describe("chanceFor - 구분으로 합격 가능성", () => {
+  it("안정 높음, 적정 보통, 상향 낮음, 지원불가 매우낮음이다", () => {
     // Arrange & Act & Assert
-    expect(chanceFor("안정", 10, sigma)).toBe("높음");
-    expect(chanceFor("지원불가", -10, sigma)).toBe("매우낮음");
+    expect(chanceFor("안정")).toBe("높음");
+    expect(chanceFor("적정")).toBe("보통");
+    expect(chanceFor("상향")).toBe("낮음");
+    expect(chanceFor("지원불가")).toBe("매우낮음");
   });
 });
 
 describe("classifyPlan - 환산점수 기준 입결", () => {
-  const threeYears = [
-    makeResult({
-      admissionYear: 2024,
-      cut70: { metric: "convertedScore", value: 870 },
-    }),
+  const twoYears = [
     makeResult({
       admissionYear: 2025,
       cut70: { metric: "convertedScore", value: 875 },
@@ -165,46 +87,39 @@ describe("classifyPlan - 환산점수 기준 입결", () => {
 
   it("손으로 계산한 기준컷·격차와 일치한다", () => {
     // Arrange
-    // 가중평균 = 880x0.5 + 875x0.3 + 870x0.2 = 876.5
-    // 1 백분위점 = 1.179 x 1000 / 100 = 11.79점
-    // 추세 = (880-870)/2 = 5점 = 0.424 백분위점 → x0.5 = 0.212 → +2.5점
-    // 모집인원 변화 없음(30 → 30) → 보정 0
-    // refCut = 876.5 + 2.5 = 879.0
-    // gapRatio = (899.167 - 879.0) / 1000 x 100 = 2.017%
-    // percentileGap = 2.017 / 1.179 = 1.711 백분위점
+    // 가중평균 = (880x0.5 + 875x0.3) / 0.8 = 878.125, 모집인원 변화 없음
+    // 차이 = 899.167 - 878.125 = 21.042점, 판정 격차 = 21.042 / 1000 x 100 = 2.104%
 
     // Act
-    const result = classifyPlan(convertedInput({ results: threeYears }));
+    const result = classifyPlan(convertedInput({ results: twoYears }));
 
     // Assert
     expect(result.referenceCut).toEqual({
       metric: "convertedScore",
-      value: 879,
+      value: 878.125,
     });
-    expect(result.gapRatio).toBe(2.017);
-    expect(result.percentileGap).toBe(1.711);
+    expect(result.gapPoints).toBe(21.042);
+    expect(result.gapRatio).toBe(2.104);
+    expect(result.resultYears).toEqual([2025, 2026]);
   });
 
-  it("σ 하한이 적용되고 적정 상단으로 분류된다", () => {
-    // Arrange
-    // 3개년 컷 표본표준편차 = 5점 = 0.424 백분위점 < σ_min(30명) = 1.0
-    // 안정 경계 = 2.0 x 1.0 = 2.0 > 1.711 → 적정
-    // 적정 상단 경계 = 0.8 x 1.0 = 0.8 ≤ 1.711 → 높음
-
-    // Act
-    const result = classifyPlan(convertedInput({ results: threeYears }));
+  it("격차 2.104 는 적정(가능성 보통)이다", () => {
+    // Arrange & Act
+    const result = classifyPlan(convertedInput({ results: twoYears }));
 
     // Assert
-    expect(result.sigma).toBe(1.0);
     expect(result.tier).toBe("적정");
-    expect(result.chance).toBe("높음");
+    expect(result.chance).toBe("보통");
   });
 
-  it("컷이 충분히 낮으면 안정으로 분류된다", () => {
+  it("2개년 입결이면 안정 구간 격차를 안정으로 분류한다", () => {
     // Arrange
-    // 컷 860 → 격차 (899.167-860)/1000x100 = 3.917% → 3.322 백분위점
-    // 안정 경계 2.0 ≤ 3.322
-    const lowCut = [
+    // 가중평균 = (860x0.5 + 855x0.3) / 0.8 = 858.125 → 격차 (899.167-858.125)/10 = 4.104
+    const lowCuts = [
+      makeResult({
+        admissionYear: 2025,
+        cut70: { metric: "convertedScore", value: 855 },
+      }),
       makeResult({
         admissionYear: 2026,
         cut70: { metric: "convertedScore", value: 860 },
@@ -212,66 +127,162 @@ describe("classifyPlan - 환산점수 기준 입결", () => {
     ];
 
     // Act
-    const result = classifyPlan(convertedInput({ results: lowCut }));
+    const result = classifyPlan(convertedInput({ results: lowCuts }));
 
     // Assert
+    expect(result.gapRatio).toBe(4.104);
     expect(result.tier).toBe("안정");
     expect(result.chance).toBe("높음");
+    expect(result.safeCapped).toBe(false);
   });
 
-  it("모집인원이 크게 늘면 기준컷을 낮춘다", () => {
+  it("입결이 1개년이면 안정 구간이어도 적정으로 둔다", () => {
     // Arrange
-    // 3개년 평균 모집인원 30 → 올해 60 (변화 +100%)
-    // clamp(1.0, ±0.4) x 1.2 = 0.48 백분위점 = 5.659점 하락
+    // 컷 850 한 해 → 격차 (899.167-850)/1000x100 = 4.917% (안정 구간)
+    const oneYear = [
+      makeResult({
+        admissionYear: 2026,
+        cut70: { metric: "convertedScore", value: 850 },
+      }),
+    ];
 
     // Act
-    const base = classifyPlan(convertedInput({ results: threeYears }));
-    const expanded = classifyPlan(
-      convertedInput({ results: threeYears, quota: 60 })
-    );
+    const result = classifyPlan(convertedInput({ results: oneYear }));
 
     // Assert
-    expect(base.referenceCut?.value).toBe(879);
-    expect(expanded.referenceCut?.value).toBe(873.341);
+    expect(MIN_YEARS_FOR_SAFE).toBe(2);
+    expect(result.gapRatio).toBe(4.917);
+    expect(result.tier).toBe("적정");
+    expect(result.chance).toBe("보통");
+    expect(result.safeCapped).toBe(true);
+    expect(result.safeCapReasons).toEqual(["1개년 입결"]);
   });
 
-  it("모집인원 변화가 10% 미만이면 보정하지 않는다", () => {
-    // Arrange & Act
-    const deadZone = classifyPlan(
-      convertedInput({ results: threeYears, quota: 32 })
-    );
-
-    // Assert
-    expect(deadZone.referenceCut?.value).toBe(879);
-  });
-
-  it("경쟁률은 기준컷 보정에 쓰지 않는다", () => {
+  it("2025·2026 입결이 같은 군이면 안정으로 둔다", () => {
     // Arrange
-    const highCompetition = threeYears.map((entry) => ({
-      ...entry,
-      competitionRate: 20,
-    }));
-
-    // Act
-    const normal = classifyPlan(convertedInput({ results: threeYears }));
-    const crowded = classifyPlan(convertedInput({ results: highCompetition }));
-
-    // Assert
-    expect(crowded.referenceCut?.value).toBe(normal.referenceCut?.value);
-    expect(crowded.tier).toBe(normal.tier);
-    expect(crowded.competitionRate).toBe(20);
-  });
-
-  it("2개년 이하면 추세 보정을 끈다", () => {
-    // Arrange
-    const twoYears = threeYears.filter((entry) => entry.admissionYear !== 2025);
+    const twoYears = [2025, 2026].map((year) =>
+      makeResult({
+        admissionYear: year as 2025 | 2026,
+        cut70: { metric: "convertedScore", value: 850 },
+      })
+    );
 
     // Act
     const result = classifyPlan(convertedInput({ results: twoYears }));
 
     // Assert
-    // 가중평균 = (880x0.5 + 870x0.2) / 0.7 = 877.143, 추세 보정 없음
-    expect(result.referenceCut?.value).toBe(877.143);
+    expect(result.tier).toBe("안정");
+    expect(result.safeCapReasons).toEqual([]);
+    expect(result.pastGroups).toEqual([]);
+  });
+
+  it("입결 학년도의 원문 모집군이 2027 과 다르면 안정 대신 적정으로 두고 그 해를 남긴다", () => {
+    // Arrange — 2027 가군, 2026 입결은 다군 모집 때 값
+    const results = [
+      makeResult({
+        admissionYear: 2025,
+        group: "가",
+        cut70: { metric: "convertedScore", value: 850 },
+      }),
+      makeResult({
+        admissionYear: 2026,
+        group: "다",
+        cut70: { metric: "convertedScore", value: 850 },
+      }),
+    ];
+
+    // Act
+    const result = classifyPlan(convertedInput({ results, group: "가" }));
+
+    // Assert
+    expect(result.tier).toBe("적정");
+    expect(result.safeCapped).toBe(true);
+    expect(result.safeCapReasons).toEqual(["모집군 변경"]);
+    expect(result.pastGroups).toEqual([{ year: 2026, group: "다" }]);
+  });
+
+  it("평균 백분위 입결은 격차가 안정 구간이어도 적정으로 둔다", () => {
+    // Arrange — 학생 단순평균 93.833, 컷 88 → +5.833 백분위점
+    const results = [2025, 2026].map((year) =>
+      makeResult({
+        admissionYear: year as 2025 | 2026,
+        cut70: { metric: "percentile", value: 88 },
+      })
+    );
+
+    // Act
+    const result = classifyPlan(convertedInput({ results }));
+
+    // Assert
+    expect(result.gapRatio).toBe(5.833);
+    expect(result.tier).toBe("적정");
+    expect(result.safeCapReasons).toEqual(["백분위 입결"]);
+  });
+
+  it("모집인원이 크게 늘면 기준컷을 낮추고 그 값을 남긴다", () => {
+    // Arrange
+    // 평균 모집인원 30 → 올해 60 (+100%) → clamp 0.4 x 1.2 = 0.48 (만점의 0.48% = 4.8점)
+
+    // Act
+    const expanded = classifyPlan(
+      convertedInput({ results: twoYears, quota: 60 })
+    );
+
+    // Assert
+    expect(expanded.referenceCut?.value).toBe(873.325);
+    expect(expanded.quotaChange).toEqual({
+      currentQuota: 60,
+      pastAverageQuota: 30,
+      cutAdjustment: -4.8,
+    });
+  });
+
+  it("모집인원 변화가 10% 미만이면 보정하지 않는다", () => {
+    // Arrange & Act
+    const deadZone = classifyPlan(
+      convertedInput({ results: twoYears, quota: 32 })
+    );
+
+    // Assert
+    expect(deadZone.referenceCut?.value).toBe(878.125);
+    expect(deadZone.quotaChange?.cutAdjustment).toBe(0);
+  });
+
+  it("경쟁률·추가합격은 기준컷 보정에 쓰지 않고 표시용으로 남긴다", () => {
+    // Arrange
+    const crowded = twoYears.map((entry) => ({
+      ...entry,
+      competitionRate: 20,
+      additionalPassCount: 45,
+    }));
+
+    // Act
+    const normal = classifyPlan(convertedInput({ results: twoYears }));
+    const result = classifyPlan(convertedInput({ results: crowded }));
+
+    // Assert
+    expect(result.referenceCut?.value).toBe(normal.referenceCut?.value);
+    expect(result.tier).toBe(normal.tier);
+    expect(result.competitionRate).toBe(20);
+    expect(result.additionalPass).toEqual({ year: 2026, quota: 30, count: 45 });
+  });
+
+  it("2024 입결은 쓰지 않는다", () => {
+    // Arrange
+    const withOld = [
+      makeResult({
+        admissionYear: 2024,
+        cut70: { metric: "convertedScore", value: 700 },
+      }),
+      ...twoYears,
+    ];
+
+    // Act
+    const result = classifyPlan(convertedInput({ results: withOld }));
+
+    // Assert
+    expect(result.referenceCut?.value).toBe(878.125);
+    expect(result.resultYears).toEqual([2025, 2026]);
   });
 });
 
@@ -289,23 +300,9 @@ describe("classifyPlan - 백분위 기준 입결", () => {
 
     // Assert
     expect(result.gapRatio).toBe(0.833);
-    expect(result.percentileGap).toBe(0.833);
-  });
-
-  it("백분위 입결은 민감도로 나누지 않는다", () => {
-    // Arrange
-    // 민감도를 바꿔도 percentileGap 이 변하지 않아야 한다
-    const results = [
-      makeResult({ cut70: { metric: "percentile", value: 93 } }),
-    ];
-
-    // Act
-    const low = classifyPlan(convertedInput({ results, sensitivity: 0.75 }));
-    const high = classifyPlan(convertedInput({ results, sensitivity: 1.58 }));
-
-    // Assert
-    expect(low.percentileGap).toBe(high.percentileGap);
-    expect(low.percentileGap).toBe(0.833);
+    expect(result.gapPoints).toBe(0.833);
+    expect(result.tier).toBe("상향");
+    expect(result.chance).toBe("낮음");
   });
 
   it("입결이 밝힌 산출 기준과 같은 방식의 학생 값으로 비교한다", () => {
@@ -471,19 +468,6 @@ describe("classifyPlan - 백분위 기준 입결", () => {
       classifyPlan(convertedInput({ results: explicitSimple })).gapRatio
     );
   });
-
-  it("단일 연도면 σ 는 하한값을 쓴다", () => {
-    // Arrange
-    const results = [
-      makeResult({ quota: 12, cut70: { metric: "percentile", value: 93 } }),
-    ];
-
-    // Act
-    const result = classifyPlan(convertedInput({ results, quota: 12 }));
-
-    // Assert
-    expect(result.sigma).toBe(1.5);
-  });
 });
 
 describe("classifyPlan - 70%컷 결측", () => {
@@ -501,7 +485,7 @@ describe("classifyPlan - 70%컷 결측", () => {
 
     // Assert
     expect(result.referenceCut).toBeNull();
-    expect(result.percentileGap).toBeNull();
+    expect(result.gapRatio).toBeNull();
   });
 });
 
@@ -513,7 +497,7 @@ describe("classifyPlan - 입결 결측", () => {
     // Assert
     expect(result.tier).toBe(UNKNOWN_CUT_TIER);
     expect(result.chance).toBe(UNKNOWN_CUT_CHANCE);
-    expect(result.percentileGap).toBeNull();
+    expect(result.gapRatio).toBeNull();
     expect(result.referenceCut).toBeNull();
   });
 
@@ -553,7 +537,6 @@ describe("기준 지표·경쟁률·컷 추이", () => {
     // Assert
     expect(metric).toBe("convertedScore");
     expect(result.cutHistory).toEqual([
-      { year: 2024, cut: null },
       { year: 2025, cut: null },
       { year: 2026, cut: 880 },
     ]);
@@ -562,7 +545,7 @@ describe("기준 지표·경쟁률·컷 추이", () => {
   it("최신 학년도 경쟁률을 표시용으로 남긴다", () => {
     // Arrange
     const results = [
-      makeResult({ admissionYear: 2024, competitionRate: 5.1 }),
+      makeResult({ admissionYear: 2025, competitionRate: 5.1 }),
       makeResult({ admissionYear: 2026, competitionRate: 3.2 }),
     ];
 
@@ -571,12 +554,12 @@ describe("기준 지표·경쟁률·컷 추이", () => {
     expect(pickCompetitionRate([])).toBeNull();
   });
 
-  it("컷 추이는 입결이 없어도 항상 3개년을 채운다", () => {
+  it("학년도별 컷은 입결이 없어도 2025·2026 두 해를 채운다", () => {
     // Arrange & Act
     const history = buildCutHistory([]);
 
     // Assert
-    expect(history.map((entry) => entry.year)).toEqual([2024, 2025, 2026]);
+    expect(history.map((entry) => entry.year)).toEqual([2025, 2026]);
     expect(history.every((entry) => entry.cut === null)).toBe(true);
   });
 });

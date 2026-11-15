@@ -17,7 +17,7 @@ export type ExamYear = 2026;
 /** 정시 모집 학년도 */
 export type AdmissionYear = 2027;
 
-/** 입결을 보유한 과거 학년도 (최근 3개년) */
+/** 입결 학년도 타입. 엔진 판정은 2025·2026 만 쓴다 (2024 입결 없음) */
 export type ResultYear = 2024 | 2025 | 2026;
 
 export type KoreanElective = "화법과작문" | "언어와매체";
@@ -100,10 +100,15 @@ export interface JeongsiPreference {
   risk: RiskAppetite;
 }
 
+/** 학생 성별 — 남학생이면 여자대학교를 후보에서 뺀다 (수시와 같은 규칙) */
+export type StudentGender = "male" | "female";
+
 /** 정시 분석 요청 전체 입력 */
 export interface JeongsiInput {
   score: SuneungScore;
   preference: JeongsiPreference;
+  /** 성별을 받기 전에 저장된 입력에는 없다. 없으면 여자대학교를 빼지 않는다 */
+  gender?: StudentGender;
 }
 
 // ─── 대학 전형 시행계획 ───
@@ -262,13 +267,24 @@ export interface JeongsiAdmissionPlan {
   category: string;
   region: UniversityRegion;
   group: AdmissionGroup;
+  /** 2027 최초 모집인원 (원문) */
   quota: number;
+  /**
+   * 2027 최종 모집인원 (수시 이월 반영, 원문). 원문이 "발표전"이면 생략한다.
+   * 스나이핑 신호(최종 모집인원 증가)에만 쓴다.
+   */
+  finalQuota?: number;
   /**
    * 전형 총점 중 수능 비율(%). 100 이면 생략한다.
    * 나머지(학생부 교과 등)는 엔진이 계산하지 않으므로, 이 값이 있는
    * 모집단위는 수능 성적만으로 본 위치다.
    */
   suneungWeight?: number;
+  /**
+   * 수능 외 전형 요소 원문 표기 (학생부·기타 비율, 원문 비고). 예)
+   * "학생부 10% · 학생부 출결 10%", "학교폭력 조치사항 감점". 없으면 생략.
+   */
+  selectionNote?: string;
   /**
    * 가중합 산출식 대학의 공시 가중치 표기 (예: "국100·수120·탐80").
    * 이런 대학의 formula.ratios 는 엔진이 계수에서 역산한 배점 비중이라
@@ -343,8 +359,18 @@ export interface JeongsiResultEntry {
 
 // ─── 엔진 산출물 ───
 
+/**
+ * 안정으로 매기지 않는 사유. 격차가 안정 구간이어도 하나라도 있으면 적정으로 둔다.
+ * 자세한 근거는 engine/classify.ts 의 MIN_YEARS_FOR_SAFE·SafeCapReason 주석.
+ */
+export type SafeCapReason = "1개년 입결" | "모집군 변경" | "백분위 입결";
+
 /** 지원 가능성 분류 */
-export type AdmissionTier = "안정" | "적정" | "상향" | "지원불가";
+/**
+ * 지원 가능성 분류. 스나이핑은 추천 범위(상향하한) 바로 아래로, 합격 가능성은
+ * 낮지만 시도해 볼 곳이다(specs/014 마지막 피드백). 그 아래는 지원불가.
+ */
+export type AdmissionTier = "안정" | "적정" | "상향" | "스나이핑" | "지원불가";
 
 /** 합격 가능성 라벨 */
 export type PassChance = "높음" | "보통" | "낮음" | "매우낮음";
@@ -396,35 +422,69 @@ export interface PlanEvaluation {
    */
   simpleAveragePercentile: number;
   /**
-   * 분류 기준이 된 **3개년 기준컷**.
-   * 단년 컷이 아니라 2026·2025·2024 가중평균(0.5/0.3/0.2)에
-   * 추세·모집인원 보정을 적용한 값이다. gapRatio 와 짝을 이룬다.
-   * 연도별 원본 컷은 cutHistory 를 보라.
-   * 쓸 수 있는 70%컷이 없으면 null (원문에 없는 컷은 만들지 않는다).
+   * 판정 기준컷. 쓸 수 있는 입결 학년도(2025·2026)의 70%컷을 가중평균
+   * (0.5/0.3, 결측 연도는 재정규화)하고 모집인원 보정을 더한 값이다.
+   * 연도별 원본 컷은 cutHistory 를 보라. 쓸 수 있는 70%컷이 없으면 null.
    */
   referenceCut: ResultCut | null;
-  /** 전년도 경쟁률. 입결이 없으면 null */
+  /** 최신 입결 학년도 경쟁률. 입결이 없으면 null */
   competitionRate: number | null;
-  /** 최근 3개년 컷 추이. 입결이 없는 해는 cut 이 null */
+  /** 학년도별 70%컷 (2025·2026). 입결이 없는 해는 cut 이 null */
   cutHistory: { year: ResultYear; cut: number | null }[];
-  /** 환산 총점 대비 컷과의 격차 비율 (%). 표시용 */
-  gapRatio: number | null;
   /**
-   * 컷과의 격차를 백분위점으로 환산한 값. **분류의 실제 척도**.
-   * 환산 총점 대비 비율(gapRatio)은 대학마다 민감도가 2배 이상 차이나
-   * 대학 간 비교가 불가능하므로 분류에 쓰지 않는다.
+   * 판정 격차 — **분류의 척도**. 모든 대학에 같은 고정 구간을 적용한다.
+   * 환산점수 입결이면 (내 환산점수 − 기준컷) ÷ 만점 × 100 (만점 대비 %),
+   * 백분위 입결이면 내 국·수·탐 평균 백분위 − 기준컷 (백분위점).
    */
-  percentileGap: number | null;
+  gapRatio: number | null;
+  /** 판정 지표 단위의 차이 (환산점수 점 또는 백분위점). 표시용 */
+  gapPoints: number | null;
+  /** 기준컷 산출에 쓴 입결 학년도 */
+  resultYears: ResultYear[];
+  /** 모집인원 변화와 그에 따른 기준컷 보정 (표시용) */
+  quotaChange: {
+    currentQuota: number;
+    pastAverageQuota: number;
+    cutAdjustment: number;
+  } | null;
+  /** 최신 입결 학년도 추가합격 인원 (표시용, 판정에 쓰지 않는다) */
+  additionalPass: { year: ResultYear; quota: number; count: number } | null;
+  /** 격차는 안정 구간이지만 safeCapReasons 때문에 적정으로 낮췄는지 */
+  safeCapped: boolean;
+  /** 안정으로 매기지 않는 사유 (1개년 입결·모집군 변경·백분위 입결) */
+  safeCapReasons: SafeCapReason[];
+  /** 기준컷에 쓴 입결 중 2027 과 모집군이 다른 학년도 (원문 군) */
+  pastGroups: { year: ResultYear; group: AdmissionGroup }[];
+  /**
+   * 2027 최종 모집인원(수시 이월 반영)과 최신 입결 학년도 모집인원.
+   * 최종 인원이 원문에 아직 없으면("발표전") null. 스나이핑 신호에 쓴다.
+   */
+  finalQuotaChange: {
+    previousYear: ResultYear;
+    previousQuota: number;
+    finalQuota: number;
+    ratio: number;
+  } | null;
+  /** 추천 범위 안인지 (안정상한을 넘는 곳은 성적보다 크게 낮아 추천하지 않는다) */
+  withinRecommendRange: boolean;
+  /**
+   * 기준컷 대비 같은 격차였던 학생이 다음 해 컷을 넘은 실측 비율 (0~1).
+   * 2025 기준컷 → 2026 실제 컷 이동 분포(engine/cut-movement.ts)로 구한다.
+   * 실측은 환산점수 입결·같은 모집군 모집단위에서만 잰 값이라, 백분위 입결로
+   * 판정한 곳과 단독 평가는 null.
+   */
+  historicalPassRate: number | null;
+  /** 최신 입결 학년도 합격자 50%·70% 컷 (판정 지표 단위, 원문 값) */
+  latestAdmitCuts: {
+    year: ResultYear;
+    cut50: number | null;
+    cut70: number;
+  } | null;
   /**
    * 백분위 1점당 환산점수 변화율 (%). 대학별 민감도.
    * 표준점수 반영 대학은 원문만으로 계산할 수 없어 null 이다.
    */
   sensitivity: number | null;
-  /**
-   * 분류에 사용된 컷 변동성 시그마 (백분위점).
-   * 3개년 컷 표준편차에 모집인원 기반 하한을 적용한 값.
-   */
-  cutVolatility: number | null;
   tier: AdmissionTier;
   chance: PassChance;
   /**
@@ -442,6 +502,10 @@ export interface GroupCombination {
   가: PlanEvaluation | null;
   나: PlanEvaluation | null;
   다: PlanEvaluation | null;
+  /** 대표 조합 (리포트에 "추천"으로 표시). 조합 목록에서 하나만 true */
+  recommended: boolean;
+  /** 세 칸의 구분이 성향의 기본 배분과 같은지 */
+  matchesRiskAllocation: boolean;
 }
 
 /**
@@ -464,6 +528,12 @@ export interface CandidateSelection {
    * 최우선으로 서술해야 한다.
    */
   blockedByRestrictions: boolean;
+  /**
+   * 희망 범위 후보 중 추천 범위를 벗어나 뺀 곳의 수.
+   * tooHigh: 기준컷이 성적보다 높아 상향 하한에도 못 미치는 곳
+   * tooLow: 기준컷이 성적보다 크게 낮아 안정 상한을 넘는 곳
+   */
+  outOfRange?: { tooHigh: number; tooLow: number };
 }
 
 /** 엔진 전체 산출물. 이 값이 AI 프롬프트의 입력이 된다. */
@@ -479,7 +549,15 @@ export interface JeongsiAnalysis {
   ineligiblePlans: PlanEvaluation[];
   /** 반영방식이 유리한 대학 (advantageScore 내림차순) */
   advantageousPlans: PlanEvaluation[];
-  /** 구분별 추천 — 각 3개 */
+  /**
+   * 구분별 추천 — 각 최대 4곳. 리포트의 대학 목록 전체다.
+   * advantageousPlans·combinations 의 모집단위는 모두 이 안에 있다.
+   */
   recommendations: Record<"상향" | "적정" | "안정", PlanEvaluation[]>;
+  /**
+   * 스나이핑 후보 (최대 SNIPING_SIZE 곳). 리포트 목록(PART 3·5)에 별도 칸으로 싣고,
+   * 공격 성향이면 이 중 한 곳을 넣은 조합을 하나 더 보인다.
+   */
+  sniping: PlanEvaluation[];
   combinations: GroupCombination[];
 }

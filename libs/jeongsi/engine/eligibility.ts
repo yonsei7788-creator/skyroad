@@ -9,6 +9,7 @@ import { isScienceInquiry } from "./convert-score";
 
 import type {
   InquirySubject,
+  StudentGender,
   SubjectRestriction,
   SuneungScore,
 } from "../types";
@@ -101,6 +102,24 @@ export const checkEligibility = (
 
   return checkInquiryRestriction(score, restrictions.inquiry);
 };
+
+// ─── 여자대학교 ───
+
+/** 여자대학교인지 (대학명이 "여자대학교"로 끝난다. 원문 데이터: 동덕·서울·성신) */
+export const isWomensUniversity = (university: string): boolean =>
+  university.endsWith("여자대학교");
+
+/**
+ * 남학생이면 여자대학교 모집단위를 뺀다. 남학생은 지원 자격이 없다.
+ * 성별을 모르면(예전 입력) 빼지 않는다 — 수시 추천과 같은 규칙.
+ */
+export const excludeWomensUniversities = <T extends { university: string }>(
+  plans: T[],
+  gender: StudentGender | undefined
+): T[] =>
+  gender === "male"
+    ? plans.filter((plan) => !isWomensUniversity(plan.university))
+    : plans;
 
 // ─── 같은 학과의 인문·자연 분리 모집 ───
 
