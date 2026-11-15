@@ -453,9 +453,10 @@ export const expandableCategories = (targetCategory: string): Set<string> => {
     return new Set([targetCategory]);
   }
 
-  // 의약은 그룹 안에서만 본다. 계열무관(자유전공)조차 섞지 않는다.
+  // 의약은 학과(분류)마다 따로 본다. 의학·치의학·한의학·약학·수의학은 면허가 달라
+  // 서로 대신할 수 없다(사용자 결정 2026-11-15: 약학 희망에 수의예과·의예과 금지).
   if (group === MEDICAL_GROUP) {
-    return new Set(FIELD_GROUPS[MEDICAL_GROUP]);
+    return new Set([targetCategory]);
   }
   // 면허 연계 트랙(보건·교육)도 같은 그룹 안에서만 넓힌다. 간호 희망 학생에게
   // 생명과학·자유전공을 안정 원서로 추천하면 지원 판단에 쓸 수 없다(specs/014 G1 실측).

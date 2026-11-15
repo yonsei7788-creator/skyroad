@@ -37,7 +37,7 @@ const GAP_BY_TIER: Record<AdmissionTier, number> = {
   안정: 2.5,
   적정: 0.5,
   상향: -1,
-  스나이핑: -1.5,
+  소신: -1.5,
   지원불가: -3,
 };
 
@@ -45,7 +45,7 @@ const CHANCE_BY_TIER: Record<AdmissionTier, PassChance> = {
   안정: "높음",
   적정: "보통",
   상향: "낮음",
-  스나이핑: "매우낮음",
+  소신: "매우낮음",
   지원불가: "매우낮음",
 };
 
@@ -499,7 +499,7 @@ describe("buildCombinations - 조합 구성", () => {
   });
 });
 
-describe("addSnipingCombination - 공격 성향 스나이핑 조합", () => {
+describe("addSnipingCombination - 공격 성향 소신 조합", () => {
   const baseCombination = (): GroupCombination => ({
     id: "jeongsi-combo-1",
     label: "희망 우선형",
@@ -513,17 +513,16 @@ describe("addSnipingCombination - 공격 성향 스나이핑 조합", () => {
     matchesRiskAllocation: true,
   });
   const snipe = (group: AdmissionGroup, university: string): PlanEvaluation =>
-    makeCandidate({ university, group, tier: "스나이핑", gap: -1.2 })
-      .evaluation;
+    makeCandidate({ university, group, tier: "소신", gap: -1.2 }).evaluation;
 
-  it("공격 성향이면 대표 조합의 상향 칸 하나를 스나이핑으로 바꾼 조합을 붙인다", () => {
+  it("공격 성향이면 대표 조합의 상향 칸 하나를 소신으로 바꾼 조합을 붙인다", () => {
     // Arrange
     const combinations = [baseCombination()];
 
     // Act
     const result = addSnipingCombination(
       combinations,
-      [snipe("가", "스나이핑대")],
+      [snipe("가", "소신대")],
       "공격"
     );
 
@@ -531,7 +530,7 @@ describe("addSnipingCombination - 공격 성향 스나이핑 조합", () => {
     expect(result).toHaveLength(2);
     const [, added] = result;
     expect(added.label).toBe(SNIPING_COMBINATION_LABEL);
-    expect(added.가?.plan.university).toBe("스나이핑대");
+    expect(added.가?.plan.university).toBe("소신대");
     expect(added.나?.plan.university).toBe("나상향대");
     expect(added.recommended).toBe(false);
     expect(result[0].recommended).toBe(true);
@@ -544,7 +543,7 @@ describe("addSnipingCombination - 공격 성향 스나이핑 조합", () => {
     // Act
     const result = addSnipingCombination(
       combinations,
-      [snipe("다", "스나이핑대")],
+      [snipe("다", "소신대")],
       "공격"
     );
 
@@ -559,7 +558,7 @@ describe("addSnipingCombination - 공격 성향 스나이핑 조합", () => {
     // Act
     const result = addSnipingCombination(
       combinations,
-      [snipe("가", "스나이핑대")],
+      [snipe("가", "소신대")],
       "균형"
     );
 

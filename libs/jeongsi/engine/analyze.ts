@@ -14,7 +14,13 @@ import {
 
 import { loadAdmissionPlans, loadAdmissionResultIndex } from "../data";
 import { calcAdvantageScore } from "./advantage";
-import { FINAL_QUOTA_SIGNAL_RATIO, GAP_BANDS, classifyPlan } from "./classify";
+import {
+  COMPETITION_SURGE_RATIO,
+  FILL_RATE_SIGNAL,
+  FINAL_QUOTA_SIGNAL_RATIO,
+  GAP_BANDS,
+  classifyPlan,
+} from "./classify";
 import {
   addSnipingCombination,
   buildCombinations,
@@ -41,10 +47,10 @@ import {
 } from "./eligibility";
 import {
   expandableCategories,
+  findFieldGroup,
   isMedicalCategory,
   matchesNeutralPlanField,
   NEUTRAL_GROUP,
-  findFieldGroup,
 } from "./field-groups";
 
 import type { AdvantageContext } from "./advantage";
@@ -58,9 +64,7 @@ import type {
   JeongsiPreference,
   JeongsiResultEntry,
   PlanEvaluation,
-  PreferredRegion,
   SuneungScore,
-  UniversityRegion,
 } from "../types";
 
 /** PART 2 에 노출할 유리한 대학 수 */
@@ -93,18 +97,6 @@ export const FIT_FIELD_GROUP = 0.5;
 /** 추천 대상 분류 (지원불가 제외) */
 const RECOMMENDATION_TIERS: RecommendableTier[] = ["상향", "적정", "안정"];
 
-const REGION_ALLOWANCE: Record<PreferredRegion, UniversityRegion[]> = {
-  서울: ["서울"],
-  수도권: ["서울", "수도권"],
-  전국: ["서울", "수도권", "지방"],
-};
-
-/** 희망 지역 조건 통과 여부 */
-export const matchesRegion = (
-  region: UniversityRegion,
-  preferred: PreferredRegion
-): boolean => REGION_ALLOWANCE[preferred].includes(region);
-
 /** 표준 카테고리로 정규화. 매핑에 없으면 입력값을 그대로 쓴다 */
 const toCategory = (name: string): string =>
   getCategoryForDepartment(name) ?? name;
@@ -126,7 +118,7 @@ const isKnownCategory = (name: string): boolean => {
  */
 export const calcDepartmentFit = (
   plan: JeongsiAdmissionPlan,
-  preference: JeongsiPreference
+  preference: Pick<JeongsiPreference, "target" | "targetKind">
 ): number => {
   const { target, targetKind } = preference;
   const planCategory = plan.category || toCategory(plan.department);
@@ -438,7 +430,7 @@ export const countFilledBands = (
     if (
       !classification.eligible ||
       classification.tier === "지원불가" ||
-      classification.tier === "스나이핑" ||
+      classification.tier === "소신" ||
       !classification.withinRecommendRange
     ) {
       continue;
@@ -461,106 +453,77 @@ interface MatchedPlan {
 /**
  * 후보 풀 단계 확대 (specs/013 §6.1-b).
  *
- * 1. 희망 학과·카테고리 일치 → 세 밴드(상향·적정·안정)가 모두
- *    찼으면 종료
- * 2. 같은 계열그룹(+계열무관) 추가 → 여기서 끝낸다
- *
- * 대계열(인문/자연) 전체로 넓히는 3단계는 없앴다(2026-11-08). 적정 칸을
- * 채우려고 넓혔더니 전자공학 희망 학생에게 식품영양학과·수학과가 적정
- * 추천으로 나갔다(실측). 희망과 무관한 학과로 칸을 채우기보다, 적정이
- * 비면 비었다고 안내한다(buildRecommendationNotices).
- *
- * 종료 조건을 "후보 개수"로 두면 안 된다. 같은 19개라도 컷이 18
- * 백분위점에 퍼져 있으면 밴드당 1.8개고 3점에 몰려 있으면 한
- * 밴드에 다 들어간다 — 개수는 이 차이를 구분하지 못한다. 또 실데이터
- * 규모(모집단위 10배)가 되면 임계값을 다시 조정해야 한다.
- *
- * 2단계에서 적정만 보는 이유: 적정은 세 성향 조합이 모두 요구하는
- * 유일한 필수 밴드다. 상향·안정은 비어도 되며(§6.1-d), 최상위권의
- * 구조적 빈 상향을 이유로 대계열까지 넓히면 희망과 무관한 학과가
- * 섞인다.
- *
- * 확대는 후보 풀에만 적용하고, 적합도 정렬로 희망 학과를 계속
- * 상위에 둔다. 의약·보건은 양방향 모두 섞지 않는다.
+ * 1. 희망 학과와 이름이 같거나(FIT_EXACT) 같은 분류(FIT_SAME_CATEGORY)인 모집단위.
+ *    세 밴드(상향·적정·안정)가 모두 찼으면 여기서 끝낸다.
+ * 2. 같은 계열(+계열무관)로 넓힌다(사용자 결정 2026-11-15 "범위를 좀 더 넓혀").
+ *    의약은 학과(분류)마다 따로 봐 약학 희망에 의예·수의예가 섞이지 않는다.
+ * 대계열(인문/자연) 전체로 넓히지 않는다(2026-11-08: 전자공학 희망에 식품영양학과·수학과).
+ * 이름 일부만 겹치는 곳(FIT_PARTIAL)은 쓰지 않는다. 칸이 비면 비었다고 안내한다.
  */
 export interface CandidatePool {
   plans: MatchedPlan[];
-  /** 어디까지 넓혔는지 (1 일치 / 2 계열그룹) */
+  /** 어디까지 넓혔는지 (1 희망 학과·같은 분류 / 2 같은 계열) */
   stage: 1 | 2;
 }
 
 export const collectCandidatePlans = (
   plans: JeongsiAdmissionPlan[],
-  preference: JeongsiPreference,
+  preference: Pick<JeongsiPreference, "target" | "targetKind">,
   /** 1단계 뒤 종료 여부 (세 밴드가 모두 찼는가) */
   shouldStop: (matched: MatchedPlan[]) => boolean
 ): CandidatePool => {
-  const inRegion = plans.filter((plan) =>
-    matchesRegion(plan.region, preference.region)
-  );
-
+  // 희망 지역은 입력에서 뺐다(사용자 결정 2026-11-15). 모든 지역의 대학을 본다.
   const matched: MatchedPlan[] = [];
   const taken = new Set<string>();
 
-  for (const plan of inRegion) {
+  const targetCategory = toCategory(preference.target);
+  /**
+   * 사범계열(○○교육과)은 교원 자격 트랙이라 희망 학과가 교육 계열일 때만 담는다
+   * (specs/014 G1). 학과 분류가 교과로 묶여 있어(컴퓨터교육과 → 컴퓨터공학) 1단계에서도
+   * 걸러야 한다 — 컴공 희망 학생의 대표 조합에 컴퓨터교육과가 들어갔다(2026-11-15 실측).
+   */
+  const targetIsEducation = findFieldGroup(targetCategory) === "교육";
+  const isTeacherTrack = (plan: JeongsiAdmissionPlan): boolean =>
+    !targetIsEducation && /교육과$|교육학과$|교육학부$/.test(plan.department);
+
+  // 1단계: 희망 학과와 이름이 같거나 같은 분류인 모집단위. 이름 일부만 겹치는 곳
+  // (FIT_PARTIAL)은 쓰지 않는다("화학" → "화학공학" 같은 오매칭, 수시와 같은 기준).
+  for (const plan of plans) {
     const fit = calcDepartmentFit(plan, preference);
-    if (fit === FIT_NONE) {
+    if (fit < FIT_SAME_CATEGORY || isTeacherTrack(plan)) {
       continue;
     }
     matched.push({ plan, fit });
     taken.add(plan.id);
   }
 
-  const targetCategory = toCategory(preference.target);
-  const targetIsMedical = isMedicalCategory(targetCategory);
-
-  /** 의약·보건은 비의약과 섞지 않는다 (양방향) */
-  const crossesMedicalBoundary = (plan: JeongsiAdmissionPlan): boolean =>
-    isMedicalCategory(plan.category) !== targetIsMedical;
-
-  /**
-   * 사범계열(○○교육과)은 교원 자격 트랙이라 희망 학과가 교육 계열일 때만 넓혀
-   * 담는다. 학과 분류가 "영어교육과 → 영어영문학"처럼 교과로 묶여 있어,
-   * 국어국문 희망 학생에게 영어교육과가 추천됐다(specs/014 G1 실측).
-   */
-  const targetIsEducation = findFieldGroup(targetCategory) === "교육";
-  const crossesTeacherTrack = (plan: JeongsiAdmissionPlan): boolean =>
-    !targetIsEducation && /교육과$|교육학과$|교육학부$/.test(plan.department);
-
-  const addAll = (
-    predicate: (plan: JeongsiAdmissionPlan) => boolean,
-    fit: number
-  ): void => {
-    for (const plan of inRegion) {
-      if (
-        taken.has(plan.id) ||
-        crossesMedicalBoundary(plan) ||
-        crossesTeacherTrack(plan)
-      ) {
-        continue;
-      }
-      if (!predicate(plan)) {
-        continue;
-      }
-      matched.push({ plan, fit });
-      taken.add(plan.id);
-    }
-  };
-
   if (shouldStop(matched)) {
     return { plans: matched, stage: 1 };
   }
 
+  // 2단계: 같은 계열로 넓힌다(사용자 결정 2026-11-15 "범위를 좀 더 넓혀"). 의약은
+  // 학과마다 따로 보므로(expandableCategories) 약학 희망에 의예·수의예가 섞이지 않는다.
+  const targetIsMedical = isMedicalCategory(targetCategory);
   const groupCategories = expandableCategories(targetCategory);
-  addAll(
-    (plan) =>
-      groupCategories.has(plan.category) &&
-      (findFieldGroup(plan.category) !== NEUTRAL_GROUP ||
-        matchesNeutralPlanField(plan.department, targetCategory)),
-    FIT_FIELD_GROUP
-  );
-
-  return { plans: matched, stage: 2 };
+  for (const plan of plans) {
+    if (taken.has(plan.id)) continue;
+    // 의약·보건은 비의약과 섞지 않는다 (양방향)
+    if (isMedicalCategory(plan.category) !== targetIsMedical) continue;
+    if (isTeacherTrack(plan)) continue;
+    if (!groupCategories.has(plan.category)) continue;
+    if (
+      findFieldGroup(plan.category) === NEUTRAL_GROUP &&
+      !matchesNeutralPlanField(plan.department, targetCategory)
+    ) {
+      continue;
+    }
+    matched.push({ plan, fit: FIT_FIELD_GROUP });
+    taken.add(plan.id);
+  }
+  // 실제로 넓혀 담은 곳이 있을 때만 2단계다. 의약처럼 넓힐 곳이 없으면 1단계로 둬
+  // "○○ 계열까지 함께 비교했습니다" 안내가 사실과 다르게 나가지 않게 한다.
+  const widened = matched.some(({ fit }) => fit === FIT_FIELD_GROUP);
+  return { plans: matched, stage: widened ? 2 : 1 };
 };
 
 /**
@@ -568,19 +531,14 @@ export const collectCandidatePlans = (
  *
  * 입력 폼이 제출 전에 "추천이 통째로 빌 입력"(예: 학과 분류에 없는
  * 줄임말 "컴공")을 걸러내는 용도다. 실제 분석과 같은 후보 수집 규칙
- * (적합도 → 계열그룹 → 대계열 확대)을 쓰되, 지역은 전국으로 본다 —
- * 지역 조건 때문에 비는 것은 학생이 바꿀 수 있는 선택이라 막지 않는다.
- * 성적·선택과목은 보지 않는다.
+ * (희망 학과·같은 분류, 비면 같은 계열)을 쓴다. 성적·선택과목은 보지 않는다.
  */
 export const countTargetCandidates = (
   plans: JeongsiAdmissionPlan[],
   preference: Pick<JeongsiPreference, "target" | "targetKind">
 ): number =>
-  collectCandidatePlans(
-    plans,
-    { ...preference, region: "전국", risk: "균형" },
-    (matched) => matched.length > 0
-  ).plans.length;
+  collectCandidatePlans(plans, preference, (matched) => matched.length > 0)
+    .plans.length;
 
 /** 적정 구간에서 가장 먼저 고르는 격차 — 적정 구간의 가운데 (실측 통과율 약 60%) */
 const MODERATE_TARGET_GAP = (GAP_BANDS.적정하한 + GAP_BANDS.안정하한) / 2;
@@ -729,6 +687,29 @@ const pickRecommendations = (
 };
 
 /** 2027 최종 모집인원이 신호만큼 늘었는지 (최종 인원이 아직 없으면 false) */
+/**
+ * 소신(스나이핑) 후보의 우선순위 신호. 숫자가 작을수록 먼저 고른다.
+ * 실측 통과율 순서(classify.ts): 최종 모집인원 증가 23% > 경쟁률 급등+충원 많음 19% >
+ * 경쟁률 급등 7~13% > 그 외 4%. 원문 값이 없는 신호는 없는 것으로 본다(추정하지 않음).
+ */
+export const snipingSignalRank = (evaluation: PlanEvaluation): number => {
+  if (hasFinalQuotaSignal(evaluation)) return 0;
+  const competitions = evaluation.plan.recentCompetitions ?? [];
+  const previous = competitions.find((entry) => entry.year === 2025);
+  const latest = competitions.find((entry) => entry.year === 2026);
+  const surged =
+    previous?.competitionRate !== undefined &&
+    previous.competitionRate > 0 &&
+    latest?.competitionRate !== undefined &&
+    latest.competitionRate / previous.competitionRate >=
+      COMPETITION_SURGE_RATIO;
+  if (!surged) return 3;
+  return latest?.additionalPassRate !== undefined &&
+    latest.additionalPassRate >= FILL_RATE_SIGNAL
+    ? 1
+    : 2;
+};
+
 const hasFinalQuotaSignal = (evaluation: PlanEvaluation): boolean =>
   evaluation.finalQuotaChange !== null &&
   evaluation.finalQuotaChange.ratio >= FINAL_QUOTA_SIGNAL_RATIO;
@@ -737,7 +718,8 @@ const hasFinalQuotaSignal = (evaluation: PlanEvaluation): boolean =>
  * 스나이핑 후보 — 추천 범위 바로 아래(SNIPING_MIN_GAP ~ 상향하한) 모집단위.
  *
  * 실측 통과율을 함께 보여야 하므로 환산점수 입결로 판정했고 모집군이 바뀌지
- * 않은(실측 표본과 같은 조건) 곳만 쓴다. 순서: 최종 모집인원 증가 신호가 있는 곳 →
+ * 않은(실측 표본과 같은 조건) 곳만 쓴다. 순서: 실측 신호(snipingSignalRank: 최종 모집인원 증가 →
+ * 경쟁률 급등과 충원 많음 → 경쟁률 급등) →
  * 희망 학과 적합도 → 기준컷에 가까운 곳. 대학당 한 곳, 추천 목록과 겹치지 않게.
  *
  * 희망 학과와 같은 분류(FIT_SAME_CATEGORY 이상)만 고른다. 수시 추천의 유사학과도
@@ -755,7 +737,7 @@ const pickSniping = (
     .filter(
       ({ evaluation }) =>
         evaluation.eligible &&
-        evaluation.tier === "스나이핑" &&
+        evaluation.tier === "소신" &&
         evaluation.referenceCut?.metric === "convertedScore" &&
         evaluation.pastGroups.length === 0 &&
         evaluation.historicalPassRate !== null &&
@@ -764,8 +746,7 @@ const pickSniping = (
     .filter((candidate) => candidate.fit >= FIT_SAME_CATEGORY)
     .sort(
       (a, b) =>
-        Number(hasFinalQuotaSignal(b.evaluation)) -
-          Number(hasFinalQuotaSignal(a.evaluation)) ||
+        snipingSignalRank(a.evaluation) - snipingSignalRank(b.evaluation) ||
         b.fit - a.fit ||
         (b.gapRatio ?? -Infinity) - (a.gapRatio ?? -Infinity) ||
         a.evaluation.plan.id.localeCompare(b.evaluation.plan.id)
@@ -848,16 +829,20 @@ export const analyzeJeongsi = async (
   // 후보에서 뺀다. 기준컷 없이 구분을 매기면 추측이다(실측: 기본값 "적정"이
   // 붙은 40곳이 "공개 기준컷이 없어 … 판단한 구분"으로 추천됨).
   // 남학생이면 여자대학교는 지원 자격이 없어 후보에 넣지 않는다.
+  // 모든 추천은 같은 기준(학생의 대학별 환산점수 vs 그 대학 환산점수 입결)으로 판단한다
+  // (사용자 결정 2026-11-15). 평균 백분위 입결은 영어와 반영비율이 빠진 값이라 대학마다
+  // 기준이 달라져(영어 4등급 학생에게 연세대가 고려대보다 쉽게 나옴) 후보에서 뺀다.
   const studentPlans = excludeOtherTrackSplits(
     excludeWomensUniversities(plans, gender).filter(
       (plan) =>
         findResults(resultIndex, plan).length > 0 &&
-        classificationOf(plan).gapRatio !== null
+        classificationOf(plan).gapRatio !== null &&
+        classificationOf(plan).referenceCut?.metric === "convertedScore"
     ),
     resolveApplicantTrack(score)
   );
 
-  // 희망 조건 필터 — 지역 + 학과 적합도, 밴드가 안 차면 계열까지 확대
+  // 희망 조건 필터 — 희망 학과·같은 분류, 밴드가 안 차면 같은 계열(의약은 학과별)
   const pool = collectCandidatePlans(studentPlans, preference, (staged) => {
     const counts = countFilledBands(
       staged.map((entry) => classificationOf(entry.plan))

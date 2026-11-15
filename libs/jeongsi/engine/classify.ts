@@ -68,6 +68,18 @@ export const FINAL_QUOTA_SIGNAL_PASS_RATES = {
   withoutSignal: 0.04,
 } as const;
 
+/**
+ * 경쟁률·충원 신호 (2026-11-15 실측, specs/014). 2024→2025 경쟁률 변화와 2025 충원율로
+ * 2025→2026 컷 이동을 견줬다(환산점수·같은 군 277곳, 기준컷 −1.0 학생 통과율):
+ *   - 경쟁률 30% 이상 상승 + 충원율 100% 이상: 19% (43곳)
+ *   - 경쟁률 30% 이상 상승 + 충원율 100% 미만: 7% (41곳)
+ *   - 그 외: 4% (193곳)
+ * 충원율만 따로 보면 구간별 5~9%로 차이가 없어 단독 신호로 쓰지 않는다.
+ * 2027 판단에는 같은 방식으로 2025→2026 경쟁률 변화와 2026 충원율을 쓴다.
+ */
+export const COMPETITION_SURGE_RATIO = 1.3;
+export const FILL_RATE_SIGNAL = 100;
+
 /** 구간 경계가 뜻하는 다음 해 컷 통과 실측 비율 */
 export const GAP_BAND_PASS_RATES = {
   상향하한: 0.1,
@@ -442,7 +454,7 @@ export const tierForGap = (gap: number): AdmissionTier => {
     return "상향";
   }
   if (gap >= SNIPING_MIN_GAP) {
-    return "스나이핑";
+    return "소신";
   }
   return "지원불가";
 };

@@ -72,18 +72,17 @@ describe("expandableCategories", () => {
     expect(expanded.has("컴퓨터공학")).toBe(false);
   });
 
-  it("의약은 다른 그룹을 섞지 않는다", () => {
+  it("의약은 학과(분류)마다 따로 보고 다른 의약 학과나 그룹을 섞지 않는다", () => {
     // Arrange & Act
-    const expanded = expandableCategories("의학");
+    const expanded = expandableCategories("약학");
 
     // Assert
-    expect(expanded.has("약학")).toBe(true);
-    expect(expanded.has("수의학")).toBe(true);
-    // 간호학은 컷 분포가 7 백분위점 아래라 의약과 섞지 않는다
+    // 면허가 달라 서로 대신할 수 없다(사용자 결정 2026-11-15)
+    expect([...expanded]).toEqual(["약학"]);
+    expect(expanded.has("수의학")).toBe(false);
+    expect(expanded.has("의학")).toBe(false);
     expect(expanded.has("간호학")).toBe(false);
-    // 계열무관조차 섞지 않는다 — 컷이 극단적으로 높아 밴드가 왜곡된다
     expect(expanded.has("자유전공")).toBe(false);
-    expect(expanded.size).toBe(FIELD_GROUPS["의약"].length);
   });
 
   it("보건(면허 트랙)과 화학·생명은 서로 넓혀 섞지 않는다", () => {

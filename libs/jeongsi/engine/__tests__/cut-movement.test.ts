@@ -86,7 +86,7 @@ describe("판정 구간 — 실데이터 실측 대조", () => {
     });
   });
 
-  it("스나이핑 하한의 실측 통과율이 안내하는 비율과 맞는다", async () => {
+  it("소신 하한의 실측 통과율이 안내하는 비율과 맞는다", async () => {
     // Arrange
     const [plans, index] = await Promise.all([
       loadAdmissionPlans(),

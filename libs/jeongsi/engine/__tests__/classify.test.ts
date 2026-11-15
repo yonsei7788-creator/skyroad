@@ -46,13 +46,13 @@ describe("tierForGap - 모든 대학 공통 고정 구간", () => {
     expect(tierForGap(GAP_BANDS.적정하한 - 0.001)).toBe("상향");
   });
 
-  it("상향 하한 바로 위는 상향, 바로 아래는 스나이핑, 스나이핑 하한 아래는 지원불가다", () => {
+  it("상향 하한 바로 위는 상향, 바로 아래는 소신, 소신 하한 아래는 지원불가다", () => {
     // Arrange & Act & Assert
     expect(tierForGap(GAP_BANDS.상향하한)).toBe("상향");
-    expect(tierForGap(GAP_BANDS.상향하한 - 0.001)).toBe("스나이핑");
-    expect(tierForGap(SNIPING_MIN_GAP)).toBe("스나이핑");
+    expect(tierForGap(GAP_BANDS.상향하한 - 0.001)).toBe("소신");
+    expect(tierForGap(SNIPING_MIN_GAP)).toBe("소신");
     expect(tierForGap(SNIPING_MIN_GAP - 0.001)).toBe("지원불가");
-    expect(chanceFor("스나이핑")).toBe("매우낮음");
+    expect(chanceFor("소신")).toBe("매우낮음");
   });
 
   it("안정 상한을 넘으면 추천 범위 밖이다", () => {

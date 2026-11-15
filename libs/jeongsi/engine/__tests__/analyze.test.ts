@@ -9,7 +9,7 @@ import {
   classifyForStudent,
   collectCandidatePlans,
   countFilledBands,
-  matchesRegion,
+  snipingSignalRank,
 } from "../analyze";
 import { MAX_COMBINATIONS } from "../combination";
 import { baseScore, makePlan, makePreference, makeResult } from "./fixtures";
@@ -163,26 +163,6 @@ const allRecommended = (
   ...recommendations.안정,
 ];
 
-describe("matchesRegion", () => {
-  it("희망 지역이 서울이면 서울만 통과한다", () => {
-    // Arrange & Act & Assert
-    expect(matchesRegion("서울", "서울")).toBe(true);
-    expect(matchesRegion("수도권", "서울")).toBe(false);
-  });
-
-  it("희망 지역이 수도권이면 서울과 수도권이 통과한다", () => {
-    // Arrange & Act & Assert
-    expect(matchesRegion("서울", "수도권")).toBe(true);
-    expect(matchesRegion("수도권", "수도권")).toBe(true);
-    expect(matchesRegion("지방", "수도권")).toBe(false);
-  });
-
-  it("희망 지역이 전국이면 모두 통과한다", () => {
-    // Arrange & Act & Assert
-    expect(matchesRegion("지방", "전국")).toBe(true);
-  });
-});
-
 describe("calcDepartmentFit", () => {
   it("학과명이 정확히 같으면 가장 높은 적합도를 준다", () => {
     // Arrange
@@ -280,7 +260,7 @@ describe("analyzeJeongsi", () => {
       ].map((evaluation) => evaluation.plan.university);
     };
 
-    it("남학생이면 여자대학교를 목록·스나이핑·조합 어디에도 넣지 않는다", async () => {
+    it("남학생이면 여자대학교를 목록·소신·조합 어디에도 넣지 않는다", async () => {
       // Arrange & Act
       const universities = await analysisFor("male");
 
@@ -349,7 +329,7 @@ describe("analyzeJeongsi", () => {
     ).not.toContain("무리대학교");
   });
 
-  it("희망 지역이 서울이면 지방·수도권 대학을 제외한다", async () => {
+  it("예전 입력에 희망 지역이 있어도 모든 지역 대학을 본다", async () => {
     // Arrange & Act
     const analysis = await analyzeJeongsi(makeInput({ region: "서울" }));
 
@@ -357,8 +337,7 @@ describe("analyzeJeongsi", () => {
     const recommended = universitiesOf(
       allRecommended(analysis.recommendations)
     );
-    expect(recommended).not.toContain("지방대학교");
-    expect(recommended).not.toContain("안정대학교");
+    expect(recommended).toContain("지방대학교");
   });
 
   it("희망 학과와 무관한 모집단위는 분석 대상에서 빠진다", async () => {
@@ -498,350 +477,139 @@ const stopAtStage1 = (): boolean => true;
 /** 끝까지 확대 */
 const expandAll = (): boolean => false;
 
-describe("collectCandidatePlans - 후보 풀 단계 확대", () => {
-  it("밴드가 찼으면(1단계 종료) 확대하지 않는다", () => {
-    // Arrange
-    const target = makePlan({
-      id: "목표대학교-컴퓨터공학과-가",
-      university: "목표대학교",
-      region: "서울",
-    });
-    const otherField = makePlan({
-      id: "기계대학교-기계공학과-가",
-      university: "기계대학교",
-      department: "기계공학과",
-      category: "기계공학",
-      region: "서울",
-    });
+describe("collectCandidatePlans - 후보 범위", () => {
+  const exact = makePlan({ id: "가-컴퓨터공학과", university: "가대학교" });
+  const sameCategory = makePlan({
+    id: "나-컴퓨터공학부",
+    university: "나대학교",
+    department: "컴퓨터공학부",
+    category: "컴퓨터공학",
+  });
+  const fieldGroup = makePlan({
+    id: "다-소프트웨어학과",
+    university: "다대학교",
+    department: "소프트웨어학과",
+    category: "소프트웨어공학",
+  });
+  const partial = makePlan({
+    id: "라-컴퓨터공학과융합전공",
+    university: "라대학교",
+    department: "컴퓨터공학과융합전공",
+    category: "융합전공",
+  });
+  const stop = () => true;
+  const keepGoing = () => false;
 
-    // Act
+  it("밴드가 찼으면 희망 학과와 이름이 같거나 같은 분류인 곳만 담는다", () => {
+    // Arrange & Act
     const pool = collectCandidatePlans(
-      [target, otherField],
+      [exact, sameCategory, fieldGroup, partial],
       makePreference(),
-      stopAtStage1
+      stop
     );
 
     // Assert
-    expect(pool.plans.map((entry) => entry.plan.university)).toEqual([
-      "목표대학교",
+    expect(pool.plans.map(({ plan }) => plan.id)).toEqual([
+      "가-컴퓨터공학과",
+      "나-컴퓨터공학부",
     ]);
     expect(pool.stage).toBe(1);
   });
 
-  it("후보가 부족하면 같은 계열그룹까지 넓힌다", () => {
-    // Arrange
-    const target = makePlan({
-      id: "목표대학교-컴퓨터공학과-가",
-      university: "목표대학교",
-      region: "서울",
-    });
-    const sameGroup = makePlan({
-      id: "AI대학교-인공지능학과-나",
-      university: "AI대학교",
-      department: "인공지능학과",
-      category: "인공지능",
-      region: "서울",
-      group: "나",
-    });
-
-    // Act
+  it("밴드가 안 차면 같은 계열로 넓히고, 이름 일부만 겹치는 학과는 담지 않는다", () => {
+    // Arrange & Act
     const pool = collectCandidatePlans(
-      [target, sameGroup],
+      [exact, fieldGroup, partial],
       makePreference(),
-      expandAll
+      keepGoing
     );
 
     // Assert
-    expect(pool.plans.map((entry) => entry.plan.university)).toEqual([
-      "목표대학교",
-      "AI대학교",
+    expect(pool.plans.map(({ plan }) => plan.id)).toEqual([
+      "가-컴퓨터공학과",
+      "다-소프트웨어학과",
     ]);
-    // 확대된 후보는 적합도가 낮아 희망 학과보다 아래로 정렬된다
-    expect(pool.plans[0].fit).toBeGreaterThan(pool.plans[1].fit);
     expect(pool.stage).toBe(2);
-  });
-
-  it("그래도 부족해도 계열그룹 밖의 같은 대계열 학과는 넣지 않는다", () => {
-    // 대계열 확대(3단계)는 없앴다: 전자공학 희망 학생에게 식품영양학과·수학과가
-    // 적정 추천으로 나갔다(2026-11-08 실측).
-    // Arrange
-    const target = makePlan({
-      id: "목표대학교-컴퓨터공학과-가",
-      university: "목표대학교",
-      region: "서울",
-    });
-    const sameBroadField = makePlan({
-      id: "기계대학교-기계공학과-나",
-      university: "기계대학교",
-      department: "기계공학과",
-      category: "기계공학",
-      region: "서울",
-      group: "나",
-    });
-    const otherBroadField = makePlan({
-      id: "인문대학교-철학과-다",
-      university: "인문대학교",
-      department: "철학과",
-      category: "철학",
-      region: "서울",
-      group: "다",
-    });
-
-    // Act
-    const pool = collectCandidatePlans(
-      [target, sameBroadField, otherBroadField],
-      makePreference(),
-      expandAll
+    expect(
+      pool.plans.find(({ plan }) => plan.id === "다-소프트웨어학과")?.fit
+    ).toBeLessThan(
+      pool.plans.find(({ plan }) => plan.id === "가-컴퓨터공학과")?.fit ?? 0
     );
-
-    // Assert
-    const universities = pool.plans.map((entry) => entry.plan.university);
-    expect(universities).not.toContain("기계대학교");
-    expect(universities).not.toContain("인문대학교");
-    expect(pool.stage).toBe(2);
   });
 
-  it("의약 지망생에게 간호·생명 모집단위를 섞지 않는다", () => {
+  it("의약은 학과마다 따로 봐, 약학 희망에 의예과와 수의예과를 넣지 않는다", () => {
     // Arrange
-    const medical = makePlan({
-      id: "의대-의예과-가",
-      university: "의대",
-      department: "의예과",
-      category: "의학",
-      region: "서울",
-    });
     const pharmacy = makePlan({
-      id: "약대-약학과-나",
+      id: "약대-약학과",
       university: "약대",
       department: "약학과",
       category: "약학",
-      region: "서울",
-      group: "나",
     });
-    const nursing = makePlan({
-      id: "간호대-간호학과-다",
-      university: "간호대",
-      department: "간호학과",
-      category: "간호학",
-      region: "서울",
-      group: "다",
-    });
-    const nonMedical = makePlan({
-      id: "생명대-생명과학과-다",
-      university: "생명대",
-      department: "생명과학과",
-      category: "생명과학",
-      region: "서울",
-      group: "다",
-    });
-
-    // Act
-    const pool = collectCandidatePlans(
-      [medical, pharmacy, nursing, nonMedical],
-      makePreference({ target: "의예과", targetKind: "department" }),
-      expandAll
-    );
-
-    // Assert
-    const universities = pool.plans.map((entry) => entry.plan.university);
-    expect(universities).toContain("의대");
-    // 치·한·수의·약은 의대 지망생의 실제 하향 선택지다
-    expect(universities).toContain("약대");
-    // 간호는 컷이 7 백분위점 아래라 별도 트랙이다
-    expect(universities).not.toContain("간호대");
-    expect(universities).not.toContain("생명대");
-  });
-
-  it("비의약 지망생에게 의약 모집단위를 섞지 않는다", () => {
-    // Arrange
-    const target = makePlan({
-      id: "생명대-생명과학과-가",
-      university: "생명대",
-      department: "생명과학과",
-      category: "생명과학",
-      region: "서울",
-    });
-    const medical = makePlan({
-      id: "의대-의예과-나",
+    const medicine = makePlan({
+      id: "의대-의예과",
       university: "의대",
       department: "의예과",
       category: "의학",
-      region: "서울",
-      group: "나",
+    });
+    const veterinary = makePlan({
+      id: "수의대-수의예과",
+      university: "수의대",
+      department: "수의예과",
+      category: "수의학",
     });
 
     // Act
     const pool = collectCandidatePlans(
-      [target, medical],
-      makePreference({ target: "생명과학과", targetKind: "department" }),
-      expandAll
+      [pharmacy, medicine, veterinary],
+      makePreference({ target: "약학과" }),
+      keepGoing
     );
 
     // Assert
-    expect(pool.plans.map((entry) => entry.plan.university)).toEqual([
-      "생명대",
-    ]);
+    expect(pool.plans.map(({ plan }) => plan.id)).toEqual(["약대-약학과"]);
+    // 넓혀 담은 곳이 없으니 확대 단계(2)로 기록하지 않는다(확대 안내가 나가지 않게)
+    expect(pool.stage).toBe(1);
   });
 
-  it("계열그룹까지만 넓히고 같은 대계열의 다른 그룹은 넣지 않는다", () => {
-    // Arrange
-    const target = makePlan({
-      id: "목표대학교-컴퓨터공학과-가",
-      university: "목표대학교",
-      region: "서울",
-    });
-    const sameGroup = makePlan({
-      id: "AI대학교-인공지능학과-나",
-      university: "AI대학교",
-      department: "인공지능학과",
-      category: "인공지능",
-      region: "서울",
-      group: "나",
-    });
-    const sameBroadField = makePlan({
-      id: "기계대학교-기계공학과-다",
-      university: "기계대학교",
-      department: "기계공학과",
-      category: "기계공학",
-      region: "서울",
-      group: "다",
+  it("교육 계열이 아닌 희망에는 같은 분류라도 사범계열(○○교육과)을 담지 않는다", () => {
+    // Arrange: 컴퓨터교육과는 분류가 컴퓨터공학이다
+    const teacher = makePlan({
+      id: "마-컴퓨터교육과",
+      university: "마대학교",
+      department: "컴퓨터교육과",
+      category: "컴퓨터공학",
     });
 
     // Act
     const pool = collectCandidatePlans(
-      [target, sameGroup, sameBroadField],
+      [exact, teacher],
       makePreference(),
-      () => false
+      stop
     );
 
     // Assert
-    const universities = pool.plans.map((entry) => entry.plan.university);
-    expect(universities).toContain("AI대학교");
-    expect(universities).not.toContain("기계대학교");
+    expect(pool.plans.map(({ plan }) => plan.id)).toEqual(["가-컴퓨터공학과"]);
   });
 
-  it("보건 지망생은 대계열까지 넓히지 않는다", () => {
+  it("희망 지역 없이 모든 지역의 모집단위를 본다", () => {
     // Arrange
-    // 간호 지망생 상향에 전자공학과가 들어오는 것을 막는다.
-    // Stage 2(보건 + 화학·생명)까지만 본다.
-    const nursing = makePlan({
-      id: "간호대-간호학과-가",
-      university: "간호대",
-      department: "간호학과",
-      category: "간호학",
-      region: "서울",
-    });
-    const companion = makePlan({
-      id: "화학대-화학공학과-나",
-      university: "화학대",
-      department: "화학공학과",
-      category: "화학공학",
-      region: "서울",
-      group: "나",
-    });
-    const unrelated = makePlan({
-      id: "전자대-전자공학과-다",
-      university: "전자대",
-      department: "전자공학과",
-      category: "전자공학",
-      region: "서울",
-      group: "다",
-    });
+    const local = {
+      ...exact,
+      id: "지방-컴퓨터공학과",
+      region: "지방" as const,
+    };
 
     // Act
     const pool = collectCandidatePlans(
-      [nursing, companion, unrelated],
-      makePreference({ target: "간호학과", targetKind: "department" }),
-      expandAll
-    );
-
-    // Assert
-    const universities = pool.plans.map((entry) => entry.plan.university);
-    expect(universities).toContain("간호대");
-    // 보건은 면허 트랙이라 화학·생명으로도 넓히지 않는다(specs/014)
-    expect(universities).not.toContain("화학대");
-    expect(universities).not.toContain("전자대");
-    // 면허 트랙이라 3단계로 가지 않는다
-    expect(pool.stage).toBe(2);
-  });
-
-  it("교육학 지망생은 사범(교육) 계열 안에서만 넓힌다", () => {
-    // Arrange
-    const education = makePlan({
-      id: "교육대-교육학과-가",
-      university: "교육대",
-      department: "교육학과",
-      category: "교육학",
-      region: "서울",
-    });
-    const sameGroup = makePlan({
-      id: "사범대-국어교육과-나",
-      university: "사범대",
-      department: "국어교육과",
-      category: "국어교육",
-      region: "서울",
-      group: "나",
-    });
-    // 교원자격 트랙이라 같은 인문 대계열의 어문 계열도 섞지 않는다
-    const humanities = makePlan({
-      id: "국문대-국어국문학과-나",
-      university: "국문대",
-      department: "국어국문학과",
-      category: "국어국문학",
-      region: "서울",
-      group: "나",
-    });
-    const otherBroadField = makePlan({
-      id: "경영대-경영학과-다",
-      university: "경영대",
-      department: "경영학과",
-      category: "경영학",
-      region: "서울",
-      group: "다",
-    });
-
-    // Act
-    const pool = collectCandidatePlans(
-      [education, sameGroup, humanities, otherBroadField],
-      makePreference({ target: "교육학과", targetKind: "department" }),
-      expandAll
-    );
-
-    // Assert
-    const universities = pool.plans.map((entry) => entry.plan.university);
-    expect(universities).toContain("사범대");
-    expect(universities).not.toContain("국문대");
-    // 경상은 같은 인문 대계열이지만 Stage 3 이므로 제외된다
-    expect(universities).not.toContain("경영대");
-  });
-
-  it("희망 지역을 벗어난 모집단위는 확대 대상에서도 빠진다", () => {
-    // Arrange
-    const target = makePlan({
-      id: "목표대학교-컴퓨터공학과-가",
-      university: "목표대학교",
-      region: "서울",
-    });
-    const localSameGroup = makePlan({
-      id: "지방AI대학교-인공지능학과-나",
-      university: "지방AI대학교",
-      department: "인공지능학과",
-      category: "인공지능",
-      region: "지방",
-      group: "나",
-    });
-
-    // Act
-    const pool = collectCandidatePlans(
-      [target, localSameGroup],
+      [exact, local],
       makePreference({ region: "서울" }),
-      expandAll
+      stop
     );
 
     // Assert
-    expect(pool.plans.map((entry) => entry.plan.university)).toEqual([
-      "목표대학교",
-    ]);
+    expect(pool.plans.map(({ plan }) => plan.id)).toContain(
+      "지방-컴퓨터공학과"
+    );
   });
 });
 
@@ -1113,7 +881,7 @@ describe("analyzeJeongsi - 희망 계열 전멸 (선택과목 제한)", () => {
     expect(analysis.ineligiblePlans[0].ineligibleReason).toContain("수학");
   });
 
-  it("희망 계열에 지원 가능한 모집단위가 하나라도 있으면 정상 분석한다", async () => {
+  it("희망 학과와 같은 분류에 지원 가능한 모집단위가 하나라도 있으면 정상 분석한다", async () => {
     // Arrange
     const plansWithOpenMedical = [
       makePlan({
@@ -1124,18 +892,19 @@ describe("analyzeJeongsi - 희망 계열 전멸 (선택과목 제한)", () => {
         region: "서울",
         restrictions: { math: ["미적분", "기하"], inquiry: "과탐필수" },
       }),
+      // 같은 분류(의학)인데 선택과목 제한이 없는 모집단위
       makePlan({
-        id: "약대-약학과-나",
-        university: "약대",
-        department: "약학과",
-        category: "약학",
+        id: "열린의대-의예과-나",
+        university: "열린의대",
+        department: "의예과",
+        category: "의학",
         region: "서울",
         group: "나",
       }),
     ];
     useFixtureData(plansWithOpenMedical, [
       cutOf("의대-의예과-가", "의대", "가", 870),
-      cutOf("약대-약학과-나", "약대", "나", 870),
+      cutOf("열린의대-의예과-나", "열린의대", "나", 870),
     ]);
 
     // Act
@@ -1145,7 +914,7 @@ describe("analyzeJeongsi - 희망 계열 전멸 (선택과목 제한)", () => {
     const recommended = universitiesOf(
       allRecommended(analysis.recommendations)
     );
-    expect(recommended).toContain("약대");
+    expect(recommended).toContain("열린의대");
     expect(recommended).not.toContain("의대");
   });
 });
@@ -1166,10 +935,10 @@ describe("analyzeJeongsi - 전멸 판정 범위 경계", () => {
     preference: makePreference({ target, targetKind: "department" }),
   });
 
-  it("희망 학과는 전멸이지만 같은 계열그룹에 지원처가 있으면 추천한다", async () => {
+  it("희망 학과가 모두 막히면 같은 계열그룹 학과로 대신 추천하지 않고 지원 불가로 안내한다", async () => {
     // Arrange
-    // 의예과만 과탐 필수, 수의예과는 제한 없음 → 전멸이 아니다.
-    // 이 경계는 샘플 데이터로는 재현되지 않으므로 픽스처로 고정한다.
+    // 의예과만 과탐 필수, 수의예과는 제한 없음. 후보는 희망 학과와 같은 분류까지라
+    // (사용자 결정 2026-11-15) 수의예과는 후보가 아니다 → 희망 학과 전멸.
     useFixtureData(
       [
         makePlan({
@@ -1203,8 +972,9 @@ describe("analyzeJeongsi - 전멸 판정 범위 경계", () => {
     const recommended = universitiesOf(
       allRecommended(analysis.recommendations)
     );
-    expect(recommended).toContain("수의대");
+    expect(recommended).not.toContain("수의대");
     expect(recommended).not.toContain("의대");
+    expect(analysis.selection.blockedByRestrictions).toBe(true);
   });
 
   it("계열그룹까지 전멸이면 대계열에 지원처가 있어도 비운다", async () => {
@@ -1372,7 +1142,7 @@ describe("analyzeJeongsi - selection 메타정보", () => {
   });
 });
 
-describe("analyzeJeongsi - 스나이핑", () => {
+describe("analyzeJeongsi - 소신", () => {
   afterEach(() => {
     resetJeongsiDataSource();
     clearJeongsiDataCache();
@@ -1397,7 +1167,7 @@ describe("analyzeJeongsi - 스나이핑", () => {
       cut70: { metric: "convertedScore", value },
     });
 
-  it("추천 범위 바로 아래 환산점수 입결 모집단위를 스나이핑으로 고르고 추천 목록에는 넣지 않는다", async () => {
+  it("추천 범위 바로 아래 환산점수 입결 모집단위를 소신으로 고르고 추천 목록에는 넣지 않는다", async () => {
     // Arrange
     useFixtureData(
       [...plans, snipingPlan("스나대학교-컴퓨터공학과-가", "스나대학교", "가")],
@@ -1413,7 +1183,7 @@ describe("analyzeJeongsi - 스나이핑", () => {
     // Assert
     expect(universitiesOf(analysis.sniping)).toEqual(["스나대학교"]);
     const [picked] = analysis.sniping;
-    expect(picked.tier).toBe("스나이핑");
+    expect(picked.tier).toBe("소신");
     expect(picked.chance).toBe("매우낮음");
     expect(picked.historicalPassRate).not.toBeNull();
     expect(
@@ -1421,7 +1191,94 @@ describe("analyzeJeongsi - 스나이핑", () => {
     ).not.toContain("스나대학교");
   });
 
-  it("희망 학과와 같은 분류가 아닌 모집단위는 스나이핑으로 고르지 않는다", async () => {
+  it("평균 백분위 입결만 있는 모집단위는 추천과 소신 어디에도 넣지 않는다 (모든 추천은 환산점수 기준)", async () => {
+    // Arrange: 적정 구간 격차의 백분위 입결만 있는 모집단위
+    const percentilePlan = snipingPlan(
+      "백분위대학교-컴퓨터공학과-나",
+      "백분위대학교",
+      "나"
+    );
+    useFixtureData(
+      [...plans, percentilePlan],
+      [
+        ...results,
+        makeResult({
+          planKey: percentilePlan.id,
+          university: "백분위대학교",
+          group: "나",
+          cut70: { metric: "percentile", value: toPercentileCut(893) },
+        }),
+      ]
+    );
+
+    // Act
+    const analysis = await analyzeJeongsi(makeInput());
+
+    // Assert
+    const shown = [
+      ...allRecommended(analysis.recommendations),
+      ...analysis.sniping,
+    ];
+    expect(universitiesOf(shown)).not.toContain("백분위대학교");
+    expect(
+      shown.every(
+        (evaluation) => evaluation.referenceCut?.metric === "convertedScore"
+      )
+    ).toBe(true);
+  });
+
+  it("전년 경쟁률이 크게 오르고 충원이 많았던 곳을 먼저 소신으로 고른다 (실측 신호 순서)", async () => {
+    // Arrange: 격차와 적합도가 같은 세 곳. 신호가 없으면 id 순서로 "가무신호"가 뽑힌다
+    const withCompetitions = (
+      id: string,
+      university: string,
+      recentCompetitions: JeongsiAdmissionPlan["recentCompetitions"]
+    ) => ({ ...snipingPlan(id, university, "가"), recentCompetitions });
+    const signalPlans = [
+      withCompetitions("가무신호대학교-컴퓨터공학과-가", "가무신호대학교", [
+        { year: 2025, competitionRate: 5, additionalPassRate: 150 },
+        { year: 2026, competitionRate: 5, additionalPassRate: 150 },
+      ]),
+      withCompetitions("나급등대학교-컴퓨터공학과-가", "나급등대학교", [
+        { year: 2025, competitionRate: 4, additionalPassRate: 50 },
+        { year: 2026, competitionRate: 6, additionalPassRate: 50 },
+      ]),
+      withCompetitions("다충원대학교-컴퓨터공학과-가", "다충원대학교", [
+        { year: 2025, competitionRate: 4, additionalPassRate: 120 },
+        { year: 2026, competitionRate: 6, additionalPassRate: 120 },
+      ]),
+    ];
+    useFixtureData(
+      [...plans, ...signalPlans],
+      [
+        ...results,
+        ...signalPlans.map((plan) =>
+          convertedCut(plan.id, plan.university, "가", 909.2)
+        ),
+      ]
+    );
+
+    // Act
+    const analysis = await analyzeJeongsi(makeInput());
+
+    // Assert
+    const picked = universitiesOf(analysis.sniping);
+    expect(picked).toHaveLength(2);
+    expect(picked).toEqual(
+      expect.arrayContaining(["다충원대학교", "나급등대학교"])
+    );
+    expect(picked).not.toContain("가무신호대학교");
+    const rankOf = (university: string) =>
+      snipingSignalRank(
+        analysis.sniping.find(
+          (evaluation) => evaluation.plan.university === university
+        ) as PlanEvaluation
+      );
+    expect(rankOf("다충원대학교")).toBe(1);
+    expect(rankOf("나급등대학교")).toBe(2);
+  });
+
+  it("희망 학과와 같은 분류가 아닌 모집단위는 소신으로 고르지 않는다", async () => {
     // Arrange
     // 학과명에 희망 학과가 들어 있을 뿐 분류가 다른 곳(적합도 FIT_PARTIAL)
     const partialPlan = makePlan({
@@ -1452,7 +1309,7 @@ describe("analyzeJeongsi - 스나이핑", () => {
     expect(universitiesOf(analysis.sniping)).not.toContain("부분대학교");
   });
 
-  it("백분위 입결이나 과거 모집군이 다른 곳은 스나이핑으로 고르지 않는다", async () => {
+  it("백분위 입결이나 과거 모집군이 다른 곳은 소신으로 고르지 않는다", async () => {
     // Arrange
     const percentileCut = makeResult({
       planKey: "백분위대학교-컴퓨터공학과-가",
@@ -1486,7 +1343,7 @@ describe("analyzeJeongsi - 스나이핑", () => {
     expect(analysis.sniping).toEqual([]);
   });
 
-  it("공격 성향이면 스나이핑을 넣은 조합을 하나 더 보인다", async () => {
+  it("공격 성향이면 소신을 넣은 조합을 하나 더 보인다", async () => {
     // Arrange
     useFixtureData(
       [...plans, snipingPlan("스나대학교-컴퓨터공학과-가", "스나대학교", "가")],
@@ -1502,7 +1359,7 @@ describe("analyzeJeongsi - 스나이핑", () => {
     // Assert
     const withSniping = analysis.combinations.filter((combination) =>
       (["가", "나", "다"] as const).some(
-        (group) => combination[group]?.tier === "스나이핑"
+        (group) => combination[group]?.tier === "소신"
       )
     );
     expect(withSniping).toHaveLength(1);
