@@ -9,7 +9,9 @@ import {
   isWithinRecommendRange,
   pickCompetitionRate,
   pickReferenceMetric,
+  SMALL_QUOTA_MAX,
   SNIPING_MIN_GAP,
+  isSmallQuota,
   tierForGap,
 } from "../classify";
 import { makeResult } from "./fixtures";
@@ -199,6 +201,48 @@ describe("classifyPlan - 환산점수 기준 입결", () => {
     expect(result.safeCapped).toBe(true);
     expect(result.safeCapReasons).toEqual(["모집군 변경"]);
     expect(result.pastGroups).toEqual([{ year: 2026, group: "다" }]);
+  });
+
+  it("모집인원이 소수 모집 기준 이하면 안정 구간이어도 적정으로 둔다", () => {
+    // Arrange — 두 해 모두 5명, 2027 도 5명이라 모집인원 보정은 없다
+    const results = [2025, 2026].map((year) =>
+      makeResult({
+        admissionYear: year as 2025 | 2026,
+        quota: SMALL_QUOTA_MAX,
+        cut70: { metric: "convertedScore", value: 850 },
+      })
+    );
+
+    // Act
+    const result = classifyPlan(
+      convertedInput({ results, quota: SMALL_QUOTA_MAX })
+    );
+
+    // Assert
+    expect(result.gapRatio).toBe(4.917);
+    expect(result.tier).toBe("적정");
+    expect(result.safeCapped).toBe(true);
+    expect(result.safeCapReasons).toEqual(["소수 모집"]);
+  });
+
+  it("모집인원이 소수 모집 기준보다 많으면 안정으로 둔다", () => {
+    // Arrange
+    const quota = SMALL_QUOTA_MAX + 1;
+    const results = [2025, 2026].map((year) =>
+      makeResult({
+        admissionYear: year as 2025 | 2026,
+        quota,
+        cut70: { metric: "convertedScore", value: 850 },
+      })
+    );
+
+    // Act
+    const result = classifyPlan(convertedInput({ results, quota }));
+
+    // Assert
+    expect(isSmallQuota(quota)).toBe(false);
+    expect(result.tier).toBe("안정");
+    expect(result.safeCapReasons).toEqual([]);
   });
 
   it("평균 백분위 입결은 격차가 안정 구간이어도 적정으로 둔다", () => {

@@ -12,6 +12,7 @@ import type {
   JeongsiAdmissionPlan,
   JeongsiPreference,
   JeongsiResultEntry,
+  PlanEvaluation,
   SuneungGrade,
   SuneungScore,
 } from "../../types";
@@ -171,5 +172,43 @@ export const makePreference = (
   targetKind: "department",
   region: "전국",
   risk: "균형",
+  ...overrides,
+});
+
+/**
+ * 평가 결과 생성 헬퍼 (만점 1000 → 격차 1 = 10점).
+ * 기본값은 2025 875, 2026 880 컷, 기준컷 880, 내 환산점수 900(격차 +2.0, 적정).
+ */
+export const makeEvaluation = (
+  overrides: Partial<PlanEvaluation> = {}
+): PlanEvaluation => ({
+  plan: makePlan(),
+  eligible: true,
+  convertedScore: 900,
+  weightedPercentile: 94,
+  simpleAveragePercentile: 93.833,
+  referenceCut: { metric: "convertedScore", value: 880 },
+  competitionRate: 4.2,
+  cutHistory: [
+    { year: 2025, cut: 875 },
+    { year: 2026, cut: 880 },
+  ],
+  gapRatio: 2,
+  gapPoints: 20,
+  resultYears: [2025, 2026],
+  quotaChange: null,
+  additionalPass: null,
+  safeCapped: false,
+  safeCapReasons: [],
+  pastGroups: [],
+  finalQuotaChange: null,
+  withinRecommendRange: true,
+  historicalPassRate: 0.45,
+  historicalPassRateScope: "all",
+  latestAdmitCuts: { year: 2026, cut50: null, cut70: 880 },
+  sensitivity: 1,
+  tier: "적정",
+  chance: "보통",
+  advantageScore: 50,
   ...overrides,
 });

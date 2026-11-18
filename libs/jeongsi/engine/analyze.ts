@@ -12,14 +12,20 @@ import {
   getCategoryForDepartment,
 } from "@/libs/report/constants/department-category-map";
 
-import { loadAdmissionPlans, loadAdmissionResultIndex } from "../data";
+import {
+  loadAdmissionPlans,
+  loadAdmissionResultIndex,
+  loadExcludedUnits,
+} from "../data";
 import { calcAdvantageScore } from "./advantage";
 import {
   COMPETITION_SURGE_RATIO,
   FILL_RATE_SIGNAL,
   FINAL_QUOTA_SIGNAL_RATIO,
   GAP_BANDS,
+  SNIPING_MIN_GAP,
   classifyPlan,
+  isSmallQuota,
 } from "./classify";
 import {
   addSnipingCombination,
@@ -63,7 +69,12 @@ import type {
   JeongsiInput,
   JeongsiPreference,
   JeongsiResultEntry,
+  ExcludedUnit,
+  NotComparedEntry,
+  NotListedEntry,
+  NotListedReason,
   PlanEvaluation,
+  StudentGender,
   SuneungScore,
 } from "../types";
 
@@ -117,7 +128,7 @@ const isKnownCategory = (name: string): boolean => {
  * 카테고리로 정규화한 뒤 비교한다. 0 이면 분석 대상에서 제외된다.
  */
 export const calcDepartmentFit = (
-  plan: JeongsiAdmissionPlan,
+  plan: Pick<JeongsiAdmissionPlan, "department" | "category">,
   preference: Pick<JeongsiPreference, "target" | "targetKind">
 ): number => {
   const { target, targetKind } = preference;
@@ -788,6 +799,175 @@ const pickAdvantageousPlans = (
     .map((candidate) => candidate.evaluation);
 };
 
+// ─── 목록에 넣지 않은 곳과 비교하지 못한 곳 ───
+
+/** PART 3 "목록에 넣지 않은 곳"에 싣는 최대 수 */
+export const NOT_LISTED_SIZE = 10;
+
+/** 추천 범위까지의 거리 (판정 격차 단위). 범위 안이면 0 */
+const distanceToRecommendRange = (gap: number): number => {
+  if (gap < GAP_BANDS.상향하한) return GAP_BANDS.상향하한 - gap;
+  if (gap > GAP_BANDS.안정상한) return gap - GAP_BANDS.안정상한;
+  return 0;
+};
+
+const NOT_LISTED_ORDER: Record<NotListedReason, number> = {
+  sameUniversityListed: 0,
+  tierListFull: 0,
+  snipingRegrouped: 1,
+  snipingSameUniversity: 1,
+  snipingListFull: 1,
+  aboveRange: 2,
+  belowRange: 2,
+  ineligible: 3,
+};
+
+/**
+ * 희망 학과와 같은 분류(FIT_SAME_CATEGORY 이상)로 비교했지만 목록에 넣지 않은 곳과 이유.
+ * "같은 성적대인데 왜 이 대학은 없나"에 답한다. 이유는 목록을 고른 규칙 그대로다
+ * (pickRecommendations·pickSniping). 추천 범위에 가까운 곳부터 NOT_LISTED_SIZE 곳.
+ */
+export const collectNotListed = (
+  candidates: CombinationCandidate[],
+  picked: Record<RecommendableTier, CombinationCandidate[]>,
+  sniping: PlanEvaluation[]
+): NotListedEntry[] => {
+  const listedIds = new Set([
+    ...RECOMMENDATION_TIERS.flatMap((tier) =>
+      picked[tier].map((candidate) => candidate.evaluation.plan.id)
+    ),
+    ...sniping.map((evaluation) => evaluation.plan.id),
+  ]);
+  const reasonOf = (
+    candidate: CombinationCandidate
+  ): NotListedReason | null => {
+    const { evaluation } = candidate;
+    const gap = candidate.gapRatio;
+    if (!evaluation.eligible) return "ineligible";
+    if (gap === null) return null;
+    if (gap < SNIPING_MIN_GAP) return "belowRange";
+    if (gap < GAP_BANDS.상향하한) {
+      if (evaluation.pastGroups.length > 0) return "snipingRegrouped";
+      return sniping.some(
+        (other) => other.plan.university === evaluation.plan.university
+      )
+        ? "snipingSameUniversity"
+        : "snipingListFull";
+    }
+    if (gap > GAP_BANDS.안정상한) return "aboveRange";
+    const { tier } = evaluation;
+    if (tier !== "상향" && tier !== "적정" && tier !== "안정") return null;
+    const sameUniversity = picked[tier].some(
+      (other) => other.evaluation.plan.university === evaluation.plan.university
+    );
+    return sameUniversity ? "sameUniversityListed" : "tierListFull";
+  };
+  return candidates
+    .filter(
+      (candidate) =>
+        candidate.fit >= FIT_SAME_CATEGORY &&
+        !listedIds.has(candidate.evaluation.plan.id)
+    )
+    .flatMap((candidate) => {
+      const reason = reasonOf(candidate);
+      if (!reason) return [];
+      const { evaluation } = candidate;
+      const entry: NotListedEntry = {
+        unitKey: evaluation.plan.id,
+        university: evaluation.plan.university,
+        department: evaluation.plan.department,
+        group: evaluation.plan.group,
+        reason,
+        tier: evaluation.tier,
+        gapRatio: candidate.gapRatio,
+        ...(reason === "ineligible" && evaluation.ineligibleReason
+          ? { ineligibleReason: evaluation.ineligibleReason }
+          : {}),
+      };
+      return [entry];
+    })
+    .sort(
+      (a, b) =>
+        NOT_LISTED_ORDER[a.reason] - NOT_LISTED_ORDER[b.reason] ||
+        distanceToRecommendRange(a.gapRatio ?? Infinity) -
+          distanceToRecommendRange(b.gapRatio ?? Infinity) ||
+        a.unitKey.localeCompare(b.unitKey)
+    )
+    .slice(0, NOT_LISTED_SIZE);
+};
+
+const WOMENS_UNIVERSITY = /여자대학교$/;
+const TEACHER_TRACK = /교육과$|교육학과$|교육학부$/;
+
+/**
+ * 희망 학과와 같은 분류인데 같은 기준(대학 환산점수 vs 그 대학 환산점수 입결)으로 비교하지
+ * 못한 곳과 원문 사유. 엔진 데이터에 들어오지 못한 곳(빌드 스크립트가 사유를 남긴 일반전형)과,
+ * 엔진 데이터에는 있지만 이 학생 값과 같은 기준의 입결이 없는 곳을 모은다.
+ * 남학생이면 여자대학교는 지원 자격이 없어 싣지 않는다. 교원 자격 트랙은 후보 수집과 같은
+ * 기준으로 뺀다.
+ */
+export const collectNotCompared = ({
+  plans,
+  excludedUnits,
+  comparedPlanIds,
+  isComparable,
+  preference,
+  gender,
+  track,
+}: {
+  plans: JeongsiAdmissionPlan[];
+  excludedUnits: ExcludedUnit[];
+  comparedPlanIds: Set<string>;
+  isComparable: (plan: JeongsiAdmissionPlan) => boolean;
+  preference: Pick<JeongsiPreference, "target" | "targetKind">;
+  gender: StudentGender | undefined;
+  track: ReturnType<typeof resolveApplicantTrack>;
+}): NotComparedEntry[] => {
+  const targetIsEducation =
+    findFieldGroup(toCategory(preference.target)) === "교육";
+  const inScope = (unit: {
+    university: string;
+    department: string;
+    category: string;
+  }): boolean =>
+    calcDepartmentFit(unit, preference) >= FIT_SAME_CATEGORY &&
+    !(gender === "male" && WOMENS_UNIVERSITY.test(unit.university)) &&
+    !(!targetIsEducation && TEACHER_TRACK.test(unit.department));
+
+  const fromPlans: NotComparedEntry[] = excludeOtherTrackSplits(
+    plans.filter(inScope),
+    track
+  )
+    .filter((plan) => !comparedPlanIds.has(plan.id) && !isComparable(plan))
+    .map((plan) => ({
+      university: plan.campus
+        ? `${plan.university}(${plan.campus})`
+        : plan.university,
+      department: plan.department,
+      group: plan.group,
+      reason: "noComparableResults" as const,
+      ...(plan.formulaChangedYears
+        ? { formulaChangedYears: plan.formulaChangedYears }
+        : {}),
+    }));
+  const fromExcluded: NotComparedEntry[] = excludedUnits
+    .filter(inScope)
+    .map((unit) => ({
+      university: unit.campus
+        ? `${unit.university}(${unit.campus})`
+        : unit.university,
+      department: unit.department,
+      group: unit.group,
+      reason: unit.reason,
+    }));
+  return [...fromPlans, ...fromExcluded].sort(
+    (a, b) =>
+      a.reason.localeCompare(b.reason) ||
+      a.university.localeCompare(b.university) ||
+      a.department.localeCompare(b.department)
+  );
+};
+
 /** 비어 있는 분석 결과 (지원 가능한 모집단위가 없을 때) */
 const emptyRecommendations = (): Record<
   "상향" | "적정" | "안정",
@@ -866,23 +1046,41 @@ export const analyzeJeongsi = async (
     ) ?? 0;
   const context: AdvantageContext = { averageEnglishLoss };
 
-  // 다음 해 컷 이동 실측 — 학생과 무관한 데이터 통계라 분석마다 한 번 만든다
-  const movement = buildCutMovement(plans, (plan) =>
-    findResults(resultIndex, plan)
+  // 다음 해 컷 이동 실측 — 학생과 무관한 데이터 통계라 분석마다 한 번 만든다.
+  // 소수 모집 모집단위는 컷이 더 크게 움직여(classify.ts SMALL_QUOTA_MAX) 소수 모집끼리 잰다.
+  const resultsOfPlan = (plan: JeongsiAdmissionPlan): JeongsiResultEntry[] =>
+    findResults(resultIndex, plan);
+  const movement = buildCutMovement(plans, resultsOfPlan);
+  const smallQuotaMovement = buildCutMovement(
+    plans,
+    resultsOfPlan,
+    "smallQuota"
   );
 
   const candidates: CombinationCandidate[] = matched.map((entry) => {
     const classification = classificationOf(entry.plan);
     const evaluation = toEvaluation(score, classification, context);
 
+    const smallQuota = isSmallQuota(entry.plan.quota);
+    const historicalPassRate =
+      evaluation.gapRatio === null ||
+      evaluation.referenceCut?.metric !== "convertedScore"
+        ? null
+        : passRateFor(
+            smallQuota ? smallQuotaMovement : movement,
+            evaluation.gapRatio
+          );
     return {
       evaluation: {
         ...evaluation,
-        historicalPassRate:
-          evaluation.gapRatio === null ||
-          evaluation.referenceCut?.metric !== "convertedScore"
-            ? null
-            : passRateFor(movement, evaluation.gapRatio),
+        historicalPassRate,
+        ...(historicalPassRate === null
+          ? {}
+          : {
+              historicalPassRateScope: smallQuota
+                ? ("smallQuota" as const)
+                : ("all" as const),
+            }),
       },
       fit: entry.fit,
       gapRatio: classification.gapRatio,
@@ -956,6 +1154,19 @@ export const analyzeJeongsi = async (
   const sniping = pickSniping(applicable, recommended).map(
     (candidate) => candidate.evaluation
   );
+  const notListed = collectNotListed(candidates, picked, sniping);
+  const notCompared = collectNotCompared({
+    plans,
+    excludedUnits: await loadExcludedUnits(),
+    comparedPlanIds: new Set(studentPlans.map((plan) => plan.id)),
+    isComparable: (plan) =>
+      findResults(resultIndex, plan).length > 0 &&
+      classificationOf(plan).gapRatio !== null &&
+      classificationOf(plan).referenceCut?.metric === "convertedScore",
+    preference,
+    gender,
+    track: resolveApplicantTrack(score),
+  });
   const combinations = addSnipingCombination(
     markRecommendedCombination(
       buildCombinations(recommended, preference.risk),
@@ -997,5 +1208,7 @@ export const analyzeJeongsi = async (
     },
     sniping,
     combinations,
+    notListed,
+    notCompared,
   };
 };

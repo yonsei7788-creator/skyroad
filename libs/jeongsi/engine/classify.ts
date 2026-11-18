@@ -80,6 +80,14 @@ export const FINAL_QUOTA_SIGNAL_PASS_RATES = {
 export const COMPETITION_SURGE_RATIO = 1.3;
 export const FILL_RATE_SIGNAL = 100;
 
+/** 위 실측의 통과율 (기준컷 −1.0 학생) */
+export const COMPETITION_SIGNAL_PASS_RATES = {
+  gap: -1.0,
+  surgeWithFill: 0.19,
+  surgeOnly: 0.07,
+  others: 0.04,
+} as const;
+
 /** 구간 경계가 뜻하는 다음 해 컷 통과 실측 비율 */
 export const GAP_BAND_PASS_RATES = {
   상향하한: 0.1,
@@ -87,6 +95,26 @@ export const GAP_BAND_PASS_RATES = {
   안정하한: 0.75,
   안정상한: 0.9,
 } as const;
+
+/**
+ * 소수 모집 기준 (2027 모집인원). 이 인원 이하는 컷이 더 크게 움직여 안정으로 매기지 않는다.
+ *
+ * 실측(cut-movement, 2025 기준컷 → 2026 컷, 환산점수·같은 군, 2026-11-18): 모집인원 5명 이하
+ * 101곳은 안정 하한(+4.0)의 다음 해 컷 통과 비율이 65%로, 6명 이상 201곳(79%)과 전체 기준
+ * (75%)보다 낮았다. 안정 상한(+6.3)에서도 84%로 6명 이상(94%)보다 낮다. 그래서 격차가 안정
+ * 구간이어도 적정으로 두고(SafeCapReason "소수 모집"), 실측 비율은 소수 모집끼리 잰 값을 쓴다.
+ */
+export const SMALL_QUOTA_MAX = 5;
+
+/** 위 실측의 안정 하한 통과 비율. cut-movement.test 가 데이터와 대조한다 */
+export const SMALL_QUOTA_SAFE_PASS_RATES = {
+  smallQuota: 0.65,
+  others: 0.79,
+} as const;
+
+/** 소수 모집 모집단위인지 */
+export const isSmallQuota = (quota: number): boolean =>
+  quota > 0 && quota <= SMALL_QUOTA_MAX;
 
 /**
  * 안정으로 매기려면 필요한 입결 학년도 수.
@@ -102,6 +130,7 @@ export const MIN_YEARS_FOR_SAFE = 2;
  *   군이 바뀌면 경쟁 대학이 달라져 컷을 그대로 옮길 수 없다.
  * - 백분위 입결: 판정 구간의 실측 통과율은 환산점수 입결 모집단위에서 잰 값이다.
  *   백분위 입결로 두 해를 비교할 수 있는 곳은 16곳뿐이라 같은 비율을 쓸 근거가 없다.
+ * - 소수 모집: 2027 모집인원이 SMALL_QUOTA_MAX 이하. 컷이 더 크게 움직였다(실측).
  */
 export type { SafeCapReason } from "../types";
 
@@ -589,6 +618,7 @@ export const classifyPlan = (input: ClassifyInput): ClassifyResult => {
     ...(yearCuts.length < MIN_YEARS_FOR_SAFE ? ["1개년 입결" as const] : []),
     ...(pastGroups.length > 0 ? ["모집군 변경" as const] : []),
     ...(metric === "percentile" ? ["백분위 입결" as const] : []),
+    ...(isSmallQuota(input.quota) ? ["소수 모집" as const] : []),
   ];
   const bandTier = tierForGap(gapRatio);
   const safeCapped = bandTier === "안정" && safeCapReasons.length > 0;

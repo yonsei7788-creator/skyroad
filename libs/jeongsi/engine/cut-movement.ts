@@ -9,7 +9,7 @@
 // 원문 입결만 쓰고 추정값을 만들지 않는다. 판정 구간(GAP_BANDS)도 이 분포에서 정했다.
 // ============================================================
 
-import { quotaAdjustmentInGap } from "./classify";
+import { isSmallQuota, quotaAdjustmentInGap } from "./classify";
 
 import type { JeongsiAdmissionPlan, JeongsiResultEntry } from "../types";
 
@@ -26,13 +26,20 @@ export interface CutMovement {
 /** 실측 분포. 두 해 모두 같은 지표의 70% 컷이 있는 모집단위만 쓴다 */
 export const buildCutMovement = (
   plans: JeongsiAdmissionPlan[],
-  resultsOf: (plan: JeongsiAdmissionPlan) => JeongsiResultEntry[]
+  resultsOf: (plan: JeongsiAdmissionPlan) => JeongsiResultEntry[],
+  /**
+   * 표본 범위. smallQuota 는 다음 해(2026) 모집인원이 SMALL_QUOTA_MAX 이하인 곳만,
+   * regularQuota 는 그 밖만 잰다. 판정하는 해(2027)의 모집인원으로 고르는 것과 같은 기준이다.
+   */
+  scope: "all" | "smallQuota" | "regularQuota" = "all"
 ): CutMovement => {
   const deltas = plans.flatMap((plan) => {
     const results = resultsOf(plan);
     const from = results.find((entry) => entry.admissionYear === FROM_YEAR);
     const to = results.find((entry) => entry.admissionYear === TO_YEAR);
     if (!from?.cut70 || !to?.cut70) return [];
+    if (scope === "smallQuota" && !isSmallQuota(to.quota)) return [];
+    if (scope === "regularQuota" && isSmallQuota(to.quota)) return [];
     if (from.cut70.metric !== to.cut70.metric) return [];
     // 백분위 입결은 두 해를 비교할 수 있는 곳이 16곳뿐이라 따로 잴 수 없고,
     // 환산점수와 섞으면 환산점수 모집단위의 비율이 흐려진다.
