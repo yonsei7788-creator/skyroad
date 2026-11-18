@@ -289,6 +289,12 @@ export interface JeongsiAdmissionPlan {
    */
   recentCompetitions?: RecentCompetition[];
   /**
+   * 환산점수 입결이 원문에 있지만 그해 환산식이 2027 과 달라 판정에 쓰지 않은 학년도
+   * (2025, 2026). 원문 30_수능반영방법의 학년도별 환산식을 비교해 정한다. 없으면 생략.
+   * 리포트가 "2027 반영방식 변경"을 변수로 밝히는 근거다.
+   */
+  formulaChangedYears?: ResultYear[];
+  /**
    * 전형 총점 중 수능 비율(%). 100 이면 생략한다.
    * 나머지(학생부 교과 등)는 엔진이 계산하지 않으므로, 이 값이 있는
    * 모집단위는 수능 성적만으로 본 위치다.
@@ -377,7 +383,11 @@ export interface JeongsiResultEntry {
  * 안정으로 매기지 않는 사유. 격차가 안정 구간이어도 하나라도 있으면 적정으로 둔다.
  * 자세한 근거는 engine/classify.ts 의 MIN_YEARS_FOR_SAFE·SafeCapReason 주석.
  */
-export type SafeCapReason = "1개년 입결" | "모집군 변경" | "백분위 입결";
+export type SafeCapReason =
+  | "1개년 입결"
+  | "모집군 변경"
+  | "백분위 입결"
+  | "소수 모집";
 
 /** 지원 가능성 분류 */
 /**
@@ -488,6 +498,11 @@ export interface PlanEvaluation {
    * 판정한 곳과 단독 평가는 null.
    */
   historicalPassRate: number | null;
+  /**
+   * historicalPassRate 를 잰 표본. 모집인원이 SMALL_QUOTA_MAX 이하인 곳은 컷이 더 크게
+   * 움직여(실측) 소수 모집 모집단위끼리만 잰다. 실측 비율이 없으면 생략.
+   */
+  historicalPassRateScope?: PassRateScope;
   /** 최신 입결 학년도 합격자 50%·70% 컷 (판정 지표 단위, 원문 값) */
   latestAdmitCuts: {
     year: ResultYear;
@@ -550,6 +565,84 @@ export interface CandidateSelection {
   outOfRange?: { tooHigh: number; tooLow: number };
 }
 
+/** 실측 통과율 표본: 소수 모집 모집단위끼리 / 전체 */
+export type PassRateScope = "smallQuota" | "all";
+
+/**
+ * 비교하지 못한 모집단위의 사유 (원문 근거). 리포트가 "왜 이 대학은 없는지"를 밝힌다.
+ * - formulaUnsupported: 대학 환산식을 원문만으로 정확히 계산할 수 없음
+ * - maxScoreUnpublished: 환산에 필요한 최고점·만점이 원문에 없음
+ * - suneungWeightLow: 전형 총점에서 수능 비율이 80% 미만
+ * - quotaUnpublished: 2027 모집인원이 원문에 없거나 0명
+ * - noPublicResults: 공개 입결이 없음
+ * - newUnit: 2027 신설 모집단위라 입결이 없음
+ * - noComparableResults: 공개 입결이 평균 백분위뿐이거나 환산점수 입결을 2027 환산식과
+ *   같은 기준으로 맞출 수 없음 (엔진 단계)
+ */
+export type NotComparedReason =
+  | "formulaUnsupported"
+  | "maxScoreUnpublished"
+  | "suneungWeightLow"
+  | "quotaUnpublished"
+  | "noPublicResults"
+  | "newUnit"
+  | "noComparableResults";
+
+/** 엔진 데이터에 들어오지 못한 일반전형 모집단위 (data/excluded-units-2027.json) */
+export interface ExcludedUnit {
+  university: string;
+  campus?: string;
+  department: string;
+  category: string;
+  group: AdmissionGroup;
+  reason: NotComparedReason;
+}
+
+/** 희망 학과와 같은 분류인데 비교하지 못한 모집단위 */
+export interface NotComparedEntry {
+  university: string;
+  department: string;
+  group: AdmissionGroup;
+  reason: NotComparedReason;
+  /** reason 이 noComparableResults 이고 2027 환산식이 바뀐 학년도가 있으면 그 해 */
+  formulaChangedYears?: ResultYear[];
+}
+
+/**
+ * 희망 학과와 같은 분류로 비교했지만 목록(PART 3)에 넣지 않은 모집단위와 그 이유.
+ * - belowRange: 기준컷 대비 격차가 소신 하한에도 못 미침
+ * - snipingRegrouped: 소신 구간이지만 과거 입결의 모집군이 2027 과 달라 실측 비율을 붙일 수 없음
+ * - snipingSameUniversity: 소신 구간이지만 같은 대학의 다른 모집단위가 소신에 이미 있음
+ * - snipingListFull: 소신 구간이지만 소신 후보(SNIPING_SIZE 곳)가 찼음
+ * - aboveRange: 격차가 안정 상한보다 커 성적보다 크게 낮은 곳
+ * - ineligible: 응시 과목 조건(선택과목 제한 등)으로 지원할 수 없음
+ * - sameUniversityListed: 같은 구분에 같은 대학의 다른 모집단위가 이미 있음
+ * - tierListFull: 같은 구분 목록이 찼음 (희망 학과에 더 가깝거나 구분 기준점에 더 가까운 곳이 먼저)
+ */
+export type NotListedReason =
+  | "belowRange"
+  | "snipingRegrouped"
+  | "snipingSameUniversity"
+  | "snipingListFull"
+  | "aboveRange"
+  | "ineligible"
+  | "sameUniversityListed"
+  | "tierListFull";
+
+export interface NotListedEntry {
+  unitKey: string;
+  university: string;
+  department: string;
+  group: AdmissionGroup;
+  reason: NotListedReason;
+  /** 판정 구분 (지원불가 포함) */
+  tier: AdmissionTier;
+  /** 판정 격차 (만점 대비 %). 없으면 null */
+  gapRatio: number | null;
+  /** ineligible 이면 엔진이 적은 사유 */
+  ineligibleReason?: string;
+}
+
 /** 엔진 전체 산출물. 이 값이 AI 프롬프트의 입력이 된다. */
 export interface JeongsiAnalysis {
   input: JeongsiInput;
@@ -574,4 +667,11 @@ export interface JeongsiAnalysis {
    */
   sniping: PlanEvaluation[];
   combinations: GroupCombination[];
+  /**
+   * 희망 학과와 같은 분류로 비교했지만 목록에 넣지 않은 곳 (격차가 추천 범위에 가까운 순).
+   * 이 필드가 생기기 전 분석에는 없다.
+   */
+  notListed?: NotListedEntry[];
+  /** 희망 학과와 같은 분류인데 같은 기준으로 비교하지 못한 곳 */
+  notCompared?: NotComparedEntry[];
 }

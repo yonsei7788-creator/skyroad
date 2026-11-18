@@ -28,11 +28,16 @@ import { z } from "zod/v4";
 
 import { logger } from "@/libs/logger";
 
-import type { JeongsiAdmissionPlan, JeongsiResultEntry } from "../types";
+import type {
+  ExcludedUnit,
+  JeongsiAdmissionPlan,
+  JeongsiResultEntry,
+} from "../types";
 
 /** 데이터 파일 식별자 (확장자 제외). specs/012-jeongsi-data-spec.md 기준 */
 const PLAN_SOURCE_NAME = "admission-plans-2027";
 const RESULT_SOURCE_NAME = "admission-results";
+const EXCLUDED_SOURCE_NAME = "excluded-units-2027";
 
 /** 프로젝트 루트 기준 데이터 디렉토리 */
 const DATA_DIR = path.join("libs", "jeongsi", "data");
@@ -48,6 +53,8 @@ const VALIDATE_ENV_KEY = "JEONGSI_VALIDATE_DATA";
 export interface JeongsiDataSource {
   readAdmissionPlans(): Promise<unknown>;
   readAdmissionResults(): Promise<unknown>;
+  /** 엔진에 들어오지 못한 일반전형 모집단위. 없는 공급자는 빈 목록으로 본다 */
+  readExcludedUnits?(): Promise<unknown>;
 }
 
 /**
@@ -78,11 +85,13 @@ const readJsonSource = async (sourceName: string): Promise<unknown> => {
 const jsonDataSource: JeongsiDataSource = {
   readAdmissionPlans: () => readJsonSource(PLAN_SOURCE_NAME),
   readAdmissionResults: () => readJsonSource(RESULT_SOURCE_NAME),
+  readExcludedUnits: () => readJsonSource(EXCLUDED_SOURCE_NAME),
 };
 
 let activeDataSource: JeongsiDataSource = jsonDataSource;
 let planCache: JeongsiAdmissionPlan[] | null = null;
 let resultCache: JeongsiResultEntry[] | null = null;
+let excludedCache: ExcludedUnit[] | null = null;
 
 /** 데이터 출처 교체 (테스트, DB 전환용) */
 export const setJeongsiDataSource = (source: JeongsiDataSource): void => {
@@ -100,6 +109,7 @@ export const resetJeongsiDataSource = (): void => {
 export const clearJeongsiDataCache = (): void => {
   planCache = null;
   resultCache = null;
+  excludedCache = null;
 };
 
 const isValidationEnabled = (): boolean =>
@@ -244,6 +254,9 @@ export const admissionPlanSchema = z.object({
         additionalPassRate: z.number().nonnegative().optional(),
       })
     )
+    .optional(),
+  formulaChangedYears: z
+    .array(z.union([z.literal(2025), z.literal(2026)]))
     .optional(),
   statedRatios: z.string().min(1).optional(),
   areaSharesEstimated: z.literal(true).optional(),
@@ -420,4 +433,22 @@ export const loadAdmissionResultIndex = async (): Promise<
   }
 
   return index;
+};
+
+/**
+ * 엔진에 들어오지 못한 일반전형 모집단위와 사유 (빌드 스크립트 생성물).
+ * 리포트가 "희망 학과와 같은 분류인데 비교하지 못한 곳"을 밝히는 데만 쓴다.
+ */
+export const loadExcludedUnits = async (): Promise<ExcludedUnit[]> => {
+  if (excludedCache) {
+    return excludedCache;
+  }
+  const read = activeDataSource.readExcludedUnits;
+  if (!read) {
+    excludedCache = [];
+    return excludedCache;
+  }
+  const entries = await readSource(() => read(), "비교 제외 모집단위");
+  excludedCache = entries as ExcludedUnit[];
+  return excludedCache;
 };

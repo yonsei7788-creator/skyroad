@@ -38,11 +38,13 @@ import type {
   BonusPolicy,
   ConversionFormula,
   EnglishPolicy,
+  ExcludedUnit,
   GradeScoreTable,
   HistoryPolicy,
   JeongsiAdmissionPlan,
   JeongsiResultEntry,
   MathElective,
+  NotComparedReason,
   ResultCut,
   ResultYear,
   ScoreArea,
@@ -58,6 +60,8 @@ const SOURCE_DIR = path.join(DATA_DIR, "source");
 
 const ADMISSION_YEAR = 2027;
 const RESULT_YEARS: ResultYear[] = [2026, 2025, 2024];
+/** 엔진이 판정에 쓰는 입결 학년도 (engine/classify.ts RESULT_YEARS) */
+const ENGINE_RESULT_YEARS: ResultYear[] = [2025, 2026];
 const GRADES: SuneungGrade[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 /**
@@ -1538,9 +1542,15 @@ interface ResultRow {
 const collectResultRows = (
   unit: SourceUnit,
   converted: ConvertedFormula
-): { metric: ResultCut["metric"] | null; rows: ResultRow[] } => {
+): {
+  metric: ResultCut["metric"] | null;
+  rows: ResultRow[];
+  formulaChangedYears: ResultYear[];
+} => {
   const percentileRows: ResultRow[] = [];
   const convertedRows: ResultRow[] = [];
+  // 환산점수 입결은 있지만 그해 환산식이 2027 과 달라 쓰지 않은 학년도(엔진 판정 학년도만)
+  const formulaChangedYears: ResultYear[] = [];
   const allowConverted =
     converted.confidence === "exact" && !converted.formula.bonus;
 
@@ -1565,15 +1575,22 @@ const collectResultRows = (
       ),
       unit
     );
-    if (
-      score &&
-      toNumber(score.cut70) !== null &&
-      sameFormula(
-        converted.formula,
-        formulaForYear(unit.formulaId ?? "", year, unit.track, unit.department)
-      )
-    ) {
+    if (!score || toNumber(score.cut70) === null) {
+      continue;
+    }
+    const yearFormula = formulaForYear(
+      unit.formulaId ?? "",
+      year,
+      unit.track,
+      unit.department
+    );
+    if (sameFormula(converted.formula, yearFormula)) {
       convertedRows.push({ year, row: score });
+      continue;
+    }
+    // 그해 환산식이 원문에 있고 2027 과 다를 때만 "바뀐 해"로 적는다(원문에 없으면 모름).
+    if (yearFormula !== null && ENGINE_RESULT_YEARS.includes(year)) {
+      formulaChangedYears.push(year);
     }
   }
 
@@ -1581,13 +1598,22 @@ const collectResultRows = (
   // 대학마다 반영비율·영어 감점이 달라 평균 백분위 입결로는 이 학생의 실제
   // 위치를 알 수 없다. 2027과 같은 환산식인 해의 환산점수 컷만 모았으므로
   // 학생 환산점수와 같은 척도다. 환산점수 입결이 없을 때만 백분위 입결을 쓴다.
+  const changed = [...formulaChangedYears].sort((a, b) => a - b);
   if (convertedRows.length > 0) {
-    return { metric: "convertedScore", rows: convertedRows };
+    return {
+      metric: "convertedScore",
+      rows: convertedRows,
+      formulaChangedYears: changed,
+    };
   }
   if (percentileRows.length > 0) {
-    return { metric: "percentile", rows: percentileRows };
+    return {
+      metric: "percentile",
+      rows: percentileRows,
+      formulaChangedYears: changed,
+    };
   }
-  return { metric: null, rows: [] };
+  return { metric: null, rows: [], formulaChangedYears: changed };
 };
 
 const quotaForYear = (unit: SourceUnit, year: number): number | null => {
@@ -1610,10 +1636,13 @@ const buildResults = (
   unit: SourceUnit,
   plan: JeongsiAdmissionPlan,
   converted: ConvertedFormula
-): JeongsiResultEntry[] => {
-  const { metric, rows } = collectResultRows(unit, converted);
+): { entries: JeongsiResultEntry[]; formulaChangedYears: ResultYear[] } => {
+  const { metric, rows, formulaChangedYears } = collectResultRows(
+    unit,
+    converted
+  );
   if (!metric) {
-    return [];
+    return { entries: [], formulaChangedYears };
   }
 
   const entries: JeongsiResultEntry[] = [];
@@ -1660,7 +1689,7 @@ const buildResults = (
       }),
     });
   }
-  return entries;
+  return { entries, formulaChangedYears };
 };
 
 /**
@@ -2025,6 +2054,82 @@ const countBy = <T>(
   return Object.fromEntries(Object.entries(counts).sort((a, b) => b[1] - a[1]));
 };
 
+// ─── 비교하지 못한 일반전형 모집단위 (서비스용) ───
+
+/**
+ * 제외 사유 → 리포트 사유. 일반전형으로 2027 에 모집하는 가·나·다군 모집단위만 남긴다.
+ * 특별전형·2027 미모집·군 외·학과 분류 매칭 실패는 학생이 지원을 견줄 대상이 아니거나
+ * 희망 학과와 이을 수 없어 싣지 않는다.
+ */
+const SERVICE_EXCLUDED_REASON: Partial<Record<ReasonText, NotComparedReason>> =
+  {
+    [REASON.suneungWeight]: "suneungWeightLow",
+    [REASON.formulaMissing]: "formulaUnsupported",
+    [REASON.areaRule]: "formulaUnsupported",
+    [REASON.metric]: "formulaUnsupported",
+    [REASON.totalScore]: "formulaUnsupported",
+    [REASON.baseConstant]: "formulaUnsupported",
+    [REASON.rankText]: "formulaUnsupported",
+    [REASON.commonDenominator]: "formulaUnsupported",
+    [REASON.denominator]: "formulaUnsupported",
+    [REASON.ratioSum]: "formulaUnsupported",
+    [REASON.englishTable]: "formulaUnsupported",
+    [REASON.englishScale]: "formulaUnsupported",
+    [REASON.englishMode]: "formulaUnsupported",
+    [REASON.historyMode]: "formulaUnsupported",
+    [REASON.inquiryCombine]: "formulaUnsupported",
+    [REASON.convertedTable]: "formulaUnsupported",
+    [REASON.convertedTableSplitMax]: "formulaUnsupported",
+    [REASON.bonus]: "formulaUnsupported",
+    [REASON.mathRestriction]: "formulaUnsupported",
+    [REASON.inquiryRestriction]: "formulaUnsupported",
+    [REASON.estimatedMax]: "maxScoreUnpublished",
+    [REASON.quota]: "quotaUnpublished",
+    [REASON.noResults]: "noPublicResults",
+  };
+
+const buildServiceExcludedUnits = (
+  excluded: { unitId: string; reason: string }[]
+): ExcludedUnit[] => {
+  const unitById = new Map(units.map((unit) => [unit.unitId, unit]));
+  const seen = new Set<string>();
+  const entries: ExcludedUnit[] = [];
+  for (const { unitId, reason } of excluded) {
+    const mapped = SERVICE_EXCLUDED_REASON[reason as ReasonText];
+    const unit = unitById.get(unitId);
+    if (!mapped || !unit) continue;
+    const { group } = unit;
+    if (group !== "가" && group !== "나" && group !== "다") continue;
+    if (!isGeneralTrack(unit.admissionType)) continue;
+    const category = resolveCategory(unit.department);
+    if (!category) continue;
+    // 공개 입결이 없는 곳 중 원문 상태가 "신설"이면 신설로 밝힌다
+    const finalReason: NotComparedReason =
+      mapped === "noPublicResults" && unit.unitStatus === "신설"
+        ? "newUnit"
+        : mapped;
+    const isMain = mainCampusCode.get(unit.university) === unit.universityCode;
+    const campus = isMain ? undefined : unit.campus;
+    const key = `${unit.university}|${campus ?? ""}|${unit.department}|${group}|${finalReason}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    entries.push({
+      university: unit.university,
+      ...(campus ? { campus } : {}),
+      department: unit.department,
+      category,
+      group,
+      reason: finalReason,
+    });
+  }
+  return entries.sort(
+    (a, b) =>
+      a.university.localeCompare(b.university) ||
+      a.department.localeCompare(b.department) ||
+      a.group.localeCompare(b.group)
+  );
+};
+
 const main = (): void => {
   const excluded: {
     unitId: string;
@@ -2032,12 +2137,12 @@ const main = (): void => {
     department: string;
     reason: string;
   }[] = [];
-  const accepted: Candidate[] = [];
+  const acceptedCandidates: Candidate[] = [];
 
   for (const unit of units) {
     const candidate = toCandidate(unit);
     if (candidate.ok) {
-      accepted.push(candidate.value);
+      acceptedCandidates.push(candidate.value);
       continue;
     }
     excluded.push({
@@ -2053,12 +2158,16 @@ const main = (): void => {
   const candidates: Candidate[] = [];
   const results: JeongsiResultEntry[] = [];
   const plansWithoutResults: JeongsiAdmissionPlan[] = [];
-  for (const candidate of disambiguate(accepted)) {
-    const entries = buildResults(
-      candidate.unit,
-      candidate.plan,
-      candidate.converted
+  for (const accepted of disambiguate(acceptedCandidates)) {
+    const { entries, formulaChangedYears } = buildResults(
+      accepted.unit,
+      accepted.plan,
+      accepted.converted
     );
+    const candidate: Candidate =
+      formulaChangedYears.length > 0
+        ? { ...accepted, plan: { ...accepted.plan, formulaChangedYears } }
+        : accepted;
     if (entries.length === 0) {
       excluded.push({
         unitId: candidate.unit.unitId,
@@ -2177,9 +2286,13 @@ const main = (): void => {
   const writeJson = (filePath: string, value: unknown): void =>
     writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
 
+  const excludedUnits = buildServiceExcludedUnits(excluded);
+
   writeJson(path.join(DATA_DIR, "admission-plans-2027.json"), plans);
   writeJson(path.join(DATA_DIR, "admission-results.json"), results);
   writeJson(path.join(SOURCE_DIR, "engine-conversion-report.json"), report);
+  // 서비스가 읽는다. 희망 학과와 같은 분류인데 비교하지 못한 곳을 리포트가 사유와 함께 밝힌다.
+  writeJson(path.join(DATA_DIR, "excluded-units-2027.json"), excludedUnits);
   // 서비스에는 쓰지 않는다. 환산식 해석 회귀 테스트(공식 계산예시)만 읽는다.
   writeJson(
     path.join(SOURCE_DIR, "plans-without-results.json"),
