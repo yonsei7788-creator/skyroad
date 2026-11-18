@@ -1,5 +1,8 @@
 import { CUT_METRIC_LABEL } from "@/libs/jeongsi/report/cut-format";
-import type { UnitJudgement } from "@/libs/jeongsi/report-types";
+import type {
+  UnitExplanation,
+  UnitJudgement,
+} from "@/libs/jeongsi/report-types";
 import type {
   CutComparison,
   JeongsiUniversityDetailSection,
@@ -436,6 +439,8 @@ const DetailProfile = ({ item, index }: DetailProfileProps) => {
         </div>
       </div>
 
+      {item.explanation && <ExplanationBlock explanation={item.explanation} />}
+
       <div className={`${styles.insightBox} ${styles.profileReason}`}>
         <span className={styles.insightLabel}>추천 이유</span>
         <p className={styles.insightText}>{item.reason}</p>
@@ -443,6 +448,73 @@ const DetailProfile = ({ item, index }: DetailProfileProps) => {
     </div>
   );
 };
+
+/** 판정 설명 (코드 작성): 왜 이 구분인지, 유리·불리, 조건, 변수, 다른 분류 근거 */
+const ExplanationBlock = ({
+  explanation,
+}: {
+  explanation: UnitExplanation;
+}) => (
+  <div className={styles.explainPanel}>
+    <span className={styles.explainPanelTitle}>판정 설명</span>
+    {explanation.fitNote && (
+      <div className={styles.explainSection}>
+        <span className={styles.explainHeading}>희망 학과와 다른 분류</span>
+        <p className={styles.explainText}>{explanation.fitNote}</p>
+      </div>
+    )}
+    <div className={styles.explainSection}>
+      <span className={styles.explainHeading}>왜 이 구분인가</span>
+      {explanation.tierReason.map((sentence) => (
+        <p key={sentence} className={styles.explainText}>
+          {sentence}
+        </p>
+      ))}
+    </div>
+    <div className={styles.explainSection}>
+      <span className={styles.explainHeading}>내 성적이 작용한 방향</span>
+      {explanation.factors.length === 0 ? (
+        <p className={styles.explainText}>
+          영어 등급과 강점, 약점 영역 반영비율에서 목록 대학과 크게 다른 점이
+          없습니다.
+        </p>
+      ) : (
+        explanation.factors.map((factor) => (
+          <p key={factor.text} className={styles.factorRow}>
+            <span
+              className={
+                factor.effect === "유리" ? styles.factorGood : styles.factorBad
+              }
+            >
+              {factor.effect}
+            </span>
+            <span>{factor.text}</span>
+          </p>
+        ))
+      )}
+    </div>
+    {explanation.conditions.length > 0 && (
+      <div className={styles.explainSection}>
+        <span className={styles.explainHeading}>판정이 달라지는 조건</span>
+        {explanation.conditions.map((sentence) => (
+          <p key={sentence} className={styles.explainText}>
+            {sentence}
+          </p>
+        ))}
+      </div>
+    )}
+    {explanation.variables.length > 0 && (
+      <div className={styles.explainSection}>
+        <span className={styles.explainHeading}>합격선에 영향을 줄 변수</span>
+        <ul className={styles.explainBullets}>
+          {explanation.variables.map((sentence) => (
+            <li key={sentence}>{sentence}</li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </div>
+);
 
 export const JeongsiUniversityDetailRenderer = ({
   data,

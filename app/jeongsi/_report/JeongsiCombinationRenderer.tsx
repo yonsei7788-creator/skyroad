@@ -155,6 +155,9 @@ export const JeongsiCombinationRenderer = ({
               const reason = recommended.slotReasons?.find(
                 (item) => item.group === group
               )?.reason;
+              const outlookSlot = recommended.outlook?.slots.find(
+                (item) => item.group === group
+              );
               return (
                 <div
                   key={group}
@@ -176,6 +179,14 @@ export const JeongsiCombinationRenderer = ({
                       {reason && (
                         <p className={styles.recommendedReason}>{reason}</p>
                       )}
+                      {outlookSlot && (
+                        <dl className={styles.outlookList}>
+                          <dt>얻는 것</dt>
+                          <dd>{outlookSlot.gain}</dd>
+                          <dt>감수할 위험</dt>
+                          <dd>{outlookSlot.risk}</dd>
+                        </dl>
+                      )}
                     </>
                   ) : (
                     <span className={styles.comboEmpty}>
@@ -186,6 +197,37 @@ export const JeongsiCombinationRenderer = ({
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* Block 3-1: 대표 조합 전체 위험과 원서를 바꿀 때 */}
+      {recommended?.outlook && (
+        <div className={styles.explainPanel}>
+          <span className={styles.explainPanelTitle}>
+            이 조합의 전체 위험과 원서를 바꿀 때
+          </span>
+          <p className={styles.explainText}>{recommended.outlook.summary}</p>
+          {recommended.outlook.swaps.map((swap) => (
+            <div key={swap.group} className={styles.swapGroup}>
+              <span className={styles.swapGroupTitle}>
+                {swap.group}군 원서를 바꾸면
+              </span>
+              {swap.note && <p className={styles.explainText}>{swap.note}</p>}
+              {swap.options.map((option) => (
+                <div
+                  key={option.unitKey}
+                  className={styles.swapOption}
+                  style={toneStyleOf(option.tier)}
+                >
+                  <span className={styles.swapOptionName}>
+                    {option.university} {option.department}
+                    <span className={styles.comboTier}> {option.tier}</span>
+                  </span>
+                  <p className={styles.explainText}>{option.text}</p>
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       )}
 

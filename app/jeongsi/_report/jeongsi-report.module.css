@@ -1769,6 +1769,197 @@
   cursor: pointer;
 }
 
+/* ============================================
+   판정 설명 (PART 3 목록 밖 대학, PART 4 조합 위험, PART 5 판정 근거)
+   모든 문장은 코드가 엔진 값으로 쓴다 (report/explanations.ts)
+   ============================================ */
+
+.explainPanel {
+  padding: 14px 16px;
+  border: 1px solid var(--js-line);
+  background: var(--js-soft);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.explainPanelTitle {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--js-ink);
+}
+
+.explainSection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.explainHeading {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--js-muted);
+}
+
+.explainText {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--js-ink-2);
+  word-break: keep-all;
+}
+
+.explainBullets {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--js-ink-2);
+  word-break: keep-all;
+}
+
+.factorRow {
+  margin: 0;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--js-ink-2);
+  word-break: keep-all;
+}
+
+.factorGood,
+.factorBad {
+  flex: none;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.factorGood {
+  color: var(--tier-safety-fg);
+  background: var(--tier-safety-bg);
+  border: 1px solid var(--tier-safety-border);
+}
+
+.factorBad {
+  color: var(--tier-snipe-fg);
+  background: var(--tier-snipe-bg);
+  border: 1px solid var(--tier-snipe-border);
+}
+
+.outsideChip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--js-muted);
+  background: var(--js-track);
+  border: 1px solid var(--js-line-strong);
+  vertical-align: middle;
+}
+
+.notListedRow {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 5fr);
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--js-ink-2);
+}
+
+.notListedName {
+  color: var(--js-ink);
+  word-break: keep-all;
+}
+
+.notListedReason {
+  word-break: keep-all;
+}
+
+.notComparedGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notComparedReason {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--js-ink-3);
+}
+
+.notComparedUnits {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--js-muted);
+  word-break: keep-all;
+}
+
+.outlookList {
+  margin: 6px 0 0 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 8px;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--js-ink-2);
+}
+
+.outlookList dt {
+  font-weight: 700;
+  color: var(--js-muted);
+}
+
+.outlookList dd {
+  margin: 0;
+  word-break: keep-all;
+}
+
+.swapGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.swapGroupTitle {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--js-muted);
+}
+
+.swapOption {
+  padding: 8px 10px;
+  border-left: 3px solid var(--tone-bar);
+  background: #ffffff;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.swapOptionName {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--js-ink);
+}
+
+@media (max-width: 640px) {
+  .notListedRow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}
+
 @media print {
   .previewNotice,
   .previewBar {
@@ -1781,7 +1972,11 @@
   .comboRow,
   .strategyCard,
   .areaCard,
-  .insightBox {
+  .insightBox,
+  .notListedRow,
+  .notComparedGroup,
+  .swapOption,
+  .explainSection {
     page-break-inside: avoid;
     break-inside: avoid;
   }

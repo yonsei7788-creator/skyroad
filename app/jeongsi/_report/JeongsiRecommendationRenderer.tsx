@@ -93,6 +93,9 @@ const RecommendationRow = ({ item, style }: RecommendationRowProps) => {
       <div className={styles.recRow}>
         <span className={styles.recName}>
           <b>{item.university}</b> <span>{item.department}</span>
+          {item.outsideTargetCategory && (
+            <span className={styles.outsideChip}>희망 학과와 다른 분류</span>
+          )}
           {judgement && (
             <span className={styles.recBasis}>
               {METRIC_NAME[judgement.metric]} 비교 /{" "}
@@ -158,7 +161,7 @@ export const JeongsiRecommendationRenderer = ({
   data,
   partNumber,
 }: JeongsiRecommendationRendererProps) => {
-  const { groups, notices, overallComment } = data;
+  const { groups, notices, overallComment, notListed, notCompared } = data;
 
   const orderedGroups = TIER_ORDER.map((tier) =>
     groups.find((group) => group.tier === tier)
@@ -269,6 +272,44 @@ export const JeongsiRecommendationRenderer = ({
           </Fragment>
         );
       })}
+
+      {/* 같은 분류인데 목록에 없는 곳과 비교하지 못한 곳. "왜 이 대학은 없나"에 답한다 */}
+      {notListed && notListed.length > 0 && (
+        <div className={styles.explainPanel}>
+          <span className={styles.explainPanelTitle}>
+            비교했지만 목록에 넣지 않은 곳
+          </span>
+          <div className={styles.ruledList}>
+            {notListed.map((row) => (
+              <div
+                key={`${row.university}-${row.department}-${row.group}`}
+                className={styles.notListedRow}
+              >
+                <span className={styles.notListedName}>
+                  <b>{row.university}</b> {row.department} ({row.group}군)
+                </span>
+                <span className={styles.notListedReason}>{row.reason}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {notCompared && notCompared.length > 0 && (
+        <div className={styles.explainPanel}>
+          <span className={styles.explainPanelTitle}>
+            희망 학과와 같은 분류지만 같은 기준으로 비교하지 못한 곳
+          </span>
+          {notCompared.map((group) => (
+            <div key={group.reason} className={styles.notComparedGroup}>
+              <p className={styles.notComparedReason}>{group.reason}</p>
+              <p className={styles.notComparedUnits}>
+                {group.units.join(", ")}
+                {group.moreCount ? ` 외 ${group.moreCount}곳` : ""}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* 최종 블록: 지원 전략 */}
       <div className={styles.insightBox}>
