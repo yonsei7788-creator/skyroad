@@ -17,6 +17,7 @@ import { analyzeJeongsi } from "../../libs/jeongsi/engine/analyze.ts";
 import {
   GAP_BANDS,
   MIN_YEARS_FOR_SAFE,
+  isSmallQuota,
   SNIPING_MIN_GAP,
   chanceFor,
   tierForGap,
@@ -28,14 +29,23 @@ import {
   isWomensUniversity,
 } from "../../libs/jeongsi/engine/eligibility.ts";
 import { findReportInconsistencies } from "../../libs/jeongsi/report/consistency.ts";
-import { findOverclaims } from "../../libs/jeongsi/report/commentary-guards.ts";
+import {
+  findOverclaims,
+  findReachSlotOverstatement,
+  findUniversityRankLabels,
+} from "../../libs/jeongsi/report/commentary-guards.ts";
 import {
   collectProtectedNames,
   hasStrayInterpunct,
 } from "../../libs/jeongsi/report/interpunct.ts";
 import { buildJeongsiReport } from "../../libs/jeongsi/report/build.ts";
 
-import type { JeongsiReportContent } from "../../libs/jeongsi/report-types.ts";
+import type {
+  JeongsiCombinationSection,
+  JeongsiRecommendationSection,
+  JeongsiReportContent,
+  JeongsiUniversityDetailSection,
+} from "../../libs/jeongsi/report-types.ts";
 import type {
   JeongsiAnalysis,
   JeongsiInput,
@@ -425,7 +435,9 @@ export const checkSniping = (analysis: JeongsiAnalysis): Violation[] => {
       violations.push(`[S] ${label}: 과거 모집군이 다른 입결`);
     }
     const rate = evaluation.historicalPassRate;
-    if (rate === null || rate < 0.02 || rate > 0.12) {
+    // 소수 모집은 소수 모집끼리 잰 실측이라 꼬리가 넓다(2026-11-18 실측: 소신 구간 7~17%)
+    const maxRate = isSmallQuota(evaluation.plan.quota) ? 0.2 : 0.12;
+    if (rate === null || rate < 0.02 || rate > maxRate) {
       violations.push(`[S] ${label}: 실측 통과율 ${rate}`);
     }
     if (recommendedIds.has(evaluation.plan.id)) {
@@ -496,7 +508,8 @@ const checkAnalysis = (analysis: JeongsiAnalysis): Violation[] => {
     const mustCap =
       evaluation.resultYears.length < MIN_YEARS_FOR_SAFE ||
       evaluation.referenceCut?.metric === "percentile" ||
-      regrouped.length > 0;
+      regrouped.length > 0 ||
+      isSmallQuota(evaluation.plan.quota);
     if (
       regrouped.length !== evaluation.pastGroups.length ||
       regrouped.some(
@@ -613,6 +626,7 @@ export const auditText = (content: JeongsiReportContent): Violation[] => {
       if (
         key !== "university" &&
         key !== "department" &&
+        key !== "units" &&
         hasStrayInterpunct(value, protectedNames)
       ) {
         violations.push(`[F2] ${path}: 가운데 점 — ${value.slice(0, 80)}`);
@@ -621,10 +635,17 @@ export const auditText = (content: JeongsiReportContent): Violation[] => {
       if (findOverclaims(value).length > 0) {
         violations.push(`[F3] ${path}: 단정 표현 — ${value.slice(0, 100)}`);
       }
+      // [F4] 대학에 등급을 매기는 말("최상위 대학", "명문대")은 데이터에 없는 판단이다
+      if (findUniversityRankLabels(value).length > 0) {
+        violations.push(
+          `[F4] ${path}: 대학 서열 표현 — ${value.slice(0, 100)}`
+        );
+      }
       return;
     }
     if (Array.isArray(value)) {
-      value.forEach((item, index) => walk(item, `${path}[${index}]`));
+      // 배열 원소는 부모 키를 이어받는다(units 는 "대학 학과(군)" 원문 이름 목록)
+      value.forEach((item, index) => walk(item, `${path}[${index}]`, key));
       return;
     }
     if (value && typeof value === "object") {
@@ -634,6 +655,20 @@ export const auditText = (content: JeongsiReportContent): Violation[] => {
     }
   };
   walk(content.sections, "sections");
+  // [F5] 상향, 소신 원서를 두고 진학 가능성을 높인다고 쓰지 않는다
+  for (const section of content.sections) {
+    if (section.sectionId !== "jeongsiCombination") continue;
+    for (const combination of section.combinations) {
+      if (
+        findReachSlotOverstatement(combination.slots, combination.strategy)
+          .length > 0
+      ) {
+        violations.push(
+          `[F5] ${combination.label}: 상향, 소신 원서 효과를 크게 씀 — ${combination.strategy.slice(0, 100)}`
+        );
+      }
+    }
+  }
   const sentencesOf = (text: string): string[] =>
     text
       .split(/(?<=[.!?])\s+/)
@@ -741,6 +776,92 @@ const formatRow = (evaluation: PlanEvaluation): string => {
   return `    ${evaluation.tier} ${evaluation.chance.padEnd(2)} ${describe(evaluation).padEnd(40)} 격차 ${String(evaluation.gapRatio).padStart(7)} ${unit} 입결 ${evaluation.resultYears.join("·") || "-"}${evaluation.safeCapped ? ` (${evaluation.safeCapReasons.join("·")}→적정)` : ""}${evaluation.pastGroups.length ? ` [과거 ${evaluation.pastGroups.map((item) => `${item.year} ${item.group}군`).join("·")}]` : ""}`;
 };
 
+/**
+ * 판정 설명이 앞뒤 판정과 맞는지 (X1~X4).
+ * X1 PART 5 모든 대학에 판정 설명이 있다
+ * X2 "왜 이 구분인가"가 그 대학의 구분을 그대로 말한다(안정 제한이면 "적정으로 판정")
+ * X3 PART 3 "다른 분류" 표시와 PART 5 다른 분류 설명이 같은 대학에 함께 있다
+ * X4 PART 4 "원서를 바꾸면" 후보는 PART 3 목록에 같은 구분으로 있다
+ * X5 목록에 넣지 않은 곳은 PART 3 목록에 없다
+ * X6 판정 설명의 유리·불리는 영역 강점·약점이 아니라 실제 점수 득실로 쓴다
+ */
+export const checkExplanations = (
+  content: JeongsiReportContent
+): Violation[] => {
+  const violations: Violation[] = [];
+  const section = <T extends JeongsiReportContent["sections"][number]>(
+    id: T["sectionId"]
+  ): T | undefined =>
+    content.sections.find((entry) => entry.sectionId === id) as T | undefined;
+  const recommendation = section<JeongsiRecommendationSection>(
+    "jeongsiRecommendation"
+  );
+  const combination = section<JeongsiCombinationSection>("jeongsiCombination");
+  const detail = section<JeongsiUniversityDetailSection>(
+    "jeongsiUniversityDetail"
+  );
+  const keyOf = (item: {
+    university: string;
+    department: string;
+    group: string;
+  }): string => `${item.university}|${item.department}|${item.group}`;
+
+  const listed = new Map<string, string>();
+  const outside = new Set<string>();
+  for (const group of recommendation?.groups ?? []) {
+    for (const item of group.items) {
+      listed.set(keyOf(item), item.judgement?.tier ?? group.tier);
+      if (item.outsideTargetCategory) outside.add(keyOf(item));
+    }
+  }
+
+  for (const item of detail?.items ?? []) {
+    const label = `${item.university} ${item.department}(${item.group})`;
+    const { explanation } = item;
+    if (!explanation) {
+      violations.push(`[X1] ${label}: 판정 설명 없음`);
+      continue;
+    }
+    const reason = explanation.tierReason.join(" ");
+    const capped = item.judgement?.safeCapped ?? false;
+    const expected = capped ? "적정으로 판정했습니다" : `${item.tier} 구간(`;
+    if (!reason.includes(expected)) {
+      violations.push(`[X2] ${label}: 구분 설명이 ${item.tier}와 다름`);
+    }
+    // X6 영역 강점·약점 서술은 PART 1 에만 둔다(D1). 판정 설명은 실제 점수 득실로 쓴다
+    for (const factor of explanation.factors) {
+      if (AREA_ROLE_OUTSIDE_PART1.test(factor.text)) {
+        violations.push(`[X6] ${label}: 영역 강점·약점 서술 — ${factor.text}`);
+      }
+    }
+    if (Boolean(explanation.fitNote) !== outside.has(keyOf(item))) {
+      violations.push(`[X3] ${label}: 다른 분류 표시와 설명이 어긋남`);
+    }
+  }
+
+  for (const item of combination?.combinations ?? []) {
+    for (const swap of item.outlook?.swaps ?? []) {
+      for (const option of swap.options) {
+        const tier = listed.get(keyOf({ ...option, group: swap.group }));
+        if (tier !== option.tier) {
+          violations.push(
+            `[X4] ${option.university} ${option.department}(${swap.group}): 바꿀 후보가 PART 3 목록의 구분(${tier ?? "없음"})과 다름`
+          );
+        }
+      }
+    }
+  }
+
+  for (const row of recommendation?.notListed ?? []) {
+    if (listed.has(keyOf(row))) {
+      violations.push(
+        `[X5] ${row.university} ${row.department}(${row.group}): 목록에 있는데 넣지 않은 곳으로 표시`
+      );
+    }
+  }
+  return violations;
+};
+
 const main = async (): Promise<void> => {
   const verbose = process.argv.includes("--verbose");
   let total = 0;
@@ -762,6 +883,7 @@ const main = async (): Promise<void> => {
       ...checkPassRates(analysis),
       ...checkSniping(analysis),
       ...auditText(content),
+      ...checkExplanations(content),
       ...findReportInconsistencies(content, analysis).map(
         (problem) => `[A2] ${problem}`
       ),

@@ -51,7 +51,8 @@ libs/jeongsi/
 ├── mock-data.ts          디자인 검증용 목 (기본 / 극단 / 지원불가 3종)
 ├── data/
 │   ├── admission-plans-2027.json    시행계획 1,811 모집단위 (생성물)
-│   ├── admission-results.json       3개년 입결 2,558건 (생성물)
+│   ├── admission-results.json       입결 2,558건 (생성물)
+│   ├── excluded-units-2027.json     엔진에 못 들어온 일반전형 모집단위와 사유 (생성물)
 │   ├── index.ts                     로더 + Zod 검증 (서버 전용)
 │   └── source/                      외주 엑셀 정규화 원본 (생성물, 엔진은 안 읽음)
 │       ├── manifest.json                원본 파일 해시·건수
@@ -70,6 +71,8 @@ libs/jeongsi/
     ├── system-prompt.ts   정시 전용 공통 시스템 프롬프트
     ├── prompts.ts         PART 1~5 해설 프롬프트 빌더
     ├── schemas.ts         AI 응답 Zod (해설 문자열만)
+    ├── explanations.ts    PART 3·5 판정 설명, 목록 밖 대학 사유 (코드 문장)
+    ├── combination-outlook.ts  PART 4 대표 조합 실익·위험·교체 효과 (코드 문장)
     └── build.ts           JeongsiAnalysis + Gemini → JeongsiReportContent
 ```
 
@@ -223,6 +226,32 @@ console.log(buildRecommendationNotices(analysis));
   실측(2024→2025 신호로 2025→2026 컷 이동, 277곳, 기준컷 −1.0 통과율): 19% / 7% / 4%. 충원율만으로는 차이가
   없어 단독 신호로 쓰지 않는다. 2027 판단에는 2025→2026 경쟁률 변화와 2026 충원율을 쓴다.
 - 경쟁률·충원율은 시행계획의 `recentCompetitions`(원문 40*입결*경쟁충원의 2025, 2026 값)에서 읽는다.
+
+### 4.1-e 판정 설명 — 학생이 물을 질문에 리포트가 답한다 (사용자 결정 2026-11-18, specs/014 4차)
+
+- 소수 모집(2027 모집인원 `SMALL_QUOTA_MAX` 5명 이하)은 안정 제한 사유 "소수 모집"이다. 실측 안정 하한 통과 비율이
+  65%로 6명 이상(79%)보다 낮았다. 실측 비율은 소수 모집끼리 잰 분포(`buildCutMovement(..., "smallQuota")`)로 붙이고
+  `historicalPassRateScope` 에 표본을 남긴다. `cut-movement.test` 가 데이터와 3%p 안인지 확인한다.
+- `analysis.notListed`: 희망 학과와 같은 분류로 비교했지만 목록에 없는 곳과 이유(`collectNotListed`, 목록 규칙 그대로).
+  `analysis.notCompared`: 같은 분류인데 같은 기준으로 비교하지 못한 곳(`collectNotCompared`). 엔진에 못 들어온 곳은
+  빌드 스크립트가 만든 `data/excluded-units-2027.json`(사유 코드 `NotComparedReason`)에서 읽는다.
+- `plan.formulaChangedYears`: 환산점수 입결이 있지만 그해 환산식이 2027 과 달라 쓰지 않은 학년도(원문 환산식 비교).
+  2027 변경사항 시트는 범위가 자유 서술이라 모집단위에 잇지 않는다.
+- 리포트: PART 3 `notListed`·`notCompared`·`outsideTargetCategory`, PART 4 대표 조합 `outlook`(원서별 실익과 위험,
+  전체 구성, 원서 교체 효과), PART 5 `explanation`(왜 이 구분인가, 유리·불리, 조건, 변수, 다른 분류 근거).
+  모두 코드 문장이다(`report/explanations.ts`, `report/combination-outlook.ts`). 확률을 새로 만들지 않고 실측 상수만 인용한다.
+- 교육과정과 전공 선택 제도는 원천에 없어 다른 분류 설명에 "판정에 넣지 않았다"고 적는다.
+- 유리·불리 요인(`composeFactors`)은 대학 환산식을 적용한 실제 점수 득실로 쓴다(반영비율로 더 받거나 덜 받는 점수,
+  영어 1등급 대비 손실, 그 점수가 없었다면 바뀌는 구분). "강점인 국어"처럼 영역 역할 서술은 PART 1 에만 둔다(specs/014 D1).
+- PART 4 대표 조합의 원서별 이유(`combination-reasons.ts`)는 사용자 예시 형식이다: 격차와 실측 비율로 이 구분에 배치한 이유
+  (안정 제한이면 그 사유) → 더 받는 점수 → 두 학년도 중 높은 70%컷보다도 높은지(적정, 안정) → 덜 받는 점수(구분을 바꾸는
+  것부터, 아니면 큰 것) → 원문 변수 두 개(소수 모집, 모집군 변경, 최종 모집인원, 경쟁률 급등, 반영방식 변경, 모집인원 보정 순)
+  → 희망 학과와의 관계와 목록 안 위치. 원서별 위험(`outlook.slots`)은 받쳐 주는 원서와 컷 상승 허용 폭만 쓴다.
+- `verify-cases.ts` X1~X5 가 설명과 앞뒤 판정의 일치를 검사한다.
+- 생성 검수(Gemini 5명, 2026-11-18)에서 찾은 모델 문장 세 가지를 코드가 찾아 다시 쓰게 한다(긍정형 고칠 방향):
+  상향, 소신 원서를 "진학 가능성을 높인다"고 쓴 문장(`findReachSlotOverstatement`, PART 4 조합 차이 문장),
+  "최상위 대학", "명문대"처럼 대학에 등급을 매기는 말(`findUniversityRankLabels`, 모든 AI 칸),
+  기본 배분과 같은 조합을 "가장 가까운"으로 부른 PART 4 총평(`checkAllocationClaim`). `verify-cases.ts` F4, F5 가 같은 기준이다.
 
 ### 4.2-a 입결의 `group` 은 그 학년도의 원문 모집군이다
 
