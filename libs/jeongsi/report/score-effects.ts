@@ -10,8 +10,13 @@
 //   합은 0 이다(반영비율이 점수를 영역 사이에서 옮길 뿐이다).
 // ============================================================
 
+import {
+  calcEnglishLoss,
+  convertScore,
+  resolveAreaRatios,
+} from "../engine/convert-score.ts";
 import type { ScoreBreakdown, UnitJudgement } from "../report-types.ts";
-import type { ScoreArea } from "../types.ts";
+import type { JeongsiAnalysis, PlanEvaluation, ScoreArea } from "../types.ts";
 
 const AREA_LABEL: Record<ScoreArea, string> = {
   korean: "국어",
@@ -35,6 +40,51 @@ const formatSigned = (value: number): string =>
 
 const percentOfMax = (points: number, totalScore: number): number =>
   totalScore > 0 ? (points / totalScore) * 100 : 0;
+
+/** 소수 셋째 자리 반올림 (엔진 roundTo3 와 같은 규칙) */
+const round3 = (value: number): number =>
+  Math.round((value + Number.EPSILON) * 1000) / 1000;
+
+/** PART 2 대학별 실제 점수. 환산식을 학생 성적에 그대로 적용한 값이다 */
+export const buildScoreBreakdown = (
+  evaluation: PlanEvaluation,
+  score: JeongsiAnalysis["input"]["score"]
+): ScoreBreakdown => {
+  const { formula } = evaluation.plan;
+  const conversion = convertScore(score, formula);
+  const ratios = resolveAreaRatios(score, formula);
+  const areaOrder: ScoreArea[] =
+    formula.english.type === "ratioIncluded"
+      ? ["korean", "math", "english", "inquiry"]
+      : ["korean", "math", "inquiry"];
+  const areas = areaOrder
+    .filter((area) => ratios[area] > 0)
+    .map((area) => ({
+      area,
+      ratio: round3(ratios[area]),
+      earned: round3(conversion.areaScores[area]),
+      max: round3((ratios[area] / 100) * formula.totalScore),
+    }));
+  const englishVsFirstGrade =
+    formula.english.type === "ratioIncluded" ||
+    formula.english.type === "add" ||
+    formula.english.type === "subtract"
+      ? // calcEnglishLoss 는 만점 대비 % 라 점수로 되돌린다
+        -round3(
+          (calcEnglishLoss(formula, score.english.grade, ratios.english) *
+            formula.totalScore) /
+            100
+        )
+      : null;
+  return {
+    areas,
+    englishVsFirstGrade,
+    historyAdjustment: round3(conversion.historyAdjustment),
+    bonusAdjustment: round3(conversion.bonusAdjustment),
+    convertedScore: evaluation.convertedScore,
+    totalScore: formula.totalScore,
+  };
+};
 
 export interface AreaEffect {
   area: ScoreArea;

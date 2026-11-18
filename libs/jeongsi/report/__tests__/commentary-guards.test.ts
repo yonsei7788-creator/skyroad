@@ -15,6 +15,8 @@ import {
   stripTopicLabel,
   findInternalTerms,
   findOverclaims,
+  findReachSlotOverstatement,
+  findUniversityRankLabels,
   findYearCountMentions,
 } from "../commentary-guards";
 
@@ -520,5 +522,53 @@ describe("findInternalTerms", () => {
       '추천 범위 바로 아래 구분은 "소신"으로 부릅니다',
     ]);
     expect(findInternalTerms("가군 소신 원서로 둡니다.")).toEqual([]);
+  });
+});
+
+describe("findReachSlotOverstatement", () => {
+  const slots = [
+    { university: "고려대학교", tier: "상향" },
+    { university: "건국대학교", tier: "적정" },
+  ];
+
+  it("상향 원서를 두고 진학 가능성을 높인다고 쓰면 고칠 방향을 준다", () => {
+    // Arrange
+    const text =
+      "가군 상향 원서로 고려대학교 경제학과를 두어, 희망 계열 진학 가능성을 높이는 데 집중합니다.";
+
+    // Act & Assert
+    expect(findReachSlotOverstatement(slots, text)).toHaveLength(1);
+  });
+
+  it("적정 원서나 한 단계 위를 노린다는 문장은 그대로 둔다", () => {
+    // Arrange
+    const texts = [
+      "나군 적정 원서에 건국대학교 경영학과를 두어, 희망 학과 진학 가능성을 높이는 역할을 합니다.",
+      "가군 상향 원서로 고려대학교 경제학과를 두어, 한 단계 위를 노립니다.",
+    ];
+
+    // Act & Assert
+    texts.forEach((text) =>
+      expect(findReachSlotOverstatement(slots, text)).toEqual([])
+    );
+  });
+});
+
+describe("findUniversityRankLabels", () => {
+  it("대학에 등급을 매기는 말을 찾는다", () => {
+    // Arrange & Act & Assert
+    expect(
+      findUniversityRankLabels(
+        "합격 가능성은 낮지만 최상위 대학 도전을 시도합니다."
+      )
+    ).toHaveLength(1);
+    expect(findUniversityRankLabels("명문대 진학을 노립니다.")).toHaveLength(1);
+  });
+
+  it("학생 성적의 최상위 표현은 그대로 둔다", () => {
+    // Arrange & Act & Assert
+    expect(
+      findUniversityRankLabels("수학 백분위 100은 응시자 최상위입니다.")
+    ).toEqual([]);
   });
 });

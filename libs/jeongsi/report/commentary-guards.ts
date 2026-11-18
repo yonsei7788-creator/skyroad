@@ -552,3 +552,49 @@ export const findInternalTerms = (text: string): string[] =>
   text.includes("스나이핑")
     ? ['추천 범위 바로 아래 구분은 "소신"으로 부릅니다']
     : [];
+
+// ─── 상향, 소신 원서의 효과를 크게 쓴 문장 ───
+
+/** 원서가 결과를 높이거나 굳힌다는 서술 */
+const RAISES_CHANCE =
+  /가능성을\s*(높|키우|끌어올)|가능성이\s*(높아|커)|합격을\s*(노리는\s*데\s*)?(유리|확실)|안정적으로\s*(합격|진학)/;
+
+/**
+ * 상향, 소신 원서를 두고 "진학 가능성을 높인다"처럼 쓴 문장 (2026-11-18 생성 실측:
+ * 실측 12% 상향 원서를 "희망 계열 진학 가능성을 높이는 데 집중"). 원서의 대학명과
+ * 같은 문장에 있을 때만 본다. 고칠 방향은 긍정형으로 적는다.
+ */
+export const findReachSlotOverstatement = (
+  slots: { university: string; tier: string }[],
+  text: string
+): string[] => {
+  const reaching = slots.filter(
+    (slot) => slot.tier === "상향" || slot.tier === "소신"
+  );
+  const overstated = text
+    .split(/(?<=[.!?])\s+/)
+    .some(
+      (sentence) =>
+        RAISES_CHANCE.test(sentence) &&
+        reaching.some((slot) => sentence.includes(slot.university))
+    );
+  return overstated
+    ? [
+        "상향과 소신 원서는 한 단계 위를 노리는 원서로 쓰고, 그 원서의 합격 가능성은 라벨(낮음, 매우낮음)과 같은 강도로 씁니다",
+      ]
+    : [];
+};
+
+// ─── 대학 서열 표현 ───
+
+/**
+ * "최상위 대학", "명문대"처럼 대학에 등급을 매기는 말. 데이터에 없는 판단이다
+ * (2026-11-18 생성 실측: 소신 원서를 "최상위 대학 도전"). 학생 성적의 "최상위"는 보지 않는다.
+ */
+const UNIVERSITY_RANK_LABEL =
+  /(최상위권?|명문|일류|톱|SKY|인서울)\s*(대학|대|학교|권\s*대학)/;
+
+export const findUniversityRankLabels = (text: string): string[] =>
+  UNIVERSITY_RANK_LABEL.test(text)
+    ? ["대학은 이름과 구분(상향, 적정, 안정, 소신)으로 부릅니다"]
+    : [];

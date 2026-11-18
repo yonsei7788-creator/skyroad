@@ -208,8 +208,29 @@ export interface RecommendationItem {
   chance: PassChance;
   /** 판정 근거 (PART 5 와 같은 값) */
   judgement?: UnitJudgement;
+  /** 희망 학과와 다른 분류(같은 계열로 넓혀 담은 곳)면 true. PART 5 explanation.fitNote 가 근거다 */
+  outsideTargetCategory?: true;
   /** AI: 한 줄 코멘트 */
   comment: string;
+}
+
+/** PART 3 — 희망 학과와 같은 분류로 비교했지만 목록에 넣지 않은 곳 (코드 작성) */
+export interface NotListedRow {
+  university: string;
+  department: string;
+  group: AdmissionGroup;
+  /** 넣지 않은 이유 한 문장 */
+  reason: string;
+}
+
+/** PART 3 — 희망 학과와 같은 분류인데 같은 기준으로 비교하지 못한 곳 (사유별 묶음, 코드 작성) */
+export interface NotComparedGroup {
+  /** 사유 한 문장 */
+  reason: string;
+  /** "대학 학과(군)" 목록 (최대 NOT_COMPARED_NAMES_PER_REASON 곳) */
+  units: string[];
+  /** units 밖에 더 있는 곳의 수 */
+  moreCount?: number;
 }
 
 export interface JeongsiRecommendationSection extends JeongsiBaseSection {
@@ -228,6 +249,10 @@ export interface JeongsiRecommendationSection extends JeongsiBaseSection {
    * 없으면 빈 배열.
    */
   notices: string[];
+  /** 목록에 넣지 않은 곳과 이유 (이 필드가 생기기 전 리포트에는 없다) */
+  notListed?: NotListedRow[];
+  /** 비교하지 못한 곳과 사유 */
+  notCompared?: NotComparedGroup[];
 }
 
 // ─── PART 4. 가·나·다군 지원 조합 ───
@@ -253,8 +278,34 @@ export interface CombinationItem {
   matchesRiskAllocation?: boolean;
   /** 대표 조합의 칸별 선택 이유 (코드 작성). 대표 조합에만 있다 */
   slotReasons?: { group: AdmissionGroup; reason: string }[];
+  /** 대표 조합의 원서별 실익과 위험, 원서를 바꿀 때의 변화 (코드 작성). 대표 조합에만 있다 */
+  outlook?: CombinationOutlook;
   /** AI: 이 조합의 전략 설명 */
   strategy: string;
+}
+
+/** 원서 한 장을 목록의 다른 후보로 바꿀 때 */
+export interface CombinationSwapOption {
+  unitKey: string;
+  university: string;
+  department: string;
+  tier: Exclude<AdmissionTier, "지원불가">;
+  /** 바꾼 뒤의 구성과 달라지는 점 */
+  text: string;
+}
+
+/** 대표 조합의 실익, 위험, 원서 교체 효과. 모든 문장은 코드가 엔진 값으로 쓴다 */
+export interface CombinationOutlook {
+  /** 세 원서 전체 구성과 전체 불합격 위험 */
+  summary: string;
+  /** 원서별 얻는 것과 감수할 위험 */
+  slots: { group: AdmissionGroup; gain: string; risk: string }[];
+  /** 군별로 다른 후보로 바꿀 때. 목록에 다른 후보가 없으면 options 가 비고 note 가 있다 */
+  swaps: {
+    group: AdmissionGroup;
+    options: CombinationSwapOption[];
+    note?: string;
+  }[];
 }
 
 export interface JeongsiCombinationSection extends JeongsiBaseSection {
@@ -301,8 +352,33 @@ export interface UniversityDetailItem {
   chance: PassChance;
   /** 판정 근거 (PART 3 과 같은 값) */
   judgement?: UnitJudgement;
+  /** 판정 설명 (코드 작성). 이 필드가 생기기 전 리포트에는 없다 */
+  explanation?: UnitExplanation;
   /** AI: 추천 이유 */
   reason: string;
+}
+
+/**
+ * 모집단위 하나의 판정 설명. 학생이 "왜 이 구분인지", "어떤 성적이 유리하고 불리했는지",
+ * "판정이 바뀔 수 있는 조건", "합격선을 움직일 변수"를 리포트 안에서 찾게 한다.
+ * 모두 엔진 값과 원문 값으로 코드가 쓴다(report/explanations.ts).
+ */
+export interface UnitExplanation {
+  /** 왜 이 구분인지 (기준컷 산출, 구간, 실측 비율, 안정 제한 사유) */
+  tierReason: string[];
+  /** 이 대학에서 유리하게, 불리하게 작용한 성적 */
+  factors: {
+    effect: "유리" | "불리";
+    text: string;
+    /** 환산점수로 더 받거나 덜 받는 크기 (원서별 이유에서 큰 것부터 고르는 데 쓴다) */
+    points?: number;
+  }[];
+  /** 판정이 성립하는 조건과 컷 변동 폭 */
+  conditions: string[];
+  /** 합격선에 영향을 줄 수 있는 원문 변수 (모집인원, 충원, 경쟁률, 반영방식 변경 등) */
+  variables: string[];
+  /** 희망 학과와 다른 분류로 넓혀 담은 곳의 근거 */
+  fitNote?: string;
 }
 
 export interface JeongsiUniversityDetailSection extends JeongsiBaseSection {

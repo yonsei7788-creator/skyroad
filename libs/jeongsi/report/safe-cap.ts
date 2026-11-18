@@ -5,6 +5,8 @@
  * 그대로 만든다 — 학년도·원문 모집군만 쓰고 추정하지 않는다.
  */
 
+import { SMALL_QUOTA_MAX } from "../engine/classify";
+
 import type { AdmissionGroup, SafeCapReason } from "../types";
 
 export interface SafeCapSource {
@@ -39,6 +41,10 @@ const describeReason = (
   }
   if (reason === "모집군 변경") {
     return describePastGroups(source.pastGroups ?? []) ?? "모집군이 바뀐 곳";
+  }
+  if (reason === "소수 모집") {
+    // 실측: 5명 이하 모집은 다음 해 컷이 더 크게 움직였다(classify.ts SMALL_QUOTA_MAX)
+    return `모집인원이 ${SMALL_QUOTA_MAX}명 이하라 합격선이 해마다 크게 움직이는 곳`;
   }
   return "대학 환산점수 입결이 없어 평균 백분위로 비교한 곳";
 };

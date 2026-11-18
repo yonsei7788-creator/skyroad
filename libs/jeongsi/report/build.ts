@@ -97,6 +97,8 @@ import {
   countByTier,
   findInternalTerms,
   findOverclaims,
+  findReachSlotOverstatement,
+  findUniversityRankLabels,
   findYearCountMentions,
   formatCardAllocation,
   formatTierCounts,
@@ -176,6 +178,19 @@ import {
   composeRecommendedSlotReasons,
 } from "./combination-reasons.ts";
 import { describePastGroups, describeSafeCapReasons } from "./safe-cap.ts";
+import {
+  composeNotComparedGroups,
+  composeNotListedRows,
+  composeUnitExplanation,
+} from "./explanations.ts";
+import {
+  composeCombinationOutlook,
+  describeComposition,
+} from "./combination-outlook.ts";
+import { buildScoreBreakdown } from "./score-effects.ts";
+
+export { buildScoreBreakdown };
+import { FIT_SAME_CATEGORY, calcDepartmentFit } from "../engine/analyze.ts";
 import type { ChanceBasis } from "./commentary-validation.ts";
 import { gapValueOf, roundGapForDisplay } from "./cut-format.ts";
 import type { GapValue } from "./cut-format.ts";
@@ -641,47 +656,6 @@ const chanceBasisOf = (evaluation: PlanEvaluation): ChanceBasis => ({
   tier: evaluation.tier === "지원불가" ? "상향" : evaluation.tier,
   capReason: evaluation.safeCapped ? describeSafeCapReasons(evaluation) : null,
 });
-
-/** PART 2 대학별 실제 점수. 환산식을 학생 성적에 그대로 적용한 값이다 */
-export const buildScoreBreakdown = (
-  evaluation: PlanEvaluation,
-  score: JeongsiAnalysis["input"]["score"]
-): ScoreBreakdown => {
-  const { formula } = evaluation.plan;
-  const conversion = convertScore(score, formula);
-  const ratios = resolveAreaRatios(score, formula);
-  const areaOrder: ScoreArea[] =
-    formula.english.type === "ratioIncluded"
-      ? ["korean", "math", "english", "inquiry"]
-      : ["korean", "math", "inquiry"];
-  const areas = areaOrder
-    .filter((area) => ratios[area] > 0)
-    .map((area) => ({
-      area,
-      ratio: round3(ratios[area]),
-      earned: round3(conversion.areaScores[area]),
-      max: round3((ratios[area] / 100) * formula.totalScore),
-    }));
-  const englishVsFirstGrade =
-    formula.english.type === "ratioIncluded" ||
-    formula.english.type === "add" ||
-    formula.english.type === "subtract"
-      ? // calcEnglishLoss 는 만점 대비 % 라 점수로 되돌린다
-        -round3(
-          (calcEnglishLoss(formula, score.english.grade, ratios.english) *
-            formula.totalScore) /
-            100
-        )
-      : null;
-  return {
-    areas,
-    englishVsFirstGrade,
-    historyAdjustment: round3(conversion.historyAdjustment),
-    bonusAdjustment: round3(conversion.bonusAdjustment),
-    convertedScore: evaluation.convertedScore,
-    totalScore: formula.totalScore,
-  };
-};
 
 // ─── PART 5 상세 항목 ───
 
@@ -1364,6 +1338,7 @@ const createSlot = ({
       ...findOverclaims(text),
       ...findYearCountMentions(text),
       ...findInternalTerms(text),
+      ...findUniversityRankLabels(text),
       ...(extraCheck?.(text) ?? []),
     ],
   };
@@ -1571,6 +1546,41 @@ const composeDifferenceFallback = (
 
 // ─── 조립 ───
 
+/** "로/으로" (받침 없거나 ㄹ 받침이면 "로") */
+const withDirectionParticle = (word: string): string => {
+  const hangul = [...word].reverse().find((char) => {
+    const code = char.charCodeAt(0);
+    return code >= HANGUL_SYLLABLE_START && code <= HANGUL_SYLLABLE_END;
+  });
+  if (!hangul) return `${word}로`;
+  const jong = (hangul.charCodeAt(0) - HANGUL_SYLLABLE_START) % JONGSEONG_CYCLE;
+  return `${word}${jong === 0 || jong === 8 ? "로" : "으로"}`;
+};
+
+/**
+ * 조합 전략 문장 위치별 바꿔 쓸 문장. 같은 문장이 앞 조합에 이미 있을 때 쓴다.
+ * 모두 이 조합의 실제 칸과 구분에서 만든다.
+ */
+export const composeCombinationAlternatives = (
+  item: Pick<CombinationItem, "slots">
+): string[][] => {
+  const slots = item.slots
+    .map(
+      (slot) =>
+        `${slot.group}군 ${slot.university} ${slot.department}(${slot.tier})`
+    )
+    .join(", ");
+  if (!slots) return [];
+  const composition = describeComposition(item.slots.map((slot) => slot.tier));
+  return [
+    [`${withDirectionParticle(slots)} 고른 조합입니다.`],
+    [`이 조합은 ${composition}으로 구성됩니다.`],
+    [
+      "다른 대학으로 비교할 선택지를 하나 더 얻는 대신, 앞선 조합에서 먼저 고른 대학은 빠진 선택입니다.",
+    ],
+  ];
+};
+
 /** 조합이 지원 성향에 맞는다는 주장. 기본 배분을 채운 조합이 없으면 쓰지 않는다 */
 const RISK_FIT_CLAIM =
   /성향에\s*(맞|부합)|성향대로|성향을\s*(그대로\s*)?(따르|반영)/;
@@ -1591,10 +1601,26 @@ export const buildJeongsiReport = async (
     toRecommendationEntry(tier, evaluation)
   );
   const combinationItems = buildCombinationItems(analysis);
-  // PART 5 는 대학마다 한 장이라 칸이 아니라 실제 판정으로 구분을 쓴다
-  const detailItems = flattened.map(({ tier, evaluation }) =>
-    buildDetailItem(actualTierOf(evaluation, tier), evaluation)
-  );
+  // PART 5 는 대학마다 한 장이라 칸이 아니라 실제 판정으로 구분을 쓴다.
+  // 판정 설명(왜 이 구분인지, 유리·불리, 조건, 변수)은 코드가 엔진 값으로 쓴다.
+  const targetCategoryForFit = toTargetCategory(preference.target.trim());
+  const fieldGroupForFit = findFieldGroup(targetCategoryForFit);
+  const fitLabels = {
+    targetLabel: resolveTargetLabel(analysis, targetCategoryForFit),
+    fieldLabel:
+      fieldGroupForFit === null
+        ? null
+        : (FIELD_GROUP_DISPLAY[fieldGroupForFit]?.label ?? null),
+  };
+  const fitOf = (evaluation: PlanEvaluation): number =>
+    calcDepartmentFit(evaluation.plan, preference);
+  const detailItems = flattened.map(({ tier, evaluation }) => ({
+    ...buildDetailItem(actualTierOf(evaluation, tier), evaluation),
+    explanation: composeUnitExplanation(evaluation, analysis, {
+      ...fitLabels,
+      fit: fitOf(evaluation),
+    }),
+  }));
   // 섹션에는 report-types 계약대로 담고, 프롬프트에만 분류 척도를 덧붙인다.
   const notices = buildRecommendationNotices(analysis);
   const selectionNotes: JeongsiSelectionNotes = {
@@ -1747,9 +1773,21 @@ export const buildJeongsiReport = async (
       });
     const allMatch =
       labels.length > 0 && allocationMatches.length === labels.length;
-    const wrong = allMatch
-      ? mentioned.length > 0 && new Set(mentioned).size < labels.length
-      : mentioned.some((label) => !allocationMatches.includes(label));
+    // 배분과 같은 조합을 "가장 가까운"으로 부르면 같은지 아닌지가 흐려진다
+    // (2026-11-18 생성 실측: 배분과 같은 두 조합을 "가장 가까운"으로 씀)
+    const callsMatchNearest = splitSentences(text).some(
+      (sentence) =>
+        sentence.includes("배분") &&
+        /가장\s*가까운/.test(sentence) &&
+        allocationMatches.some((label) =>
+          sentence.replace(/\s/g, "").includes(label.replace(/\s/g, ""))
+        )
+    );
+    const wrong =
+      callsMatchNearest ||
+      (allMatch
+        ? mentioned.length > 0 && new Set(mentioned).size < labels.length
+        : mentioned.some((label) => !allocationMatches.includes(label)));
     return wrong
       ? [
           `기본 배분과 같은 조합은 재료의 판단대로 씁니다: ${allocationFact.meaning}`,
@@ -2201,6 +2239,7 @@ export const buildJeongsiReport = async (
               ? ["다른 조합과 달라지는 칸만 짚습니다"]
               : []),
             ...findWrongSlotTier(combinationItems[index], text),
+            ...findReachSlotOverstatement(combinationItems[index].slots, text),
           ],
         })
       ),
@@ -2342,7 +2381,12 @@ export const buildJeongsiReport = async (
     "jeongsiCombination",
     [
       { text: combinationOverall },
-      ...combinationStrategies.map((text) => ({ text })),
+      // 라벨이 같은 대안 조합은 코드 문장이 모두 같아 반복 제거로 비어 버렸다(2026-11-18
+      // 생성 실측). 문장 위치마다 이 조합의 원서를 짚는 문장을 바꿔 쓸 문장으로 둔다.
+      ...combinationStrategies.map((text, index) => ({
+        text,
+        alternatives: composeCombinationAlternatives(combinationItems[index]),
+      })),
     ]
   );
 
@@ -2450,8 +2494,20 @@ export const buildJeongsiReport = async (
         substitutedFrom: _substitutedFrom,
         ...rest
       } = entry;
-      return { ...rest, comment: uniqueRecommendationComments[index] };
+      const outside =
+        fitOf(flattened[index].evaluation) < FIT_SAME_CATEGORY
+          ? { outsideTargetCategory: true as const }
+          : {};
+      return {
+        ...rest,
+        ...outside,
+        comment: uniqueRecommendationComments[index],
+      };
     }
+  );
+  const notListedRows = composeNotListedRows(analysis.notListed ?? []);
+  const notComparedGroups = composeNotComparedGroups(
+    analysis.notCompared ?? []
   );
 
   const recommendationSection: JeongsiRecommendationSection = {
@@ -2467,6 +2523,8 @@ export const buildJeongsiReport = async (
     })).filter((group) => group.tier !== "소신" || group.items.length > 0),
     overallComment: uniqueRecommendationOverall,
     notices,
+    ...(notListedRows.length > 0 ? { notListed: notListedRows } : {}),
+    ...(notComparedGroups.length > 0 ? { notCompared: notComparedGroups } : {}),
   };
 
   const combinationSection: JeongsiCombinationSection = {
@@ -2478,9 +2536,14 @@ export const buildJeongsiReport = async (
         analysis.combinations[index],
         analysis
       );
+      const outlook = composeCombinationOutlook(
+        analysis.combinations[index],
+        analysis
+      );
       return {
         ...item,
         ...(slotReasons.length > 0 ? { slotReasons } : {}),
+        ...(outlook ? { outlook } : {}),
         strategy: uniqueCombinationStrategies[index],
       };
     }),
@@ -2531,10 +2594,18 @@ export const buildJeongsiReport = async (
         (sectionId) => sectionById[sectionId]
       ),
     },
-    analysis.ineligiblePlans.flatMap(({ plan }) => [
-      plan.university,
-      plan.department,
-    ])
+    [
+      ...analysis.ineligiblePlans.flatMap(({ plan }) => [
+        plan.university,
+        plan.department,
+      ]),
+      // 비교하지 못한 곳은 "대학 학과(군)" 문자열로 싣는다. 원문 고유명의 점을 지킨다
+      ...(analysis.notCompared ?? []).flatMap((entry) => [
+        entry.university,
+        entry.department,
+      ]),
+      ...flattened.map(({ evaluation }) => evaluation.plan.category),
+    ]
   );
 
   // 페이지 간 대학명·모집단위·모집군·구분·가능성·지원 자격이 하나라도 어긋나면
